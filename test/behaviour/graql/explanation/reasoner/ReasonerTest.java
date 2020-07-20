@@ -18,14 +18,9 @@
 
 package grakn.core.test.behaviour.graql.explanation.reasoner;
 
-import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.lang.reflect.InvocationTargetException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -57,15 +52,4 @@ public class ReasonerTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void beforeClass() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        SingletonTestServer.start();
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        SingletonTestServer.shutdown();
-    }
-
 }

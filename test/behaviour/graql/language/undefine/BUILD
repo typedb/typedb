@@ -26,9 +26,6 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.graql.language.undefine.UndefineTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/server:server",
-
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
     ],
@@ -41,7 +38,7 @@ java_test(
     data = [
         "@graknlabs_verification//behaviour/graql/language:undefine.feature",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
+    classpath_resources = ["//test/conf:logback"],
     size = "large",
     visibility = ["//visibility:public"]
 )

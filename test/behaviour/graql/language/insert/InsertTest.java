@@ -18,16 +18,9 @@
 
 package grakn.core.test.behaviour.graql.language.insert;
 
-import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.TimeoutException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -60,14 +53,4 @@ public class InsertTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        SingletonTestServer.start();
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        SingletonTestServer.shutdown();
-    }
 }

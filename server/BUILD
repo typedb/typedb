@@ -16,11 +16,7 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(
-    default_visibility = [
-        "//daemon:__subpackages__",
-    ]
-)
+package(default_visibility = ["//visibility:private",])
 
 genrule(
     name = "version",
