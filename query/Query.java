@@ -18,7 +18,6 @@
 
 package grakn.core.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concepts;

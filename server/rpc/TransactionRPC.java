@@ -51,7 +51,7 @@ import static grakn.core.common.exception.Error.Transaction.UNEXPECTED_NULL;
  * and the server. This class receives a stream of {@code Transaction.Req} and
  * returns a stream of {@code Transaction.Res}.
  */
-class TransactionRPC implements StreamObserver<Transaction.Req> {
+public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionRPC.class);
     private final StreamObserver<Transaction.Res> responseSender;
@@ -212,7 +212,7 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
      *
      * The iterators operate by batching results to reduce total round-trips.
      */
-    static class Iterators {
+    public static class Iterators {
         private final Consumer<Transaction.Res> responseSender;
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(0);
         private final Map<Integer, BatchingIterator> iterators = new ConcurrentHashMap<>();
