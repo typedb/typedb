@@ -18,7 +18,6 @@
 
 package grakn.core.graph.iid;
 
-import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Schema;

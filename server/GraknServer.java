@@ -20,9 +20,9 @@ package grakn.core.server;
 
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.common.util.Pair;
 import grakn.core.Grakn;
-import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.rpc.GraknRPC;
@@ -77,64 +77,6 @@ public class GraknServer implements AutoCloseable {
         server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
-    }
-
-    private void enableGrablTracing() {
-        GrablTracing grablTracingClient;
-        grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
-                options.grablURI().toString(),
-                options.grablUsername(),
-                options.grablToken()
-        ));
-        GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
-        GraknServer.LOG.info("Grabl tracing is enabled");
-    }
-
-    private Server rpcServer() {
-        NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
-        return NettyServerBuilder.forPort(options.databasePort())
-                .executor(Executors.newFixedThreadPool(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor")))
-                .workerEventLoopGroup(workerELG)
-                .bossEventLoopGroup(workerELG)
-                .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
-                .channelType(NioServerSocketChannel.class)
-                .addService(graknRPC)
-                .build();
-    }
-
-    @Override
-    public void close() {
-        LOG.info("");
-        LOG.info("Shutting down Grakn Core Server...");
-        try {
-            graknRPC.close();
-            server.shutdown();
-            server.awaitTermination();
-            grakn.close();
-            LOG.info("Grakn Core Server has been shutdown");
-        } catch (InterruptedException e) {
-            LOG.error(FAILED_AT_STOPPING.message(), e);
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private void start() throws IOException {
-        try {
-            server.start();
-        } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    private void serve() {
-        try {
-            server.awaitTermination();
-        } catch (InterruptedException e) {
-            // grakn server stop is called
-            close();
-            Thread.currentThread().interrupt();
-        }
     }
 
     private static void printGraknLogo() throws IOException {
@@ -225,6 +167,64 @@ public class GraknServer implements AutoCloseable {
         }
 
         System.exit(0);
+    }
+
+    private void enableGrablTracing() {
+        GrablTracing grablTracingClient;
+        grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                options.grablURI().toString(),
+                options.grablUsername(),
+                options.grablToken()
+        ));
+        GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+        GraknServer.LOG.info("Grabl tracing is enabled");
+    }
+
+    private Server rpcServer() {
+        NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
+        return NettyServerBuilder.forPort(options.databasePort())
+                .executor(Executors.newFixedThreadPool(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor")))
+                .workerEventLoopGroup(workerELG)
+                .bossEventLoopGroup(workerELG)
+                .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
+                .channelType(NioServerSocketChannel.class)
+                .addService(graknRPC)
+                .build();
+    }
+
+    @Override
+    public void close() {
+        LOG.info("");
+        LOG.info("Shutting down Grakn Core Server...");
+        try {
+            graknRPC.close();
+            server.shutdown();
+            server.awaitTermination();
+            grakn.close();
+            LOG.info("Grakn Core Server has been shutdown");
+        } catch (InterruptedException e) {
+            LOG.error(FAILED_AT_STOPPING.message(), e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void start() throws IOException {
+        try {
+            server.start();
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    private void serve() {
+        try {
+            server.awaitTermination();
+        } catch (InterruptedException e) {
+            // grakn server stop is called
+            close();
+            Thread.currentThread().interrupt();
+        }
     }
 
 }

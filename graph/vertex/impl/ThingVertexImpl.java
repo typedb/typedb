@@ -18,7 +18,6 @@
 
 package grakn.core.graph.vertex.impl;
 
-import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.ThingGraph;
 import grakn.core.graph.adjacency.Adjacency;

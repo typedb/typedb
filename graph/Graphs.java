@@ -52,7 +52,7 @@ public class Graphs {
         return thingGraph;
     }
 
-    public Traversal traversal(){
+    public Traversal traversal() {
         return new Traversal(); // TODO
     }
 

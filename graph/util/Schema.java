@@ -18,7 +18,6 @@
 
 package grakn.core.graph.util;
 
-import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 
 import javax.annotation.Nullable;

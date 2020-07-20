@@ -18,7 +18,6 @@
 
 package grakn.core.concept.type.impl;
 
-import grakn.core.common.exception.Error;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
