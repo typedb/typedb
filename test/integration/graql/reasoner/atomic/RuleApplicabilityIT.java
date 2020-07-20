@@ -484,12 +484,10 @@ public class RuleApplicabilityIT {
             Atom relation3 = reasonerQueryFactory.create(conjunction(relationString3)).getAtoms(RelationAtom.class).findFirst().orElse(null);
 
 
-            // TODO ask kasper about this one, why is the `isa entity` not ruling out the rule that requires relations
-
-
             assertEquals(7, relation.getApplicableRules().count());
-            Set<Rule> rules = testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).collect(toSet());
-            assertTrue(relation2.getApplicableRules().allMatch(r -> rules.contains(r.getRule())));
+            // TODO this is actually incorrect, should also be 7 rules `isa entity` is not pruning the rule inferring relation of relations
+            Set<Rule> rulesInferringRelations = testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).collect(toSet());
+            assertTrue(relation2.getApplicableRules().allMatch(r -> rulesInferringRelations.contains(r.getRule())));
             assertEquals(testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
         }
     }
@@ -499,19 +497,20 @@ public class RuleApplicabilityIT {
         try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String relationString = "{ (someRole: $x, subRole: $y) isa reifying-relation; };";
-            String relationString2 = "{ $x isa entity;(someRole: $x, subRole: $y) isa reifying-relation; };";
-            String relationString3 = "{ $x isa anotherTwoRoleEntity;(someRole: $x, subRole: $y) isa reifying-relation; };";
-            String relationString4 = "{ $x isa twoRoleEntity;(someRole: $x, subRole: $y) isa reifying-relation; };";
+            String relationString = "{ (ranked: $x, ranked: $y) isa linked-ranking; };";
+            String relationString2 = "{ $x isa entity;(ranked: $x, ranked: $y) isa linked-ranking; };";
+            String relationString3 = "{ $x isa city;(ranked: $x, ranked: $y) isa linked-ranking; };";
+            String relationString4 = "{ $x isa ranked-hill-city;(ranked: $x, ranked: $y) isa linked-ranking; };";
 
             Atom relation = reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
             Atom relation2 = reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
             Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             assertEquals(2, relation.getApplicableRules().count());
+            // TODO this can actually prune down to 1 rule based on role playability
             assertEquals(2, relation2.getApplicableRules().count());
             assertEquals(1, relation3.getApplicableRules().count());
-            assertThat(relation4.getApplicableRules().collect(toSet()), empty());
+            assertEquals(1, relation4.getApplicableRules().count());
         }
     }
 

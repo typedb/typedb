@@ -74,7 +74,7 @@ located-description sub rule,
 # In theory, we can try to figure out whether a rule CAN match
 # some query by using the attribute values in the 'when' clause
 # however, this only is useful once we either include cardinaltiy
-# restrictions
+# restrictions, or only look at keyed entities
 # the best current case would be to ignore rules whose negated attribuet ownerships
 # can be excluded
 # however, we for now do no such pruning
@@ -124,10 +124,12 @@ ternary-ranked-connection sub ranked-connection,
     relates upper-connected,
     relates middle-connected as other-connected;
 
+ranking sub relation,
+    relates ranked;
 linked-ranking sub relation,
-    relates lower-ranked,
-    relates upper-ranked,
-    relates linked-ranked-item;
+    relates lower-ranked as ranked,
+    relates upper-ranked as ranked,
+    relates linked-ranked-item as ranked;
 
 located sub relation,
     relates located-in,
