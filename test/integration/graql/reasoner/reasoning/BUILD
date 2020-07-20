@@ -1,22 +1,6 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "neq-idpredicate-it",
-    size = "medium",
-    srcs = ["NeqIdPredicateIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.NeqIdPredicateIT",
-    deps = [
-        "//concept/answer",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "//test/common:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
     name = "valuepredicate-it",
     size = "medium",
     srcs = ["ValuePredicateIT.java"],
@@ -69,30 +53,10 @@ java_test(
     ],
 )
 
-java_test(
-    name = "variable-roles-it",
-    size = "large",
-    srcs = ["VariableRolesIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.VariableRolesIT",
-    deps = [
-        "//concept/answer",
-        "@maven//:commons_collections_commons_collections",
-        "@maven//:org_apache_commons_commons_math3",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "//test/common:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":neq-idpredicate-it",
         ":valuepredicate-it",
         ":recursion-it",
-        ":variable-roles-it",
     ],
 )
