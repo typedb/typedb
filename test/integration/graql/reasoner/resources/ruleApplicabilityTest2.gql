@@ -2,39 +2,39 @@ define
 
 ## Rules
 
-# Transitive connection and binary to ternary connections
-ranked-connection-transitivity sub rule,
+# Transitive path and binary to ternary paths
+steep-path-transitivity sub rule,
     when {
-        (lower-connected: $x, upper-connected: $y) isa ranked-connection;
-        (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+        (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
     }, then {
-        (lower-connected: $x, upper-connected: $z) isa ranked-connection;
+        (steep-path_lower-end: $x, steep-path_upper-end: $z) isa steep-path;
     };
 
-ternary-ranked-connection-from-ranked-connections sub rule,
+ternary-steep-path-from-steep-paths sub rule,
     when {
-        (lower-connected: $x, upper-connected: $y) isa ranked-connection;
-        (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+        (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
     }, then {
-        (lower-connected: $x, middle-connected: $y, upper-connected: $z) isa ternary-ranked-connection;
+        (steep-path_lower-end: $x, ternary-steep-path_middle-end: $y, steep-path_upper-end: $z) isa ternary-steep-path;
     };
 
-flat-ternary-ranked-connection sub rule,
+flat-ternary-steep-path sub rule,
     when {
-        (lower-connected: $x, upper-connected: $y) isa ranked-connection;
-        (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+        (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
     }, then {
-        (lower-connected: $x, lower-connected: $y, upper-connected: $z) isa ternary-ranked-connection;
+        (steep-path_lower-end: $x, steep-path_lower-end: $y, steep-path_upper-end: $z) isa ternary-steep-path;
     };
 
 
-# link ranked connections
-all-linked-rankings sub rule,
+# link ranked paths
+all-elevation-rankings sub rule,
     when {
-        $r1 (lower-connected: $x, upper-connected: $y) isa ranked-connection;
-        $r2 (lower-connected: $y, upper-connected: $z) isa ranked-connection;
+        $r1 (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        $r2 (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
     }, then {
-        (lower-ranked: $r1, upper-ranked: $r2) isa linked-ranking;
+        (elevation-ranking_lower-path: $r1, elevation-ranking_upper: $r2) isa elevation-ranking;
     };
 
 # create links between other linkable entities
@@ -43,13 +43,13 @@ link-cities sub rule,
         $x isa ranked-hill-city;
         $y isa ranked-hill-city;
     }, then {
-        (linked-ranked-item: $x, linked-ranked-item: $y) isa linked-ranking;
+        (elevation-ranking_nearby-item: $x, elevation-ranking_nearby-item: $y) isa elevation-ranking;
     };
 
-# add a text tag to ranking connections
-ranking-description sub rule,
+# add a text tag to ranking paths
+elevation-ranking-description sub rule,
     when {
-        $rel (lower-connected: $x, upper-connected: $y) isa ranked-connection;
+        $rel (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
     }, then {
         $rel has description 'a ranking cities by elevation';
     };
@@ -68,7 +68,7 @@ located-description sub rule,
     when {
         $r (located-in: $x, located-item: $y, located-by: $z) isa located;
     }, then {
-        $r has description 'in a fictiondescriptional hilly world';
+        $r has description 'in a fictional hilly world';
     };
 
 # In theory, we can try to figure out whether a rule CAN match
@@ -101,35 +101,35 @@ long-attributed-entities-relation sub rule,
 
 # Relations
 #
-# connection  ------------------ connected
+# path  ------------------ path_end
 # |
-# ranked-connection ------------ lower-connected, upper-connected
+# steep-path ------------ steep-path_lower-end, steep-path_upper-end
 # |
-# ternary-ranked-connection ---- lower-connected, upper-connected, middle-connected
+# ternary-steep-path ---- steep-path_lower-end, steep-path_upper-end, ternary-steep-path_middle-end
 #
 
-connection sub relation,
-    relates connected;
+path sub relation,
+    relates path_end;
 
-ranked-connection sub connection,
-    relates lower-connected as connected,
-    relates upper-connected as connected,
-    relates other-connected as connected, # we have this because we won't be able to access 'connected' in sub relations
-    plays lower-ranked,
-    plays upper-ranked,
+steep-path sub path,
+    relates steep-path_lower-end as path_end,
+    relates steep-path_upper-end as path_end,
+    relates steep-path_other-end as path_end, # we have this because we won't be able to access 'connected' in sub relations
+    plays elevation-ranking_lower-path,
+    plays elevation-ranking_upper,
     has description;
 
-ternary-ranked-connection sub ranked-connection,
-    relates lower-connected,
-    relates upper-connected,
-    relates middle-connected as other-connected;
+ternary-steep-path sub steep-path,
+    relates steep-path_lower-end,
+    relates steep-path_upper-end,
+    relates ternary-steep-path_middle-end as steep-path_other-end;
 
 ranking sub relation,
     relates ranked;
-linked-ranking sub relation,
-    relates lower-ranked as ranked,
-    relates upper-ranked as ranked,
-    relates linked-ranked-item as ranked;
+elevation-ranking sub relation,
+    relates elevation-ranking_lower-path as ranked,
+    relates elevation-ranking_upper as ranked,
+    relates elevation-ranking_nearby-item;
 
 located sub relation,
     relates located-in,
@@ -149,21 +149,21 @@ entities-with-attributes sub relation,
 root sub entity;
 
 city sub root,
-    plays connected,
+    plays path_end,
     plays located-in;
 
 hill-city sub city,
-    plays lower-connected,
-    plays upper-connected,
-    plays middle-connected;
+    plays steep-path_lower-end,
+    plays steep-path_upper-end,
+    plays ternary-steep-path_middle-end;
 
 ranked-hill-city sub hill-city,
-    plays linked-ranked-item,
+    plays elevation-ranking_nearby-item,
     plays long-attributed,
     has numerical-elevation-rank;
 
 monument sub root,
-    plays lower-connected, # nonsense, just to throw off type inference
+    plays steep-path_lower-end, # to throw off type inference by having another player of this role
     plays located-item,
     plays string-attributed,
     plays long-attributed,
@@ -182,6 +182,9 @@ discoverer sub root,
 with-long sub root,
     plays long-attributed,
     has age;
+with-string sub root,
+    plays string-attributed,
+    has name;
 
 numerical-elevation-rank sub attribute, value long;
 age sub attribute, value long;
@@ -190,17 +193,18 @@ description sub attribute, value string;
 
 
 insert
+    $root isa root;
     $x isa hill-city;
 
     $a isa ranked-hill-city;
     $b isa ranked-hill-city;
     $c isa ranked-hill-city, has numerical-elevation-rank 0;
 
-    (lower-connected: $a, upper-connected: $b) isa ranked-connection;
-    (lower-connected: $b, upper-connected: $c) isa ranked-connection;
+    (steep-path_lower-end: $a, steep-path_upper-end: $b) isa steep-path;
+    (steep-path_lower-end: $b, steep-path_upper-end: $c) isa steep-path;
 
     $z isa monument, has numerical-elevation-rank 100, has name 'Big Rock';
     $d isa discoverer, has age 40;
 
 
-    $long-attribuetd isa with-long, has age 10;
+    $long-attributed isa with-long, has age 10;

@@ -165,7 +165,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return subs().flatMap(sub -> TypeImpl.<T, V>from(sub).instancesDirect());
     }
 
-    Stream<V> instancesDirect() {
+    @Override
+    public Stream<V> instancesDirect() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
                 .map(EdgeElement::source)
                 .map(VertexElement::asShard)
