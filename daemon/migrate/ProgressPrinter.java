@@ -43,7 +43,7 @@ public class ProgressPrinter implements MigrationClient.ProgressListener, AutoCl
 
     private int anim;
 
-    public ProgressPrinter(String type) {
+    public ProgressPrinter(String type, int animRate) {
         this.type = type;
 
         TimerTask task = new TimerTask() {
@@ -52,7 +52,7 @@ public class ProgressPrinter implements MigrationClient.ProgressListener, AutoCl
                 step();
             }
         };
-        timer.scheduleAtFixedRate(task, 0, 100);
+        timer.scheduleAtFixedRate(task, 0, animRate);
     }
 
     private synchronized void step() {

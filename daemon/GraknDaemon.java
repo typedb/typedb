@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -261,19 +262,48 @@ public class GraknDaemon {
         serverExecutor.clean();
     }
 
+    private static final int SLOW_ANIM_RATE = 5000;
+    private static final int FAST_ANIM_RATE = 100;
+
+    private class MigrationArgs {
+        private List<String> remaining;
+        private boolean fastAnim = true;
+
+        private MigrationArgs(List<String> args) {
+            remaining = new ArrayList<>();
+            for (String arg : args) {
+                if (!arg.startsWith("--")) {
+                    remaining.add(arg);
+                }
+
+                if (arg.equals("--no-anim")) {
+                    fastAnim = false;
+                }
+            }
+
+            if (remaining.size() != 2) {
+                throw new IllegalArgumentException("Must use exactly 2 arguments: <keyspace> <file>");
+            }
+        }
+    }
+
     private void export(List<String> args) {
+        MigrationArgs margs = new MigrationArgs(args);
+
         try (MigrationClient client = new MigrationClient();
-             ProgressPrinter printer = new ProgressPrinter("export")) {
-            client.export(args.get(0), args.get(1), printer);
+             ProgressPrinter printer = new ProgressPrinter("export", margs.fastAnim ? FAST_ANIM_RATE : SLOW_ANIM_RATE)) {
+            client.export(margs.remaining.get(0), margs.remaining.get(1), printer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
     }
 
     private void import_(List<String> args) {
+        MigrationArgs margs = new MigrationArgs(args);
+
         try (MigrationClient client = new MigrationClient();
-             ProgressPrinter printer = new ProgressPrinter("import")) {
-            client.import_(args.get(0), args.get(1), printer);
+             ProgressPrinter printer = new ProgressPrinter("import", margs.fastAnim ? FAST_ANIM_RATE : SLOW_ANIM_RATE)) {
+            client.import_(margs.remaining.get(0), margs.remaining.get(1), printer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }

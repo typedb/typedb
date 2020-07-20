@@ -90,7 +90,7 @@ public class MigrationE2E {
         loadSimulationSchema("simulation");
 
         System.out.println("Performing import");
-        assertExecutes(GRAKN, "server", "import", "simulation", IMPORT_PATH.toString());
+        assertExecutes(GRAKN, "server", "import", "--no-anim", "simulation", IMPORT_PATH.toString());
 
         System.out.println("Smoke test that something was inserted");
         GraknClient graknClient = new GraknClient("localhost:48555");
@@ -102,7 +102,7 @@ public class MigrationE2E {
         Path exportPath = Paths.get("simulationexport.grakn");
 
         System.out.println("Performing export");
-        assertExecutes(GRAKN, "server", "export", "simulation", exportPath.toString());
+        assertExecutes(GRAKN, "server", "export", "--no-anim", "simulation", exportPath.toString());
 
         assertTrue(Files.exists(exportPath));
 
