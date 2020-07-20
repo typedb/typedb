@@ -114,14 +114,14 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/concept/thing/relation:test --test_output=errors
 
-  test-traversal:
+  test-query:
     machine: true
     working_directory: ~/grakn
     steps:
       - install-bazel
       - checkout
       - run-bazel:
-          command: bazel test //test/integration:test-traversal --test_output=errors
+          command: bazel test //test/integration:test-query --test_output=errors
 
 workflows:
   grakn:
@@ -132,4 +132,4 @@ workflows:
       - test-basic
       - test-connection
       - test-concept
-      - test-traversal
+      - test-query
