@@ -180,17 +180,21 @@ load("@graknlabs_grakn_core//dependencies/maven:artifacts.bzl", graknlabs_grakn_
 
 # Override libraries conflicting with versions defined in @graknlabs_dependencies
 OVERRIDES = {
-    # @graknlabs_grakn_core overrides
     "org.scala-lang:scala-library": "2.11.8",
     "com.fasterxml.jackson.core:jackson-core": "2.9.10",
     "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
 
     "io.netty:netty-all": "4.1.38.Final",
+    "io.netty:netty-buffer": "4.1.38.Final",
+    "io.netty:netty-codec": "4.1.38.Final",
     "io.netty:netty-codec-http2": "4.1.38.Final",
-
-    # @graknlabs_grabl_tracing overrides
+    "io.netty:netty-codec-http": "4.1.38.Final",
+    "io.netty:netty-codec-socks": "4.1.38.Final",
+    "io.netty:netty-common": "4.1.38.Final",
     "io.netty:netty-handler": "4.1.38.Final",
     "io.netty:netty-handler-proxy": "4.1.38.Final",
+    "io.netty:netty-resolver": "4.1.38.Final",
+    "io.netty:netty-transport": "4.1.38.Final",
 }
 
 ###############
