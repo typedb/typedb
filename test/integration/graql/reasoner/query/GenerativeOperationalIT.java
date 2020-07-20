@@ -38,6 +38,7 @@ import graql.lang.statement.Statement;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ import static graql.lang.Graql.var;
  * - there exists a `SUBSUMPTIVE` unifier between the parent and the child (child subsumes parent)
  * - there exists a `STRUCTURAL_SUBSUMPTIVE` unifier between the parent and the child
  */
+@Ignore
 public class GenerativeOperationalIT {
 
     @ClassRule

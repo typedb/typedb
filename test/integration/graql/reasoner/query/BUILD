@@ -146,7 +146,7 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
+        "//test/integration/graql/reasoner/resources:generic-schema-refactored",
         "//test/integration/graql/reasoner/resources:unification-with-types",
     ],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",

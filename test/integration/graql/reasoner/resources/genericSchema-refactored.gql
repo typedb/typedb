@@ -35,10 +35,10 @@ anotherBaseRoleEntity sub entity,
 subRoleEntity sub baseRoleEntity,
     plays subRole1,
     plays subRole2,
-    plays subRole3;
-    #plays anotherSubRole1,
-    #plays anotherSubRole2,
-    #plays anotherSubRole3;
+    plays subRole3,
+    plays anotherSubRole1,
+    plays anotherSubRole2,
+    plays anotherSubRole3;
 
 subSubRoleEntity sub subRoleEntity,
     plays subSubRole1,
@@ -57,16 +57,17 @@ baseRelation sub relation, abstract,
     relates baseRole3,
     has resource;
 
+#NB: explicit overriding is only needed as relates is not inherited atm, after the semantics change they should be removed
 interimRelation sub baseRelation, abstract,
     relates baseRole1,
     relates baseRole2,
     relates baseRole3,
     relates subRole1 as baseRole1,
     relates subRole2 as baseRole2,
-    relates subRole3 as baseRole3;
-    #relates anotherSubRole1 as baseRole1,
-    #relates anotherSubRole2 as baseRole2,
-    #relates anotherSubRole3 as baseRole3;
+    relates subRole3 as baseRole3,
+    relates anotherSubRole1 as baseRole1,
+    relates anotherSubRole2 as baseRole2,
+    relates anotherSubRole3 as baseRole3;
 
 ternary sub interimRelation,
     relates baseRole1,
@@ -75,9 +76,9 @@ ternary sub interimRelation,
     relates subRole1 as baseRole1,
     relates subRole2 as baseRole2,
     relates subRole3 as baseRole3,
-    #relates anotherSubRole1 as baseRole1,
-    #relates anotherSubRole2 as baseRole2,
-    #relates anotherSubRole3 as baseRole3,
+    relates anotherSubRole1 as baseRole1,
+    relates anotherSubRole2 as baseRole2,
+    relates anotherSubRole3 as baseRole3,
     relates subSubRole1 as subRole1,
     relates subSubRole2 as subRole2,
     relates subSubRole3 as subRole3;
@@ -127,10 +128,11 @@ $m isa subSubRoleEntity, has resource 'm';
 $d isa subSubRoleEntity, has resource 'd';
 $s isa subSubRoleEntity, has resource 's';
 
-#(anotherSubRole1: $m, subRole2: $s) isa ternary;
-#(subRole1: $f, anotherSubRole2: $d) isa ternary;
-#(subRole1: $m, anotherSubRole2: $d) isa ternary;
-#(anotherSubRole1: $m, anotherSubRole2: $d) isa ternary;
+#NB: these together with extra roles seem only used in AtomicQueryUnificationIT
+(anotherSubRole1: $m, subRole2: $s) isa ternary;
+(subRole1: $f, anotherSubRole2: $d) isa ternary;
+(subRole1: $m, anotherSubRole2: $d) isa ternary;
+(anotherSubRole1: $m, anotherSubRole2: $d) isa ternary;
 
 (subRole1: $f, subRole2: $s) isa ternary;
 (subRole1: $f, subSubRole2: $d) isa ternary;
