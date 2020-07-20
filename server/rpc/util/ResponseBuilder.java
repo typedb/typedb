@@ -74,6 +74,10 @@ public class ResponseBuilder {
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
                                             .setIteratorId(id)).build();
             }
+
+            public static TransactionProto.Transaction.Res query(Object object) {
+                return null; // TODO
+            }
         }
     }
 }

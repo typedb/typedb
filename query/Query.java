@@ -18,13 +18,18 @@
 
 package grakn.core.query;
 
+import grabl.tracing.client.GrablTracingThreadStatic;
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
+import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 
 import java.util.stream.Stream;
+
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
 public class Query {
 
@@ -36,7 +41,17 @@ public class Query {
         this.graphs = graphs;
     }
 
-    public Stream<ConceptMap> stream(GraqlQuery query, GraknOptions options) {
-        return null; // TODO
+    private GraqlQuery parse(String query) {
+        try (ThreadTrace ignored2 = traceOnThread("parse")) {
+            return Graql.parse(query);
+        }
+    }
+
+    public Stream<ConceptMap> stream(String query, GraknOptions options) {
+        try (ThreadTrace ignored2 = traceOnThread("stream")) {
+            GraqlQuery graql = parse(query);
+
+            return null; // TODO
+        }
     }
 }

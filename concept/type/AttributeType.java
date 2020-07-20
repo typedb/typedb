@@ -19,6 +19,7 @@
 package grakn.core.concept.type;
 
 import grakn.core.concept.thing.Attribute;
+import grakn.core.graph.util.Schema;
 
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
@@ -57,6 +58,33 @@ public interface AttributeType extends ThingType {
     AttributeType.String asString();
 
     AttributeType.DateTime asDateTime();
+
+    enum ValueType {
+        BOOLEAN(Schema.ValueType.BOOLEAN),
+        LONG(Schema.ValueType.LONG),
+        DOUBLE(Schema.ValueType.DOUBLE),
+        STRING(Schema.ValueType.STRING),
+        DATETIME(Schema.ValueType.DATETIME);
+
+        private final Class<?> valueClass;
+
+        ValueType(Schema.ValueType valueType) {
+            this.valueClass = valueType.valueClass();
+        }
+
+        public ValueType of(Class<?> valueClass) {
+            for (ValueType vt : ValueType.values()) {
+                if (vt.valueClass.equals(valueClass)) {
+                    return vt;
+                }
+            }
+            return null;
+        }
+
+        public Class<?> valueClass() {
+            return valueClass;
+        }
+    }
 
     interface Boolean extends AttributeType {
 

@@ -37,8 +37,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.Error.Session.SESSION_NOT_FOUND;
 import static grakn.core.common.exception.Error.Transaction.TRANSACTION_ALREADY_OPENED;
@@ -125,11 +127,30 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
     }
 
     private void handleRequest(Transaction.Req request) {
-
+        switch (request.getReqCase()) {
+            case OPEN_REQ:
+                open(request.getOpenReq());
+                break;
+            // TODO: add cases
+            default:
+            case REQ_NOT_SET:
+                throw Status.INVALID_ARGUMENT.asRuntimeException();
+        }
     }
 
     private void handleIterRequest(Transaction.Iter.Req request) {
-
+        switch (request.getReqCase()) {
+            case ITERATORID:
+                iterators.resumeBatchIterating(request.getIteratorId(), request.getOptions());
+                break;
+            case QUERY_ITER_REQ:
+                query(request.getQueryIterReq(), request.getOptions());
+                break;
+            // TODO: add cases
+            default:
+            case REQ_NOT_SET:
+                throw Status.INVALID_ARGUMENT.asRuntimeException();
+        }
     }
 
     private void open(Transaction.Open.Req request) {
@@ -162,6 +183,26 @@ class TransactionRPC implements StreamObserver<Transaction.Req> {
             } else {
                 responseSender.onCompleted();
             }
+        }
+    }
+
+    private Grakn.Transaction transaction() {
+        return nonNull(transaction);
+    }
+
+    private void query(Transaction.Query.Iter.Req request, Transaction.Iter.Req.Options queryOptions) {
+        try (ThreadTrace ignored = traceOnThread("query")) {
+            GraknOptions options = new GraknOptions();
+            if (request.getOptions().getInferCase() == Transaction.Query.Options.InferCase.INFERFLAG) {
+                options.infer(request.getOptions().getInferFlag());
+            }
+            if (request.getOptions().getExplainCase() == Transaction.Query.Options.ExplainCase.EXPLAINFLAG) {
+                options.explain(request.getOptions().getExplainFlag());
+            }
+
+            Stream<Transaction.Res> responseStream = transaction().query().stream(request.getQuery(), options)
+                    .map(ResponseBuilder.Transaction.Iter::query);
+            iterators.startBatchIterating(responseStream.iterator(), queryOptions);
         }
     }
 

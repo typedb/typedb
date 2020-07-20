@@ -36,6 +36,7 @@ java_library(
         "//graph:graph",
 
         # External dependencies from @graknlabs
+        "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java:graql",
     ],
 )
