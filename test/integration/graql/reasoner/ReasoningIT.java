@@ -278,6 +278,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (extremely similar to multiple existing tests) and delete schema
     @Test //Expected result: Returns db and inferred relations + their inverses and relations with self for all entities
     public void reasoningWithRepeatingRoles() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -291,6 +292,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     @Test //Expected result: The same set of results is always returned
     public void reasoningWithLimitHigherThanNumberOfResults_ReturnsConsistentResults() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -308,6 +310,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (duplicate test exists in concept-inequality) and delete schema
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -325,6 +328,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to value-predicate) and delete schema
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
     public void reasoningWithResourceValueComparison() {
         try (Session session = server.sessionWithNewKeyspace()) {
