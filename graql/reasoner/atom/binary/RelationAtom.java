@@ -433,15 +433,15 @@ public class RelationAtom extends Atom {
         return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
-    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes) {
-        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true));
+    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes, boolean parentTypesExact) {
+        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true, parentTypesExact));
     }
 
-    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes) {
-        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false));
+    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes, boolean parentTypesExact) {
+        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false, parentTypesExact));
     }
 
-    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy) {
+    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy, boolean parentTypeIsExact) {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         List<Role> roleRequirements = getRoleVarMap().entries().stream()
@@ -453,7 +453,9 @@ public class RelationAtom extends Atom {
 
         if (roleRequirements.isEmpty()) return true;
 
-        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
+        // in some cases, the parent types are not specified by ISA but by ID directly - then we do no have to search subtypes for compatibility
+        Set<Type> parentTypes = parentTypeIsExact ? Sets.newHashSet(parentType) : parentType.subs().collect(Collectors.toSet());
+
         return roleRequirements.stream()
                 //include sub roles
                 .flatMap(role -> includeRoleHierarchy ? role.subs() : Stream.of(role))

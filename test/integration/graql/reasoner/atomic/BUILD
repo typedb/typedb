@@ -5,7 +5,6 @@ java_test(
     size = "medium",
     srcs = ["TypeInferenceIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/resources:type-inference"],
     test_class = "grakn.core.graql.reasoner.atomic.TypeInferenceIT",
     deps = [
         "//common",

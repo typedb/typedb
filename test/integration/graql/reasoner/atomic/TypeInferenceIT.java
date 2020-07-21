@@ -64,8 +64,6 @@ import static org.junit.Assert.assertNull;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class TypeInferenceIT {
 
-    private static String resourcePath = "test/integration/graql/reasoner/resources/";
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 

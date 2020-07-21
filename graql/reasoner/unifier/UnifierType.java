@@ -184,13 +184,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types,  boolean parentTypesExact) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types, parentTypesExact);
         }
 
         @Override
-        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithInsertSemantics(var, types);
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types,  boolean parentTypesExact) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types, parentTypesExact);
         }
 
         @Override
@@ -265,13 +265,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, boolean parentTypesExact) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types, parentTypesExact);
         }
 
         @Override
-        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithInsertSemantics(var, types);
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, boolean parentTypesExact) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types, parentTypesExact);
         }
 
         @Override
@@ -323,13 +323,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override public boolean roleCompatibility(Role parent, Role child) { return SUBSUMPTIVE.roleCompatibility(parent, child); }
 
         @Override
-        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
-            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, boolean parentTypesExact) {
+            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types, parentTypesExact);
         }
 
         @Override
-        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
-            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types);
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, boolean parentTypesExact) {
+            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types, parentTypesExact);
         }
 
         @Override
