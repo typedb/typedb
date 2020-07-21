@@ -59,7 +59,7 @@ public class ReasoningIT {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
-    // TODO: delete (migrated to relation-inference) and delete schema
+    // TODO: delete (migrated to negation and relation-inference) and delete schema
     @Test
     public void whenMaterialising_duplicatesAreNotCreated() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -99,6 +99,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationOfReflexiveSymmetricRelations() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -119,6 +120,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to infinite-answers) and delete schema
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void whenResolutionProducesInfiniteStreamOfAnswers_executingLimitedQueryTerminates() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -133,6 +135,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRepeatingRoleTypes() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -150,6 +153,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     /**
      * recursive relation having same type for different role players
      * tests for handling recursivity and equivalence of queries and relations
@@ -167,6 +171,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -179,6 +184,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema
     @Test //Expected result: The query should return two unique matches
     public void circularRuleDependencies() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -192,6 +198,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference and value-predicate)
     @Test
     public void resourcesAsRolePlayers() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -232,6 +239,7 @@ public class ReasoningIT {
 
     }
 
+    // TODO: delete (migrated to relation-inference and value-predicate) and delete schema (also used by the test above this one)
     @Test
     public void resourcesAsRolePlayers_vpPropagationTest() {
         try (Session session = server.sessionWithNewKeyspace()) {
