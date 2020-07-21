@@ -68,10 +68,10 @@ public class Import extends AbstractJob {
     Map<String, String> idMap = new HashMap<>();
 
     // Pair of IMPORTED thing ids to list of ORIGINAL attribute ids
-    List<Pair<String, List<String>>> missingAttributeOwnerships = new ArrayList<>();
+    List<Pair<String, List<String>>> allMissingAttributeOwnerships = new ArrayList<>();
 
     // Pair of IMPORTED relation ids to map of role LABEL to lists of ORIGINAL player ids
-    List<Pair<String, List<Pair<String, List<String>>>>> missingRolePlayers = new ArrayList<>();
+    List<Pair<String, List<Pair<String, List<String>>>>> allMissingRolePlayers = new ArrayList<>();
 
     Map<String, AttributeType<?>> attributeTypeCache = new HashMap<>();
     Map<String, EntityType> entityTypeCache = new HashMap<>();
@@ -187,7 +187,7 @@ public class Import extends AbstractJob {
                     case HEADER:
                         DataProto.Item.Header header = item.getHeader();
                         LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
-                                header.getOriginalKeyspace(),
+                                header.getOriginalDatabase(),
                                 header.getGraknVersion(),
                                 session.keyspace().name(),
                                 Version.VERSION);
@@ -325,7 +325,7 @@ public class Import extends AbstractJob {
         }
 
         if (!missingRolePlayers.isEmpty()) {
-            this.missingRolePlayers.add(new Pair<>(importedId, missingRolePlayers));
+            this.allMissingRolePlayers.add(new Pair<>(importedId, missingRolePlayers));
         }
 
         insertOwnedAttributesThatExist(relation, relationMessage.getAttributeList());
@@ -357,12 +357,12 @@ public class Import extends AbstractJob {
         }
 
         if (!missingOwnerships.isEmpty()) {
-            missingAttributeOwnerships.add(new Pair<>(thing.id().toString(), missingOwnerships));
+            allMissingAttributeOwnerships.add(new Pair<>(thing.id().toString(), missingOwnerships));
         }
     }
 
     private void insertMissingAttributeOwnershipsAtEnd() {
-        for (Pair<String, List<String>> attributeKeyOwnership : missingAttributeOwnerships) {
+        for (Pair<String, List<String>> attributeKeyOwnership : allMissingAttributeOwnerships) {
             Attribute<?> owner = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
 
             for (String attributeIdString : attributeKeyOwnership.second()) {
@@ -376,11 +376,11 @@ public class Import extends AbstractJob {
             write();
         }
 
-        missingAttributeOwnerships.clear();
+        allMissingAttributeOwnerships.clear();
     }
 
     private void insertMissingRolePlayersAtEnd() {
-        for (Pair<String, List<Pair<String, List<String>>>> missingRolePlayers : missingRolePlayers) {
+        for (Pair<String, List<Pair<String, List<String>>>> missingRolePlayers : allMissingRolePlayers) {
             Relation relation = currentTransaction.getConcept(ConceptId.of(missingRolePlayers.first()));
 
             for (Pair<String, List<String>> pair : missingRolePlayers.second()) {
@@ -397,7 +397,7 @@ public class Import extends AbstractJob {
             write();
         }
 
-        missingRolePlayers.clear();
+        allMissingRolePlayers.clear();
     }
 
     private <T> T valueFrom(DataProto.ValueObject valueObject) {

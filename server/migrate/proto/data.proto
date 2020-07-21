@@ -104,7 +104,7 @@ message Item {
 
     message Header {
         string grakn_version = 1;
-        string original_keyspace = 2;
+        string original_database = 2; // formerly keyspace
     }
 
     message Checksums {

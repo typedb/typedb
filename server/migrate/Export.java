@@ -107,7 +107,7 @@ public class Export extends AbstractJob {
             write(DataProto.Item.newBuilder()
                     .setHeader(DataProto.Item.Header.newBuilder()
                             .setGraknVersion(Version.VERSION)
-                            .setOriginalKeyspace(session.keyspace().name()))
+                            .setOriginalDatabase(session.keyspace().name()))
                     .build());
 
             List<ExportWorker<?, ?>> exportWorkers = new ArrayList<>();

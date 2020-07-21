@@ -47,7 +47,7 @@ public class MigrationClient implements AutoCloseable {
     private final boolean isLocal;
 
     private final Thread shutdownHook;
-    private final Set<CancellableGrpcConsumer<?, ?>> jobs = Collections.synchronizedSet(new HashSet<>());
+    private final Set<CancellableServerStreamingBlockingCall<?, ?>> jobs = Collections.synchronizedSet(new HashSet<>());
 
     private MigrationClient(String uri, boolean isLocal) {
         this.isLocal = isLocal;
@@ -69,10 +69,10 @@ public class MigrationClient implements AutoCloseable {
     }
 
     private <T, U> void call(BiConsumer<T, StreamObserver<U>> rpc, T request, Consumer<U> observer) throws Exception {
-        CancellableGrpcConsumer<T, U> job = new CancellableGrpcConsumer<>(rpc, request, observer);
+        CancellableServerStreamingBlockingCall<T, U> job = new CancellableServerStreamingBlockingCall<>(rpc, request, observer);
         jobs.add(job);
         try {
-            job.execute();
+            job.call();
         } finally {
             jobs.remove(job);
         }
@@ -134,7 +134,7 @@ public class MigrationClient implements AutoCloseable {
     }
 
     private void shutdown() {
-        jobs.forEach(CancellableGrpcConsumer::cancel);
+        jobs.forEach(CancellableServerStreamingBlockingCall::cancel);
         channel.shutdownNow();
     }
 
@@ -153,23 +153,43 @@ public class MigrationClient implements AutoCloseable {
         void onCompletion(long total);
     }
 
-    private static class CancellableGrpcConsumer<T, U> implements ClientResponseObserver<T, U> {
+    /**
+     * A wrapper class to make server-streaming gRPC calls much easier to use, working more like a foreach and requiring
+     * significantly less manual work.
+     *
+     * @param <T> The request message type
+     * @param <U> The response message type
+     */
+    private static class CancellableServerStreamingBlockingCall<T, U> implements ClientResponseObserver<T, U> {
         private final BiConsumer<T, StreamObserver<U>> rpc;
         private final T request;
-        private final Consumer<U> observer;
+        private final Consumer<U> consumer;
 
         private final CountDownLatch finished = new CountDownLatch(1);
         private volatile Throwable error;
         private volatile boolean cancelled;
         private volatile ClientCallStreamObserver<T> requestStream;
 
-        CancellableGrpcConsumer(BiConsumer<T, StreamObserver<U>> rpc, T request, Consumer<U> observer) {
+        /**
+         * Constructs a new caller.
+         *
+         * @param rpc a method reference to the server-streaming RPC being invoked.
+         * @param request the request message to send when the call is invoked.
+         * @param consumer a consumer for each server response.
+         */
+        CancellableServerStreamingBlockingCall(BiConsumer<T, StreamObserver<U>> rpc, T request, Consumer<U> consumer) {
             this.rpc = rpc;
             this.request = request;
-            this.observer = observer;
+            this.consumer = consumer;
         }
 
-        void execute() throws Exception {
+        /**
+         * Performs the call, supplying received messages to the consumer this caller was constructed with. This method
+         * should be called only once, multiple calls are undefined.
+         *
+         * @throws Exception on any error encountered during the course of this call.
+         */
+        void call() throws Exception {
             rpc.accept(request, this);
             finished.await();
             if (error != null) {
@@ -177,24 +197,33 @@ public class MigrationClient implements AutoCloseable {
             }
         }
 
+        // This method is synchronized to prevent a race with cancel()
+        @Override
+        public synchronized void beforeStart(ClientCallStreamObserver<T> requestStream) {
+            this.requestStream = requestStream;
+
+            // Although this method is called right at the start of the RPC, it is possible that we were cancelled
+            // asynchronously in the time between creating the call and reaching this point, so we must check here.
+            if (cancelled) {
+                cancel();
+            }
+        }
+
+        // This method is synchronized to prevent a race with beforeStart()
         synchronized void cancel() {
             cancelled = true;
+
+            // Counterpart to the code in beforeStart: requestStream will be null if beforeStart was not called yet.
+            // If this happens, beforeStart will re-invoke this method after setting requestStream to let us properly
+            // cancel the call.
             if (requestStream != null) {
                 requestStream.cancel("Cancelled.", new StatusRuntimeException(Status.CANCELLED));
             }
         }
 
         @Override
-        public synchronized void beforeStart(ClientCallStreamObserver<T> requestStream) {
-            this.requestStream = requestStream;
-            if (cancelled) {
-                cancel();
-            }
-        }
-
-        @Override
         public void onNext(U value) {
-            observer.accept(value);
+            consumer.accept(value);
         }
 
         @Override
@@ -205,7 +234,6 @@ public class MigrationClient implements AutoCloseable {
 
         @Override
         public void onCompleted() {
-
             finished.countDown();
         }
     }
