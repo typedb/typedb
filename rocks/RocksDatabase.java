@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.common.util.Pair;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.options.GraknOptions;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
@@ -58,7 +59,7 @@ public class RocksDatabase implements Grakn.Database {
         schemaLock = new StampedLock();
 
         try {
-            rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.options(), directory().toString());
+            rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksConfig(), directory().toString());
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
@@ -73,7 +74,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     private RocksDatabase initialiseAndOpen() {
-        try (RocksSession session = createAndOpenSession(Grakn.Session.Type.SCHEMA)) {
+        try (RocksSession session = createAndOpenSession(Grakn.Session.Type.SCHEMA, new GraknOptions.Session())) {
             try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                 if (txn.graph().isInitialised()) {
                     throw new GraknException(DIRTY_INITIALISATION);
@@ -87,7 +88,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     private RocksDatabase loadAndOpen() {
-        try (RocksSession session = createAndOpenSession(Grakn.Session.Type.DATA)) {
+        try (RocksSession session = createAndOpenSession(Grakn.Session.Type.DATA, new GraknOptions.Session())) {
             try (RocksTransaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                 keyGenerator.sync(txn.storage());
             }
@@ -96,12 +97,12 @@ public class RocksDatabase implements Grakn.Database {
         return this;
     }
 
-    RocksSession createAndOpenSession(Grakn.Session.Type type) {
+    RocksSession createAndOpenSession(Grakn.Session.Type type, GraknOptions.Session options) {
         long schemaWriteLockStamp = 0;
         if (type.equals(Grakn.Session.Type.SCHEMA)) {
             schemaWriteLockStamp = schemaLock.writeLock();
         }
-        RocksSession session = new RocksSession(this, type);
+        RocksSession session = new RocksSession(this, type, options);
         sessions.put(session.uuid(), new Pair<>(session, schemaWriteLockStamp));
         return session;
     }
@@ -143,6 +144,11 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public String name() {
         return name;
+    }
+
+    @Override
+    public GraknOptions.Global options() {
+        return rocksGrakn.options();
     }
 
     @Override

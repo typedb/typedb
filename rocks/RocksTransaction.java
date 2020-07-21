@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concepts;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.util.KeyGenerator;
@@ -50,6 +51,7 @@ class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
     private final RocksSession session;
+    private final GraknOptions.Transaction options;
     private final OptimisticTransactionOptions optOptions;
     private final WriteOptions writeOptions;
     private final ReadOptions readOptions;
@@ -58,12 +60,14 @@ class RocksTransaction implements Grakn.Transaction {
     private final CoreStorage storage;
     private final Graphs graph;
     private final Concepts concepts;
-    private final Query traversal;
+    private final Query query;
     private final AtomicBoolean isOpen;
 
-    RocksTransaction(RocksSession session, Type type) {
+    RocksTransaction(RocksSession session, Type type, GraknOptions.Transaction options) {
         this.type = type;
         this.session = session;
+        this.options = options;
+        this.options.parent(session.options());
 
         readOptions = new ReadOptions();
         writeOptions = new WriteOptions();
@@ -74,7 +78,7 @@ class RocksTransaction implements Grakn.Transaction {
         storage = new CoreStorage();
         graph = new Graphs(storage);
         concepts = new Concepts(graph);
-        traversal = new Query(graph, concepts);
+        query = new Query(graph, concepts);
 
         isOpen = new AtomicBoolean();
         isOpen.set(true);
@@ -95,6 +99,11 @@ class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
+    public GraknOptions.Transaction options() {
+        return options;
+    }
+
+    @Override
     public boolean isOpen() {
         return this.isOpen.get();
     }
@@ -102,7 +111,7 @@ class RocksTransaction implements Grakn.Transaction {
     @Override
     public Query query() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
-        return traversal;
+        return query;
     }
 
     @Override
@@ -200,6 +209,11 @@ class RocksTransaction implements Grakn.Transaction {
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
             iterators = ConcurrentHashMap.newKeySet();
+        }
+
+        @Override
+        public GraknOptions.Transaction options() {
+            return options;
         }
 
         @Override

@@ -20,6 +20,7 @@ package grakn.core.test.behaviour.graql;
 
 import com.google.common.collect.Iterators;
 import grakn.core.Grakn;
+import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
@@ -49,6 +50,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -81,7 +83,7 @@ public class GraqlSteps {
     }
 
     @Given("the integrity is validated")
-    public void integrity_is_validated(){
+    public void integrity_is_validated() {
         // TODO
     }
 
@@ -154,7 +156,8 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
 
-        answers = tx.query().stream(graqlQuery, true, true);
+        GraknOptions.Query options = new GraknOptions.Query().infer(true).explain(true);
+        answers = tx.query().stream(graqlQuery, options).collect(toList());
         tx.commit();
         tx = session.transaction(Grakn.Transaction.Type.WRITE);
     }
@@ -168,7 +171,8 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlGet) {
-            answers = tx.query().stream(graqlQuery.asGet(), true, true); // always use inference and have explanations
+
+            answers = tx.query().stream(graqlQuery.asGet(), new GraknOptions.Query().explain(true)); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlGet.Aggregate) {
@@ -250,7 +254,7 @@ public class GraqlSteps {
         assertNotNull(getAnswers());
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-                        answersIdentifiers.size(), getAnswers().size()),
+                              answersIdentifiers.size(), getAnswers().size()),
                 answersIdentifiers.size(), getAnswers().size()
         );
 
@@ -265,7 +269,7 @@ public class GraqlSteps {
             }
             assertEquals(
                     String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s",
-                            matchingIdentifiers1.size(), answer.map().keySet().toString()),
+                                  matchingIdentifiers1.size(), answer.map().keySet().toString()),
                     1, matchingIdentifiers1.size()
             );
         }
@@ -276,7 +280,7 @@ public class GraqlSteps {
         assertNotNull(getAnswers());
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-                        answersIdentifiers.size(), getAnswers().size()),
+                              answersIdentifiers.size(), getAnswers().size()),
                 answersIdentifiers.size(), getAnswers().size()
         );
 
@@ -295,9 +299,9 @@ public class GraqlSteps {
         assertNotNull("The last executed query was not an aggregate query", getNumericAnswers());
         assertEquals(String.format("Expected 1 answer, but got %d answers", getNumericAnswers().size()), 1, getNumericAnswers().size());
         assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, getNumericAnswers().get(0).number().doubleValue()),
-                expectedAnswer,
-                getNumericAnswers().get(0).number().doubleValue(),
-                0.01);
+                     expectedAnswer,
+                     getNumericAnswers().get(0).number().doubleValue(),
+                     0.01);
     }
 
     @Then("aggregate answer is empty")
@@ -326,8 +330,8 @@ public class GraqlSteps {
                 .collect(Collectors.toSet());
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
-                answerIdentifierGroups.size(), getAnswerGroups().size()),
-                answerIdentifierGroups.size(), getAnswerGroups().size()
+                                   answerIdentifierGroups.size(), getAnswerGroups().size()),
+                     answerIdentifierGroups.size(), getAnswerGroups().size()
         );
 
         for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
@@ -350,7 +354,7 @@ public class GraqlSteps {
                 }
                 assertEquals(
                         String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were [%d] matching identifier entries for answer with variables %s",
-                                matchingIdentifiers.size(), answer.map().keySet().toString()),
+                                      matchingIdentifiers.size(), answer.map().keySet().toString()),
                         1, matchingIdentifiers.size()
                 );
             }
@@ -369,8 +373,8 @@ public class GraqlSteps {
         }
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
-                expectations.size(), getNumericAnswerGroups().size()),
-                expectations.size(), getNumericAnswerGroups().size()
+                                   expectations.size(), getNumericAnswerGroups().size()),
+                     expectations.size(), getNumericAnswerGroups().size()
         );
 
         for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
@@ -385,7 +389,7 @@ public class GraqlSteps {
             double actualAnswer = answerGroup.answers().get(0).number().doubleValue();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
-                            expectedAnswer, groupIdentifier, actualAnswer),
+                                  expectedAnswer, groupIdentifier, actualAnswer),
                     expectedAnswer, actualAnswer, 0.01
             );
         }
@@ -409,15 +413,15 @@ public class GraqlSteps {
             answersIdentifiers = new ArrayList<>();
             for (final Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
                 answersIdentifiers.add(rawAnswerIdentifiers.entrySet().stream()
-                        .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                                               .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
+                                               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
             }
         }
     }
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
 
-        if(!answerIdentifiers.keySet().equals(answer.map().keySet().stream().map(Variable::name).collect(Collectors.toSet()))) {
+        if (!answerIdentifiers.keySet().equals(answer.map().keySet().stream().map(Variable::name).collect(Collectors.toSet()))) {
             return false;
         }
 
@@ -425,7 +429,7 @@ public class GraqlSteps {
             String varName = entry.getKey();
             String identifier = entry.getValue();
 
-            if(!identifierChecks.containsKey(identifier)) {
+            if (!identifierChecks.containsKey(identifier)) {
                 throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
             }
 
@@ -437,7 +441,7 @@ public class GraqlSteps {
                 return false;
             }
 
-            if(!identifierChecks.get(identifier).check(concept)) {
+            if (!identifierChecks.get(identifier).check(concept)) {
                 return false;
             }
         }
@@ -494,24 +498,24 @@ public class GraqlSteps {
             List<ConceptMap> explAnswers = explanation.getAnswers();
 
             assertEquals(String.format("Explanation entry %d should have as many children as it has answers. Instead, %d children were declared, and %d answers were found. Note, this entry could be wrongly declared as a rule, when it is a lookup.", entryId, children.length, explAnswers.size()),
-                    children.length, explAnswers.size());
+                         children.length, explAnswers.size());
 
             if (expectedRule.equals("join") || expectedRule.equals("negation") || expectedRule.equals("disjunction")) {
-                assertNull(String.format("Explanation entry %d is declared as a join, and should not have a rule attached, but one was found", entryId), explanation.isRuleExplanation() ? ((RuleExplanation)explanation).getRule() : null);
+                assertNull(String.format("Explanation entry %d is declared as a join, and should not have a rule attached, but one was found", entryId), explanation.isRuleExplanation() ? ((RuleExplanation) explanation).getRule() : null);
             } else {
                 // rule
-                Rule rule = ((RuleExplanation)explanation).getRule();
+                Rule rule = ((RuleExplanation) explanation).getRule();
                 String ruleLabel = rule.label().toString();
                 assertEquals(String.format("Incorrect rule label for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRule, ruleLabel), expectedRule, ruleLabel);
 
                 Map<String, String> expectedRuleDefinition = rules.get(expectedRule);
                 Pattern when = Graql.parsePattern(Objects.requireNonNull(rule.when()).toString());
                 assertEquals(String.format("Incorrect rule body (when) for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRuleDefinition.get("when"), when),
-                        Graql.parsePattern(expectedRuleDefinition.get("when")), when);
+                             Graql.parsePattern(expectedRuleDefinition.get("when")), when);
 
                 Pattern then = Graql.parsePattern(Objects.requireNonNull(rule.then()).toString());
                 assertEquals(String.format("Incorrect rule head (then) for explanation entry %d with rule %s.\nExpected: %s\nActual: %s", entryId, ruleLabel, expectedRuleDefinition.get("then"), then),
-                        Graql.parsePattern(expectedRuleDefinition.get("then")), then);
+                             Graql.parsePattern(expectedRuleDefinition.get("then")), then);
             }
             for (String child : children) {
                 // Recurse
@@ -526,7 +530,7 @@ public class GraqlSteps {
         for (ConceptMap answer : getAnswers()) {
             String query = applyQueryTemplate(templatedQuery, answer);
             GraqlQuery graqlQuery = Graql.parse(query);
-            List<? extends Answer> answers = tx.query().stream(graqlQuery);
+            List<? extends Answer> answers = tx.query().stream(graqlQuery).collect(toList());
             assertEquals(1, answers.size());
         }
     }
@@ -676,12 +680,13 @@ public class GraqlSteps {
 
         /**
          * Check that the given key is in the concept's keys
+         *
          * @param concept to check
          * @return whether the given key matches a key belonging to the concept
          */
         @Override
         public boolean check(Concept concept) {
-            if(!concept.isThing()) { return false; }
+            if (!concept.isThing()) { return false; }
 
             Set<Attribute> keys = concept.asThing().keys().collect(Collectors.toSet());
 

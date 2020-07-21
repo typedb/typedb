@@ -95,6 +95,8 @@ public abstract class Error {
                 new Internal(2, "Unrecognised schema value!");
         public static final Internal DIRTY_INITIALISATION =
                 new Internal(3, "Invalid Database Initialisation.");
+        public static final Internal ILLEGAL_ARGUMENT =
+                new Internal(4, "Illegal argument provided.");
 
         private static final String codePrefix = "INT";
         private static final String descriptionPrefix = "Invalid Internal State";

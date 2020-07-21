@@ -20,6 +20,7 @@ package grakn.core.rocks;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.options.GraknOptions;
 
 import java.io.File;
 import java.util.Arrays;
@@ -52,8 +53,8 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     }
 
     @Override
-    public boolean contains(String database) {
-        return databases.containsKey(database);
+    public boolean contains(String name) {
+        return databases.containsKey(name);
     }
 
     @Override
@@ -66,8 +67,8 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     }
 
     @Override
-    public RocksDatabase get(String database) {
-        return databases.get(database);
+    public RocksDatabase get(String name) {
+        return databases.get(name);
     }
 
     @Override

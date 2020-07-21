@@ -192,7 +192,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
     private void query(Transaction.Query.Iter.Req request, Transaction.Iter.Req.Options queryOptions) {
         try (ThreadTrace ignored = traceOnThread("query")) {
-            GraknOptions options = new GraknOptions();
+            GraknOptions.Query options = new GraknOptions.Query();
             if (request.getOptions().getInferCase() == Transaction.Query.Options.InferCase.INFERFLAG) {
                 options.infer(request.getOptions().getInferFlag());
             }

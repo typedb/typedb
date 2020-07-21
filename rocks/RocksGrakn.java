@@ -20,12 +20,12 @@ package grakn.core.rocks;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.options.GraknOptions;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 
 import java.nio.file.Path;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_FOUND;
@@ -40,19 +40,17 @@ public class RocksGrakn implements Grakn {
     }
 
     private final Path directory;
-    private final Options options;
+    private final GraknOptions.Global options;
+    private final Options rocksConfig;
     private final AtomicBoolean isOpen;
-    private final RocksProperties properties;
     private final RocksDatabaseManager databaseMgr;
 
-    private RocksGrakn(Path directory, Properties properties) {
+    private RocksGrakn(Path directory, GraknOptions.Global options) {
         this.directory = directory;
-        this.properties = new RocksProperties(properties);
-
-        options = new Options();
-        options.setCreateIfMissing(true);
-        options.setMergeOperator(new UInt64AddOperator());
-        setOptionsFromProperties();
+        this.options = options;
+        this.rocksConfig = new Options()
+                .setCreateIfMissing(true)
+                .setMergeOperator(new UInt64AddOperator());
 
         databaseMgr = new RocksDatabaseManager(this);
         databaseMgr.loadAll();
@@ -61,33 +59,35 @@ public class RocksGrakn implements Grakn {
     }
 
     public static RocksGrakn open(Path directory) {
-        return open(directory, new Properties());
+        return open(directory, new GraknOptions.Global());
     }
 
-    public static RocksGrakn open(Path directory, Properties properties) {
-        return new RocksGrakn(directory, properties);
-    }
-
-    private void setOptionsFromProperties() {
-        // TODO: configure optimisation paramaters
+    public static RocksGrakn open(Path directory, GraknOptions.Global options) {
+        return new RocksGrakn(directory, options);
     }
 
     Path directory() {
         return directory;
     }
 
-    RocksProperties properties() {
-        return properties;
+    Options rocksConfig() {
+        return rocksConfig;
     }
 
-    Options options() {
+    @Override
+    public GraknOptions.Global options() {
         return options;
     }
 
     @Override
     public RocksSession session(String database, Grakn.Session.Type type) {
+        return session(database, type, new GraknOptions.Session());
+    }
+
+    @Override
+    public RocksSession session(String database, Session.Type type, GraknOptions.Session options) {
         if (databaseMgr.contains(database)) {
-            return databaseMgr.get(database).createAndOpenSession(type);
+            return databaseMgr.get(database).createAndOpenSession(type, options);
         } else {
             throw new GraknException(DATABASE_NOT_FOUND.message(database));
         }
@@ -107,7 +107,7 @@ public class RocksGrakn implements Grakn {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
-            options.close();
+            rocksConfig.close();
         }
     }
 }

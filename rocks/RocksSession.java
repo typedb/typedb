@@ -19,6 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
+import grakn.core.common.options.GraknOptions;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
@@ -31,13 +32,16 @@ public class RocksSession implements Grakn.Session {
 
     private final RocksDatabase database;
     private final Type type;
+    private final GraknOptions.Session options;
     private final ConcurrentMap<RocksTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
     private final UUID uuid;
 
-    RocksSession(RocksDatabase database, Type type) {
+    RocksSession(RocksDatabase database, Type type, GraknOptions.Session options) {
         this.database = database;
         this.type = type;
+        this.options = options;
+        this.options.parent(database.options());
 
         uuid = UUID.randomUUID();
         transactions = new ConcurrentHashMap<>();
@@ -66,17 +70,27 @@ public class RocksSession implements Grakn.Session {
     }
 
     @Override
+    public GraknOptions.Session options() {
+        return options;
+    }
+
+    @Override
     public RocksDatabase database() {
         return database;
     }
 
     @Override
     public RocksTransaction transaction(Grakn.Transaction.Type type) {
+        return transaction(type, new GraknOptions.Transaction());
+    }
+
+    @Override
+    public RocksTransaction transaction(Grakn.Transaction.Type type, GraknOptions.Transaction options) {
         long schemaReadLockStamp = 0;
         if (this.type.equals(Type.DATA) && type.equals(Grakn.Transaction.Type.WRITE)) {
             schemaReadLockStamp = database.acquireSchemaReadLock();
         }
-        RocksTransaction transaction = new RocksTransaction(this, type);
+        RocksTransaction transaction = new RocksTransaction(this, type, options);
         transactions.put(transaction, schemaReadLockStamp);
         return transaction;
     }

@@ -46,10 +46,18 @@ public class Query {
         }
     }
 
-    public Stream<ConceptMap> stream(String query, GraknOptions options) {
-        try (ThreadTrace ignored2 = traceOnThread("stream")) {
-            GraqlQuery graql = parse(query);
+    public Stream<ConceptMap> stream(String query, GraknOptions.Query queryOptions) {
+        GraqlQuery graql = parse(query);
+        return stream(graql, queryOptions);
+    }
 
+    public Stream<ConceptMap> stream(GraqlQuery query) {
+        return stream(query, new GraknOptions.Query());
+    }
+
+    public Stream<ConceptMap> stream(GraqlQuery query, GraknOptions.Query queryOptions) {
+        try (ThreadTrace ignored = traceOnThread("stream")) {
+            queryOptions.parent(graphs.storage().options());
             return null; // TODO
         }
     }

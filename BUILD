@@ -28,6 +28,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         # Internal package dependencies
+        "//common:common",
         "//query:query",
         "//concept:concept",
     ],

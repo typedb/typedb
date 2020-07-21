@@ -17,40 +17,104 @@
 
 package grakn.core.common.options;
 
-public class GraknOptions {
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
+
+public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends GraknOptions> {
 
     public static final boolean DEFAULT_INFER = true;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final int DEFAULT_BATCH_SIZE = 50;
 
+    private PARENT parent;
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
 
-    public GraknOptions() {}
+    abstract SELF getThis();
 
-    public Boolean infer() {
-        if (infer != null) return infer;
-        else return DEFAULT_INFER;
+    public void parent(PARENT parent) {
+        this.parent = parent;
     }
 
-    public void infer(boolean infer) {
+    public Boolean infer() {
+        if (infer != null) {
+            return infer;
+        } else if (parent != null) {
+            return parent.infer();
+        } else {
+            return DEFAULT_INFER;
+        }
+    }
+
+    public SELF infer(boolean infer) {
         this.infer = infer;
+        return getThis();
     }
 
     public Boolean explain() {
-        return explain;
+        if (explain != null) {
+            return explain;
+        } else if (parent != null) {
+            return parent.explain();
+        } else {
+            return DEFAULT_EXPLAIN;
+        }
     }
 
-    public void explain(boolean explain) {
+    public SELF explain(boolean explain) {
         this.explain = explain;
+        return getThis();
     }
 
     public Integer batchSize() {
-        return batchSize;
+        if (batchSize != null) {
+            return batchSize;
+        } else if (parent != null) {
+            return parent.batchSize();
+        } else {
+            return DEFAULT_BATCH_SIZE;
+        }
     }
 
-    public void batchSize(int batchSize) {
+    public SELF batchSize(int batchSize) {
         this.batchSize = batchSize;
+        return getThis();
+    }
+
+    public static class Global extends GraknOptions<GraknOptions, Global> {
+
+        @Override
+        Global getThis() {
+            return this;
+        }
+
+        public void parent(GraknOptions parent) {
+            throw new GraknException(Error.Internal.ILLEGAL_ARGUMENT);
+        }
+    }
+
+    public static class Session extends GraknOptions<Global, Session> {
+
+        @Override
+        Session getThis() {
+            return this;
+        }
+    }
+
+    public static class Transaction extends GraknOptions<Session, Transaction> {
+
+        @Override
+        Transaction getThis() {
+            return this;
+        }
+    }
+
+    public static class Query extends GraknOptions<Transaction, Query> {
+
+        @Override
+        Query getThis() {
+            return this;
+        }
     }
 }

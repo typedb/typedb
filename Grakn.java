@@ -18,6 +18,7 @@
 
 package grakn.core;
 
+import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concepts;
 import grakn.core.query.Query;
 
@@ -33,9 +34,13 @@ import java.util.stream.Stream;
  */
 public interface Grakn extends AutoCloseable {
 
+    GraknOptions.Global options();
+
     default Session session(String database) { return session(database, Session.Type.DATA); }
 
     Session session(String database, Session.Type type);
+
+    Session session(String database, Session.Type type, GraknOptions.Session options);
 
     DatabaseManager databases();
 
@@ -48,11 +53,11 @@ public interface Grakn extends AutoCloseable {
      */
     interface DatabaseManager {
 
-        boolean contains(String database);
+        boolean contains(String name);
 
-        Database create(String database);
+        Database create(String name);
 
-        Database get(String database);
+        Database get(String name);
 
         Set<? extends Database> all();
     }
@@ -65,6 +70,8 @@ public interface Grakn extends AutoCloseable {
     interface Database {
 
         String name();
+
+        GraknOptions.Global options();
 
         boolean contains(UUID sessionID);
 
@@ -85,9 +92,13 @@ public interface Grakn extends AutoCloseable {
 
         Transaction transaction(Transaction.Type type);
 
+        Transaction transaction(Transaction.Type type, GraknOptions.Transaction options);
+
         UUID uuid();
 
         Session.Type type();
+
+        GraknOptions.Session options();
 
         Database database();
 
@@ -126,6 +137,8 @@ public interface Grakn extends AutoCloseable {
     interface Transaction extends AutoCloseable {
 
         Transaction.Type type();
+
+        GraknOptions.Transaction options();
 
         boolean isOpen();
 

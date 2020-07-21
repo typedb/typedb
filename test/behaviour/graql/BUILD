@@ -18,30 +18,30 @@
 package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "steps",
-    srcs = [
-        "GraqlSteps.java"
-    ],
-    deps = [
-        # Package dependencies
-        "//concept:concept",
-        "//test/behaviour/connection:steps",
-
-        # Grakn Labs dependencies
-        "@graknlabs_graql//java:graql",
-
-        # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
-        "@maven//:com_google_guava_guava",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    targets = [
-        ":steps",
-    ],
-)
+#java_library(
+#    name = "steps",
+#    srcs = [
+#        "GraqlSteps.java"
+#    ],
+#    deps = [
+#        # Package dependencies
+#        "//concept:concept",
+#        "//test/behaviour/connection:steps",
+#
+#        # Grakn Labs dependencies
+#        "@graknlabs_graql//java:graql",
+#
+#        # External dependencies from Maven
+#        "@maven//:junit_junit",
+#        "@maven//:io_cucumber_cucumber_java",
+#        "@maven//:com_google_guava_guava",
+#    ],
+#    visibility = ["//visibility:public"],
+#)
+#
+#checkstyle_test(
+#    name = "checkstyle",
+#    targets = [
+#        ":steps",
+#    ],
+#)
