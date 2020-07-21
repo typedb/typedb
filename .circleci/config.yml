@@ -22,14 +22,14 @@ orbs:
 commands:
   install-bazel-linux-rbe:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/715e4802ea375abda44e24b2bb092ee14de72e42/ci/install-bazel-linux.sh
       - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/715e4802ea375abda44e24b2bb092ee14de72e42/ci/install-bazel-rbe.sh
       - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
 
   install-bazel-mac:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/715e4802ea375abda44e24b2bb092ee14de72e42/ci/install-bazel-mac.sh
       - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
 
   run-bazel-rbe:
@@ -518,7 +518,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
       - test-common:
           filters:
             branches:
@@ -584,7 +584,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - build
             - build-checkstyle
@@ -609,7 +609,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - build
             - build-checkstyle
@@ -634,7 +634,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - build
             - build-checkstyle
@@ -659,7 +659,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - build
             - build-checkstyle
@@ -684,7 +684,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - build
             - build-checkstyle
@@ -709,7 +709,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -721,7 +721,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -733,7 +733,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
@@ -741,7 +741,7 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
+                - 1.8.1
           requires:
             - deploy-rpm-snapshot
       - sync-dependencies-snapshot:
@@ -749,6 +749,7 @@ workflows:
             branches:
               only:
                 - master
+                - 1.8.1
           requires:
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
@@ -757,6 +758,7 @@ workflows:
             branches:
               only:
                 - master
+                - 1.8.1
           requires:
             - sync-dependencies-snapshot
 

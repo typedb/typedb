@@ -27,6 +27,7 @@ java_library(
         # Grakn Core dependencies
         "//common:common",
         "//server:server",
+        "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -36,6 +37,8 @@ java_library(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "//dependencies/maven/artifacts/io/grpc:grpc-api",
+        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
