@@ -51,11 +51,6 @@ filegroup(
 )
 
 filegroup(
-    name = "type-inference",
-    srcs = ["typeInferenceTest.gql"],
-)
-
-filegroup(
     name = "matching-types",
     srcs = ["matchingTypesTest.gql"],
 )
