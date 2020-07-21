@@ -99,7 +99,6 @@ java_test(
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
-        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql"
     ],

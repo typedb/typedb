@@ -30,7 +30,6 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
