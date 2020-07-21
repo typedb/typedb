@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Schema {
 
@@ -65,17 +64,17 @@ public class Schema {
 
         AttributeType<?> metaAttribute = (AttributeType<?>) tx.getMetaAttributeType();
         metaAttribute.subs()
-                .filter(at -> !metaAttribute.equals(at) && !at.isImplicit())
+                .filter(at -> !metaAttribute.equals(at))
                 .forEach(TypeDeclaration::new);
 
         EntityType metaEntity = tx.getMetaEntityType();
         metaEntity.subs()
-                .filter(et -> !metaEntity.equals(et) && !et.isImplicit())
+                .filter(et -> !metaEntity.equals(et))
                 .forEach(TypeDeclaration::new);
 
         RelationType metaRelationType = tx.getMetaRelationType();
         metaRelationType.subs()
-                .filter(rt -> !metaRelationType.equals(rt) && !rt.isImplicit())
+                .filter(rt -> !metaRelationType.equals(rt))
                 .forEach(TypeDeclaration::new);
 
         Rule metaRule = tx.getMetaRule();
@@ -168,7 +167,7 @@ public class Schema {
     private class TypeDeclaration {
         private final String label;
         private final String superType;
-        private final String dataType;
+        private final String valueType;
         private final boolean isAbstract;
         private final Set<String> key;
         private final Set<String> has;
@@ -185,14 +184,14 @@ public class Schema {
             superMap.computeIfAbsent(superType, st -> new ArrayList<>()).add(this);
 
             if (sc.isAttributeType()) {
-                AttributeType.DataType<?> dataType = sc.asAttributeType().dataType();
-                if (dataType != null) {
-                    this.dataType = convertDataType(dataType.dataClass());
+                AttributeType.ValueType<?> valueType = sc.asAttributeType().valueType();
+                if (valueType != null) {
+                    this.valueType = convertValueType(valueType.valueClass());
                 } else {
-                    this.dataType = null;
+                    this.valueType = null;
                 }
             } else {
-                dataType = null;
+                valueType = null;
             }
 
             if (sc.isType()) {
@@ -202,13 +201,12 @@ public class Schema {
                         .map(t -> t.label().toString())
                         .collect(Collectors.toSet());
 
-                has = type.attributes()
+                has = type.has()
                         .map(t -> t.label().toString())
                         .filter(l -> !key.contains(l))
                         .collect(Collectors.toSet());
 
                 plays = type.playing()
-                        .filter(r -> !r.isImplicit())
                         .map(t -> t.label().toString())
                         .collect(Collectors.toSet());
 
@@ -234,7 +232,6 @@ public class Schema {
             if (sc.isRelationType()) {
                 RelationType relationType = sc.asRelationType();
                 relates = relationType.roles()
-                        .filter(r -> !r.isImplicit())
                         .map(RelatesDeclaration::new)
                         .collect(Collectors.toSet());
 
@@ -267,10 +264,10 @@ public class Schema {
                 writer.println(",");
                 writer.print("abstract");
             }
-            if (dataType != null) {
+            if (valueType != null) {
                 writer.println(",");
-                writer.print("datatype ");
-                writer.print(dataType);
+                writer.print("value ");
+                writer.print(valueType);
             }
             for (String key : order(this.key, attributeOrder)) {
                 writer.println(",");
@@ -367,23 +364,23 @@ public class Schema {
         }
     }
 
-    private static String convertDataType(Class<?> dataType) {
-        if (dataType.equals(String.class)) {
+    private static String convertValueType(Class<?> valueType) {
+        if (valueType.equals(String.class)) {
             return "string";
-        } else if (dataType.equals(Boolean.class)) {
+        } else if (valueType.equals(Boolean.class)) {
             return "boolean";
-        } else if (dataType.equals(Integer.class)) {
+        } else if (valueType.equals(Integer.class)) {
             return "long";
-        } else if (dataType.equals(Long.class)) {
+        } else if (valueType.equals(Long.class)) {
             return "long";
-        } else if (dataType.equals(Float.class)) {
+        } else if (valueType.equals(Float.class)) {
             return "double";
-        } else if (dataType.equals(Double.class)) {
+        } else if (valueType.equals(Double.class)) {
             return "double";
-        } else if (dataType.equals(LocalDateTime.class)) {
-            return "date";
+        } else if (valueType.equals(LocalDateTime.class)) {
+            return "datetime";
         } else {
-            throw new UnsupportedOperationException("Datatype not recognized.");
+            throw new UnsupportedOperationException("Valuetype not recognized.");
         }
     }
 }

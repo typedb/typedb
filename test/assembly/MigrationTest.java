@@ -47,7 +47,7 @@ import static org.junit.Assert.fail;
 
 public class MigrationTest {
 
-    private static final Path DATA_ROOT = Paths.get("test-end-to-end", "migration", "data");
+    private static final Path DATA_ROOT = Paths.get("test", "assembly", "data");
     private static final Path SCHEMA = DATA_ROOT.resolve("schema.gql");
     private static final Path SCHEMA_PT2 = DATA_ROOT.resolve("schema-pt2.gql");
     private static final Path IMPORT_PATH = DATA_ROOT.resolve("simulation.grakn");
@@ -82,13 +82,13 @@ public class MigrationTest {
         loadSimulationSchema("simulation");
 
         System.out.println("Performing import");
-        assertExecutes(GRAKN, "server", "import", "--no-anim", "simulation", IMPORT_PATH.toString());
+        assertExecutes(GRAKN, "server", "import", "--no-anim", "simulation", IMPORT_PATH.toString(), "value=monetary-value");
 
         System.out.println("Smoke test that something was inserted");
         GraknClient graknClient = new GraknClient("localhost:48555");
         GraknClient.Session session = graknClient.session("simulation");
         try (GraknClient.Transaction tx = session.transaction().read()) {
-            assertThat(tx.execute(Graql.compute().count().in("thing")).get(0).number().longValue(), greaterThan(0L));
+            assertThat(tx.execute(Graql.compute().count().in("thing")).get().get(0).number().longValue(), greaterThan(0L));
         }
 
         Path exportPath = Paths.get("simulationexport.grakn");

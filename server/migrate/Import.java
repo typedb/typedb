@@ -70,7 +70,7 @@ public class Import extends AbstractJob {
     // Pair of IMPORTED thing ids to list of ORIGINAL attribute ids
     List<Pair<String, List<String>>> allMissingAttributeOwnerships = new ArrayList<>();
 
-    // Pair of IMPORTED relation ids to map of role LABEL to lists of ORIGINAL player ids
+    // Pair of IMPORTED relation ids to map of remapped role LABEL to lists of ORIGINAL player ids
     List<Pair<String, List<Pair<String, List<String>>>>> allMissingRolePlayers = new ArrayList<>();
 
     Map<String, AttributeType<?>> attributeTypeCache = new HashMap<>();
@@ -91,12 +91,14 @@ public class Import extends AbstractJob {
     private final SessionFactory sessionFactory;
     private final Path inputPath;
     private final String keyspace;
+    private final Map<String, String> remapLabels;
 
-    public Import(SessionFactory sessionFactory, Path inputPath, String keyspace) {
+    public Import(SessionFactory sessionFactory, Path inputPath, String keyspace, Map<String, String> remapLabels) {
         super("import");
         this.sessionFactory = sessionFactory;
         this.inputPath = inputPath;
         this.keyspace = keyspace;
+        this.remapLabels = remapLabels;
     }
 
     /**
@@ -249,7 +251,7 @@ public class Import extends AbstractJob {
 
     private void insertAttribute(DataProto.Item.Attribute attributeMessage) {
         Attribute<?> attribute = attributeTypeCache.computeIfAbsent(
-                        attributeMessage.getLabel(),
+                        relabel(attributeMessage.getLabel()),
                         l -> currentTransaction.getAttributeType(l))
                 .create(valueFrom(attributeMessage.getValue()));
 
@@ -266,7 +268,7 @@ public class Import extends AbstractJob {
 
     private void insertEntity(DataProto.Item.Entity entityMessage) {
         Entity entity = entityTypeCache.computeIfAbsent(
-                        entityMessage.getLabel(),
+                        relabel(entityMessage.getLabel()),
                         l -> currentTransaction.getEntityType(l))
                 .create();
 
@@ -282,7 +284,7 @@ public class Import extends AbstractJob {
 
     private void insertRelation(DataProto.Item.Relation relationMessage) {
         Relation relation = relationTypeCache.computeIfAbsent(
-                        relationMessage.getLabel(),
+                        relabel(relationMessage.getLabel()),
                         l -> currentTransaction.getRelationType(l))
                 .create();
 
@@ -310,7 +312,7 @@ public class Import extends AbstractJob {
 
                 if (player != null) {
                     if (role == null) {
-                        role = roleCache.computeIfAbsent(roleMessage.getLabel(), l -> currentTransaction.getRole(l));
+                        role = roleCache.computeIfAbsent(relabel(roleMessage.getLabel()), l -> currentTransaction.getRole(l));
                     }
                     relation.assign(role, player);
                     roleCount++;
@@ -320,7 +322,7 @@ public class Import extends AbstractJob {
             }
 
             if (!missingPlayers.isEmpty()) {
-                missingRolePlayers.add(new Pair<>(roleMessage.getLabel(), missingPlayers));
+                missingRolePlayers.add(new Pair<>(relabel(roleMessage.getLabel()), missingPlayers));
             }
         }
 
@@ -398,6 +400,10 @@ public class Import extends AbstractJob {
         }
 
         allMissingRolePlayers.clear();
+    }
+
+    private String relabel(String original) {
+        return remapLabels.getOrDefault(original, original);
     }
 
     private <T> T valueFrom(DataProto.ValueObject valueObject) {

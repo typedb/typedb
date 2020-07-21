@@ -60,7 +60,7 @@ java_test(
         "AssemblyConstants.java",
         "MigrationTest.java",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
+    classpath_resources = ["//test/resources:logback-test"],
     data = [
         "data/schema.gql",
         "data/schema-pt2.gql",

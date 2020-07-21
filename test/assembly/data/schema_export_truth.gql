@@ -1,137 +1,137 @@
 define
 
 age sub attribute,
-    datatype long;
+    value long;
 
 annual-wage sub attribute,
-    datatype double;
+    value double;
 
 company-number sub attribute,
-    datatype long;
+    value long;
 
 content-language sub attribute,
-    datatype string;
+    value string;
 
 contracted-hours sub attribute,
-    datatype double;
+    value double;
 
 currency sub attribute,
-    datatype string,
+    value string,
     has currency-code;
 
 currency-code sub attribute,
-    datatype string;
+    value string;
 
 date-of-event sub attribute,
     abstract,
-    datatype date;
+    value datetime;
 
     date-of-birth sub date-of-event,
-        datatype date;
+        value datetime;
 
     date-of-incorporation sub date-of-event,
-        datatype date;
+        value datetime;
 
     date-of-marriage sub date-of-event,
-        datatype date;
+        value datetime;
 
     end-date sub date-of-event,
-        datatype date;
+        value datetime;
 
     relocation-date sub date-of-event,
-        datatype date;
+        value datetime;
 
     start-date sub date-of-event,
-        datatype date;
+        value datetime;
 
 date-signed sub attribute,
-    datatype date;
+    value datetime;
 
 description sub attribute,
-    datatype string;
+    value string;
 
     product-description sub description,
-        datatype string;
+        value string;
 
     service-description sub description,
-        datatype string;
+        value string;
 
 email sub attribute,
-    datatype string;
+    value string;
 
 gender sub attribute,
-    datatype string;
+    value string;
 
 identifier sub attribute,
-    datatype long;
+    value long;
 
     marriage-id sub identifier,
-        datatype long;
+        value long;
 
 identifier-double sub attribute,
-    datatype double;
+    value double;
 
     product-barcode sub identifier-double,
-        datatype double;
+        value double;
 
     service-id sub identifier-double,
-        datatype double;
+        value double;
 
 is-current sub attribute,
-    datatype boolean;
+    value boolean;
 
 is-taxable sub attribute,
-    datatype boolean;
+    value boolean;
 
 language sub attribute,
-    datatype string;
+    value string;
 
 name sub attribute,
-    datatype string;
+    value string;
 
     forename sub name,
-        datatype string;
+        value string;
 
     location-name sub name,
-        datatype string;
+        value string;
 
     organisation-name sub name,
-        datatype string;
+        value string;
 
         charity-name sub organisation-name,
-            datatype string;
+            value string;
 
         company-name sub organisation-name,
-            datatype string;
+            value string;
 
         university-name sub organisation-name,
-            datatype string;
+            value string;
 
     product-name sub name,
-        datatype string;
+        value string;
 
     service-name sub name,
-        datatype string;
+        value string;
 
     surname sub name,
-        datatype string;
+        value string;
 
 num-characters sub attribute,
-    datatype long;
+    value long;
 
 product-quantity sub attribute,
-    datatype long;
+    value long;
 
 text-content sub attribute,
-    datatype string,
+    value string,
     has content-language,
     has num-characters;
 
     contract-content sub text-content,
-        datatype string;
+        value string;
 
 value sub attribute,
-    datatype double;
+    value double;
 
 legal-document sub entity,
     has date-signed,

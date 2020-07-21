@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -96,8 +97,9 @@ public class MigrateService extends MigrateServiceGrpc.MigrateServiceImplBase {
     public void importFile(MigrateProto.ImportFile.Req request,
                            StreamObserver<MigrateProto.Job.Res> responseObserver) {
         Path inputPath = Paths.get(request.getPath());
+        Map<String, String> remapLabels = request.getRemapLabelsMap();
 
-        runJob(new Import(sessionFactory, inputPath, request.getName()), responseObserver);
+        runJob(new Import(sessionFactory, inputPath, request.getName(), remapLabels), responseObserver);
     }
 
     @Override

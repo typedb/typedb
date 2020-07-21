@@ -32,6 +32,3 @@ when {
 }, then {
     $emp has contracted-hours $hours;
 };
-
-@has-annual-wage sub @has-attribute,
-    has currency;

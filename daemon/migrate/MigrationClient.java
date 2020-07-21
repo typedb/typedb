@@ -33,6 +33,7 @@ import io.grpc.stub.StreamObserver;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -104,7 +105,7 @@ public class MigrationClient implements AutoCloseable {
         );
     }
 
-    public void import_(String keyspace, String path, ProgressListener progressListener) throws Exception {
+    public void import_(String keyspace, String path, Map<String, String> remapLabels, ProgressListener progressListener) throws Exception {
         String resolvedPath = resolvePath(path);
 
         call(
@@ -112,6 +113,7 @@ public class MigrationClient implements AutoCloseable {
                 MigrateProto.ImportFile.Req.newBuilder()
                         .setName(keyspace)
                         .setPath(resolvedPath)
+                        .putAllRemapLabels(remapLabels)
                         .build(),
                 res -> reportProgress(progressListener, res)
         );

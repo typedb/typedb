@@ -26,7 +26,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
@@ -40,14 +39,12 @@ import graql.lang.Graql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedOutputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -127,18 +124,7 @@ public class Export extends AbstractJob {
 
     private void computeApproximateCount() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-            // Compute is broken, we must manually prune implicit relations from the types to count as their counts are
-            // completely wrong. We must also ensure that we only add supertypes, so we check that included relation
-            // types are definitely direct subtypes of "relation".
-            RelationType metaRelationType = tx.getMetaRelationType();
-            List<String> nonImplicitTypes = Stream.concat(metaRelationType.subs()
-                            .filter(rt -> !rt.equals(metaRelationType) && Objects.equals(rt.sup(), metaRelationType) && !rt.isImplicit())
-                            .map(SchemaConcept::label)
-                            .map(Label::toString),
-                    Stream.of("attribute", "entity"))
-                    .collect(Collectors.toList());
-
-            approximateThingCount = tx.execute(Graql.compute().count().in(nonImplicitTypes))
+            approximateThingCount = tx.execute(Graql.compute().count().in("thing"))
                     .stream().findFirst().map(n -> n.number().longValue()).orElse(0L);
         }
     }
@@ -150,7 +136,7 @@ public class Export extends AbstractJob {
     private List<AttributeExportWorker<?>> createAttributeWorkers() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             return ((Stream<AttributeType<?>>) tx.getMetaAttributeType().subs())
-                    .filter(at -> !at.isAbstract() && !at.isImplicit())
+                    .filter(at -> !at.isAbstract())
                     .map(at -> at.label().toString())
                     .map(AttributeExportWorker::new)
                     .collect(Collectors.toList());
@@ -160,7 +146,7 @@ public class Export extends AbstractJob {
     private List<EntityExportWorker> createEntityWorkers() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             return tx.getMetaEntityType().subs()
-                    .filter(et -> !et.isAbstract() && !et.isImplicit())
+                    .filter(et -> !et.isAbstract())
                     .map(et -> et.label().toString())
                     .map(EntityExportWorker::new)
                     .collect(Collectors.toList());
@@ -170,7 +156,7 @@ public class Export extends AbstractJob {
     private List<RelationExportWorker> createRelationWorkers() {
         try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             return tx.getMetaRelationType().subs()
-                    .filter(rt -> !rt.isAbstract() && !rt.isImplicit())
+                    .filter(rt -> !rt.isAbstract())
                     .map(rt -> rt.label().toString())
                     .map(RelationExportWorker::new)
                     .collect(Collectors.toList());
@@ -239,7 +225,7 @@ public class Export extends AbstractJob {
 
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 T type = tx.getSchemaConcept(Label.of(label));
-                AttributeType<?>[] ownedTypes = type.attributes().filter(at -> !at.isImplicit()).toArray(AttributeType[]::new);
+                AttributeType<?>[] ownedTypes = type.has().toArray(AttributeType[]::new);
                 Iterator<U> iterator = (Iterator<U>) type.instancesDirect().iterator();
                 while (iterator.hasNext()) {
                     if (isCancelled()) {
@@ -314,9 +300,6 @@ public class Export extends AbstractJob {
             Map<Role, List<Thing>> roleMap = relation.rolePlayersMap();
             for (Map.Entry<Role, List<Thing>> roleEntry : roleMap.entrySet()) {
                 Role role = roleEntry.getKey();
-                if (role.isImplicit()) {
-                    continue;
-                }
 
                 DataProto.Item.Relation.Role.Builder roleBuilder = DataProto.Item.Relation.Role.newBuilder()
                         .setLabel(role.label().toString());
