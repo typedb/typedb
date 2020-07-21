@@ -33,14 +33,13 @@ import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
@@ -55,51 +54,59 @@ public class RuleCacheIT {
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session ruleApplicabilitySession;
+    private static Session session;
 
     @BeforeClass
     public static void loadContext() {
-        ruleApplicabilitySession = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
+        session = SessionUtil.serverlessSessionWithNewKeyspace(storage.createCompatibleServerConfig());
         String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", ruleApplicabilitySession);
+        loadFromFileAndCommit(resourcePath, "genericSchema-refactored.gql", s);
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            String schema = "define"
+                    "genericEntity sub entity;" +
+                    "noInstanceEntity sub entity;" +
+
+        }
     }
 
     @AfterClass
     public static void closeSession() {
-        ruleApplicabilitySession.close();
+        genericSchemaSession.close();
     }
 
+    //fetch rules of specific type from cache
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             RuleCacheImpl ruleCache = testTx.ruleCache();
 
-            Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
-            Type ternary = tx.getType(Label.of("ternary"));
-            Set<Rule> rulesWithBinary = ruleCache.getRulesWithType(reifyingRelation).collect(toSet());
-            Set<Rule> rulesWithTernary = ruleCache.getRulesWithType(ternary).collect(toSet());
+            Type symmetricRelation = tx.getType(Label.of("symmetricRelation"));
+            Type transitiveRelation = tx.getType(Label.of("transitiveRelation"));
+            Set<Rule> rulesWithSymmetric = ruleCache.getRulesWithType(symmetricRelation).collect(toSet());
+            Set<Rule> rulesWithTransitive = ruleCache.getRulesWithType(transitiveRelation).collect(toSet());
 
-            assertEquals(2, rulesWithBinary.size());
-            assertEquals(2, rulesWithTernary.size());
+            assertEquals(1, rulesWithSymmetric.size());
+            assertEquals(1, rulesWithTransitive.size());
 
-            rulesWithBinary.stream()
+            rulesWithSymmetric.stream()
                     .map(ruleCache::getRule)
-                    .forEach(r -> assertEquals(reifyingRelation, r.getHead().getAtom().getSchemaConcept()));
-            rulesWithTernary.stream()
+                    .forEach(r -> assertEquals(symmetricRelation, r.getHead().getAtom().getSchemaConcept()));
+            rulesWithTransitive.stream()
                     .map(ruleCache::getRule)
-                    .forEach(r -> assertEquals(ternary, r.getHead().getAtom().getSchemaConcept()));
+                    .forEach(r -> assertEquals(transitiveRelation, r.getHead().getAtom().getSchemaConcept()));
         }
     }
 
+    //add a rule and assert the cache contains it
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
-            Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
+            Pattern then = Graql.parsePattern("{ (baseRole1: $x, baseRole2: $y) isa ternary; };");
             Rule dummyRule = tx.putRule("dummyRule", when, then);
 
-            Type binary = tx.getType(Label.of("binary"));
+            Type binary = tx.getType(Label.of("ternary"));
 
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
             Set<Rule> cachedRules = testTx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
@@ -109,13 +116,12 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
-
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
-            Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
+            Pattern then = Graql.parsePattern("{ (baseRole1: $x, baseRole2: $y) isa ternary; };");
             Rule dummyRule = tx.putRule("dummyRule", when, then);
 
-            Type binary = tx.getType(Label.of("binary"));
+            Type binary = tx.getType(Label.of("ternary"));
             Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
 
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
@@ -126,14 +132,14 @@ public class RuleCacheIT {
 
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.undefine(type("binary-transitivity").sub("rule")));
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.undefine(type("binaryTransitivity").sub("rule")));
             tx.commit();
         }
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
-            Type binary = tx.getType(Label.of("binary"));
+            Type binary = tx.getType(Label.of("transitiveRelation"));
             Set<Rule> rules = testTx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
             assertTrue(rules.isEmpty());
         }
@@ -141,7 +147,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenFetchingRules_fruitlessRulesAreNotReturned(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             Type description = tx.getType(Label.of("description"));
@@ -160,7 +166,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasDirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             EntityType anotherNoRoleEntity = tx.getEntityType("anotherNoRoleEntity");
@@ -170,7 +176,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasIndirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             //no direct instances present, however anotherTwoRoleEntity subs anotherSingleRoleEntity and has instances
@@ -181,7 +187,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             Type description = tx.getType(Label.of("description"));
@@ -192,7 +198,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeSubTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             RelationType binary = tx.getRelationType("binary");
@@ -204,9 +210,10 @@ public class RuleCacheIT {
         }
     }
 
+    //check absent types updated on deletion and insertion
     @Test
     public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
-        try(Transaction tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE)) {
+        try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
