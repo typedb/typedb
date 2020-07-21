@@ -123,7 +123,8 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     @Override
     public void sessionOpen(Session.Open.Req request, StreamObserver<Session.Open.Res> responseObserver) {
         try {
-            SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase());
+            Grakn.Session.Type sessionType = Grakn.Session.Type.of(request.getType().getNumber());
+            SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase(), sessionType);
             sessions.put(sessionRPC.session().uuid(), sessionRPC);
             ByteString uuid = copyFrom(uuidToBytes(sessionRPC.session().uuid()));
             responseObserver.onNext(Session.Open.Res.newBuilder().setSessionID(uuid).build());

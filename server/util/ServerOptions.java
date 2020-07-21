@@ -21,6 +21,7 @@ package grakn.core.server.util;
 import grakn.core.server.Version;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -34,36 +35,36 @@ public class ServerOptions {
     public static final String DEFAULT_DATABASE_DIRECTORY = "server/db";
     public static final int DEFAULT_DATABASE_PORT = 48555;
 
-    @CommandLine.Option(descriptionKey = "database.directory",
+    @Option(descriptionKey = "database.directory",
             names = {"--database-directory"},
             defaultValue = DEFAULT_DATABASE_DIRECTORY,
             description = "Directory to write database files")
     private String databaseDirectory;
 
-    @CommandLine.Option(descriptionKey = "database.port",
+    @Option(descriptionKey = "database.port",
             names = {"--database-port"},
             defaultValue = DEFAULT_DATABASE_PORT + "",
             description = "GRPC port for Grakn clients to connect to the server")
     private int databasePort;
 
-    @CommandLine.Option(descriptionKey = "grabl.trace",
+    @Option(descriptionKey = "grabl.trace",
             names = {"--grabl-trace"},
             negatable = true,
             defaultValue = "false",
             description = "Enable Grabl performance tracing")
     private boolean grablTrace;
 
-    @CommandLine.Option(descriptionKey = "grabl.uri",
+    @Option(descriptionKey = "grabl.uri",
             names = {"--grabl-uri"},
             description = "Grabl tracing server URI")
     private URI grablURI;
 
-    @CommandLine.Option(descriptionKey = "grabl.username",
+    @Option(descriptionKey = "grabl.username",
             names = {"--grabl-username"},
             description = "Grabl username")
     private String grablUsername;
 
-    @CommandLine.Option(descriptionKey = "grabl.token",
+    @Option(descriptionKey = "grabl.token",
             names = {"--grabl-token"},
             description = "Grabl account access token")
     private String grablToken;

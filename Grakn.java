@@ -36,8 +36,6 @@ public interface Grakn extends AutoCloseable {
 
     GraknOptions.Global options();
 
-    default Session session(String database) { return session(database, Session.Type.DATA); }
-
     Session session(String database, Session.Type type);
 
     Session session(String database, Session.Type type, GraknOptions.Session options);

@@ -332,7 +332,7 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database)) {
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
                     age(txn).put(18);
@@ -410,7 +410,7 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database)) {
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -529,7 +529,7 @@ public class BasicTest {
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database)) {
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -628,7 +628,7 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database)) {
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
                 Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
 

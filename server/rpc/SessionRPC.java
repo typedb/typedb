@@ -28,8 +28,8 @@ public class SessionRPC {
     private final Grakn.Session session;
     private final Set<TransactionRPC> transactionRPCs;
 
-    SessionRPC(Grakn grakn, String database) {
-        this.session = grakn.session(database);
+    SessionRPC(Grakn grakn, String database, Grakn.Session.Type type) {
+        this.session = grakn.session(database, type);
         transactionRPCs = ConcurrentHashMap.newKeySet();
     }
 
