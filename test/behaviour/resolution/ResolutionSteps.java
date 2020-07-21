@@ -18,6 +18,7 @@
 
 package grakn.core.test.behaviour.resolution;
 
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.behaviour.resolution.framework.Resolution;
@@ -28,9 +29,11 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.util.List;
 import java.util.function.Function;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 
 public class ResolutionSteps {
 
@@ -86,6 +89,20 @@ public class ResolutionSteps {
             String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
                     "but found [%d] answers, for query :\n %s", expectedCount, testResultsCount, queryToTest);
             throw new Resolution.CorrectnessException(msg);
+        }
+    }
+
+    @Then("answers are consistent across {int} executions in reasoned keyspace")
+    public void reasoned_keyspace_answers_are_consistent_across_n_executions(final int executionCount) {
+        List<ConceptMap> oldAnswers;
+        try (final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ)) {
+            oldAnswers = reasonedTx.execute(queryToTest);
+        }
+        for (int i = 0; i < executionCount - 1; i++) {
+            try (final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ)) {
+                final List<ConceptMap> answers = reasonedTx.execute(queryToTest);
+                assertCollectionsNonTriviallyEqual(oldAnswers, answers);
+            }
         }
     }
 
