@@ -82,7 +82,7 @@ public class GenerativeOperationalIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "genericSchema-refactored.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "genericSchemaRefactored.gql", genericSchemaSession);
 
         try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();

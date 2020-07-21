@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
 public class GenericSchemaGraph {
 
     private final static String gqlPath = "test/integration/graql/reasoner/resources/";
-    private final static String gqlFile = "genericSchema-refactored.gql";
+    private final static String gqlFile = "genericSchemaRefactored.gql";
 
     private final QueryPattern differentReflexiveRelationVariants;
     private final QueryPattern differentRelationVariants;

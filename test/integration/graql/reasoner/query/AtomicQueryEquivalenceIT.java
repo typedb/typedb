@@ -198,7 +198,6 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentRelationInequivalentVariants(){
-
         HashSet<String> queries = Sets.newHashSet(
                 "{ $x isa binary; };",
                 "{ ($y) isa binary; };",

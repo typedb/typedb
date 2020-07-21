@@ -79,7 +79,7 @@ public class QueryCacheIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "genericSchema-refactored.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "genericSchemaRefactored.gql", genericSchemaSession);
     }
 
     @AfterClass

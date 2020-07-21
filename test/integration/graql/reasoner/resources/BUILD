@@ -27,7 +27,7 @@ filegroup(
 
 filegroup(
     name = "generic-schema-refactored",
-    srcs = ["genericSchema-refactored.gql"],
+    srcs = ["genericSchemaRefactored.gql"],
 )
 
 filegroup(
