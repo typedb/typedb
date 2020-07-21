@@ -5,7 +5,7 @@ java_test(
     size = "medium",
     srcs = ["QueryCacheIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = [],
+    resources = ["//test/integration/graql/reasoner/resources:generic-schema-refactored"],
     test_class = "grakn.core.graql.reasoner.cache.QueryCacheIT",
     deps = [
         "//common",
@@ -26,7 +26,7 @@ java_test(
     size = "medium",
     srcs = ["RuleCacheIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/resources:generic-schema-refactored"],
+    resources = [],
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
         "//graql/reasoner",
