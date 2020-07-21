@@ -19,6 +19,7 @@ package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
+import grakn.core.common.options.GraknOptions;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.DatabaseProto.Database;
 import grakn.protocol.GraknGrpc;
@@ -41,6 +42,7 @@ import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_EXISTS;
 import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.Error.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.Error.Session.SESSION_NOT_FOUND;
+import static grakn.core.server.rpc.util.RequestReader.getOptions;
 import static grakn.protocol.SessionProto.Session;
 import static java.util.stream.Collectors.toList;
 
@@ -124,7 +126,8 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     public void sessionOpen(Session.Open.Req request, StreamObserver<Session.Open.Res> responseObserver) {
         try {
             Grakn.Session.Type sessionType = Grakn.Session.Type.of(request.getType().getNumber());
-            SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase(), sessionType);
+            GraknOptions.Session options = getOptions(GraknOptions.Session::new, request.getOptions());
+            SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase(), sessionType, options);
             sessions.put(sessionRPC.session().uuid(), sessionRPC);
             ByteString uuid = copyFrom(uuidToBytes(sessionRPC.session().uuid()));
             responseObserver.onNext(Session.Open.Res.newBuilder().setSessionID(uuid).build());
