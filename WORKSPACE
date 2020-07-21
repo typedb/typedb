@@ -147,6 +147,7 @@ load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol
 #################################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
+load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
 
 ###############################
 # Load @graknlabs_client_java #
@@ -178,13 +179,22 @@ load("@graknlabs_verification//dependencies/maven:artifacts.bzl", graknlabs_veri
 load("@graknlabs_grakn_core//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
 
 # Override libraries conflicting with versions defined in @graknlabs_dependencies
-GRAKN_CORE_OVERRIDES = {
-   "org.scala-lang:scala-library": "2.11.8",
-   "com.fasterxml.jackson.core:jackson-core": "2.9.10",
-   "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
+OVERRIDES = {
+    "org.scala-lang:scala-library": "2.11.8",
+    "com.fasterxml.jackson.core:jackson-core": "2.9.10",
+    "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
 
-   "io.netty:netty-all": "4.1.38.Final",
-   "io.netty:netty-codec-http2": "4.1.38.Final",
+    "io.netty:netty-all": "4.1.38.Final",
+    "io.netty:netty-buffer": "4.1.38.Final",
+    "io.netty:netty-codec": "4.1.38.Final",
+    "io.netty:netty-codec-http2": "4.1.38.Final",
+    "io.netty:netty-codec-http": "4.1.38.Final",
+    "io.netty:netty-codec-socks": "4.1.38.Final",
+    "io.netty:netty-common": "4.1.38.Final",
+    "io.netty:netty-handler": "4.1.38.Final",
+    "io.netty:netty-handler-proxy": "4.1.38.Final",
+    "io.netty:netty-resolver": "4.1.38.Final",
+    "io.netty:netty-transport": "4.1.38.Final",
 }
 
 ###############
@@ -194,9 +204,10 @@ maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
     graknlabs_client_java_artifacts +
+    graknlabs_grabl_tracing_artifacts +
     graknlabs_verification_artifacts +
     graknlabs_grakn_core_artifacts,
-    GRAKN_CORE_OVERRIDES
+    OVERRIDES
 )
 
 ###############################################
