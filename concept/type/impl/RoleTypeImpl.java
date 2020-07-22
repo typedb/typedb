@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.graph.TypeGraph;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
@@ -34,6 +35,8 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.stream;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -93,13 +96,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public RelationTypeImpl relation() {
-        Iterator<TypeVertex> v = vertex.ins().edge(Schema.Edge.Type.RELATES).from();
-        return RelationTypeImpl.of(v.next());
+        return RelationTypeImpl.of(vertex.ins().edge(Schema.Edge.Type.RELATES).from().next());
     }
 
     @Override
     public Stream<RelationTypeImpl> relations() {
         return relation().subs().filter(rel -> rel.roles().anyMatch(rol -> rol.equals(this)));
+    }
+
+    @Override
+    public Stream<? extends ThingTypeImpl> players() {
+        return stream(apply(vertex.ins().edge(Schema.Edge.Type.PLAYS).from(), ThingTypeImpl::of));
     }
 
     @Override

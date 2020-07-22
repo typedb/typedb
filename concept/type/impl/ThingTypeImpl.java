@@ -77,6 +77,21 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         super(graph, label, schema);
     }
 
+    public static ThingTypeImpl of(TypeVertex vertex) {
+        switch (vertex.schema()) {
+            case ENTITY_TYPE:
+                return EntityTypeImpl.of(vertex);
+            case ATTRIBUTE_TYPE:
+                return AttributeTypeImpl.of(vertex);
+            case RELATION_TYPE:
+                return RelationTypeImpl.of(vertex);
+            case THING_TYPE:
+                return new ThingTypeImpl.Root(vertex);
+            default:
+                throw new GraknException(UNRECOGNISED_VALUE);
+        }
+    }
+
     @Override
     public void isAbstract(boolean isAbstract) {
         if (isAbstract && instances().findFirst().isPresent()) {
@@ -91,6 +106,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
         return subs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
     }
+
+//    <THING> Stream<THING> instancesWith(Attribute attribute, Function<ThingVertex, THING> thingConstructor) {
+//
+//    }
 
     @Override
     public void has(AttributeType attributeType) {

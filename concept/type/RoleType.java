@@ -39,4 +39,6 @@ public interface RoleType extends Type {
     RelationType relation();
 
     Stream<? extends RelationType> relations();
+
+    Stream<? extends ThingType> players();
 }

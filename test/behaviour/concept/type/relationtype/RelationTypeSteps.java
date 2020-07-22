@@ -19,6 +19,8 @@
 package grakn.core.test.behaviour.concept.type.relationtype;
 
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -126,6 +128,24 @@ public class RelationTypeSteps {
     public void relation_type_get_role_type_get_supertypes_do_not_contain(String relationLabel, String roleLabel, List<Parameters.ScopedLabel> superLabels) {
         Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_supertypes_actuals(relationLabel, roleLabel);
         for (Parameters.ScopedLabel superLabel : superLabels) {
+            assertFalse(actuals.contains(superLabel));
+        }
+    }
+
+    private Set<String> relation_type_get_role_type_players_actuals(String relationLabel, String roleLabel) {
+        return tx().concepts().getRelationType(relationLabel).role(roleLabel).players().map(Type::label).collect(toSet());
+    }
+
+    @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get players contain:")
+    public void relation_type_get_role_type_get_players_contain(String relationLabel, String roleLabel, List<String> playerLabels) {
+        Set<String> actuals = relation_type_get_role_type_players_actuals(relationLabel, roleLabel);
+        assertTrue(actuals.containsAll(playerLabels));
+    }
+
+    @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get players do not contain:")
+    public void relation_type_get_role_type_get_plays_do_not_contain(String relationLabel, String roleLabel, List<String> playerLabels) {
+        Set<String> actuals = relation_type_get_role_type_players_actuals(relationLabel, roleLabel);
+        for (String superLabel : playerLabels) {
             assertFalse(actuals.contains(superLabel));
         }
     }

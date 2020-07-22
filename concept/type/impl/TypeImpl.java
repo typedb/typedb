@@ -63,18 +63,10 @@ public abstract class TypeImpl implements Type {
 
     public static TypeImpl of(TypeVertex vertex) {
         switch (vertex.schema()) {
-            case ENTITY_TYPE:
-                return EntityTypeImpl.of(vertex);
-            case ATTRIBUTE_TYPE:
-                return AttributeTypeImpl.of(vertex);
-            case RELATION_TYPE:
-                return RelationTypeImpl.of(vertex);
             case ROLE_TYPE:
                 return RoleTypeImpl.of(vertex);
-            case THING_TYPE:
-                return new ThingTypeImpl.Root(vertex);
             default:
-                throw new GraknException(UNRECOGNISED_VALUE);
+                return ThingTypeImpl.of(vertex);
         }
     }
 
