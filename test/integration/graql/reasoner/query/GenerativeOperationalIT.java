@@ -342,9 +342,9 @@ public class GenerativeOperationalIT {
                             ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
                             ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
 
-                            //QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
+                            QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
                             QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
-                            //QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
                         }
                     }
                 }

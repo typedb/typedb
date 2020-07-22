@@ -202,7 +202,7 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("{(role: $x, role: $y) isa ternary;$x isa baseEntity;};"));
+            ReasonerAtomicQuery childQuery = testTx.reasonerQueryFactory().atomic(conjunction("{(role: $x, role: $y) isa ternary;};"));
             Set<ConceptMap> cachedAnswers = cache.getAnswers(childQuery);
             assertTrue(cachedAnswers.contains(mockedAnswer));
             assertTrue(cachedAnswers.containsAll(tx.execute(childQuery.getQuery())));
@@ -710,8 +710,6 @@ public class QueryCacheIT {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
             ReasonerQueryImpl query = testTx.reasonerQueryFactory().create(conjunction(
                     "{" +
-                            "$x isa baseEntity;" +
-                            "$link isa baseEntity;" +
                             "(baseRole1: $x, baseRole2: $link) isa ternary;" +
                             "(baseRole2: $link, baseRole2: $y) isa ternary;" +
                             "(symmetricRole: $y, symmetricRole: $z) isa symmetricRelation;" +
@@ -878,7 +876,7 @@ public class QueryCacheIT {
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction) tx);
             MultilevelSemanticCache cache = testTx.queryCache();
 
-            List<Entity> entities = tx.getEntityType("baseEntity").instances().collect(toList());
+            List<Entity> entities = tx.getEntityType("entity").instances().collect(toList());
             for(Entity entity : entities){
                 ReasonerAtomicQuery parentQuery = testTx.reasonerQueryFactory().atomic(conjunction(
                         "{" +

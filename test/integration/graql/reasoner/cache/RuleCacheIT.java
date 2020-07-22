@@ -43,7 +43,9 @@ import java.util.stream.Collectors;
 
 import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.*;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.assertFalse;
 
 @SuppressWarnings("CheckReturnValue")
 public class RuleCacheIT {
@@ -267,7 +269,7 @@ public class RuleCacheIT {
             TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction)tx;
 
             EntityType someEntity = tx.getEntityType("someEntity");
-            AttributeType derivedResource = tx.getAttributeType("derivedResource");
+            AttributeType<?> derivedResource = tx.getAttributeType("derivedResource");
             assertTrue(testTx.ruleCache().absentTypes(Collections.singleton(someEntity)));
 
             Rule positiveRule = tx.getRule("positiveRule");
