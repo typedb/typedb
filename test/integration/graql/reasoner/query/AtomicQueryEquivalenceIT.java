@@ -90,6 +90,7 @@ public class AtomicQueryEquivalenceIT {
     public void setUp(){
         tx = session.transaction(Transaction.Type.WRITE);
         reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        // disable type inference so we test fewer things
         reasonerQueryFactory.disableInferTypes();
     }
 
