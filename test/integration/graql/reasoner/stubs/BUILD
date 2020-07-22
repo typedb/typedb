@@ -39,7 +39,6 @@ filegroup(
         "testSet24.gql",
         "testSet25.gql",
         "testSet26.gql",
-        "testSet27.gql",
         "testSet28.gql",
         "testSet28b.gql",
         "testSet29.gql",

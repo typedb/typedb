@@ -34,12 +34,15 @@ import java.util.function.Function;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.test.common.GraqlTestUtil.assertCollectionsEqual;
+import static org.junit.Assert.assertNotNull;
 
 public class ResolutionSteps {
 
     private Session reasonedSession;
     private Session materialisedSession;
     private GraqlGet queryToTest;
+    private List<ConceptMap> answers;
     private Resolution resolution;
 
     @Given("for each session, graql define")
@@ -83,7 +86,8 @@ public class ResolutionSteps {
     @Then("answer size in reasoned keyspace is: {number}")
     public void reasoned_keyspace_answer_size_is(final int expectedCount) {
         final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
-        final int testResultsCount = reasonedTx.execute(queryToTest).size();
+        answers = reasonedTx.execute(queryToTest);
+        final int testResultsCount = answers.size();
         reasonedTx.close();
         if (expectedCount != testResultsCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
@@ -104,6 +108,13 @@ public class ResolutionSteps {
                 assertCollectionsNonTriviallyEqual(oldAnswers, answers);
             }
         }
+    @Then("answer set is equivalent for graql query")
+    public void equivalent_answer_set(final String equivalentQuery) {
+        assertNotNull("A graql query must have been previously loaded in order to test answer equivalence.", queryToTest);
+        assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
+        final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
+        final List<ConceptMap> newAnswers = reasonedTx.execute(Graql.parse(equivalentQuery).asGet());
+        assertCollectionsEqual(answers, newAnswers);
     }
 
     @Then("all answers are correct in reasoned keyspace")
