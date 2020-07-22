@@ -108,27 +108,18 @@ public abstract class ThingImpl implements Thing {
         vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex).delete();
     }
 
-    public Stream<? extends AttributeImpl> keys(List<AttributeType> attributeTypes) {
-        if (attributeTypes.isEmpty()) return attributes(type().attributes(true).collect(toList()));
-
-        List<AttributeType> keyTypes = new ArrayList<>(attributeTypes);
-        keyTypes.retainAll(type().attributes(true).collect(toList()));
-        if (keyTypes.isEmpty()) return Stream.empty();
-        else return attributes(keyTypes);
-    }
-
     @Override
-    public Stream<? extends Attribute> attributes() {
+    public Stream<? extends AttributeImpl> attributes() {
         return attributes(false);
     }
 
     @Override
-    public Stream<? extends Attribute> attributes(boolean onlyKey) {
+    public Stream<? extends AttributeImpl> attributes(boolean onlyKey) {
         return attributes(type().attributes(onlyKey).collect(toList()));
     }
 
     @Override
-    public Stream<? extends Attribute> attributes(AttributeType attributeTypes) {
+    public Stream<? extends AttributeImpl> attributes(AttributeType attributeTypes) {
         return attributes(Collections.singletonList(attributeTypes));
     }
 
