@@ -38,6 +38,7 @@ import graql.lang.statement.Statement;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -288,6 +289,9 @@ public class GenerativeOperationalIT {
         }
     }
 
+    // TODO - re-enable this when we have a way to semantically validate queries
+    // TODO - or when the fuzzer creates semantically valid generalisations
+    @Ignore
     @Test
     public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected(){
         try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
