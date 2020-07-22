@@ -214,10 +214,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<AttributeTypeImpl> attributes(boolean isKeyOnly) {
-        if (isKeyOnly && isRoot()) {
+    public Stream<AttributeTypeImpl> attributes(boolean onlKey) {
+        if (onlKey && isRoot()) {
             return declaredKeys();
-        } else if (isKeyOnly) {
+        } else if (onlKey) {
             Set<TypeVertex> overridden = new HashSet<>();
             filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
             return concat(declaredKeys(), sup().attributes(true).filter(key -> !overridden.contains(key.vertex)));
@@ -232,8 +232,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    public Stream<AttributeTypeImpl> attributes(Class<?> valueType, boolean isKeyOnly) {
-        return attributes(isKeyOnly).filter(att -> att.valueType().equals(valueType));
+    public Stream<AttributeTypeImpl> attributes(Class<?> valueType, boolean onlyKey) {
+        return attributes(onlyKey).filter(att -> att.valueType().equals(valueType));
     }
 
     @Override

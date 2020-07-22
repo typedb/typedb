@@ -52,11 +52,11 @@ public interface ThingType extends Type {
 
     Stream<? extends AttributeType> attributes();
 
-    Stream<? extends AttributeType> attributes(boolean isKeyOnly);
+    Stream<? extends AttributeType> attributes(boolean onlKey);
 
     Stream<? extends AttributeType> attributes(Class<?> valueType);
 
-    Stream<? extends AttributeType> attributes(Class<?> valueType, boolean isKeyOnly);
+    Stream<? extends AttributeType> attributes(Class<?> valueType, boolean onlyKey);
 
     void plays(RoleType roleType);
 

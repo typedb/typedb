@@ -90,45 +90,18 @@ public interface Thing extends Concept {
     void unhas(Attribute attribute);
 
     /**
-     * Get all {@code Attribute} instances that are keys to this {@code Thing}.
+     * Get all {@code Attribute} instances owned by this {@code Thing}.
      *
-     * @return a stream of {@code Attribute} instances that are keys of this {@code Thing}
+     * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    default Stream<? extends Attribute> keys() {
-        return keys(Collections.emptyList());
-    }
-
-    /**
-     * Get all {@code Attribute} instances that are keys to this {@code Thing}
-     * filtered by an {@code AttributeType} type.
-     *
-     * Get all {@code Attribute} instances that are keys to this {@code Thing}
-     * filtered by an {@code AttributeType} type. Although we are providing
-     * one {@code AttributeType} to this method, it is possible that it is a
-     * supertype of multiple {@code AttributeType} keys to this {@code Thing}.
-     *
-     * @return a stream of {@code Attribute} instances that are keys of this {@code Thing}
-     */
-    default Stream<? extends Attribute> keys(AttributeType attributeType) {
-        return keys(Collections.singletonList(attributeType));
-    }
-
-    /**
-     * Get all {@code Attribute} instances that are keys to this {@code Thing}
-     * filtered by their {@code AttributeType} types.
-     *
-     * @return a stream of {@code Attribute} instances that are keys of this {@code Thing}
-     */
-    Stream<? extends Attribute> keys(List<AttributeType> attributeTypes);
+    Stream<? extends Attribute> attributes();
 
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing}.
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    default Stream<? extends Attribute> attributes() {
-        return attributes(Collections.emptyList());
-    }
+    Stream<? extends Attribute> attributes(boolean onlyKey);
 
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing} filtered
@@ -136,9 +109,7 @@ public interface Thing extends Concept {
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    default Stream<? extends Attribute> attributes(AttributeType attributeTypes) {
-        return attributes(Collections.singletonList(attributeTypes));
-    }
+    Stream<? extends Attribute> attributes(AttributeType attributeTypes);
 
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing} filtered

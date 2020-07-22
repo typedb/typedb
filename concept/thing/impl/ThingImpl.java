@@ -31,6 +31,7 @@ import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -91,7 +92,7 @@ public abstract class ThingImpl implements Thing {
         if (type().attributes().noneMatch(t -> t.equals(attribute.type()))) {
             throw new GraknException(THING_ATTRIBUTE_UNDEFINED.message(vertex.type().label()));
         } else if (type().attributes(true).anyMatch(t -> t.equals(attribute.type()))) {
-            if (keys(attribute.type()).findAny().isPresent()) {
+            if (attributes(attribute.type()).findAny().isPresent()) {
                 throw new GraknException(THING_KEY_OVER.message(attribute.type().label(), type().label()));
             } else if (attribute.owners(type()).findAny().isPresent()) {
                 throw new GraknException(THING_KEY_TAKEN.message(attribute.type().label(), type().label()));
@@ -107,7 +108,6 @@ public abstract class ThingImpl implements Thing {
         vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex).delete();
     }
 
-    @Override
     public Stream<? extends AttributeImpl> keys(List<AttributeType> attributeTypes) {
         if (attributeTypes.isEmpty()) return attributes(type().attributes(true).collect(toList()));
 
@@ -115,6 +115,21 @@ public abstract class ThingImpl implements Thing {
         keyTypes.retainAll(type().attributes(true).collect(toList()));
         if (keyTypes.isEmpty()) return Stream.empty();
         else return attributes(keyTypes);
+    }
+
+    @Override
+    public Stream<? extends Attribute> attributes() {
+        return attributes(false);
+    }
+
+    @Override
+    public Stream<? extends Attribute> attributes(boolean onlyKey) {
+        return attributes(type().attributes(onlyKey).collect(toList()));
+    }
+
+    @Override
+    public Stream<? extends Attribute> attributes(AttributeType attributeTypes) {
+        return attributes(Collections.singletonList(attributeTypes));
     }
 
     @Override
@@ -155,9 +170,9 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public void validate() {
-        if (keys().map(Attribute::type).count() < type().attributes(true).count()) {
+        if (attributes(true).map(Attribute::type).count() < type().attributes(true).count()) {
             Set<AttributeType> missing = type().attributes(true).collect(toSet());
-            missing.removeAll(keys().map(Attribute::type).collect(toSet()));
+            missing.removeAll(attributes(true).map(Attribute::type).collect(toSet()));
             throw new GraknException(THING_KEY_MISSING.message(type().label(), printTypeSet(missing)));
         }
     }
