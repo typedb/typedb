@@ -18,32 +18,36 @@
 package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "ResolutionSteps.java"
+        "VariableRoleTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.variable_role.VariableRoleTest",
     deps = [
         # Package dependencies
-        "//test/behaviour/resolution/framework:resolution-lib",
-        "//kb/server",
-        "//concept/answer",
-        "//test/behaviour/connection:steps",
-        "//test/common:graql-test-util",
-
-        # Grakn Labs dependencies
-        "@graknlabs_graql//java:graql",
+        "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
-    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/graql/reasoner/resolution:variable-role.feature",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    size = "medium",
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":steps",
+        ":test",
     ],
 )
