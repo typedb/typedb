@@ -372,6 +372,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated the useful parts to relation-inference and match)
     @Test //Expected result: number of answers equal to specified limit (no duplicates produced)
     public void whenReasoningWithRelationConjunctions_duplicatesNotProducesAndTypesInferredCorrectly() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -396,6 +397,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference)
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -415,6 +417,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference)
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_DisconnectedQuery() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -444,6 +447,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference) and delete schema (used here and in 2 other migrated tests)
     /**
      * Should find the possible relation configurations:
      * (x, z) - (z, z1) - (z1, z)

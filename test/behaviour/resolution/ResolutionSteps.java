@@ -108,6 +108,8 @@ public class ResolutionSteps {
                 assertCollectionsNonTriviallyEqual(oldAnswers, answers);
             }
         }
+    }
+
     @Then("answer set is equivalent for graql query")
     public void equivalent_answer_set(final String equivalentQuery) {
         assertNotNull("A graql query must have been previously loaded in order to test answer equivalence.", queryToTest);
