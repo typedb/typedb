@@ -140,10 +140,6 @@ public abstract class TypeImpl implements Type {
         return stream(apply(tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()), typeConstructor));
     }
 
-    <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return subs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
-    }
-
     @Override
     public List<GraknException> validate() {
         return new ArrayList<>();

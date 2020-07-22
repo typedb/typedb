@@ -89,11 +89,13 @@ public class Bytes {
         bytes[2] = (byte) (num >>= 8);
         bytes[1] = (byte) (num >>= 8);
         bytes[0] = (byte) (num >> 8);
+        // TODO: bytes[0] = (byte) ((num >> 8) ^ 0x80);
         return bytes;
     }
 
     public static long bytesToLong(byte[] bytes) {
         assert bytes.length == LONG_SIZE;
+        // TODO: bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getLong();
     }
 

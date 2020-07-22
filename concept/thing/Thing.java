@@ -187,11 +187,6 @@ public interface Thing extends Concept {
     Stream<? extends Relation> relations(List<RoleType> roleTypes);
 
     /**
-     * Deletes this {@code Thing} from the system.
-     */
-    void delete();
-
-    /**
      * Returns true if this {@code Thing} has been deleted.
      *
      * @return true if this {@code Thing} has been deleted

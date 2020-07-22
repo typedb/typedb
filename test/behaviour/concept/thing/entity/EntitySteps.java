@@ -73,13 +73,6 @@ public class EntitySteps {
         put(var, tx().concepts().getEntityType(type).create().has(key));
     }
 
-    @When("{var} = entity\\( ?{type_label} ?) get instance with key: {var}")
-    public void entity_type_get_instance_with_key(String var1, String type, String var2) {
-        put(var1, get(var1).asAttribute().owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getEntityType(type)))
-                .findFirst().orElse(null));
-    }
-
     @When("{var} = entity\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")
     public void entity_type_get_instance_with_key(String var1, String type, String keyType, boolean keyValue) {
         put(var1, tx().concepts().getAttributeType(keyType).asBoolean().get(keyValue).owners()

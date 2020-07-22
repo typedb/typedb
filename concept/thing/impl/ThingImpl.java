@@ -90,7 +90,7 @@ public abstract class ThingImpl implements Thing {
     public Thing has(Attribute attribute) {
         if (type().attributes().noneMatch(t -> t.equals(attribute.type()))) {
             throw new GraknException(THING_ATTRIBUTE_UNDEFINED.message(vertex.type().label()));
-        } else if (type().keys().anyMatch(t -> t.equals(attribute.type()))) {
+        } else if (type().attributes(true).anyMatch(t -> t.equals(attribute.type()))) {
             if (keys(attribute.type()).findAny().isPresent()) {
                 throw new GraknException(THING_KEY_OVER.message(attribute.type().label(), type().label()));
             } else if (attribute.owners(type()).findAny().isPresent()) {
@@ -109,10 +109,10 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public Stream<? extends AttributeImpl> keys(List<AttributeType> attributeTypes) {
-        if (attributeTypes.isEmpty()) return attributes(type().keys().collect(toList()));
+        if (attributeTypes.isEmpty()) return attributes(type().attributes(true).collect(toList()));
 
         List<AttributeType> keyTypes = new ArrayList<>(attributeTypes);
-        keyTypes.retainAll(type().keys().collect(toList()));
+        keyTypes.retainAll(type().attributes(true).collect(toList()));
         if (keyTypes.isEmpty()) return Stream.empty();
         else return attributes(keyTypes);
     }
@@ -155,8 +155,8 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public void validate() {
-        if (keys().map(Attribute::type).count() < type().keys().count()) {
-            Set<AttributeType> missing = type().keys().collect(toSet());
+        if (keys().map(Attribute::type).count() < type().attributes(true).count()) {
+            Set<AttributeType> missing = type().attributes(true).collect(toSet());
             missing.removeAll(keys().map(Attribute::type).collect(toSet()));
             throw new GraknException(THING_KEY_MISSING.message(type().label(), printTypeSet(missing)));
         }

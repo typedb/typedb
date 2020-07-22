@@ -102,6 +102,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return relation().subs().filter(rel -> rel.roles().anyMatch(rol -> rol.equals(this)));
     }
 
+    @Override
     public void delete() {
         vertex.delete();
     }

@@ -73,13 +73,6 @@ public class RelationSteps {
         put(var, tx().concepts().getRelationType(type).create().has(key));
     }
 
-    @When("{var} = relation\\( ?{type_label} ?) get instance with key: {var}")
-    public void relation_type_get_instance_with_key(String var1, String type, String var2) {
-        put(var1, get(var2).asAttribute().owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
-                .findFirst().orElse(null));
-    }
-
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, boolean keyValue) {
         put(var1, tx().concepts().getAttributeType(keyType).asBoolean().get(keyValue).owners()

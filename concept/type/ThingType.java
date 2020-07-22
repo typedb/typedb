@@ -50,13 +50,13 @@ public interface ThingType extends Type {
 
     void unhas(AttributeType attributeType);
 
-    Stream<? extends AttributeType> keys(Class<?> valueType);
+    Stream<? extends AttributeType> attributes();
 
-    Stream<? extends AttributeType> keys();
+    Stream<? extends AttributeType> attributes(boolean isKeyOnly);
 
     Stream<? extends AttributeType> attributes(Class<?> valueType);
 
-    Stream<? extends AttributeType> attributes();
+    Stream<? extends AttributeType> attributes(Class<?> valueType, boolean isKeyOnly);
 
     void plays(RoleType roleType);
 
@@ -64,7 +64,5 @@ public interface ThingType extends Type {
 
     void unplay(RoleType roleType);
 
-    Stream<? extends RoleType> plays();
-
-    void delete();
+    Stream<? extends RoleType> playing();
 }

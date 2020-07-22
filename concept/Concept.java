@@ -39,6 +39,11 @@ public interface Concept {
 
     boolean isDeleted();
 
+    /**
+     * Deletes this {@code Thing} from the system.
+     */
+    void delete();
+
     default Type asType() {
         throw new GraknException(INVALID_TYPE_CASTING.message(Type.class.getCanonicalName()));
     }

@@ -241,13 +241,13 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get has key types contain:")
     public void thing_type_get_has_key_types_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
-        Set<String> actuals = get_thing_type(rootLabel, typeLabel).keys().map(Type::label).collect(toSet());
+        Set<String> actuals = get_thing_type(rootLabel, typeLabel).attributes(true).map(Type::label).collect(toSet());
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get has key types do not contain:")
     public void thing_type_get_has_key_types_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
-        Set<String> actuals = get_thing_type(rootLabel, typeLabel).keys().map(Type::label).collect(toSet());
+        Set<String> actuals = get_thing_type(rootLabel, typeLabel).attributes(true).map(Type::label).collect(toSet());
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
         }
@@ -334,7 +334,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles contain:")
     public void thing_type_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
-        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).playing().map(r -> {
             String[] labels = r.scopedLabel().split(":");
             return new Parameters.ScopedLabel(labels[0], labels[1]);
         }).collect(toSet());
@@ -343,7 +343,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain:")
     public void thing_type_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
-        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).plays().map(r -> {
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).playing().map(r -> {
             String[] labels = r.scopedLabel().split(":");
             return new Parameters.ScopedLabel(labels[0], labels[1]);
         }).collect(toSet());
