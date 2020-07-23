@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
-import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_SCHEMA_WRITES;
 import static grakn.core.common.exception.Error.Transaction.ILLEGAL_COMMIT;
@@ -301,7 +301,7 @@ class RocksTransaction implements Grakn.Transaction {
         public void mergeUntracked(byte[] key, long increment) {
             try {
                 readWriteLock.lockWrite();
-                rocksTransaction.mergeUntracked(key, longToBytes(increment));
+                rocksTransaction.mergeUntracked(key, longToSortedBytes(increment));
             } catch (RocksDBException | InterruptedException e) {
                 throw new GraknException(e);
             } finally {

@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.longToBytes;
-import static grakn.core.common.collection.Bytes.shortToBytes;
+import static grakn.core.common.collection.Bytes.longToSortedBytes;
+import static grakn.core.common.collection.Bytes.shortToSortedBytes;
 import static grakn.core.common.iterator.Iterators.filter;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;
@@ -49,13 +49,13 @@ public abstract class KeyGenerator {
     }
 
     public byte[] forType(PrefixIID root) {
-        return shortToBytes(typeKeys.computeIfAbsent(
+        return shortToSortedBytes(typeKeys.computeIfAbsent(
                 root, k -> new AtomicInteger(initialValue)
         ).getAndAdd(delta));
     }
 
     public byte[] forThing(VertexIID.Type typeIID) {
-        return longToBytes(thingKeys.computeIfAbsent(
+        return longToSortedBytes(thingKeys.computeIfAbsent(
                 typeIID, k -> new AtomicLong(initialValue)
         ).getAndAdd(delta));
     }

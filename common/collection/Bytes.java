@@ -58,28 +58,35 @@ public class Bytes {
         return true;
     }
 
-    public static byte[] shortToBytes(int num) {
+    public static byte[] shortToSortedBytes(int num) {
         byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
-        bytes[0] = (byte) (num >> 8);
+        bytes[0] = (byte) ((num >> 8) ^ 0x80);
         return bytes;
     }
 
-    public static Short bytesToShort(byte[] bytes) {
+    public static Short sortedBytesToShort(byte[] bytes) {
         assert bytes.length == SHORT_SIZE;
+        bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getShort();
     }
 
-    public static byte[] integerToBytes(int num) {
+    public static byte[] integerToSortedBytes(int num) {
         byte[] bytes = new byte[INTEGER_SIZE];
         bytes[3] = (byte) (num);
         bytes[2] = (byte) (num >>= 8);
         bytes[1] = (byte) (num >>= 8);
-        bytes[0] = (byte) (num >> 8);
+        bytes[0] = (byte) ((num >> 8) ^ 0x80);
         return bytes;
     }
 
-    public static byte[] longToBytes(long num) {
+    public static long sortedBytesToInteger(byte[] bytes) {
+        assert bytes.length == INTEGER_SIZE;
+        bytes[0] = (byte) (bytes[0] ^ 0x80);
+        return ByteBuffer.wrap(bytes).getInt();
+    }
+
+    public static byte[] longToSortedBytes(long num) {
         byte[] bytes = new byte[LONG_SIZE];
         bytes[7] = (byte) (num);
         bytes[6] = (byte) (num >>= 8);
@@ -88,33 +95,53 @@ public class Bytes {
         bytes[3] = (byte) (num >>= 8);
         bytes[2] = (byte) (num >>= 8);
         bytes[1] = (byte) (num >>= 8);
-        bytes[0] = (byte) (num >> 8);
-        // TODO: bytes[0] = (byte) ((num >> 8) ^ 0x80);
+        bytes[0] = (byte) ((num >> 8) ^ 0x80);
         return bytes;
     }
 
-    public static long bytesToLong(byte[] bytes) {
+    public static long sortedBytesToLong(byte[] bytes) {
         assert bytes.length == LONG_SIZE;
-        // TODO: bytes[0] = (byte) (bytes[0] ^ 0x80);
+        bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getLong();
     }
 
-    public static byte[] doubleToBytes(double value) {
-        return ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
-        // TODO: We need to implement a custom byte representation of doubles.
-        //       The bytes need to be lexicographically sortable in the same
-        //       order as the numerical values of themselves.
-        //       I.e. The bytes of -10 need to come before -1, -1 before 0,
-        //       0 before 1, and 1 before 10, and so on. This is not true with
-        //       the (default) 2's complement byte representation of doubles.
-        //       We need to XOR all positive numbers with 0x8000... and XOR
-        //       negative numbers with 0xffff... This should flip the sign bit
-        //       on both (so negative numbers go first), and then reverse the
-        //       ordering on negative numbers.
+    /**
+     * Convert {@code double} to lexicographically sorted bytes.
+     *
+     * We need to implement a custom byte representation of doubles. The bytes
+     * need to be lexicographically sortable in the same order as the numerical
+     * values of themselves. I.e. The bytes of -10 need to come before -1, -1
+     * before 0, 0 before 1, and 1 before 10, and so on. This is not true with
+     * the (default) 2's complement byte representation of doubles.
+     *
+     * We need to XOR all positive numbers with 0x8000... and XOR negative
+     * numbers with 0xffff... This should flip the sign bit on both (so negative
+     * numbers go first), and then reverse the ordering on negative numbers.
+     *
+     * @param value the {@code double} value to convert
+     * @return the sorted byte representation of the {@code double} value
+     */
+    public static byte[] doubleToSortedBytes(double value) {
+        byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
+        if (value >= 0) {
+            bytes[0] = (byte) (bytes[0] ^ 0x80);
+        } else {
+            for (int i = 0; i < DOUBLE_SIZE; i++) {
+                bytes[i] = (byte) (bytes[i] ^ 0xff);
+            }
+        }
+        return bytes;
     }
 
-    public static double bytesToDouble(byte[] bytes) {
+    public static double sortedBytesToDouble(byte[] bytes) {
         assert bytes.length == DOUBLE_SIZE;
+        if ((bytes[0] & 0x80) == 0x80) {
+            bytes[0] = (byte) (bytes[0] ^ 0x80);
+        } else {
+            for (int i = 0; i < DOUBLE_SIZE; i++) {
+                bytes[i] = (byte) (bytes[i] ^ 0xff);
+            }
+        }
         return ByteBuffer.wrap(bytes).getDouble();
     }
 
@@ -137,11 +164,11 @@ public class Bytes {
     }
 
     public static byte[] dateTimeToBytes(java.time.LocalDateTime value, ZoneId timeZoneID) {
-        return longToBytes(value.atZone(timeZoneID).toInstant().toEpochMilli());
+        return longToSortedBytes(value.atZone(timeZoneID).toInstant().toEpochMilli());
     }
 
     public static java.time.LocalDateTime bytesToDateTime(byte[] bytes, ZoneId timeZoneID) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), timeZoneID);
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(sortedBytesToLong(bytes)), timeZoneID);
     }
 
     public static byte[] uuidToBytes(UUID uuid) {

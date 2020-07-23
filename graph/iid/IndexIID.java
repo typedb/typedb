@@ -28,13 +28,13 @@ import static grakn.core.common.collection.Bytes.LONG_SIZE;
 import static grakn.core.common.collection.Bytes.booleanToByte;
 import static grakn.core.common.collection.Bytes.byteToBoolean;
 import static grakn.core.common.collection.Bytes.bytesToDateTime;
-import static grakn.core.common.collection.Bytes.bytesToDouble;
-import static grakn.core.common.collection.Bytes.bytesToLong;
+import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
+import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.bytesToString;
 import static grakn.core.common.collection.Bytes.dateTimeToBytes;
-import static grakn.core.common.collection.Bytes.doubleToBytes;
+import static grakn.core.common.collection.Bytes.doubleToSortedBytes;
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.stringToBytes;
 import static grakn.core.graph.util.Schema.STRING_ENCODING;
 import static grakn.core.graph.util.Schema.TIME_ZONE_ID;
@@ -90,11 +90,11 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.LONG.bytes(), longToBytes(value), typeIID.bytes);
+            return newAttributeIndex(Schema.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.DOUBLE.bytes(), doubleToBytes(value), typeIID.bytes);
+            return newAttributeIndex(Schema.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
@@ -114,10 +114,10 @@ public abstract class IndexIID extends IID {
                     value = byteToBoolean(bytes[VALUE_INDEX]).toString();
                     break;
                 case LONG:
-                    value = bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                    value = sortedBytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
                     break;
                 case DOUBLE:
-                    value = bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                    value = sortedBytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
                     break;
                 case STRING:
                     value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), STRING_ENCODING);

@@ -28,14 +28,14 @@ import static grakn.core.common.collection.Bytes.LONG_SIZE;
 import static grakn.core.common.collection.Bytes.booleanToByte;
 import static grakn.core.common.collection.Bytes.byteToBoolean;
 import static grakn.core.common.collection.Bytes.bytesToDateTime;
-import static grakn.core.common.collection.Bytes.bytesToDouble;
-import static grakn.core.common.collection.Bytes.bytesToLong;
-import static grakn.core.common.collection.Bytes.bytesToShort;
+import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
+import static grakn.core.common.collection.Bytes.sortedBytesToLong;
+import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static grakn.core.common.collection.Bytes.bytesToString;
 import static grakn.core.common.collection.Bytes.dateTimeToBytes;
-import static grakn.core.common.collection.Bytes.doubleToBytes;
+import static grakn.core.common.collection.Bytes.doubleToSortedBytes;
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.longToBytes;
+import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.stringToBytes;
 import static grakn.core.common.exception.Error.ThingRead.INVALID_IID_CASTING;
 import static grakn.core.graph.util.Schema.STRING_ENCODING;
@@ -91,7 +91,7 @@ public abstract class VertexIID extends IID {
         public String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + schema().toString() + "]" +
-                        "[" + (VertexIID.Type.LENGTH - PrefixIID.LENGTH) + ": " + bytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + "]";
+                        "[" + (VertexIID.Type.LENGTH - PrefixIID.LENGTH) + ": " + sortedBytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + "]";
             }
             return readableString;
         }
@@ -161,7 +161,7 @@ public abstract class VertexIID extends IID {
                 readableString = "[" + PrefixIID.LENGTH + ": " + schema().toString() + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                         "[" + (DEFAULT_LENGTH - PREFIX_W_TYPE_LENGTH) + ": " +
-                        bytesToLong(copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
+                        sortedBytesToLong(copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
             }
             return readableString;
         }
@@ -294,7 +294,7 @@ public abstract class VertexIID extends IID {
             }
 
             public Long(Type typeIID, long value) {
-                super(Schema.ValueType.LONG, typeIID, longToBytes(value));
+                super(Schema.ValueType.LONG, typeIID, longToSortedBytes(value));
             }
 
             public static VertexIID.Attribute.Long extract(byte[] bytes, int from) {
@@ -303,7 +303,7 @@ public abstract class VertexIID extends IID {
 
             @Override
             public java.lang.Long value() {
-                return bytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
+                return sortedBytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
             }
 
             @Override
@@ -319,7 +319,7 @@ public abstract class VertexIID extends IID {
             }
 
             public Double(Type typeIID, double value) {
-                super(Schema.ValueType.DOUBLE, typeIID, doubleToBytes(value));
+                super(Schema.ValueType.DOUBLE, typeIID, doubleToSortedBytes(value));
             }
 
             public static VertexIID.Attribute.Double extract(byte[] bytes, int from) {
@@ -328,7 +328,7 @@ public abstract class VertexIID extends IID {
 
             @Override
             public java.lang.Double value() {
-                return bytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
+                return sortedBytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
             }
 
             @Override
