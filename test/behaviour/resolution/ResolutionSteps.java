@@ -114,9 +114,10 @@ public class ResolutionSteps {
     public void equivalent_answer_set(final String equivalentQuery) {
         assertNotNull("A graql query must have been previously loaded in order to test answer equivalence.", queryToTest);
         assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-        final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
-        final List<ConceptMap> newAnswers = reasonedTx.execute(Graql.parse(equivalentQuery).asGet());
-        assertCollectionsEqual(answers, newAnswers);
+        try (final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ)) {
+            final List<ConceptMap> newAnswers = reasonedTx.execute(Graql.parse(equivalentQuery).asGet());
+            assertCollectionsEqual(answers, newAnswers);
+        }
     }
 
     @Then("all answers are correct in reasoned keyspace")
