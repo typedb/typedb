@@ -48,6 +48,7 @@ import grakn.core.graql.reasoner.atom.task.validate.RelationAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -433,15 +434,15 @@ public class RelationAtom extends Atom {
         return validator.validateAsRuleBody(this, ruleLabel, context());
     }
 
-    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes) {
-        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true));
+    public boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes, Type parentTypeExact) {
+        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, true, parentTypeExact));
     }
 
-    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes) {
-        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false));
+    public boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes, Type parentTypeExact) {
+        return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false, parentTypeExact));
     }
 
-    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy) {
+    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy, Type parentTypeExact) {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         List<Role> roleRequirements = getRoleVarMap().entries().stream()
@@ -453,7 +454,9 @@ public class RelationAtom extends Atom {
 
         if (roleRequirements.isEmpty()) return true;
 
-        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
+        // in some cases, the parent types are not specified by ISA but by ID directly - then we do no have to search subtypes for compatibility
+        Set<Type> parentTypes = parentTypeExact != null ? Sets.newHashSet(parentTypeExact) : parentType.subs().collect(Collectors.toSet());
+
         return roleRequirements.stream()
                 //include sub roles
                 .flatMap(role -> includeRoleHierarchy ? role.subs() : Stream.of(role))

@@ -26,7 +26,6 @@ java_test(
         "//common",
         "//graql/reasoner",
         "//kb/server",
-        "//test/common:graql-test-util",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",

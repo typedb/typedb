@@ -51,8 +51,8 @@ filegroup(
 )
 
 filegroup(
-    name = "type-inference",
-    srcs = ["typeInferenceTest.gql"],
+    name = "rule-applicability-new",
+    srcs = ["ruleApplicabilityTest2.gql"],
 )
 
 filegroup(

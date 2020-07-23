@@ -64,6 +64,10 @@ public class RuleScalingIT {
         setupSchema(session, N);
         setupRules(session, N);
 
+
+        // note: roles do not have to be shared, specific relation always used to query
+        // can generate new roles with relation
+
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             for (int k = 0; k < populatedChains; k++) {
                 tx.execute(Graql.<GraqlInsert>parse(

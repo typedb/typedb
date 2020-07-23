@@ -33,12 +33,12 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 
@@ -49,52 +49,62 @@ public class AtomicConversionIT {
 
     private static Session session;
 
-    private static Conjunction<Statement> attributePattern;
-    private static Conjunction<Statement> relationPattern;
-    private static Variable attributeVar;
-    private static Variable relationVar;
-
-    @BeforeClass
-    public static void loadContext(){
-        final String resourcePath = "test/integration/graql/reasoner/resources/";
+    @Before
+    public void before() {
+        // prepare the test server
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", session);
-
-        Statement has = Graql.var("x").has("resource", "b");
-        attributeVar = has.getProperties(HasAttributeProperty.class).iterator().next().attribute().var();
-        Statement id = Graql.var(attributeVar).id("V123");
-        attributePattern = Graql.and(Sets.newHashSet(has, id));
-
-        relationVar = Graql.var("r").var();
-        Statement rel = Graql.var(relationVar).rel("baseRole1", "x").rel("baseRole2", "y").isa("binary");
-        Statement rId = Graql.var(relationVar).id("V123");
-        relationPattern = Graql.and(Sets.newHashSet(rel, rId));
     }
 
-    @AfterClass
-    public static void finalise(){
+    @After
+    public void after() {
         session.close();
     }
 
     @Test
-    public void whenConvertingAttributeToIsaAtom_predicatesArePreserved(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+    public void whenConvertingAttributeToIsaAtom_predicatesArePreserved() {
+        // define schema
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "person sub entity, has name; " +
+                    "name sub attribute, value string;").asDefine());
+            tx.commit();
+        }
+
+        Statement has = Graql.var("x").has("name", "john");
+        Variable attributeVar = has.getProperties(HasAttributeProperty.class).iterator().next().attribute().var();
+        Statement id = Graql.var(attributeVar).id("V123");
+        Conjunction<Statement> attributePattern = Graql.and(Sets.newHashSet(has, id));
+
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
             Atom attribute = reasonerQueryFactory.atomic(attributePattern).getAtom();
             IsaAtom isa = attribute.toIsaAtom();
 
             assertEquals(
                     attribute.getAllPredicates(attributeVar, Predicate.class).collect(toSet()),
                     isa.getAllPredicates(attributeVar, Predicate.class).collect(toSet())
-                    );
+            );
         }
     }
 
     @Test
-    public void whenConvertingRelationToIsaAtom_predicatesArePreserved(){
-        try(Transaction tx = session.transaction(Transaction.Type.READ)){
-            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+    public void whenConvertingRelationToIsaAtom_predicatesArePreserved() {
+        // define schema
+
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "employment sub relation, relates employer, relates employee;").asDefine());
+            tx.commit();
+        }
+
+        Variable relationVar = Graql.var("r").var();
+        Statement rel = Graql.var(relationVar).rel("employer", "x").rel("employee", "y").isa("employment");
+        Statement rId = Graql.var(relationVar).id("V123");
+        Conjunction<Statement> relationPattern = Graql.and(Sets.newHashSet(rel, rId));
+
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
             Atom relation = reasonerQueryFactory.atomic(relationPattern).getAtom();
             IsaAtom isa = relation.toIsaAtom();
 

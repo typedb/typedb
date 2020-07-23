@@ -163,6 +163,15 @@ typed-relation-rule sub rule,
     	(someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
     };
 
+
+typed-relation-description-rule sub rule,
+    when {
+        $r1 (someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
+    },
+    then {
+        $r1 has description 'reified';
+    };
+
 attributed-relation-string-rule sub rule,
     when {
     	$x isa singleRoleEntity, has resource-string 'someValue';

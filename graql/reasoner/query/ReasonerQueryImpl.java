@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
@@ -87,6 +88,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+
+import static grakn.core.core.Schema.PLACEHOLDER_ID;
 
 /**
  *
@@ -366,10 +369,18 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     private Stream<Pair<Variable, Type>> typeMappings(){
-        return isas()
+//        Stream<Pair<Variable, Type>> typesById = getIdPredicates().stream()
+//                .filter(id -> !id.isPlaceholder())
+//                .map(id -> {
+//                    Concept concept = context().conceptManager().getConcept(id.getPredicate());
+//                    Type type = concept.isThing() ? concept.asThing().type() : concept.asType();
+//                    return new Pair<>(id.getVarName(), type);
+//                });
+        Stream<Pair<Variable, Type>> typesByIsa = isas()
                 .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                 .filter(at -> at.getSchemaConcept().isType())
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept().asType()));
+        return Streams.concat(typesByIsa);
     }
 
     private Stream<Pair<Variable, Type>> inferEntityTypes(ConceptMap sub) {
@@ -577,7 +588,6 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         );
     }
 
-    private static final String PLACEHOLDER_ID = "000000";
 
     /**
      * @return true if this query has complete entries in the cache

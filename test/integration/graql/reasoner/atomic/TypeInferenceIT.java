@@ -18,7 +18,6 @@
 package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.concept.answer.ConceptMap;
@@ -29,17 +28,16 @@ import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.test.common.GraqlTestUtil;
 import grakn.core.test.rule.GraknTestStorage;
 import grakn.core.test.rule.SessionUtil;
 import grakn.core.test.rule.TestTransactionProvider;
-import grakn.core.test.common.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
@@ -53,13 +51,12 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -67,30 +64,84 @@ import static org.junit.Assert.assertNull;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class TypeInferenceIT {
 
-    private static String resourcePath = "test/integration/graql/reasoner/resources/";
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session testContextSession;
+    private static Session session;
     private Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        testContextSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath,"typeInferenceTest.gql", testContextSession);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            /*
+            People can own dogs and toys and be employed
+            pets can own toys, or borrow toys from other pets or people
+            Dogs can chew dog-toys
+            Companies can be employers only
+             */
+            tx.execute(Graql.parse("define " +
+                    "ownership sub relation," +
+                    "  relates owner," +
+                    "  relates owned;" +
+                    "borrowing sub ownership," +
+                    "  relates owner," +
+                    "  relates owned," +
+                    "  relates borrowed as owned," +
+                    "  relates borrower as owner," +
+                    "  relates supplier as owner;" +
+                    "employment sub relation," +
+                    "  relates employer," +
+                    "  relates employee;" +
+                    "chews sub relation," +
+                    "  relates chewed," +
+                    "  relates chewer;" +
+                    "root-entity sub entity;" +
+                    "person sub root-entity," +
+                    "  plays owner," +
+                    "  plays borrower," +
+                    "  plays supplier," +
+                    "  plays employee;" +
+                    "pet sub root-entity," +
+                    "  plays owner," +
+                    "  plays owned," +
+                    "  plays borrowed," +
+                    "  plays borrower," +
+                    "  plays supplier;" +
+                    "dog sub pet," +
+                    "  plays chewer;" +
+                    "toy sub root-entity," +
+                    "  plays owned," +
+                    "  plays borrowed;" +
+                    "dog-toy sub toy," +
+                    "  plays chewed;" +
+                    "company sub root-entity," +
+                    "  plays employer;" +
+                    "").asDefine());
+
+            tx.execute(Graql.parse("insert" +
+                    "$root isa root-entity;" +
+                    "$pet isa pet;" +
+                    "$dog isa dog;" +
+                    "$person isa person;" +
+                    "$company isa company; " +
+                    "$toy isa toy;" +
+                    "$dog-toy isa dog-toy;"
+                    ).asInsert());
+            tx.commit();
+        }
     }
 
     @AfterClass
     public static void closeSession(){
-        testContextSession.close();
+        session.close();
     }
-
 
     @Before
     public void setup() {
-        tx = testContextSession.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -98,218 +149,283 @@ public class TypeInferenceIT {
         tx.close();
     }
 
+    /*
+    COllapse a super type and a subtype into the subtype only -- aggregate type information downward
+     */
     @Test
     public void whenCalculatingTypeMaps_typesAreCollapsedCorrectly(){
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        ReasonerQuery query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa singleRoleEntity;$x isa twoRoleEntity;};"));
-        assertEquals(tx.getEntityType("twoRoleEntity"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+        ReasonerQuery query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa pet;$x isa dog;};"));
+        assertEquals(tx.getEntityType("dog"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
 
-        query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};"));
-        assertEquals(tx.getType(Label.of("singleRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+        query = reasonerQueryFactory.atomic(conjunction("{($x); $x isa entity;$x isa pet;};"));
+        assertEquals(tx.getType(Label.of("pet")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
     }
 
+    /*
+    Test type inference using a single role player type to obtain all possible relation types
+     */
     @Test
     public void testTypeInference_singleGuard() {
-        //parent of all roles so all relations possible
-        String patternString = "{ $x isa noRoleEntity; ($x, $y); };";
-        String subbedPatternString = "{ $x id " + conceptId(tx, "noRoleEntity") + ";($x, $y); };";
+        //parent of all role players so all relations possible
+        String patternString = "{ $x isa root-entity; ($x, $y); };";
+        String subbedPatternString = "{ $x id " + conceptId(tx, "root-entity") + ";($x, $y); };";
 
-        //SRE -> rel2
-        //sub(SRE)=TRE -> rel3
-        String patternString2 = "{ $x isa singleRoleEntity; ($x, $y); };";
-        String subbedPatternString2 = "{ $x id " + conceptId(tx, "singleRoleEntity") + ";($x, $y); };";
+        //pet -> ownership, borrowing
+        //sub(pet)=dog -> chewing
+        String patternString2 = "{ $x isa pet; ($x, $y); };";
+        String subbedPatternString2 = "{ $x id " + conceptId(tx, "pet") + ";($x, $y); };";
 
-        //TRE -> rel3
-        String patternString3 = "{ $x isa twoRoleEntity; ($x, $y); };";
-        String subbedPatternString3 = "{ $x id " + conceptId(tx, "twoRoleEntity") + ";($x, $y); };";
+        //pet -> chewing
+        String patternString3 = "{ $x isa dog; ($x, $y); };";
+        String subbedPatternString3 = "{ $x id " + conceptId(tx, "dog") + ";($x, $y); };";
 
-        List<Type> possibleTypes = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        // note that type inference doesn't return ALL subtypes of the allowed types, it just returns the most super type
+        List<Type> possibleTypes = Arrays.asList(
+                tx.getType(Label.of("employment")),
+                tx.getType(Label.of("ownership")),
+                tx.getType(Label.of("chews"))
         );
 
-        typeInference(allRelations(tx), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(possibleTypes, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
-    }
-
-    @Test
-    public void testTypeInference_doubleGuard() {
-        //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
-        String patternString = "{ $x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString = "{($x, $y);" +
-                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
-
-        //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
-        String patternString2 = "{ $x isa twoRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString2 = "{($x, $y);" +
-                "$x id " + conceptId(tx, "twoRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
-
-        //{rel1} ^ {rel1, rel2, rel3} = {rel1}
-        String patternString3 = "{ $x isa yetAnotherSingleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString3 = "{($x, $y);" +
-                "$x id " + conceptId(tx, "yetAnotherSingleRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
-
-        List<Type> possibleTypes = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes2 = Arrays.asList(
+                tx.getType(Label.of("ownership")),
+                tx.getType(Label.of("chews"))
         );
-
-        List<Type> possibleTypes2 = Collections.singletonList(tx.getType(Label.of("twoRoleBinary")));
 
         typeInference(possibleTypes, patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes2, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
         typeInference(possibleTypes2, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
     }
 
+    /*
+    Use two role player types to constrain the relation types
+     */
+    @Test
+    public void testTypeInference_doubleGuard() {
+        //{ownership, borrowing, employment} ^ {ownership, borrowing, chews} = {ownership, borrowing}
+        String patternString1 = "{ $x isa person; ($x, $y); $y isa dog; };";
+        String subbedPatternString1 = "{($x, $y);" +
+                "$x id " + conceptId(tx, "person") + ";" +
+                "$y id " + conceptId(tx, "dog") +";};";
+
+        // note [ ] indicates that this is possible because of downward (isa) inheritance
+        //{ownership, borrowing, employment} ^ {employment} = {employment}
+        String patternString2 = "{ $x isa person; ($x, $y); $y isa company; };";
+        String subbedPatternString2 = "{($x, $y);" +
+                "$x id " + conceptId(tx, "person") + ";" +
+                "$y id " + conceptId(tx, "company") +";};";
+
+        //{ownership, borrowing, employment} ^ {ownership, borrowing, [chews]} = {employment, borrowing}
+        String patternString3 = "{ $x isa person; ($x, $y); $y isa toy; };";
+        String subbedPatternString3 = "{($x, $y);" +
+                "$x id " + conceptId(tx, "person") + ";" +
+                "$y id " + conceptId(tx, "toy") +";};";
+
+        //{ownership, borrowing, [chews]} ^ {ownership, borrowing, [chews]} = {ownership, borrowing, chews}
+        String patternString4 = "{ $x isa toy; ($x, $y); $y isa toy; };";
+        String subbedPatternString4 = "{($x, $y);" +
+                "$x id " + conceptId(tx, "toy") + ";" +
+                "$y id " + conceptId(tx, "toy") +";};";
+
+        // type inference only keeps the top-most inferred type
+        List<Type> possibleTypesOwnership = Arrays.asList(
+                tx.getType(Label.of("ownership"))
+//                tx.getType(Label.of("borrowing"))
+        );
+
+        List<Type> possibleTypes2 = Arrays.asList(
+                tx.getType(Label.of("employment"))
+        );
+
+        // type inference only keeps the top-most inferred type
+        List<Type> possibleTypes4 = Arrays.asList(
+                tx.getType(Label.of("ownership")),
+//                tx.getType(Label.of("borrowing"))
+                tx.getType(Label.of("chews"))
+        );
+
+
+        typeInference(possibleTypesOwnership, patternString1, subbedPatternString1, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes2, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypesOwnership, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes4, patternString4, subbedPatternString4, (TestTransactionProvider.TestTransaction)tx);
+    }
+
+    /*
+    A single role type limits the relation types
+    In general, we expect a single relation to have a role (the originating one)
+
+    TODO investigate this code path and see if this assumption can simplify code now
+     */
     @Test
     public void testTypeInference_singleRole() {
-        String patternString = "{ (role1: $x, $y); };";
-        String patternString2 = "{ (role2: $x, $y); };";
-        String patternString3 = "{ (role3: $x, $y); };";
+        String patternString = "{ (owner: $x, $y); };";
+        String patternString2 = "{ (supplier: $x, $y); };";
+        String patternString3 = "{ (chewer: $x, $y); };";
 
-        List<Type> possibleTypes = Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary")));
-        List<Type> possibleTypes2 = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        List<Type> possibleTypes =  Arrays.asList(
+                tx.getType(Label.of("ownership")) // we only keep the super, so don't have borrower too
+        );
+        List<Type> possibleTypes2 =  Arrays.asList(
+                tx.getType(Label.of("borrowing"))
+        );
+        List<Type> possibleTypes3 =  Arrays.asList(
+                tx.getType(Label.of("chews"))
         );
 
         typeInference(possibleTypes, patternString, tx);
-        typeInference(allRelations(tx), patternString2, tx);
-        typeInference(possibleTypes2, patternString3, tx);
+        typeInference(possibleTypes2, patternString2, tx);
+        typeInference(possibleTypes3, patternString3, tx);
     }
 
+    /*
+    A sub role limits the relation type to a single relation type
+     */
     @Test
     public void testTypeInference_singleRole_subType() {
-        String patternString = "{ (subRole2: $x, $y); };";
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, tx);
+        String patternString = "{ (borrower: $x, $y); };";
+        typeInference(Arrays.asList(tx.getType(Label.of("borrowing"))), patternString, tx);
     }
 
+    /*
+    Combinations of a role type and a player type to constrain a binary relation
+     */
     @Test
     public void testTypeInference_singleRole_singleGuard() {
 
-        //{rel1, rel2, rel3} ^ {rel2, rel3}
-        String patternString = "{ (role2: $x, $y); $y isa singleRoleEntity; };";
-        String subbedPatternString = "{(role2: $x, $y);" +
-                "$y id " + conceptId(tx, "singleRoleEntity") + ";};";
-        //{rel1, rel2, rel3} ^ {rel2, rel3}
-        String patternString2 = "{ (role2: $x, $y); $y isa twoRoleEntity; };";
-        String subbedPatternString2 = "{(role2: $x, $y);" +
-                "$y id " + conceptId(tx, "twoRoleEntity") + ";};";
-        //{rel1} ^ {rel1, rel2, rel3}
-        String patternString3 = "{ (role1: $x, $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString3 = "{(role1: $x, $y);" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") + ";};";
+        //{borrowing} ^ {ownership, borrowing, employment} = {borrowing}
+        String patternString = "{ (borrower: $x, $y); $y isa person; };";
+        String subbedPatternString = "{(borrower: $x, $y);" +
+                "$y id " + conceptId(tx, "person") + ";};";
+        //{ownership, borrowing} ^ {ownership, borrowing, employment = {ownership, borrowing}
+        String patternString2 = "{ (owner: $x, $y); $y isa person; };";
+        String subbedPatternString2 = "{(owner: $x, $y);" +
+                "$y id " + conceptId(tx, "person") + ";};";
+        //{chews} ^ {ownership, borrowing, [chews]} = {chews}
+        String patternString3 = "{ (chewed: $x, $y); $y isa pet; };";
+        String subbedPatternString3 = "{(chewed: $x, $y);" +
+                "$y id " + conceptId(tx, "pet") + ";};";
 
-        List<Type> possibleTypes = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        List<Type> possibleTypesBorrowing = Arrays.asList(
+                tx.getType(Label.of("borrowing"))
         );
-
-        typeInference(possibleTypes, patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("twoRoleBinary"))), patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
+        // inference only return topmost type of hierarchy
+        List<Type> possibleTypesOwnership = Arrays.asList(
+                tx.getType(Label.of("ownership"))
+//                tx.getType(Label.of("ownership"))
+        );
+        List<Type> possibleTypesChews = Arrays.asList(
+                tx.getType(Label.of("chews"))
+        );
+        typeInference(possibleTypesBorrowing, patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypesOwnership, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypesChews, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
     }
 
+    /*
+    Using a subrole and a player that is a subtype to constrain the relation type
+     */
     @Test
     public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
-        //{rel3} ^ {rel2, rel3}
-        String patternString = "{ (subRole2: $x, $y); $y isa twoRoleEntity; };";
-        String subbedPatternString = "{(subRole2: $x, $y);" +
-                "$y id " + conceptId(tx, "twoRoleEntity") + ";};";
-        //{rel3} ^ {rel1, rel2, rel3}
-        String patternString2 = "{ (subRole2: $x, $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString2 = "{(subRole2: $x, $y);" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") + ";};";
+        //{borrowing} ^ {ownership, borrowing, chews}
+        String patternString = "{ (borrowed: $x, $y); $y isa dog; };";
+        String subbedPatternString = "{(borrower: $x, $y);" +
+                "$y id " + conceptId(tx, "dog") + ";};";
+        //{borrowing} ^ {ownership, borrowing, chews}
+        String patternString2 = "{ (supplier: $x, $y); $y isa dog-toy; };";
+        String subbedPatternString2 = "{(supplier: $x, $y);" +
+                "$y id " + conceptId(tx, "dog-toy") + ";};";
 
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
+        typeInference(Arrays.asList(tx.getSchemaConcept(Label.of("borrowing"))), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(Arrays.asList(tx.getSchemaConcept(Label.of("borrowing"))), patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
     }
 
+    /*
+    A contradiction in role and role player
+     */
     @Test
     public void testTypeInference_singleRole_singleGuard_typeContradiction() {
-        //{rel1} ^ {rel2}
-        String patternString = "{ (role1: $x, $y); $y isa singleRoleEntity; };";
-        String subbedPatternString = "{(role1: $x, $y);" +
-                "$y id " + conceptId(tx, "singleRoleEntity") + ";};";
-        String patternString2 = "{ (role1: $x, $y); $x isa singleRoleEntity; };";
-        String subbedPatternString2 = "{(role1: $x, $y);" +
-                "$x id " + conceptId(tx, "singleRoleEntity") + ";};";
+        String patternString = "{ (employee: $x, $y); $y isa dog; };";
+        String subbedPatternString = "{(employee: $x, $y);" +
+                "$y id " + conceptId(tx, "dog") + ";};";
+        String patternString2 = "{ (chewer: $x, $y); $x isa person; };";
+        String subbedPatternString2 = "{(chewer: $x, $y);" +
+                "$x id " + conceptId(tx, "person") + ";};";
 
         typeInference(Collections.emptyList(), patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
         typeInference(Collections.emptyList(), patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
     }
 
+    /*
+    constrained binary relation by a role and two role player types
+     */
     @Test
     public void testTypeInference_singleRole_doubleGuard() {
-        //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{ $x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString = "{(role2: $x, $y);" +
-                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
+        //{ownership, borrowing, employment} ^ {ownership, [borrowing]} ^ {ownership, borrowing, chews}
+        String patternString = "{ $x isa person;(owner: $x, $y); $y isa dog; };";
+        String subbedPatternString = "{(owner: $x, $y);" +
+                "$x id " + conceptId(tx, "person") + ";" +
+                "$y id " + conceptId(tx, "dog") +";};";
 
-        List<Type> possibleTypes = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        // inference only returns topmost inferred type
+        List<Type> possibleTypes = Arrays.asList(
+                tx.getType(Label.of("ownership"))
+//                tx.getType(Label.of("borrowing"))
         );
         typeInference(possibleTypes, patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard() {
-        //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{ $x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity; };";
-        String subbedPatternString = "{(subRole2: $x, role3: $y);" +
-                "$x id " + conceptId(tx, "threeRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "threeRoleEntity") + ";};";
+        //{ownership, borrowing, employment} ^ {borrowing} ^ {ownership, borrowing} ^ {ownership, borrowing, [chews]}
+        String patternString = "{ $x isa person;(supplier: $x, owned: $y); $y isa toy; };";
+        String subbedPatternString = "{(supplier: $x, owned: $y);" +
+                "$x id " + conceptId(tx, "person") + ";" +
+                "$y id " + conceptId(tx, "toy") + ";};";
 
-        //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString2 = "{ $x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString2 = "{(role2: $x, role3: $y);" +
-                "$x id " + conceptId(tx, "threeRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
+        //{ownership, borrowing, employment} ^ {ownership, [borrowing]} ^ {ownership, [borrowing]} ^ {ownership, borrowing, [chews]}
+        String patternString2 = "{ $x isa person;(owner: $x, owned: $y); $y isa dog-toy; };";
+        String subbedPatternString2 = "{(owner: $x, owned: $y);" +
+                "$x id " + conceptId(tx, "person") + ";" +
+                "$y id " + conceptId(tx, "dog-toy") +";};";
 
-        typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
-
-        List<Type> possibleTypes = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
-        );
-        typeInference(possibleTypes, patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
+        typeInference(Arrays.asList(tx.getType(Label.of("borrowing"))), patternString, subbedPatternString,(TestTransactionProvider.TestTransaction) tx);
+        typeInference(Arrays.asList(tx.getType(Label.of("ownership"))), patternString2, subbedPatternString2,(TestTransactionProvider.TestTransaction) tx);
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_contradiction() {
-        //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{ $x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity; };";
-        String subbedPatternString = "{(role1: $x, role2: $y);" +
-                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
-
-        //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString2 = "{ $x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity; };";
-        String subbedPatternString2 = "{(role1: $x, role2: $y);" +
-                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
-                "$y id " + conceptId(tx, "anotherSingleRoleEntity") +";};";
+        //{employment} ^ {borrowing} ^ {ownership, borrowing} ^ {ownership, borrowing, [chews]}
+        String patternString = "{ $x isa company;(supplier: $x, owned: $y); $y isa toy; };";
+        String subbedPatternString = "{(supplier: $x, owned: $y);" +
+                "$x id " + conceptId(tx, "company") + ";" +
+                "$y id " + conceptId(tx, "toy") +";};";
 
         typeInference(Collections.emptyList(), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
     }
 
     @Test
     public void testTypeInference_metaGuards() {
         String patternString = "{ ($x, $y);$x isa entity; $y isa entity; };";
-        typeInference(allRelations(tx), patternString, tx);
+        List<Type> allNonMetaRootRelations = Arrays.asList(
+                tx.getType(Label.of("ownership")),
+                tx.getType(Label.of("chews")),
+                tx.getType(Label.of("employment"))
+        );
+        typeInference(allNonMetaRootRelations, patternString, tx);
     }
 
     @Test
     public void testTypeInference_genericRelation() {
         String patternString = "{ ($x, $y); };";
-        typeInference(allRelations(tx), patternString, tx);
+        List<Type> allNonMetaRootRelations = Arrays.asList(
+                tx.getType(Label.of("ownership")),
+                tx.getType(Label.of("chews")),
+                tx.getType(Label.of("employment"))
+//                tx.getType(Label.of("ownership"))
+        );
+        typeInference(allNonMetaRootRelations, patternString, tx);
     }
 
     private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Variable> vars){
@@ -320,10 +436,15 @@ public class TypeInferenceIT {
 
     @Test
     public void testTypeInference_conjunctiveQuery() {
+
+        // first relation is either an ownership or a  borrowing
+        // last relation is employment only, so $z must be a company or person
+        // which means that the middle relation must be an employment, or ownership or borrowing
+
         String patternString = "{" +
-                "($x, $y); $x isa anotherSingleRoleEntity;" +
-                "($y, $z); $y isa anotherTwoRoleEntity;" +
-                "($z, $w); $w isa threeRoleEntity;" +
+                "($x, $y); $x isa dog;" +
+                "($y, $z); $y isa person;" +
+                "($z, $w); $w isa company;" +
                 "};";
 
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
@@ -340,19 +461,23 @@ public class TypeInferenceIT {
         assertCollectionsNonTriviallyEqual(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
 
         //differently prioritised options arise from using neighbour information
-        List<Type> firstTypeOption = Lists.newArrayList(
-                tx.getType(Label.of("twoRoleBinary")),
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        List<Type> firstTypeOption = Arrays.asList(
+                tx.getType(Label.of("ownership"))
+//                tx.getType(Label.of("borrowing"))
         );
-        List<Type> secondTypeOption = Lists.newArrayList(
-                tx.getType(Label.of("anotherTwoRoleBinary")),
-                tx.getType(Label.of("twoRoleBinary")),
-                tx.getType(Label.of("threeRoleBinary"))
+        List<Type> secondTypeOption = Arrays.asList(
+                tx.getType(Label.of("ownership")),
+//                tx.getType(Label.of("borrowing")),
+                tx.getType(Label.of("employment"))
         );
-        typeInference(secondTypeOption, XYatom.getCombinedPattern().toString(), tx);
-        typeInference(firstTypeOption, YZatom.getCombinedPattern().toString(), tx);
-        typeInference(firstTypeOption, ZWatom.getCombinedPattern().toString(), tx);
+        List<Type> thirdTypeOptions = Arrays.asList(
+                tx.getType(Label.of("employment"))
+        );
+
+
+        assertCollectionsNonTriviallyEqual(firstTypeOption, XYatom.getPossibleTypes());
+        assertCollectionsNonTriviallyEqual(secondTypeOption, YZatom.getPossibleTypes());
+        assertCollectionsNonTriviallyEqual(thirdTypeOptions, ZWatom.getPossibleTypes());
     }
 
     private void typeInference(List<Type> possibleTypes, String pattern, Transaction tx){
@@ -366,7 +491,7 @@ public class TypeInferenceIT {
             assertEquals(possibleTypes, relationTypes);
             assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
         } else {
-            GraqlTestUtil.assertCollectionsNonTriviallyEqual(possibleTypes, relationTypes);
+            assertCollectionsNonTriviallyEqual(possibleTypes, relationTypes);
             assertEquals(atom.getSchemaConcept(), null);
         }
 
@@ -415,11 +540,6 @@ public class TypeInferenceIT {
             tx.stream(typedQuery).filter(ans -> !answers.contains(ans)).forEach(answers::add);
         }
         return answers;
-    }
-
-    private List<Type> allRelations(Transaction tx){
-        RelationType metaType = tx.getRelationType(Graql.Token.Type.RELATION.toString());
-        return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 
     private ConceptId conceptId(Transaction tx, String type){

@@ -172,11 +172,19 @@ public class GenerativeOperationalIT {
         return tarjan.successorMap().entries().stream().map(e -> new Pair<>(e.getKey(), e.getValue()));
     }
 
+    // TODO - re-enable this when we have a way to semantically validate queries
+    // TODO - or when we can test unification separately from soundness/semantic validation
+    // TODO - or when the fuzzer creates semantically valid generalisations
+    @Ignore
     @Test
     public void whenComparingSubsumptivePairs_binaryRelationBase_SubsumptionRelationHolds() throws ExecutionException, InterruptedException {
         testSubsumptionRelationHoldsBetweenPatternPairs(generateTestPairs(binaryRelationPatternTree, true).collect(Collectors.toList()), 4);
     }
 
+    // TODO - re-enable this when we have a way to semantically validate queries
+    // TODO - or when we can test unification separately from soundness/semantic validation
+    // TODO - or when the fuzzer creates semantically valid generalisations
+    @Ignore
     @Test
     public void whenComparingSubsumptivePairs_ternaryRelationBase_SubsumptionRelationHolds() throws ExecutionException, InterruptedException {
         testSubsumptionRelationHoldsBetweenPatternPairs(generateTestPairs(ternaryRelationPatternTree, false).collect(Collectors.toList()), 4);
@@ -290,6 +298,10 @@ public class GenerativeOperationalIT {
         }
     }
 
+    // TODO - re-enable this when we have a way to semantically validate queries
+    // TODO - or when we can test unification separately from soundness/semantic validation
+    // TODO - or when the fuzzer creates semantically valid generalisations
+    @Ignore
     @Test
     public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected(){
         try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
