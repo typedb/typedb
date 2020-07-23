@@ -14,7 +14,7 @@ java_library(
 
 java_test(
     name = "reasoning-it",
-    size = "enormous",
+    size = "medium",
     srcs = ["ReasoningIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
@@ -25,7 +25,6 @@ java_test(
         "@maven//:commons_collections_commons_collections",
         "@maven//:org_apache_commons_commons_math3",
         "@maven//:org_hamcrest_hamcrest_library",
-        "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "//test/common:graql-test-util",
