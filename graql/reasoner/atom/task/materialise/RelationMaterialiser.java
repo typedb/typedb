@@ -60,7 +60,6 @@ public class RelationMaterialiser implements AtomMaterialiser<RelationAtom> {
             relation = foundRelation != null? foundRelation : relationType.addRelationInferred();
         }
 
-        //NB: this will potentially reify existing implicit relationships
         // we make the relation conform to the required number and quantity of each role player
         roleVarMap.asMap()
                 .forEach((role, variables) -> {

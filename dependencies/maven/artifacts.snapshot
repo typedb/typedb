@@ -452,6 +452,8 @@
 @maven//:org_glassfish_jersey_core_jersey_server_2_22_2
 @maven//:org_glassfish_jersey_media_jersey_media_jaxb
 @maven//:org_glassfish_jersey_media_jersey_media_jaxb_2_22_2
+@maven//:org_hamcrest_hamcrest
+@maven//:org_hamcrest_hamcrest_2_2
 @maven//:org_hamcrest_hamcrest_all
 @maven//:org_hamcrest_hamcrest_all_1_3
 @maven//:org_hamcrest_hamcrest_core

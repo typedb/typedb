@@ -17,12 +17,17 @@
 
 package grakn.core.common.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Root Grakn Exception
  * Encapsulates any exception which is thrown by the Grakn stack.
  * This includes failures server side, failed graph mutations, and failed querying attempts
  */
 public abstract class GraknException extends RuntimeException {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknException.class);
+    private static boolean logStackTraces = LOG.isDebugEnabled() || LOG.isTraceEnabled();
 
     protected GraknException(String error) {
         super(error);
@@ -32,8 +37,8 @@ public abstract class GraknException extends RuntimeException {
         super(error, e);
     }
 
-    protected GraknException(String error, Exception e, boolean enableSuppression, boolean writableStackTrace) {
-        super(error, e, enableSuppression, writableStackTrace);
+    protected GraknException(String error, Exception e, boolean enableSuppression) {
+        super(error, e, enableSuppression, logStackTraces);
     }
 
     public abstract String getName();

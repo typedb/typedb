@@ -15,28 +15,39 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "resolve",
+java_test(
+    name = "test",
     srcs = [
-        "ResolutionQueryBuilder.java",
+        "VariableRoleTest.java",
     ],
-    visibility = ["//visibility:public"],
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.variable_role.VariableRoleTest",
     deps = [
-        "//concept/answer",
-        "@maven//:com_google_guava_guava",
-        "//graql/reasoner",
-        "//kb/server",
-        "//kb/concept/api",
-        "//test/behaviour/resolution/framework/common",
-        "@graknlabs_graql//java:graql",
+        # Package dependencies
+        "//test/behaviour/server:server",
+
+        # External dependencies from Maven
+        "@maven//:io_cucumber_cucumber_junit",
     ],
+    runtime_deps = [
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
+    ],
+    data = [
+        "@graknlabs_verification//behaviour/graql/reasoner/resolution:variable-role.feature",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    size = "medium",
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":resolve",
+        ":test",
     ],
 )

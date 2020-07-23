@@ -54,8 +54,8 @@ public class TestCompleter {
                 "$r1-l2 true;" +
                 "$r1-c2 has is-liable $r1-l2;" +
                 "$x0 (instance: $r1-c2) isa isa-property, has type-label \"company\";" +
-                "$x1 (owner: $r1-c2) isa has-attribute-property, has name $r1-n2;" +
-                "$x2 (owner: $r1-c2) isa has-attribute-property, has is-liable $r1-l2;" +
+                "$x1 (owned: $r1-n2, owner: $r1-c2) isa has-attribute-property;" +
+                "$x2 (owned: $r1-l2, owner: $r1-c2) isa has-attribute-property;" +
                 "$_ (body: $x0, body: $x1, head: $x2) isa resolution, has rule-label \"company-is-liable\";" +
                 "$r1-n2 == \"the-company\";" +
                 "$r1-c2 has name $r1-n2;" +
@@ -65,7 +65,7 @@ public class TestCompleter {
                 "$r2-n1 \"the-company\";" +
                 "$r2-c1 has name $r2-n1;" +
                 "$x3 (instance: $r2-c1) isa isa-property, has type-label \"company\";" +
-                "$x4 (owner: $r2-c1) isa has-attribute-property, has name $r2-n1;" +
+                "$x4 (owned: $r2-n1, owner: $r2-c1) isa has-attribute-property;" +
                 "$_ (body: $x3, head: $x4) isa resolution, has rule-label \"company-has-name\";" +
                 "$r2-c1 has company-id 0;"
         ));

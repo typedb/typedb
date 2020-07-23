@@ -20,6 +20,9 @@ define
 label sub attribute,
     value string;
 
+inferred sub attribute,
+    value boolean;
+
 # ===== Properties =====
 
 type-label sub label;
@@ -29,19 +32,22 @@ role-label sub label;
 var-property sub relation,
     abstract,
     plays body,
-    plays head;
+    plays head,
+    has inferred;
 
 isa-property sub var-property,
     relates instance,
     has type-label;
 
 has-attribute-property sub var-property,
-    relates owner;
+    relates owner,
+    relates owned;
 
 relation-property sub var-property,
     relates roleplayer,
     relates rel,
     has role-label;
+
 
 # ===== Inference =====
 

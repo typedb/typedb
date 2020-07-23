@@ -19,8 +19,6 @@ artifacts = [
   "io.grpc:grpc-stub",
   "io.grpc:grpc-testing",
   "io.grpc:grpc-api",
-  "io.netty:netty-all",
-  "io.netty:netty-codec-http2",
   "javax.servlet:javax.servlet-api",
   "junit:junit",
   "org.apache.cassandra:cassandra-all",

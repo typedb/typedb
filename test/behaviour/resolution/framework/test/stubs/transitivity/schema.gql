@@ -7,9 +7,6 @@ define
 name sub attribute,
     value string;
 
-location-hierarchy-id sub attribute,
-    value long;
-
 location sub entity,
     abstract,
     key name,
@@ -22,7 +19,6 @@ country sub location;
 continent sub location;
 
 location-hierarchy sub relation,
-    key location-hierarchy-id,
     relates location-hierarchy_superior,
     relates location-hierarchy_subordinate;
 

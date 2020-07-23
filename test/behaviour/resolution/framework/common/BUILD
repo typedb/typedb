@@ -35,6 +35,7 @@ java_library(
         "//kb/concept/api",
         "//kb/server",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )
 

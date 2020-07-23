@@ -25,7 +25,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 
 /**
- * The MapReduce program for counting the number of instances excluding attributes and implicit relations
+ * The MapReduce program for counting the number of instances excluding attributes
  *
  */
 
