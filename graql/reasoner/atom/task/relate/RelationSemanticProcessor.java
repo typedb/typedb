@@ -157,8 +157,8 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                             .filter(idPredicate ->  !idPredicate.isPlaceholder())
                             .findAny()
                             .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
-                            .filter(Concept::isType)
-                            .map(Concept::asType)
+                            .filter(Concept::isThing)
+                            .map(concept -> concept.asThing().type())
                             .orElse(null);
 
                     Set<RelationProperty.RolePlayer> compatibleRelationPlayers = new HashSet<>();

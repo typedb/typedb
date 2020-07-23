@@ -442,7 +442,7 @@ public class RelationAtom extends Atom {
         return parentTypes.stream().allMatch(parentType -> isTypeRoleCompatible(typedVar, parentType, false, parentTypeExact));
     }
 
-    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy, Type parentTypeIsExact) {
+    private boolean isTypeRoleCompatible(Variable typedVar, Type parentType, boolean includeRoleHierarchy, Type parentTypeExact) {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         List<Role> roleRequirements = getRoleVarMap().entries().stream()
@@ -455,7 +455,7 @@ public class RelationAtom extends Atom {
         if (roleRequirements.isEmpty()) return true;
 
         // in some cases, the parent types are not specified by ISA but by ID directly - then we do no have to search subtypes for compatibility
-        Set<Type> parentTypes = parentTypeIsExact == null ? Sets.newHashSet(parentType) : parentType.subs().collect(Collectors.toSet());
+        Set<Type> parentTypes = parentTypeExact != null ? Sets.newHashSet(parentTypeExact) : parentType.subs().collect(Collectors.toSet());
 
         return roleRequirements.stream()
                 //include sub roles

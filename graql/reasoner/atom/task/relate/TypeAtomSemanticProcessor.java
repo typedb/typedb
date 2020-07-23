@@ -56,13 +56,6 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
         Variable childPredicateVarName = childAtom.getPredicateVariable();
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
         Set<Type> parentTypes = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentVarName);
-        Type parentTypeExact = parentAtom.getPredicates(parentVarName, IdPredicate.class)
-                .filter(idPredicate ->  !idPredicate.isPlaceholder())
-                .findAny()
-                .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .orElse(null);
         Set<Type> childTypes = childAtom.getParentQuery().getVarTypeMap(inferTypes).get(childAtom.getVarName());
 
         ConceptManager conceptManager = ctx.conceptManager();
@@ -74,7 +67,7 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
                     parentType != null? Collections.singleton(parentType) : Collections.emptySet(),
                     childType != null? Collections.singleton(childType) : Collections.emptySet())
                 || !unifierType.typeCompatibility(parentTypes, childTypes)
-                || !unifierType.typePlayabilityWithInsertSemantics(childAtom, childAtom.getVarName(), parentTypes, parentTypeExact)
+                || !unifierType.typePlayabilityWithInsertSemantics(childAtom, childAtom.getVarName(), parentTypes, null)
                 || !unifierType.typeDirectednessCompatibility(parentAtom, childAtom)){
             return UnifierImpl.nonExistent();
         }
