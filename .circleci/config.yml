@@ -192,7 +192,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/graql/language/rule-validation:test --test_output=errors
+          command: bazel test //test/behaviour/graql/language/rule_validation:test --test_output=errors
 
   test-behaviour-graql-undefine:
     machine:
