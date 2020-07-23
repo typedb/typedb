@@ -109,7 +109,12 @@ public interface Thing extends Concept {
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> attributes(AttributeType attributeTypes);
+    Stream<? extends Attribute> attributes(AttributeType attributeType);
+    Stream<? extends Attribute.Boolean> attributes(AttributeType.Boolean attributeType);
+    Stream<? extends Attribute.Long> attributes(AttributeType.Long attributeType);
+    Stream<? extends Attribute.Double> attributes(AttributeType.Double attributeType);
+    Stream<? extends Attribute.String> attributes(AttributeType.String attributeType);
+    Stream<? extends Attribute.DateTime> attributes(AttributeType.DateTime attributeType);
 
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing} filtered
@@ -121,7 +126,7 @@ public interface Thing extends Concept {
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> attributes(List<AttributeType> attributeTypes);
+    Stream<? extends Attribute> attributes(List<AttributeType> attributeType);
 
     /**
      * Get all {@code RoleType} types that this {@code Thing} plays in a {@code Relation}.

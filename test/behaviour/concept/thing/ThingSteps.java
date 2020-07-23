@@ -98,14 +98,44 @@ public class ThingSteps {
         assertTrue(get(var1).attributes(true).noneMatch(k -> k.equals(get(var2))));
     }
 
+    @Then("entity/attribute/relation {var} get attributes contain: {var}")
+    public void thing_get_attributes_contain(String var1, String var2) {
+        assertTrue(get(var1).attributes().anyMatch(k -> k.equals(get(var2))));
+    }
+
     @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) contain: {var}")
     public void thing_get_attributes_contain(String var1, String typeLabel, String var2) {
         assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel)).anyMatch(k -> k.equals(get(var2))));
     }
 
-    @Then("entity/attribute/relation {var} get attributes contain: {var}")
-    public void thing_get_attributes_contain(String var1, String var2) {
-        assertTrue(get(var1).attributes().anyMatch(k -> k.equals(get(var2))));
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?boolean ?) contain: {var}")
+    public void thing_get_attributes_as_boolean_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asBoolean()).anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?long ?) contain: {var}")
+    public void thing_get_attributes_as_long_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asLong()).anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?double ?) contain: {var}")
+    public void thing_get_attributes_as_double_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asDouble()).anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?string ?) contain: {var}")
+    public void thing_get_attributes_as_string_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asString()).anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?datetime ?) contain: {var}")
+    public void thing_get_attributes_as_datetime_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asDateTime()).anyMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes do not contain: {var}")
+    public void thing_get_attributes_do_not_contain(String var1, String var2) {
+        assertTrue(get(var1).attributes().noneMatch(k -> k.equals(get(var2))));
     }
 
     @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) do not contain: {var}")
@@ -113,9 +143,29 @@ public class ThingSteps {
         assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel)).noneMatch(k -> k.equals(get(var2))));
     }
 
-    @Then("entity/attribute/relation {var} get attributes do not contain: {var}")
-    public void thing_get_attributes_do_not_contain(String var1, String var2) {
-        assertTrue(get(var1).attributes().noneMatch(k -> k.equals(get(var2))));
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?boolean ?) do not contain: {var}")
+    public void thing_get_attributes_as_boolean_do_not_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asBoolean()).noneMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?long ?) do not contain: {var}")
+    public void thing_get_attributes_as_long_do_not_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asLong()).noneMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?double ?) do not contain: {var}")
+    public void thing_get_attributes_as_double_do_not_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asDouble()).noneMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?string ?) do not contain: {var}")
+    public void thing_get_attributes_as_string_do_not_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asString()).noneMatch(k -> k.equals(get(var2))));
+    }
+
+    @Then("entity/attribute/relation {var} get attributes\\( ?{type_label} ?) as\\( ?datetime ?) do not contain: {var}")
+    public void thing_get_attributes_as_datetime_do_not_contain(String var1, String typeLabel, String var2) {
+        assertTrue(get(var1).attributes(tx().concepts().getAttributeType(typeLabel).asDateTime()).noneMatch(k -> k.equals(get(var2))));
     }
 
     @Then("entity/attribute/relation {var} get relations\\( ?{scoped_label} ?) contain: {var}")

@@ -20,9 +20,12 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
+
+import java.util.stream.Stream;
 
 public class EntityImpl extends ThingImpl implements Entity {
 
