@@ -122,13 +122,13 @@ public interface Atomic {
     If the parent type is exact (ie. obtained via an ID), then we don't need to check the parent type _subtypes_ for compatibility
      */
     @CheckReturnValue
-    default boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes,  boolean parentTypesExact){ return true;}
+    default boolean typesRoleCompatibleWithMatchSemantics(Variable typedVar, Set<Type> parentTypes, Type parentTypeExact){ return true;}
 
     /*
     If the parent type is exact (ie. obtained via an ID), then we don't need to check the parent type _subtypes_ for compatibility
      */
     @CheckReturnValue
-    default boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes,  boolean parentTypesExact){ return true;}
+    default boolean typesRoleCompatibleWithInsertSemantics(Variable typedVar, Set<Type> parentTypes, Type parentTypeExact){ return true;}
 
     /**
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,

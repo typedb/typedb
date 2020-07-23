@@ -369,18 +369,18 @@ public class ReasonerQueryImpl extends ResolvableQuery {
     }
 
     private Stream<Pair<Variable, Type>> typeMappings(){
-        Stream<Pair<Variable, Type>> typesById = getIdPredicates().stream()
-                .filter(id -> !id.isPlaceholder())
-                .map(id -> {
-                    Concept concept = context().conceptManager().getConcept(id.getPredicate());
-                    Type type = concept.isThing() ? concept.asThing().type() : concept.asType();
-                    return new Pair<>(id.getVarName(), type);
-                });
+//        Stream<Pair<Variable, Type>> typesById = getIdPredicates().stream()
+//                .filter(id -> !id.isPlaceholder())
+//                .map(id -> {
+//                    Concept concept = context().conceptManager().getConcept(id.getPredicate());
+//                    Type type = concept.isThing() ? concept.asThing().type() : concept.asType();
+//                    return new Pair<>(id.getVarName(), type);
+//                });
         Stream<Pair<Variable, Type>> typesByIsa = isas()
                 .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                 .filter(at -> at.getSchemaConcept().isType())
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept().asType()));
-        return Streams.concat(typesById, typesByIsa);
+        return Streams.concat(typesByIsa);
     }
 
     private Stream<Pair<Variable, Type>> inferEntityTypes(ConceptMap sub) {

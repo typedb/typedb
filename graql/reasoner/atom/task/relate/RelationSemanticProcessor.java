@@ -153,7 +153,13 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                     Role parentRole = parentRoleLabel != null ? conceptManager.getRole(parentRoleLabel) : null;
                     Variable parentRolePlayer = prp.getPlayer().var();
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
-                    boolean parentTypesExact = parentAtom.getPredicates(parentRolePlayer, IdPredicate.class).findAny().isPresent();
+                    Type parentTypeExact = parentAtom.getPredicates(parentRolePlayer, IdPredicate.class)
+                            .filter(idPredicate ->  !idPredicate.isPlaceholder())
+                            .findAny()
+                            .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
+                            .filter(Concept::isType)
+                            .map(Concept::asType)
+                            .orElse(null);
 
                     Set<RelationProperty.RolePlayer> compatibleRelationPlayers = new HashSet<>();
                     childAtom.getRelationPlayers().stream()
@@ -187,14 +193,14 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                                 Set<Type> childTypes = childVarTypeMap.get(childVar);
 
                                 return unifierType.typeCompatibility(parentTypes, childTypes)
-                                        && unifierType.typePlayabilityWithInsertSemantics(childAtom, childVar, parentTypes, parentTypesExact);
+                                        && unifierType.typePlayabilityWithInsertSemantics(childAtom, childVar, parentTypes, parentTypeExact);
                             })
                             //rule body playability - match semantics
                             .filter(crp -> {
                                 Variable childVar = crp.getPlayer().var();
                                 return childQuery.getAtoms(RelationAtom.class)
                                         .filter(at -> !at.equals(childAtom))
-                                        .allMatch(at -> unifierType.typePlayabilityWithMatchSemantics(childAtom, childVar, parentTypes, parentTypesExact));
+                                        .allMatch(at -> unifierType.typePlayabilityWithMatchSemantics(childAtom, childVar, parentTypes, parentTypeExact));
                             })
                             //check for substitution compatibility
                             .filter(crp -> {

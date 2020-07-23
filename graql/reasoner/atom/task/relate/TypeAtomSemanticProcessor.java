@@ -31,6 +31,7 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
@@ -55,7 +56,13 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
         Variable childPredicateVarName = childAtom.getPredicateVariable();
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
         Set<Type> parentTypes = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentVarName);
-        boolean parentTypesExact = parentAtom.getPredicates(parentVarName, IdPredicate.class).findAny().isPresent();
+        Type parentTypeExact = parentAtom.getPredicates(parentVarName, IdPredicate.class)
+                .filter(idPredicate ->  !idPredicate.isPlaceholder())
+                .findAny()
+                .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .orElse(null);
         Set<Type> childTypes = childAtom.getParentQuery().getVarTypeMap(inferTypes).get(childAtom.getVarName());
 
         ConceptManager conceptManager = ctx.conceptManager();
@@ -67,7 +74,7 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
                     parentType != null? Collections.singleton(parentType) : Collections.emptySet(),
                     childType != null? Collections.singleton(childType) : Collections.emptySet())
                 || !unifierType.typeCompatibility(parentTypes, childTypes)
-                || !unifierType.typePlayabilityWithInsertSemantics(childAtom, childAtom.getVarName(), parentTypes, parentTypesExact)
+                || !unifierType.typePlayabilityWithInsertSemantics(childAtom, childAtom.getVarName(), parentTypes, parentTypeExact)
                 || !unifierType.typeDirectednessCompatibility(parentAtom, childAtom)){
             return UnifierImpl.nonExistent();
         }
