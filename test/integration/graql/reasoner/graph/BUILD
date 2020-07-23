@@ -44,7 +44,7 @@ java_library(
 java_library(
     name = "generic-schema-graph",
     srcs = ["GenericSchemaGraph.java"],
-    data = ["//test/integration/graql/reasoner/resources:generic-schema"],
+    data = ["//test/integration/graql/reasoner/resources:generic-schema-refactored"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@maven//:com_google_guava_guava",

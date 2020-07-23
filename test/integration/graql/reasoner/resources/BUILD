@@ -26,6 +26,11 @@ filegroup(
 )
 
 filegroup(
+    name = "generic-schema-refactored",
+    srcs = ["genericSchemaRefactored.gql"],
+)
+
+filegroup(
     name = "explicit-ownership-relation-applicability",
     srcs = ["explicitOwnershipRelationApplicabilityTest.gql"],
 )

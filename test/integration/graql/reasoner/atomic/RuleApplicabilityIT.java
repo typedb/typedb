@@ -470,9 +470,7 @@ public class RuleApplicabilityIT {
 
 
             assertEquals(7, relation.getApplicableRules().count());
-            // TODO this is actually incorrect, should also be 7 rules `isa entity` is not pruning the rule inferring relation of relations
-            Set<Rule> rulesInferringRelations = testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isRelationType)).collect(toSet());
-            assertTrue(relation2.getApplicableRules().allMatch(r -> rulesInferringRelations.contains(r.getRule())));
+            assertEquals(7, relation2.getApplicableRules().count());
             assertEquals(testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
         }
     }
