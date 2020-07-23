@@ -183,14 +183,19 @@ public class TypeInferenceIT {
 
         // note that type inference doesn't return ALL subtypes of the allowed types, it just returns the most super type
         List<Type> possibleTypes = Arrays.asList(
+                tx.getType(Label.of("employment")),
                 tx.getType(Label.of("ownership")),
-//                tx.getType(Label.of("borrowing")),
                 tx.getType(Label.of("chews"))
         );
 
-//        typeInference(allRelations(tx), patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
-        typeInference(possibleTypes, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
+        List<Type> possibleTypes2 = Arrays.asList(
+                tx.getType(Label.of("ownership")),
+                tx.getType(Label.of("chews"))
+        );
+
+        typeInference(possibleTypes, patternString, subbedPatternString, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes2, patternString2, subbedPatternString2, (TestTransactionProvider.TestTransaction)tx);
+        typeInference(possibleTypes2, patternString3, subbedPatternString3, (TestTransactionProvider.TestTransaction)tx);
     }
 
     /*
