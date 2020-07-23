@@ -40,7 +40,7 @@ public class QueryTestUtil {
         }
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
 
-        assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
+        assertEquals("Unexpected unifier: " + multiUnifier + " of type "+ unifierType.name() + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType.equivalence() != null) {
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
             assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());

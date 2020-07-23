@@ -5,19 +5,19 @@ java_test(
     size = "medium",
     srcs = ["QueryCacheIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/resources:generic-schema"],
+    resources = ["//test/integration/graql/reasoner/resources:generic-schema-refactored"],
     test_class = "grakn.core.graql.reasoner.cache.QueryCacheIT",
     deps = [
         "//common",
         "//concept/answer",
-        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
-        "//test/rule:grakn-test-server",
         "//test/common:graql-test-util",
+        "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -26,16 +26,15 @@ java_test(
     size = "medium",
     srcs = ["RuleCacheIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/resources:rule-applicability"],
+    resources = [],
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
-        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -45,21 +44,21 @@ java_test(
     srcs = ["SemanticDifferenceIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
+        "//test/integration/graql/reasoner/resources:generic-schema-refactored",
     ],
     test_class = "grakn.core.graql.reasoner.cache.SemanticDifferenceIT",
     deps = [
         "//common",
         "//concept/answer",
-        "@maven//:com_google_guava_guava",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
-        "//test/rule:grakn-test-server",
         "//test/common:graql-test-util",
+        "//test/rule:grakn-test-server",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
