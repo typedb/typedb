@@ -489,6 +489,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: remove all assertions (migrated to roleplayer-attachment and negation) except the last one, which tests the reasoner cache; rename test
     @Test
     public void whenAppendingRolePlayers_queryIsRewrittenCorrectly() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -526,6 +527,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to roleplayer-attachment)
     @Test
     public void whenAppendingRolePlayers_DuplicatesAreCreated() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -546,6 +548,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to roleplayer-attachment)
     @Test
     public void whenCopyingRolePlayer_DuplicateRoleRetrievedCorrectly() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -596,6 +599,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference)
     @Test //when rule are defined to append new RPs no new relation instances should be created
     public void whenAppendingRolePlayers_whenHeadRelationHasSymmetricRoles_answersContainAllPermutations() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -613,6 +617,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference)
     @Test //tests whether shared resources are recognised correctly
     public void inferrableRelationWithRolePlayersSharingResource() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -657,6 +662,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (already exists in variable-role) and delete schema (also used in the test above)
     @Test
     public void ternaryRelationsRequiringDifferentMultiunifiers() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -703,6 +709,7 @@ public class ReasoningIT {
         }
     }
 
+    // TODO: delete (migrated to relation-inference)
     @Test
     //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
     public void mutuallyRecursiveRelationAndResource_queryForAttributedType() {
