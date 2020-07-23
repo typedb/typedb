@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.reasoner.test_framework;
+package grakn.core.test.behaviour.graql.language.rule_validation;
 
 import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
@@ -32,23 +32,24 @@ import java.lang.reflect.InvocationTargetException;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/reasoner/test-framework.feature",
+        features = "external/graknlabs_verification/behaviour/graql/language/rule-validation.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
-public class TestFrameworkTest {
+public class RuleValidationTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test TestFrameworkTest'
+    // 3) Select 'Bazel test RuleValidationTest'
     //
     // 4) Ensure 'Target Expression' is set correctly:
-    //    a) Use '//<this>/<package>/<name>:test' to test against
+    //    a) Use '//<this>/<package>/<name>:test-core' to test against grakn-core
+    //    b) Use '//<this>/<package>/<name>:test-kgms' to test against grakn-kgms
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=grakn.client.*'
+    //    a) Remove the line that says: '--test_filter=grakn.core.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed
@@ -59,12 +60,12 @@ public class TestFrameworkTest {
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
 
     @BeforeClass
-    public static void beforeClass() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         SingletonTestServer.start();
     }
 
     @AfterClass
-    public static void afterClass() {
+    public static void tearDown() {
         SingletonTestServer.shutdown();
     }
 

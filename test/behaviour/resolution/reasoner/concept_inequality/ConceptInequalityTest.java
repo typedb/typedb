@@ -32,7 +32,7 @@ import java.lang.reflect.InvocationTargetException;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/reasoner/resolution/concept-inequality.feature",
+        features = "external/graknlabs_verification/behaviour/graql/reasoner/concept-inequality.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class ConceptInequalityTest {

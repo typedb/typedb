@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner/resolution:test-framework.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:test-framework.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "enormous",

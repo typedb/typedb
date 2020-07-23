@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner/resolution:relation-inference.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:relation-inference.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "large",

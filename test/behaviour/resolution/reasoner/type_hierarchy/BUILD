@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner/resolution:type-hierarchy.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:type-hierarchy.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "medium",
