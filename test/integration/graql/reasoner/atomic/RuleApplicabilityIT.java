@@ -471,7 +471,7 @@ public class RuleApplicabilityIT {
 
             assertEquals(7, relation.getApplicableRules().count());
             assertEquals(7, relation2.getApplicableRules().count());
-            assertEquals(testTx.ruleCache().getRules().filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
+            assertEquals(1, relation3.getApplicableRules().count());
         }
     }
 
@@ -490,8 +490,7 @@ public class RuleApplicabilityIT {
             Atom relation3 = reasonerQueryFactory.atomic(conjunction(relationString3)).getAtom();
             Atom relation4 = reasonerQueryFactory.atomic(conjunction(relationString4)).getAtom();
             assertEquals(2, relation.getApplicableRules().count());
-            // TODO this can actually prune down to 1 rule based on role playability
-            assertEquals(2, relation2.getApplicableRules().count());
+            assertEquals(1, relation2.getApplicableRules().count());
             assertEquals(1, relation3.getApplicableRules().count());
             assertEquals(1, relation4.getApplicableRules().count());
         }
