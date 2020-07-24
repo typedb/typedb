@@ -464,6 +464,48 @@ public class ValidatorIT {
     }
 
     @Test
+    public void whenCreatingRelationWithSubTypeHierarchyAndNoMatchingRoleTypeHierarchy_Throw1() throws InvalidKBException {
+        Role pChild = tx.putRole("pChild");
+        Role fChild = tx.putRole("fChild").sup(pChild);
+        Role parent = tx.putRole("parent");
+        Role father = tx.putRole("father").sup(parent);
+        Role inContext = tx.putRole("in-context");
+
+        tx.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
+        tx.putEntityType("context").plays(inContext);
+
+        RelationType parenthood = tx.putRelationType("parenthood").relates(parent).relates(pChild);
+        RelationType fatherhood = tx.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.label(), fatherhood.label(), "super", "super", parenthood.label()));
+
+        tx.commit();
+    }
+
+    @Test
+    public void whenCreatingRelationWithSubTypeHierarchyAndNoMatchingRoleTypeHierarchy_Throw2() throws InvalidKBException {
+        Role parent = tx.putRole("parent");
+        Role father = tx.putRole("father").sup(parent);
+        Role pChild = tx.putRole("pChild");
+        Role fChild = tx.putRole("fChild").sup(pChild);
+        Role inContext = tx.putRole("in-context");
+
+        tx.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
+        tx.putEntityType("context").plays(inContext);
+
+        RelationType parenthood = tx.putRelationType("parenthood").relates(parent).relates(pChild).relates(inContext);
+        RelationType fatherhood = tx.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild);
+
+        exception.expect(InvalidKBException.class);
+        exception.expectMessage(
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.label(), parenthood.label(), "sub", "sub", fatherhood.label()));
+
+        tx.commit();
+    }
+
+    @Test
     public void checkRoleTypeValidSuperOfSelfTypeWhenLinkedToRelationsWhichAreSubsOfEachOther() throws InvalidKBException {
         Role insurer = tx.putRole("insurer");
         Role monoline = tx.putRole("monoline").sup(insurer);
