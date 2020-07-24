@@ -62,6 +62,7 @@ public class OntologicalQueryIT {
         loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", session);
     }
 
+    // TODO: delete (migrated to schema-queries)
     @Test
     public void instancePairsRelatedToSameTypeOfEntity(){
         Session session = server.sessionWithNewKeyspace();
@@ -94,6 +95,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to schema-queries)
     @Test
     public void instancesOfSubsetOfTypesExcludingGivenType() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)){
@@ -107,6 +109,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to schema-queries)
     //TODO need to correctly return THING and RELATION mapping for %type
     @Ignore
     @Test
