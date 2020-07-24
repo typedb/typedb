@@ -56,6 +56,19 @@ public class Schema {
         }
     }
 
+    public enum PrefixType {
+        INDEX(0),
+        TYPE(1),
+        THING(2),
+        RULE(3);
+
+        private final int key;
+
+        PrefixType(int key) {
+            this.key = key;
+        }
+    }
+
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
@@ -63,24 +76,25 @@ public class Schema {
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Prefix {
-        INDEX_TYPE(0),
-        INDEX_ATTRIBUTE(5),
-        VERTEX_THING_TYPE(10),
-        VERTEX_ENTITY_TYPE(20),
-        VERTEX_ATTRIBUTE_TYPE(30),
-        VERTEX_RELATION_TYPE(40),
-        VERTEX_ROLE_TYPE(50),
-        VERTEX_ENTITY(60),
-        VERTEX_ATTRIBUTE(70),
-        VERTEX_RELATION(80),
-        VERTEX_ROLE(90),
-        VERTEX_VALUE(100),
-        VERTEX_RULE(110);
+        INDEX_TYPE(0, PrefixType.INDEX),
+        INDEX_ATTRIBUTE(5, PrefixType.INDEX),
+        VERTEX_THING_TYPE(10, PrefixType.TYPE),
+        VERTEX_ENTITY_TYPE(20, PrefixType.TYPE),
+        VERTEX_ATTRIBUTE_TYPE(30, PrefixType.TYPE),
+        VERTEX_RELATION_TYPE(40, PrefixType.TYPE),
+        VERTEX_ROLE_TYPE(50, PrefixType.TYPE),
+        VERTEX_ENTITY(60, PrefixType.THING),
+        VERTEX_ATTRIBUTE(70, PrefixType.THING),
+        VERTEX_RELATION(80, PrefixType.THING),
+        VERTEX_ROLE(90, PrefixType.THING),
+        VERTEX_RULE(100, PrefixType.RULE);
 
         private final byte key;
+        private final PrefixType type;
 
-        Prefix(int key) {
+        Prefix(int key, PrefixType type) {
             this.key = (byte) key;
+            this.type = type;
         }
 
         public static Prefix of(byte key) {
@@ -97,6 +111,37 @@ public class Schema {
         public byte[] bytes() {
             return new byte[]{key};
         }
+
+        public PrefixType type() {
+            return type;
+        }
+
+        public boolean isIndex() {
+            return type.equals(PrefixType.INDEX);
+        }
+
+        public boolean isType() {
+            return type.equals(PrefixType.TYPE);
+        }
+
+        public boolean isThing() {
+            return type.equals(PrefixType.THING);
+        }
+
+        public boolean isRule() {
+            return type.equals(PrefixType.RULE);
+        }
+    }
+
+    public enum InfixType {
+        PROPERTY(0),
+        EDGE(1);
+
+        private final int key;
+
+        InfixType(int key) {
+            this.key = key;
+        }
     }
 
     /**
@@ -106,38 +151,40 @@ public class Schema {
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Infix {
-        PROPERTY_LABEL(0),
-        PROPERTY_SCOPE(1),
-        PROPERTY_ABSTRACT(2),
-        PROPERTY_REGEX(3),
-        PROPERTY_VALUE_TYPE(4),
-        PROPERTY_VALUE_REF(5),
-        PROPERTY_VALUE(6),
-        PROPERTY_WHEN(7),
-        PROPERTY_THEN(8),
-        EDGE_ISA_IN(-20), // EDGE_ISA_OUT does not exist by design
-        EDGE_SUB_OUT(30),
-        EDGE_SUB_IN(-30),
-        EDGE_KEY_OUT(40),
-        EDGE_KEY_IN(-40),
-        EDGE_HAS_OUT(50),
-        EDGE_HAS_IN(-50),
-        EDGE_PLAYS_OUT(60),
-        EDGE_PLAYS_IN(-60),
-        EDGE_RELATES_OUT(70),
-        EDGE_RELATES_IN(-70),
-        EDGE_ROLEPLAYER_OUT(100, true),
-        EDGE_ROLEPLAYER_IN(-100, true);
+        PROPERTY_LABEL(0, InfixType.PROPERTY),
+        PROPERTY_SCOPE(1, InfixType.PROPERTY),
+        PROPERTY_ABSTRACT(2, InfixType.PROPERTY),
+        PROPERTY_REGEX(3, InfixType.PROPERTY),
+        PROPERTY_VALUE_TYPE(4, InfixType.PROPERTY),
+        PROPERTY_VALUE_REF(5, InfixType.PROPERTY),
+        PROPERTY_VALUE(6, InfixType.PROPERTY),
+        PROPERTY_WHEN(7, InfixType.PROPERTY),
+        PROPERTY_THEN(8, InfixType.PROPERTY),
+        EDGE_ISA_IN(-20, InfixType.EDGE), // EDGE_ISA_OUT does not exist by design
+        EDGE_SUB_OUT(30, InfixType.EDGE),
+        EDGE_SUB_IN(-30, InfixType.EDGE),
+        EDGE_KEY_OUT(40, InfixType.EDGE),
+        EDGE_KEY_IN(-40, InfixType.EDGE),
+        EDGE_HAS_OUT(50, InfixType.EDGE),
+        EDGE_HAS_IN(-50, InfixType.EDGE),
+        EDGE_PLAYS_OUT(60, InfixType.EDGE),
+        EDGE_PLAYS_IN(-60, InfixType.EDGE),
+        EDGE_RELATES_OUT(70, InfixType.EDGE),
+        EDGE_RELATES_IN(-70, InfixType.EDGE),
+        EDGE_ROLEPLAYER_OUT(100, InfixType.EDGE, true),
+        EDGE_ROLEPLAYER_IN(-100, InfixType.EDGE, true);
 
         private final byte key;
         private final boolean isOptimisation;
+        private final InfixType type;
 
-        Infix(int key) {
-            this(key, false);
+        Infix(int key, InfixType type) {
+            this(key, type, false);
         }
 
-        Infix(int key, boolean isOptimisation) {
+        Infix(int key, InfixType type, boolean isOptimisation) {
             this.key = (byte) key;
+            this.type = type;
             this.isOptimisation = isOptimisation;
         }
 
@@ -154,6 +201,18 @@ public class Schema {
 
         public byte[] bytes() {
             return new byte[]{key};
+        }
+
+        public InfixType type() {
+            return type;
+        }
+
+        public boolean isProperty() {
+            return type.equals(InfixType.PROPERTY);
+        }
+
+        public boolean isEdge() {
+            return type.equals(InfixType.EDGE);
         }
 
         public boolean isOptimisation() {
@@ -273,21 +332,6 @@ public class Schema {
     public interface Vertex {
 
         Prefix prefix();
-
-        enum Value implements Vertex {
-            VALUE(Prefix.VERTEX_VALUE);
-
-            private final Prefix prefix;
-
-            Value(Prefix prefix) {
-                this.prefix = prefix;
-            }
-
-            @Override
-            public Prefix prefix() {
-                return prefix;
-            }
-        }
 
         enum Rule implements Vertex {
             RULE(Prefix.VERTEX_RULE);
