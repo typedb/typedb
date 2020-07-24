@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.reasoner.variable_role;
+package grakn.core.test.behaviour.resolution.reasoner.variable_roles;
 
 import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
@@ -32,17 +32,17 @@ import java.lang.reflect.InvocationTargetException;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/reasoner/variable-role.feature",
+        features = "external/graknlabs_verification/behaviour/graql/reasoner/variable-roles.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
-public class VariableRoleTest {
+public class VariableRolesTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test VariableRoleTest'
+    // 3) Select 'Bazel test VariableRolesTest'
     //
     // 4) Ensure 'Target Expression' is set correctly:
     //    a) Use '//<this>/<package>/<name>:test' to test against

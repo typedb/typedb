@@ -306,7 +306,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/value_predicate:test --test_output=errors
 
-  test-behaviour-reasoner-variable-role:
+  test-behaviour-reasoner-variable-roles:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -802,7 +802,7 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-reasoner-variable-role:
+      - test-behaviour-reasoner-variable-roles:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -861,7 +861,7 @@ workflows:
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
             - test-behaviour-reasoner-value-predicate
-            - test-behaviour-reasoner-variable-role
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -899,7 +899,7 @@ workflows:
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
             - test-behaviour-reasoner-value-predicate
-            - test-behaviour-reasoner-variable-role
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -937,7 +937,7 @@ workflows:
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
             - test-behaviour-reasoner-value-predicate
-            - test-behaviour-reasoner-variable-role
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -975,7 +975,7 @@ workflows:
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
             - test-behaviour-reasoner-value-predicate
-            - test-behaviour-reasoner-variable-role
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -1013,7 +1013,7 @@ workflows:
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
             - test-behaviour-reasoner-value-predicate
-            - test-behaviour-reasoner-variable-role
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
