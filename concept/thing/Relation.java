@@ -22,6 +22,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public interface Relation extends Thing {
@@ -60,5 +61,7 @@ public interface Relation extends Thing {
     Stream<? extends Thing> players(RoleType roleTypes);
 
     Stream<? extends Thing> players(List<RoleType> roleTypes);
+
+    Map<? extends RoleType, ? extends List<? extends Thing>> playersMap();
 
 }

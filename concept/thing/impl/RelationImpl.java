@@ -30,13 +30,17 @@ import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
 import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.stream;
+import static java.util.stream.Collectors.toList;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
@@ -88,19 +92,29 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Stream<? extends ThingImpl> players() {
+    public Stream<ThingImpl> players() {
         return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
     }
 
     @Override
-    public Stream<? extends ThingImpl> players(RoleType roleType) {
+    public Stream<ThingImpl> players(RoleType roleType) {
         return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).to())
                 .map(ThingImpl::of);
     }
 
     @Override
-    public Stream<? extends ThingImpl> players(List<RoleType> roleTypes) {
+    public Stream<ThingImpl> players(List<RoleType> roleTypes) {
         return roleTypes.stream().flatMap(this::players);
+    }
+
+    @Override
+    public Map<RoleTypeImpl, ? extends List<ThingImpl>> playersMap() {
+        Map<RoleTypeImpl, List<ThingImpl>> playersMap = new HashMap<>();
+        type().roles().forEach(rt -> {
+            List<ThingImpl> players = players(rt).collect(toList());
+            if (!players.isEmpty()) playersMap.put(rt, players);
+        });
+        return playersMap;
     }
 
     @Override

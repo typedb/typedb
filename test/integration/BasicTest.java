@@ -126,16 +126,16 @@ public class BasicTest {
         Util.resetDirectory(directory);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create("my_data_database");
+            grakn.databases().create(database);
 
             assertTrue(grakn.isOpen());
             assertEquals(1, grakn.databases().all().size());
-            assertEquals("my_data_database", grakn.databases().all().iterator().next().name());
+            assertEquals(database, grakn.databases().all().iterator().next().name());
 
-            try (Grakn.Session session = grakn.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
-                assertEquals("my_data_database", session.database().name());
+                assertEquals(database, session.database().name());
 
                 try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
@@ -244,12 +244,12 @@ public class BasicTest {
 
             assertTrue(grakn.isOpen());
             assertEquals(1, grakn.databases().all().size());
-            assertEquals("my_data_database", grakn.databases().all().iterator().next().name());
+            assertEquals(database, grakn.databases().all().iterator().next().name());
 
-            try (Grakn.Session session = grakn.session("my_data_database", Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
-                assertEquals("my_data_database", session.database().name());
+                assertEquals(database, session.database().name());
 
                 try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);

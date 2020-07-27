@@ -19,17 +19,25 @@
 package grakn.core.test.behaviour.concept.thing.relation;
 
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RoleType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static grakn.core.test.behaviour.concept.thing.ThingSteps.get;
 import static grakn.core.test.behaviour.concept.thing.ThingSteps.put;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RelationSteps {
 
@@ -132,6 +140,23 @@ public class RelationSteps {
     @When("relation {var} remove player for role\\( ?{type_label} ?): {var}")
     public void relation_remove_player_for_role(String var1, String roleTypeLabel, String var2) {
         get(var1).asRelation().unrelate(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
+    }
+
+    @Then("relation {var} get players contain:")
+    public void relation_get_players_contain(String var, Map<String, String> players) {
+        Relation relation = get(var).asRelation();
+        players.forEach((rt, var2) -> assertTrue(relation.playersMap().get(relation.type().role(rt)).contains(get(var2.substring(1)))));
+    }
+
+    @Then("relation {var} get players do not contain:")
+    public void relation_get_players_do_not_contain(String var, Map<String, String> players) {
+        Relation relation = get(var).asRelation();
+        players.forEach((rt, var2) -> {
+            List<? extends Thing> p;
+            if ((p = relation.playersMap().get(relation.type().role(rt))) != null) {
+                assertFalse(p.contains(get(var2.substring(1))));
+            }
+        });
     }
 
     @Then("relation {var} get players contain: {var}")
