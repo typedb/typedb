@@ -122,6 +122,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to schema-queries and match)
     @Test
     @Ignore //TODO: re-enable this test once we figure out why it randomly fails
     public void allRolePlayerPairsAndTheirRelationType() {
@@ -152,6 +153,7 @@ public class OntologicalQueryIT {
      * HasAtom
      **/
 
+    // TODO: delete (migrated to match)
     @Test
     public void allInstancesOfTypesThatCanHaveAGivenResourceType() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -164,6 +166,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to schema-queries)
     @Test
     public void allInstancesOfTypesThatCanHaveAGivenResourceType_needInferenceToGetAllResults() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -180,6 +183,7 @@ public class OntologicalQueryIT {
      * SubAtom
      **/
 
+    // TODO: delete (migrated to match)
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -191,6 +195,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to schema-queries)
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType_needInferenceToGetAllResults() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -202,6 +207,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (already exists in match)
     @Test
     public void allTypesAGivenTypeSubs() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -223,6 +229,7 @@ public class OntologicalQueryIT {
      * PlaysAtom
      **/
 
+    // TODO: delete (migrated to match and schema-queries)
     @Test
     public void allInstancesOfTypesThatPlayGivenRole() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -239,6 +246,7 @@ public class OntologicalQueryIT {
      * RelatesAtom
      **/
 
+    // TODO: delete (migrated to match and schema-queries)
     @Test
     public void allInstancesOfRelationsThatRelateGivenRole() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -252,6 +260,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (already exists in match)
     @Test
     public void allRolesGivenRelationRelates() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -269,6 +278,7 @@ public class OntologicalQueryIT {
      * IsaAtom
      **/
 
+    // TODO: delete (migrated to schema-queries)
     @Test
     public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -280,6 +290,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to schema-queries)
     @Test
     public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -295,6 +306,7 @@ public class OntologicalQueryIT {
      * meta concepts
      **/
 
+    // TODO: delete (migrated to match and schema-queries)
     @Test
     public void allInstancesOfMetaEntity() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -306,6 +318,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to match and schema-queries)
     @Test
     public void allInstancesOfMetaRelation() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
@@ -321,6 +334,7 @@ public class OntologicalQueryIT {
         }
     }
 
+    // TODO: delete (migrated to match and schema-queries)
     @Test
     public void allInstancesOfMetaResource() {
         try(Transaction tx = session.transaction(Transaction.Type.READ)) {
