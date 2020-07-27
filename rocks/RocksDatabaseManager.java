@@ -20,7 +20,6 @@ package grakn.core.rocks;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.options.GraknOptions;
 
 import java.io.File;
 import java.util.Arrays;

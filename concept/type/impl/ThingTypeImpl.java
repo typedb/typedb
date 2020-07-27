@@ -19,11 +19,10 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.thing.impl.EntityImpl;
 import grakn.core.concept.thing.impl.RelationImpl;
+import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
@@ -107,10 +106,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return subs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
     }
 
-//    <THING> Stream<THING> instancesWith(Attribute attribute, Function<ThingVertex, THING> thingConstructor) {
-//
-//    }
-
     @Override
     public void has(AttributeType attributeType) {
         has(attributeType, false);
@@ -118,8 +113,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void has(AttributeType attributeType, boolean isKey) {
-        if (isKey) hasKey(attributeType);
-        else hasAttribute(attributeType);
+        if (isKey) hasKey((AttributeTypeImpl) attributeType);
+        else hasAttribute((AttributeTypeImpl) attributeType);
     }
 
     @Override
@@ -129,8 +124,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-        if (isKey) hasKey(attributeType, overriddenType);
-        else hasAttribute(attributeType, overriddenType);
+        if (isKey) hasKey((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
+        else hasAttribute((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
     }
 
     @Override
@@ -142,7 +137,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
-                                           Stream<? extends Type> overridable, Stream<? extends Type> notOverridable) {
+                                           Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
         if (type.sups().noneMatch(t -> t.equals(overriddenType))) {
             throw new GraknException(OVERRIDDEN_NOT_SUPERTYPE.message(type.label(), overriddenType.label()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
@@ -163,7 +158,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return concat(stream(link(overriddenAttributes).apply(AttributeTypeImpl::of)), sup().overriddenAttributes());
     }
 
-    private void hasKey(AttributeType attributeType) {
+    private void hasKey(AttributeTypeImpl attributeType) {
         if (!attributeType.isKeyable()) {
             throw new GraknException(HAS_KEY_VALUE_TYPE.message(attributeType.label(), attributeType.valueType().getSimpleName()));
         } else if (concat(sup().attributes(attributeType.valueType(), true), sup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
@@ -186,25 +181,25 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (sup().declaredAttributes().anyMatch(a -> a.equals(attributeType))) keyEdge.overridden(attVertex);
     }
 
-    private void hasKey(AttributeType attributeType, AttributeType overriddenType) {
+    private void hasKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.hasKey(attributeType);
         override(Schema.Edge.Type.KEY, attributeType, overriddenType,
                  sup().attributes(attributeType.valueType()),
                  declaredAttributes());
     }
 
-    private void hasAttribute(AttributeType attributeType) {
+    private void hasAttribute(AttributeTypeImpl attributeType) {
         if (sups().filter(t -> !t.equals(this)).flatMap(ThingType::attributes).anyMatch(a -> a.equals(attributeType))) {
             throw new GraknException(HAS_ATT_NOT_AVAILABLE.message(attributeType.label()));
         }
 
-        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
+        TypeVertex attVertex = attributeType.vertex;
         TypeEdge keyEdge;
         if ((keyEdge = vertex.outs().edge(Schema.Edge.Type.KEY, attVertex)) != null) keyEdge.delete();
         vertex.outs().put(Schema.Edge.Type.HAS, attVertex);
     }
 
-    private void hasAttribute(AttributeType attributeType, AttributeType overriddenType) {
+    private void hasAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.hasAttribute(attributeType);
         override(Schema.Edge.Type.HAS, attributeType, overriddenType,
                  sup().attributes(attributeType.valueType()),
@@ -223,20 +218,20 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<? extends AttributeTypeImpl> attributes() {
+    public Stream<AttributeTypeImpl> attributes() {
         return attributes(false);
     }
 
     @Override
-    public Stream<? extends AttributeTypeImpl> attributes(Class<?> valueType) {
+    public Stream<AttributeTypeImpl> attributes(Class<?> valueType) {
         return attributes(valueType, false);
     }
 
     @Override
-    public Stream<AttributeTypeImpl> attributes(boolean onlKey) {
-        if (onlKey && isRoot()) {
+    public Stream<AttributeTypeImpl> attributes(boolean onlyKey) {
+        if (onlyKey && isRoot()) {
             return declaredKeys();
-        } else if (onlKey) {
+        } else if (onlyKey) {
             Set<TypeVertex> overridden = new HashSet<>();
             filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
             return concat(declaredKeys(), sup().attributes(true).filter(key -> !overridden.contains(key.vertex)));
@@ -340,12 +335,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public ThingTypeImpl sup() { return null; }
 
         @Override
-        public Stream<? extends ThingTypeImpl> sups() {
+        public Stream<ThingTypeImpl> sups() {
             return Stream.of(this);
         }
 
         @Override
-        public Stream<? extends ThingTypeImpl> subs() {
+        public Stream<ThingTypeImpl> subs() {
             return subs(v -> {
                 switch (v.schema()) {
                     case THING_TYPE:
@@ -364,7 +359,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public Stream<? extends Thing> instances() {
+        public Stream<ThingImpl> instances() {
             return super.instances(v -> {
                 switch (v.schema()) {
                     case ENTITY:

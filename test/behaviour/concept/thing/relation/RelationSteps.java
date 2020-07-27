@@ -21,7 +21,6 @@ package grakn.core.test.behaviour.concept.thing.relation;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.RoleType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -35,9 +34,7 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RelationSteps {
 

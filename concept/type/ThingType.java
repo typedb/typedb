@@ -52,7 +52,7 @@ public interface ThingType extends Type {
 
     Stream<? extends AttributeType> attributes();
 
-    Stream<? extends AttributeType> attributes(boolean onlKey);
+    Stream<? extends AttributeType> attributes(boolean onlyKey);
 
     Stream<? extends AttributeType> attributes(Class<?> valueType);
 

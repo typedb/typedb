@@ -113,47 +113,47 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<? extends AttributeImpl> attributes() {
+    public Stream<AttributeImpl> attributes() {
         return attributes(false);
     }
 
     @Override
-    public Stream<? extends AttributeImpl> attributes(boolean onlyKey) {
+    public Stream<AttributeImpl> attributes(boolean onlyKey) {
         return attributes(type().attributes(onlyKey).collect(toList()));
     }
 
     @Override
-    public Stream<? extends AttributeImpl> attributes(AttributeType attributeType) {
+    public Stream<AttributeImpl> attributes(AttributeType attributeType) {
         return attributes(((AttributeTypeImpl) attributeType).vertex).map(AttributeImpl::of);
     }
 
     @Override
-    public Stream<? extends AttributeImpl.Boolean> attributes(AttributeType.Boolean attributeType) {
+    public Stream<AttributeImpl.Boolean> attributes(AttributeType.Boolean attributeType) {
         return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asBoolean());
     }
 
     @Override
-    public Stream<? extends AttributeImpl.Long> attributes(AttributeType.Long attributeType) {
+    public Stream<AttributeImpl.Long> attributes(AttributeType.Long attributeType) {
         return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asLong());
     }
 
     @Override
-    public Stream<? extends AttributeImpl.Double> attributes(AttributeType.Double attributeType) {
+    public Stream<AttributeImpl.Double> attributes(AttributeType.Double attributeType) {
         return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asDouble());
     }
 
     @Override
-    public Stream<? extends AttributeImpl.String> attributes(AttributeType.String attributeType) {
+    public Stream<AttributeImpl.String> attributes(AttributeType.String attributeType) {
         return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asString());
     }
 
     @Override
-    public Stream<? extends AttributeImpl.DateTime> attributes(AttributeType.DateTime attributeType) {
+    public Stream<AttributeImpl.DateTime> attributes(AttributeType.DateTime attributeType) {
         return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asDateTime());
     }
 
     @Override
-    public Stream<? extends AttributeImpl> attributes(List<AttributeType> attributeType) {
+    public Stream<AttributeImpl> attributes(List<AttributeType> attributeType) {
         Iterator<ThingVertex> vertices;
         if (!attributeType.isEmpty()) {
             Set<TypeVertex> filter = attributeType.stream().map(t -> ((TypeImpl) t).vertex).collect(toSet());
@@ -166,12 +166,12 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<? extends RoleType> roles() {
+    public Stream<RoleType> roles() {
         return stream(apply(apply(vertex.outs().edge(Schema.Edge.Thing.PLAYS).to(), ThingVertex::type), RoleTypeImpl::of));
     }
 
     @Override
-    public Stream<? extends RelationImpl> relations(List<RoleType> roleTypes) {
+    public Stream<RelationImpl> relations(List<RoleType> roleTypes) {
         if (roleTypes.isEmpty()) {
             return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
         } else {

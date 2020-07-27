@@ -22,14 +22,12 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
 import grakn.core.graph.TypeGraph;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -105,7 +103,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public Stream<? extends ThingTypeImpl> players() {
+    public Stream<ThingTypeImpl> players() {
         return stream(apply(vertex.ins().edge(Schema.Edge.Type.PLAYS).from(), ThingTypeImpl::of));
     }
 

@@ -226,12 +226,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<? extends AttributeTypeImpl> sups() {
+        public Stream<AttributeTypeImpl> sups() {
             return Stream.of(this);
         }
 
         @Override
-        public Stream<? extends AttributeTypeImpl> subs() {
+        public Stream<AttributeTypeImpl> subs() {
             return subs(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
@@ -254,7 +254,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<? extends AttributeImpl<?>> instances() {
+        public Stream<AttributeImpl<?>> instances() {
             return super.instances(v -> AttributeImpl.of(v.asAttribute()));
         }
 

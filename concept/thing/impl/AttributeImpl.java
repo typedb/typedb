@@ -77,19 +77,19 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
-    public Stream<? extends ThingImpl> owners() {
+    public Stream<ThingImpl> owners() {
         return owners(vertex.ins().edge(Schema.Edge.Thing.HAS).from());
     }
 
     @Override
-    public Stream<? extends ThingImpl> owners(ThingType ownerType) {
+    public Stream<ThingImpl> owners(ThingType ownerType) {
         TypeVertex ownerVertex = ((ThingTypeImpl) ownerType).vertex;
         return owners(vertex.ins().edge(Schema.Edge.Thing.HAS,
                                         PrefixIID.of(Schema.Vertex.Thing.of(ownerVertex.schema()).prefix()),
                                         ownerVertex.iid()).from());
     }
 
-    private Stream<? extends ThingImpl> owners(Iterator<ThingVertex> owners) {
+    private Stream<ThingImpl> owners(Iterator<ThingVertex> owners) {
         return stream(apply(owners, v -> {
             switch (v.schema()) {
                 case ENTITY:

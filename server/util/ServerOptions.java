@@ -19,7 +19,6 @@
 package grakn.core.server.util;
 
 import grakn.core.server.Version;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 

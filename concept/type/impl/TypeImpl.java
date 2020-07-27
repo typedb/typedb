@@ -23,7 +23,6 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.TypeGraph;
 import grakn.core.graph.util.Schema;
-import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -34,7 +33,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
 import static grakn.core.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
