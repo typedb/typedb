@@ -133,7 +133,7 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquality_DifferentHasVariants() {
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         String patternString = "{ $x has name; };";
         String patternString2 = "{ $y has name; };";
@@ -147,7 +147,7 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquality_AttributeAtomsWithDifferingAttributeVariables() {
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         String patternString = "{ $x has name $v1; };";
         String patternString2 = "{ $x has name $v2; };";
@@ -157,7 +157,7 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquality_DifferentRelationVariants() {
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         String pattern = "{ (employee: $x, employer: $y) isa employment; };";
         String directPattern = "{ (employee: $x, employer: $y) isa! employment; };";
@@ -195,7 +195,7 @@ public class AtomicEquivalenceIT {
         AttributeType<?> metaAttributeType = tx.getMetaAttributeType();
         Set<AttributeType> attributeTypes = metaAttributeType.subs().collect(toSet());
 
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         AttributeType.ValueType.values().stream()
                 .filter(valueType -> attributeTypes.stream().anyMatch(t -> t.valueType() != null && t.valueType().equals(valueType)))
@@ -203,11 +203,12 @@ public class AtomicEquivalenceIT {
                     Object value = testValues.get(valueType);
                     attributeTypes.stream()
                             .filter(t -> Objects.nonNull(t.valueType()))
-                            .filter(t -> t.valueType().equals(valueType)).forEach(attributeType -> {
+                            .filter(t -> t.valueType().equals(valueType))
+                            .forEach(attributeType -> {
 
                         Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
                         valueType.comparableValueTypes().forEach(comparableValueType -> {
-                            AttributeValueConverter<Object, ?> converter = AttributeValueConverter.of(comparableValueType);
+                            AttributeValueConverter<?> converter = AttributeValueConverter.of(comparableValueType);
                             Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                             atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
@@ -230,7 +231,7 @@ public class AtomicEquivalenceIT {
                 value.contains(bound)
         );
 
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         variablePredicates.forEach(vp -> {
             Conjunction<Statement> conj = (Conjunction<Statement>) Graql.and(vp);
@@ -267,7 +268,7 @@ public class AtomicEquivalenceIT {
                 value.contains(anotherValue)
         );
 
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         variablePredicates.forEach(vp -> {
             Conjunction<Statement> conj = (Conjunction<Statement>) Graql.and(vp);
@@ -290,7 +291,7 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquality_AbstractId() {
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         // test for hash collisions AND equality check between atom produced by `isAbstract` and `type`
         String typeIsAbstract = Graql.var("x").type("organisation").toString();
@@ -299,7 +300,7 @@ public class AtomicEquivalenceIT {
     }
 
     private void testEquality_DifferentTypeVariants(Transaction tx, String keyword, String label, String label2) {
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
         String variantAString = "{ $x " + keyword + " " + label + "; };";
         String variantAString2 = "{ $y " + keyword + " " + label + "; };";
