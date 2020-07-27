@@ -274,7 +274,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/resolution/reasoner/test_framework:test --test_output=errors
+          command: bazel test //test/behaviour/resolution/reasoner/resolution_test_framework:test --test_output=errors
 
   test-behaviour-reasoner-type-generation:
     machine:

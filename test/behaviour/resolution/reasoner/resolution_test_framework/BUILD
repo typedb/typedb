@@ -21,9 +21,9 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "TestFrameworkTest.java",
+        "ResolutionTestFrameworkTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.test_framework.TestFrameworkTest",
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.resolution_test_framework.ResolutionTestFrameworkTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner:test-framework.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:resolution-test-framework.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "enormous",
