@@ -64,7 +64,14 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
      */
     @Override
     public Map<Role, List<Thing>> rolePlayersMap() {
-        return allRolePlayers();
+        HashMap<Role, List<Thing>> roleMap = new HashMap<>();
+
+        //We add the role types explicitly so we can return them when there are no roleplayers
+//        type().roles().forEach(roleType -> roleMap.put(roleType, new ArrayList<>()));
+        //All castings are used here because we need to iterate over all of them anyway
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
+
+        return roleMap;
     }
 
     /**
@@ -98,17 +105,6 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
         return castingsRelation(roles).map(Casting::getRolePlayer);
-    }
-
-    private Map<Role, List<Thing>> allRolePlayers() {
-        HashMap<Role, List<Thing>> roleMap = new HashMap<>();
-
-        //We add the role types explicitly so we can return them when there are no roleplayers
-        type().roles().forEach(roleType -> roleMap.put(roleType, new ArrayList<>()));
-        //All castings are used here because we need to iterate over all of them anyway
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
-
-        return roleMap;
     }
 
 
@@ -176,7 +172,7 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
     public String innerToString() {
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");
-        for (Map.Entry<Role, List<Thing>> entry : allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, List<Thing>> entry : rolePlayersMap().entrySet()) {
             if (entry.getValue().isEmpty()) {
                 description.append("    Role [").append(entry.getKey().label()).append("] not played by any instance \n");
             } else {
