@@ -314,7 +314,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/resolution/reasoner/variable_role:test --test_output=errors
+          command: bazel test //test/behaviour/resolution/reasoner/variable_roles:test --test_output=errors
 
   test-resolution-framework:
     machine:
