@@ -176,7 +176,7 @@ public class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     public static Optional<String> validateHasSingleIncomingRelatesEdge(Role role) {
-        if (!role.relations().findAny().isPresent()) {
+        if (role.relations().count() != 1) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
         }
         return Optional.empty();

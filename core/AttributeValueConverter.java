@@ -20,6 +20,7 @@ package grakn.core.core;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,34 +30,47 @@ import java.util.Map;
  * Convert Attribute Values obtained from Graql and stored in Properties, and convert
  * them to native java data instances
  */
-public abstract class AttributeValueConverter<SOURCE, TARGET>{
+public abstract class AttributeValueConverter<TARGET> {
 
-    private static Map<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>>builder()
-            .put(AttributeType.ValueType.BOOLEAN, new IdentityConverter<Boolean, Boolean>())
+    private static Map<AttributeType.ValueType<?>, AttributeValueConverter<?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?>>builder()
+            .put(AttributeType.ValueType.BOOLEAN, new BooleanConverter())
             .put(AttributeType.ValueType.DATETIME, new DateConverter())
             .put(AttributeType.ValueType.DOUBLE, new DoubleConverter())
-            .put(AttributeType.ValueType.FLOAT, new FloatConverter())
-            .put(AttributeType.ValueType.INTEGER, new IntegerConverter())
             .put(AttributeType.ValueType.LONG, new LongConverter())
-            .put(AttributeType.ValueType.STRING, new IdentityConverter<String, String>())
+            .put(AttributeType.ValueType.STRING, new StringConverter())
             .build();
 
-    public static <SOURCE, TARGET> AttributeValueConverter<SOURCE, TARGET> of(AttributeType.ValueType<TARGET> valueType) {
-        AttributeValueConverter<?, ?> converter = converters.get(valueType);
+    public static <TARGET> AttributeValueConverter<TARGET> of(AttributeType.ValueType<TARGET> valueType) {
+        AttributeValueConverter<?> converter = converters.get(valueType);
         if (converter == null){
             throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
         }
-        return (AttributeValueConverter<SOURCE, TARGET>) converter;
+        return (AttributeValueConverter<TARGET>) converter;
     }
 
-    public abstract TARGET convert(SOURCE value);
+    public abstract TARGET convert(Object value);
 
-    public static class IdentityConverter<SOURCE, TARGET> extends AttributeValueConverter<SOURCE, TARGET> {
+    public static class BooleanConverter extends AttributeValueConverter<Boolean> {
         @Override
-        public TARGET convert(SOURCE value) { return (TARGET) value;}
+        public Boolean convert(Object value) {
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            }
+            throw new ClassCastException();
+        }
     }
 
-    public static class DateConverter extends AttributeValueConverter<Object, LocalDateTime> {
+    public static class StringConverter extends AttributeValueConverter<String> {
+        @Override
+        public String convert(Object value) {
+            if (value instanceof String) {
+                return value.toString();
+            }
+            throw new ClassCastException();
+        }
+    }
+
+    public static class DateConverter extends AttributeValueConverter<LocalDateTime> {
 
         @Override
         public LocalDateTime convert(Object value) {
@@ -70,32 +84,24 @@ public abstract class AttributeValueConverter<SOURCE, TARGET>{
         }
     }
 
-    public static class DoubleConverter extends AttributeValueConverter<Number, Double> {
+    public static class DoubleConverter extends AttributeValueConverter<Double> {
         @Override
-        public Double convert(Number value) {
-            return value.doubleValue();
-        }
-    }
-
-    public static class FloatConverter extends AttributeValueConverter<Number, Float> {
-        @Override
-        public Float convert(Number value) {
-            return value.floatValue();
-        }
-    }
-
-    public static class IntegerConverter extends AttributeValueConverter<Number, Integer> {
-        @Override
-        public Integer convert(Number value) {
-            if ( value.floatValue() % 1 == 0) return value.intValue();
+        public Double convert(Object value) {
+            if (value instanceof Long) {
+                return ((Long)value).doubleValue();
+            } else if (value instanceof Double){
+                return (Double) value;
+            }
             throw new ClassCastException();
         }
     }
 
-    public static class LongConverter extends AttributeValueConverter<Number, Long> {
+    public static class LongConverter extends AttributeValueConverter<Long> {
         @Override
-        public Long convert(Number value) {
-            if ( value.floatValue() % 1 == 0) return value.longValue();
+        public Long convert(Object value) {
+            if (value instanceof Long) {
+                return (Long) value;
+            }
             throw new ClassCastException();
         }
     }
