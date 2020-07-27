@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
 public class GenericSchemaGraph {
 
     private final static String gqlPath = "test/integration/graql/reasoner/resources/";
-    private final static String gqlFile = "genericSchema.gql";
+    private final static String gqlFile = "genericSchemaRefactored.gql";
 
     private final QueryPattern differentReflexiveRelationVariants;
     private final QueryPattern differentRelationVariants;
@@ -68,7 +68,7 @@ public class GenericSchemaGraph {
         EntityType anotherEntityType = tx.getEntityType("anotherBaseRoleEntity");
         AttributeType<Object> resourceType = tx.getAttributeType("resource");
         AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
-        RelationType binary = tx.getRelationType("binary");
+        RelationType binary = tx.getRelationType("symmetricRelation");
         RelationType ternary = tx.getRelationType("ternary");
 
         Entity baseRoleEntity = entityType.instances()
@@ -85,9 +85,9 @@ public class GenericSchemaGraph {
                 .filter(et -> !et.type().equals(subSubRoleEntity) )
                 .findFirst().orElse(null);
 
-        Iterator<Relation> relations = binary.subs().flatMap(RelationType::instances).iterator();
-        Relation relation = relations.next();
-        Relation anotherRelation = relations.next();
+        Iterator<Relation> relations = ternary.subs().flatMap(RelationType::instances).iterator();
+        Relation relationInstance = relations.next();
+        Relation anotherRelationInstance = relations.next();
 
         Iterator<Attribute<Object>> resources = resourceType.instances().collect(toSet()).iterator();
         Attribute<Object> resource = resources.next();
@@ -99,7 +99,7 @@ public class GenericSchemaGraph {
 
         this.differentTypeRelationVariants = new TypePattern(
                 binary.label(), ternary.label(), tx.getMetaRelationType().label(),
-                relation.id(), anotherRelation.id());
+                relationInstance.id(), anotherRelationInstance.id());
 
         this.differentResourceVariants = new AttributePattern(
                 resourceType.label(), anotherResourceType.label(),
@@ -445,7 +445,7 @@ public class GenericSchemaGraph {
                         new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), Graql.var()), Label.of("anotherBaseRoleEntity")
                 ),
                 Lists.newArrayList(baseRoleEntity.id(), anotherBaseRoleEntity.id(), subEntity.id()),
-                Lists.newArrayList(relation.id(), anotherRelation.id())
+                Lists.newArrayList(relationInstance.id(), anotherRelationInstance.id())
         ){
             @Override
             public int[][] structuralMatrix() {

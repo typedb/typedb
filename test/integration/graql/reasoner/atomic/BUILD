@@ -5,7 +5,6 @@ java_test(
     size = "medium",
     srcs = ["TypeInferenceIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = ["//test/integration/graql/reasoner/resources:type-inference"],
     test_class = "grakn.core.graql.reasoner.atomic.TypeInferenceIT",
     deps = [
         "//common",
@@ -57,7 +56,6 @@ java_test(
         "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/server",
-        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
@@ -71,7 +69,7 @@ java_test(
     resources = [
         "//test/integration/graql/reasoner/resources:explicit-ownership-relation-applicability",
         "//test/integration/graql/reasoner/resources:resource-applicability",
-        "//test/integration/graql/reasoner/resources:rule-applicability",
+        "//test/integration/graql/reasoner/resources:rule-applicability-new",
     ],
     test_class = "grakn.core.graql.reasoner.atomic.RuleApplicabilityIT",
     deps = [
@@ -93,23 +91,16 @@ java_test(
     size = "medium",
     srcs = ["RoleInferenceIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
-        "//test/integration/graql/reasoner/resources:role-inference",
-        "//test/integration/graql/reasoner/resources:rule-applicability",
-    ],
     test_class = "grakn.core.graql.reasoner.atomic.RoleInferenceIT",
     deps = [
         "//common",
-        "//core",
         "@maven//:com_google_guava_guava",
         "@maven//:org_hamcrest_hamcrest_library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
-        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java:graql"
     ],
 )
 
@@ -129,7 +120,6 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
-        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],

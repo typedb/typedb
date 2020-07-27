@@ -1,10 +1,5 @@
 define
 
-#Roles
-
-role1 sub role;
-role2 sub role;
-
 #Entities
 
 genericEntity sub entity,
@@ -44,15 +39,6 @@ rule-1 sub rule,
 
 
 ######################################################################
-
-object sub role;
-subject sub role;
-location sub role;
-place sub role;
-operated sub role;
-operator sub role;
-owned sub role;
-owner sub role;
 
 geo-location sub entity,
     plays location,

@@ -1,0 +1,155 @@
+define
+
+#Roles
+
+# Role hierarchy
+#
+#                             role
+#             /                 |                   \
+#         baseRole1         baseRole2                baseRole3
+#       /      \             /     \                |
+# subRole1   aSubRole1   subRole2  aSubRole1      subRole3
+#       |                    |                      |
+# subSubRole1            subSubRole2             subSubRole3
+#
+
+
+#Entities
+#simple vertical hierarchy
+
+
+baseRoleEntity sub entity,
+    has resource,
+    plays symmetricRole,
+    plays baseRole1,
+    plays baseRole2,
+    plays baseRole3;
+
+anotherBaseRoleEntity sub entity,
+    has resource,
+    plays symmetricRole,
+    plays baseRole1,
+    plays baseRole2,
+    plays baseRole3;
+
+subRoleEntity sub baseRoleEntity,
+    plays subRole1,
+    plays subRole2,
+    plays subRole3,
+    plays anotherSubRole1,
+    plays anotherSubRole2,
+    plays anotherSubRole3;
+
+subSubRoleEntity sub subRoleEntity,
+    plays subSubRole1,
+    plays subSubRole2,
+    plays subSubRole3;
+
+symmetricRelation sub baseRelation,
+    relates symmetricRole;
+
+transitiveRelation sub baseRelation,
+    relates symmetricRole;
+
+baseRelation sub relation, abstract,
+    relates baseRole1,
+    relates baseRole2,
+    relates baseRole3,
+    has resource;
+
+#NB: explicit overriding is only needed as relates is not inherited atm, after the semantics change they should be removed
+interimRelation sub baseRelation, abstract,
+    relates baseRole1,
+    relates baseRole2,
+    relates baseRole3,
+    relates subRole1 as baseRole1,
+    relates subRole2 as baseRole2,
+    relates subRole3 as baseRole3,
+    relates anotherSubRole1 as baseRole1,
+    relates anotherSubRole2 as baseRole2,
+    relates anotherSubRole3 as baseRole3;
+
+ternary sub interimRelation,
+    relates baseRole1,
+    relates baseRole2,
+    relates baseRole3,
+    relates subRole1 as baseRole1,
+    relates subRole2 as baseRole2,
+    relates subRole3 as baseRole3,
+    relates anotherSubRole1 as baseRole1,
+    relates anotherSubRole2 as baseRole2,
+    relates anotherSubRole3 as baseRole3,
+    relates subSubRole1 as subRole1,
+    relates subSubRole2 as subRole2,
+    relates subSubRole3 as subRole3;
+
+#Resources
+
+resource sub attribute, value string,
+    plays baseRole1,
+    plays baseRole2;
+
+resource-long sub attribute, value long,
+    plays baseRole1,
+    plays baseRole2;
+
+resource-double sub attribute, value double;
+resource-date sub attribute, value datetime;
+resource-boolean sub attribute, value boolean;
+
+
+binarySymmetricity sub rule,
+when {
+    (baseRole1: $x, baseRole2: $y) isa ternary;
+},
+then {
+    (symmetricRole: $x, symmetricRole: $y) isa symmetricRelation;
+};
+
+binaryTransitivity sub rule,
+when {
+    (symmetricRole: $x, symmetricRole: $y) isa symmetricRelation;
+    (symmetricRole: $y, symmetricRole: $z) isa symmetricRelation;
+},
+then {
+    (symmetricRole: $y, symmetricRole: $z) isa transitiveRelation;
+};
+
+insert
+
+#Instances
+
+$a isa anotherBaseRoleEntity;
+
+$b isa baseRoleEntity, has resource 'b';
+
+$f isa subRoleEntity, has resource 'f';
+$m isa subSubRoleEntity, has resource 'm';
+$d isa subSubRoleEntity, has resource 'd';
+$s isa subSubRoleEntity, has resource 's';
+
+#NB: these together with extra roles seem only used in AtomicQueryUnificationIT
+(anotherSubRole1: $m, subRole2: $s) isa ternary;
+(subRole1: $f, anotherSubRole2: $d) isa ternary;
+(subRole1: $m, anotherSubRole2: $d) isa ternary;
+(anotherSubRole1: $m, anotherSubRole2: $d) isa ternary;
+
+(subRole1: $f, subRole2: $s) isa ternary;
+(subRole1: $f, subSubRole2: $d) isa ternary;
+(subSubRole1: $m, subRole2: $s) isa ternary;
+(subSubRole1: $m, subSubRole2: $d) isa ternary;
+
+(baseRole1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
+(baseRole1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
+
+(subRole1: $f, subRole2: $m, subSubRole3: $d) isa ternary;
+(subRole1: $f, subRole2: $f, subSubRole3: $d) isa ternary;
+
+(subRole1: $f, subSubRole2: $m, subSubRole3: $d) isa ternary;
+(subRole1: $m, subSubRole2: $m, subSubRole3: $d) isa ternary;
+
+(subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
+(subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
+
+$dummy 0 isa resource-long;
+$dummy2 1 isa resource-long;
