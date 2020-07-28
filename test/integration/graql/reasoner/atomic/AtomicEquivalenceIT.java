@@ -184,8 +184,6 @@ public class AtomicEquivalenceIT {
             .put(AttributeType.ValueType.BOOLEAN, true)
             .put(AttributeType.ValueType.DATETIME, LocalDateTime.now())
             .put(AttributeType.ValueType.DOUBLE, 10.0)
-            .put(AttributeType.ValueType.FLOAT, 10.0)
-            .put(AttributeType.ValueType.INTEGER, 10)
             .put(AttributeType.ValueType.LONG, 10L)
             .put(AttributeType.ValueType.STRING, "10")
             .build();
@@ -202,18 +200,18 @@ public class AtomicEquivalenceIT {
                 .forEach(valueType -> {
                     Object value = testValues.get(valueType);
                     attributeTypes.stream()
-                            .filter(t -> Objects.nonNull(t.valueType()))
-                            .filter(t -> t.valueType().equals(valueType))
+                            .filter(at -> at.valueType() != null)
                             .forEach(attributeType -> {
-
-                        Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
-                        valueType.comparableValueTypes().forEach(comparableValueType -> {
-                            AttributeValueConverter<?> converter = AttributeValueConverter.of(comparableValueType);
-                            Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
-                            atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
-                            atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
-                        });
-                    });
+                                AttributeValueConverter<?> converter = AttributeValueConverter.of(attributeType.valueType());
+                                try {
+                                    Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(value) + ";");
+                                    Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(converter.convert(value)) + ";");
+                                    atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
+                                    atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
+                                } catch (ClassCastException e) {
+                                    // do nothing - was non-castable
+                                }
+                            });
                 });
     }
 
@@ -355,5 +353,12 @@ public class AtomicEquivalenceIT {
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Graql.and(vars);
+    }
+
+    private String escapeIfRequired(Object value) {
+        if (value instanceof String) {
+            return String.format("'%s'", value);
+        }
+        return value.toString();
     }
 }

@@ -18,6 +18,7 @@
 
 package grakn.core.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -32,7 +33,8 @@ import java.util.Map;
  */
 public abstract class AttributeValueConverter<TARGET> {
 
-    private static Map<AttributeType.ValueType<?>, AttributeValueConverter<?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?>>builder()
+    @VisibleForTesting
+    public static Map<AttributeType.ValueType<?>, AttributeValueConverter<?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?>>builder()
             .put(AttributeType.ValueType.BOOLEAN, new BooleanConverter())
             .put(AttributeType.ValueType.DATETIME, new DateConverter())
             .put(AttributeType.ValueType.DOUBLE, new DoubleConverter())
