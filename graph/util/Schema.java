@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Objects;
 
 import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -374,7 +375,7 @@ public class Schema {
 
             public static Type of(Thing thing) {
                 for (Type t : Type.values()) {
-                    if (t.instance().equals(thing)) return t;
+                    if (Objects.equals(t.instance, thing)) return t;
                 }
                 throw new GraknException(UNRECOGNISED_VALUE);
             }
