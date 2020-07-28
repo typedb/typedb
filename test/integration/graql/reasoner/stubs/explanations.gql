@@ -1,45 +1,5 @@
 define
 
-#Entities
-
-genericEntity sub entity,
-    has name,
-    plays role1,
-    plays role2;
-
-#Relations
-
-baseRelation sub relation,
-    relates role1,
-    relates role2;
-
-anotherBaseRelation sub relation,
-    relates role1,
-    relates role2;
-
-inferredRelation sub relation,
-    relates role1,
-    relates role2;
-
-#Resources
-
-name sub attribute, value string;
-
-rule-1 sub rule,
-    when {
-    	(role1: $x, role2: $y) isa baseRelation;
-    	($y, $z) isa inferredRelation;
-    	($z, $u) isa anotherBaseRelation;
-    	($u, $v) isa baseRelation;
-    	(role1: $v, role2: $w) isa inferredRelation;
-    },
-    then {
-    	(role1: $x, role2: $w) isa inferredRelation;
-    };
-
-
-######################################################################
-
 geo-location sub entity,
     plays location,
     plays subject;
@@ -52,7 +12,8 @@ asset sub entity,
 company sub entity,
     plays operator,
     plays owner,
-    plays subject;
+    plays subject,
+    has value;
 
 factor sub entity,
     has value,
@@ -134,24 +95,24 @@ then {
 
 
 insert
-
-$a1 isa genericEntity, has name "a1";
-$a2 isa genericEntity, has name "a2";
-$b isa genericEntity, has name "b";
-$c isa genericEntity, has name "c";
-
-(role1:$a1, role2:$c) isa anotherBaseRelation;
-(role1:$a2, role2:$c) isa anotherBaseRelation;
-(role1:$a1, role2:$b) isa baseRelation;
-(role1:$a2, role2:$b) isa baseRelation;
-(role1:$b, role2:$c) isa inferredRelation;
+#
+#$a1 isa genericEntity, has name "a1";
+#$a2 isa genericEntity, has name "a2";
+#$b isa genericEntity, has name "b";
+#$c isa genericEntity, has name "c";
+#
+#(role1:$a1, role2:$c) isa anotherBaseRelation;
+#(role1:$a2, role2:$c) isa anotherBaseRelation;
+#(role1:$a1, role2:$b) isa baseRelation;
+#(role1:$a2, role2:$b) isa baseRelation;
+#(role1:$b, role2:$c) isa inferredRelation;
 
 ######################################################################
 
 $fac isa factor, has value 'high';
 $geo isa geo-location;
 $asset isa asset;
-$company isa company;
+$company isa company, has value 'medium';
 (object: $fac, subject: $geo) isa carried-relation;
 (location: $geo, place: $asset) isa coordinates;
 (owned: $asset, owner: $company) isa owns;

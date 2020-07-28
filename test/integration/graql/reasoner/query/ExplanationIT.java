@@ -252,9 +252,9 @@ public class ExplanationIT {
     public void whenExplainingConjunctions_explanationsAreCorrect() {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.READ)) {
             String queryString = "match " +
-                    "(role1: $x, role2: $w) isa inferredRelation;" +
-                    "$x has name $xName;" +
-                    "$w has name $wName; get;";
+                    "(object: $obj, subject: $company) isa carried-relation;" +
+                    "$obj has value $obj-value; " +
+                    "$company has value $company-value; get;";
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query, true, true);
@@ -305,7 +305,7 @@ public class ExplanationIT {
     @Test
     public void whenQueryingWithExplainFlag_explanationIsCached() {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
-            String query = "match $x isa inferredRelation; get;";
+            String query = "match $x isa operates; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
 
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
@@ -324,7 +324,7 @@ public class ExplanationIT {
     @Test
     public void whenQueryingWithDefaults_explanationIsNotCached() {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
-            String query = "match $x isa inferredRelation; get;";
+            String query = "match $x isa operates; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet());
 
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
@@ -340,7 +340,7 @@ public class ExplanationIT {
     @Test
     public void whenQueryingWithNoExplain_explanationIsNotCached() {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
-            String query = "match $x isa inferredRelation; get;";
+            String query = "match $x isa operates; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, false);
 
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
@@ -356,7 +356,7 @@ public class ExplanationIT {
     @Test
     public void whenRequestingSubExplanationViaTransaction_subExplanationsAreCachedLazily() {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
-            String query = "match $x isa inferredRelation; get;";
+            String query = "match $x isa operates; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
 
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);
@@ -378,7 +378,7 @@ public class ExplanationIT {
     @Test
     public void onDelete_explanationCacheIsCleared() {
         try (Transaction tx = explanationSession.transaction(Transaction.Type.WRITE)) {
-            String query = "match $x isa inferredRelation; get;";
+            String query = "match $x isa operates; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(query).asGet(), true, true);
 
             TestTransactionProvider.TestTransaction testTx = ((TestTransactionProvider.TestTransaction)tx);

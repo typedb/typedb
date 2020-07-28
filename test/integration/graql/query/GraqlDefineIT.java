@@ -21,6 +21,7 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -118,5 +119,16 @@ public class GraqlDefineIT {
         String queryString = "define my-entity sub entity;";
         GraqlDefine defineQuery = Graql.parse(queryString).asDefine();
         assertEquals(queryString, defineQuery.toString());
+    }
+
+    // TODO migrate to BDD
+    @Test
+    public void whenReusingRoleInUnrelatedRelation_Throw() {
+        String define = "define " +
+                "ownership sub relation, relates owner, relates owned;" +
+                "mortgage sub relation, relates owner, relates bank;";
+        tx.execute(Graql.parse(define).asDefine());
+        exception.expect(InvalidKBException.class);
+        tx.commit();
     }
 }
