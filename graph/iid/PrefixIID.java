@@ -33,6 +33,10 @@ public class PrefixIID extends IID {
         return new PrefixIID(prefix.bytes());
     }
 
+    public static PrefixIID of(Schema.Vertex schema) {
+        return new PrefixIID(schema.prefix().bytes());
+    }
+
     @Override
     public String toString() {
         if (readableString == null) readableString = "[" + Schema.Prefix.of(bytes[0]).toString() + "]";

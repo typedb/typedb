@@ -154,8 +154,8 @@ public abstract class ThingImpl implements Thing {
             return attributeTypes.stream()
                     .flatMap(AttributeType::subs).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
-                    .flatMap(at -> stream(vertex.outs().edge(
-                            Schema.Edge.Thing.HAS, PrefixIID.of(Schema.Vertex.Thing.of(at.schema()).prefix()), at.iid()
+                    .flatMap(type -> stream(vertex.outs().edge(
+                            Schema.Edge.Thing.HAS, PrefixIID.of(type.schema().instance()), type.iid()
                     ).to())).map(ThingVertex::asAttribute);
         } else {
             return stream(apply(vertex.outs().edge(Schema.Edge.Thing.HAS).to(), ThingVertex::asAttribute));

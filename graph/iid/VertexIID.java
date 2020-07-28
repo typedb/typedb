@@ -52,7 +52,7 @@ public abstract class VertexIID extends IID {
     public abstract Schema.Vertex schema();
 
     public PrefixIID prefix() {
-        return PrefixIID.of(schema().prefix());
+        return PrefixIID.of(schema());
     }
 
     public static class Type extends VertexIID {
@@ -80,7 +80,7 @@ public abstract class VertexIID extends IID {
          * @return a byte array representing a new IID for a {@code TypeVertex}
          */
         public static Type generate(KeyGenerator keyGenerator, Schema.Vertex.Type schema) {
-            return of(join(schema.prefix().bytes(), keyGenerator.forType(PrefixIID.of(schema.prefix()))));
+            return of(join(schema.prefix().bytes(), keyGenerator.forType(PrefixIID.of(schema))));
         }
 
         public Schema.Vertex.Type schema() {
@@ -114,9 +114,8 @@ public abstract class VertexIID extends IID {
          * @return a byte array representing a new IID for a {@code ThingVertex}
          */
         public static VertexIID.Thing generate(KeyGenerator keyGenerator, Type typeIID) {
-            return new Thing(join(Schema.Vertex.Thing.of(typeIID.schema()).prefix().bytes(),
-                                  typeIID.bytes(),
-                                  keyGenerator.forThing(typeIID)));
+            return new Thing(join(typeIID.schema().instance().prefix().bytes(),
+                                  typeIID.bytes(), keyGenerator.forThing(typeIID)));
         }
 
         static VertexIID.Thing of(byte[] bytes) {

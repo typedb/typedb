@@ -80,7 +80,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void unrelate(RoleType roleType, Thing player) {
         Iterator<ThingVertex> role = filter(
                 vertex.outs().edge(Schema.Edge.Thing.RELATES,
-                                   PrefixIID.of(Schema.Vertex.Thing.ROLE.prefix()),
+                                   PrefixIID.of(Schema.Vertex.Thing.ROLE),
                                    ((RoleTypeImpl) roleType).vertex.iid()).to(),
                 v -> v.ins().edge(Schema.Edge.Thing.PLAYS, ((ThingImpl) player).vertex) != null
         );

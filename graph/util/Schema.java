@@ -349,23 +349,32 @@ public class Schema {
         }
 
         enum Type implements Vertex {
-            THING_TYPE(Prefix.VERTEX_THING_TYPE, Root.THING),
-            ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY),
-            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE),
-            RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION),
-            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE);
+            THING_TYPE(Prefix.VERTEX_THING_TYPE, Root.THING, null),
+            ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY, Thing.ENTITY),
+            ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE, Thing.ATTRIBUTE),
+            RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION, Thing.RELATION),
+            ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE, Thing.ROLE);
 
             private final Prefix prefix;
             private final Root root;
+            private final Thing instance;
 
-            Type(Prefix prefix, Root root) {
+            Type(Prefix prefix, Root root, Thing instance) {
                 this.prefix = prefix;
                 this.root = root;
+                this.instance = instance;
             }
 
             public static Type of(byte prefix) {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
+                }
+                throw new GraknException(UNRECOGNISED_VALUE);
+            }
+
+            public static Type of(Thing thing) {
+                for (Type t : Type.values()) {
+                    if (t.instance().equals(thing)) return t;
                 }
                 throw new GraknException(UNRECOGNISED_VALUE);
             }
@@ -389,6 +398,10 @@ public class Schema {
 
             public Root root() {
                 return root;
+            }
+
+            public Thing instance() {
+                return instance;
             }
 
             public enum Root {
@@ -421,17 +434,15 @@ public class Schema {
         }
 
         enum Thing implements Vertex {
-            ENTITY(Prefix.VERTEX_ENTITY, Type.ENTITY_TYPE),
-            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE, Type.ATTRIBUTE_TYPE),
-            RELATION(Prefix.VERTEX_RELATION, Type.RELATION_TYPE),
-            ROLE(Prefix.VERTEX_ROLE, Type.ROLE_TYPE);
+            ENTITY(Prefix.VERTEX_ENTITY),
+            ATTRIBUTE(Prefix.VERTEX_ATTRIBUTE),
+            RELATION(Prefix.VERTEX_RELATION),
+            ROLE(Prefix.VERTEX_ROLE);
 
             private final Prefix prefix;
-            private final Schema.Vertex.Type type;
 
-            Thing(Prefix prefix, Schema.Vertex.Type type) {
+            Thing(Prefix prefix) {
                 this.prefix = prefix;
-                this.type = type;
             }
 
             public static Thing of(byte prefix) {
@@ -441,20 +452,9 @@ public class Schema {
                 throw new GraknException(UNRECOGNISED_VALUE);
             }
 
-            public static Thing of(Type type) {
-                for (Thing t : Thing.values()) {
-                    if (t.type().equals(type)) return t;
-                }
-                throw new GraknException(UNRECOGNISED_VALUE);
-            }
-
             @Override
             public Prefix prefix() {
                 return prefix;
-            }
-
-            public Type type() {
-                return type;
             }
         }
 

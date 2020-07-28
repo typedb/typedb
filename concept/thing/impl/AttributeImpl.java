@@ -86,7 +86,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         TypeVertex ownerVertex = ((ThingTypeImpl) ownerType).vertex;
         return owners(vertex.ins().edge(
                 Schema.Edge.Thing.HAS,
-                PrefixIID.of(Schema.Vertex.Thing.of(ownerVertex.schema()).prefix()),
+                PrefixIID.of(ownerVertex.schema().instance()),
                 ownerVertex.iid()
         ).from());
     }
