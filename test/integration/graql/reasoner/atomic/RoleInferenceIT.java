@@ -21,7 +21,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.common.config.Config;
-import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Role;
@@ -34,295 +33,336 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Set;
 
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
+/**
+ * Test the implementation of role inference. Given some roles, role player types, or relation types
+ * we can sometimes deduce more information that the original query had in it.
+ *
+ * Note that with restrictions such as cardinality constraints, the
+ */
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class RoleInferenceIT {
 
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session roleInferenceSetSession;
-    private static Session genericSchemaSession;
-    private static Session ruleApplicabilitySetSession;
+    private static Session session;
+    private static Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
         Config compatibleServerConfig = storage.createCompatibleServerConfig();
-        final String resourcePath = "test/integration/graql/reasoner/resources/";
-        roleInferenceSetSession = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
-        loadFromFileAndCommit(resourcePath, "roleInferenceTest.gql", roleInferenceSetSession);
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
-        ruleApplicabilitySetSession = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
-        loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySetSession);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(compatibleServerConfig);
+
+        // define role inference schema
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            // binary inference schema
+            tx.execute(Graql.parse("define " +
+                    "ownership sub relation, " +
+                    "  relates owner," +
+                    "  relates owned;" +
+                    "borrowing sub ownership," +
+                    "  relates owner, " + // TODO remove once inherited
+                    "  relates owned, " + // TODO remove once inherited
+                    "  relates borrower as owner," +
+                    "  relates borrowed as owned;" +
+                    "friendship sub relation," +
+                    "  relates friend;" +
+                    "best-friendship sub relation," +
+                    "  relates friend, " + // "inherited" and overriden in the same hierarchy
+                    "  relates best-friend as friend;" +
+                    "person sub entity," +
+                    "  plays owner," +
+                    "  plays friend, " +
+                    "  plays best-friend;" +
+                    "reader sub person, " +
+                    "  plays borrower;" +
+                    "item sub entity," +
+                    "  plays owned;" +
+                    "book sub item," +
+                    "  plays borrowed;").asDefine());
+
+            // ternary schema
+            // three roles in 'recipe'
+            // three roles in 'indian-recipe sub recipe' that subtype parent roles
+            tx.execute(Graql.parse("define " +
+                    "recipe sub relation, " +
+                    "  relates recipe-ingredient, " +
+                    "  relates recipe-utensil, " +
+                    "  relates recipe-cooker;" +
+                    "indian-recipe sub recipe, " +
+//                    "  relates ingredient, " +  // TODO remove once inherited
+//                    "  relates utensil, " +     // TODO remove once inherited
+//                    "  relates cooker," +       // TODO remove once inherited
+                    "  relates indian-recipe-spice as recipe-ingredient, " +
+                    "  relates indian-recipe-ladle as recipe-utensil, " +
+                    "  relates indian-recipe-grill as recipe-cooker; " +
+                    "vegetable sub entity," +
+                    "  plays recipe-ingredient;" +
+                    "cutlery sub entity," +
+                    "  plays recipe-utensil;" +
+                    "heated-element sub entity," +
+                    "  plays recipe-cooker;" +
+                    "ginger sub vegetable," +
+                    "  plays indian-recipe-spice;" +
+                    "spoon sub cutlery," +
+                    "  plays indian-recipe-ladle;" +
+                    "oven sub heated-element," +
+                    "  plays indian-recipe-grill; " +
+                    //plays with ambiguity, unrelated to above hierarchies
+                    "toaster sub entity," +
+                    "  plays recipe-utensil," +
+                    "  plays recipe-cooker;").asDefine());
+            tx.commit();
+        }
     }
 
     @AfterClass
     public static void closeSession(){
-        roleInferenceSetSession.close();
-        genericSchemaSession.close();
-        ruleApplicabilitySetSession.close();
+        session.close();
     }
+
+    @Before
+    public void setup() {
+        tx = session.transaction(Transaction.Type.WRITE);
+    }
+
+    @After
+    public void tearDown() {
+        tx.close();
+    }
+
+
+    /*
+
+      Using Binary Relations
+
+     */
 
     @Test
     public void testRoleInference_TypedBinaryRelation(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String patternString = "{ ($x, $y); $x isa entity1; $y isa entity2; };";
-        String patternString2 = "{ ($x, $y) isa binary; $x isa entity1; $y isa entity2; };";
+        String patternString = "{ ($x, $y); $x isa person; $y isa item; };";
+        String patternString2 = "{ ($x, $y) isa ownership; $x isa person; $y isa item; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
-                tx.getRole("role2"), new Variable("y"));
+                tx.getRole("owner"), new Variable("x"),
+                tx.getRole("owned"), new Variable("y"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
     }
 
     @Test
     public void testRoleInference_TypedBinaryRelation_SingleTypeMissing(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String patternString = "{ ($x, $y); $x isa entity1; };";
-        String patternString2 = "{ ($x, $y) isa binary; $x isa entity1; };";
+        String patternString = "{ ($x, $y); $x isa item; };";
+        String patternString2 = "{ ($x, $y) isa ownership; $x isa item; };";
 
         ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
+                tx.getRole("owned"), new Variable("x"),
                 tx.getRole("role"), new Variable("y"));
         roleInference(patternString, correctRoleMap, reasonerQueryFactory);
         roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
     }
 
-    @Test //each type maps to a specific role
-    public void testRoleInference_TypedTernaryRelationWithKnownRole(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{  ($x, $y, role3: $z);$x isa entity1;$y isa entity2;  };";
-        String patternString2 = "{ ($x, $y, role3: $z) isa ternary;$x isa entity1;$y isa entity2; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
-                tx.getRole("role2"), new Variable("y"),
-                tx.getRole("role3"), new Variable("z"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
-
-    @Test //without cardinality constraints the $y variable can be mapped to any of the three roles hence metarole is assigned
-    public void testRoleInference_TypedTernaryRelation(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{ ($x, $y, $z);$x isa entity1;$y isa entity2; };";
-        String patternString2 = "{ ($x, $y, $z) isa ternary;$x isa entity1;$y isa entity2; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
-                tx.getRole("role2"), new Variable("y"),
-                tx.getRole("role"), new Variable("z"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
-
-    @Test
-    public void testRoleInference_TernaryRelationWithRepeatingRolePlayers(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{ (role1: $x, role2: $y, $y); };";
-        String patternString2 = "{ (role1: $x, role2: $y, $y) isa ternary; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
-                tx.getRole("role2"), new Variable("y"),
-                tx.getRole("role"), new Variable("y"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
-
-    @Test
-    public void testRoleInference_TypedTernaryRelation_TypesPlaySubRoles_SubRolesAreCorrectlyIdentified(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{ (role: $x, role: $y, role: $z); $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3; };";
-        String patternString2 = "{ (role: $x, role: $y, role: $z) isa ternary; $x isa anotherEntity1; $y isa anotherEntity2; $z isa anotherEntity3; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("subRole1"), new Variable("x"),
-                tx.getRole("subRole2"), new Variable("y"),
-                tx.getRole("subRole3"), new Variable("z"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
-
-    @Test
-    public void testRoleInference_TypedTernaryRelationWithMetaRoles_MetaRolesShouldBeOverwritten(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{ (role: $x, role: $y, role: $z); $x isa entity1; $y isa entity2; $z isa entity3; };";
-        String patternString2 = "{ (role: $x, role: $y, role: $z) isa ternary; $x isa entity1; $y isa entity2; $z isa entity3; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
-                tx.getRole("role2"), new Variable("y"),
-                tx.getRole("role3"), new Variable("z"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
-
-    @Test
-    public void testRoleInference_TypedTernaryRelation_TypesAreSubTypes_TopRolesShouldBeChosen(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{ (role: $x, role: $y, role: $z); $x isa subEntity1; $y isa subEntity2; $z isa subEntity3; };";
-        String patternString2 = "{ (role: $x, role: $y, role: $z) isa ternary; $x isa subEntity1; $y isa subEntity2; $z isa subEntity3; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role1"), new Variable("x"),
-                tx.getRole("role2"), new Variable("y"),
-                tx.getRole("role3"), new Variable("z"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
-
-    @Test
-    public void testRoleInference_TypedTernaryRelation_TypesCanPlayMultipleRoles_MetaRoleIsChosen(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String patternString = "{ ($x, $y, $z); $x isa genericEntity; $y isa genericEntity; $z isa genericEntity; };";
-        String patternString2 = "{ ($x, $y, $z) isa ternary; $x isa genericEntity; $y isa genericEntity; $z isa genericEntity; };";
-
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role"), new Variable("x"),
-                tx.getRole("role"), new Variable("y"),
-                tx.getRole("role"), new Variable("z"));
-        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
-        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
-        tx.close();
-    }
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_NoInformationPresent(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
         String relationString = "{ ($x, $y); };";
-        RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
-        tx.close();
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("role"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"));
+        roleInference(relationString, correctRoleMap, reasonerQueryFactory);
     }
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_MetaRelationType(){
-        Transaction tx = roleInferenceSetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
         String relationString = "{ ($x, $y) isa relation; };";
-        RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
-        tx.close();
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("role"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"));
+        roleInference(relationString, correctRoleMap, reasonerQueryFactory);
     }
 
     @Test //missing role is ambiguous without cardinality constraints
     public void testRoleInference_RoleHierarchyInvolved() {
-        Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String relationString = "{ ($p, subRole2: $gc) isa binary; };";
-        String relationString2 = "{ (subRole1: $gp, $p) isa binary; };";
-        RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-        RelationAtom relation2 = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString2)).getAtom();
-        Multimap<Role, Variable> roleMap = roleSetMap(relation.getRoleVarMap());
-        Multimap<Role, Variable> roleMap2 = roleSetMap(relation2.getRoleVarMap());
+        String ownershipRelation = "{ ($x, $generic) isa ownership; $x isa reader; };";
+        String borrowingRelation = "{ (owner: $x, owned: $y) isa borrowing; };";
 
-        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
-                tx.getRole("role"), new Variable("p"),
-                tx.getRole("subRole2"), new Variable("gc"));
-        ImmutableSetMultimap<Role, Variable> correctRoleMap2 = ImmutableSetMultimap.of(
-                tx.getRole("role"), new Variable("p"),
-                tx.getRole("subRole1"), new Variable("gp"));
-        assertEquals(correctRoleMap, roleMap);
-        assertEquals(correctRoleMap2, roleMap2);
-        tx.close();
+        ImmutableSetMultimap<Role, Variable> correctOwnerKnownMap = ImmutableSetMultimap.of(
+                tx.getRole("owner"), new Variable("x"), // is an owner or a subtype!
+                tx.getRole("role"), new Variable("generic"));
+        // cannot deduce any further that what is given
+        ImmutableSetMultimap<Role, Variable> correctLenderKnownMap = ImmutableSetMultimap.of(
+                tx.getRole("owner"), new Variable("x"),
+                tx.getRole("owned"), new Variable("y"));
+        roleInference(ownershipRelation, correctOwnerKnownMap, reasonerQueryFactory);
+        roleInference(borrowingRelation, correctLenderKnownMap, reasonerQueryFactory);
     }
 
-    @Test //entity1 plays role1 but entity2 plays roles role1, role2 hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
-    public void testRoleInference_WithMetaType(){
-        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String relationString = "{ ($x, $y, $z) isa ternary; $x isa singleRoleEntity; $y isa twoRoleEntity; $z isa entity; };";
-        RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("someRole"), new Variable("x"),
-                tx.getRole("role"), new Variable("y"),
-                tx.getRole("role"), new Variable("z"));
-        assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
-        tx.close();
-    }
-
-    @Test //entity1 plays role1, entity2 plays 2 roles, entity3 plays 3 roles hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
-    public void testRoleInference_RoleMappingUnambiguous(){
-        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String relationString = "{ ($x, $y, $z) isa ternary;$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
-        RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("someRole"), new Variable("x"),
-                tx.getRole("role"), new Variable("y"),
-                tx.getRole("role"), new Variable("z"));
-        assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
-        tx.close();
-    }
-
-    @Test //for each role player role mapping is ambiguous so metarole has to be assigned
-    public void testRoleInference_AllRolePlayersHaveAmbiguousRoles(){
-        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
-        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-
-        String relationString = "{ ($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
-        RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
-        tx.close();
-    }
 
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
     public void testRoleInference_RelationHasVerticalRoleHierarchy(){
-        Transaction tx = ruleApplicabilitySetSession.transaction(Transaction.Type.WRITE);
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String relationString = "{ ($x, $y) isa reifying-relation; };";
+        // should be able to infer the most-specialised role possible, when all
+        // roles played are of the same ancestor (friend -> best-friend)
+        String relationString = "{ ($x) isa best-friendship; };";
+        ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
+                tx.getRole("friend"), new Variable("x"));
+        roleInference(relationString, roleMap, reasonerQueryFactory);
+    }
+
+
+    /*
+
+      Using ternary relations
+
+     */
+
+    @Test //each type maps to a specific role
+    public void testRoleInference_TypedTernaryRelationWithKnownRole(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{  ($x, $y, recipe-cooker: $z);$x isa vegetable;$y isa cutlery;  };";
+        String patternString2 = "{ ($x, $y, recipe-cooker: $z) isa recipe; $x isa vegetable;$y isa cutlery; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("recipe-cooker"), new Variable("z"));
+        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test //without cardinality constraints the $y variable can be mapped to any of the three roles hence metarole is assigned
+    public void testRoleInference_TypedTernaryRelation(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{ ($x, $y, $z); $x isa vegetable; $y isa cutlery; };";
+        String patternString2 = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa cutlery; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
+        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test
+    public void testRoleInference_TernaryRelationWithRepeatingRolePlayers(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{ (recipe-ingredient: $x, recipe-utensil: $y, $y); };";
+        String patternString2 = "{ (recipe-ingredient: $x, recipe-utensil: $y, $y) isa recipe; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("role"), new Variable("y"));
+        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test
+    public void testRoleInference_TypedTernaryRelation_TypesPlaySubRoles_SubRolesAreCorrectlyIdentified(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString2 = "{ (role: $x, role: $y, role: $z) isa indian-recipe; $x isa ginger; $y isa spoon; $z isa oven; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("indian-recipe-spice"), new Variable("x"),
+                tx.getRole("indian-recipe-ladle"), new Variable("y"),
+                tx.getRole("indian-recipe-grill"), new Variable("z"));
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test
+    public void testRoleInference_TypedTernaryRelationWithMetaRoles_MetaRolesShouldBeOverwritten(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{ (role: $x, role: $y, role: $z); $x isa vegetable; $y isa cutlery; $z isa heated-element; };";
+        String patternString2 = "{ (role: $x, role: $y, role: $z) isa recipe; $x isa vegetable; $y isa cutlery; $z isa heated-element; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("recipe-cooker"), new Variable("z"));
+        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test
+    public void testRoleInference_TypedTernaryRelation_TypesAreSubTypes_TopRolesShouldBeChosen(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{ (role: $x, role: $y, role: $z); $x isa ginger; $y isa spoon; $z isa oven; };";
+        String patternString2 = "{ (role: $x, role: $y, role: $z) isa recipe; $x isa ginger; $y isa spoon; $z isa oven; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-utensil"), new Variable("y"),
+                tx.getRole("recipe-cooker"), new Variable("z"));
+        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test
+    public void testRoleInference_TypedTernaryRelation_TypesCanPlayMultipleRoles_MostSuperCommonRoleIsChosen(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String patternString = "{ ($x, $y, $z); $x isa vegetable; $y isa vegetable; $z isa vegetable; };";
+        String patternString2 = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa vegetable; $z isa vegetable; };";
+
+        ImmutableSetMultimap<Role, Variable> correctRoleMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("recipe-ingredient"), new Variable("y"),
+                tx.getRole("recipe-ingredient"), new Variable("z"));
+        roleInference(patternString, correctRoleMap, reasonerQueryFactory);
+        roleInference(patternString2, correctRoleMap, reasonerQueryFactory);
+    }
+
+    @Test
+    public void testRoleInference_WithMetaType(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String relationString = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa toaster; $z isa toaster; };";
         RelationAtom relation = (RelationAtom) reasonerQueryFactory.atomic(conjunction(relationString)).getAtom();
         ImmutableSetMultimap<Role, Variable> roleMap = ImmutableSetMultimap.of(
-                tx.getRole("someRole"), new Variable("x"),
-                tx.getRole("someRole"), new Variable("y"));
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
-        tx.close();
+    }
+
+    @Test
+    public void testRoleInference_RoleMappingUnambiguous(){
+        ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+
+        String relationString = "{ ($x, $y, $z) isa recipe; $x isa vegetable; $y isa toaster; $z isa toaster; };";
+        ImmutableSetMultimap<Role, Variable> correctMap = ImmutableSetMultimap.of(
+                tx.getRole("recipe-ingredient"), new Variable("x"),
+                tx.getRole("role"), new Variable("y"),
+                tx.getRole("role"), new Variable("z"));
+        roleInference(relationString, correctMap, reasonerQueryFactory);
     }
 
     private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMap, ReasonerQueryFactory reasonerQueryFactory) {

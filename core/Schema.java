@@ -51,6 +51,8 @@ import static grakn.common.util.Collections.pair;
 public final class Schema {
     private final static String PREFIX_VERTEX = "V";
 
+    public static final String PLACEHOLDER_ID = "000000";
+
     private Schema() {
         throw new UnsupportedOperationException();
     }

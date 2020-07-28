@@ -26,6 +26,11 @@ filegroup(
 )
 
 filegroup(
+    name = "generic-schema-refactored",
+    srcs = ["genericSchemaRefactored.gql"],
+)
+
+filegroup(
     name = "explicit-ownership-relation-applicability",
     srcs = ["explicitOwnershipRelationApplicabilityTest.gql"],
 )
@@ -46,8 +51,8 @@ filegroup(
 )
 
 filegroup(
-    name = "type-inference",
-    srcs = ["typeInferenceTest.gql"],
+    name = "rule-applicability-new",
+    srcs = ["ruleApplicabilityTest2.gql"],
 )
 
 filegroup(

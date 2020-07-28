@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -61,26 +60,50 @@ public class AtomicEquivalenceIT {
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session genericSchemaSession;
+    private static Session session;
 
     private Transaction tx;
 
     @BeforeClass
     public static void loadContext() {
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+
+        // define schema
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "organisation sub entity," +
+                    "  has name, " +
+                    "  plays employer," +
+                    "  plays owner," +
+                    "  abstract; " +
+                    "company sub organisation;" +
+                    "charity sub company;" +
+                    "employment sub relation, " +
+                    "  relates employer," +
+                    "  relates employee;" +
+                    "ownership sub relation," +
+                    "  relates owner;" +
+                    "name sub attribute, value string;").asDefine());
+
+            // define an attribute type of each additional type
+            tx.execute(Graql.parse("define " +
+                    "age sub attribute, value long;" +
+                    "volume sub attribute, value double;" +
+                    "expiration sub attribute, value datetime;" +
+                    "is-sold sub attribute, value boolean;").asDefine());
+            tx.commit();
+        }
     }
 
     @AfterClass
     public static void closeSession() {
-        genericSchemaSession.close();
+        session.close();
     }
 
     @Before
     public void setUp() {
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -90,30 +113,30 @@ public class AtomicEquivalenceIT {
 
     @Test
     public void testEquality_DifferentIsaVariants() {
-        testEquality_DifferentTypeVariants(tx, "isa", "baseRoleEntity", "subRoleEntity");
+        testEquality_DifferentTypeVariants(tx, "isa", "company", "charity");
     }
 
     @Test
     public void testEquality_DifferentSubVariants() {
-        testEquality_DifferentTypeVariants(tx, "sub", "baseRoleEntity", "baseRole1");
+        testEquality_DifferentTypeVariants(tx, "sub", "company", "charity");
     }
 
     @Test
     public void testEquality_DifferentPlaysVariants() {
-        testEquality_DifferentTypeVariants(tx, "plays", "baseRole1", "baseRole2");
+        testEquality_DifferentTypeVariants(tx, "plays", "employer", "employee");
     }
 
     @Test
     public void testEquality_DifferentRelatesVariants() {
-        testEquality_DifferentTypeVariants(tx, "relates", "baseRole1", "baseRole2");
+        testEquality_DifferentTypeVariants(tx, "relates", "employer", "employee");
     }
 
     @Test
     public void testEquality_DifferentHasVariants() {
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String patternString = "{ $x has resource; };";
-        String patternString2 = "{ $y has resource; };";
+        String patternString = "{ $x has name; };";
+        String patternString2 = "{ $y has name; };";
         String patternString3 = "{ $x has " + Graql.Token.Type.ATTRIBUTE + "; };";
 
         atomicEquality(patternString, patternString, true, reasonerQueryFactory);
@@ -126,8 +149,8 @@ public class AtomicEquivalenceIT {
     public void testEquality_AttributeAtomsWithDifferingAttributeVariables() {
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String patternString = "{ $x has resource $v1; };";
-        String patternString2 = "{ $x has resource $v2; };";
+        String patternString = "{ $x has name $v1; };";
+        String patternString2 = "{ $x has name $v2; };";
 
         atomicEquality(patternString, patternString2, false, reasonerQueryFactory);
     }
@@ -136,21 +159,21 @@ public class AtomicEquivalenceIT {
     public void testEquality_DifferentRelationVariants() {
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String pattern = "{ (baseRole1: $x, baseRole2: $y) isa binary; };";
-        String directPattern = "{ (baseRole1: $x, baseRole2: $y) isa! binary; };";
-        String pattern2 = "{ $r (baseRole1: $x, baseRole2: $y) isa binary; };";
-        String pattern3 = "{ $z (baseRole1: $x, baseRole2: $y) isa binary; };";
-        String pattern4 = "{ (baseRole1: $x, baseRole2: $y); };";
-        String pattern5 = "{ (baseRole1: $z, baseRole2: $v) isa binary; };";
-        String pattern6 = "{ (role: $x, baseRole2: $y) isa binary; };";
-        String pattern7 = "{ (baseRole1: $x, baseRole2: $y) isa $type; };";
-        String pattern8 = "{ (baseRole1: $x, baseRole2: $y) isa $type;$type type binary; };";
+        String pattern = "{ (employee: $x, employer: $y) isa employment; };";
+        String directPattern = "{ (employee: $x, employer: $y) isa! employment; };";
+        String pattern2 = "{ $r (employee: $x, employer: $y) isa employment; };";
+        String pattern3 = "{ $z (employee: $x, employer: $y) isa employment; };";
+        String pattern4 = "{ (employee: $x, employer: $y); };";
+        String pattern5 = "{ (employee: $z, employer: $v) isa employment; };";
+        String pattern6 = "{ (role: $x, employer: $y) isa employment; };";
+        String pattern7 = "{ (employee: $x, employer: $y) isa $type; };";
+        String pattern8 = "{ (employee: $x, employer: $y) isa $type;$type type employment; };";
 
         atomicEquality(pattern, pattern, true, reasonerQueryFactory);
         atomicEquality(pattern, directPattern, false, reasonerQueryFactory);
         atomicEquality(pattern, pattern2, false, reasonerQueryFactory);
         atomicEquality(pattern, pattern3, false, reasonerQueryFactory);
-        atomicEquality(pattern, pattern4, false, reasonerQueryFactory);
+        atomicEquality(pattern, pattern4, true, reasonerQueryFactory); // true because of type inference!
         atomicEquality(pattern, pattern5, false, reasonerQueryFactory);
         atomicEquality(pattern, pattern6, false, reasonerQueryFactory);
         atomicEquality(pattern, pattern7, false, reasonerQueryFactory);
@@ -270,7 +293,7 @@ public class AtomicEquivalenceIT {
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
         // test for hash collisions AND equality check between atom produced by `isAbstract` and `type`
-        String typeIsAbstract = Graql.var("x").type("baseRoleEntity").toString();
+        String typeIsAbstract = Graql.var("x").type("organisation").toString();
         String isAbstract = Graql.var("x").isAbstract().toString();
         atomicEquality(typeIsAbstract, isAbstract, false, reasonerQueryFactory);
     }

@@ -45,17 +45,16 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.test.common.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
@@ -66,7 +65,6 @@ import static graql.lang.Graql.val;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
@@ -82,7 +80,7 @@ public class SemanticDifferenceIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "genericSchemaRefactored.gql", genericSchemaSession);
     }
 
     @AfterClass
@@ -97,9 +95,9 @@ public class SemanticDifferenceIT {
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
             Pattern parentPattern =
-                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
+                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("ternary");
             Pattern childPattern = and(
-                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("ternary"),
                     var("x").isa(subRoleEntity.label().getValue())
             );
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
@@ -128,10 +126,10 @@ public class SemanticDifferenceIT {
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
             Pattern parentPattern = and(
-                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary"),
+                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("ternary"),
                     var("z").isa(baseRoleEntity.label().getValue()));
             Pattern childPattern = and(
-                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("ternary"),
                     var("x").isa(subRoleEntity.label().getValue()));
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
@@ -160,10 +158,10 @@ public class SemanticDifferenceIT {
             EntityType metaEntityType = tx.getMetaEntityType();
 
             Pattern parentPattern = and(
-                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary"),
+                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("ternary"),
                     var("z").isa(baseRoleEntity.label().getValue()));
             Pattern childPattern = and(
-                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("ternary"),
                     var("x").isa(metaEntityType.label().getValue()));
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
@@ -182,9 +180,9 @@ public class SemanticDifferenceIT {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role role = tx.getRole("baseRole1");
             Pattern parentPattern =
-                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary");
+                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("ternary");
             Pattern childPattern = and(
-                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("ternary"),
                     var("role").type(role.label().getValue()));
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
@@ -214,10 +212,10 @@ public class SemanticDifferenceIT {
             Role subRole = tx.getRole("subRole1");
 
             Pattern parentPattern = and(
-                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary"),
+                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("ternary"),
                     var("role").type(baseRole.label().getValue()));
             Pattern childPattern = and(
-                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("ternary"),
                     var("role").type(subRole.label().getValue()));
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -247,11 +245,11 @@ public class SemanticDifferenceIT {
             Role subRole2 = tx.getRole("subRole2");
 
             Pattern parentPattern = and(
-                    var().rel(var("role"), var("z")).rel(var("role2"), var("z")).isa("binary"),
+                    var().rel(var("role"), var("z")).rel(var("role2"), var("z")).isa("ternary"),
                     var("role").type(baseRole1.label().getValue()),
                     var("role2").type(baseRole2.label().getValue()));
             Pattern childPattern = and(
-                    var().rel(var("role"), var("x")).rel(var("role2"), var("x")).isa("binary"),
+                    var().rel(var("role"), var("x")).rel(var("role2"), var("x")).isa("ternary"),
                     var("role").type(subRole1.label().getValue()),
                     var("role2").type(subRole2.label().getValue()));
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
@@ -279,9 +277,9 @@ public class SemanticDifferenceIT {
         try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Pattern parentPattern =
-                    var().rel(var("role"), var("z")).rel(var("role2"), var("w")).isa("binary");
+                    var().rel(var("role"), var("z")).rel(var("role2"), var("w")).isa("ternary");
             Pattern childPattern = and(
-                    var().rel(var("role"), var("x")).rel(var("role2"), var("y")).isa("binary"),
+                    var().rel(var("role"), var("x")).rel(var("role2"), var("y")).isa("ternary"),
                     var("y").id("V123"));
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -299,8 +297,8 @@ public class SemanticDifferenceIT {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
-            Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
-            Pattern childPattern = var().rel(subRole1.label().getValue(), var("x")).rel(subRole2.label().getValue(), var("y")).isa("binary");
+            Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("ternary");
+            Pattern childPattern = var().rel(subRole1.label().getValue(), var("x")).rel(subRole2.label().getValue(), var("y")).isa("ternary");
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
 
@@ -325,8 +323,8 @@ public class SemanticDifferenceIT {
         try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             Role metaRole = tx.getMetaRole();
-            Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
-            Pattern childPattern = var().rel(metaRole.label().getValue(), var("x")).rel(metaRole.label().getValue(), var("y")).isa("binary");
+            Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("ternary");
+            Pattern childPattern = var().rel(metaRole.label().getValue(), var("x")).rel(metaRole.label().getValue(), var("y")).isa("ternary");
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -480,8 +478,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecialisesWithDuplicateRole_differenceExists() {
         try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
-            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");
+            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("ternary");
+            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("ternary");
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -504,7 +502,7 @@ public class SemanticDifferenceIT {
             Entity entity1 = baseRoleEntity.create();
             Entity entity2 = baseRoleEntity.create();
 
-            Relation relation = tx.getRelationType("binary").create();
+            Relation relation = tx.getRelationType("ternary").create();
             relation.assign(baseRole1, entity1).assign(baseRole1, entity2);
 
             ConceptMap answer = new ConceptMap(ImmutableMap.of(new Variable("x"), entity1));
@@ -517,8 +515,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecialisesWithQuadrupleRole_differenceExists() {
         try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
-            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");
+            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("ternary");
+            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("ternary");
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -542,7 +540,7 @@ public class SemanticDifferenceIT {
             Entity entity1 = baseRoleEntity.create();
             Entity entity2 = baseRoleEntity.create();
 
-            Relation relation = tx.getRelationType("binary").create();
+            Relation relation = tx.getRelationType("ternary").create();
             relation.assign(baseRole1, entity1).assign(baseRole1, entity2);
 
             ConceptMap answer = new ConceptMap(ImmutableMap.of(new Variable("x"), entity1));
@@ -555,8 +553,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecialisesWithQuadrupleRole_differenceExistsAndIsSatisfiable() {
         try (TestTransaction tx = ((TestTransaction) genericSchemaSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("binary");
-            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("binary");
+            Pattern childPattern = var().rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).rel("baseRole1", var("x")).isa("ternary");
+            Pattern parentPattern = var().rel("baseRole1", var("x")).isa("ternary");
 
             ReasonerAtomicQuery parent = reasonerQueryFactory.atomic(conjunction(parentPattern));
             ReasonerAtomicQuery child = reasonerQueryFactory.atomic(conjunction(childPattern));
@@ -579,7 +577,7 @@ public class SemanticDifferenceIT {
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             Entity entity1 = baseRoleEntity.create();
 
-            Relation relation = tx.getRelationType("binary").create();
+            Relation relation = tx.getRelationType("ternary").create();
             relation.assign(baseRole1, entity1).assign(baseRole1, entity1).assign(baseRole1, entity1).assign(baseRole1, entity1);
 
             ConceptMap answer = new ConceptMap(ImmutableMap.of(new Variable("x"), entity1));

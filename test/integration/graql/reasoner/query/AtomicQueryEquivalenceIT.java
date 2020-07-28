@@ -42,38 +42,56 @@ import java.util.List;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.atomicEquivalence;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.conjunction;
 import static grakn.core.graql.reasoner.query.QueryTestUtil.queryEquivalence;
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {
 
-    private static String resourcePath = "test/integration/graql/reasoner/resources/";
-
     @ClassRule
     public static final GraknTestStorage storage = new GraknTestStorage();
 
-    private static Session genericSchemaSession;
+    private static Session session;
 
     private Transaction tx;
     // Transaction-bound reasonerQueryFactory
     private ReasonerQueryFactory reasonerQueryFactory;
 
     @BeforeClass
-    public static void loadContext(){
+    public static void loadContext() {
         Config mockServerConfig = storage.createCompatibleServerConfig();
-        genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
+        session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
+
+        // define schema
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define " +
+                    "organisation sub entity," +
+                    "  has name, " +
+                    "  plays employer," +
+                    "  plays owner," +
+                    "  abstract; " +
+                    "company sub organisation;" +
+                    "charity sub company;" +
+                    "employment sub relation, " +
+                    "  relates employer," +
+                    "  relates employee;" +
+                    "ownership sub relation," +
+                    "  relates owner;" +
+                    "name sub attribute, value string;").asDefine());
+            tx.commit();
+        }
     }
+
 
     @AfterClass
     public static void closeSession(){
-        genericSchemaSession.close();
+        session.close();
     }
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
+        // disable type inference so we test fewer things
+        reasonerQueryFactory.disableInferTypes();
     }
 
     @After
@@ -85,11 +103,11 @@ public class AtomicQueryEquivalenceIT {
     public void testEquivalence_DifferentIsaVariants(){
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-        String query = "{ $x isa baseRoleEntity; };";
-        String query2 = "{ $y isa $type;$type type baseRoleEntity; };";
-        String query3 = "{ $z isa $t;$t type baseRoleEntity; };";
+        String query = "{ $x isa organisation; };";
+        String query2 = "{ $y isa $type;$type type organisation; };";
+        String query3 = "{ $z isa $t;$t type organisation; };";
         String query4 = "{ $x isa $y; };";
-        String query5 = "{ $x isa subRoleEntity; };";
+        String query5 = "{ $x isa company; };";
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5);
 
@@ -111,17 +129,17 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentSubVariants(){
-        testEquivalence_DifferentOntologicalVariants(tx, "sub", "baseRoleEntity", "baseRole1");
+        testEquivalence_DifferentOntologicalVariants(tx, "sub", "organisation", "employee");
     }
 
     @Test
     public void testEquivalence_DifferentPlaysVariants(){
-        testEquivalence_DifferentOntologicalVariants(tx, "plays", "baseRole1", "baseRole2");
+        testEquivalence_DifferentOntologicalVariants(tx, "plays", "employee", "employer");
     }
 
     @Test
     public void testEquivalence_DifferentRelatesVariants(){
-        testEquivalence_DifferentOntologicalVariants(tx, "relates", "baseRole1", "baseRole2");
+        testEquivalence_DifferentOntologicalVariants(tx, "relates", "employee", "employer");
     }
 
     private void testEquivalence_DifferentOntologicalVariants(Transaction tx, String keyword, String label, String label2){
@@ -152,8 +170,8 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentHasVariants(){
-        String query = "{ $x has resource; };";
-        String query2 = "{ $y has resource; };";
+        String query = "{ $x has name; };";
+        String query2 = "{ $y has name; };";
         String query3 = "{ $x has " + Graql.Token.Type.ATTRIBUTE + "; };";
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3);
@@ -170,13 +188,13 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_TypesWithSameLabel(){
-        String isaQuery = "{ $x isa baseRoleEntity; };";
-        String subQuery = "{ $x sub baseRoleEntity; };";
+        String isaQuery = "{ $x isa organisation; };";
+        String subQuery = "{ $x sub organisation; };";
 
-        String playsQuery = "{ $x plays baseRole1; };";
-        String relatesQuery = "{ $x relates baseRole1; };";
-        String hasQuery = "{ $x has resource; };";
-        String subQuery2 = "{ $x sub baseRole1; };";
+        String playsQuery = "{ $x plays employer; };";
+        String relatesQuery = "{ $x relates employer; };";
+        String hasQuery = "{ $x has name; };";
+        String subQuery2 = "{ $x sub employer; };";
 
         ArrayList<String> queries = Lists.newArrayList(isaQuery, subQuery, playsQuery, relatesQuery, hasQuery, subQuery2);
 
@@ -198,21 +216,20 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentRelationInequivalentVariants(){
-
         HashSet<String> queries = Sets.newHashSet(
-                "{ $x isa binary; };",
-                "{ ($y) isa binary; };",
+                "{ $x isa employment; };",
+                "{ ($y) isa employment; };",
 
                 "{ ($x, $y); };",
-                "{ ($x, $y) isa binary; };",
-                "{ (baseRole1: $x, baseRole2: $y) isa binary; };",
-                "{ (role: $y, baseRole2: $z) isa binary; };",
-                "{ (role: $y, baseRole2: $z) isa $type; };",
-                "{ (role: $y, baseRole2: $z) isa $type; $type type binary; };",
-                "{ (role: $x, role: $x, baseRole2: $z) isa binary; };",
+                "{ ($x, $y) isa employment; };",
+                "{ (employer: $x, employee: $y) isa employment; };",
+                "{ (role: $y, employee: $z) isa employment; };",
+                "{ (role: $y, employee: $z) isa $type; };",
+                "{ (role: $y, employee: $z) isa $type; $type type employment; };",
+                "{ (role: $x, role: $x, employee: $z) isa employment; };",
 
-                "{ $x ($y, $z) isa binary; };",
-                "{ $x (baseRole1: $y, baseRole2: $z) isa binary; };"
+                "{ $x ($y, $z) isa employment; };",
+                "{ $x (employer: $y, employee: $z) isa employment; };"
         );
 
         queries.forEach(qA -> {
@@ -227,8 +244,8 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationWithRepeatingVariables(){
-        String query = "{ (baseRole1: $x, baseRole2: $y); };";
-        String query2 = "{ (baseRole1: $x, baseRole2: $x); };";
+        String query = "{ (employer: $x, employee: $y); };";
+        String query2 = "{ (employer: $x, employee: $x); };";
 
         equivalence(query, query2, false, ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
         equivalence(query, query2, false, ReasonerQueryEquivalence.StructuralEquivalence, reasonerQueryFactory);
@@ -236,14 +253,14 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationsWithTypedRolePlayers(){
-        String query = "{ (role: $x, role: $y);$x isa baseRoleEntity; };";
-        String query2 = "{ (role: $x, role: $y);$y isa baseRoleEntity; };";
-        String query3 = "{ (role: $x, role: $y);$x isa subRoleEntity; };";
-        String query4 = "{ (role: $x, role: $y);$y isa baseRoleEntity;$x isa baseRoleEntity; };";
-        String query5 = "{ (baseRole1: $x, baseRole2: $y);$x isa baseRoleEntity; };";
-        String query6 = "{ (baseRole1: $x, baseRole2: $y);$y isa baseRoleEntity; };";
-        String query7 = "{ (baseRole1: $x, baseRole2: $y);$x isa baseRoleEntity;$y isa subRoleEntity; };";
-        String query8 = "{ (baseRole1: $x, baseRole2: $y);$x isa baseRoleEntity;$y isa baseRoleEntity; };";
+        String query = "{ (role: $x, role: $y);$x isa organisation; };";
+        String query2 = "{ (role: $x, role: $y);$y isa organisation; };";
+        String query3 = "{ (role: $x, role: $y);$x isa company; };";
+        String query4 = "{ (role: $x, role: $y);$y isa organisation;$x isa organisation; };";
+        String query5 = "{ (employer: $x, employee: $y);$x isa organisation; };";
+        String query6 = "{ (employer: $x, employee: $y);$y isa organisation; };";
+        String query7 = "{ (employer: $x, employee: $y);$x isa organisation;$y isa company; };";
+        String query8 = "{ (employer: $x, employee: $y);$x isa organisation;$y isa organisation; };";
 
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6, query7, query8);
 
@@ -279,8 +296,8 @@ public class AtomicQueryEquivalenceIT {
 
         String query3 = "{ (role: $x, role: $y);$x id V666;$y id V666; };";
 
-        String query4 = "{ (baseRole1: $x, baseRole2: $y);$x id V666;$y id V667; };";
-        String query5 = "{ (baseRole1: $x, baseRole2: $y);$y id V666;$x id V667; };";
+        String query4 = "{ (employer: $x, employee: $y);$x id V666;$y id V667; };";
+        String query5 = "{ (employer: $x, employee: $y);$y id V666;$x id V667; };";
 
         ArrayList<String> queries = Lists.newArrayList(query, queryb, query2, query2b, query3, query4, query5);
 
@@ -308,13 +325,13 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationsWithSubstitution_differentRolesMapped(){
-        String query = "{ (baseRole1: $x, baseRole2: $y);$x id V666; };";
-        String query2 = "{ (baseRole1: $x, baseRole2: $y);$x id V667; };";
-        String query3 = "{ (baseRole1: $x, baseRole2: $y);$y id V666; };";
-        String query4 = "{ (baseRole1: $x, baseRole2: $y);$y id V667; };";
+        String query = "{ (employer: $x, employee: $y);$x id V666; };";
+        String query2 = "{ (employer: $x, employee: $y);$x id V667; };";
+        String query3 = "{ (employer: $x, employee: $y);$y id V666; };";
+        String query4 = "{ (employer: $x, employee: $y);$y id V667; };";
 
-        String query5 = "{ (baseRole1: $x, baseRole2: $y);$x id V666;$y id V667; };";
-        String query6 = "{ (baseRole1: $x, baseRole2: $y);$y id V666;$x id V667; };";
+        String query5 = "{ (employer: $x, employee: $y);$x id V666;$y id V667; };";
+        String query6 = "{ (employer: $x, employee: $y);$y id V666;$x id V667; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query6);
 
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
@@ -335,14 +352,14 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_ResourcesAsRoleplayers(){
-        String query = "{ (baseRole1: $x, baseRole2: $y);$x == 'V666'; };";
-        String query2 = "{ (baseRole1: $x, baseRole2: $y);$x == 'V667'; };";
+        String query = "{ (employer: $x, employee: $y);$x == 'V666'; };";
+        String query2 = "{ (employer: $x, employee: $y);$x == 'V667'; };";
 
-        String query3 = "{ (baseRole1: $x, baseRole2: $y);$y == 'V666'; };";
-        String query4 = "{ (baseRole1: $x, baseRole2: $y);$y == 'V667'; };";
+        String query3 = "{ (employer: $x, employee: $y);$y == 'V666'; };";
+        String query4 = "{ (employer: $x, employee: $y);$y == 'V667'; };";
 
-        String query5 = "{ (baseRole1: $x, baseRole2: $y);$x == 'V666';$y == 'V667'; };";
-        String query6 = "{ (baseRole1: $x, baseRole2: $y);$y == 'V666';$x == 'V667'; };";
+        String query5 = "{ (employer: $x, employee: $y);$x == 'V666';$y == 'V667'; };";
+        String query6 = "{ (employer: $x, employee: $y);$y == 'V666';$x == 'V667'; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6);
 
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);
@@ -363,9 +380,9 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationsWithVariableAndSubstitution(){
-        String query = "{ $r (baseRole1: $x);$x id V666; };";
-        String query2 = "{ $a (baseRole1: $x);$x id V667; };";
-        String query3 = "{ $b (baseRole2: $y);$y id V666; };";
+        String query = "{ $r (employer: $x);$x id V666; };";
+        String query2 = "{ $a (employer: $x);$x id V667; };";
+        String query3 = "{ $b (employee: $y);$y id V666; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3);
 
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, reasonerQueryFactory);

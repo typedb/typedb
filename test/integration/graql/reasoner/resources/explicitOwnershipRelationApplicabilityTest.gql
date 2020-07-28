@@ -18,9 +18,6 @@ res-long sub attribute, value long,
 res-boolean sub attribute, value boolean,
     plays resource-value;
 
-resource-owner sub role;
-resource-value sub role;
-
 resource-relation sub relation,
     relates resource-owner,
     relates resource-value;

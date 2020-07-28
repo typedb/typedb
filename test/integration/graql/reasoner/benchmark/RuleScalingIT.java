@@ -26,10 +26,9 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import graql.lang.statement.Statement;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,90 +42,31 @@ public class RuleScalingIT {
         final int N = 60;
         final int populatedChains = 3;
         Session session = server.sessionWithNewKeyspace();
+        setup(session, N, populatedChains);
 
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            tx.execute(Graql.<GraqlDefine>parse(
-                    "define " +
-                            "baseEntity sub entity, plays someRole, plays anotherRole;" +
-                            "someEntity sub baseEntity;" +
-                            "intermediateEntity sub baseEntity;" +
-                            "finalEntity sub baseEntity;" +
-                            "baseRelation sub relation, relates someRole, relates anotherRole;" +
-                            "anotherBaseRelation sub relation, relates someRole, relates anotherRole;" +
-
-                            "inferredRelation sub relation, " +
-                            "   has inferredAttribute, has anotherInferredAttribute," +
-                            "   relates someRole, relates anotherRole;" +
-                            "indexingRelation sub relation, relates someRole, relates anotherRole;" +
-                            "inferredAttribute sub attribute, value string;" +
-                            "anotherInferredAttribute sub attribute, value string;"
-            ));
-
-            for (int i = 0; i < N; i++) {
-                tx.execute(Graql.<GraqlDefine>parse(
-                        "define " +
-                                "specificRelation" + i + " sub relation, relates someRole, relates anotherRole;" +
-                                "anotherSpecificRelation" + i + " sub relation, relates someRole, relates anotherRole;"
-                ));
-            }
-            tx.commit();
+        try( Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            String query = "match " +
+                    "$x isa someEntity;" +
+                    "(BR-role: $x, BR-anotherRole: $y) isa baseRelation;" +
+                    "(ABR-role: $y, ABR-anotherRole: $link) isa anotherBaseRelation;" +
+                    "$r (DR-role: $link, DR-anotherRole: $anotherLink) isa derivedRelation;" +
+                    "$r has inferredAttribute $value;" +
+                    "$r has anotherInferredAttribute $anotherValue;" +
+                    "(IR-role: $anotherLink, IR-anotherRole: $index) isa indexingRelation;" +
+                    "get;";
+            List<ConceptMap> answers = executeQuery(query, tx);
+            assertEquals(populatedChains, answers.size());
         }
+        session.close();
+    }
 
-        String basePattern =
-                "$x isa someEntity;" +
-                        "(someRole: $x, anotherRole: $y) isa baseRelation;" +
-                        "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;";
+    private void setup(Session session, int N, int populatedChains){
+        setupSchema(session, N);
+        setupRules(session, N);
 
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            for (int i = 0; i < N; i++) {
-                Pattern specificPattern = Graql.parsePattern(
-                        "{" +
-                                basePattern +
-                                "(someRole: $link, anotherRole: $index) isa specificRelation" + i + ";" +
-                                "(someRole: $index, anotherRole: $anotherLink) isa anotherSpecificRelation" + i + ";" +
-                                "};"
-                );
-                Statement relationRule = Graql
-                        .type("relationRule" + i)
-                        .when(Graql.and(specificPattern))
-                        .then(Graql.and(Graql.parsePattern("(someRole: $link, anotherRole: $anotherLink) isa inferredRelation;")));
 
-                tx.execute(Graql.define(relationRule));
-
-                Statement attributeRule = Graql
-                        .type("attributeRule" + i)
-                        .when(Graql.and(
-                                specificPattern,
-                                Graql.parsePattern("$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation;")
-                        ))
-                        .then(Graql.and(Graql.parsePattern("$r has inferredAttribute 'inferredValue" + i + "';")));
-
-                tx.execute(Graql.define(attributeRule));
-
-                Statement anotherAttributeRule = Graql
-                        .type("anotherAttributeRule" + i)
-                        .when(Graql.and(
-                                specificPattern,
-                                Graql.parsePattern("$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation;"),
-                                Graql.parsePattern("$r has inferredAttribute 'inferredValue" + i + "';")
-                        ))
-                        .then(Graql.and(Graql.parsePattern("$r has anotherInferredAttribute 'anotherInferredValue" + i + "';")));
-
-                tx.execute(Graql.define(anotherAttributeRule));
-
-                Statement indexingRelationRule = Graql
-                        .type("indexingRelationRule" + i)
-                        .when(Graql.and(specificPattern,
-                                Graql.parsePattern("$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation;"),
-                                Graql.parsePattern("$r has inferredAttribute 'inferredValue" + i + "';"),
-                                Graql.parsePattern("$r has anotherInferredAttribute 'anotherInferredValue" + i + "';")))
-                        .then(Graql.and(Graql.parsePattern("(someRole: $anotherLink, anotherRole: $index) isa indexingRelation;")));
-
-                tx.execute(Graql.define(indexingRelationRule));
-
-            }
-            tx.commit();
-        }
+        // note: roles do not have to be shared, specific relation always used to query
+        // can generate new roles with relation
 
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             for (int k = 0; k < populatedChains; k++) {
@@ -137,30 +77,116 @@ public class RuleScalingIT {
                                 "$link isa intermediateEntity;" +
                                 "$index isa intermediateEntity;" +
                                 "$anotherLink isa finalEntity;" +
-                                "(someRole: $x, anotherRole: $y) isa baseRelation;" +
-                                "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;" +
-                                "(someRole: $link, anotherRole: $index) isa specificRelation" + k + ";" +
-                                "(someRole: $index, anotherRole: $anotherLink) isa anotherSpecificRelation" + k + ";"
+                                "(BR-role: $x, BR-anotherRole: $y) isa baseRelation;" +
+                                "(ABR-role: $y, ABR-anotherRole: $link) isa anotherBaseRelation;" +
+                                "(SR" + k + "-role: $link, SR" + k + "-anotherRole: $index) isa specificRelation" + k + ";" +
+                                "(ASR" + k + "-role: $index, ASR" + k + "-anotherRole: $anotherLink) isa anotherSpecificRelation" + k + ";"
                 ));
             }
             tx.commit();
         }
+    }
 
-        try( Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            String query = "match " +
-                    "$x isa someEntity;" +
-                    "(someRole: $x, anotherRole: $y) isa baseRelation;" +
-                    "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;" +
-                    "$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation;" +
-                    "$r has inferredAttribute $value;" +
-                    "$r has anotherInferredAttribute $anotherValue;" +
-                    "(someRole: $anotherLink, anotherRole: $index) isa indexingRelation;" +
-                    "get;";
-            List<ConceptMap> answers = executeQuery(query, tx);
-            assertEquals(populatedChains, answers.size());
+    private void setupSchema(Session session, int N){
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.<GraqlDefine>parse(
+                    "define " +
+                            "baseEntity sub entity," +
+                                "plays BR-role, plays BR-anotherRole," +
+                                "plays ABR-role, plays ABR-anotherRole," +
+                                "plays DR-role, plays DR-anotherRole," +
+                                "plays IR-role, plays IR-anotherRole;" +
+                            "someEntity sub baseEntity;" +
+                            "intermediateEntity sub baseEntity;" +
+                            "finalEntity sub baseEntity;" +
+                            "baseRelation sub relation, relates BR-role, relates BR-anotherRole;" +
+                            "anotherBaseRelation sub relation, relates ABR-role, relates ABR-anotherRole;" +
+
+                            "derivedRelation sub relation, " +
+                            "   has inferredAttribute, has anotherInferredAttribute," +
+                            "   relates DR-role, relates DR-anotherRole;" +
+                            "indexingRelation sub relation, relates IR-role, relates IR-anotherRole;" +
+                            "inferredAttribute sub attribute, value string;" +
+                            "anotherInferredAttribute sub attribute, value string;"
+            ));
+
+            for (int i = 0; i < N; i++) {
+                tx.execute(Graql.<GraqlDefine>parse(
+                        "define " +
+                                "specificRelation" + i + " sub relation," +
+                                    "relates SR" + i + "-role," +
+                                    "relates SR" + i + "-anotherRole;" +
+                                "anotherSpecificRelation" + i + " sub relation," +
+                                    "relates ASR" + i + "-role," +
+                                    "relates ASR" + i + "-anotherRole;" +
+                                "baseEntity sub entity," +
+                                    "plays SR" + i + "-role," +
+                                    "plays SR" + i + "-anotherRole," +
+                                    "plays ASR" + i + "-role," +
+                                    "plays ASR" + i + "-anotherRole;"
+
+                ));
+            }
+            tx.commit();
         }
-        session.close();
+    }
 
+    private void setupRules(Session session, int N){
+        String basePattern =
+                "$x isa someEntity;" +
+                        "(BR-role: $x, BR-anotherRole: $y) isa baseRelation;" +
+                        "(ABR-role: $y, ABR-anotherRole: $link) isa anotherBaseRelation;";
+
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            for (int i = 0; i < N; i++) {
+                Pattern specificPattern = Graql.parsePattern(
+                        "{" +
+                                basePattern +
+                                "(SR" + i + "-role: $link, SR" + i + "-anotherRole: $index) isa specificRelation" + i + ";" +
+                                "(ASR" + i + "-role: $index, ASR" + i + "-anotherRole: $anotherLink) isa anotherSpecificRelation" + i + ";" +
+                                "};"
+                );
+                Statement relationRule = Graql
+                        .type("relationRule" + i)
+                        .when(Graql.and(specificPattern))
+                        .then(Graql.and(Graql.parsePattern("(DR-role: $link, DR-anotherRole: $anotherLink) isa derivedRelation;")));
+
+                tx.execute(Graql.define(relationRule));
+
+                Statement attributeRule = Graql
+                        .type("attributeRule" + i)
+                        .when(Graql.and(
+                                specificPattern,
+                                Graql.parsePattern("$r (DR-role: $link, DR-anotherRole: $anotherLink) isa derivedRelation;")
+                        ))
+                        .then(Graql.and(Graql.parsePattern("$r has inferredAttribute 'inferredValue" + i + "';")));
+
+                tx.execute(Graql.define(attributeRule));
+
+                Statement anotherAttributeRule = Graql
+                        .type("anotherAttributeRule" + i)
+                        .when(Graql.and(
+                                specificPattern,
+                                Graql.parsePattern("$r (DR-role: $link, DR-anotherRole: $anotherLink) isa derivedRelation;"),
+                                Graql.parsePattern("$r has inferredAttribute 'inferredValue" + i + "';")
+                        ))
+                        .then(Graql.and(Graql.parsePattern("$r has anotherInferredAttribute 'anotherInferredValue" + i + "';")));
+
+                tx.execute(Graql.define(anotherAttributeRule));
+
+                Statement indexingRelationRule = Graql
+                        .type("indexingRelationRule" + i)
+                        .when(Graql.and(specificPattern,
+                                Graql.parsePattern("$r (DR-role: $link, DR-anotherRole: $anotherLink) isa derivedRelation;"),
+                                Graql.parsePattern("$r has inferredAttribute 'inferredValue" + i + "';"),
+                                Graql.parsePattern("$r has anotherInferredAttribute 'anotherInferredValue" + i + "';")))
+                        .then(Graql.and(Graql.parsePattern("(IR-role: $anotherLink, IR-anotherRole: $index) isa indexingRelation;")));
+
+                tx.execute(Graql.define(indexingRelationRule));
+
+            }
+            tx.commit();
+        }
     }
 
     private List<ConceptMap> executeQuery(String queryString, Transaction transaction){

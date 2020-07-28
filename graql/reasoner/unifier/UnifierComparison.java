@@ -178,17 +178,7 @@ public interface UnifierComparison {
      * @param types which role playability is to be checked
      * @return true if typing the typeVar with type is compatible with role configuration of the provided atom
      */
-    default boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types){ return true;}
+    default boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact){ return true;}
 
-    default boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types){ return true;}
-
-    /**
-     *
-     * @param parent    Atomic query
-     * @param child     Atomic query
-     * @param parentVar variable of interest in the parent query
-     * @param childVar  variable of interest in the child query
-     * @return true if attributes attached to child var are compatible with attributes attached to parent var
-     */
-    default boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) { return true;}
+    default boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypesExact){ return true;}
 }

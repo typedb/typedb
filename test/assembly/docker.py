@@ -1,9 +1,24 @@
 #!/usr/bin/env python
 
 import os
+import socket
 import subprocess as sp
 import sys
 import time
+
+
+def wait_for_port(port, host='localhost', timeout=30.0):
+    start_time = time.time()
+    while True:
+        try:
+            socket.create_connection((host, port), timeout=timeout)
+            return
+        except OSError as ex:
+            time.sleep(0.01)
+            if time.time() - start_time >= timeout:
+                raise TimeoutError('Waited too long for the port {} on host {} to start accepting '
+                                   'connections.'.format(port, host))
+
 
 print('Building the image...')
 sp.check_call(['bazel', 'run', '//:assemble-docker'])
@@ -17,12 +32,7 @@ sys.stdout.write('Waiting for the instance to be ready')
 sys.stdout.flush()
 timeout = 0 # TODO: add timeout
 # TODO: fail if the docker image is dead
-# upon a successful gRPC connection, the curl returns 0 in linux, and 8 in mac
-while sp.call(['curl', '--output', '/dev/null', '--silent', '--head', '--fail', 'localhost:48555']) not in {0, 8}:
-    sys.stdout.write('.')
-    sys.stdout.flush()
-    time.sleep(1)
-print()
+wait_for_port(48555)
 
 print('Running the test...')
 sp.check_call(['bazel', 'test', '//test/common:grakn-application-test', '--test_output=streamed',
