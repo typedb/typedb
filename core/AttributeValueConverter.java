@@ -42,7 +42,7 @@ public abstract class AttributeValueConverter<TARGET> {
 
     public static <TARGET> AttributeValueConverter<TARGET> of(AttributeType.ValueType<TARGET> valueType) {
         AttributeValueConverter<?> converter = converters.get(valueType);
-        if (converter == null){
+        if (converter == null) {
             throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
         }
         return (AttributeValueConverter<TARGET>) converter;
@@ -74,9 +74,9 @@ public abstract class AttributeValueConverter<TARGET> {
 
         @Override
         public LocalDateTime convert(Object value) {
-            if (value instanceof LocalDateTime){
+            if (value instanceof LocalDateTime) {
                 return (LocalDateTime) value;
-            } else if (value instanceof LocalDate){
+            } else if (value instanceof LocalDate) {
                 return ((LocalDate) value).atStartOfDay();
             }
             //NB: we are not able to parse ZonedDateTime correctly so leaving that for now
@@ -88,8 +88,10 @@ public abstract class AttributeValueConverter<TARGET> {
         @Override
         public Double convert(Object value) {
             if (value instanceof Long) {
-                return ((Long)value).doubleValue();
-            } else if (value instanceof Double){
+                return ((Long) value).doubleValue();
+            } else if (value instanceof Integer) {
+                return ((Integer) value).doubleValue();
+            } else if (value instanceof Double) {
                 return (Double) value;
             }
             throw new ClassCastException();
@@ -101,6 +103,8 @@ public abstract class AttributeValueConverter<TARGET> {
         public Long convert(Object value) {
             if (value instanceof Long) {
                 return (Long) value;
+            } else if (value instanceof Integer) {
+                return Long.valueOf((Integer)value);
             }
             throw new ClassCastException();
         }
