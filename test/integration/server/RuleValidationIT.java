@@ -29,6 +29,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
@@ -924,8 +925,8 @@ public class RuleValidationIT {
     }
 
     private void initTx(Transaction tx) {
-        AttributeType<Integer> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.INTEGER);
-        AttributeType<Integer> anotherAttribute = tx.putAttributeType("anotherAttribute", AttributeType.ValueType.INTEGER);
+        AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.ValueType.LONG);
+        AttributeType<Long> anotherAttribute = tx.putAttributeType("anotherAttribute", AttributeType.ValueType.LONG);
         AttributeType<String> stringAttribute = tx.putAttributeType("stringAttribute", AttributeType.ValueType.STRING);
         Role someRole = tx.putRole("someRole");
         Role anotherRole = tx.putRole("anotherRole");
@@ -936,15 +937,25 @@ public class RuleValidationIT {
                 .has(anotherAttribute)
                 .has(stringAttribute)
                 .plays(someRole)
-                .plays(anotherRole);
+                .plays(anotherRole)
+                .plays(singleRole);
+
+        RelationType rootRelation = tx.putRelationType("rootRelation")
+                .relates(someRole)
+                .relates(anotherRole)
+                .relates(singleRole);
 
         tx.putRelationType("someRelation")
+                .sup(rootRelation)
                 .relates(someRole)
                 .relates(anotherRole)
                 .relates(singleRole)
                 .plays(someRole)
                 .plays(anotherRole);
         tx.putRelationType("anotherRelation")
+                .sup(rootRelation)
+                .relates(someRole)
+                .relates(anotherRole)
                 .relates(singleRole);
     }
 }

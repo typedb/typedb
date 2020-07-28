@@ -359,8 +359,8 @@ public class ValidateGlobalRules {
         if (headPatterns.size() != 1) {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));
         } else {
-            ReasonerQuery bodyQuery = reasonerQueryFactory.create(Iterables.getOnlyElement(bodyPatterns));
-            ReasonerQuery headQuery = reasonerQueryFactory.create(Iterables.getOnlyElement(headPatterns));
+            ReasonerQuery bodyQuery = reasonerQueryFactory.withoutRoleInference(Iterables.getOnlyElement(bodyPatterns));
+            ReasonerQuery headQuery = reasonerQueryFactory.withoutRoleInference(Iterables.getOnlyElement(headPatterns));
             ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
 
             Set<Atomic> headAtoms = headQuery.getAtoms();
