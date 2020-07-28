@@ -80,8 +80,7 @@ class RocksTransaction implements Grakn.Transaction {
         concepts = new Concepts(graph);
         query = new Query(graph, concepts);
 
-        isOpen = new AtomicBoolean();
-        isOpen.set(true);
+        isOpen = new AtomicBoolean(true);
     }
 
     Graphs graph() {

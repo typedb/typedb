@@ -23,6 +23,7 @@ java_library(
     name = "common",
     srcs = glob(["*/*.java"]),
     deps = [],
+    tags = ["maven_coordinates=grakn.core:grakn-core-common:{pom_version}"],
 )
 
 checkstyle_test(

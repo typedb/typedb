@@ -32,6 +32,7 @@ java_library(
         "//query:query",
         "//concept:concept",
     ],
+    tags = ["maven_coordinates=grakn.core:grakn-core:{pom_version}"],
 )
 
 checkstyle_test(

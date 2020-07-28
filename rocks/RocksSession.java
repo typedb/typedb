@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RocksSession implements Grakn.Session {
-
     private final RocksDatabase database;
     private final Type type;
     private final GraknOptions.Session options;
@@ -45,8 +44,7 @@ public class RocksSession implements Grakn.Session {
 
         uuid = UUID.randomUUID();
         transactions = new ConcurrentHashMap<>();
-        isOpen = new AtomicBoolean();
-        isOpen.set(true);
+        isOpen = new AtomicBoolean(true);
     }
 
     OptimisticTransactionDB rocks() {

@@ -57,6 +57,8 @@ java_library(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
+    tags = ["maven_coordinates=grakn.core:grakn-core-server:{pom_version}"],
+    visibility = [ "//visibility:public" ]
 )
 
 java_binary(

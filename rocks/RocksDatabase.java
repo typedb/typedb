@@ -55,8 +55,8 @@ public class RocksDatabase implements Grakn.Database {
         this.rocksGrakn = rocksGrakn;
         keyGenerator = new KeyGenerator.Persisted();
         sessions = new ConcurrentHashMap<>();
-        isOpen = new AtomicBoolean(false);
         schemaLock = new StampedLock();
+        isOpen = new AtomicBoolean(false);
 
         try {
             rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksConfig(), directory().toString());

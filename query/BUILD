@@ -39,6 +39,8 @@ java_library(
         "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java:graql",
     ],
+    tags = ["maven_coordinates=grakn.core:grakn-core-query:{pom_version}"],
+    visibility = [ "//visibility:public" ]
 )
 
 checkstyle_test(
