@@ -31,9 +31,7 @@ import static grakn.common.util.Collections.pair;
 public abstract class AttributeSerialiser<DESERIALISED, SERIALISED> {
 
     public static final AttributeSerialiser<Boolean, Boolean> BOOLEAN = new Default<>();
-    public static final AttributeSerialiser<Float, Float> FLOAT = new Default<>();
     public static final AttributeSerialiser<Double, Double> DOUBLE = new Default<>();
-    public static final AttributeSerialiser<Integer, Integer> INTEGER = new Default<>();
     public static final AttributeSerialiser<Long, Long> LONG = new Default<>();
     public static final AttributeSerialiser<String, String> STRING = new Default<>();
     public static final AttributeSerialiser<LocalDateTime, Long> DATE = new AttributeSerialiser.Date();
@@ -48,8 +46,6 @@ public abstract class AttributeSerialiser<DESERIALISED, SERIALISED> {
             pair(AttributeType.ValueType.BOOLEAN, BOOLEAN),
             pair(AttributeType.ValueType.DATETIME, DATE),
             pair(AttributeType.ValueType.DOUBLE, DOUBLE),
-            pair(AttributeType.ValueType.FLOAT, FLOAT),
-            pair(AttributeType.ValueType.INTEGER, INTEGER),
             pair(AttributeType.ValueType.LONG, LONG),
             pair(AttributeType.ValueType.STRING, STRING)
     );

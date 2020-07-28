@@ -257,20 +257,10 @@ public interface AttributeType<D> extends Type {
             @Override
             public Set<ValueType<?>> comparableValueTypes() {
                 return set(ValueType.DOUBLE,
-                           //ValueType.FLOAT,
-                           //ValueType.INTEGER,
                            ValueType.LONG);
             }
         };
 
-        public static final ValueType<Float> FLOAT = new ValueType<Float>(Float.class){
-            @Override
-            public Set<ValueType<?>> comparableValueTypes() { return new HashSet<>(); }
-        };
-        public static final ValueType<Integer> INTEGER = new ValueType<Integer>(Integer.class){
-            @Override
-            public Set<ValueType<?>> comparableValueTypes() { return new HashSet<>(); }
-        };
         public static final ValueType<Long> LONG = new ValueType<Long>(Long.class){
             @Override
             public Set<ValueType<?>> comparableValueTypes() {
@@ -285,7 +275,7 @@ public interface AttributeType<D> extends Type {
             public Set<ValueType<?>> comparableValueTypes() { return Collections.singleton(ValueType.STRING); }
         };
 
-        private static final List<ValueType<?>> values = list(BOOLEAN, DATETIME, DOUBLE, FLOAT, INTEGER, LONG, STRING);
+        private static final List<ValueType<?>> values = list(BOOLEAN, DATETIME, DOUBLE, LONG, STRING);
 
         private final Class<D> dataClass;
 

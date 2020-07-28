@@ -237,12 +237,8 @@ public class ResponseBuilder {
                 return ConceptProto.AttributeType.VALUE_TYPE.STRING;
             } else if (valueType.equals(AttributeType.ValueType.BOOLEAN)) {
                 return ConceptProto.AttributeType.VALUE_TYPE.BOOLEAN;
-            } else if (valueType.equals(AttributeType.ValueType.INTEGER)) {
-                return ConceptProto.AttributeType.VALUE_TYPE.INTEGER;
             } else if (valueType.equals(AttributeType.ValueType.LONG)) {
                 return ConceptProto.AttributeType.VALUE_TYPE.LONG;
-            } else if (valueType.equals(AttributeType.ValueType.FLOAT)) {
-                return ConceptProto.AttributeType.VALUE_TYPE.FLOAT;
             } else if (valueType.equals(AttributeType.ValueType.DOUBLE)) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
             } else if (valueType.equals(AttributeType.ValueType.DATETIME)) {
@@ -258,12 +254,8 @@ public class ResponseBuilder {
                     return AttributeType.ValueType.STRING;
                 case BOOLEAN:
                     return AttributeType.ValueType.BOOLEAN;
-                case INTEGER:
-                    return AttributeType.ValueType.INTEGER;
                 case LONG:
                     return AttributeType.ValueType.LONG;
-                case FLOAT:
-                    return AttributeType.ValueType.FLOAT;
                 case DOUBLE:
                     return AttributeType.ValueType.DOUBLE;
                 case DATETIME:

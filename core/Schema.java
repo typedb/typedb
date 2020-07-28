@@ -207,7 +207,6 @@ public final class Schema {
         //Supported Value Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
         VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class),
-        VALUE_INTEGER(Integer.class), VALUE_FLOAT(Float.class),
         VALUE_DATE(Long.class);
 
         private final Class valueType;
@@ -216,8 +215,6 @@ public final class Schema {
                 pair(AttributeType.ValueType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
                 pair(AttributeType.ValueType.DATETIME, VertexProperty.VALUE_DATE),
                 pair(AttributeType.ValueType.DOUBLE, VertexProperty.VALUE_DOUBLE),
-                pair(AttributeType.ValueType.FLOAT, VertexProperty.VALUE_FLOAT),
-                pair(AttributeType.ValueType.INTEGER, VertexProperty.VALUE_INTEGER),
                 pair(AttributeType.ValueType.LONG, VertexProperty.VALUE_LONG),
                 pair(AttributeType.ValueType.STRING, VertexProperty.VALUE_STRING)
         );

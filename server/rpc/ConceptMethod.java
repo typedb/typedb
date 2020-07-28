@@ -651,12 +651,6 @@ public class ConceptMethod {
                     case DOUBLE:
                         responseSender.accept(create(AttributeSerialiser.DOUBLE.deserialise(protoValue.getDouble())));
                         return;
-                    case FLOAT:
-                        responseSender.accept(create(AttributeSerialiser.FLOAT.deserialise(protoValue.getFloat())));
-                        return;
-                    case INTEGER:
-                        responseSender.accept(create(AttributeSerialiser.INTEGER.deserialise(protoValue.getInteger())));
-                        return;
                     case LONG:
                         responseSender.accept(create(AttributeSerialiser.LONG.deserialise(protoValue.getLong())));
                         return;
