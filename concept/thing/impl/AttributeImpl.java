@@ -84,9 +84,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     @Override
     public Stream<ThingImpl> owners(ThingType ownerType) {
         TypeVertex ownerVertex = ((ThingTypeImpl) ownerType).vertex;
-        return owners(vertex.ins().edge(Schema.Edge.Thing.HAS,
-                                        PrefixIID.of(Schema.Vertex.Thing.of(ownerVertex.schema()).prefix()),
-                                        ownerVertex.iid()).from());
+        return owners(vertex.ins().edge(
+                Schema.Edge.Thing.HAS,
+                PrefixIID.of(Schema.Vertex.Thing.of(ownerVertex.schema()).prefix()),
+                ownerVertex.iid()
+        ).from());
     }
 
     private Stream<ThingImpl> owners(Iterator<ThingVertex> owners) {

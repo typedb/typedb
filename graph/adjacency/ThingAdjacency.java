@@ -70,5 +70,5 @@ public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, 
      * @param schema    type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      */
-    void delete(Schema.Edge.Thing schema, IID[] lookAhead);
+    void delete(Schema.Edge.Thing schema, IID... lookAhead);
 }

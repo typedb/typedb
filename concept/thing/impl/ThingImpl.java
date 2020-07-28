@@ -24,9 +24,9 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
-import grakn.core.concept.type.impl.AttributeTypeImpl;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
@@ -39,13 +39,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static grakn.common.util.Collections.list;
 import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED;
 import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;
@@ -108,10 +108,6 @@ public abstract class ThingImpl implements Thing {
         vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex).delete();
     }
 
-    private Stream<AttributeVertex> attributes(TypeVertex attributeType) {
-        return stream(apply(vertex.outs().edge(Schema.Edge.Thing.HAS).to(), ThingVertex::asAttribute));
-    }
-
     @Override
     public Stream<AttributeImpl> attributes() {
         return attributes(false);
@@ -124,45 +120,56 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public Stream<AttributeImpl> attributes(AttributeType attributeType) {
-        return attributes(((AttributeTypeImpl) attributeType).vertex).map(AttributeImpl::of);
+        return attributeVertices(list(attributeType)).map(AttributeImpl::of);
     }
 
     @Override
     public Stream<AttributeImpl.Boolean> attributes(AttributeType.Boolean attributeType) {
-        return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asBoolean());
+        return attributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asBoolean());
     }
 
     @Override
     public Stream<AttributeImpl.Long> attributes(AttributeType.Long attributeType) {
-        return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asLong());
+        return attributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asLong());
     }
 
     @Override
     public Stream<AttributeImpl.Double> attributes(AttributeType.Double attributeType) {
-        return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asDouble());
+        return attributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDouble());
     }
 
     @Override
     public Stream<AttributeImpl.String> attributes(AttributeType.String attributeType) {
-        return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asString());
+        return attributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asString());
     }
 
     @Override
     public Stream<AttributeImpl.DateTime> attributes(AttributeType.DateTime attributeType) {
-        return attributes(((AttributeTypeImpl) attributeType).vertex).map(v -> AttributeImpl.of(v).asDateTime());
+        return attributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDateTime());
     }
 
     @Override
     public Stream<AttributeImpl> attributes(List<AttributeType> attributeType) {
-        Iterator<ThingVertex> vertices;
-        if (!attributeType.isEmpty()) {
-            Set<TypeVertex> filter = attributeType.stream().map(t -> ((TypeImpl) t).vertex).collect(toSet());
-            vertices = filter(vertex.outs().edge(Schema.Edge.Thing.HAS).to(), v -> filter.contains(v.type()));
-        } else {
-            vertices = vertex.outs().edge(Schema.Edge.Thing.HAS).to();
-        }
+        return attributeVertices(attributeType).map(AttributeImpl::of);
+    }
 
-        return stream(apply(vertices, v -> AttributeImpl.of(v.asAttribute())));
+    private Stream<AttributeVertex> attributeVertices(List<? extends AttributeType> attributeTypes) {
+        if (!attributeTypes.isEmpty()) {
+            return attributeTypes.stream()
+                    .flatMap(AttributeType::subs).distinct()
+                    .map(t -> ((TypeImpl) t).vertex)
+                    .flatMap(this::attributeVertices);
+        } else {
+            return stream(apply(vertex.outs().edge(Schema.Edge.Thing.HAS).to(), ThingVertex::asAttribute));
+        }
+    }
+
+    private Stream<AttributeVertex> attributeVertices(TypeVertex attributeType) {
+        return stream(apply(vertex.outs().edge(
+                Schema.Edge.Thing.HAS,
+                PrefixIID.of(Schema.Vertex.Thing.of(attributeType.schema()).prefix()),
+                attributeType.iid()
+        ).to(), ThingVertex::asAttribute));
     }
 
     @Override

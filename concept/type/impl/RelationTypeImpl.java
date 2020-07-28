@@ -150,12 +150,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void unrelate(String roleLabel) {
-        TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
-        if (roleTypeVertex != null) RoleTypeImpl.of(roleTypeVertex).delete();
-    }
-
-    @Override
     public Stream<RoleTypeImpl> roles() {
         Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
         if (isRoot()) {

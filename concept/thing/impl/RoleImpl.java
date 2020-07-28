@@ -18,13 +18,12 @@
 
 package grakn.core.concept.thing.impl;
 
-import grakn.core.concept.thing.Role;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
 
 import static java.util.Objects.requireNonNull;
 
-public class RoleImpl implements Role {
+public class RoleImpl {
 
     final ThingVertex vertex;
 

@@ -233,7 +233,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public void delete(Schema.Edge.Thing schema, IID[] lookAhead) {
+        public void delete(Schema.Edge.Thing schema, IID... lookAhead) {
             bufferedEdgeIterator(schema, lookAhead).forEachRemaining(Edge::delete);
         }
 
@@ -299,7 +299,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public void delete(Schema.Edge.Thing schema, IID[] lookAhead) {
+        public void delete(Schema.Edge.Thing schema, IID... lookAhead) {
             edgeIterator(schema, lookAhead).forEachRemaining(Edge::delete);
         }
 
