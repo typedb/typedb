@@ -26,15 +26,11 @@ import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
 
 import java.time.LocalDateTime;
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.Error.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.stream;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
@@ -78,33 +74,14 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public Stream<ThingImpl> owners() {
-        return owners(vertex.ins().edge(Schema.Edge.Thing.HAS).from());
+        return stream(vertex.ins().edge(Schema.Edge.Thing.HAS).from()).map(ThingImpl::of);
     }
 
     @Override
     public Stream<ThingImpl> owners(ThingType ownerType) {
-        TypeVertex ownerVertex = ((ThingTypeImpl) ownerType).vertex;
-        return owners(vertex.ins().edge(
-                Schema.Edge.Thing.HAS,
-                PrefixIID.of(ownerVertex.schema().instance()),
-                ownerVertex.iid()
-        ).from());
-    }
-
-    private Stream<ThingImpl> owners(Iterator<ThingVertex> owners) {
-        return stream(apply(owners, v -> {
-            switch (v.schema()) {
-                case ENTITY:
-                    return EntityImpl.of(v);
-                case RELATION:
-                    return RelationImpl.of(v);
-                case ATTRIBUTE:
-                    return AttributeImpl.of(v.asAttribute());
-                default:
-                    assert false;
-                    return null;
-            }
-        }));
+        return ownerType.subs().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(v -> stream(vertex.ins().edge(
+                Schema.Edge.Thing.HAS, PrefixIID.of(v.schema().instance()), v.iid()
+        ).from())).map(ThingImpl::of);
     }
 
     @Override
