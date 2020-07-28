@@ -21,9 +21,9 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "AttributeAttachmentTest.java",
+        "NegationTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.attribute_attachment.AttributeAttachmentTest",
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.negation.NegationTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner:attribute-attachment.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:negation.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "medium",

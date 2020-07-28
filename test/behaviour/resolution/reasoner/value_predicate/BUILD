@@ -38,7 +38,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner/resolution:value-predicate.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:value-predicate.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "large",

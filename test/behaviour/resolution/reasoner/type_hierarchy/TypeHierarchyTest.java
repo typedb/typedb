@@ -32,7 +32,7 @@ import java.lang.reflect.InvocationTargetException;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/reasoner/resolution/type-hierarchy.feature",
+        features = "external/graknlabs_verification/behaviour/graql/reasoner/type-hierarchy.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class TypeHierarchyTest {

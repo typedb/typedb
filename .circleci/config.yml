@@ -184,6 +184,16 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
 
+  test-behaviour-graql-rule-validation:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/graql/language/rule_validation:test --test_output=errors
+
   test-behaviour-graql-undefine:
     machine:
       image: ubuntu-1604:201903-01
@@ -206,7 +216,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/graql/explanation/reasoner:test --test_output=errors
 
-  test-behaviour-resolution-attribute-attachment:
+  test-behaviour-reasoner-attribute-attachment:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -216,7 +226,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/attribute_attachment:test --test_output=errors
 
-  test-behaviour-resolution-concept-inequality:
+  test-behaviour-reasoner-concept-inequality:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -226,6 +236,36 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/concept_inequality:test --test_output=errors
 
+  test-behaviour-reasoner-negation:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/reasoner/negation:test --test_output=errors
+
+  test-behaviour-reasoner-relation-inference:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/reasoner/relation_inference:test --test_output=errors
+
+  test-behaviour-reasoner-roleplayer-attachment:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/reasoner/roleplayer_attachment:test --test_output=errors
+
   test-behaviour-resolution-test-framework:
     machine:
       image: ubuntu-1604:201903-01
@@ -234,9 +274,9 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/resolution/reasoner/test_framework:test --test_output=errors
+          command: bazel test //test/behaviour/resolution/reasoner/resolution_test_framework:test --test_output=errors
 
-  test-behaviour-resolution-type-generation:
+  test-behaviour-reasoner-type-generation:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -246,7 +286,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/type_generation:test --test_output=errors
 
-  test-behaviour-resolution-type-hierarchy:
+  test-behaviour-reasoner-type-hierarchy:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -256,7 +296,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/type_hierarchy:test --test_output=errors
 
-  test-behaviour-resolution-value-predicate:
+  test-behaviour-reasoner-value-predicate:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -266,7 +306,7 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/value_predicate:test --test_output=errors
 
-  test-behaviour-resolution-variable-role:
+  test-behaviour-reasoner-variable-roles:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -274,7 +314,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/resolution/reasoner/variable_role:test --test_output=errors
+          command: bazel test //test/behaviour/resolution/reasoner/variable_roles:test --test_output=errors
 
   test-resolution-framework:
     machine:
@@ -714,6 +754,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-behaviour-graql-rule-validation:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-behaviour-graql-undefine:
           filters:
             branches:
@@ -722,11 +766,23 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-attribute-attachment:
+      - test-behaviour-reasoner-attribute-attachment:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-concept-inequality:
+      - test-behaviour-reasoner-concept-inequality:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-reasoner-negation:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-reasoner-relation-inference:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - test-behaviour-reasoner-roleplayer-attachment:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -734,19 +790,19 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-type-generation:
+      - test-behaviour-reasoner-type-generation:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-type-hierarchy:
+      - test-behaviour-reasoner-type-hierarchy:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-value-predicate:
+      - test-behaviour-reasoner-value-predicate:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-resolution-variable-role:
+      - test-behaviour-reasoner-variable-roles:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -793,15 +849,19 @@ workflows:
             - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
+            - test-behaviour-graql-rule-validation
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-attribute-attachment
-            - test-behaviour-resolution-concept-inequality
+            - test-behaviour-reasoner-attribute-attachment
+            - test-behaviour-reasoner-concept-inequality
+            - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-relation-inference
+            - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-resolution-test-framework
-            - test-behaviour-resolution-type-generation
-            - test-behaviour-resolution-type-hierarchy
-            - test-behaviour-resolution-value-predicate
-            - test-behaviour-resolution-variable-role
+            - test-behaviour-reasoner-type-generation
+            - test-behaviour-reasoner-type-hierarchy
+            - test-behaviour-reasoner-value-predicate
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -827,15 +887,19 @@ workflows:
             - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
+            - test-behaviour-graql-rule-validation
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-attribute-attachment
-            - test-behaviour-resolution-concept-inequality
+            - test-behaviour-reasoner-attribute-attachment
+            - test-behaviour-reasoner-concept-inequality
+            - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-relation-inference
+            - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-resolution-test-framework
-            - test-behaviour-resolution-type-generation
-            - test-behaviour-resolution-type-hierarchy
-            - test-behaviour-resolution-value-predicate
-            - test-behaviour-resolution-variable-role
+            - test-behaviour-reasoner-type-generation
+            - test-behaviour-reasoner-type-hierarchy
+            - test-behaviour-reasoner-value-predicate
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -861,15 +925,19 @@ workflows:
             - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
+            - test-behaviour-graql-rule-validation
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-attribute-attachment
-            - test-behaviour-resolution-concept-inequality
+            - test-behaviour-reasoner-attribute-attachment
+            - test-behaviour-reasoner-concept-inequality
+            - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-relation-inference
+            - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-resolution-test-framework
-            - test-behaviour-resolution-type-generation
-            - test-behaviour-resolution-type-hierarchy
-            - test-behaviour-resolution-value-predicate
-            - test-behaviour-resolution-variable-role
+            - test-behaviour-reasoner-type-generation
+            - test-behaviour-reasoner-type-hierarchy
+            - test-behaviour-reasoner-value-predicate
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -895,15 +963,19 @@ workflows:
             - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
+            - test-behaviour-graql-rule-validation
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-attribute-attachment
-            - test-behaviour-resolution-concept-inequality
+            - test-behaviour-reasoner-attribute-attachment
+            - test-behaviour-reasoner-concept-inequality
+            - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-relation-inference
+            - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-resolution-test-framework
-            - test-behaviour-resolution-type-generation
-            - test-behaviour-resolution-type-hierarchy
-            - test-behaviour-resolution-value-predicate
-            - test-behaviour-resolution-variable-role
+            - test-behaviour-reasoner-type-generation
+            - test-behaviour-reasoner-type-hierarchy
+            - test-behaviour-reasoner-value-predicate
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
@@ -929,15 +1001,19 @@ workflows:
             - test-behaviour-graql-get
             - test-behaviour-graql-insert
             - test-behaviour-graql-match
+            - test-behaviour-graql-rule-validation
             - test-behaviour-graql-undefine
             - test-behaviour-graql-explanation
-            - test-behaviour-resolution-attribute-attachment
-            - test-behaviour-resolution-concept-inequality
+            - test-behaviour-reasoner-attribute-attachment
+            - test-behaviour-reasoner-concept-inequality
+            - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-relation-inference
+            - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-resolution-test-framework
-            - test-behaviour-resolution-type-generation
-            - test-behaviour-resolution-type-hierarchy
-            - test-behaviour-resolution-value-predicate
-            - test-behaviour-resolution-variable-role
+            - test-behaviour-reasoner-type-generation
+            - test-behaviour-reasoner-type-hierarchy
+            - test-behaviour-reasoner-value-predicate
+            - test-behaviour-reasoner-variable-roles
             - test-resolution-framework
             - test-integration
             - test-integration-reasoner
