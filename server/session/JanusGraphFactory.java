@@ -200,4 +200,3 @@ final public class JanusGraphFactory {
         }
     }
 }
-

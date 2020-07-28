@@ -440,7 +440,7 @@ public class EntityTypeIT {
     @Test
     public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
+        AttributeType<Long> age = tx.putAttributeType("age", AttributeType.ValueType.LONG);
         EntityType person = tx.putEntityType("person").has(name).has(age);
         assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age));
         person.unhas(name);
@@ -450,8 +450,8 @@ public class EntityTypeIT {
     @Test
     public void whenRemovingKeysFromAType_EnsureKeysAreRemovedt(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
-        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
+        AttributeType<Long> age = tx.putAttributeType("age", AttributeType.ValueType.LONG);
+        AttributeType<Long> id = tx.putAttributeType("id", AttributeType.ValueType.LONG);
         EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age, id));
@@ -466,8 +466,8 @@ public class EntityTypeIT {
     @Test
     public void whenRemovingKeyAsHas_Throw(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.ValueType.STRING);
-        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.ValueType.INTEGER);
-        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.ValueType.INTEGER);
+        AttributeType<Long> age = tx.putAttributeType("age", AttributeType.ValueType.LONG);
+        AttributeType<Long> id = tx.putAttributeType("id", AttributeType.ValueType.LONG);
         EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.has().collect(toSet()), containsInAnyOrder(name, age, id));

@@ -184,8 +184,6 @@ public class AtomicEquivalenceIT {
             .put(AttributeType.ValueType.BOOLEAN, true)
             .put(AttributeType.ValueType.DATETIME, LocalDateTime.now())
             .put(AttributeType.ValueType.DOUBLE, 10.0)
-            .put(AttributeType.ValueType.FLOAT, 10.0)
-            .put(AttributeType.ValueType.INTEGER, 10)
             .put(AttributeType.ValueType.LONG, 10L)
             .put(AttributeType.ValueType.STRING, "10")
             .build();
