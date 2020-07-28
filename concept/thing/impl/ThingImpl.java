@@ -30,10 +30,7 @@ import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
 
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -46,7 +43,6 @@ import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -158,18 +154,12 @@ public abstract class ThingImpl implements Thing {
             return attributeTypes.stream()
                     .flatMap(AttributeType::subs).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
-                    .flatMap(this::attributeVertices);
+                    .flatMap(at -> stream(vertex.outs().edge(
+                            Schema.Edge.Thing.HAS, PrefixIID.of(Schema.Vertex.Thing.of(at.schema()).prefix()), at.iid()
+                    ).to())).map(ThingVertex::asAttribute);
         } else {
             return stream(apply(vertex.outs().edge(Schema.Edge.Thing.HAS).to(), ThingVertex::asAttribute));
         }
-    }
-
-    private Stream<AttributeVertex> attributeVertices(TypeVertex attributeType) {
-        return stream(apply(vertex.outs().edge(
-                Schema.Edge.Thing.HAS,
-                PrefixIID.of(Schema.Vertex.Thing.of(attributeType.schema()).prefix()),
-                attributeType.iid()
-        ).to(), ThingVertex::asAttribute));
     }
 
     @Override
@@ -182,11 +172,9 @@ public abstract class ThingImpl implements Thing {
         if (roleTypes.isEmpty()) {
             return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
         } else {
-            List<Iterator<ThingVertex>> iterators = new LinkedList<>();
-            for (RoleType roleType : roleTypes) {
-                iterators.add(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).from());
-            }
-            return stream(apply(link(iterators), RelationImpl::of));
+            return roleTypes.stream().flatMap(RoleType::subs).distinct().flatMap(rt -> stream(
+                    vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
+            )).map(RelationImpl::of);
         }
     }
 
