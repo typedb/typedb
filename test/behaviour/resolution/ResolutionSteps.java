@@ -84,7 +84,7 @@ public class ResolutionSteps {
     }
 
     @Then("answer size in reasoned keyspace is: {number}")
-    public void reasoned_keyspace_answer_size_is(final int expectedCount) {
+    public void answer_size_in_reasoned_keyspace_is(final int expectedCount) {
         final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
         answers = reasonedTx.execute(queryToTest);
         final int testResultsCount = answers.size();
@@ -97,7 +97,7 @@ public class ResolutionSteps {
     }
 
     @Then("answers are consistent across {int} executions in reasoned keyspace")
-    public void reasoned_keyspace_answers_are_consistent_across_n_executions(final int executionCount) {
+    public void answers_are_consistent_across_n_executions_in_reasoned_keyspace(final int executionCount) {
         List<ConceptMap> oldAnswers;
         try (final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ)) {
             oldAnswers = reasonedTx.execute(queryToTest);
