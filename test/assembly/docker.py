@@ -6,20 +6,6 @@ import subprocess as sp
 import sys
 import time
 
-
-def wait_for_port(port, host='localhost', timeout=30.0):
-    start_time = time.time()
-    while True:
-        try:
-            socket.create_connection((host, port), timeout=timeout)
-            return
-        except OSError as ex:
-            time.sleep(0.01)
-            if time.time() - start_time >= timeout:
-                raise TimeoutError('Waited too long for the port {} on host {} to start accepting '
-                                   'connections.'.format(port, host))
-
-
 print('Building the image...')
 sp.check_call(['bazel', 'run', '//:assemble-docker'])
 
@@ -28,11 +14,8 @@ sp.check_call(['docker', 'run', '-v', '{}:/grakn-core-all-linux/logs/'.format(os
 print('Docker status:')
 sp.check_call(['docker', 'ps'])
 
-sys.stdout.write('Waiting for the instance to be ready')
-sys.stdout.flush()
-timeout = 0 # TODO: add timeout
-# TODO: fail if the docker image is dead
-wait_for_port(48555)
+print('Waiting 30s for the instance to be ready')
+time.sleep(30)
 
 print('Running the test...')
 sp.check_call(['bazel', 'test', '//test/common:grakn-application-test', '--test_output=streamed',
