@@ -29,6 +29,7 @@ import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -97,13 +98,18 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public Stream<ThingImpl> players(RoleType roleType) {
-        return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) roleType).vertex.iid()).to())
-                .map(ThingImpl::of);
+        return players(roleType.subs().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     @Override
     public Stream<ThingImpl> players(List<RoleType> roleTypes) {
-        return roleTypes.stream().flatMap(this::players);
+        return players(roleTypes.stream().flatMap(RoleType::subs).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+    }
+
+    private Stream<ThingImpl> players(Stream<TypeVertex> roleTypeVertices) {
+        return roleTypeVertices.flatMap(v -> stream(
+                vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, v.iid()).to())
+        ).map(ThingImpl::of);
     }
 
     @Override
