@@ -188,28 +188,6 @@ java_test(
 )
 
 java_test(
-    name = "ontological-query-it",
-    size = "large",
-    srcs = ["OntologicalQueryIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/integration/graql/reasoner/resources:matching-types",
-        "//test/integration/graql/reasoner/resources:rule-applicability",
-    ],
-    test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
-    deps = [
-        "//concept/answer",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/common:graql-test-util",
-        "//test/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-        "@maven//:com_google_guava_guava",
-        "@maven//:org_hamcrest_hamcrest_library",
-    ],
-)
-
-java_test(
     name = "resolution-plan-it",
     size = "medium",
     srcs = ["ResolutionPlanIT.java"],
@@ -299,7 +277,6 @@ checkstyle_test(
         ":negation-it",
         ":query-unification-it",
         ":query-it",
-        ":ontological-query-it",
         ":resolution-plan-it",
         ":subsumption-it",
         ":generative-operational-it",
