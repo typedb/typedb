@@ -54,9 +54,9 @@ public interface ThingType extends Type {
 
     Stream<? extends AttributeType> attributes(boolean onlyKey);
 
-    Stream<? extends AttributeType> attributes(Class<?> valueType);
+    Stream<? extends AttributeType> attributes(AttributeType.ValueType valueType);
 
-    Stream<? extends AttributeType> attributes(Class<?> valueType, boolean onlyKey);
+    Stream<? extends AttributeType> attributes(AttributeType.ValueType valueType, boolean onlyKey);
 
     void plays(RoleType roleType);
 

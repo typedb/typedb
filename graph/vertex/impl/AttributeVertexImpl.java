@@ -44,7 +44,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         if (buffer) type().buffer(this);
     }
 
-    public static AttributeVertexImpl<?> of(ThingGraph graph, VertexIID.Attribute iid) {
+    public static AttributeVertexImpl<?> of(ThingGraph graph, VertexIID.Attribute<?> iid) {
         switch (iid.valueType()) {
             case BOOLEAN:
                 return new AttributeVertexImpl.Boolean(graph, iid.asBoolean());
@@ -86,7 +86,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public VALUE value() {
-        if (type().valueType().isIndexable()) {
+        if (type().valueType().isWritable()) {
             return attributeIID.value();
         } else {
             // TODO: implement for ValueType.TEXT

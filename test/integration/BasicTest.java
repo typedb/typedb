@@ -35,6 +35,11 @@ import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static grakn.core.concept.type.AttributeType.ValueType.BOOLEAN;
+import static grakn.core.concept.type.AttributeType.ValueType.DATETIME;
+import static grakn.core.concept.type.AttributeType.ValueType.DOUBLE;
+import static grakn.core.concept.type.AttributeType.ValueType.LONG;
+import static grakn.core.concept.type.AttributeType.ValueType.STRING;
 import static grakn.core.test.integration.Util.assertNotNulls;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -178,12 +183,12 @@ public class BasicTest {
 
                     Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
                             tx -> {
-                                AttributeType name = tx.concepts().putAttributeType("name", String.class).asString();
+                                AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
                                 Util.assertNotNulls(name);
                                 assertEquals(rootAttributeType, name.sup());
                             },
                             tx -> {
-                                AttributeType.Long age = tx.concepts().putAttributeType("age", Long.class).asLong();
+                                AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
                                 Util.assertNotNulls(age);
                                 assertEquals(rootAttributeType, age.sup());
                             },
@@ -256,7 +261,7 @@ public class BasicTest {
                 }
 
                 try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
-                    AttributeType.String gender = transaction.concepts().putAttributeType("gender", String.class).asString();
+                    AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
                     teaching.relates("teacher");
@@ -287,11 +292,11 @@ public class BasicTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
-                    txn.concepts().putAttributeType("is-alive", Boolean.class);
-                    txn.concepts().putAttributeType("age", Long.class);
-                    txn.concepts().putAttributeType("score", Double.class);
-                    txn.concepts().putAttributeType("name", String.class);
-                    txn.concepts().putAttributeType("birth-date", LocalDateTime.class);
+                    txn.concepts().putAttributeType("is-alive", BOOLEAN);
+                    txn.concepts().putAttributeType("age", LONG);
+                    txn.concepts().putAttributeType("score", DOUBLE);
+                    txn.concepts().putAttributeType("name", STRING);
+                    txn.concepts().putAttributeType("birth-date", DATETIME);
 
                     txn.commit();
                 }

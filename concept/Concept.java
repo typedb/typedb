@@ -35,7 +35,7 @@ import static grakn.core.common.exception.Error.TypeRead.INVALID_TYPE_CASTING;
 
 public interface Concept {
 
-    String iid();
+    byte[] iid();
 
     boolean isDeleted();
 

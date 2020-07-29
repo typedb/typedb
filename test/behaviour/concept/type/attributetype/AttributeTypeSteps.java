@@ -42,50 +42,51 @@ import static org.junit.Assert.fail;
 public class AttributeTypeSteps {
 
     @When("put attribute type: {type_label}, with value type: {value_type}")
-    public void put_attribute_type_with_value_type(String typeLabel, Class<?> valueType) {
+    public void put_attribute_type_with_value_type(String typeLabel, AttributeType.ValueType valueType) {
         tx().concepts().putAttributeType(typeLabel, valueType);
     }
 
     @Then("attribute\\( ?{type_label} ?) get value type: {value_type}")
-    public void attribute_type_get_value_type(String typeLabel, Class<?> valueType) {
+    public void attribute_type_get_value_type(String typeLabel, AttributeType.ValueType valueType) {
         assertEquals(valueType, tx().concepts().getAttributeType(typeLabel).valueType());
     }
 
     @Then("attribute\\( ?{type_label} ?) get supertype value type: {value_type}")
-    public void attribute_type_get_supertype_value_type(String typeLabel, Class<?> valueType) {
+    public void attribute_type_get_supertype_value_type(String typeLabel, AttributeType.ValueType valueType) {
         AttributeType supertype = tx().concepts().getAttributeType(typeLabel).sup();
         assertEquals(valueType, supertype.valueType());
     }
 
-    private AttributeType attribute_type_as_value_type(String typeLabel, Class<?> valueType) {
+    private AttributeType attribute_type_as_value_type(String typeLabel, AttributeType.ValueType valueType) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
 
-        if (valueType.equals(Object.class)) {
-            return attributeType.asObject();
-        } else if (valueType.equals(Boolean.class)) {
-            return attributeType.asBoolean();
-        } else if (valueType.equals(Long.class)) {
-            return attributeType.asLong();
-        } else if (valueType.equals(Double.class)) {
-            return attributeType.asDouble();
-        } else if (valueType.equals(String.class)) {
-            return attributeType.asString();
-        } else if (valueType.equals(LocalDateTime.class)) {
-            return attributeType.asDateTime();
-        } else {
-            throw new GraknException(UNRECOGNISED_VALUE);
+        switch (valueType) {
+            case OBJECT:
+                return attributeType.asObject();
+            case BOOLEAN:
+                return attributeType.asBoolean();
+            case LONG:
+                return attributeType.asLong();
+            case DOUBLE:
+                return attributeType.asDouble();
+            case STRING:
+                return attributeType.asString();
+            case DATETIME:
+                return attributeType.asDateTime();
+            default:
+                throw new GraknException(UNRECOGNISED_VALUE);
         }
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes contain:")
-    public void attribute_type_as_value_type_get_subtypes_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
+    public void attribute_type_as_value_type_get_subtypes_contain(String typeLabel, AttributeType.ValueType valueType, List<String> subLabels) {
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes do not contain:")
-    public void attribute_type_as_value_type_get_subtypes_do_not_contain(String typeLabel, Class<?> valueType, List<String> subLabels) {
+    public void attribute_type_as_value_type_get_subtypes_do_not_contain(String typeLabel, AttributeType.ValueType valueType, List<String> subLabels) {
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         Set<String> actuals = attributeType.subs().map(ThingType::label).collect(toSet());
         for (String subLabel : subLabels) {
@@ -94,15 +95,15 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) set regex: {}")
-    public void attribute_type_as_value_type_set_regex(String typeLabel, Class<?> valueType, String regex) {
-        if (!valueType.equals(String.class)) fail();
+    public void attribute_type_as_value_type_set_regex(String typeLabel, AttributeType.ValueType valueType, String regex) {
+        if (!valueType.equals(AttributeType.ValueType.STRING)) fail();
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         attributeType.asString().regex(regex);
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get regex: {}")
-    public void attribute_type_as_value_type_get_regex(String typeLabel, Class<?> valueType, String regex) {
-        if (!valueType.equals(String.class)) fail();
+    public void attribute_type_as_value_type_get_regex(String typeLabel, AttributeType.ValueType valueType, String regex) {
+        if (!valueType.equals(AttributeType.ValueType.STRING)) fail();
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         assertEquals(regex, attributeType.asString().regex());
     }

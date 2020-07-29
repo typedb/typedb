@@ -36,7 +36,7 @@ java_library(
         # Internal package dependencies
         "//:grakn",
         "//common:common",
-        # "//concept:concept",
+        "//concept:concept",
         "//rocks:rocks",
 
         # External dependencies from @graknlabs

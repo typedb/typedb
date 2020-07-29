@@ -18,6 +18,7 @@
 
 package grakn.core.test.behaviour.concept.thing.attribute;
 
+import grakn.core.concept.type.AttributeType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -48,7 +49,7 @@ public class AttributeSteps {
     }
 
     @Then("attribute {var} has value type: {value_type}")
-    public void attribute_has_value_type(String var, Class<?> valueType) {
+    public void attribute_has_value_type(String var, AttributeType.ValueType valueType) {
         assertEquals(valueType, get(var).asAttribute().type().valueType());
     }
 

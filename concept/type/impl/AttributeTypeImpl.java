@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -108,9 +109,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void sup(AttributeType superType) {
-        if (!superType.isRoot() && !this.valueType().equals(superType.valueType())) {
+        if (!superType.isRoot() && !Objects.equals(this.valueType(), superType.valueType())) {
             throw new GraknException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.message(
-                    label(), valueType().getSimpleName(), superType.label(), superType.valueType().getSimpleName()
+                    label(), valueType().name(), superType.label(), superType.valueType().name()
             ));
         } else if (this.equals(superType)) {
             throw new GraknException(SUPERTYPE_SELF.message(label()));
@@ -127,8 +128,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public Class<?> valueType() {
-        return Object.class;
+    public ValueType valueType() {
+        return null;
     }
 
     @Override
@@ -138,7 +139,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl.Root asObject() {
-        if (this.valueType().equals(java.lang.Object.class)) return new AttributeTypeImpl.Root(this.vertex);
+        if (this.valueType() == ValueType.OBJECT) return new AttributeTypeImpl.Root(this.vertex);
         else throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
     }
 
@@ -187,7 +188,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         }
 
-        public Class<java.lang.Object> valueType() { return java.lang.Object.class; }
+        public ValueType valueType() { return ValueType.OBJECT; }
 
         @Override
         public AttributeTypeImpl.Root asObject() { return this; }
@@ -330,7 +331,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.Boolean> valueType() { return java.lang.Boolean.class; }
+        public ValueType valueType() { return ValueType.BOOLEAN; }
 
         @Override
         public AttributeTypeImpl.Boolean asBoolean() { return this; }
@@ -460,8 +461,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.Long> valueType() {
-            return java.lang.Long.class;
+        public ValueType valueType() {
+            return ValueType.LONG;
         }
 
         @Override
@@ -592,8 +593,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.Double> valueType() {
-            return java.lang.Double.class;
+        public ValueType valueType() {
+            return ValueType.DOUBLE;
         }
 
         @Override
@@ -778,8 +779,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<java.lang.String> valueType() {
-            return java.lang.String.class;
+        public ValueType valueType() {
+            return ValueType.STRING;
         }
 
         private static class Root extends AttributeTypeImpl.String {
@@ -893,8 +894,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Class<LocalDateTime> valueType() {
-            return LocalDateTime.class;
+        public ValueType valueType() {
+            return ValueType.DATETIME;
         }
 
         @Override

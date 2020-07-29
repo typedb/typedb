@@ -43,7 +43,7 @@ public interface Thing extends Concept {
      * @return the {@code IID} of this {@code Thing} has hexadecimal string
      */
     @Override
-    String iid();
+    byte[] iid();
 
     /**
      * Get the immediate {@code ThingType} in which this this {@code Thing} is

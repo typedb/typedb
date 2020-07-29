@@ -26,6 +26,7 @@ import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -69,8 +70,8 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public String iid() {
-        return vertex.iid().toHexString();
+    public byte[] iid() {
+        return vertex.iid().bytes();
     }
 
     @Override

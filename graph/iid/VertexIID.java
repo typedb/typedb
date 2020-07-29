@@ -49,6 +49,17 @@ public abstract class VertexIID extends IID {
         super(bytes);
     }
 
+    public static VertexIID of(byte[] bytes) {
+        switch (Schema.Prefix.of(bytes[0]).type()) {
+            case TYPE:
+                return VertexIID.Type.of(bytes);
+            case THING:
+                return VertexIID.Thing.of(bytes);
+            default:
+                return null;
+        }
+    }
+
     public abstract Schema.Vertex schema();
 
     public PrefixIID prefix() {
@@ -118,7 +129,7 @@ public abstract class VertexIID extends IID {
                                   typeIID.bytes(), keyGenerator.forThing(typeIID)));
         }
 
-        static VertexIID.Thing of(byte[] bytes) {
+        public static VertexIID.Thing of(byte[] bytes) {
             if (Schema.Vertex.Type.of(bytes[PrefixIID.LENGTH]).equals(Schema.Vertex.Type.ATTRIBUTE_TYPE)) {
                 return VertexIID.Attribute.of(bytes);
             } else {
@@ -146,7 +157,7 @@ public abstract class VertexIID extends IID {
             return copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, bytes.length);
         }
 
-        public VertexIID.Attribute asAttribute() {
+        public VertexIID.Attribute<?> asAttribute() {
             if (!schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
                 throw new GraknException(INVALID_IID_CASTING.message(VertexIID.Attribute.class.getCanonicalName()));
             }
@@ -188,7 +199,7 @@ public abstract class VertexIID extends IID {
             this.valueType = valueType;
         }
 
-        public static VertexIID.Attribute of(byte[] bytes) {
+        public static VertexIID.Attribute<?> of(byte[] bytes) {
             switch (Schema.ValueType.of(bytes[PREFIX_W_TYPE_LENGTH])) {
                 case BOOLEAN:
                     return new Attribute.Boolean(bytes);

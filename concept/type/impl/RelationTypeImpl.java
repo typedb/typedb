@@ -120,7 +120,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void relates(String roleLabel) {
+    public RoleTypeImpl relates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (sups().filter(t -> !t.equals(this)).flatMap(RelationType::roles).anyMatch(role -> role.label().equals(roleLabel))) {
@@ -130,14 +130,15 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 roleType.isAbstract(this.isAbstract());
                 vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
                 vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.sup().vertex);
+                return roleType;
             }
         }
+        return RoleTypeImpl.of(roleTypeVertex);
     }
 
     @Override
-    public void relates(String roleLabel, String overriddenLabel) {
-        this.relates(roleLabel);
-        RoleTypeImpl roleType = role(roleLabel);
+    public RoleTypeImpl relates(String roleLabel, String overriddenLabel) {
+        RoleTypeImpl roleType = this.relates(roleLabel);
 
         Optional<RoleTypeImpl> inherited;
         if (declaredRoles().anyMatch(r -> r.label().equals(overriddenLabel)) ||
@@ -147,6 +148,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         roleType.sup(inherited.get());
         vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
+        return roleType;
     }
 
     @Override

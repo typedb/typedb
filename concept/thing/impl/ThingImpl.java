@@ -31,6 +31,9 @@ import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -69,8 +72,8 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public String iid() {
-        return vertex.iid().toHexString();
+    public byte[] iid() {
+        return vertex.iid().bytes();
     }
 
     @Override
@@ -95,13 +98,13 @@ public abstract class ThingImpl implements Thing {
             }
         }
 
-        vertex.outs().put(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex);
+        vertex.outs().put(Schema.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex);
         return this;
     }
 
     @Override
     public void unhas(Attribute attribute) {
-        vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl) attribute).vertex).delete();
+        vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex).delete();
     }
 
     @Override
@@ -200,6 +203,11 @@ public abstract class ThingImpl implements Thing {
             if (i < array.length - 1) string.append(", ");
         }
         return string.toString();
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getCanonicalName() + " {" + vertex.toString() + "}";
     }
 
     @Override

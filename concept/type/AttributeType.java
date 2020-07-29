@@ -45,7 +45,7 @@ public interface AttributeType extends ThingType {
 
     boolean isKeyable();
 
-    Class<?> valueType();
+    ValueType valueType();
 
     AttributeType asObject();
 
@@ -60,6 +60,7 @@ public interface AttributeType extends ThingType {
     AttributeType.DateTime asDateTime();
 
     enum ValueType {
+        OBJECT(Schema.ValueType.OBJECT),
         BOOLEAN(Schema.ValueType.BOOLEAN),
         LONG(Schema.ValueType.LONG),
         DOUBLE(Schema.ValueType.DOUBLE),
@@ -67,9 +68,11 @@ public interface AttributeType extends ThingType {
         DATETIME(Schema.ValueType.DATETIME);
 
         private final Class<?> valueClass;
+        private final boolean isWritable;
 
         ValueType(Schema.ValueType valueType) {
             this.valueClass = valueType.valueClass();
+            this.isWritable = valueType.isWritable();
         }
 
         public ValueType of(Class<?> valueClass) {
@@ -83,6 +86,10 @@ public interface AttributeType extends ThingType {
 
         public Class<?> valueClass() {
             return valueClass;
+        }
+
+        public boolean isWritable() {
+            return isWritable;
         }
     }
 

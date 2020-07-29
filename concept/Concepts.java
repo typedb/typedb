@@ -24,13 +24,16 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
 import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.concept.type.impl.RelationTypeImpl;
 import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.Graphs;
+import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Schema;
+import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
 
@@ -96,10 +99,12 @@ public final class Concepts {
         else return null;
     }
 
-    public AttributeType putAttributeType(String label, Class<?> valueType) {
-        Schema.ValueType schema = Schema.ValueType.of(valueType);
+    public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
+        if (!valueType.isWritable()) {
+            throw new GraknException(UNSUPPORTED_OPERATION);
+        }
         TypeVertex vertex = graph.type().get(label);
-        switch (schema) {
+        switch (valueType) {
             case BOOLEAN:
                 if (vertex != null) return AttributeTypeImpl.Boolean.of(vertex);
                 else return new AttributeTypeImpl.Boolean(graph.type(), label);
@@ -116,7 +121,7 @@ public final class Concepts {
                 if (vertex != null) return AttributeTypeImpl.DateTime.of(vertex);
                 else return new AttributeTypeImpl.DateTime(graph.type(), label);
             default:
-                throw new GraknException(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.getSimpleName()));
+                throw new GraknException(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.name()));
         }
     }
 
@@ -124,6 +129,27 @@ public final class Concepts {
         TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return AttributeTypeImpl.of(vertex);
         else return null;
+    }
+
+    public Type getType(String label) {
+        TypeVertex vertex = graph.type().get(label);
+        if (vertex != null) return TypeImpl.of(vertex);
+        else return null;
+    }
+
+    public Concept getConcept(byte[] iid) {
+        switch (Schema.Prefix.of(iid[0]).type()) {
+            case TYPE:
+                TypeVertex typeVertex = graph.type().convert(VertexIID.Type.of(iid));
+                if (typeVertex != null) return TypeImpl.of(typeVertex);
+                else return null;
+            case THING:
+                ThingVertex thingVertex = graph.thing().convert(VertexIID.Thing.of(iid));
+                if (thingVertex != null) return ThingImpl.of(thingVertex);
+                else return null;
+            default:
+                return null;
+        }
     }
 
     public void validateTypes() {

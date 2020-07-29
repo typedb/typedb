@@ -286,13 +286,13 @@ public class Schema {
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;
-        private final boolean isIndexable;
+        private final boolean isWritable;
 
-        ValueType(int key, Class<?> valueClass, boolean isIndexable, boolean isKeyable) {
+        ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable) {
             this.key = (byte) key;
             this.valueClass = valueClass;
             this.isKeyable = isKeyable;
-            this.isIndexable = isIndexable;
+            this.isWritable = isWritable;
         }
 
         public static ValueType of(byte value) {
@@ -321,8 +321,8 @@ public class Schema {
             return valueClass;
         }
 
-        public boolean isIndexable() {
-            return isIndexable;
+        public boolean isWritable() {
+            return isWritable;
         }
 
         public boolean isKeyable() {

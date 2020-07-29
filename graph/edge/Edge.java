@@ -25,7 +25,7 @@ import grakn.core.graph.vertex.Vertex;
 public interface Edge<
         EDGE_SCHEMA extends Schema.Edge,
         EDGE_IID extends EdgeIID<EDGE_SCHEMA, ?, ?, ?>,
-        VERTEX extends Vertex> {
+        VERTEX extends Vertex<?, ?, ?, ?, ?>> {
 
     /**
      * Returns the schema of this edge.

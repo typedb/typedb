@@ -20,7 +20,13 @@ package grakn.core.server.rpc;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
+import grakn.core.common.exception.Error;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.options.GraknOptions;
+import grakn.core.concept.Concept;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.TransactionProto.Transaction;
@@ -34,6 +40,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -83,6 +93,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     @Override
     public void onNext(Transaction.Req request) {
         try {
+            LOG.trace("Request: {}", request);
+
             if (GrablTracingThreadStatic.isTracingEnabled()) {
                 Map<String, String> metadata = request.getMetadataMap();
                 String rootId = metadata.get("traceRootId");
@@ -142,24 +154,57 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
                 open(request.getOpenReq());
                 break;
             // TODO: add cases
+            case COMMIT_REQ:
+                commit();
+                break;
+            case ITER_REQ:
+                handleIterRequest(request.getIterReq());
+                break;
+            case GETTYPE_REQ:
+                getType(request.getGetTypeReq());
+                break;
+            case GETCONCEPT_REQ:
+                getConcept(request.getGetConceptReq());
+                break;
+            case PUTENTITYTYPE_REQ:
+                putEntityType(request.getPutEntityTypeReq());
+                break;
+            case PUTATTRIBUTETYPE_REQ:
+                putAttributeType(request.getPutAttributeTypeReq());
+                break;
+            case PUTRELATIONTYPE_REQ:
+                putRelationType(request.getPutRelationTypeReq());
+                break;
+//            case PUTRULE_REQ:
+//                putRule(request.getPutRuleReq());
+//                break;
+            case CONCEPTMETHOD_REQ:
+                conceptMethod(request.getConceptMethodReq());
+                break;
+//            case EXPLANATION_REQ:
+//                explanation(request.getExplanationReq());
+//                break;
             default:
             case REQ_NOT_SET:
-                throw Status.INVALID_ARGUMENT.asRuntimeException();
+                throw new GraknException(Error.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 
     private void handleIterRequest(Transaction.Iter.Req request) {
         switch (request.getReqCase()) {
             case ITERATORID:
-                iterators.resumeBatchIterating(request.getIteratorId(), request.getOptions());
+                iterators.resumeBatchIterating(request.getIteratorID(), request.getOptions());
                 break;
             case QUERY_ITER_REQ:
                 query(request.getQueryIterReq(), request.getOptions());
                 break;
             // TODO: add cases
+            case CONCEPTMETHOD_ITER_REQ:
+                conceptIterMethod(request.getConceptMethodIterReq(), request.getOptions());
+                break;
             default:
             case REQ_NOT_SET:
-                throw Status.INVALID_ARGUMENT.asRuntimeException();
+                throw new GraknException(Error.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -205,12 +250,75 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         try (ThreadTrace ignored = traceOnThread("query")) {
             GraknOptions.Query options = RequestReader.getOptions(GraknOptions.Query::new, request.getOptions());
 
-
             Stream<Transaction.Res> responseStream = transaction().query().stream(request.getQuery(), options)
                     .map(ResponseBuilder.Transaction.Iter::query);
             iterators.startBatchIterating(responseStream.iterator(), queryOptions);
         }
     }
+
+    private void commit() {
+        transaction().commit();
+        responseSender.onNext(ResponseBuilder.Transaction.commit());
+    }
+
+    private void getType(Transaction.GetType.Req request) {
+        Concept concept = transaction().concepts().getType(request.getLabel());
+        Transaction.Res response = ResponseBuilder.Transaction.getType(concept);
+        responseSender.onNext(response);
+    }
+
+    private void getConcept(Transaction.GetConcept.Req request) {
+        Concept concept = transaction().concepts().getConcept(request.getId().toByteArray());
+        Transaction.Res response = ResponseBuilder.Transaction.getConcept(concept);
+        responseSender.onNext(response);
+    }
+
+    private void putEntityType(Transaction.PutEntityType.Req request) {
+        EntityType entityType = transaction().concepts().putEntityType(request.getLabel());
+        Transaction.Res response = ResponseBuilder.Transaction.putEntityType(entityType);
+        responseSender.onNext(response);
+    }
+
+    private void putAttributeType(Transaction.PutAttributeType.Req request) {
+        AttributeType.ValueType valueType = ResponseBuilder.Concept.VALUE_TYPE(request.getValueType());
+
+        AttributeType attributeType = transaction.concepts().putAttributeType(request.getLabel(), valueType);
+
+        Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
+        responseSender.onNext(response);
+    }
+
+    private void putRelationType(Transaction.PutRelationType.Req request) {
+        RelationType relationType = transaction().concepts().putRelationType(request.getLabel());
+        Transaction.Res response = ResponseBuilder.Transaction.putRelationType(relationType);
+        responseSender.onNext(response);
+    }
+
+//    private void putRule(Transaction.PutRule.Req request) {
+//        Label label = Label.of(request.getLabel());
+//        Pattern when = Graql.parsePattern(request.getWhen());
+//        Pattern then = Graql.parsePattern(request.getThen());
+//
+//        Rule rule = transaction().putRule(label, when, then);
+//        Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);
+//        responseSender.onNext(response);
+//    }
+
+    private void conceptMethod(Transaction.ConceptMethod.Req request) {
+        ConceptRPC.run(request.getIid(), request.getMethod(), iterators, transaction(), responseSender::onNext);
+    }
+
+    private void conceptIterMethod(Transaction.ConceptMethod.Iter.Req request, Transaction.Iter.Req.Options options) {
+        ConceptRPC.iter(request.getIid(), request.getMethod(), iterators, transaction(), responseSender::onNext, options);
+    }
+
+//    /**
+//     * Reconstruct local ConceptMap and return the explanation associated with the ConceptMap provided by the user
+//     */
+//    private void explanation(AnswerProto.Explanation.Req explanationReq) {
+//        responseSender.onError(Status.UNIMPLEMENTED.asException());
+//        // TODO: implement TransactionListener.explanation()
+//    }
 
     /**
      * Contains a mutable map of iterators of TransactionProto.Transaction.Res for gRPC. These iterators are used for returning

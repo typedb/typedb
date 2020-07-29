@@ -160,7 +160,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void hasKey(AttributeTypeImpl attributeType) {
         if (!attributeType.isKeyable()) {
-            throw new GraknException(HAS_KEY_VALUE_TYPE.message(attributeType.label(), attributeType.valueType().getSimpleName()));
+            throw new GraknException(HAS_KEY_VALUE_TYPE.message(attributeType.label(), attributeType.valueType().name()));
         } else if (concat(sup().attributes(attributeType.valueType(), true), sup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
             throw new GraknException(HAS_KEY_NOT_AVAILABLE.message(attributeType.label()));
         }
@@ -223,7 +223,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<AttributeTypeImpl> attributes(Class<?> valueType) {
+    public Stream<AttributeTypeImpl> attributes(AttributeType.ValueType valueType) {
         return attributes(valueType, false);
     }
 
@@ -246,7 +246,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    public Stream<AttributeTypeImpl> attributes(Class<?> valueType, boolean onlyKey) {
+    public Stream<AttributeTypeImpl> attributes(AttributeType.ValueType valueType, boolean onlyKey) {
         return attributes(onlyKey).filter(att -> att.valueType().equals(valueType));
     }
 

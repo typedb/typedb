@@ -41,9 +41,9 @@ public interface RelationType extends ThingType {
 
     void sup(RelationType superType);
 
-    void relates(String roleLabel);
+    RoleType relates(String roleLabel);
 
-    void relates(String roleLabel, String overriddenLabel);
+    RoleType relates(String roleLabel, String overriddenLabel);
 
     Stream<? extends RoleType> roles();
 

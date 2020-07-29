@@ -30,7 +30,7 @@ public interface Type extends Concept {
     default Type asType() { return this; }
 
     @Override
-    String iid();
+    byte[] iid();
 
     Long count();
 

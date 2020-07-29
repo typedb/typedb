@@ -79,6 +79,12 @@ public abstract class Error {
                 new Server(6, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
                 new Server(7, "Grakn Core server has been shutdown.");
+        public static final Server MISSING_CONCEPT =
+                new Server(8, "Concept does not exist.");
+        public static final Server BAD_VALUE_TYPE =
+                new Server(9, "A value type was not correctly set.");
+        public static final Server UNKNOWN_REQUEST_TYPE =
+                new Server(10, "The request message was not recognized.");
 
         private static final String codePrefix = "SRV";
         private static final String descriptionPrefix = "Server Error";

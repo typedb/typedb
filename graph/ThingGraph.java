@@ -68,31 +68,34 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     @Override
     public ThingVertex convert(VertexIID.Thing iid) {
         assert storage().isOpen();
-//        return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
         if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
-            VertexIID.Attribute attIID = iid.asAttribute();
-            switch (attIID.valueType()) {
-                case BOOLEAN:
-                    return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(), iid1 ->
-                            new AttributeVertexImpl.Boolean(this, iid1));
-                case LONG:
-                    return attributesByIID.longs.computeIfAbsent(attIID.asLong(), iid1 ->
-                            new AttributeVertexImpl.Long(this, iid1));
-                case DOUBLE:
-                    return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(), iid1 ->
-                            new AttributeVertexImpl.Double(this, iid1));
-                case STRING:
-                    return attributesByIID.strings.computeIfAbsent(attIID.asString(), iid1 ->
-                            new AttributeVertexImpl.String(this, iid1));
-                case DATETIME:
-                    return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(), iid1 ->
-                            new AttributeVertexImpl.DateTime(this, iid1));
-                default:
-                    assert false;
-                    return null;
-            }
+            return convert(iid.asAttribute());
         } else {
             return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+        }
+    }
+
+    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
+        assert storage().isOpen();
+        switch (attIID.valueType()) {
+            case BOOLEAN:
+                return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(), iid1 ->
+                        new AttributeVertexImpl.Boolean(this, iid1));
+            case LONG:
+                return attributesByIID.longs.computeIfAbsent(attIID.asLong(), iid1 ->
+                        new AttributeVertexImpl.Long(this, iid1));
+            case DOUBLE:
+                return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(), iid1 ->
+                        new AttributeVertexImpl.Double(this, iid1));
+            case STRING:
+                return attributesByIID.strings.computeIfAbsent(attIID.asString(), iid1 ->
+                        new AttributeVertexImpl.String(this, iid1));
+            case DATETIME:
+                return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(), iid1 ->
+                        new AttributeVertexImpl.DateTime(this, iid1));
+            default:
+                assert false;
+                return null;
         }
     }
 
@@ -311,7 +314,7 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
             dateTimes.clear();
         }
 
-        void remove(VertexIID.Attribute iid) {
+        void remove(VertexIID.Attribute<?> iid) {
             switch (iid.valueType()) {
                 // We need to manually cast all 'iid', to avoid warning from .remove()
                 case BOOLEAN:

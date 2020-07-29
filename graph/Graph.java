@@ -18,13 +18,16 @@
 
 package grakn.core.graph;
 
+import grakn.core.graph.edge.Edge;
 import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Schema;
 import grakn.core.graph.util.Storage;
 import grakn.core.graph.vertex.Vertex;
 
 import java.util.stream.Stream;
 
-public interface Graph<VERTEX_IID extends VertexIID, VERTEX extends Vertex> {
+public interface Graph<VERTEX_IID extends VertexIID,
+        VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, ?, ?>> {
 
     Storage storage();
 
