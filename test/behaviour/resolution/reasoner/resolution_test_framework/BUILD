@@ -21,9 +21,9 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "VariableRoleTest.java",
+        "ResolutionTestFrameworkTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.variable_role.VariableRoleTest",
+    test_class = "grakn.core.test.behaviour.resolution.reasoner.resolution_test_framework.ResolutionTestFrameworkTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -38,10 +38,10 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner/resolution:variable-role.feature",
+        "@graknlabs_verification//behaviour/graql/reasoner:resolution-test-framework.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "medium",
+    size = "enormous",
     visibility = ["//visibility:public"]
 )
 

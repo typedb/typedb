@@ -15,15 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour:__subpackages__"])
+
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test",
     srcs = [
-        "AttributeAttachmentTest.java",
+        "RuleValidationTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.attribute_attachment.AttributeAttachmentTest",
+    test_class = "grakn.core.test.behaviour.graql.language.rule_validation.RuleValidationTest",
     deps = [
         # Package dependencies
         "//test/behaviour/server:server",
@@ -32,13 +33,13 @@ java_test(
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
+        "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
-        "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/reasoner:attribute-attachment.feature",
+        "@graknlabs_verification//behaviour/graql/language:rule-validation.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
     size = "medium",
