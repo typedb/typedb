@@ -505,7 +505,7 @@ public class ValidatorIT {
         tx.commit();
     }
 
-    @Test
+    @TesRoleInferenceITt
     public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
         Role role1 = tx.putRole("role-1");
         Role role2 = tx.putRole("role-2");
