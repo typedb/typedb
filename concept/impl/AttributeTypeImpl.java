@@ -136,7 +136,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         if (valueType().equals(ValueType.STRING)) checkConformsToRegexes((String) value);
 
-        Attribute<D> instance = getAttribute(value);
+        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvertForRead(this, value).toString());
+        Attribute<D> instance = conceptManager.getAttribute(index);
         if (instance == null) {
             // create a brand new vertex and concept
             instance = conceptManager.createAttribute(this, value, isInferred);
@@ -168,18 +169,10 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     @Nullable
     public Attribute<D> attribute(D value) {
-        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvert(this, value).toString());
+        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvertForRead(this, value).toString());
         Attribute<D> concept = conceptManager.getCachedAttribute(index);
         if (concept != null) return concept;
         return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
-    }
-
-    /**
-     * This is only used when checking if attribute exists before trying to create a new one.
-     */
-    private Attribute<D> getAttribute(D value) {
-        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvert(this, value).toString());
-        return conceptManager.getAttribute(index);
     }
 
     /**

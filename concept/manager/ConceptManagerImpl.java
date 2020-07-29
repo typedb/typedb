@@ -235,7 +235,7 @@ public class ConceptManagerImpl implements ConceptManager {
 
         AttributeType.ValueType<V> valueType = type.valueType();
 
-        V convertedValue = AttributeValueConverter.tryConvert(type, value);
+        V convertedValue = AttributeValueConverter.tryConvertForWrite(type, value);
 
         // set persisted value
         Object valueToPersist = AttributeSerialiser.of(valueType).serialise(convertedValue);

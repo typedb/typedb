@@ -53,9 +53,10 @@ public class AttributeMaterialiser implements AtomMaterialiser<AttributeAtom> {
         if (atom.isValueEquality()) {
             ValuePredicate vp = Iterables.getOnlyElement(atom.getMultiPredicate());
             Object value = vp.getPredicate().value();
-            Object persistedValue = AttributeValueConverter.tryConvert(attributeType, value);
-            Attribute existingAttribute = attributeType.attribute(persistedValue);
-            attribute = existingAttribute == null ? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
+            // read attr if exists
+            Attribute existingAttribute = attributeType.attribute(value);
+            // write attribute if it doesn't
+            attribute = existingAttribute == null ? attributeType.putAttributeInferred(value) : existingAttribute;
         } else {
             Attribute existingAttribute = substitution.containsVar(resourceVariable) ? substitution.get(resourceVariable).asAttribute() : null;
             //even if the attribute exists but is of different type (supertype for instance) we create a new one

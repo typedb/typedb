@@ -18,9 +18,7 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.base.Equivalence;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.core.AttributeValueConverter;
@@ -41,13 +39,10 @@ import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -61,11 +56,8 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -142,11 +134,10 @@ public class AttributeAtom extends Atom{
         AttributeType<Object> attributeType = type.isAttributeType()? type.asAttributeType() : null;
         if (attributeType == null || Schema.MetaSchema.isMetaLabel(attributeType.label())) return this;
 
-        AttributeType.ValueType<Object> valueType = attributeType.valueType();
         Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
             Object value = vp.getPredicate().value();
             if (value == null) return vp;
-            Object convertedValue = AttributeValueConverter.tryConvert(attributeType, value);
+            Object convertedValue = AttributeValueConverter.tryConvertForRead(attributeType, value);
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());

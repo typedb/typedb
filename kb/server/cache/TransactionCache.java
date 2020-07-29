@@ -196,7 +196,7 @@ public class TransactionCache {
         }
         if (concept.isAttribute()){
             Attribute<Object> attribute = concept.asAttribute();
-            String index = Schema.generateAttributeIndex(attribute.type().label(), AttributeValueConverter.tryConvert(attribute.type(), attribute.value()).toString());
+            String index = Schema.generateAttributeIndex(attribute.type().label(), attribute.value().toString());
             attributeCache.put(index, attribute);
         }
     }

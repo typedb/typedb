@@ -45,7 +45,6 @@ import org.junit.Test;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -203,7 +202,8 @@ public class AtomicEquivalenceIT {
                             .filter(at -> at.valueType() != null)
                             .forEach(attributeType -> {
                                 try {
-                                    Object converted = AttributeValueConverter.tryConvert(attributeType, value);
+                                    // read - lax normalisation
+                                    Object converted = AttributeValueConverter.tryConvertForRead(attributeType, value);
                                     Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(value) + ";");
                                     Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(converted) + ";");
                                     atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
