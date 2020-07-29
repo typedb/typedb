@@ -66,6 +66,7 @@ import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_CASTI
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MULTIPLE_NON_HIERARCHY_RELATION_TYPE;
 
 /**
  * Specific Validation Rules
@@ -177,8 +178,11 @@ public class ValidateGlobalRules {
         // find the topmost owners of each role, ensuring that there aren't more than 1 top
         Set<RelationType> owners = role.relations().collect(Collectors.toSet());
         role.relations().forEach(rel -> rel.subs().filter(sub -> !sub.equals(rel)).forEach(owners::remove));
-        if (owners.size() != 1) {
+
+        if (owners.size() == 0) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
+        } else if (owners.size() > 1) {
+            return Optional.of(VALIDATION_ROLE_TYPE_MULTIPLE_NON_HIERARCHY_RELATION_TYPE.getMessage(role.label()));
         }
         return Optional.empty();
     }
