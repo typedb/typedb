@@ -44,6 +44,7 @@ public class RecursionIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
+    // TODO: delete (migrated) and delete schema
     /**
      * from Vieille - Recursive Axioms in Deductive Databases p. 192
      */
@@ -66,6 +67,7 @@ public class RecursionIT {
 
     /*single-directional*/
 
+    // TODO: delete (migrated) and delete schema
     /**
      * from Bancilhon - An Amateur's Introduction to Recursive Query Processing Strategies p. 25
      */
@@ -129,6 +131,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated) and delete schema
     /**
      * from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186
      */
@@ -163,6 +166,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated), delete schema
     /**
      * from Vieille - Recursive Query Processing: The power of logic p. 25
      */
@@ -181,6 +185,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated), delete schema
     /**
      * from Vieille - Recursive Query Processing: The power of logic p. 18
      */
@@ -198,6 +203,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated)
     @Test
     public void testReachability() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -224,6 +230,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated) and delete schema
     @Test
     public void testReachabilitySymmetric() {
         try (Session session = server.sessionWithNewKeyspace()) {
@@ -238,6 +245,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated) and delete schema
     /**
      * test 6.6 from Cao p.76
      */
