@@ -24,7 +24,6 @@ import grakn.core.concept.type.ThingType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 

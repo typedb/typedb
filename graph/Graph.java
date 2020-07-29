@@ -18,9 +18,7 @@
 
 package grakn.core.graph;
 
-import grakn.core.graph.edge.Edge;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
 import grakn.core.graph.util.Storage;
 import grakn.core.graph.vertex.Vertex;
 

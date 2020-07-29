@@ -26,7 +26,6 @@ import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

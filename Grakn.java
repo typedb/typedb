@@ -19,7 +19,6 @@
 package grakn.core;
 
 import grakn.core.common.options.GraknOptions;
-import grakn.core.concept.Concept;
 import grakn.core.concept.Concepts;
 import grakn.core.query.Query;
 

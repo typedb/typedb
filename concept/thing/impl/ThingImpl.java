@@ -31,9 +31,6 @@ import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
