@@ -120,6 +120,7 @@ java_test(
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
+        "//kb/graql/exception",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],

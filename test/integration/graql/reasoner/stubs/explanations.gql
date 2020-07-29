@@ -23,7 +23,7 @@ carried-relation sub relation,
     relates object,
     relates subject;
 
-coordinates sub relatiorn,
+coordinates sub relation,
     relates location,
     relates place;
 

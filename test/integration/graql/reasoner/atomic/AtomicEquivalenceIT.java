@@ -25,6 +25,8 @@ import grakn.core.core.AttributeValueConverter;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -208,7 +210,7 @@ public class AtomicEquivalenceIT {
                                     Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(converted) + ";");
                                     atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                                     atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
-                                } catch (ClassCastException e) {
+                                } catch (GraknConceptException e) {
                                     // do nothing - was non-castable
                                 }
                             });
