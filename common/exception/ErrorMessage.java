@@ -86,6 +86,7 @@ public enum ErrorMessage {
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
+    VALIDATION_ROLE_TYPE_MULTIPLE_NON_HIERARCHY_RELATION_TYPE("Role [%s] has multiple relates connection to Relation Types that are not in a hierarchy. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
 
     VALIDATION_OWNS_NO_KEY("Thing [%s] of type [%s] does not have the required key of type [%s]. \n"),
