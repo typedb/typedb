@@ -119,28 +119,32 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     }
 
     @Override
-    public Attribute<D> create(D value) {
+    public Attribute<D> create(Object value) {
         return putAttribute(value, false);
     }
 
     @Override
-    public Attribute<D> putAttributeInferred(D value) {
+    public Attribute<D> putAttributeInferred(Object value) {
         return putAttribute(value, true);
     }
 
     /**
      * Method through which all new instance creations of attributes pass through
      */
-    private Attribute<D> putAttribute(D value, boolean isInferred) {
+    private Attribute<D> putAttribute(Object value, boolean isInferred) {
         Objects.requireNonNull(value);
 
+        // check that the value conforms
         if (valueType().equals(ValueType.STRING)) checkConformsToRegexes((String) value);
+        D writeableValue = AttributeValueConverter.tryConvertForWrite(this, value);
 
-        String index = Schema.generateAttributeIndex(label(), AttributeValueConverter.tryConvertForRead(this, value).toString());
+        // if the value is readable, return read value
+        D readableValue = AttributeValueConverter.tryConvertForRead(this, value);
+        String index = Schema.generateAttributeIndex(label(), readableValue.toString());
         Attribute<D> instance = conceptManager.getAttribute(index);
         if (instance == null) {
             // create a brand new vertex and concept
-            instance = conceptManager.createAttribute(this, value, isInferred);
+            instance = conceptManager.createAttribute(this, writeableValue, isInferred);
         } else {
             if (isInferred && !instance.isInferred()) {
                 throw GraknConceptException.nonInferredThingExists(instance);
