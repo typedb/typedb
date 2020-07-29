@@ -50,7 +50,7 @@ public class GraqlGetIT {
     @BeforeClass
     public static void newSession() {
         session = graknServer.sessionWithNewKeyspace();
-//        MovieGraph.load(session);
+        MovieGraph.load(session);
     }
 
     @Before
@@ -66,36 +66,6 @@ public class GraqlGetIT {
     @AfterClass
     public static void closeSession() {
         session.close();
-    }
-
-    @Test
-    public void test() {
-        tx.execute(Graql.parse("define d sub attribute, value double;").asDefine());
-        tx.execute(Graql.parse("insert $x 2.0 isa d; $y 2 isa d;").asInsert());
-        tx.execute(Graql.parse("match $x isa d; get;").asGet());
-        assertEquals(1,tx.execute(Graql.parse("match $x isa d; get;").asGet()).size());
-    }
-
-    @Test
-    public void test2() {
-        tx.execute(Graql.parse("define p sub entity, key d; d sub attribute, value double;").asDefine());
-        tx.execute(Graql.parse("insert $x isa p, has d 2.0; $y isa p, has d 2;").asInsert());
-        exception.expect(Exception.class);
-        tx.commit();
-    }
-
-    @Test
-    public void test3() {
-        tx.execute(Graql.parse("define d sub attribute, value double;").asDefine());
-        tx.execute(Graql.parse("insert $x 2 isa d; $y 2 isa d;").asInsert());
-        assertEquals(1,tx.execute(Graql.parse("match $x isa d; get;").asGet()).size());
-    }
-
-    @Test
-    public void test4() {
-        tx.execute(Graql.parse("define person sub entity, has attr-double, has attr-long; attr-double sub attribute, value double; attr-long sub attribute, value long;").asDefine());
-        tx.execute(Graql.parse("insert $x 2 isa attr-long; $y 2.0 isa attr-double;").asInsert());
-        assertEquals(2,tx.execute(Graql.parse("match $x 2.0 isa attribute; get;").asGet()).size());
     }
 
     @Test
