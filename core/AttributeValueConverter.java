@@ -35,8 +35,6 @@ public abstract class AttributeValueConverter<SOURCE, TARGET>{
             .put(AttributeType.ValueType.BOOLEAN, new IdentityConverter<Boolean, Boolean>())
             .put(AttributeType.ValueType.DATETIME, new DateConverter())
             .put(AttributeType.ValueType.DOUBLE, new DoubleConverter())
-            .put(AttributeType.ValueType.FLOAT, new FloatConverter())
-            .put(AttributeType.ValueType.INTEGER, new IntegerConverter())
             .put(AttributeType.ValueType.LONG, new LongConverter())
             .put(AttributeType.ValueType.STRING, new IdentityConverter<String, String>())
             .build();
