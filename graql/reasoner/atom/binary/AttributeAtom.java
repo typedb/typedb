@@ -41,6 +41,7 @@ import grakn.core.graql.reasoner.atom.task.validate.AttributeAtomValidator;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
@@ -145,12 +146,7 @@ public class AttributeAtom extends Atom{
         Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
             Object value = vp.getPredicate().value();
             if (value == null) return vp;
-            Object convertedValue;
-            try {
-                convertedValue = AttributeValueConverter.of(valueType).convert(value);
-            } catch (ClassCastException e){
-                throw GraqlSemanticException.incompatibleAttributeValue(valueType, value);
-            }
+            Object convertedValue = AttributeValueConverter.tryConvert(attributeType, value);
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());

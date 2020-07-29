@@ -19,6 +19,7 @@ package grakn.core.graql.planning.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
@@ -109,17 +110,9 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
             throw new IllegalStateException("This optimisation should contain equalValues in equalValueFragments method");
         }
 
-        Object value = valueSet.operation().value();
-
-        AttributeType.ValueType<?> valueType = conceptManager.getAttributeType(label.getValue()).valueType();
-        if (Number.class.isAssignableFrom(valueType.valueClass())) {
-            if (valueType.valueClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
-                value = ((Double) value).longValue();
-            } else if (valueType.valueClass() == Double.class && value instanceof Long) {
-                value = ((Long) value).doubleValue();
-            }
-        }
-        AttributeIndexFragmentSet indexFragmentSet = new AttributeIndexFragmentSet(attribute, label, value);
+        AttributeType<?> type = conceptManager.getAttributeType(label.getValue());
+        final Object convertedValue = AttributeValueConverter.tryConvert(type, valueSet.operation().value());
+        AttributeIndexFragmentSet indexFragmentSet = new AttributeIndexFragmentSet(attribute, label, convertedValue);
         fragmentSets.add(indexFragmentSet);
     }
 

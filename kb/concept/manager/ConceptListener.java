@@ -47,7 +47,7 @@ public interface ConceptListener {
 
     void schemaConceptDeleted(SchemaConcept schemaConcept);
 
-    <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred);
+    <D> void attributeCreated(Attribute<D> attribute, String uniqueIndex, boolean isInferred);
 
     void relationCreated(Relation relation, boolean isInferred);
 

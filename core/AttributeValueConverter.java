@@ -41,13 +41,24 @@ public abstract class AttributeValueConverter<TARGET> {
             .put(AttributeType.ValueType.LONG, new LongConverter())
             .put(AttributeType.ValueType.STRING, new StringConverter())
             .build();
-
-    public static <TARGET> AttributeValueConverter<TARGET> of(AttributeType.ValueType<TARGET> valueType) {
-        AttributeValueConverter<?> converter = converters.get(valueType);
-        if (converter == null) {
-            throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
+    /**
+     * Try to convert an attribute value to a desired target type, throwing an exception if the conversion fails.
+     * @param type The attribute type
+     * @param value The attribute value
+     * @param <T> The target type
+     * @return The converted value
+     */
+    public static <T> T tryConvert(AttributeType<T> type, Object value) {
+        try {
+            final AttributeType.ValueType<T> valueType = type.valueType();
+            AttributeValueConverter<T> converter = (AttributeValueConverter<T>) converters.get(valueType);
+            if (converter == null) {
+                throw new UnsupportedOperationException("Unsupported ValueType: " + valueType);
+            }
+            return converter.convert(value);
+        } catch (ClassCastException e) {
+            throw GraknConceptException.invalidAttributeValue(type, value);
         }
-        return (AttributeValueConverter<TARGET>) converter;
     }
 
     public abstract TARGET convert(Object value);

@@ -97,8 +97,8 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
     }
 
     @Override
-    public <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
-        conceptListener.attributeCreated(attribute, value, isInferred);
+    public <D> void attributeCreated(Attribute<D> attribute, String uniqueIndex, boolean isInferred) {
+        conceptListener.attributeCreated(attribute, uniqueIndex, isInferred);
     }
 
     @Override

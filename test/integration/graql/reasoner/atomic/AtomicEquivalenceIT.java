@@ -191,7 +191,7 @@ public class AtomicEquivalenceIT {
     @Test
     public void testEquivalence_AttributesWithEquivalentValues() {
         AttributeType<?> metaAttributeType = tx.getMetaAttributeType();
-        Set<AttributeType> attributeTypes = metaAttributeType.subs().collect(toSet());
+        Set<AttributeType<?>> attributeTypes = metaAttributeType.subs().collect(toSet());
 
         ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
 
@@ -202,10 +202,10 @@ public class AtomicEquivalenceIT {
                     attributeTypes.stream()
                             .filter(at -> at.valueType() != null)
                             .forEach(attributeType -> {
-                                AttributeValueConverter<?> converter = AttributeValueConverter.of(attributeType.valueType());
                                 try {
+                                    Object converted = AttributeValueConverter.tryConvert(attributeType, value);
                                     Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(value) + ";");
-                                    Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(converter.convert(value)) + ";");
+                                    Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(converted) + ";");
                                     atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, reasonerQueryFactory);
                                     atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, reasonerQueryFactory);
                                 } catch (ClassCastException e) {
