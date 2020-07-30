@@ -1,0 +1,440 @@
+define
+
+#######################################################################
+# Attributes
+#######################################################################
+
+name sub attribute,
+    datatype string;
+
+location-name sub name;
+
+organisation-name sub name;
+company-name sub organisation-name;
+university-name sub organisation-name;
+charity-name sub organisation-name;
+
+company-number sub attribute,
+    datatype long;
+
+forename sub name;
+
+surname sub name;
+
+product-name sub name;
+
+service-name sub name;
+
+date-of-event sub attribute,
+    abstract,
+    datatype date;
+
+date-of-incorporation sub date-of-event;
+
+start-date sub date-of-event;
+
+end-date sub date-of-event;
+
+date-of-birth sub date-of-event;
+
+date-of-marriage sub date-of-event;
+
+relocation-date sub date-of-event;
+
+gender sub attribute,
+    datatype string;
+
+age sub attribute,
+    datatype long;
+
+language sub attribute,
+    datatype string,
+    regex "^(English|German|Portugese|Afrikaans|Mandarin)$";
+
+content-language sub attribute,
+    datatype string;
+
+num-characters sub attribute,
+    datatype long;
+
+text-content sub attribute, 
+    datatype string,
+    has content-language,
+    has num-characters;
+
+contract-content sub text-content;
+
+contracted-hours sub attribute,
+    datatype double;
+
+annual-wage sub attribute,
+    datatype double;
+
+currency-code sub attribute,
+    datatype string,
+    regex "^(USD|GBP|EUR|BRL|ZAR|RMB|AUD)$";
+
+currency sub attribute,
+    datatype string,
+    regex "^(American Dollar|Great British Pound|Euro|Brazilian Real|South African Rand|Renminbi|Australian Dollar)$",
+    has currency-code;
+
+value sub attribute,
+    datatype double;
+
+date-signed sub attribute,
+    datatype date;
+
+email sub attribute,
+    datatype string;
+
+identifier sub attribute,
+    datatype long;
+
+marriage-id sub identifier;
+
+identifier-double sub attribute, 
+    datatype double;
+
+service-id sub identifier-double;
+
+product-barcode sub identifier-double;
+
+description sub attribute,
+    datatype string;
+
+product-description sub description;
+
+product-quantity sub attribute,
+    datatype long;
+
+service-description sub description;
+
+is-taxable sub attribute,
+    datatype boolean;
+
+is-current sub attribute,
+    datatype boolean;
+
+#######################################################################
+# Entities, Relations and Rules, by approximate category
+#######################################################################
+
+# --------------------------------------------------------
+# Locations
+# --------------------------------------------------------
+
+location sub entity,
+    abstract,
+    key location-name,
+    plays location-hierarchy_superior,
+    plays location-hierarchy_subordinate,
+    plays relocation_previous-location,
+    plays relocation_new-location,
+    plays locates_location,
+    plays born-in_place-of-birth;  # TODO Can we avoid using this but also avoid validation errors?
+
+city sub location,
+    plays residency_location;
+
+country sub location,
+    has currency,
+    has language,
+    plays incorporation_incorporating;
+
+continent sub location,
+    plays produced-in_continent;
+
+location-hierarchy sub relation,
+    relates location-hierarchy_superior,
+    relates location-hierarchy_subordinate;
+
+locates sub relation,
+    relates locates_location,
+    relates locates_located;
+
+location-hierarchy-transitivity sub rule,
+when {
+    $lh1(location-hierarchy_superior: $a, location-hierarchy_subordinate: $b) isa location-hierarchy;
+    $lh2(location-hierarchy_superior: $b, location-hierarchy_subordinate: $c) isa location-hierarchy;
+}, then {
+    (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;
+};
+
+# Transitive group membership
+# Here we realise that it's common to say that when something takes place in a location it also takes place in the superior places.
+# This will lead to many rules of this kind. Can this be generified, and should it be?
+locates-transitive-with-location-hierarchy sub rule,
+when {
+    $loc(locates_located: $thing, locates_location: $a) isa locates;
+    $lh2(location-hierarchy_superior: $b, location-hierarchy_subordinate: $a) isa location-hierarchy;
+}, then {
+    (locates_located: $thing, locates_location: $b) isa locates;
+};
+
+# --------------------------------------------------------
+# Currency
+# --------------------------------------------------------
+
+transaction-currency-is-that-of-the-country sub rule,
+when {
+    $transaction isa transaction;
+    $l(locates_located: $t, locates_location: $transaction-location) isa locates;
+    $transaction-country isa country, has currency $currency;
+}, then {
+    $transaction has currency $currency;
+};
+
+# --------------------------------------------------------
+# Friends and Family
+# --------------------------------------------------------
+
+person sub entity,
+    key email,
+    has forename,
+    has surname,
+    has gender,
+    has date-of-birth,
+    has age,
+    plays employment_employee,
+    plays volunteering_volunteer,
+    plays studentship_student,
+    plays parentship_parent,
+    plays parentship_child,
+    plays marriage_husband,
+    plays marriage_wife,
+    plays friendship_friend,
+    plays born-in_child,
+    plays residency_resident,
+    plays relocation_relocated-person;
+
+parentship sub relation,
+    relates parentship_parent,  # Could have two parents playing parent in a single parentship for interesting cardinality
+    relates parentship_child;
+
+friendship sub relation,
+    has start-date,
+    has end-date,
+    relates friendship_friend; # Could be N-ary, though in a real-world context this is imperfect
+
+marriage sub relation,
+    key marriage-id,
+    has date-of-marriage,
+    relates marriage_husband,
+    relates marriage_wife,
+    plays locates_located;
+
+# --------------------------------------------------------
+# Individuals
+# --------------------------------------------------------
+
+born-in sub locates,
+    relates born-in_place-of-birth as locates_location,
+    relates born-in_child as locates_located;
+
+residency sub relation,
+    has start-date,
+    has end-date,
+    has is-current,
+    relates residency_resident,
+    relates residency_location;
+
+relocation sub relation,
+    has relocation-date,
+    relates relocation_previous-location,
+    relates relocation_new-location,
+    relates relocation_relocated-person;
+
+# Causes of residency
+# - born in a location
+# - move to a location
+# - can be inferred from where someone works or studies at school or university
+
+born-in-location-implies-residency sub rule,
+when {
+    $bi(born-in_place-of-birth: $location, born-in_child: $person) isa born-in;
+}, then {
+    (residency_resident: $person, residency_location: $location) isa residency;
+};
+
+# This rule can be triggered by a person moving back to their hometown having moved away, and add an incorrect start-date
+born-in-location-implies-residency-date sub rule,
+when {
+    $bi(born-in_place-of-birth: $location, born-in_child: $person) isa born-in;
+    $person isa person, has date-of-birth $dob;
+    $r(residency_resident: $person, residency_location: $location) isa residency;
+}, then {
+    $r has start-date $dob;
+};
+
+person-relocating-adds-new-residency sub rule,
+when {
+    $rel(relocation_relocated-person: $person, relocation_new-location: $location) isa relocation;
+}, then {
+    (residency_resident: $person, residency_location: $location) isa residency;
+};
+
+person-relocating-ends-old-residency sub rule,
+when {
+    $rel(relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation, has relocation-date $rel-date;
+    $old-residency(residency_resident: $person, residency_location: $location) isa residency;
+}, then {
+    $old-residency has end-date $rel-date;
+};
+
+person-membership-of-organisation-means-relocation sub rule,
+when {
+    (membership_member: $person, membership_group: $group) isa membership;
+    (locates_located: $group, locates_location: $location) isa locates;
+}, then {
+    (relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation;
+};
+
+person-membership-of-organisation-means-relocation-date sub rule,
+when {
+    (membership_member: $person, membership_group: $group) isa membership, has start-date $membership-start-date;
+    (locates_located: $group, locates_location: $location) isa locates;
+    $rel(relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation;
+}, then {
+    $rel has relocation-date $membership-start-date;
+};
+
+residency-without-end-date-is-current sub rule,
+when {
+    $res(residency_resident: $person, residency_location: $location) isa residency;
+    not {
+        $res has end-date $rel-date;
+    };
+}, then {
+    $res has is-current true;
+};
+
+label-non-current-residency sub rule,
+when {
+    $res isa residency, has end-date $end-date;
+}, then {
+    $res has is-current false;
+};
+
+# --------------------------------------------------------
+# Organisational Structure
+# --------------------------------------------------------
+
+organisation sub entity;
+
+company sub organisation,
+    # We may want to say `has company-name as organisation-name;`
+    key company-name,
+    key company-number,
+    plays employment_employer,
+    plays transaction_vendor,
+    plays transaction_buyer,
+    plays incorporation_incorporated;
+
+incorporation sub relation,
+    has date-of-incorporation,
+    relates incorporation_incorporated,
+    relates incorporation_incorporating;
+
+university sub organisation,
+    has university-name,
+    plays employment_employer,
+    plays studentship_school,
+    plays transaction_vendor,
+    plays transaction_buyer;
+
+charity sub organisation,
+    has charity-name,
+    plays volunteering_cause,
+    plays transaction_buyer;
+
+membership sub relation,
+#    key identifier,
+    has start-date,
+    has end-date,
+    relates membership_member,
+    relates membership_group;
+
+employment sub membership,
+    # key employment-id as membership-id, # We might want to say this?
+    relates employment_employee as membership_member,
+    relates employment_employer as membership_group,
+    # relates employment_contract,
+    # relates employment_profession,  # https://github.com/graknlabs/grakn/issues/5553
+    
+    # For wages in different currencies, either:
+    # - subtype for the different currencies,
+    # - add currency as attribute to implicit relation,
+    # - model the wage as an entity,
+    # The attribute on an implicit relation is a pattern we would like to stress-test
+    has annual-wage, 
+    has contracted-hours,
+    # Nested relation
+    plays locates_located;
+
+# @has-annual-wage sub @has-attribute,
+#     has currency;
+
+studentship sub membership,
+    relates studentship_student as membership_member,
+    relates studentship_school as membership_group;
+
+volunteering sub membership,
+    relates volunteering_volunteer as membership_member,
+    relates volunteering_cause as membership_group;
+
+occupation sub entity,
+    key name;
+#    plays employment_profession;
+
+legal-document sub entity,
+    has date-signed,
+    has text-content;
+
+employment-contract sub legal-document,
+    # plays employment_contract,
+    has contract-content,
+    has contracted-hours;
+
+unemployed-person sub person;
+
+person-with-no-active-employment-is-unemployed sub rule,
+when {
+    $p isa person;
+    not {
+        $e(employment_employee: $p) isa employment;
+    };
+}, then {
+    $p isa unemployed-person;
+};
+
+# --------------------------------------------------------
+# Organisational Trade
+# --------------------------------------------------------
+
+transaction sub relation,
+    relates transaction_buyer,
+    relates transaction_vendor,
+    relates transaction_merchandise,
+    has currency,
+    has value,
+    has product-quantity,
+    has is-taxable,
+    plays locates_located;
+
+product sub entity,
+    key product-barcode,
+    has product-name,
+    has product-description,
+    plays transaction_merchandise,
+    plays produced-in_product;
+
+produced-in sub relation,
+    relates produced-in_product,
+    relates produced-in_continent;
+
+service sub entity,
+    key service-id,
+    has service-name,
+    has service-description,
+    plays transaction_merchandise;

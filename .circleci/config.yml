@@ -22,14 +22,14 @@ orbs:
 commands:
   install-bazel-linux-rbe:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/abbee2441ccb14c5e9ff12eb7668ecc89d1c6b1d/ci/install-bazel-linux.sh
       - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/abbee2441ccb14c5e9ff12eb7668ecc89d1c6b1d/ci/install-bazel-rbe.sh
       - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
 
   install-bazel-mac:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/abbee2441ccb14c5e9ff12eb7668ecc89d1c6b1d/ci/install-bazel-mac.sh
       - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
 
   run-bazel-rbe:

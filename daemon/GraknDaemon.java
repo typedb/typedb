@@ -22,6 +22,8 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
+import grakn.core.daemon.migrate.MigrationClient;
+import grakn.core.daemon.migrate.ProgressPrinter;
 import grakn.core.server.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -134,15 +137,20 @@ public class GraknDaemon {
      * @param args arrays of arguments, eg., { 'server', 'start' }
      */
     public void run(String[] args) {
-        String action = args.length > 1 ? args[1] : "";
-        String option = args.length > 2 ? args[2] : "";
+        // Ignore command name arg by starting at one
 
-        List<String> otherArgs = Collections.emptyList();
-        for (int i = 2; i < args.length; ++i) {
-            if (OPTIONS.equals(args[i])) {
-                otherArgs = Arrays.asList(args).subList(i + 1, args.length);
-            }
+        int splitPoint = 1;
+        while (splitPoint < args.length && !OPTIONS.equals(args[splitPoint])) {
+            splitPoint++;
         }
+
+        List<String> mainArgs = Arrays.asList(args).subList(1, splitPoint);
+        List<String> otherArgs = splitPoint < args.length
+                ? Arrays.asList(args).subList(splitPoint + 1, args.length)
+                : Collections.emptyList();
+
+        String action = mainArgs.size() > 0 ? mainArgs.get(0) : "";
+        String option = mainArgs.size() > 1 ? mainArgs.get(1) : "";
 
         switch (action) {
             case "start":
@@ -162,6 +170,15 @@ public class GraknDaemon {
                 break;
             case "version":
                 version();
+                break;
+            case "export":
+                export(mainArgs.subList(1, mainArgs.size()));
+                break;
+            case "import":
+                import_(mainArgs.subList(1, mainArgs.size()));
+                break;
+            case "schema":
+                exportSchema(mainArgs.subList(1, mainArgs.size()));
                 break;
             default:
                 serverHelp();
@@ -243,6 +260,61 @@ public class GraknDaemon {
         }
         storageExecutor.clean();
         serverExecutor.clean();
+    }
+
+    private static final int SLOW_ANIM_RATE = 5000;
+    private static final int FAST_ANIM_RATE = 100;
+
+    private class MigrationArgs {
+        private List<String> remaining;
+        private boolean fastAnim = true;
+
+        private MigrationArgs(List<String> args) {
+            remaining = new ArrayList<>();
+            for (String arg : args) {
+                if (!arg.startsWith("--")) {
+                    remaining.add(arg);
+                }
+
+                if (arg.equals("--no-anim")) {
+                    fastAnim = false;
+                }
+            }
+
+            if (remaining.size() != 2) {
+                throw new IllegalArgumentException("Must use exactly 2 arguments: <keyspace> <file>");
+            }
+        }
+    }
+
+    private void export(List<String> args) {
+        MigrationArgs margs = new MigrationArgs(args);
+
+        try (MigrationClient client = new MigrationClient();
+             ProgressPrinter printer = new ProgressPrinter("export", margs.fastAnim ? FAST_ANIM_RATE : SLOW_ANIM_RATE)) {
+            client.export(margs.remaining.get(0), margs.remaining.get(1), printer);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    private void import_(List<String> args) {
+        MigrationArgs margs = new MigrationArgs(args);
+
+        try (MigrationClient client = new MigrationClient();
+             ProgressPrinter printer = new ProgressPrinter("import", margs.fastAnim ? FAST_ANIM_RATE : SLOW_ANIM_RATE)) {
+            client.import_(margs.remaining.get(0), margs.remaining.get(1), printer);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    private void exportSchema(List<String> args) {
+        try (MigrationClient client = new MigrationClient()) {
+            System.out.println(client.exportSchema(args.get(0)));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
     }
 }
 

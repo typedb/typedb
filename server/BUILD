@@ -17,6 +17,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -26,7 +27,6 @@ exports_files(
     glob(["conf/**", "services/**"]),
     visibility = ["//visibility:public"]
 )
-
 
 genrule(
     name = "version",
@@ -65,7 +65,7 @@ java_library(
         "//graql/planning",
         "//graql/reasoner",
         "//graph",
-
+        "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -84,6 +84,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/grpc:grpc-api",
+        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
@@ -97,7 +98,8 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core"
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
+        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

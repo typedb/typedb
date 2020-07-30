@@ -4,7 +4,7 @@ java_library(
         "//external:jar/com/google/protobuf/protobuf-java"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

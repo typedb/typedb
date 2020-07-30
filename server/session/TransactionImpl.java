@@ -136,6 +136,8 @@ public class TransactionImpl implements Transaction {
     protected final ReasonerQueryFactory reasonerQueryFactory;
     private final ReadWriteLock graphLock;
 
+    private boolean skipValidationChecks = false;
+
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache,
@@ -1131,6 +1133,10 @@ public class TransactionImpl implements Transaction {
         }
     }
 
+    public void disableCommitValidation() {
+        skipValidationChecks = true;
+    }
+
     private void closeTransaction(String closedReason) {
         this.closedReason = closedReason;
         this.isTxOpen = false;
@@ -1145,6 +1151,10 @@ public class TransactionImpl implements Transaction {
     }
 
     private void validateGraph() throws InvalidKBException {
+        if (skipValidationChecks) {
+            return;
+        }
+
         Validator validator = new Validator(reasonerQueryFactory, transactionCache, conceptManager);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
