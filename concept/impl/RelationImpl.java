@@ -141,16 +141,17 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
      */
     @Override
     public Stream<Casting> castingsRelation(Role... roles) {
-        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        if (roleSet.isEmpty()) {
+        Set<Integer> roleTypeIdSet = Arrays.stream(roles)
+                .flatMap(Role::subs)
+                .map(r -> r.labelId().getValue())
+                .collect(Collectors.toSet());
+        if (roleTypeIdSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
                     .map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
         }
 
         //Traversal is used so we can potentially optimise on the index
-        Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
-
-        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type().labelId().getValue(), roleTypesIds);
+        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type().labelId().getValue(), roleTypeIdSet);
         return castingsEdges.map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
     }
 
