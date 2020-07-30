@@ -23,7 +23,7 @@ java_test(
 
 java_test(
     name = "recursion-it",
-    size = "large",
+    size = "medium",
     srcs = ["RecursionIT.java"],
     classpath_resources = [
         "//test/resources:logback-test",
@@ -31,7 +31,6 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.reasoning.RecursionIT",
     deps = [
-        "//concept/answer",
         "@maven//:com_google_guava_guava",
         "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
@@ -39,7 +38,6 @@ java_test(
         "//test/integration/graql/reasoner/graph:path-matrix-graph",
         "//test/integration/graql/reasoner/graph:path-tree-graph",
         "//test/integration/graql/reasoner/graph:path-tree-symmetric-graph",
-        "//test/integration/graql/reasoner/graph:reachability-graph",
         "//test/rule:grakn-test-server",
         "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
