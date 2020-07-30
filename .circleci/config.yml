@@ -246,6 +246,16 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/negation:test --test_output=errors
 
+  test-behaviour-reasoner-recursion:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/reasoner/recursion:test --test_output=errors
+
   test-behaviour-reasoner-relation-inference:
     machine:
       image: ubuntu-1604:201903-01
@@ -788,6 +798,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-behaviour-reasoner-recursion:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-behaviour-reasoner-relation-inference:
           filters:
             branches:
@@ -869,6 +883,7 @@ workflows:
             - test-behaviour-reasoner-attribute-attachment
             - test-behaviour-reasoner-concept-inequality
             - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-recursion
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-reasoner-schema-queries
@@ -908,6 +923,7 @@ workflows:
             - test-behaviour-reasoner-attribute-attachment
             - test-behaviour-reasoner-concept-inequality
             - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-recursion
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-reasoner-schema-queries
@@ -947,6 +963,7 @@ workflows:
             - test-behaviour-reasoner-attribute-attachment
             - test-behaviour-reasoner-concept-inequality
             - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-recursion
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-reasoner-schema-queries
@@ -986,6 +1003,7 @@ workflows:
             - test-behaviour-reasoner-attribute-attachment
             - test-behaviour-reasoner-concept-inequality
             - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-recursion
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-reasoner-schema-queries
@@ -1025,6 +1043,7 @@ workflows:
             - test-behaviour-reasoner-attribute-attachment
             - test-behaviour-reasoner-concept-inequality
             - test-behaviour-reasoner-negation
+            - test-behaviour-reasoner-recursion
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
             - test-behaviour-reasoner-schema-queries
