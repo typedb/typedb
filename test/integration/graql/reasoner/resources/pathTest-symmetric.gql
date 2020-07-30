@@ -9,12 +9,15 @@ has index;
 vertex sub entity,
 has index;
 
-coordinate sub role;
-arc sub relation, relates coordinate;
+
+locatable sub relation,
+    relates coordinate;
+
+arc sub locatable, relates coordinate;
 vertex plays coordinate;
 start-vertex plays coordinate;
 
-path sub relation, relates coordinate;
+path sub locatable, relates coordinate;
 vertex plays coordinate;
 start-vertex plays coordinate;
 
