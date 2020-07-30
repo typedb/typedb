@@ -263,6 +263,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated) and delete schema
     /**
      * from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89
      */
@@ -289,10 +290,11 @@ public class RecursionIT {
                 GraqlTestUtil.assertCollectionsNonTriviallyEqual(
                         tx.execute(Graql.parse(generalExplicitQuery).asGet(), false),
                         tx.execute(Graql.parse(generalQuery).asGet()));
-                }
+            }
         }
     }
 
+    // TODO: delete (migrated), delete DualLinearTransitivityMatrixGraph, delete schema
     /**
      * test 6.1 from Cao p 71
      */
@@ -311,6 +313,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated), delete TailRecursionGraph and delete its schema
     /**
      * test 6.3 from Cao p 75
      */
@@ -330,6 +333,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated), delete NguyenGraph and delete its schema
     /**
      * test3 from Nguyen (similar to test 6.5 from Cao):
      * <p>
@@ -369,6 +373,7 @@ public class RecursionIT {
         }
     }
 
+    // TODO: delete (migrated)
     /**
      * test 6.9 from Cao p.82
      */
