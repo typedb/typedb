@@ -76,11 +76,6 @@ filegroup(
 )
 
 filegroup(
-    name = "dual-linear-transitivity",
-    srcs = ["dualLinearTransitivity.gql"],
-)
-
-filegroup(
     name = "path-test",
     srcs = ["pathTest.gql"],
 )
