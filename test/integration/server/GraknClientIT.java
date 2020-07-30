@@ -912,13 +912,13 @@ public class GraknClientIT {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             EntityType.Remote person = tx.putEntityType("person");
             AttributeType.Remote<String> name = tx.putAttributeType("name",  ValueType.STRING);
-            AttributeType.Remote<Integer> age = tx.putAttributeType("age",  ValueType.INTEGER);
+            AttributeType.Remote<Long> age = tx.putAttributeType("age",  ValueType.LONG);
             AttributeType.Remote<Double> rating = tx.putAttributeType("rating",  ValueType.DOUBLE);
 
             person.has(name).has(age).has(rating);
 
-            person.create().has(name.create("Alice")).has(age.create(20));
-            person.create().has(name.create("Bob")).has(age.create(22));
+            person.create().has(name.create("Alice")).has(age.create(20L));
+            person.create().has(name.create("Bob")).has(age.create(22L));
 
             GraqlGet.Aggregate nullQuery =
                     Graql.match(var("x").isa("person").has("rating", var("y"))).get().sum("y");

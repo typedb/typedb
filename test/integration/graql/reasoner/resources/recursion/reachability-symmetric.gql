@@ -24,14 +24,14 @@ rule-1
 when {
 ($x, $y) isa link;},
 then {
-($x, $y) isa reachable;};
+(coordinate: $x, coordinate: $y) isa reachable;};
 
 rule-2
 when {
 ($x, $z) isa link;
 ($z, $y) isa reachable;},
 then {
-($x, $y) isa reachable;};
+(coordinate: $x, coordinate: $y) isa reachable;};
 
 insert
 

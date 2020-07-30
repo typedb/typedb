@@ -10,10 +10,21 @@ traversable sub indexable,
 vertex sub traversable;
 node sub traversable;
 
-link sub relation, relates from, relates to;
-indirect-link sub relation, relates from, relates to;
-reachable sub relation, relates from, relates to;
-unreachable sub relation, relates from, relates to;
+connection sub relation,
+    relates from,
+    relates to;
+link sub connection,
+    relates from,
+    relates to;
+indirect-link sub connection,
+    relates from,
+    relates to;
+reachable sub connection,
+    relates from,
+    relates to;
+unreachable sub connection,
+    relates from,
+    relates to;
 
 index sub attribute, value string;
 

@@ -382,6 +382,7 @@ public class RuleValidationIT {
     /*
     TODO re-enable when semantic query validation is implemented (see #5861)
      */
+    @Ignore
     @Test
     public void whenAddingRuleInvalidOntologically_TypeCantPlayARole_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
@@ -461,6 +462,7 @@ public class RuleValidationIT {
     /*
     TODO re-enable when semantic query validation is implemented (see #5861)
      */
+    @Ignore
     @Test
     public void whenAddingRuleWithOntologicallyInvalidHead_RelationDoesntRelateARole_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(

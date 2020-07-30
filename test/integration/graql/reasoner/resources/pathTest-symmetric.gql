@@ -28,11 +28,11 @@ rule-1
 when {
 ($x, $y) isa arc;},
 then {
-($x, $y) isa path;};
+(coordinate: $x, coordinate: $y) isa path;};
 
 rule-2
 when {
 ($x, $z) isa path;
 ($z, $y) isa path;},
 then {
-($x, $y) isa path;};
+(coordinate: $x, coordinate: $y) isa path;};
