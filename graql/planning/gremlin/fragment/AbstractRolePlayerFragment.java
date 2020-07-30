@@ -43,15 +43,8 @@ import static java.util.stream.Collectors.toSet;
  */
 abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
-    static final Variable RELATION_EDGE = reservedVar("RELATION_EDGE");
-    static final Variable RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
-
     AbstractRolePlayerFragment(VarProperty varProperty, Variable start, Variable end) {
         super(varProperty, start, end);
-    }
-
-    private static Variable reservedVar(String value) {
-        return new Variable(value, Variable.Type.Reserved);
     }
 
     abstract Variable edge();
