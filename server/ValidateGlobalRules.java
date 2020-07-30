@@ -319,15 +319,6 @@ public class ValidateGlobalRules {
         return errors;
     }
 
-    /**
-     * @param rule the rule to be cast into a combined conjunction query
-     * @return a combined conjunction created from statements from both the body and the head of the rule
-     */
-    private static ReasonerQuery combinedRuleQuery(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
-        ReasonerQuery bodyQuery = reasonerQueryFactory.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
-        ReasonerQuery headQuery = reasonerQueryFactory.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
-        return headQuery.conjunction(bodyQuery);
-    }
 
     /**
      * NB: this only gets checked if the rule obeys the Horn clause form
@@ -341,7 +332,10 @@ public class ValidateGlobalRules {
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
         //as a result the rule can be ontologically validated by combining them into a conjunction
         //this additionally allows to cross check body-head references
-        ReasonerQuery combinedQuery = combinedRuleQuery(reasonerQueryFactory, rule);
+        ReasonerQuery bodyQuery = reasonerQueryFactory.withoutRoleInference(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
+        ReasonerQuery headQuery = reasonerQueryFactory.withoutRoleInference(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
+        ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
+
         errors.addAll(combinedQuery.validateOntologically(rule.label()));
         return errors;
     }
@@ -358,8 +352,9 @@ public class ValidateGlobalRules {
         if (headPatterns.size() != 1) {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));
         } else {
-            ReasonerQuery bodyQuery = reasonerQueryFactory.create(Iterables.getOnlyElement(bodyPatterns));
-            ReasonerQuery headQuery = reasonerQueryFactory.create(Iterables.getOnlyElement(headPatterns));
+            // TODO we should replace the type inference performed in here with semantic query validation check
+            ReasonerQuery bodyQuery = reasonerQueryFactory.withoutRoleInference(Iterables.getOnlyElement(bodyPatterns));
+            ReasonerQuery headQuery = reasonerQueryFactory.withoutRoleInference(Iterables.getOnlyElement(headPatterns));
             ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
 
             Set<Atomic> headAtoms = headQuery.getAtoms();

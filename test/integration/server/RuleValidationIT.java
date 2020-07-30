@@ -937,7 +937,8 @@ public class RuleValidationIT {
                 .has(anotherAttribute)
                 .has(stringAttribute)
                 .plays(someRole)
-                .plays(anotherRole);
+                .plays(anotherRole)
+                .plays(singleRole);
 
         RelationType rootRelation = tx.putRelationType("rootRelation")
                 .relates(someRole)
@@ -953,6 +954,8 @@ public class RuleValidationIT {
                 .plays(anotherRole);
         tx.putRelationType("anotherRelation")
                 .sup(rootRelation)
+                .relates(someRole)
+                .relates(anotherRole)
                 .relates(singleRole);
     }
 }
