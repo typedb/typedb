@@ -289,6 +289,13 @@ public class ValidateGlobalRules {
      * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
     public static Set<String> validateRuleIsValidClause(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
+
+        /*
+        TODO we want to apply semantic query validation technique here to validate the rule patterns are valid
+        TODO as well as keep the validation that there is only 1 negation block, no disjunction, or negation nesting etc.
+         */
+
+
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
         if (patterns.size() > 1) {

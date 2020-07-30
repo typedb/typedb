@@ -1,10 +1,5 @@
 define
 
-#Roles
-
-role1 sub role;
-role2 sub role;
-
 #Entities
 
 entity1 sub entity,
@@ -14,16 +9,20 @@ entity2 sub entity,
     plays role2,
     has res1;
 
-relation1 sub relation,
+rootRelation sub relation,
+    relates role1,
+    relates role2;
+
+relation1 sub rootRelation,
     relates role1,
     relates role2,
     has res2;
 
-relation2 sub relation,
+relation2 sub rootRelation,
     relates role1,
     relates role2;
 
-relation3 sub relation,
+relation3 sub rootRelation,
     relates role1,
     relates role2;
 

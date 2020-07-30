@@ -78,7 +78,7 @@ public class RelationAtomValidator implements AtomValidator<RelationAtom> {
             return errors;
         }
 
-        //check role-type compatibility
+        //check role-type compatibility using type inference
         SetMultimap<Variable, Type> varTypeMap = atom.getParentQuery().getVarTypeMap();
         for (Map.Entry<Role, Collection<Variable>> e : atom.getRoleVarMap().asMap().entrySet()) {
             Role role = e.getKey();
