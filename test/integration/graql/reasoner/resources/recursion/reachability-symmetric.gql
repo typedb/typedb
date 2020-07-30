@@ -7,11 +7,15 @@ define
 vertex sub entity,
     has index;
 
-coordinate sub role;
-link sub relation, relates coordinate;
+locatable sub relation,
+    relates coordinate;
+
+link sub locatable,
+    relates coordinate;
 vertex plays coordinate;
 
-reachable sub relation, relates coordinate;
+reachable sub locatable,
+    relates coordinate;
 vertex plays coordinate;
 
 index sub attribute, value string;

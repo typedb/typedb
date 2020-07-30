@@ -17,6 +17,7 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -44,6 +45,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class NumberCastingIT {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
@@ -128,7 +132,6 @@ public class NumberCastingIT {
     @Test
     public void whenAddressingDateAsLocalDateTime_ConversionHappens() {
         LocalDateTime now = LocalDateTime.now();
-
         Pattern pattern = Graql.parsePattern("$x " + now + " isa attr-date;");
         verifyWrite(session, pattern);
         verifyRead(session, pattern);
@@ -136,23 +139,31 @@ public class NumberCastingIT {
     }
 
     @Test
-    public void whenAddressingLongAsConvertibleDouble_ConversionHappens() {
+    public void whenReadingLongAsDouble_ConversionHappens() {
         double value = 10.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
-        verifyWrite(session, pattern);
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.getAttributeType("attr-long").create(10L);
+            tx.commit();
+        }
         verifyRead(session, pattern);
-        cleanup(session, pattern);
     }
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    @Test
+    public void whenWritingLongAsDouble_throw() {
+        double value = 10.0;
+        Pattern pattern = Graql.var("x").val(value).isa("attr-long");
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(ErrorMessage.INVALID_VALUETYPE_WRITE.getMessage(value, "Double", AttributeType.ValueType.LONG.name(), "attr-long"));
+        verifyWrite(session, pattern);
+    }
 
     @Test
     public void whenAddressingDateAsNonDate_exceptionIsThrown() throws GraknConceptException {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-date");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.time.LocalDateTime]");
+        expectedException.expectMessage(ErrorMessage.INVALID_VALUETYPE_WRITE.getMessage(value, "Double", AttributeType.ValueType.DATETIME, "attr-date"));
         verifyWrite(session, pattern);
     }
 
@@ -161,7 +172,7 @@ public class NumberCastingIT {
         boolean value = true;
         Pattern pattern = Graql.var("x").val(value).isa("attr-double");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of value type [java.lang.Double]");
+        expectedException.expectMessage(ErrorMessage.INVALID_VALUETYPE_WRITE.getMessage( value, "Boolean", AttributeType.ValueType.DOUBLE, "attr-double"));
         verifyWrite(session, pattern);
     }
 
@@ -170,7 +181,7 @@ public class NumberCastingIT {
         double value = 10.1;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
         expectedException.expect(GraknConceptException.class);
-        expectedException.expectMessage("The value [" + value + "] of type [Double] must be of value type [java.lang.Long]");
+        expectedException.expectMessage(ErrorMessage.INVALID_VALUETYPE_WRITE.getMessage( value, "Double", AttributeType.ValueType.LONG, "attr-long"));
         verifyWrite(session, pattern);
     }
 }
