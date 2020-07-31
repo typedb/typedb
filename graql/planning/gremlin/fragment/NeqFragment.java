@@ -56,12 +56,9 @@ public class NeqFragment extends FragmentImpl {
     public GraphTraversal<Vertex, Vertex> applyTraversalInner(
             GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
-        // neq may be between two edges
-        // we save the point the traversal was at
-        // recall the start variable, compare it to the other variable
-        // and restore the traversal point
-
-        traversal.select(start().symbol()).where(P.neq(other().symbol()));
+        // the caller will ensure that start() is active on the traversal
+        // NOTE: generics are broken, since the variable can refer to an edge!!
+        traversal.where(P.neq(other().symbol()));
         return traversal;
     }
 
