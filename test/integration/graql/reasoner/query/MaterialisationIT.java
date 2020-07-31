@@ -240,7 +240,7 @@ public class MaterialisationIT {
             materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10).id(entity.id().getValue()),reasonerQueryFactory, tx);
             materialiseWithoutDuplicates(Graql.var("x").has("resource-double", 10.0).id(entity.id().getValue()),reasonerQueryFactory, tx);
 
-//            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10.0).id(entity.id().getValue()),reasonerQueryFactory, tx);
+            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10.0).id(entity.id().getValue()),reasonerQueryFactory, tx);
             materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10).id(entity.id().getValue()),reasonerQueryFactory,tx);
             materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10L).id(entity.id().getValue()),reasonerQueryFactory, tx);
 
