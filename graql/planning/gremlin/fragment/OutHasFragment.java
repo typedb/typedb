@@ -60,16 +60,15 @@ public class OutHasFragment extends EdgeFragment {
     }
 
     @Override
-    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // a type can own any attribute that any of its parents (self inclusive) can own
-        return Fragments
-                .outSubs(Fragments.isVertex(traversal))
+        return Fragments.outSubs(traversal)
                 .out(Schema.EdgeLabel.HAS.getLabel(), Schema.EdgeLabel.KEY.getLabel());
     }
 
     @Override
     public String name() {
-        return "-[has]->";
+        return "-[has/key]->";
     }
 
     @Override

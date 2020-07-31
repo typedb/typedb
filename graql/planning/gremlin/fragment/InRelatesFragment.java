@@ -45,9 +45,9 @@ class InRelatesFragment extends EdgeFragment {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        return Fragments.isVertex(traversal).in(RELATES.getLabel());
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+        return traversal.in(RELATES.getLabel());
     }
 
     @Override

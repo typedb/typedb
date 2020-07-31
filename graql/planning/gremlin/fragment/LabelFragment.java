@@ -60,8 +60,8 @@ public class LabelFragment extends FragmentImpl {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         Set<Integer> labelIds =
                 labels().stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());

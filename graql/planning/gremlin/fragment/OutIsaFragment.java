@@ -56,19 +56,18 @@ public class OutIsaFragment extends EdgeFragment {
 
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         // from the traversal, branch to take either of these paths
-        return Fragments.union(traversal, ImmutableSet.of(
-                Fragments.isVertex(__.start()).out(ISA.getLabel()).out(SHARD.getLabel()),
-                edgeTraversal() // what is this doing?
-        ));
+        return traversal.out(ISA.getLabel()).out(SHARD.getLabel());
+//                edgeTraversal() // what is this doing?
+//        ));
     }
-
-    private GraphTraversal<Element, Vertex> edgeTraversal() {
-        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.start()), RELATION_TYPE_LABEL_ID);
-    }
+//
+//    private GraphTraversal<Element, Vertex> edgeTraversal() {
+//        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.start()), RELATION_TYPE_LABEL_ID);
+//    }
 
     @Override
     public String name() {

@@ -55,7 +55,7 @@ public class InKeyFragment extends EdgeFragment {
     }
 
     @Override
-    GraphTraversal<Vertex, ? extends Element> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // anyone that can be keyed this directly or any of their subs is a valid owner
         return Fragments.inSubs(traversal.in(Schema.EdgeLabel.KEY.getLabel()));
     }

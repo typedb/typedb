@@ -55,11 +55,12 @@ public class OutKeyFragment extends EdgeFragment {
     }
 
     @Override
-    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // a type can be keyed by any attribute that any of its parents (self inclusive) is keyed by
         return Fragments
-                .outSubs(Fragments.isVertex(traversal))
-                .out(Schema.EdgeLabel.KEY.getLabel());    }
+                .outSubs(traversal)
+                .out(Schema.EdgeLabel.KEY.getLabel());
+    }
 
     @Override
     public String name() {

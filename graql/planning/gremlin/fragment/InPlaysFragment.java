@@ -54,16 +54,15 @@ class InPlaysFragment extends EdgeFragment {
 
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         if (required()) {
-            vertexTraversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
+            traversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {
-            vertexTraversal.in(PLAYS.getLabel());
+            traversal.in(PLAYS.getLabel());
         }
 
-        return Fragments.inSubs(vertexTraversal);
+        return Fragments.inSubs(traversal);
     }
 
     @Override

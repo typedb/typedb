@@ -53,9 +53,19 @@ public class NeqFragment extends FragmentImpl {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
-        return traversal.where(P.neq(other().symbol()));
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+
+        // neq may be between two edges
+        // we save the point the traversal was at
+        // recall the start variable, compare it to the other variable
+        // and restore the traversal point
+
+        Variable checkpoint = new Variable();
+        traversal.as(checkpoint.symbol());
+        traversal.select(start().symbol()).where(P.neq(other().symbol()));
+        traversal.select(checkpoint.symbol());
+        return traversal;
     }
 
     @Override

@@ -90,18 +90,16 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 relationTraversal(conceptManager, vars)
         ));
     }
 
-    private GraphTraversal<Element, Vertex> relationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {
-        GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
-
-        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().symbol());
+    private GraphTraversal<Vertex, Vertex> relationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.outE(ROLE_PLAYER.getLabel()).as(edge().symbol());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), conceptManager);

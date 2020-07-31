@@ -69,16 +69,13 @@ public class OutAttributeFragment extends EdgeFragment {
     }
 
     @Override
-    GraphTraversal<Vertex, ? extends Element> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // (start) ATTR <-[edge]- OWNER (START)
-        return Fragments.union(
-                Fragments.isVertex(traversal),
-                ImmutableSet.of(edgeRelationTraversal(conceptManager))
-        );
+        return edgeRelationTraversal(traversal, conceptManager);
     }
 
-    private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(ConceptManager conceptManager) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
+    private GraphTraversal<Vertex, Vertex> edgeRelationTraversal(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager) {
+        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
 
         Set<Label> labelsWithSubtypes = attributeTypeLabels
                 .stream()

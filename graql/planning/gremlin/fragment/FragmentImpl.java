@@ -199,8 +199,8 @@ public abstract class FragmentImpl implements Fragment {
      * @param traversal the traversal to extend with this Fragment
      */
     @Override
-    public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager,
+    public final GraphTraversal<Vertex, Vertex> applyTraversal(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager,
             Collection<Variable> vars, Variable currentVar) {
 
 
@@ -235,7 +235,7 @@ public abstract class FragmentImpl implements Fragment {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> selectVariable(GraphTraversal<Vertex, ? extends Element> traversal) {
+    public GraphTraversal<Vertex, Vertex> selectVariable(GraphTraversal<Vertex, Vertex> traversal) {
         traversal.as(start().symbol());
         return traversal;
     }
@@ -255,8 +255,8 @@ public abstract class FragmentImpl implements Fragment {
      * @param conceptManager
      * @param vars
      */
-    abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars);
+    abstract GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars);
 
 
     /**
