@@ -61,10 +61,7 @@ public class NeqFragment extends FragmentImpl {
         // recall the start variable, compare it to the other variable
         // and restore the traversal point
 
-        Variable checkpoint = new Variable();
-        traversal.as(checkpoint.symbol());
         traversal.select(start().symbol()).where(P.neq(other().symbol()));
-        traversal.select(checkpoint.symbol());
         return traversal;
     }
 
