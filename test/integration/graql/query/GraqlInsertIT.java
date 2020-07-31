@@ -76,7 +76,7 @@ public class GraqlInsertIT {
     @BeforeClass
     public static void newSession() {
         session = graknServer.sessionWithNewKeyspace();
-        MovieGraph.load(session);
+//        MovieGraph.load(session);
     }
 
     @Before
@@ -93,6 +93,60 @@ public class GraqlInsertIT {
     public static void closeSession() {
         session.close();
     }
+
+    @Test
+    public void test() {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            tx.execute(Graql.parse("define\n" +
+                    "\n" +
+                    "closed_space sub entity,\n" +
+                    "    plays from_space,\n" +
+                    "    plays to_space;\n" +
+                    "\n" +
+                    "kitchen sub closed_space;\n" +
+                    "living sub closed_space;\n" +
+                    "hall sub closed_space;\n" +
+                    "\n" +
+                    "door sub entity,\n" +
+                    "    plays connection;\n" +
+                    "living_door sub door;\n" +
+                    "kitchen_door sub door;\n" +
+                    "\n" +
+                    "closed_space_connecting sub relation,\n" +
+                    "    relates connection,\n" +
+                    "    relates from_space,\n" +
+                    "    relates to_space;").asDefine());
+            tx.execute(Graql.parse("insert\n" +
+                    "$l isa living;\n" +
+                    "$k isa kitchen;\n" +
+                    "$h isa hall;\n" +
+                    "$ld isa living_door;\n" +
+                    "$kd isa kitchen_door;\n" +
+                    "(from_space: $l, to_space: $h, connection: $ld) isa closed_space_connecting;\n" +
+                    "(from_space: $h, to_space: $l, connection: $ld) isa closed_space_connecting;\n" +
+                    "\n" +
+                    "(from_space: $k, to_space: $h, connection: $kd) isa closed_space_connecting;\n" +
+                    "(from_space: $h, to_space: $k, connection: $kd) isa closed_space_connecting;").asInsert());
+            tx.commit();
+        }
+
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            List<ConceptMap> answers = tx.execute(Graql.parse("match\n" +
+                    "$x isa closed_space;\n" +
+                    "$y isa closed_space;\n" +
+                    "$z isa closed_space;\n" +
+                    "$d1 isa door;\n" +
+                    "$d2 isa door;\n" +
+                    "(from_space: $x, to_space: $y, connection: $d1) isa closed_space_connecting;\n" +
+                    "(from_space: $y, to_space: $z, connection: $d2) isa closed_space_connecting;\n" +
+                    "$x != $z;\n" +
+                    "get $x, $z;").asGet());
+            System.out.println(answers);
+        }
+
+
+    }
+
 
     @Test
     public void testMatchInsertShouldInsertDataEvenWhenResultsAreNotCollected() {
@@ -238,7 +292,7 @@ public class GraqlInsertIT {
             assertExists(tx, var);
         }
 
-        for (Statement statement: vars) {
+        for (Statement statement : vars) {
             tx.execute(Graql.match(statement).delete(Graql.var(statement.var()).isa("thing")));
         }
 
