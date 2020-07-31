@@ -11,7 +11,7 @@ b-entity sub entity2;
 S sub entity2;
 
 R-rA sub role;
-R-rB sub role
+R-rB sub role;
 R sub relation, relates R-rA, relates R-rB;
 entity2 plays R-rA, plays R-rB;
 
