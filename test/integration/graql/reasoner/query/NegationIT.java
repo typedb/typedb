@@ -115,6 +115,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to match)
     @Test (expected = ReasonerException.class)
     public void whenExecutingUnboundNegationPattern_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -140,6 +141,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to match)
     @Test (expected = ReasonerException.class)
     public void whenExecutingIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -173,6 +175,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to match)
     @Test (expected = GraqlSemanticException.class)
     public void whenExecutingNegationBlockContainingDisjunction_exceptionIsThrown () {
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -202,6 +205,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void whenATypeInRuleNegationBlockIsAbsent_theRuleIsMatched() {
         try (Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -217,6 +221,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void conjunctionOfRelations_filteringSpecificRolePlayerType(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -250,6 +255,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void conjunctionOfRelations_filteringSpecificUnresolvableConnection(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -289,6 +295,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (duplicate of the previous test)
     @Test
     public void conjunctionOfRelations_filteringSpecificResolvableConnection(){
         try (Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -329,6 +336,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (already exists in negation)
     @Test
     public void entitiesWithoutSpecificAttributeValue(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -352,6 +360,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void entitiesWithAttributeNotEqualToSpecificValue(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -376,6 +385,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void entitiesHavingAttributesThatAreNotOfSpecificType(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -394,6 +404,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void entitiesNotHavingRolePlayersInRelations(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -437,6 +448,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void excludingASpecificRole(){
         try (Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -456,6 +468,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void negateMultiplePropertyStatement(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -488,6 +501,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void negateMultipleStatements(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -514,6 +528,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation) and delete schema
     @Test
     /**
      * The test highlights a potential issue with eagerly updating global subgoals when branching out to determine whether
@@ -539,6 +554,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation) and delete schema
     @Test
     public void whenEvaluatingNegationBlocks_weDoNotAckCompletionOfIncompleteQueries(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
@@ -556,6 +572,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void whenNegatingGroundTransitiveRelation_queryTerminates(){
         try(Transaction tx = negationSession.transaction(Transaction.Type.WRITE)) {
@@ -576,6 +593,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void doubleNegation_recipesContainingAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
@@ -597,6 +615,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void negatedConjunction_allRecipesThatDoNotContainAllergens(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
@@ -619,18 +638,6 @@ public class NegationIT {
     @Test
     public void allRecipesContainingAvailableIngredients(){
         try(Transaction tx = recipeSession.transaction(Transaction.Type.WRITE)) {
-            List<ConceptMap> allRecipes = tx.stream(match(var("r").isa("recipe")).get()).collect(Collectors.toList());
-            List<ConceptMap> recipesWithUnavailableIngredientsExplicit = tx.execute(
-                    match(
-                            var("r").isa("recipe"),
-                            var().rel("r").rel("i").isa("requires"),
-                            not(var("i").isa("available-ingredient"))
-                    ).get("r"));
-            
-            List<ConceptMap> recipesWithUnavailableIngredients = tx.execute(
-                    match(var("r").isa("recipe-with-unavailable-ingredient")).get("r"));
-
-            assertCollectionsNonTriviallyEqual(recipesWithUnavailableIngredientsExplicit, recipesWithUnavailableIngredients);
             List<ConceptMap> recipesWithAllIngredientsAvailableSimple = tx.execute(
                     match(
                             var("r").isa("recipe"),
@@ -660,10 +667,10 @@ public class NegationIT {
 
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailableSimple);
-            assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailable, ListsUtil.listDifference(allRecipes, recipesWithUnavailableIngredients));
         }
     }
 
+    // TODO: delete (migrated to negation)
     @Test
     public void testSemiPositiveProgram(){
         try(Transaction tx = reachabilitySession.transaction(Transaction.Type.WRITE)) {
@@ -698,6 +705,7 @@ public class NegationIT {
         }
     }
 
+    // TODO: delete (migrated) and maybe delete ReachabilityGraph? I think its other tests are deleted in the Recursion PR
     @Test
     public void testStratifiedProgram(){
         try (Transaction tx = reachabilitySession.transaction(Transaction.Type.WRITE)) {
