@@ -82,11 +82,12 @@ public interface Relation extends Thing {
     Relation assign(Role role, Thing player);
 
     /**
-     * Removes the Thing which is playing a Role in this Relation.
+     * Removes the Thing which is playing a exact Role in this Relation.
      * If the Thing is not playing any Role in this Relation nothing happens.
      *
      * @param role   The Role being played by the Thing
      * @param player The Thing playing the Role in this Relation
+     * @return whether the player was unassigned over the role or a subtype of the role
      */
     void unassign(Role role, Thing player);
 
