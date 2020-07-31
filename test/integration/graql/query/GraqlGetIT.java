@@ -34,7 +34,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static graql.lang.Graql.var;
-import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("Duplicates")
 public class GraqlGetIT {

@@ -66,7 +66,7 @@ import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_CASTI
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
-import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MULTIPLE_NON_HIERARCHY_RELATION_TYPE;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_TOO_MANY_NON_RELATED_RELATION_TYPE;
 
 /**
  * Specific Validation Rules
@@ -182,7 +182,7 @@ public class ValidateGlobalRules {
         if (owners.size() == 0) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
         } else if (owners.size() > 1) {
-            return Optional.of(VALIDATION_ROLE_TYPE_MULTIPLE_NON_HIERARCHY_RELATION_TYPE.getMessage(role.label()));
+            return Optional.of(VALIDATION_ROLE_TYPE_TOO_MANY_NON_RELATED_RELATION_TYPE.getMessage(role.label()));
         }
         return Optional.empty();
     }

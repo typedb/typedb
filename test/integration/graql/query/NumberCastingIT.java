@@ -44,6 +44,10 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+/*
+Test Java-based Graql builder syntax for writing attribute values
+The Graql-only compatibility tests have been moved to BDD
+ */
 public class NumberCastingIT {
 
     @Rule
