@@ -203,7 +203,6 @@ public class AtomicEquivalenceIT {
                             .filter(at -> at.valueType() != null)
                             .forEach(attributeType -> {
                                 try {
-                                    // read - lax normalisation
                                     Object converted = AttributeValueConverter.tryConvertForRead(attributeType, value);
                                     Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(value) + ";");
                                     Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + escapeIfRequired(converted) + ";");

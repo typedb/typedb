@@ -121,14 +121,4 @@ public class GraqlDefineIT {
         assertEquals(queryString, defineQuery.toString());
     }
 
-    // TODO migrate to BDD
-    @Test
-    public void whenReusingRoleInUnrelatedRelation_Throw() {
-        String define = "define " +
-                "ownership sub relation, relates owner, relates owned;" +
-                "mortgage sub relation, relates owner, relates bank;";
-        tx.execute(Graql.parse(define).asDefine());
-        exception.expect(InvalidKBException.class);
-        tx.commit();
-    }
 }
