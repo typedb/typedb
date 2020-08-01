@@ -94,9 +94,6 @@ public class GenerativeOperationalIT {
             String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
             String subId = tx.getEntityType("subRoleEntity").instances().iterator().next().id().getValue();
             String subSubId = tx.getEntityType("subSubRoleEntity").instances().iterator().next().id().getValue();
-            System.out.println("baseRoleEntity: " + id);
-            System.out.println("subRoleEntity: " + subId);
-            System.out.println("subSubRoleEntity: " + subSubId);
             Pattern baseBinaryPattern = and(
                     var("r")
                             .rel("subRole1", var("x"))
@@ -368,7 +365,6 @@ public class GenerativeOperationalIT {
             List<Pair<Pattern, Pattern>> subList = testPairs.subList(startIndex, endIndex);
             System.out.println("Subset to test: " + subList.size());
             CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(() -> {
-                int tested = 0;
                 try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
                     ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory().disableInferTypes();
 
@@ -387,12 +383,10 @@ public class GenerativeOperationalIT {
                                 QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
                                 QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
                                 QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                                tested++;
                             }
                         }
                     }
                 }
-                System.out.println("tested: " + tested);
                 return null;
             }, executorService);
             testChunks.add(testChunk);
