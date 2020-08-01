@@ -39,9 +39,6 @@ public class QueryTestUtil {
             queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         }
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
-        if (unifierExists == multiUnifier.isEmpty()){
-            child.getMultiUnifier(parent, unifierType);
-        }
 
         assertEquals("Unexpected unifier: " + multiUnifier + " of type "+ unifierType.name() + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType.equivalence() != null) {
