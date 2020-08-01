@@ -57,6 +57,7 @@ import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -156,6 +157,7 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                     Type parentTypeExact = parentAtom.getPredicates(parentRolePlayer, IdPredicate.class)
                             .filter(idPredicate ->  !idPredicate.isPlaceholder())
                             .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
+                            .filter(Objects::nonNull)
                             .filter(Concept::isThing)
                             .map(concept -> concept.asThing().type())
                             .findAny().orElse(null);
