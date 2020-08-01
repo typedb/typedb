@@ -324,12 +324,14 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypesExact) {
-            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types, parentTypesExact);
+            //NB: exact parent is established from an id which in this context is only a structural placeholder hence we pass null
+            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types, null);
         }
 
         @Override
         public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact) {
-            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types, parentTypeExact);
+            //NB: exact parent is established from an id which in this context is only a structural placeholder hence we pass null
+            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types, null);
         }
 
         @Override
