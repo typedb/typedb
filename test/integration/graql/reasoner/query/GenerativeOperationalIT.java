@@ -294,7 +294,7 @@ public class GenerativeOperationalIT {
     }
 
     @Test
-    public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected() throws ExecutionException, InterruptedException {
+    public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected(){
         binaryRelationPatternTree.keySet().parallelStream().forEach(pattern -> {
             try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
                 TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
