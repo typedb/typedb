@@ -53,8 +53,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -264,90 +262,61 @@ public class GenerativeOperationalIT {
     }
 
     @Test
-    public void whenFuzzyingVariablesWithBindingsPreserved_AlphaEquivalenceIsNotAffected() throws ExecutionException, InterruptedException {
-        Function<List<Pattern>, Supplier<Void>> func = (patterns) -> () -> {
+    public void whenFuzzyingVariablesWithBindingsPreserved_AlphaEquivalenceIsNotAffected(){
+        binaryRelationPatternTree.keySet().parallelStream().forEach(pattern -> {
             try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
                 TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
                 ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
                 TransactionContext txCtx = new TransactionContext(tx);
                 Operator fuzzer = Operators.fuzzVariables();
-                for (Pattern pattern : patterns) {
-                    List<Pattern> fuzzedPatterns = Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
-                            .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
-                            .collect(Collectors.toList());
-                    int N = fuzzedPatterns.size();
-                    for (int i = 0; i < N; i++) {
-                        Pattern p = fuzzedPatterns.get(i);
-                        for (int j = i; j < N; j++) {
-                            Pattern p2 = fuzzedPatterns.get(j);
-                            ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(p));
-                            ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(p2));
+                List<Pattern> fuzzedPatterns = Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
+                        .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
+                        .collect(Collectors.toList());
+                int N = fuzzedPatterns.size();
+                for (int i = 0; i < N; i++) {
+                    Pattern p = fuzzedPatterns.get(i);
+                    for (int j = i; j < N; j++) {
+                        Pattern p2 = fuzzedPatterns.get(j);
+                        ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(p));
+                        ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(p2));
 
-                            if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                                ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
-                                ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
-                                QueryTestUtil.unification(queryA, queryB, true, UnifierType.EXACT);
-                                QueryTestUtil.queryEquivalence(queryA, queryB, i == j, ReasonerQueryEquivalence.Equality);
-                                QueryTestUtil.queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.StructuralEquivalence);
-                            }
+                        if (pQuery.isAtomic() && cQuery.isAtomic()) {
+                            ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
+                            ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
+                            QueryTestUtil.unification(queryA, queryB, true, UnifierType.EXACT);
+                            QueryTestUtil.queryEquivalence(queryA, queryB, i == j, ReasonerQueryEquivalence.Equality);
+                            QueryTestUtil.queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.StructuralEquivalence);
                         }
                     }
                 }
             }
-            return null;
-        };
-        processPatterns(new ArrayList<>(binaryRelationPatternTree.keySet()), func, 4);
+        });
     }
 
     @Test
     public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected() throws ExecutionException, InterruptedException {
-        Function<List<Pattern>, Supplier<Void>> func = (patterns) -> () -> {
+        binaryRelationPatternTree.keySet().parallelStream().forEach(pattern -> {
             try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
                 TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
                 ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
                 TransactionContext txCtx = new TransactionContext(tx);
 
                 Operator fuzzer = Operators.fuzzIds();
-                for(Pattern pattern : patterns){
-                    ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pattern));
-                    Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
-                            .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
-                            .forEach(fuzzedPattern -> {
-                                ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(fuzzedPattern));
+                ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pattern));
+                Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
+                        .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
+                        .forEach(fuzzedPattern -> {
+                            ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(fuzzedPattern));
 
-                                if (pQuery.isAtomic() && cQuery.isAtomic()) {
-                                    ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
-                                    ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
-                                    QueryTestUtil.unification(queryA, queryB,true, UnifierType.STRUCTURAL);
-                                    QueryTestUtil.unification(queryA, queryB,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
-                                }
-                            });
-                }
+                            if (pQuery.isAtomic() && cQuery.isAtomic()) {
+                                ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
+                                ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
+                                QueryTestUtil.unification(queryA, queryB, true, UnifierType.STRUCTURAL);
+                                QueryTestUtil.unification(queryA, queryB, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            }
+                        });
             }
-            return null;
-        };
-        processPatterns(new ArrayList<>(binaryRelationPatternTree.keySet()), func, 1);
-    }
-
-    private void processPatterns(List<Pattern> patterns, Function<List<Pattern>, Supplier<Void>> func, int threads) throws ExecutionException, InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
-        int listSize = patterns.size();
-        int listChunk = listSize / threads + 1;
-
-        List<CompletableFuture<Void>> testChunks = new ArrayList<>();
-        for (int threadNo = 0; threadNo < threads; threadNo++) {
-            boolean lastChunk = threadNo == threads - 1;
-            final int startIndex = threadNo * listChunk;
-            int endIndex = (threadNo + 1) * listChunk;
-            if (endIndex > listSize && lastChunk) endIndex = listSize;
-
-            List<Pattern> subPatterns = patterns.subList(startIndex, endIndex);
-            System.out.println("Subset to test: " + subPatterns.size());
-            CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(func.apply(subPatterns), executorService);
-            testChunks.add(testChunk);
-        }
-        CompletableFuture.allOf(testChunks.toArray(new CompletableFuture[]{})).get();
-        executorService.shutdown();
+        });
     }
 
     private void testSubsumptionRelationHoldsBetweenPatternPairs(List<Pair<Pattern, Pattern>> testPairs, int threads) throws ExecutionException, InterruptedException {
