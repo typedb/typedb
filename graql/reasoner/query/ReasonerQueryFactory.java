@@ -60,14 +60,12 @@ public class ReasonerQueryFactory {
         this.ctx = new ReasoningContext(this, conceptManager, queryCache, ruleCache, statistics);
     }
 
-    public ReasonerQueryFactory enableInferTypes() {
+    public void enableInferTypes() {
         inferTypes = true;
-        return this;
     }
 
-    public ReasonerQueryFactory disableInferTypes() {
+    public void disableInferTypes() {
         inferTypes = false;
-        return this;
     }
 
 

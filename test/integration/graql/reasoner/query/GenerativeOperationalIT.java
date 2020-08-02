@@ -366,7 +366,8 @@ public class GenerativeOperationalIT {
             System.out.println("Subset to test: " + subList.size());
             CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(() -> {
                 try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
-                    ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory().disableInferTypes();
+                    ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+                    reasonerQueryFactory.disableInferTypes();
 
                     for (Pair<Pattern, Pattern> pair : subList) {
                         ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pair.first()));
