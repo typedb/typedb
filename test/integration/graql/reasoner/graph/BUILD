@@ -30,18 +30,6 @@ java_library(
 )
 
 java_library(
-    name = "dual-linear-transitivity-graph",
-    srcs = ["DualLinearTransitivityMatrixGraph.java"],
-    resources = ["//test/integration/graql/reasoner/resources:dual-linear-transitivity"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/common:graql-test-util",
-    ],
-)
-
-java_library(
     name = "generic-schema-graph",
     srcs = ["GenericSchemaGraph.java"],
     data = ["//test/integration/graql/reasoner/resources:generic-schema-refactored"],
@@ -73,19 +61,6 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:linear-transivity"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/common:graql-test-util",
-    ],
-)
-
-java_library(
-    name = "nguyen-graph",
-    srcs = ["NguyenGraph.java"],
-    resources = ["//test/integration/graql/reasoner/resources/recursion:nguyen"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/common:graql-test-util",
@@ -139,20 +114,7 @@ java_library(
     srcs = [
         "ReachabilityGraph.java",
     ],
-    resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "@maven//:com_google_guava_guava",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/common:graql-test-util",
-    ],
-)
-
-java_library(
-    name = "tail-recursion-graph",
-    srcs = ["TailRecursionGraph.java"],
-    resources = ["//test/integration/graql/reasoner/resources/recursion:tail-recursion"],
+    resources = ["//test/integration/graql/reasoner/resources:reachability"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
         "@maven//:com_google_guava_guava",
@@ -190,16 +152,13 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":diagonal-graph",
-        ":dual-linear-transitivity-graph",
         ":generic-schema-graph",
         ":geo-graph",
         ":linear-transitivity-matrix-graph",
-        ":nguyen-graph",
         ":path-matrix-graph",
         ":path-tree-graph",
         ":path-tree-symmetric-graph",
         ":reachability-graph",
-        ":tail-recursion-graph",
         ":transitivity-chain-graph",
         ":transitivity-matrix-graph",
     ],

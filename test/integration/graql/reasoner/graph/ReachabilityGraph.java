@@ -48,7 +48,7 @@ import static grakn.core.test.common.GraqlTestUtil.putEntityWithResource;
 public class ReachabilityGraph {
 
     private final Session session;
-    private final static String gqlPath = "test/integration/graql/reasoner/resources/recursion/";
+    private final static String gqlPath = "test/integration/graql/reasoner/resources/";
     private final static String gqlFile = "reachability.gql";
     private final static Label key = Label.of("index");
 
