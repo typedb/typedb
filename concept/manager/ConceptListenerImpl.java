@@ -148,7 +148,7 @@ public class ConceptListenerImpl implements ConceptListener {
     private <D> void attributeDeleted(Attribute<D> attribute) {
         AttributeType<D> type = attribute.type();
         //Track the attribute by index
-        String index = Schema.generateAttributeIndex(type.label(), AttributeValueConverter.tryConvert(type, attribute.value()).toString());
+        String index = Schema.generateAttributeIndex(type.label(), attribute.value().toString());
         attributeManager.ackAttributeDelete(index, txId);
     }
 
@@ -168,7 +168,7 @@ public class ConceptListenerImpl implements ConceptListener {
         //acknowledge key relation modification if the thing is one
         if (owner.type().keys().anyMatch(attribute.type()::equals)) {
             Label label = attribute.type().label();
-            String index = Schema.generateAttributeIndex(label, AttributeValueConverter.tryConvert(attribute.type(), attribute.value()).toString());
+            String index = Schema.generateAttributeIndex(label, attribute.value().toString());
             transactionCache.addModifiedKeyIndex(index);
         }
 

@@ -326,10 +326,10 @@ public class KeyspaceStatisticsIT {
             Somehow the age isn't being looked up properly because the label is not in the schema label cache?
 
              */
-            grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx1.<Integer>getAttributeType("age").asRemote(tx1);
+            grakn.client.concept.type.AttributeType.Remote<Long> ageT = tx1.<Long>getAttributeType("age").asRemote(tx1);
             grakn.client.concept.type.EntityType.Remote personT = tx1.getEntityType("person").asRemote(tx1);
-            ageT.create(2);
-            ageT.create(3);
+            ageT.create(2L);
+            ageT.create(3L);
             personT.create();
             tx1.commit();
             return null;
@@ -337,10 +337,10 @@ public class KeyspaceStatisticsIT {
 
         CompletableFuture<Void> future2 = CompletableFuture.supplyAsync(() -> {
             GraknClient.Transaction tx2 = remoteSession.transaction().write();
-            grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx2.<Integer>getAttributeType("age").asRemote(tx2);
+            grakn.client.concept.type.AttributeType.Remote<Long> ageT = tx2.<Long>getAttributeType("age").asRemote(tx2);
             grakn.client.concept.type.EntityType.Remote personT = tx2.getEntityType("person").asRemote(tx2);
-            ageT.create(3); // tricky case - this will be merge
-            ageT.create(4);
+            ageT.create(3L); // tricky case - this will be merge
+            ageT.create(4L);
             personT.create();
             tx2.commit();
             return null;

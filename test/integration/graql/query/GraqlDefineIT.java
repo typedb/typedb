@@ -21,6 +21,7 @@ import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -119,4 +120,5 @@ public class GraqlDefineIT {
         GraqlDefine defineQuery = Graql.parse(queryString).asDefine();
         assertEquals(queryString, defineQuery.toString());
     }
+
 }

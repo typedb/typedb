@@ -37,7 +37,7 @@ binary sub relation,
     relates role1,
     relates role2;
 
-ternary sub relation,
+ternary sub binary,
     relates role1,
     relates role2,
     relates role3;

@@ -222,28 +222,26 @@ public class ConceptManagerImpl implements ConceptManager {
     /**
      * Create a new attribute instance from a vertex, skip checking caches because this should be a brand new vertex
      * @param type - the Concept type
-     * @param value - value saved in the attribute
+     * @param explicitValue - value saved in the attribute
      * @param isInferred - if the new concept is inferred or concrete
      * @param <V> - attribute type
      * @return - new Attribute Concept
      */
     @Override
-    public <V> AttributeImpl<V> createAttribute(AttributeType<V> type, V value, boolean isInferred) {
+    public <V> AttributeImpl<V> createAttribute(AttributeType<V> type, V explicitValue, boolean isInferred) {
         preCheckForInstanceCreation(type);
 
         VertexElement vertex = createInstanceVertex(ATTRIBUTE, isInferred);
 
         AttributeType.ValueType<V> valueType = type.valueType();
 
-        V convertedValue = AttributeValueConverter.tryConvert(type, value);
-
         // set persisted value
-        Object valueToPersist = AttributeSerialiser.of(valueType).serialise(convertedValue);
+        Object valueToPersist = AttributeSerialiser.of(valueType).serialise(explicitValue);
         Schema.VertexProperty property = Schema.VertexProperty.ofValueType(valueType);
         vertex.propertyImmutable(property, valueToPersist, null);
 
         // set unique index - combination of type and value to an indexed Janus property, used for lookups
-        String uniqueIndex = Schema.generateAttributeIndex(type.label(), convertedValue.toString());
+        String uniqueIndex = Schema.generateAttributeIndex(type.label(), explicitValue.toString());
         vertex.property(Schema.VertexProperty.INDEX, uniqueIndex);
 
         AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptNotificationChannel);

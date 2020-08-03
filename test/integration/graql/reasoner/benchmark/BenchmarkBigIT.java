@@ -152,6 +152,7 @@ public class BenchmarkBigIT {
     private void loadRuleChainData(int N) {
         Label entityLabel = Label.of("genericEntity");
         Label attributeLabel = Label.of("index");
+        Label superRelationLabel = Label.of("super-relation");
         Label baseRelationLabel = Label.of("relation1");
         Label genericRelationLabel = Label.of("relation");
         Label fromRoleLabel = Label.of("fromRole");
@@ -168,9 +169,14 @@ public class BenchmarkBigIT {
                         .plays(toRole)
                         .has(index);
 
+                RelationType.Remote superRelation = transaction.putRelationType(superRelationLabel)
+                        .relates(fromRole)
+                        .relates(toRole);
+
                 //define N relation types
                 for (int i = 1; i <= N; i++) {
                     transaction.putRelationType(Label.of(genericRelationLabel.getValue() + i))
+                            .sup(superRelation)
                             .relates(fromRole)
                             .relates(toRole);
                 }

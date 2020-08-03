@@ -81,57 +81,59 @@ public class QueryIT {
     }
 
     @Test
-    public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierfalsearchies_weReiterate(){
+    public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierarchies_weReiterate() {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
-            Role someRole = tx.putRole("someRole");
-            EntityType genericEntity = tx.putEntityType("genericEntity")
-                    .plays(someRole);
+                Role friend = tx.putRole("friend");
+                Role spouse = tx.putRole("spouse");
+                EntityType person = tx.putEntityType("person")
+                        .plays(friend)
+                        .plays(spouse);
 
-            Entity entity = genericEntity.create();
-            Entity anotherEntity = genericEntity.create();
-            Entity yetAnotherEntity = genericEntity.create();
+                Entity personA = person.create();
+                Entity personB = person.create();
+                Entity personC = person.create();
 
-            RelationType someRelation = tx.putRelationType("someRelation")
-                    .relates(someRole);
+                RelationType marriage = tx.putRelationType("marriage")
+                        .relates(spouse);
 
-            someRelation.create()
-                    .assign(someRole, entity)
-                    .assign(someRole, anotherEntity);
+                marriage.create()
+                        .assign(spouse, personA)
+                        .assign(spouse, personB);
 
-            RelationType inferredBase = tx.putRelationType("inferredBase")
-                    .relates(someRole);
+                RelationType friendship = tx.putRelationType("friendship")
+                        .relates(friend);
 
-            inferredBase.create()
-                    .assign(someRole, anotherEntity)
-                    .assign(someRole, yetAnotherEntity);
+                friendship.create()
+                        .assign(friend, personB)
+                        .assign(friend, personC);
 
-            tx.putRelationType("inferred")
-                    .relates(someRole).sup(inferredBase);
+                tx.putRelationType("best-friendship")
+                        .relates(friend).sup(friendship);
 
-            tx.putRule("rule1",
-                    Graql.parsePattern(
-                            "{" +
-                                    "($x, $y) isa someRelation; " +
-                                    "($y, $z) isa inferredBase;" +
-                                    "};"
-                    ),
-                    Graql.parsePattern("{ (someRole: $x, someRole: $z) isa inferred; };"));
+                tx.putRule("rule1",
+                        Graql.parsePattern(
+                                "{" +
+                                        "($x, $y) isa marriage; " +
+                                        "($y, $z) isa friendship;" +
+                                        "};"
+                        ),
+                        Graql.parsePattern("{ (friend: $x, friend: $z) isa best-friendship; };"));
 
-            tx.commit();
-        }
-        try (TestTransaction tx = ((TestTransaction) session.transaction(Transaction.Type.WRITE))) {
-            ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-            String patternString = "{ ($x, $y) isa inferred; };";
-            ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
-            Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(toSet());
+                tx.commit();
+            }
+            try (TestTransaction tx = ((TestTransaction) session.transaction(Transaction.Type.WRITE))) {
+                ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
+                String patternString = "{ ($x, $y) isa best-friendship; };";
+                ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
+                Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, reasonerQueryFactory)).collect(toSet());
 
-            //with cache empty no loops are found
-            assertFalse(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
-            assertFalse(query.requiresReiteration());
-            query.resolve(true).collect(Collectors.toList());
+                //with cache empty no loops are found
+                assertFalse(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
+                assertFalse(query.requiresReiteration());
+                query.resolve(true).collect(Collectors.toList());
 
                 //with populated cache we find a loop
                 assertTrue(RuleUtils.subGraphIsCyclical(rules, tx.queryCache()));
@@ -144,67 +146,58 @@ public class QueryIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         try (Session session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig)) {
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                Role fromRole = tx.putRole("fromRole");
-                Role toRole = tx.putRole("toRole");
-                EntityType someEntity = tx.putEntityType("someEntity")
-                        .plays(fromRole)
-                        .plays(toRole);
+                Role superior = tx.putRole("superior");
+                Role subordinate = tx.putRole("subordinate");
+                Role part = tx.putRole("part");
+                Role whole = tx.putRole("whole");
+                EntityType place = tx.putEntityType("place")
+                        .plays(superior)
+                        .plays(subordinate)
+                        .plays(part)
+                        .plays(whole);
 
-                RelationType someRelation = tx.putRelationType("someRelation")
-                        .relates(fromRole)
-                        .relates(toRole);
-                RelationType transRelation = tx.putRelationType("transRelation")
-                        .relates(fromRole)
-                        .relates(toRole);
+                RelationType locationHierarchy = tx.putRelationType("location-hierarchy")
+                        .relates(superior)
+                        .relates(subordinate);
+                RelationType componentOf = tx.putRelationType("component-of")
+                        .relates(part)
+                        .relates(whole);
 
-                Rule rule1 = tx.putRule("transRule",
-                        Graql.and(
-                                Graql.var()
-                                        .rel(type(fromRole.label().getValue()), Graql.var("x"))
-                                        .rel(type(toRole.label().getValue()), Graql.var("y"))
-                                        .isa(type(transRelation.label().getValue())),
-                                Graql.var()
-                                        .rel(type(fromRole.label().getValue()), Graql.var("y"))
-                                        .rel(type(toRole.label().getValue()), Graql.var("z"))
-                                        .isa(type(transRelation.label().getValue()))
-                        ),
-                        Graql.var()
-                                .rel(type(fromRole.label().getValue()), Graql.var("x"))
-                                .rel(type(toRole.label().getValue()), Graql.var("z"))
-                                .isa(type(transRelation.label().getValue()))
-                );
+                tx.execute(Graql.parse("define transitive-location sub rule, " +
+                        "when { " +
+                        "(subordinate: $x, superior: $y) isa location-hierarchy;" +
+                        "(subordinate: $y, superior: $z) isa location-hierarchy;" +
+                        "}, then {" +
+                        "(subordinate: $x, superior: $z) isa location-hierarchy;" +
+                        "};").asDefine());
 
-                Rule rule = tx.putRule("equivRule",
-                        Graql.var()
-                                .rel(type(fromRole.label().getValue()), Graql.var("x"))
-                                .rel(type(toRole.label().getValue()), Graql.var("z"))
-                                .isa(type(someRelation.label().getValue())),
-                        Graql.var()
-                                .rel(type(fromRole.label().getValue()), Graql.var("x"))
-                                .rel(type(toRole.label().getValue()), Graql.var("z"))
-                                .isa(type(transRelation.label().getValue()))
-                );
+                tx.execute(Graql.parse("define component-is-location sub rule, " +
+                        "when { " +
+                        "(part: $x, whole: $y) isa component-of;" +
+                        "}, then {" +
+                        "(subordinate: $x, superior: $y) isa location-hierarchy; " +
+                        "};").asDefine());
 
-                Entity entityA = someEntity.create();
-                Entity entityB = someEntity.create();
-                Entity entityC = someEntity.create();
-                Entity entityD = someEntity.create();
-                Entity entityE = someEntity.create();
-                Entity entityF = someEntity.create();
-                Entity entityG = someEntity.create();
+                Entity entityA = place.create();
+                Entity entityB = place.create();
+                Entity entityC = place.create();
+                Entity entityD = place.create();
+                Entity entityE = place.create();
+                Entity entityF = place.create();
+                Entity entityG = place.create();
 
-                someRelation.create().assign(fromRole, entityA).assign(toRole, entityB);
-                someRelation.create().assign(fromRole, entityA).assign(toRole, entityC);
-                someRelation.create().assign(fromRole, entityA).assign(toRole, entityD);
-                someRelation.create().assign(fromRole, entityD).assign(toRole, entityE);
-                someRelation.create().assign(fromRole, entityE).assign(toRole, entityF);
-                someRelation.create().assign(fromRole, entityF).assign(toRole, entityA);
-                someRelation.create().assign(fromRole, entityF).assign(toRole, entityG);
+                componentOf.create().assign(part, entityA).assign(whole, entityB);
+                componentOf.create().assign(part, entityA).assign(whole, entityC);
+                componentOf.create().assign(part, entityA).assign(whole, entityD);
+                componentOf.create().assign(part, entityD).assign(whole, entityE);
+                componentOf.create().assign(part, entityE).assign(whole, entityF);
+                componentOf.create().assign(part, entityF).assign(whole, entityA);
+                componentOf.create().assign(part, entityF).assign(whole, entityG);
                 tx.commit();
             }
             try (TestTransaction tx = ((TestTransaction) session.transaction(Transaction.Type.WRITE))) {
                 ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
-                String patternString = "{ (fromRole: $x, toRole: $y) isa transRelation; };";
+                String patternString = "{ (subordinate: $x, superior: $y) isa location-hierarchy; };";
                 ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(patternString));
                 Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx.reasonerQueryFactory())).collect(toSet());
 
@@ -240,7 +233,7 @@ public class QueryIT {
                     Graql.var("x").has("derivedResource", Graql.var("value")),
                     Graql.var("y").has("derivedResource", Graql.var("anotherValue"))
             );
-            try (TestTransaction tx = ((TestTransaction)session.transaction(Transaction.Type.WRITE))) {
+            try (TestTransaction tx = ((TestTransaction) session.transaction(Transaction.Type.WRITE))) {
                 ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
                 ReasonerQueryImpl query = reasonerQueryFactory.create(conjunction(pattern.toString()));
                 assertTrue(query.requiresReiteration());
@@ -262,7 +255,7 @@ public class QueryIT {
                         .has(resource);
                 tx.commit();
             }
-            try (TestTransaction tx = ((TestTransaction)session.transaction(Transaction.Type.WRITE))) {
+            try (TestTransaction tx = ((TestTransaction) session.transaction(Transaction.Type.WRITE))) {
                 ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
                 Attribute<Long> attribute = tx.getAttributesByValue(1337L).iterator().next();
                 String basePattern = "{" +
@@ -283,7 +276,7 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_simpleChainWithAttributeAndTypeGuards() {
-        try (TestTransaction tx = ((TestTransaction)geoSession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) geoSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ " +
                     "$x isa city, has name 'Warsaw';" +
@@ -308,7 +301,7 @@ public class QueryIT {
     @Ignore("we currently do not fully support equivalence checks for non-atomic queries")
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
-        try (TestTransaction tx = ((TestTransaction)geoSession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) geoSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String chainString = "{" +
                     "($x, $y) isa is-located-in;" +
@@ -339,7 +332,7 @@ public class QueryIT {
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
-        try (TestTransaction tx = ((TestTransaction)geoSession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) geoSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String polandId = getConcept(tx, "name", "Poland").id().getValue();
             String patternString = "{ $y id " + polandId + "; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
@@ -367,7 +360,7 @@ public class QueryIT {
 
     @Test //tests alpha-equivalence of queries with indirect types
     public void testAlphaEquivalence_indirectTypes() {
-        try (TestTransaction tx = ((TestTransaction)geoSession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) geoSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ (entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
                     "$x1 isa $t1; $t1 sub geoObject; };";
@@ -382,7 +375,7 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_RelationsWithSubstitution() {
-        try (TestTransaction tx = ((TestTransaction)geoSession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) geoSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ (role: $x, role: $y);$x id V666; };";
             String patternString2 = "{ (role: $x, role: $y);$y id V666; };";
@@ -438,7 +431,7 @@ public class QueryIT {
 
     @Test
     public void whenReifyingRelation_extraAtomIsCreatedWithUserDefinedName() {
-        try (TestTransaction tx = ((TestTransaction)geoSession.transaction(Transaction.Type.WRITE))) {
+        try (TestTransaction tx = ((TestTransaction) geoSession.transaction(Transaction.Type.WRITE))) {
             ReasonerQueryFactory reasonerQueryFactory = tx.reasonerQueryFactory();
             String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ ($x, $y) has name 'Poland'; };";

@@ -79,7 +79,7 @@ public class RoleInferenceIT {
                     "  relates borrowed as owned;" +
                     "friendship sub relation," +
                     "  relates friend;" +
-                    "best-friendship sub relation," +
+                    "best-friendship sub friendship," +
                     "  relates friend, " + // "inherited" and overriden in the same hierarchy
                     "  relates best-friend as friend;" +
                     "person sub entity," +

@@ -148,7 +148,7 @@ public class ConcurrencyIT {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
             tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
             EntityType someEntity = tx.putEntityType("someEntity");
-            someEntity.has(tx.putAttributeType("attribute0",  AttributeType.ValueType.INTEGER));
+            someEntity.has(tx.putAttributeType("attribute0",  AttributeType.ValueType.LONG));
             someEntity.has(tx.putAttributeType("attribute1",  AttributeType.ValueType.STRING));
             for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
                 someEntity.has(tx.putAttributeType("attribute" + attributeNo,  AttributeType.ValueType.STRING));

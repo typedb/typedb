@@ -47,7 +47,7 @@ when {
     $x isa someEntity;
 },
 then {
-    $x has res-boolean 'true';
+    $x has res-boolean true;
 };
 
 rule-5 sub rule,

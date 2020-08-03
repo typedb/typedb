@@ -58,15 +58,40 @@ public class AtomicQueryIT {
     public static void loadContext(){
         Config mockServerConfig = storage.createCompatibleServerConfig();
         session = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
-        String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", session);
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            // define schema
+            tx.execute(Graql.parse("define " +
+                    "ownership sub relation, " +
+                    "  relates owner," +
+                    "  relates owned;" +
+                    "borrowing sub ownership," +
+                    "  relates borrower as owner," +
+                    "  relates borrowed as owned;" +
+                    "friendship sub relation," +
+                    "  relates friend;" +
+                    "best-friendship sub relation," +
+                    "  relates best-friend as friend;" +
+                    "person sub entity," +
+                    "  plays owner," +
+                    "  plays friend, " +
+                    "  plays best-friend," +
+                    "  has name;" +
+                    "reader sub person, " +
+                    "  plays borrower;" +
+                    "item sub entity," +
+                    "  plays owned;" +
+                    "book sub item," +
+                    "  plays borrowed;" +
+                    "name sub attribute, value string;").asDefine());
+            tx.commit();
+        }
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void whenConstructingNonAtomicQuery_ExceptionIsThrown() {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
-            String patternString = "{ ($x, $y) isa binary;($y, $z) isa binary; };";
+            String patternString = "{ ($x, $y) isa friendship;($y, $z) isa friendship; };";
             ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(conjunction(patternString));
         }
     }
@@ -76,7 +101,7 @@ public class AtomicQueryIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String patternString = "{ $x isa someType; };";
+            String patternString = "{ $x isa space-tractor; };";
             ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(patternString));
         }
     }
@@ -86,7 +111,7 @@ public class AtomicQueryIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String patternString = "{ $x has resource-double '100'; };";
+            String patternString = "{ $x has name 100.01; };";
             ReasonerAtomicQuery query = reasonerQueryFactory.atomic(conjunction(patternString));
         }
     }
@@ -96,7 +121,7 @@ public class AtomicQueryIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String patternString = "{ $x isa subRoleEntity;$y isa subSubRoleEntity;($x, $y) isa binary; };";
+            String patternString = "{ $x isa person;$y isa reader;($x, $y) isa borrowing; };";
             Conjunction<Statement> pattern = conjunction(patternString);
             ReasonerAtomicQuery atomicQuery = reasonerQueryFactory.atomic(pattern);
             ReasonerAtomicQuery copy = atomicQuery.copy();
@@ -110,8 +135,8 @@ public class AtomicQueryIT {
         try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String childString = "match (subRole1: $x, subRole2: $y) isa binary; get;";
-            String parentString = "match ($x, $y) isa binary; get;";
+            String childString = "match (borrowed: $x, borrower: $y) isa borrowing; get;";
+            String parentString = "match ($x, $y) isa borrowing; get;";
 
             GraqlGet childQuery = Graql.parse(childString).asGet();
             GraqlGet parentQuery = Graql.parse(parentString).asGet();

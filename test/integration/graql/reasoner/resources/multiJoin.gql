@@ -4,9 +4,6 @@ define
 ####################Schema######################
 #################################################
 
-fromRole sub role;
-toRole sub role;
-
 genericEntity sub entity,
     has index,
     plays fromRole,

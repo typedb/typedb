@@ -111,7 +111,7 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
         }
 
         AttributeType<?> type = conceptManager.getAttributeType(label.getValue());
-        final Object convertedValue = AttributeValueConverter.tryConvert(type, valueSet.operation().value());
+        final Object convertedValue = AttributeValueConverter.tryConvertForRead(type, valueSet.operation().value());
         AttributeIndexFragmentSet indexFragmentSet = new AttributeIndexFragmentSet(attribute, label, convertedValue);
         fragmentSets.add(indexFragmentSet);
     }
