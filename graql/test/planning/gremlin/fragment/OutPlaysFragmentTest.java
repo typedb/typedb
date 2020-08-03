@@ -48,8 +48,6 @@ public class OutPlaysFragmentTest {
                         __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.out(SUB.getLabel())).emit())
                 .unfold()
                 .out(PLAYS.getLabel());
-        // Make sure we check this is a vertex, then traverse upwards subs once and plays
-        // NB: we are using lambda filter steps now and these are not comparable
         assertEquals(expected.toString(), traversal.toString());
     }
 }
