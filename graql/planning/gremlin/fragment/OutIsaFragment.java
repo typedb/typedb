@@ -17,7 +17,6 @@
 
 package grakn.core.graql.planning.gremlin.fragment;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
@@ -26,8 +25,6 @@ import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -38,7 +35,6 @@ import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.ISA;
 import static grakn.core.core.Schema.EdgeLabel.SHARD;
-import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from instance to type.
@@ -61,13 +57,8 @@ public class OutIsaFragment extends EdgeFragment {
 
         // from the traversal, branch to take either of these paths
         return traversal.out(ISA.getLabel()).out(SHARD.getLabel());
-//                edgeTraversal() // what is this doing?
-//        ));
     }
-//
-//    private GraphTraversal<Element, Vertex> edgeTraversal() {
-//        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.start()), RELATION_TYPE_LABEL_ID);
-//    }
+
 
     @Override
     public String name() {

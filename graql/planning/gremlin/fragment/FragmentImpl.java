@@ -33,7 +33,6 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -211,13 +210,12 @@ public abstract class FragmentImpl implements Fragment {
                     traversal.select(start().symbol());
                 } else {
                     // Restart traversal when fragments are disconnected
-                    traversal.V();
-                    selectVariable(traversal);
+                    traversal.V().as(start().symbol());
                 }
             }
         } else {
             // this is the very start of the traversal, record the step using `as` as we haven't visited the variable yet
-            selectVariable(traversal);
+            traversal.as(start().symbol());
         }
 
         vars.add(start());
@@ -231,12 +229,6 @@ public abstract class FragmentImpl implements Fragment {
 
         vars.addAll(vars());
 
-        return traversal;
-    }
-
-    @Override
-    public GraphTraversal<Vertex, Vertex> selectVariable(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.as(start().symbol());
         return traversal;
     }
 

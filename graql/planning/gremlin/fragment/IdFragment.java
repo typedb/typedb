@@ -53,12 +53,6 @@ class IdFragment extends FragmentImpl {
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> selectVariable(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.as(start().symbol());
-        return traversal;
-    }
-
-    @Override
     public GraphTraversal<Vertex, Vertex> applyTraversalInner(
             GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         return traversal.hasId(Schema.elementId(id()));

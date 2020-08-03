@@ -106,8 +106,6 @@ public interface Fragment {
             GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager,
             Collection<Variable> vars, Variable currentVar);
 
-    GraphTraversal<Vertex, Vertex> selectVariable(GraphTraversal<Vertex, Vertex> traversal);
-
     /**
      * The name of the fragment
      */

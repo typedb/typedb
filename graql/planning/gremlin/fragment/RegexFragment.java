@@ -22,7 +22,6 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import graql.lang.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
