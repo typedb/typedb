@@ -64,7 +64,12 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
      */
     @Override
     public Map<Role, List<Thing>> rolePlayersMap() {
-        return allRolePlayers();
+        HashMap<Role, List<Thing>> roleMap = new HashMap<>();
+
+        //All castings are used here because we need to iterate over all of them anyway
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
+
+        return roleMap;
     }
 
     /**
@@ -90,7 +95,7 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
     /**
      * Remove this relation if there are no more role player present
      */
-    void cleanUp() {
+    private void cleanUp() {
         boolean performDeletion = !rolePlayers().findAny().isPresent();
         if (performDeletion) delete();
     }
@@ -100,31 +105,22 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
         return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
-    private Map<Role, List<Thing>> allRolePlayers() {
-        HashMap<Role, List<Thing>> roleMap = new HashMap<>();
-
-        //We add the role types explicitly so we can return them when there are no roleplayers
-        type().roles().forEach(roleType -> roleMap.put(roleType, new ArrayList<>()));
-        //All castings are used here because we need to iterate over all of them anyway
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new ArrayList<>()).add(rp.getRolePlayer()));
-
-        return roleMap;
-    }
-
 
     /**
      * Remove a single single instance of specific role player playing a given role in this relation
      * We could have duplicates, so we only operate on a single casting that is found
+     * returns True if a role player was deleted
      */
     private void removeRolePlayerIfPresent(Role role, Thing thing) {
-        castingsRelation(role)
-                .filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing))
+        castingsRelationDirect(role)
+                .filter(casting -> casting.getRolePlayer().equals(thing))
                 .findAny()
                 .ifPresent(casting -> {
                     casting.delete();
                     conceptNotificationChannel.castingDeleted(casting);
                 });
     }
+
     private void addRolePlayer(Role role, Thing thing) {
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
@@ -147,16 +143,29 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
      */
     @Override
     public Stream<Casting> castingsRelation(Role... roles) {
-        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        if (roleSet.isEmpty()) {
+        Set<Integer> roleTypeIdSet = Arrays.stream(roles)
+                .flatMap(Role::subs)
+                .map(r -> r.labelId().getValue())
+                .collect(Collectors.toSet());
+        if (roleTypeIdSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
                     .map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
         }
 
         //Traversal is used so we can potentially optimise on the index
-        Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
+        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type().labelId().getValue(), roleTypeIdSet);
+        return castingsEdges.map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
+    }
 
-        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type().labelId().getValue(), roleTypesIds);
+    private Stream<Casting> castingsRelationDirect(Role... roles) {
+        Set<Integer> roleTypeIdSet = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(Collectors.toSet());
+        if (roleTypeIdSet.isEmpty()) {
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
+                    .map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
+        }
+
+        //Traversal is used so we can potentially optimise on the index
+        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type().labelId().getValue(), roleTypeIdSet);
         return castingsEdges.map(edge -> CastingImpl.withRelation(edge, this, conceptManager));
     }
 
@@ -176,7 +185,7 @@ public class RelationImpl extends ThingImpl<Relation, RelationType> implements R
     public String innerToString() {
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");
-        for (Map.Entry<Role, List<Thing>> entry : allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, List<Thing>> entry : rolePlayersMap().entrySet()) {
             if (entry.getValue().isEmpty()) {
                 description.append("    Role [").append(entry.getKey().label()).append("] not played by any instance \n");
             } else {
