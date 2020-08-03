@@ -87,7 +87,6 @@ java_test(
         "//kb/keyspace",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
 )

@@ -18,8 +18,6 @@
 
 package grakn.core.keyspace;
 
-import grakn.client.GraknClient;
-import grakn.client.concept.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -43,34 +41,28 @@ public class KeyspaceSchemaCacheIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-    private Session localSession;
-    private GraknClient.Session remoteSession;
-    private GraknClient graknClient;
+    private Session session;
 
     @Before
     public void setUp() {
-        localSession = server.sessionWithNewKeyspace();
-        graknClient = new GraknClient(server.grpcUri());
-        remoteSession = graknClient.session(localSession.keyspace().name());
+        session = server.sessionWithNewKeyspace();
     }
 
     @After
     public void tearDown() {
-        localSession.close();
-        remoteSession.close();
-        graknClient.close();
+        session.close();
     }
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithSameLocalSession(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (Transaction tx = localSession.transaction(Transaction.Type.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -85,14 +77,14 @@ public class KeyspaceSchemaCacheIT {
      */
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionAfterSchemaIsDefined(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        Session testSession = server.sessionFactory().session(localSession.keyspace());
+        Session testSession = server.sessionFactory().session(session.keyspace());
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
@@ -108,8 +100,8 @@ public class KeyspaceSchemaCacheIT {
      */
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionBeforeSchemaIsDefined(){
-        Session testSession = server.sessionFactory().session(localSession.keyspace());
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        Session testSession = server.sessionFactory().session(session.keyspace());
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
@@ -127,15 +119,15 @@ public class KeyspaceSchemaCacheIT {
 
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionClosingPreviousOne(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
             Role role2 = tx.putRole("role2");
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        localSession.close();
-        Session testSession = server.sessionFactory().session(localSession.keyspace());
+        session.close();
+        Session testSession = server.sessionFactory().session(session.keyspace());
         try (Transaction tx = testSession.transaction(Transaction.Type.READ)) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
@@ -145,59 +137,4 @@ public class KeyspaceSchemaCacheIT {
         testSession.close();
     }
 
-    @Test
-    public void addEntityWithLocalSession_possibleToRetrieveItWithRemoteSession(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
-            tx.putEntityType("animal");
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
-            tx.putRelationType("test-relationship").relates(role1).relates(role2);
-            tx.commit();
-        }
-        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
-            Set<String> entityTypeSubs = tx.getSchemaConcept(Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
-            Set<String> relationshipTypeSubs = tx.getSchemaConcept(Label.of("relation")).subs().map(et -> et.label().getValue()).collect(toSet());
-            assertTrue(relationshipTypeSubs.contains("test-relationship"));
-            assertTrue(entityTypeSubs.contains("animal"));
-        }
-    }
-
-    @Test
-    public void addEntityWithLocalSession_possibleToRetrieveItWithNewRemoteSession(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
-            tx.putEntityType("animal");
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
-            tx.putRelationType("test-relationship").relates(role1).relates(role2);
-            tx.commit();
-        }
-        GraknClient.Session testSession = new GraknClient(server.grpcUri()).session(localSession.keyspace().name());
-        try (GraknClient.Transaction tx = testSession.transaction().read()) {
-            Set<String> entityTypeSubs = tx.getSchemaConcept(Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
-            assertTrue(entityTypeSubs.contains("animal"));
-            Set<String> relationshipTypeSubs = tx.getSchemaConcept(Label.of("relation")).subs().map(et -> et.label().getValue()).collect(toSet());
-            assertTrue(relationshipTypeSubs.contains("test-relationship"));
-        }
-        testSession.close();
-    }
-
-    @Test
-    public void addEntityWithLocalSession_possibleToRetrieveItWithNewRemoteSessionClosingPreviousOne(){
-        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
-            tx.putEntityType("animal");
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
-            tx.putRelationType("test-relationship").relates(role1).relates(role2);
-            tx.commit();
-        }
-        remoteSession.close();
-        GraknClient.Session testSession = graknClient.session(localSession.keyspace().name());
-        try (GraknClient.Transaction tx = testSession.transaction().read()) {
-            Set<String> entityTypeSubs = tx.getSchemaConcept(Label.of("entity")).subs().map(et -> et.label().getValue()).collect(toSet());
-            assertTrue(entityTypeSubs.contains("animal"));
-            Set<String> relationshipTypeSubs = tx.getSchemaConcept(Label.of("relation")).subs().map(et -> et.label().getValue()).collect(toSet());
-            assertTrue(relationshipTypeSubs.contains("test-relationship"));
-        }
-        testSession.close();
-    }
 }

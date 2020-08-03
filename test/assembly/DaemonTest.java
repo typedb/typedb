@@ -229,7 +229,6 @@ public class DaemonTest {
     /**
      * Grakn should stop correctly when there are client connections still open
      */
-
     @Test
     public void grakn_whenThereAreOpenConnections_shouldBeAbleToStop() throws InterruptedException, TimeoutException, IOException {
         commandExecutor.command("./grakn", "server", "start").execute();
