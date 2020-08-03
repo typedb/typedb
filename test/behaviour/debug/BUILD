@@ -49,6 +49,7 @@ java_test(
         ":debug.feature",
     ],
     size = "medium",
+    tags = ["manual"]
 )
 
 checkstyle_test(
