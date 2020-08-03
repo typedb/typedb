@@ -46,15 +46,22 @@ subSubRoleEntity sub subRoleEntity,
     plays subSubRole3;
 
 symmetricRelation sub baseRelation,
+    relates baseRole1,
+    relates baseRole2,
+    relates baseRole3,
     relates symmetricRole;
 
 transitiveRelation sub baseRelation,
+    relates baseRole1,
+    relates baseRole2,
+    relates baseRole3,
     relates symmetricRole;
 
 baseRelation sub relation, abstract,
     relates baseRole1,
     relates baseRole2,
     relates baseRole3,
+    relates symmetricRole,
     has resource;
 
 #NB: explicit overriding is only needed as relates is not inherited atm, after the semantics change they should be removed

@@ -740,8 +740,8 @@ public class RuleApplicabilityIT {
         try(Transaction tx = resourceApplicabilitySession.transaction(Transaction.Type.WRITE)) {
             ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction)tx).reasonerQueryFactory();
 
-            String resourceString = "{ $x has res-boolean 'true'; };";
-            String resourceString2 = "{ $x has res-boolean 'false'; };";
+            String resourceString = "{ $x has res-boolean true; };";
+            String resourceString2 = "{ $x has res-boolean false; };";
 
             Atom resource = reasonerQueryFactory.atomic(conjunction(resourceString)).getAtom();
             Atom resource2 = reasonerQueryFactory.atomic(conjunction(resourceString2)).getAtom();

@@ -19,29 +19,33 @@ yetAnotherEntity sub baseEntity;
 
 #Relations
 
-someRelation sub relation,
+baseRelation sub relation,
     relates someRole,
     relates otherRole;
 
-someRelationTrans sub relation,
+someRelation sub baseRelation,
     relates someRole,
     relates otherRole;
 
-anotherRelation sub relation,
+someRelationTrans sub baseRelation,
     relates someRole,
     relates otherRole;
 
-yetAnotherRelation sub relation,
+anotherRelation sub baseRelation,
     relates someRole,
     relates otherRole;
 
-derivedRelation sub relation,
+yetAnotherRelation sub baseRelation,
+    relates someRole,
+    relates otherRole;
+
+derivedRelation sub baseRelation,
     relates someRole,
     relates otherRole,
     has resource,
     has anotherResource;
 
-anotherDerivedRelation sub relation,
+anotherDerivedRelation sub baseRelation,
     relates someRole,
     relates otherRole;
 

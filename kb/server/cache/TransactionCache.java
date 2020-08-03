@@ -20,6 +20,7 @@ package grakn.core.kb.server.cache;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.common.util.Pair;
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Concept;

@@ -264,10 +264,8 @@ public interface AttributeType<D> extends Type {
         public static final ValueType<Long> LONG = new ValueType<Long>(Long.class){
             @Override
             public Set<ValueType<?>> comparableValueTypes() {
-                return set(ValueType.DOUBLE,
-                           //ValueType.FLOAT,
-                           //ValueType.INTEGER,
-                           ValueType.LONG);
+                return set(ValueType.LONG,
+                           ValueType.DOUBLE);
             }
         };
         public static final ValueType<String> STRING = new ValueType<String>(String.class){
@@ -303,6 +301,10 @@ public interface AttributeType<D> extends Type {
             return values;
         }
 
+        /**
+         * Comparable value types differ from convertible value types - we can compare doubles and longs
+         * but we cannot cast convert double to long
+         */
         @CheckReturnValue
         public abstract Set<ValueType<?>> comparableValueTypes();
 

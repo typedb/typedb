@@ -18,8 +18,10 @@
 
 package grakn.core.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,71 +31,150 @@ import java.util.Map;
  * Convert Attribute Values obtained from Graql and stored in Properties, and convert
  * them to native java data instances
  */
-public abstract class AttributeValueConverter<SOURCE, TARGET>{
+public abstract class AttributeValueConverter<TARGET> {
 
-    private static Map<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?, ?>>builder()
-            .put(AttributeType.ValueType.BOOLEAN, new IdentityConverter<Boolean, Boolean>())
+    @VisibleForTesting
+    public static Map<AttributeType.ValueType<?>, AttributeValueConverter<?>> converters = ImmutableMap.<AttributeType.ValueType<?>, AttributeValueConverter<?>>builder()
+            .put(AttributeType.ValueType.BOOLEAN, new BooleanConverter())
             .put(AttributeType.ValueType.DATETIME, new DateConverter())
             .put(AttributeType.ValueType.DOUBLE, new DoubleConverter())
             .put(AttributeType.ValueType.LONG, new LongConverter())
-            .put(AttributeType.ValueType.STRING, new IdentityConverter<String, String>())
+            .put(AttributeType.ValueType.STRING, new StringConverter())
             .build();
 
-    public static <SOURCE, TARGET> AttributeValueConverter<SOURCE, TARGET> of(AttributeType.ValueType<TARGET> valueType) {
-        AttributeValueConverter<?, ?> converter = converters.get(valueType);
-        if (converter == null){
-            throw new UnsupportedOperationException("Unsupported ValueType: " + valueType.toString());
+    /**
+     * Try to convert an attribute value to a desired target type, throwing an exception if the conversion fails.
+     * This is strict - we require, in most cases, that the type of value provided matches the
+     * desired value type exactly
+     */
+    public static <T> T tryConvertForWrite(AttributeType<T> type, Object value) {
+        try {
+            final AttributeType.ValueType<T> valueType = type.valueType();
+            AttributeValueConverter<T> converter = (AttributeValueConverter<T>) converters.get(valueType);
+            if (converter == null) {
+                throw new UnsupportedOperationException("Unsupported ValueType: " + valueType);
+            }
+            return converter.convertForWrite(value);
+        } catch (ClassCastException e) {
+            throw GraknConceptException.invalidAttributeValueWrite(type, value);
         }
-        return (AttributeValueConverter<SOURCE, TARGET>) converter;
     }
 
-    public abstract TARGET convert(SOURCE value);
-
-    public static class IdentityConverter<SOURCE, TARGET> extends AttributeValueConverter<SOURCE, TARGET> {
-        @Override
-        public TARGET convert(SOURCE value) { return (TARGET) value;}
+    /**
+     * Try to convert an attribute value to a desired target type, throwing an exception if the conversion fails.
+     * This is slightly more lax than write conversions, as we allow doubles to retrieve longs if decimals are compatible
+     */
+    public static <T> T tryConvertForRead(AttributeType<T> type, Object value) {
+        try {
+            final AttributeType.ValueType<T> valueType = type.valueType();
+            AttributeValueConverter<T> converter = (AttributeValueConverter<T>) converters.get(valueType);
+            if (converter == null) {
+                throw new UnsupportedOperationException("Unsupported ValueType: " + valueType);
+            }
+            return converter.convertForRead(value);
+        } catch (ClassCastException e) {
+            throw GraknConceptException.invalidAttributeValueRead(type, value);
+        }
     }
 
-    public static class DateConverter extends AttributeValueConverter<Object, LocalDateTime> {
+    // strict conversion for writes
+    abstract TARGET convertForWrite(Object value);
+    // slightly laxer conversion for reads
+    abstract TARGET convertForRead(Object value);
+
+    public static class BooleanConverter extends AttributeValueConverter<Boolean> {
+        @Override
+        Boolean convertForWrite(Object value) {
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            }
+            throw new ClassCastException();
+        }
 
         @Override
-        public LocalDateTime convert(Object value) {
-            if (value instanceof LocalDateTime){
+        Boolean convertForRead(Object value) {
+            return convertForWrite(value);
+        }
+    }
+
+    public static class StringConverter extends AttributeValueConverter<String> {
+        @Override
+        String convertForWrite(Object value) {
+            if (value instanceof String) {
+                return value.toString();
+            }
+            throw new ClassCastException();
+        }
+
+        @Override
+        String convertForRead(Object value) {
+            return convertForWrite(value);
+        }
+    }
+
+    public static class DateConverter extends AttributeValueConverter<LocalDateTime> {
+
+        @Override
+        LocalDateTime convertForWrite(Object value) {
+            if (value instanceof LocalDateTime) {
                 return (LocalDateTime) value;
-            } else if (value instanceof LocalDate){
+            } else if (value instanceof LocalDate) {
                 return ((LocalDate) value).atStartOfDay();
             }
             //NB: we are not able to parse ZonedDateTime correctly so leaving that for now
             throw new ClassCastException();
         }
-    }
 
-    public static class DoubleConverter extends AttributeValueConverter<Number, Double> {
         @Override
-        public Double convert(Number value) {
-            return value.doubleValue();
+        LocalDateTime convertForRead(Object value) {
+            return convertForWrite(value);
         }
     }
 
-    public static class FloatConverter extends AttributeValueConverter<Number, Float> {
+    public static class DoubleConverter extends AttributeValueConverter<Double> {
         @Override
-        public Float convert(Number value) {
-            return value.floatValue();
-        }
-    }
-
-    public static class IntegerConverter extends AttributeValueConverter<Number, Integer> {
-        @Override
-        public Integer convert(Number value) {
-            if ( value.floatValue() % 1 == 0) return value.intValue();
+        Double convertForWrite(Object value) {
+            if (value instanceof Long) {
+                return ((Long) value).doubleValue();
+            } else if (value instanceof Integer) {
+                return ((Integer) value).doubleValue();
+            } else if (value instanceof Double) {
+                return (Double) value;
+            }
             throw new ClassCastException();
         }
+
+        @Override
+        Double convertForRead(Object value) {
+            return convertForWrite(value);
+        }
     }
 
-    public static class LongConverter extends AttributeValueConverter<Number, Long> {
+    public static class LongConverter extends AttributeValueConverter<Long> {
         @Override
-        public Long convert(Number value) {
-            if ( value.floatValue() % 1 == 0) return value.longValue();
+        Long convertForWrite(Object value) {
+            if (value instanceof Long) {
+                return (Long) value;
+            } else if (value instanceof Integer) {
+                return Long.valueOf((Integer) value);
+            }
+            throw new ClassCastException();
+        }
+
+        /*
+        At read time, we do allow converting 2.0 to 2 and retriving it as such
+        */
+        @Override
+        Long convertForRead(Object value) {
+            if (value instanceof Long) {
+                return (Long) value;
+            } else if (value instanceof Integer) {
+                return Long.valueOf((Integer) value);
+            } else if (value instanceof Double) {
+                if (((Double)value) % 1 == 0) {
+                    return ((Double)value).longValue();
+                }
+            }
             throw new ClassCastException();
         }
     }

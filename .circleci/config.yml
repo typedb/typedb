@@ -266,6 +266,16 @@ jobs:
       - run-bazel:
           command: bazel test //test/behaviour/resolution/reasoner/roleplayer_attachment:test --test_output=errors
 
+  test-behaviour-reasoner-schema-queries:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run-bazel:
+          command: bazel test //test/behaviour/resolution/reasoner/schema_queries:test --test_output=errors
+
   test-behaviour-resolution-test-framework:
     machine:
       image: ubuntu-1604:201903-01
@@ -786,6 +796,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - test-behaviour-reasoner-schema-queries:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - test-behaviour-resolution-test-framework:
           filters:
             branches:
@@ -857,6 +871,7 @@ workflows:
             - test-behaviour-reasoner-negation
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
+            - test-behaviour-reasoner-schema-queries
             - test-behaviour-resolution-test-framework
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
@@ -895,6 +910,7 @@ workflows:
             - test-behaviour-reasoner-negation
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
+            - test-behaviour-reasoner-schema-queries
             - test-behaviour-resolution-test-framework
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
@@ -933,6 +949,7 @@ workflows:
             - test-behaviour-reasoner-negation
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
+            - test-behaviour-reasoner-schema-queries
             - test-behaviour-resolution-test-framework
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
@@ -971,6 +988,7 @@ workflows:
             - test-behaviour-reasoner-negation
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
+            - test-behaviour-reasoner-schema-queries
             - test-behaviour-resolution-test-framework
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy
@@ -1009,6 +1027,7 @@ workflows:
             - test-behaviour-reasoner-negation
             - test-behaviour-reasoner-relation-inference
             - test-behaviour-reasoner-roleplayer-attachment
+            - test-behaviour-reasoner-schema-queries
             - test-behaviour-resolution-test-framework
             - test-behaviour-reasoner-type-generation
             - test-behaviour-reasoner-type-hierarchy

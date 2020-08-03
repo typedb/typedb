@@ -756,10 +756,11 @@ public class TransactionIT {
         String inferrableSchema = "define " +
                 "someEntity sub entity, plays someRole, plays anotherRole;" +
                 "anotherEntity sub entity, plays someRole, plays anotherRole;" +
-                "nonInferredRelation sub relation, relates someRole, relates anotherRole;" +
-                "inferredRelation sub relation, relates someRole, relates anotherRole, plays someRole;" +
-                "anotherInferredRelation sub relation, relates someRole, relates anotherRole, plays someRole;" +
-                "yetAnotherInferredRelation sub relation, relates someRole, relates anotherRole, plays someRole;" +
+                "rootRelation sub relation, relates someRole, relates anotherRole; " +
+                "nonInferredRelation sub rootRelation, relates someRole, relates anotherRole;" +
+                "inferredRelation sub rootRelation, relates someRole, relates anotherRole, plays someRole;" +
+                "anotherInferredRelation sub rootRelation, relates someRole, relates anotherRole, plays someRole;" +
+                "yetAnotherInferredRelation sub rootRelation, relates someRole, relates anotherRole, plays someRole;" +
 
                 "infer-relation sub rule," +
                 "when { $p isa someEntity; $q isa anotherEntity;}, " +

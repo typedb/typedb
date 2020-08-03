@@ -102,9 +102,13 @@ public class QueryPlannerIT {
         superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
+        RelationType startingRelation = graph.putRelationType("rootRelation")
+                .relates(role1).relates(role2).relates(role3);
         RelationType relationType1 = graph.putRelationType(related)
+                .sup(startingRelation)
                 .relates(role1).relates(role2).relates(role3);
         graph.putRelationType(sameAsRelated)
+                .sup(startingRelation)
                 .relates(role1).relates(role2).relates(role3);
 
         Role role4 = graph.putRole("role4");

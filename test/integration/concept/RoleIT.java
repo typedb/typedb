@@ -128,17 +128,4 @@ public class RoleIT {
 
         roleA.delete();
     }
-
-    @Test
-    public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidKBException {
-        Role roleA = tx.putRole("roleA");
-        Role roleB = tx.putRole("roleB");
-        relationType.relates(roleA).relates(role);
-        RelationType relationType2 = tx.putRelationType("relationType2").relates(roleB).relates(role);
-        tx.commit();
-
-        assertThat(roleA.relations().collect(toSet()), containsInAnyOrder(relationType));
-        assertThat(roleB.relations().collect(toSet()), containsInAnyOrder(relationType2));
-        assertThat(role.relations().collect(toSet()), containsInAnyOrder(relationType, relationType2));
-    }
 }

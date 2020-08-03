@@ -23,7 +23,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
 import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.concept.impl.RuleImpl;
-import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.query.CompositeQuery;
@@ -65,9 +64,9 @@ import static grakn.core.common.exception.ErrorMessage.VALIDATION_MORE_THAN_ONE_
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_OWNS_NO_KEY;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPE;
-import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_TOO_MANY_NON_RELATED_RELATION_TYPE;
 
 /**
  * Specific Validation Rules
@@ -176,8 +175,14 @@ public class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     public static Optional<String> validateHasSingleIncomingRelatesEdge(Role role) {
-        if (!role.relations().findAny().isPresent()) {
+        // find the topmost owners of each role, ensuring that there aren't more than 1 top
+        Set<RelationType> owners = role.relations().collect(Collectors.toSet());
+        role.relations().forEach(rel -> rel.subs().filter(sub -> !sub.equals(rel)).forEach(owners::remove));
+
+        if (owners.size() == 0) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
+        } else if (owners.size() > 1) {
+            return Optional.of(VALIDATION_ROLE_TYPE_TOO_MANY_NON_RELATED_RELATION_TYPE.getMessage(role.label()));
         }
         return Optional.empty();
     }
@@ -210,28 +215,7 @@ public class ValidateGlobalRules {
         Collection<Role> relates = relationType.roles().collect(Collectors.toSet());
         Set<Label> relatesLabels = relates.stream().map(SchemaConcept::label).collect(Collectors.toSet());
 
-        //TODO: Determine if this check is redundant
-        //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
-        if (!superRelationType.isAbstract()) {
-            Set<Label> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.sups().forEach(rel -> rel.roles().forEach(roleType -> allSuperRolesPlayed.add(roleType.label())));
-
-            for (Role relate : relates) {
-                boolean validRoleTypeFound = SchemaConceptImpl.from(relate).sups().
-                        anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.label()));
-
-                if (!validRoleTypeFound) {
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.label(), relationType.label(), "super", "super", superRelationType.label()));
-                }
-            }
-        }
-        //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
-        for (Role superRelate : superRelates) {
-            boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.label()));
-            if (subRoleNotFoundInRelates) {
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.label(), superRelationType.label(), "sub", "sub", relationType.label()));
-            }
-        }
+        // TODO this will not be re-implemented as it is handled in 2.0
 
         // TODO implement the new validation behaviours:
         // newly declared roles may not clash with any other roles that exist
@@ -305,6 +289,13 @@ public class ValidateGlobalRules {
      * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
     public static Set<String> validateRuleIsValidClause(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
+
+        /*
+        TODO we want to apply semantic query validation technique here to validate the rule patterns are valid
+        TODO as well as keep the validation that there is only 1 negation block, no disjunction, or negation nesting etc.
+         */
+
+
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
         if (patterns.size() > 1) {

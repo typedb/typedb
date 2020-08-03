@@ -111,6 +111,7 @@ java_test(
     test_class = "grakn.core.graql.query.NumberCastingIT",
     deps = [
         "//concept/answer",
+        "//common",
         "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",

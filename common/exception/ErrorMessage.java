@@ -44,6 +44,8 @@ public enum ErrorMessage {
     INVALID_UNIQUE_PROPERTY_MUTATION("Property [%s] of Concept [%s] cannot be changed to [%s] as it is already taken by Concept [%s]"),
     UNIQUE_PROPERTY_TAKEN("Property [%s] with value [%s] is already taken by concept [%s]"),
     INVALID_VALUETYPE("The value [%s] of type [%s] must be of value type [%s] for attribute type [%s]"),
+    INVALID_VALUETYPE_WRITE("The given value [%s] of type [%s] is not writable into value type [%s] for attribute type [%s]"),
+    INVALID_VALUETYPE_READ("The given value [%s] of type [%s] is not readable as value type [%s] for attribute type [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
     REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
@@ -86,6 +88,7 @@ public enum ErrorMessage {
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
+    VALIDATION_ROLE_TYPE_TOO_MANY_NON_RELATED_RELATION_TYPE("Role [%s] has multiple relates connection to Relation Types that are not in a hierarchy. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
 
     VALIDATION_OWNS_NO_KEY("Thing [%s] of type [%s] does not have the required key of type [%s]. \n"),

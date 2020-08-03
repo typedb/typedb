@@ -50,6 +50,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -74,6 +75,8 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotEquals;
 
+// TODO Alex will re-enable this when he moves it to BDD and refactors the schemas
+@Ignore
 public class NegationIT {
 
     @ClassRule

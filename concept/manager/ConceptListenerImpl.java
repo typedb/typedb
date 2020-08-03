@@ -20,6 +20,7 @@ package grakn.core.concept.manager;
 
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.ThingImpl;
+import grakn.core.core.AttributeValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -135,18 +136,17 @@ public class ConceptListenerImpl implements ConceptListener {
     }
 
     @Override
-    public <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
+    public <D> void attributeCreated(Attribute<D> attribute, String uniqueIndex, boolean isInferred) {
         Type type = attribute.type();
         //Track the attribute by index
         Label label = type.label();
-        String index = Schema.generateAttributeIndex(label, value.toString());
-        transactionCache.addNewAttribute(label, index, attribute.id());
+        transactionCache.addNewAttribute(label, uniqueIndex, attribute.id());
         thingCreated(attribute, isInferred);
-        attributeManager.ackAttributeInsert(index, txId);
+        attributeManager.ackAttributeInsert(uniqueIndex, txId);
     }
 
     private <D> void attributeDeleted(Attribute<D> attribute) {
-        Type type = attribute.type();
+        AttributeType<D> type = attribute.type();
         //Track the attribute by index
         String index = Schema.generateAttributeIndex(type.label(), attribute.value().toString());
         attributeManager.ackAttributeDelete(index, txId);
