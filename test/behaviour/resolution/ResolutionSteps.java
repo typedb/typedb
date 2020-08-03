@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
-import static grakn.core.test.common.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.test.common.GraqlTestUtil.assertCollectionsEqual;
 import static org.junit.Assert.assertNotNull;
 
@@ -105,7 +104,7 @@ public class ResolutionSteps {
         for (int i = 0; i < executionCount - 1; i++) {
             try (final Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ)) {
                 final List<ConceptMap> answers = reasonedTx.execute(queryToTest);
-                assertCollectionsNonTriviallyEqual(oldAnswers, answers);
+                assertCollectionsEqual(oldAnswers, answers);
             }
         }
     }
