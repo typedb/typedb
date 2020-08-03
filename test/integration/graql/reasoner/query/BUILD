@@ -115,7 +115,6 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources/recursion:recursion-schemas",
         "//test/integration/graql/reasoner/stubs:reasoning-stubs",
     ],
     test_class = "grakn.core.graql.reasoner.query.NegationIT",
