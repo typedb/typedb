@@ -22,7 +22,6 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -36,8 +35,8 @@ class AbstractFragment extends FragmentImpl {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return traversal.has(Schema.VertexProperty.IS_ABSTRACT.name(), true);
     }

@@ -19,9 +19,7 @@
 package grakn.core.graql.planning.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.planning.gremlin.fragment.InHasFragment;
 import grakn.core.graql.planning.gremlin.fragment.InKeyFragment;
-import grakn.core.graql.planning.gremlin.fragment.OutHasFragment;
 import grakn.core.graql.planning.gremlin.fragment.OutKeyFragment;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.VarProperty;
