@@ -46,7 +46,7 @@ public class GraknApplicationTest {
     }
 
     @Test
-    public void testDeployment() {
+    public void testQuery() {
         try (Session session = graknClient.session("grakn")) {
             try (GraknClient.Transaction tx = session.transaction().write()) {
                 List<ConceptMap> result = tx.execute(Graql.match(Graql.var("t").sub("thing")).get()).get();
