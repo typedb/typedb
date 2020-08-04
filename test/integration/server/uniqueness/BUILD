@@ -53,7 +53,6 @@ java_test(
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
         "@maven//:commons_io_commons_io",

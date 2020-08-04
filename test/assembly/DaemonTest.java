@@ -240,11 +240,9 @@ public class DaemonTest {
         commandExecutor.command("./grakn", "server", "start").execute();
         String host = "localhost:48555";
         String keyspace = "test";
-//        GraknClient graknClient = new GraknClient(host);
-//        GraknClient.Transaction test = graknClient.session(keyspace).transaction().write();
-
 
         // open a session and tx to the server
+        // don't use client-java to avoid a circular dependency
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(host)
                 .usePlaintext().build();
@@ -266,12 +264,11 @@ public class DaemonTest {
         // block until response
         responseObserver.getNext();
 
-
         commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
     }
 
-    class BlockingResponseObserver implements StreamObserver<SessionProto.Transaction.Res> {
+    static class BlockingResponseObserver implements StreamObserver<SessionProto.Transaction.Res> {
         BlockingQueue<SessionProto.Transaction.Res> responses = new LinkedBlockingQueue<>();
         public SessionProto.Transaction.Res getNext() throws InterruptedException {
             return responses.take();
