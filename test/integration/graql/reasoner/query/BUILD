@@ -127,7 +127,6 @@ java_test(
         "//kb/graql/reasoner",
         "//kb/server",
         "//test/common:graql-test-util",
-        "//test/integration/graql/reasoner/graph:reachability-graph",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
         "@maven//:com_google_guava_guava",
