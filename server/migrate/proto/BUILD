@@ -36,11 +36,11 @@ java_library(
     name = "migrate-proto-java",
     srcs = [":migrate-proto-java-src"],
     deps = [
-        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
-        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
-        "//dependencies/maven/artifacts/io/grpc:grpc-api",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "@maven//:io_grpc_grpc_protobuf",
+        "@maven//:io_grpc_grpc_stub",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_protobuf_protobuf_java",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-migrate-proto:{pom_version}", "checkstyle_ignore"],
 )
