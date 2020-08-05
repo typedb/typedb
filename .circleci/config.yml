@@ -454,7 +454,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
       - test-common:
           filters:
             branches:
@@ -497,7 +497,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - build
             - build-checkstyle
@@ -514,7 +514,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - build
             - build-checkstyle
@@ -531,7 +531,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - build
             - build-checkstyle
@@ -548,7 +548,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - build
             - build-checkstyle
@@ -565,7 +565,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -577,7 +577,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -589,7 +589,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
@@ -598,7 +598,7 @@ workflows:
               only:
                 - master
                 - rewrite
-                - 1.7.2
+                - 1.7.3
           requires:
             - deploy-rpm-snapshot
       - sync-dependencies-snapshot:
@@ -606,7 +606,7 @@ workflows:
             branches:
               only:
                 - master
-                - 1.7.2
+                - 1.7.3
           requires:
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
@@ -615,7 +615,7 @@ workflows:
             branches:
               only:
                 - master
-                - 1.7.2
+                - 1.7.3
           requires:
             - sync-dependencies-snapshot
 
