@@ -220,8 +220,9 @@ public class RelationExecutor implements PropertyExecutor.Insertable, PropertyEx
                 Thing rolePlayer = executor.getConcept(rolePlayerVar).asThing();
 
                 // find the first role subtype that is the actual role being played
-                Optional<Role> concreteRolePlayed = requiredRole.subs()
-                        .filter(role -> relation.rolePlayers(role).anyMatch(rolePlayer::equals))
+                Optional<Role> concreteRolePlayed = relation.castingsRelation(requiredRole)
+                        .filter(casting -> casting.getRolePlayer().equals(rolePlayer))
+                        .map(casting -> casting.getRole())
                         .findFirst();
 
                 if (!concreteRolePlayed.isPresent()) {

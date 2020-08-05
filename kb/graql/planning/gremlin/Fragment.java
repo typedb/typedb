@@ -102,11 +102,9 @@ public interface Fragment {
     /**
      * @param traversal the traversal to extend with this Fragment
      */
-    GraphTraversal<Vertex, ? extends Element> applyTraversal(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager,
+    GraphTraversal<Vertex, Vertex> applyTraversal(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager,
             Collection<Variable> vars, Variable currentVar);
-
-    GraphTraversal<Vertex, ? extends Element> selectVariable(GraphTraversal<Vertex, ? extends Element> traversal);
 
     /**
      * The name of the fragment

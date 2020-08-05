@@ -19,7 +19,6 @@ package grakn.core.graql.planning.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.planning.gremlin.fragment.Fragments;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.planning.gremlin.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -27,9 +26,6 @@ import graql.lang.statement.Variable;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
-
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static grakn.core.graql.planning.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
  * see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)

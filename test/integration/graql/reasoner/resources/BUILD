@@ -76,11 +76,6 @@ filegroup(
 )
 
 filegroup(
-    name = "dual-linear-transitivity",
-    srcs = ["dualLinearTransitivity.gql"],
-)
-
-filegroup(
     name = "path-test",
     srcs = ["pathTest.gql"],
 )
@@ -113,4 +108,9 @@ filegroup(
 filegroup(
     name = "reasoner-logback-test",
     srcs = ["logback.xml"],
+)
+
+filegroup(
+    name = "reachability",
+    srcs = ["reachability.gql"],
 )
