@@ -1,13 +1,5 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_test(
-    name = "grakn-application-test",
-    srcs = ["GraknApplicationTest.java"],
-    test_class = "grakn.core.test.common.GraknApplicationTest",
-    deps = [
-        "@graknlabs_graql//java:graql",
-    ],
-)
 
 java_library(
     name = "graql-test-util",
@@ -25,7 +17,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-application-test",
         ":graql-test-util",
     ],
 )
