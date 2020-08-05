@@ -149,12 +149,6 @@ load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
 load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
 
-###############################
-# Load @graknlabs_client_java #
-###############################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
-graknlabs_client_java()
-load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
 
 ####################################
 # Load @graknlabs_console_artifact #
@@ -203,7 +197,6 @@ OVERRIDES = {
 maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
-    graknlabs_client_java_artifacts +
     graknlabs_grabl_tracing_artifacts +
     graknlabs_verification_artifacts +
     graknlabs_grakn_core_artifacts,
