@@ -110,21 +110,6 @@ java_library(
 )
 
 java_library(
-    name = "reachability-graph",
-    srcs = [
-        "ReachabilityGraph.java",
-    ],
-    resources = ["//test/integration/graql/reasoner/resources:reachability"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "@maven//:com_google_guava_guava",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/common:graql-test-util",
-    ],
-)
-
-java_library(
     name = "transitivity-chain-graph",
     srcs = ["TransitivityChainGraph.java"],
     resources = ["//test/integration/graql/reasoner/resources:quadratic-transitivity"],
@@ -158,7 +143,6 @@ checkstyle_test(
         ":path-matrix-graph",
         ":path-tree-graph",
         ":path-tree-symmetric-graph",
-        ":reachability-graph",
         ":transitivity-chain-graph",
         ":transitivity-matrix-graph",
     ],
