@@ -46,11 +46,11 @@ def get_dep_version(ws):
 
 
 core_version = '0.0.0-' + get_commit()
-console_version = get_dep_version("graknlabs_console")
+console_version = get_dep_version("graknlabs_console_artifact")
 
 command = [
     'sudo',
-    'aptitude',
+    'apt',
     'install',
     '-y',
     'grakn-core-all={}'.format(core_version),

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "grakn-client-it",
@@ -40,9 +40,9 @@ java_test(
         "@graknlabs_graql//java:graql",
 
         # External depencncies from Maven
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -50,13 +50,13 @@ java_test(
 
 java_test(
     name = "validator-it",
-    size = "medium",
+    size = "large",
     srcs = ["ValidatorIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.server.ValidatorIT",
     deps = [
         "//common:common",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -89,8 +89,8 @@ java_test(
     deps = [
         "//common:common",
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//graql/reasoner",

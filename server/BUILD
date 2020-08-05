@@ -21,12 +21,13 @@ load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 exports_files(
     glob(["conf/**", "services/**"]),
     visibility = ["//visibility:public"]
 )
+
 
 genrule(
     name = "version",
@@ -74,37 +75,37 @@ java_library(
         "@graknlabs_grabl_tracing//client",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-cli:commons-cli",
-        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-netty",
-        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
-        "//dependencies/maven/artifacts/io/grpc:grpc-api",
-        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
-        "//dependencies/maven/artifacts/io/netty:netty-all",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common",
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-mapreduce-client-core",
-        "//dependencies/maven/artifacts/org/apache/spark:spark-core-2-11",
-        "//dependencies/maven/artifacts/org/apache/spark:spark-launcher-2-11",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "@maven//:org_apache_hadoop_hadoop_annotations",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_protobuf_protobuf_java",
+        "@maven//:commons_cli_commons_cli",
+        "@maven//:commons_configuration_commons_configuration",
+        "@maven//:commons_lang_commons_lang",
+        "@maven//:io_grpc_grpc_core",
+        "@maven//:io_grpc_grpc_netty",
+        "@maven//:io_grpc_grpc_stub",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:io_grpc_grpc_protobuf",
+        "@maven//:io_netty_netty_all",
+        "@maven//:org_apache_cassandra_cassandra_all",
+        "@maven//:org_apache_commons_commons_lang3",
+        "@maven//:org_apache_hadoop_hadoop_common",
+        "@maven//:org_apache_hadoop_hadoop_mapreduce_client_core",
+        "@maven//:org_apache_spark_spark_core_2_11",
+        "@maven//:org_apache_spark_spark_launcher_2_11",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_apache_tinkerpop_hadoop_gremlin",
+        "@maven//:org_apache_tinkerpop_spark_gremlin",
+        "@maven//:org_apache_tinkerpop_tinkergraph_gremlin",
+        "@maven//:org_scala_lang_scala_library",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:com_datastax_oss_java_driver_core",
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
+        "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
+        "@maven//:javax_servlet_javax_servlet_api",
         "//mapreduce:mapreduce"
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
@@ -163,7 +164,7 @@ java_deps(
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-core-server-linux",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":server-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -186,7 +187,7 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-core-server-mac",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
+    targets = [":server-deps", "@graknlabs_dependencies//distribution:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -209,7 +210,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-core-server-windows",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bat-targz"],
+    targets = [":server-deps", "@graknlabs_dependencies//distribution:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -266,7 +267,7 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-linux-apt",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )
 
 assemble_rpm(
@@ -301,5 +302,5 @@ assemble_rpm(
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "@graknlabs_dependencies//distribution:deployment.properties",
 )

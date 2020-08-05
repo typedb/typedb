@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "label-fragment-set-test",
@@ -23,9 +23,9 @@ java_test(
     srcs = ["LabelFragmentSetTest.java"],
     test_class = "grakn.core.graql.planning.gremlin.sets.LabelFragmentSetTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_mockito_mockito_core",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/concept/manager",
@@ -40,9 +40,9 @@ java_test(
     srcs = ["RolePlayerFragmentSetTest.java"],
     test_class = "grakn.core.graql.planning.gremlin.sets.RolePlayerFragmentSetTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_mockito_mockito_core",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/concept/manager",

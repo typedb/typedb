@@ -17,7 +17,7 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "impl",
@@ -35,10 +35,10 @@ java_library(
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_slf4j_slf4j_api",
     ],
 )
 

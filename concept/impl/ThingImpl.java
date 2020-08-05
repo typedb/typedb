@@ -166,9 +166,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public Stream<Relation> relations(Role... roles) {
-        Set<Integer> roleIds = Arrays.stream(roles).map(role -> role.labelId().getValue()).collect(Collectors.toSet());
+        Set<Integer> roleIds = Arrays.stream(roles)
+                .flatMap(Role::subs)
+                .map(role -> role.labelId().getValue()).collect(Collectors.toSet());
         Stream<VertexElement> relationVertices = vertex().relations(roleIds);
-        return relationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
+        return relationVertices.map(conceptManager::buildConcept);
     }
 
     private void deleteAttributeOwnerships() {

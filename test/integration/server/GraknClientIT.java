@@ -1092,7 +1092,7 @@ public class GraknClientIT {
             assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).value());
 
             ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableList<?>> expectedRolePlayers =
-                    ImmutableMap.of(chaser, ImmutableList.of(dunstan), chased, ImmutableList.of());
+                    ImmutableMap.of(chaser, ImmutableList.of(dunstan));
 
             assertEquals(expectedRolePlayers, aChase.rolePlayersMap());
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import socket
 import subprocess as sp
 import sys
 import time
@@ -13,16 +14,8 @@ sp.check_call(['docker', 'run', '-v', '{}:/grakn-core-all-linux/logs/'.format(os
 print('Docker status:')
 sp.check_call(['docker', 'ps'])
 
-sys.stdout.write('Waiting for the instance to be ready')
-sys.stdout.flush()
-timeout = 0 # TODO: add timeout
-# TODO: fail if the docker image is dead
-# upon a successful gRPC connection, the curl returns 0 in linux, and 8 in mac
-while sp.call(['curl', '--output', '/dev/null', '--silent', '--head', '--fail', 'localhost:48555']) not in {0, 8}:
-    sys.stdout.write('.')
-    sys.stdout.flush()
-    time.sleep(1)
-print()
+print('Waiting 30s for the instance to be ready')
+time.sleep(30)
 
 print('Running the test...')
 sp.check_call(['bazel', 'test', '//test/common:grakn-application-test', '--test_output=streamed',

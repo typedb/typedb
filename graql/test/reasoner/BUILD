@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "concept-map-test",
@@ -24,8 +24,8 @@ java_test(
     test_class = "grakn.core.graql.reasoner.ConceptMapTest",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_mockito_mockito_core",
         "//kb/concept/api",
         "//graql/reasoner",
         "@graknlabs_graql//java:graql",

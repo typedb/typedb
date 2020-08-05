@@ -26,7 +26,6 @@ import grakn.core.kb.keyspace.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -54,8 +53,8 @@ public class ValueFragment extends FragmentImpl {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         return predicate().apply(traversal);
     }
 
@@ -90,7 +89,7 @@ public class ValueFragment extends FragmentImpl {
 
     @Override
     public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
-        // compute the sum of all @has-attribute implicit relations
+        // compute the sum of all attribute ownerships
         // and the sum of all attribute instances
         // then compute some mean number of owners per attribute
         // this is probably not the highest quality heuristic (plus it is a heavy operation), needs work

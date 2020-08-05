@@ -26,8 +26,8 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
-import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.QueryExecutor;
@@ -98,16 +98,12 @@ public class QueryExecutorImpl implements QueryExecutor {
         try {
             validateClause(matchClause);
 
-            // TODO: lazy flatMap() is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
-            // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
-            Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
-            Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                    .map(p -> reasonerQueryFactory.resolvable(p))
-                    // we return an answer with the substituted IDs in the pattern
-                    .map(q -> q.resolve(infer).map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
+            Set<Variable> bindingVars = matchClause.getPatterns().variables();
 
-            LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
-            return mergedStreams.flatStream();
+            Disjunction<Conjunction<Pattern>> disjunction = matchClause.getPatterns().getNegationDNF();
+            ResolvableQuery resolvableQuery = reasonerQueryFactory.resolvable(disjunction, bindingVars);
+
+            return resolvableQuery.resolve(infer);
         } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());
             answerStream = Stream.empty();

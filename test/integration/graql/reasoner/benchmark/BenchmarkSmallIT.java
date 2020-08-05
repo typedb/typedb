@@ -67,13 +67,18 @@ public class BenchmarkSmallIT {
         try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
+            RelationType superRelation = tx.putRelationType("super-relation")
+                    .relates(fromRole)
+                    .relates(toRole);
 
             RelationType relation0 = tx.putRelationType("relation0")
+                    .sup(superRelation)
                     .relates(fromRole)
                     .relates(toRole);
 
             for (int i = 1; i <= N; i++) {
                 tx.putRelationType("relation" + i)
+                        .sup(superRelation)
                         .relates(fromRole)
                         .relates(toRole);
             }

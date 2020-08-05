@@ -24,9 +24,9 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 
-import static grakn.core.util.GraqlTestUtil.getInstance;
-import static grakn.core.util.GraqlTestUtil.loadFromFile;
-import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.test.common.GraqlTestUtil.getInstance;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFile;
+import static grakn.core.test.common.GraqlTestUtil.putEntityWithResource;
 
 /**
  * Defines a KB for the the following tests:
@@ -48,7 +48,7 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 public class ReachabilityGraph {
 
     private final Session session;
-    private final static String gqlPath = "test/integration/graql/reasoner/resources/recursion/";
+    private final static String gqlPath = "test/integration/graql/reasoner/resources/";
     private final static String gqlFile = "reachability.gql";
     private final static Label key = Label.of("index");
 

@@ -17,7 +17,7 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "daemon",
@@ -30,20 +30,20 @@ java_library(
         "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core", # NEEDS TO GO
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind", # NEEDS TO GO
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml", # NEEDS TO GO
-        "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-        "//dependencies/maven/artifacts/io/grpc:grpc-api",
-        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:com_fasterxml_jackson_core_jackson_core", # NEEDS TO GO
+        "@maven//:com_fasterxml_jackson_core_jackson_databind", # NEEDS TO GO
+        "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml", # NEEDS TO GO
+        "@maven//:commons_io_commons_io",
+        "@maven//:org_apache_cassandra_cassandra_all",
+        "@maven//:org_zeroturnaround_zt_exec",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:io_grpc_grpc_stub",
+        "@maven//:com_google_protobuf_protobuf_java",
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+        "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
     ],
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",

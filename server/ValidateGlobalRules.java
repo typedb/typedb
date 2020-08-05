@@ -225,15 +225,17 @@ public class ValidateGlobalRules {
                 }
             }
         }
-
         //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
         for (Role superRelate : superRelates) {
             boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.label()));
-
             if (subRoleNotFoundInRelates) {
                 errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.label(), superRelationType.label(), "sub", "sub", relationType.label()));
             }
         }
+
+        // TODO implement the new validation behaviours:
+        // newly declared roles may not clash with any other roles that exist
+        // roles overriden with "as" must exist in a parent relation
 
         return errorMessages;
     }

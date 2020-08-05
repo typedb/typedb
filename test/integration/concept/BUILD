@@ -1,4 +1,4 @@
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "attribute-it",
@@ -8,8 +8,8 @@ java_test(
     test_class = "grakn.core.concept.AttributeIT",
     deps = [
         "//concept/impl:impl",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -23,7 +23,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.AttributeTypeIT",
     deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -39,8 +39,8 @@ java_test(
     test_class = "grakn.core.concept.ConceptIT",
     deps = [
         "//core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
@@ -56,7 +56,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.EntityIT",
     deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -84,8 +84,8 @@ java_test(
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
     ],
 )
 
@@ -104,9 +104,9 @@ java_test(
         "//kb/concept/api",
         "//kb/concept/manager",
         "//test/rule:grakn-test-server",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -119,7 +119,7 @@ java_test(
     test_class = "grakn.core.concept.RelationTypeIT",
     deps = [
         "//core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -133,7 +133,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.concept.RoleIT",
     deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
@@ -150,8 +150,8 @@ java_test(
         "//common:common",
         "//concept/impl:impl",
         "//core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//kb/concept/structure",
@@ -167,8 +167,8 @@ java_test(
     test_class = "grakn.core.concept.SchemaMutationIT",
     deps = [
         "//common:common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",

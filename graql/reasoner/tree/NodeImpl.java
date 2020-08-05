@@ -92,7 +92,7 @@ public class NodeImpl implements Node{
     @Override
     public void addAnswer(ConceptMap answer){
         if (answer.isEmpty()) return;
-        validateAnswer(answer);
+//        validateAnswer(answer);
         answers.add(answer);
     }
 

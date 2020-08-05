@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test-daemon",
@@ -29,9 +29,9 @@ java_test(
     deps = [
         "//common",
         "//server",
-        "//dependencies/maven/artifacts/commons-io",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "@maven//:commons_io_commons_io",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_zeroturnaround_zt_exec",
         "@graknlabs_client_java//:client-java",
     ],
 )
@@ -47,9 +47,9 @@ java_test(
     test_class = "grakn.core.test.assembly.DistributionTest",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/commons-io",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "@maven//:commons_io_commons_io",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_zeroturnaround_zt_exec",
     ],
 )
 

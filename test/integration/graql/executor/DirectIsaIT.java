@@ -45,6 +45,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static graql.lang.Graql.and;
@@ -112,14 +113,6 @@ public class DirectIsaIT {
     public void tearDown() {
         tx.close();
         session.close();
-    }
-
-    @Test
-    public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
-        tx.execute(Graql.insert(var("x").isaX("superType1")));
-        assertEquals(1, tx.execute(Graql.parse("match $z isa! superType1; get; count;").asGetAggregate()).get(0).number().intValue());
-        assertEquals(2, tx.execute(Graql.parse("match $z isa superType1; get; count;").asGetAggregate()).get(0).number().intValue());
-
     }
 
     @Test
@@ -226,6 +219,13 @@ public class DirectIsaIT {
                 instanceOf(OutIsaFragment.class), // check the role player's type
                 instanceOf(OutSubFragment.class) // check the subtypes
         ));
+    }
+
+    // TODO when subX is in the ConceptAPI, we can add this test
+    @Ignore
+    @Test
+    public void directSubInConceptAPIReturnsOnlyItselfAndDirectChildTypes() {
+
     }
 
     private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {

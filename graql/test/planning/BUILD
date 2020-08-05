@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "nodes-util-test",
@@ -23,7 +23,7 @@ java_test(
     srcs = ["NodesUtilTest.java"],
     test_class = "grakn.core.graql.planning.NodesUtilTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",

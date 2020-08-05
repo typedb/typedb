@@ -17,14 +17,14 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "conceptcache",
     srcs = glob(["*.java"]),
     deps = [
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept-cache:{pom_version}"],
 

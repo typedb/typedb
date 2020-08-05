@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 checkstyle_test(
     name = "checkstyle",
@@ -31,7 +31,7 @@ java_test(
     deps = [
         "@graknlabs_graql//java:graql",
         "//graql/planning",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
     ],
     size = "small"
 )

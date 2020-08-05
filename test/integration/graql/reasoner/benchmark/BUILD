@@ -1,16 +1,16 @@
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "rule-scaling-it",
-    size = "small",
+    size = "medium",
     srcs = ["RuleScalingIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.benchmark.RuleScalingIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -28,9 +28,9 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
         "//test/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
@@ -49,7 +49,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner/graph:diagonal-graph",

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "chu-liu-edmonds-test",
@@ -26,7 +26,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.planning.spanningtree.ChuLiuEdmondsTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/graql/planning",
         "@graknlabs_graql//java:graql",
     ],
@@ -38,7 +38,7 @@ java_test(
     srcs = ["datastructure/FibonacciHeapTest.java"],
     test_class = "grakn.core.graql.planning.spanningtree.datastructure.FibonacciHeapTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/graql/planning",
     ],
 )
@@ -49,7 +49,7 @@ java_test(
     srcs = ["datastructure/FibonacciQueueTest.java"],
     test_class = "grakn.core.graql.planning.spanningtree.datastructure.FibonacciQueueTest",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/graql/planning",
     ],
 )
