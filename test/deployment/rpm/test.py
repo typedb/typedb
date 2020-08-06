@@ -97,9 +97,9 @@ try:
     lprint('Installing dependencies')
     gcloud_ssh(instance, 'sudo yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm')
     gcloud_ssh(instance, 'sudo yum update -y')
-    gcloud_ssh(instance, 'sudo yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build yum-utils')
-    gcloud_ssh(instance, 'curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh')
-    gcloud_ssh(instance, 'sudo bash ./install-bazel-linux.sh')
+    gcloud_ssh(instance, 'sudo yum install -y sudo procps which gcc gcc-c++ python-devel python3 unzip git java-1.8.0-openjdk-devel rpm-build yum-utils')
+    gcloud_ssh(instance, 'curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh')
+    gcloud_ssh(instance, 'sudo bash ./linux.sh')
 
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
 
