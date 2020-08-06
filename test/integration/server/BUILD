@@ -72,7 +72,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-client-it",
         ":validator-it",
         ":validate-global-rules-it",
         ":rule-validation-it",
