@@ -26,6 +26,7 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceService;
+import grakn.core.server.rpc.MigrateService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
@@ -150,6 +151,8 @@ public class ServerFactory {
 
         SessionService sessionService = new SessionService(requestOpener);
 
+        MigrateService migrateService = new MigrateService(sessionFactory);
+
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 
         NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(ELG_THREADS, new ThreadFactoryBuilder().setNameFormat("grpc-ELG-handler-%d").build());
@@ -164,6 +167,7 @@ public class ServerFactory {
                 .channelType(NioServerSocketChannel.class)
                 .addService(sessionService)
                 .addService(new KeyspaceService(keyspaceManager))
+                .addService(migrateService)
                 .build();
     }
 

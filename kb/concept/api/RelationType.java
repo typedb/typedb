@@ -187,6 +187,9 @@ public interface RelationType extends Type {
     @Override
     Stream<Relation> instances();
 
+    @Override
+    Stream<Relation> instancesDirect();
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

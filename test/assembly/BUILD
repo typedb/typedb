@@ -53,11 +53,41 @@ java_test(
     ],
 )
 
+java_test(
+    name = "test-migration",
+    size = "enormous",
+    srcs = [
+        "AssemblyConstants.java",
+        "MigrationTest.java",
+    ],
+    classpath_resources = ["//test/resources:logback-test"],
+    data = [
+        "data/schema.gql",
+        "data/schema-pt2.gql",
+        "data/schema_export_truth.gql",
+        "data/simulation.grakn",
+        "//:assemble-mac-zip",
+    ],
+    test_class = "grakn.core.test.assembly.MigrationTest",
+    deps = [
+        "//common",
+        "@maven//:com_google_protobuf_protobuf_java",
+        "@maven//:commons_io_commons_io",
+        "@maven//:commons_lang_commons_lang",
+        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_zeroturnaround_zt_exec",
+        "//server/migrate/proto:migrate-proto-java",
+        "@graknlabs_client_java//:client-java",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
 test_suite(
     name = "test-assembly",
     tests = [
         "//test/assembly:test-daemon",
         "//test/assembly:test-distribution",
+        "//test/assembly:test-migration",
     ]
 )
 
@@ -65,6 +95,7 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":test-daemon",
-        ":test-distribution"
+        ":test-distribution",
+        ":test-migration",
     ],
 )

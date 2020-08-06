@@ -27,6 +27,7 @@ java_library(
         # Grakn Core dependencies
         "//common:common",
         "//server:server",
+        "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies
         "@maven//:org_slf4j_slf4j_api",
@@ -36,6 +37,9 @@ java_library(
         "@maven//:commons_io_commons_io",
         "@maven//:org_apache_cassandra_cassandra_all",
         "@maven//:org_zeroturnaround_zt_exec",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:io_grpc_grpc_stub",
+        "@maven//:com_google_protobuf_protobuf_java",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",

@@ -475,7 +475,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
       - test-common:
           filters:
             branches:
@@ -501,7 +500,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -516,7 +514,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -531,7 +528,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -546,7 +542,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -561,7 +556,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -588,7 +582,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -600,7 +593,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -612,7 +604,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
@@ -620,7 +611,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - deploy-rpm-snapshot
       - sync-dependencies-snapshot:
