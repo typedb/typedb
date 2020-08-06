@@ -185,6 +185,7 @@ jobs:
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --get
       - run: unzip bazel-bin/grakn-core-all-mac.zip -d bazel-bin/
       - run: nohup bazel-bin/grakn-core-all-mac/grakn server start
+      - run: cat nohup.out
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-bin/grakn-core-all-mac/grakn server stop
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-mac.zip --save-success
@@ -216,6 +217,8 @@ jobs:
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --get
       - run: tar -xf bazel-bin/grakn-core-all-linux.tar.gz -C bazel-bin
       - run: nohup bazel-bin/grakn-core-all-linux/grakn server start
+      - run: cat nohup.out
+      - run: sleep 10
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-bin/grakn-core-all-linux/grakn server stop
       - run: TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --save-success
