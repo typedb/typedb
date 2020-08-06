@@ -137,14 +137,14 @@ public final class Concepts {
         else return null;
     }
 
-    public Concept getConcept(byte[] iid) {
+    public Concept getConcept(final byte[] iid) {
         switch (Schema.Prefix.of(iid[0]).type()) {
             case TYPE:
-                TypeVertex typeVertex = graph.type().convert(VertexIID.Type.of(iid));
+                TypeVertex typeVertex = graph.type().get(VertexIID.Type.of(iid));
                 if (typeVertex != null) return TypeImpl.of(typeVertex);
                 else return null;
             case THING:
-                ThingVertex thingVertex = graph.thing().convert(VertexIID.Thing.of(iid));
+                ThingVertex thingVertex = graph.thing().get(VertexIID.Thing.of(iid));
                 if (thingVertex != null) return ThingImpl.of(thingVertex);
                 else return null;
             default:

@@ -31,6 +31,8 @@ public interface Graph<VERTEX_IID extends VertexIID,
 
     Stream<VERTEX> vertices();
 
+    VERTEX get(VERTEX_IID iid);
+
     VERTEX convert(VERTEX_IID iid);
 
     void delete(VERTEX vertex);

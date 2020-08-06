@@ -95,6 +95,15 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     @Override
+    public TypeVertex get(VertexIID.Type iid) {
+        assert storage().isOpen();
+        if (!typesByIID.containsKey(iid) && storage().get(iid.bytes()) == null) {
+            return null;
+        }
+        return convert(iid);
+    }
+
+    @Override
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);

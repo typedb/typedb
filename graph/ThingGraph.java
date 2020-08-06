@@ -29,6 +29,7 @@ import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -66,6 +67,25 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     @Override
+    public ThingVertex get(VertexIID.Thing iid) {
+        assert storage().isOpen();
+        if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
+            return get(iid.asAttribute());
+        }
+        if (!thingsByIID.containsKey(iid) && storage().get(iid.bytes()) == null) {
+            return null;
+        }
+        return convert(iid);
+    }
+
+    public AttributeVertex<?> get(VertexIID.Attribute<?> iid) {
+        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage().get(iid.bytes()) == null) {
+            return null;
+        }
+        return convert(iid);
+    }
+
+    @Override
     public ThingVertex convert(VertexIID.Thing iid) {
         assert storage().isOpen();
         if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
@@ -76,7 +96,6 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     }
 
     public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
-        assert storage().isOpen();
         switch (attIID.valueType()) {
             case BOOLEAN:
                 return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(), iid1 ->
@@ -332,6 +351,19 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
                 case DATETIME:
                     dateTimes.remove((VertexIID.Attribute.DateTime) iid);
                     break;
+            }
+        }
+
+        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Schema.ValueType valueType) {
+            switch (valueType) {
+                case BOOLEAN: return booleans;
+                case LONG: return longs;
+                case DOUBLE: return doubles;
+                case STRING: return strings;
+                case DATETIME: return dateTimes;
+                default:
+                    assert false;
+                    return null;
             }
         }
     }
