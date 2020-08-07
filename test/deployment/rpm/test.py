@@ -118,8 +118,19 @@ try:
     gcloud_ssh(instance, 'sudo chown -R $USER:$USER /opt/grakn')
 
     gcloud_ssh(instance, 'grakn server start')
-    gcloud_ssh(instance, 'pushd /tmp/grakn && bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no && popd')
+
+    cmd="define person sub entity;" \
+        "insert $x isa person;" \
+        "commit" \
+        "match $x sub thing; get;" \
+        "rollback" \
+        "compute count in person;" \
+        "exit;"
+    gcloud_ssh(instance, 'pushd /tmp/grakn && '
+                         'echo "$cmd" | ./grakn console && '
+                         'popd')
     gcloud_ssh(instance, 'grakn server stop')
+
 finally:
     lprint('Copying logs from CentOS instance')
     gcloud_scp_from_remote(instance, remote='/opt/grakn/core/logs/grakn.log', local='./grakn.log')
