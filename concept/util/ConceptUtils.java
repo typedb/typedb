@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.common.util.ListsUtil;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
@@ -108,9 +109,12 @@ public class ConceptUtils {
         if (parent == null) return true;
         if (child == null) return false;
         if (direct) return parent.equals(child);
-        if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
+
+        Label thingLabel = Schema.MetaSchema.THING.getLabel();
+        if (parent.label().equals(thingLabel)) return true;
+
         SchemaConcept superType = child;
-        while (superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
+        while (superType != null && !superType.label().equals(thingLabel)) {
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }

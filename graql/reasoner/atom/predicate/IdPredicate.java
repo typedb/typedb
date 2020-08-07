@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.manager.ConceptManager;
@@ -33,6 +34,8 @@ import graql.lang.statement.Variable;
  * Predicate implementation specialising it to be an id predicate. Corresponds to IdProperty.
  */
 public class IdPredicate extends Predicate<ConceptId> {
+
+    private static final ConceptId placeholder = ConceptId.of(Schema.PLACEHOLDER_ID);
 
     private IdPredicate(Variable varName, Statement pattern, ReasonerQuery parentQuery, ConceptId predicate) {
         super(varName, pattern, predicate, parentQuery);
@@ -59,6 +62,10 @@ public class IdPredicate extends Predicate<ConceptId> {
 
     private static Statement createIdVar(Variable varName, ConceptId typeId) {
         return new Statement(varName).id(typeId.getValue());
+    }
+
+    public boolean isPlaceholder() {
+        return getPredicate().equals(placeholder);
     }
 
     @Override

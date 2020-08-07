@@ -24,9 +24,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlGetIT",
     deps = [
-        "//concept/answer",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/concept/api",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/graql/exception",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
@@ -42,15 +40,11 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
-        "//common",
-        "//concept/answer",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/concept/api",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/graql/exception",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -64,13 +58,9 @@ java_test(
     ],
     test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
-        "//concept/answer",
-        "//kb/concept/api",
-        "//kb/graql/exception",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -83,14 +73,14 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlInsertIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -102,15 +92,13 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlUndefineIT",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
-        "//common",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -123,7 +111,7 @@ java_test(
     test_class = "grakn.core.graql.query.NumberCastingIT",
     deps = [
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/rule:grakn-test-server",
@@ -140,9 +128,9 @@ java_test(
     deps = [
         "//kb/graql/exception",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -154,7 +142,7 @@ java_test(
     classpath_resources = ["//test/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryAdminIT",
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/server",
         "//test/integration/graql/graph:movie-graph",
         "//test/rule:grakn-test-server",
@@ -170,7 +158,7 @@ java_test(
     test_class = "grakn.core.graql.query.QueryErrorIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:org_hamcrest_hamcrest_library",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/server",
@@ -188,25 +176,10 @@ java_test(
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//graql/planning",
         "//kb/concept/api",
         "//kb/graql/planning",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
-    name = "query-validity-it",
-    size = "medium",
-    srcs = ["QueryValidityIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    test_class = "grakn.core.graql.query.QueryValidityIT",
-    deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/graql/exception",
         "//kb/server",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -225,7 +198,6 @@ checkstyle_test(
         ":query-admin-it",
         ":query-error-it",
         ":query-planner-it",
-        ":query-validity-it",
         ":number-casting-it",
     ],
 )

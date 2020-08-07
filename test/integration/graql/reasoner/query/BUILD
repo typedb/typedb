@@ -5,11 +5,11 @@ java_library(
     srcs = glob(["QueryTestUtil.java"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/junit",
         "//graql/reasoner",
         "//kb/graql/reasoner",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:junit_junit",
     ],
 )
 
@@ -24,14 +24,13 @@ java_test(
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryEquivalenceIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/server",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -45,15 +44,15 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/graql/exception",
         "//kb/graql/reasoner",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -73,13 +72,13 @@ java_test(
         "//concept/answer",
         "//kb/concept/api",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/reasoner/graph:geo-graph",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -93,18 +92,18 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//graql/reasoner",
-        "//kb/concept/api",
-        "//kb/server",
         "//concept/impl",
         "//core",
+        "//graql/reasoner",
+        "//kb/concept/api",
         "//kb/concept/structure",
+        "//kb/server",
+        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -116,25 +115,23 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources/recursion:recursion-schemas",
         "//test/integration/graql/reasoner/stubs:reasoning-stubs",
     ],
     test_class = "grakn.core.graql.reasoner.query.NegationIT",
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/exception",
         "//kb/graql/reasoner",
         "//kb/server",
-        "//test/integration/graql/reasoner/graph:reachability-graph",
+        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -146,26 +143,26 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
+        "//test/integration/graql/reasoner/resources:generic-schema-refactored",
         "//test/integration/graql/reasoner/resources:unification-with-types",
     ],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
         "//common",
         "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/graql/reasoner",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/reasoner:pattern",
         "//test/integration/graql/reasoner/graph:generic-schema-graph",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -183,30 +180,8 @@ java_test(
         "//kb/server",
         "//test/integration/graql/reasoner/graph:geo-graph",
         "//test/rule:grakn-test-server",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
         "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
-    name = "ontological-query-it",
-    size = "large",
-    srcs = ["OntologicalQueryIT.java"],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/integration/graql/reasoner/resources:matching-types",
-        "//test/integration/graql/reasoner/resources:rule-applicability",
-    ],
-    test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
-    deps = [
-        "//concept/answer",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
-        "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -219,8 +194,6 @@ java_test(
     test_class = "grakn.core.graql.reasoner.query.ResolutionPlanIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/planning",
         "//graql/reasoner",
         "//kb/concept/api",
@@ -229,9 +202,11 @@ java_test(
         "//kb/keyspace",
         "//kb/server",
         "//keyspace",
+        "//test/common:graql-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -244,24 +219,24 @@ java_test(
     ],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
+        "//test/integration/graql/reasoner/resources:generic-schema-refactored",
     ],
     test_class = "grakn.core.graql.reasoner.query.GenerativeOperationalIT",
     deps = [
         "//common",
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/concept/api",
         "//kb/server",
+        "//test/common:graql-test-util",
         "//test/integration/graql/reasoner/query:query-test-util",
         "//test/rule:grakn-test-server",
-        "//test/integration/util:graql-test-util",
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
-        "@graknlabs_verification//tools/operator:operator",
+        "@graknlabs_verification//tools/operator",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -271,14 +246,11 @@ java_test(
     srcs = ["SubsumptionIT.java"],
     classpath_resources = ["//test/resources:logback-test"],
     resources = [
-        "//test/integration/graql/reasoner/resources:generic-schema",
+        "//test/integration/graql/reasoner/resources:generic-schema-refactored",
     ],
     test_class = "grakn.core.graql.reasoner.query.SubsumptionIT",
     deps = [
         "//common",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//graql/reasoner",
         "//kb/graql/reasoner",
         "//kb/server",
@@ -286,6 +258,9 @@ java_test(
         "//test/integration/graql/reasoner/graph:generic-schema-graph",
         "//test/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
+        "@maven//:com_google_guava_guava",
+        "@maven//:commons_collections_commons_collections",
+        "@maven//:org_hamcrest_hamcrest_library",
     ],
 )
 
@@ -300,7 +275,6 @@ checkstyle_test(
         ":negation-it",
         ":query-unification-it",
         ":query-it",
-        ":ontological-query-it",
         ":resolution-plan-it",
         ":subsumption-it",
         ":generative-operational-it",

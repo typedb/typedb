@@ -133,6 +133,8 @@ public class TransactionImpl implements Transaction {
     protected final ReasonerQueryFactory reasonerQueryFactory;
     private final ReadWriteLock graphLock;
 
+    private boolean skipValidationChecks = false;
+
     public TransactionImpl(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache, ExplanationCache explanationCache,
@@ -173,7 +175,7 @@ public class TransactionImpl implements Transaction {
      * - use a lock to serialise commits if two given txs try to insert the same attribute
      * - use a lock to serialise commits if two given txs try to insert a shard for the same type that
      * - use a lock if there is a tx that deletes attributes
-     * - use a lock if there is a tx that mutates key implicit relations
+     * - use a lock if there is a tx that mutates "has" key ownerships
      * - otherwise do not lock
      *
      * @return true if graph lock need to be acquired for commit
@@ -1178,6 +1180,10 @@ public class TransactionImpl implements Transaction {
         }
     }
 
+    public void disableCommitValidation() {
+        skipValidationChecks = true;
+    }
+
     private void closeTransaction(String closedReason) {
         this.closedReason = closedReason;
         this.isTxOpen = false;
@@ -1197,6 +1203,10 @@ public class TransactionImpl implements Transaction {
     }
 
     private void validateGraph() throws InvalidKBException {
+        if (skipValidationChecks) {
+            return;
+        }
+
         Validator validator = new Validator(reasonerQueryFactory, transactionCache, conceptManager);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();

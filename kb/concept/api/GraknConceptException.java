@@ -98,16 +98,6 @@ public class GraknConceptException extends GraknException {
         return create(ErrorMessage.INVALID_VALUETYPE.getMessage(name, supported));
     }
 
-
-    /**
-     * Thrown when creating a label which starts with a reserved character Schema.ImplicitType#RESERVED
-     */
-    // TODO use Schema.ImplicitType.RESERVED.getValue() after breaking cyclic dependency
-    public static GraknConceptException invalidLabelStart(Label label) {
-        return create(String.format("Cannot create a label {%s} starting with character {%s} as it is a reserved starting character", label, "@"));
-    }
-
-
     /**
      * Thrown when creating an Attribute whose value Object does not match attribute value type
      */

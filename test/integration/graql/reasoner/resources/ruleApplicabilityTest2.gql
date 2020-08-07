@@ -1,0 +1,210 @@
+define
+
+## Rules
+
+# Transitive path and binary to ternary paths
+steep-path-transitivity sub rule,
+    when {
+        (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
+    }, then {
+        (steep-path_lower-end: $x, steep-path_upper-end: $z) isa steep-path;
+    };
+
+ternary-steep-path-from-steep-paths sub rule,
+    when {
+        (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
+    }, then {
+        (steep-path_lower-end: $x, ternary-steep-path_middle-end: $y, steep-path_upper-end: $z) isa ternary-steep-path;
+    };
+
+flat-ternary-steep-path sub rule,
+    when {
+        (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
+    }, then {
+        (steep-path_lower-end: $x, steep-path_lower-end: $y, steep-path_upper-end: $z) isa ternary-steep-path;
+    };
+
+
+# link ranked paths
+all-elevation-rankings sub rule,
+    when {
+        $r1 (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+        $r2 (steep-path_lower-end: $y, steep-path_upper-end: $z) isa steep-path;
+    }, then {
+        (elevation-ranking_lower-path: $r1, elevation-ranking_upper-path: $r2) isa elevation-ranking;
+    };
+
+# create links between other linkable entities
+link-cities sub rule,
+    when {
+        $x isa ranked-hill-city;
+        $y isa ranked-hill-city;
+    }, then {
+        (elevation-ranking_nearby-item: $x, elevation-ranking_nearby-item: $y) isa elevation-ranking;
+    };
+
+# add a text tag to ranking paths
+elevation-ranking-description sub rule,
+    when {
+        $rel (steep-path_lower-end: $x, steep-path_upper-end: $y) isa steep-path;
+    }, then {
+        $rel has description 'a ranking cities by elevation';
+    };
+
+# create 'located' relations, with attributes on the relation
+located-in-all-combinations sub rule,
+    when {
+        $x isa city;
+        $y isa monument;
+        $z isa discoverer;
+    }, then {
+        (located-in: $x, located-item: $y, located-by: $z) isa located;
+    };
+
+located-description sub rule,
+    when {
+        $r (located-in: $x, located-item: $y, located-by: $z) isa located;
+    }, then {
+        $r has description 'in a fictional hilly world';
+    };
+
+# In theory, we can try to figure out whether a rule CAN match
+# some query by using the attribute values in the 'when' clause
+# however, this only is useful once we either include cardinaltiy
+# restrictions, or only look at keyed entities
+# the best current case would be to ignore rules whose negated attribuet ownerships
+# can be excluded
+# however, we for now do no such pruning
+mixed-attributed-entities-relation sub rule,
+    when {
+        $x isa ranked-hill-city, has numerical-elevation-rank 0;
+        $y has name 'Big Rock';
+        $z isa discoverer, has description 'discovery is cool';
+    }, then {
+        (long-attributed: $x, string-attributed: $y, string-attributed: $z) isa entities-with-attributes;
+    };
+
+long-attributed-entities-relation sub rule,
+    when {
+        $x isa ranked-hill-city, has numerical-elevation-rank < -1000;
+        $y has numerical-elevation-rank !== 0;
+        $z isa discoverer, has age > 1000;
+    }, then {
+        (long-attributed: $x, long-attributed: $y, long-attributed: $z) isa entities-with-attributes;
+    };
+
+
+
+
+# Relations
+#
+# path  ------------------ path_end
+# |
+# steep-path ------------ steep-path_lower-end, steep-path_upper-end
+# |
+# ternary-steep-path ---- steep-path_lower-end, steep-path_upper-end, ternary-steep-path_middle-end
+#
+
+path sub relation,
+    relates path_end;
+
+steep-path sub path,
+    relates steep-path_lower-end as path_end,
+    relates steep-path_upper-end as path_end,
+    relates steep-path_other-end as path_end, # we have this because we won't be able to access 'connected' in sub relations
+    plays elevation-ranking_lower-path,
+    plays elevation-ranking_upper-path,
+    has description;
+
+ternary-steep-path sub steep-path,
+    relates steep-path_lower-end,
+    relates steep-path_upper-end,
+    relates ternary-steep-path_middle-end as steep-path_other-end;
+
+ranking sub relation,
+    relates ranked;
+elevation-ranking sub relation,
+    relates elevation-ranking_lower-path as ranked,
+    relates elevation-ranking_upper-path as ranked,
+    relates elevation-ranking_nearby-item as ranked;
+
+located sub relation,
+    relates located-in,
+    relates located-item,
+    relates located-by,
+    has description;
+
+things-with-attributes sub relation,
+    relates attributed;
+entities-with-attributes sub relation,
+    relates string-attributed as attributed,
+    relates long-attributed as attributed;
+
+
+# entities
+
+root sub entity;
+
+city sub root,
+    plays path_end,
+    plays located-in;
+
+hill-city sub city,
+    plays steep-path_lower-end,
+    plays steep-path_upper-end,
+    plays ternary-steep-path_middle-end;
+
+ranked-hill-city sub hill-city,
+    plays elevation-ranking_nearby-item,
+    plays long-attributed,
+    has numerical-elevation-rank;
+
+monument sub root,
+    plays steep-path_lower-end, # to throw off type inference by having another player of this role
+    plays located-item,
+    plays string-attributed,
+    plays long-attributed,
+    has numerical-elevation-rank,
+    has name;
+
+discoverer sub root,
+    plays located-by,
+    plays string-attributed,
+    plays long-attributed,
+    has name,
+    has description,
+    has age;
+
+# entities that plays just 1 high level role that can be inferred
+with-long sub root,
+    plays long-attributed,
+    has age;
+with-string sub root,
+    plays string-attributed,
+    has name;
+
+numerical-elevation-rank sub attribute, value long;
+age sub attribute, value long;
+name sub attribute, value string;
+description sub attribute, value string;
+
+
+insert
+    $root isa root;
+    $x isa hill-city;
+
+    $a isa ranked-hill-city;
+    $b isa ranked-hill-city;
+    $c isa ranked-hill-city, has numerical-elevation-rank 0;
+
+    (steep-path_lower-end: $a, steep-path_upper-end: $b) isa steep-path;
+    (steep-path_lower-end: $b, steep-path_upper-end: $c) isa steep-path;
+
+    $z isa monument, has numerical-elevation-rank 100, has name 'Big Rock';
+    $d isa discoverer, has age 40;
+
+
+    $long-attributed isa with-long, has age 10;

@@ -1,0 +1,34 @@
+define
+
+employment sub membership,
+    relates employment_contract,
+    relates employment_profession;
+
+occupation sub entity,
+   plays employment_profession;
+
+employment-contract sub legal-document,
+    plays employment_contract;
+
+contract-has-language-of-location-is-there-is-only-one-language sub rule,
+when {
+    $emp(employment_contract: $contract) isa employment;
+    $contract isa employment-contract, has contract-content $content;
+    ($emp, $location1) isa locates;
+    $location1 has language $lang1;
+    not {
+        ($emp, $location2) isa locates;
+        $location2 has language $lang2;
+        $lang1 !== $lang2;
+    };
+}, then {
+    $content has content-language $lang1;
+};
+
+contracted-hours-apply-to-employment sub rule,
+when {
+    $emp(employment_contract: $c) isa employment;
+    $c isa employment-contract, has contracted-hours $hours;
+}, then {
+    $emp has contracted-hours $hours;
+};

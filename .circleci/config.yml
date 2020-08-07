@@ -37,7 +37,9 @@ commands:
       command:
           type: string
     steps:
-      - run: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+      - run:
+          command: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+          no_output_timeout: 120m
 
 jobs:
   build:
@@ -49,6 +51,11 @@ jobs:
       - checkout
       - run-bazel:
           command: bazel build //...
+      - run:
+          name: Verify dependencies/maven/snapshot.json
+          command: |
+            dependencies/maven/update.sh
+            git diff --exit-code dependencies/maven/artifacts.snapshot
       - run:
           command: bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
           no_output_timeout: 30m
@@ -113,7 +120,7 @@ jobs:
 
 
   # behaviour tests
-  test-behaviour-connection:
+  test-behaviour:
     machine:
       image: ubuntu-1604:201903-01
     working_directory: ~/grakn
@@ -121,82 +128,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/behaviour/connection/keyspace:test --test_output=errors
-      - run-bazel:
-          command: bazel test //test/behaviour/connection/session:test --test_output=errors
-      - run-bazel:
-          command: bazel test //test/behaviour/connection/transaction:test --test_output=errors
-
-  test-behaviour-graql-define:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/language/define:test --test_output=errors
-
-  test-behaviour-graql-delete:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/language/delete:test --test_output=errors
-
-  test-behaviour-graql-get:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/language/get:test --test_output=errors
-
-  test-behaviour-graql-insert:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/language/insert:test --test_output=errors
-
-  test-behaviour-graql-match:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/language/match:test --test_output=errors
-
-  test-behaviour-graql-undefine:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/language/undefine:test --test_output=errors
-
-  test-behaviour-graql-explanation:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/explanation/language:test --test_output=errors
-      - run-bazel:
-          command: bazel test //test/behaviour/graql/explanation/reasoner:test --test_output=errors
+          command: bazel test //test/behaviour/... --test_output=errors
 
   # integration tests
   test-integration:
@@ -207,53 +139,7 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/integration/server/... --test_output=errors
-      - run-bazel:
-          command: bazel test //test/integration/graql/executor/... --test_output=errors
-      - run-bazel:
-          command: bazel test //test/integration/graql/query/... --test_output=errors
-      - run-bazel:
-          command: bazel test //test/integration/graql/planning/... --test_output=errors
-
-  test-integration-concept:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/integration/concept/... --test_output=errors
-
-  test-integration-keyspace:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/integration/keyspace/... --test_output=errors
-
-  test-integration-reasoner:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/integration/graql/reasoner/... --test_output=errors
-
-  test-integration-analytics:
-    machine:
-      image: ubuntu-1604:201903-01
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux
-      - checkout
-      - run-bazel:
-          command: bazel test //test/integration/graql/analytics/... --test_output=errors
+          command: bazel test //test/integration/... --test_output=errors
 
   # assembly tests
   test-assembly:
@@ -334,6 +220,18 @@ jobs:
       - store_artifacts:
           path: ./cassandra.log
           destination: logs/cassandra.log
+
+  deploy-artifact-snapshot:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
 
   deploy-apt-snapshot:
     machine:
@@ -438,7 +336,19 @@ jobs:
       - checkout
       - run: |
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
-            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console
+            graknlabs_common graknlabs_graql graknlabs_protocol graknlabs_console_artifact
+
+  deploy-artifact:
+    machine:
+      image: ubuntu-1604:201903-01
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux
+      - checkout
+      - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(cat VERSION) //:deploy-linux-targz -- release
 
   deploy-github:
     machine:
@@ -565,7 +475,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
       - test-common:
           filters:
             branches:
@@ -578,55 +487,11 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-behaviour-connection:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-define:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-delete:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-get:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-insert:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-match:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-undefine:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-behaviour-graql-explanation:
+      - test-behaviour:
           filters:
             branches:
               ignore: grakn-release-branch
       - test-integration:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-concept:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-keyspace:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-reasoner:
-          filters:
-            branches:
-              ignore: grakn-release-branch
-      - test-integration-analytics:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -635,7 +500,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -643,25 +507,13 @@ workflows:
             - test-common
             - test-server
             - test-graql
-            - test-behaviour-connection
-            - test-behaviour-graql-define
-            - test-behaviour-graql-delete
-            - test-behaviour-graql-get
-            - test-behaviour-graql-insert
-            - test-behaviour-graql-match
-            - test-behaviour-graql-undefine
-            - test-behaviour-graql-explanation
+            - test-behaviour
             - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-integration-concept
-            - test-integration-keyspace
       - test-assembly-mac-zip:
           filters:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -669,25 +521,13 @@ workflows:
             - test-common
             - test-server
             - test-graql
-            - test-behaviour-connection
-            - test-behaviour-graql-define
-            - test-behaviour-graql-delete
-            - test-behaviour-graql-get
-            - test-behaviour-graql-insert
-            - test-behaviour-graql-match
-            - test-behaviour-graql-undefine
-            - test-behaviour-graql-explanation
+            - test-behaviour
             - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-integration-concept
-            - test-integration-keyspace
       - test-assembly-windows-zip:
           filters:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -695,25 +535,13 @@ workflows:
             - test-common
             - test-server
             - test-graql
-            - test-behaviour-connection
-            - test-behaviour-graql-define
-            - test-behaviour-graql-delete
-            - test-behaviour-graql-get
-            - test-behaviour-graql-insert
-            - test-behaviour-graql-match
-            - test-behaviour-graql-undefine
-            - test-behaviour-graql-explanation
+            - test-behaviour
             - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-integration-concept
-            - test-integration-keyspace
       - test-assembly-linux-targz:
           filters:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -721,25 +549,13 @@ workflows:
             - test-common
             - test-server
             - test-graql
-            - test-behaviour-connection
-            - test-behaviour-graql-define
-            - test-behaviour-graql-delete
-            - test-behaviour-graql-get
-            - test-behaviour-graql-insert
-            - test-behaviour-graql-match
-            - test-behaviour-graql-undefine
-            - test-behaviour-graql-explanation
+            - test-behaviour
             - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-integration-concept
-            - test-integration-keyspace
       - test-assembly-docker:
           filters:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - build
             - build-checkstyle
@@ -747,25 +563,25 @@ workflows:
             - test-common
             - test-server
             - test-graql
-            - test-behaviour-connection
-            - test-behaviour-graql-define
-            - test-behaviour-graql-delete
-            - test-behaviour-graql-get
-            - test-behaviour-graql-insert
-            - test-behaviour-graql-match
-            - test-behaviour-graql-undefine
-            - test-behaviour-graql-explanation
+            - test-behaviour
             - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-integration-concept
-            - test-integration-keyspace
-      - deploy-apt-snapshot:
+      - deploy-artifact-snapshot:
           filters:
             branches:
               only:
                 - master
                 - rewrite
+          requires:
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-assembly-docker
+            - test-assembly
+      - deploy-apt-snapshot:
+          filters:
+            branches:
+              only:
+                - master
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -777,7 +593,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -789,7 +604,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
@@ -797,7 +611,6 @@ workflows:
             branches:
               only:
                 - master
-                - rewrite
           requires:
             - deploy-rpm-snapshot
       - sync-dependencies-snapshot:
@@ -806,6 +619,7 @@ workflows:
               only:
                 - master
           requires:
+            - deploy-artifact-snapshot
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
@@ -835,6 +649,12 @@ workflows:
           filters:
             branches:
               only: grakn-release-branch
+      - deploy-artifact:
+          filters:
+            branches:
+              only: grakn-release-branch
+          requires:
+            - deploy-approval
       - deploy-apt:
           filters:
             branches:

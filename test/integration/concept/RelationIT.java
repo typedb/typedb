@@ -121,7 +121,7 @@ public class RelationIT {
         Entity entity1 = type.create();
 
         relation.assign(role, entity1);
-        assertThat(relation.rolePlayersMap().keySet(), containsInAnyOrder(role1, role2, role3, role));
+        assertThat(relation.rolePlayersMap().keySet(), containsInAnyOrder(role));
         assertThat(relation.rolePlayersMap().get(role), containsInAnyOrder(entity1));
     }
 
@@ -195,7 +195,7 @@ public class RelationIT {
 
     @Test
     public void whenGettingRolePlayersOfRelation_ReturnsRolesAndInstances() throws Exception {
-        assertThat(relation.rolePlayersMap().keySet(), Matchers.containsInAnyOrder(role1, role2, role3));
+        assertThat(relation.rolePlayersMap().keySet(), Matchers.containsInAnyOrder(role1, role2));
         assertThat(relation.rolePlayers(role1).collect(toSet()), containsInAnyOrder(rolePlayer1));
         assertThat(relation.rolePlayers(role2).collect(toSet()), containsInAnyOrder(rolePlayer2));
     }

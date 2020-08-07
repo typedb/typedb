@@ -17,17 +17,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -35,35 +25,22 @@ import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
-import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.util.GraqlTestUtil.assertExists;
-import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class GraqlDefineIT {

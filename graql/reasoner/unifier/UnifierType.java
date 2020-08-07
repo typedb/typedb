@@ -184,13 +184,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types, parentTypeExact);
         }
 
         @Override
-        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithInsertSemantics(var, types);
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types, parentTypeExact);
         }
 
         @Override
@@ -217,16 +217,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
                     parent.isEmpty()
                             || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> comparison.apply(pp, cp)))
             );
-        }
-
-        @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
-            Map<SchemaConcept, AttributeAtom> parentRes = new HashMap<>();
-            parent.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
-            Map<SchemaConcept, AttributeAtom> childRes = new HashMap<>();
-            child.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
-            return childRes.values().stream()
-                    .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
         }
     },
 
@@ -275,13 +265,13 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithMatchSemantics(var, types);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact) {
+            return child.typesRoleCompatibleWithMatchSemantics(var, types, parentTypeExact);
         }
 
         @Override
-        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
-            return child.typesRoleCompatibleWithInsertSemantics(var, types);
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact) {
+            return child.typesRoleCompatibleWithInsertSemantics(var, types, parentTypeExact);
         }
 
         @Override
@@ -311,16 +301,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
                     && (parent.isEmpty()
                     || (!child.isEmpty() && parentToChild && childToParent));
         }
-
-        @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
-            Map<SchemaConcept, AttributeAtom> parentRes = new HashMap<>();
-            parent.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
-            Map<SchemaConcept, AttributeAtom> childRes = new HashMap<>();
-            child.getAtoms(AttributeAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
-            return childRes.values().stream()
-                    .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
-        }
     },
 
     /**
@@ -343,13 +323,15 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override public boolean roleCompatibility(Role parent, Role child) { return SUBSUMPTIVE.roleCompatibility(parent, child); }
 
         @Override
-        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types) {
-            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types);
+        public boolean typePlayabilityWithMatchSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypesExact) {
+            //NB: exact parent is established from an id which in this context is only a structural placeholder hence we pass null
+            return SUBSUMPTIVE.typePlayabilityWithMatchSemantics(child, var, types, null);
         }
 
         @Override
-        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types) {
-            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types);
+        public boolean typePlayabilityWithInsertSemantics(Atomic child, Variable var, Set<Type> types, Type parentTypeExact) {
+            //NB: exact parent is established from an id which in this context is only a structural placeholder hence we pass null
+            return SUBSUMPTIVE.typePlayabilityWithInsertSemantics(child, var, types, null);
         }
 
         @Override
@@ -365,11 +347,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         @Override
         public boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison) {
             return SUBSUMPTIVE.predicateCompatibility(parent, child, comparison);
-        }
-
-        @Override
-        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Variable parentVar, Variable childVar) {
-            return SUBSUMPTIVE.attributeCompatibility(parent, child, parentVar, childVar);
         }
 
         @Override

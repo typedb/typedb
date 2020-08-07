@@ -156,6 +156,9 @@ public interface EntityType extends Type {
     @Override
     Stream<Entity> instances();
 
+    @Override
+    Stream<Entity> instancesDirect();
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

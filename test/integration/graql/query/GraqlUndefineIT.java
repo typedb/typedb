@@ -17,23 +17,15 @@
 
 package grakn.core.graql.query;
 
-import com.google.common.collect.ImmutableList;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
-import graql.lang.query.GraqlUndefine;
 import graql.lang.statement.Statement;
 import org.junit.After;
 import org.junit.Before;
@@ -43,23 +35,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
-
-import static grakn.core.util.GraqlTestUtil.assertExists;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
 public class GraqlUndefineIT {

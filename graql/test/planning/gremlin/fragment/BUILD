@@ -24,8 +24,8 @@ java_test(
     test_class = "grakn.core.graql.planning.gremlin.fragment.InPlaysFragmentTest",
     deps = [
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
         "//graql/planning",
         "@graknlabs_graql//java:graql",
     ],
@@ -46,8 +46,8 @@ java_test(
     test_class = "grakn.core.graql.planning.gremlin.fragment.OutPlaysFragmentTest",
     deps = [
         "//core",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
 
         "//graql/planning",
         "@graknlabs_graql//java:graql",

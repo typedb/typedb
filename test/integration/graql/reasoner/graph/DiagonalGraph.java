@@ -25,8 +25,8 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFile;
-import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFile;
+import static grakn.core.test.common.GraqlTestUtil.putEntityWithResource;
 
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph{

@@ -22,8 +22,14 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import grakn.common.util.Pair;
 import grakn.core.common.config.Config;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestStorage;
@@ -50,7 +56,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 
@@ -80,7 +86,7 @@ public class GenerativeOperationalIT {
         Config mockServerConfig = storage.createCompatibleServerConfig();
         genericSchemaSession = SessionUtil.serverlessSessionWithNewKeyspace(mockServerConfig);
         String resourcePath = "test/integration/graql/reasoner/resources/";
-        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "genericSchemaRefactored.gql", genericSchemaSession);
 
         try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
@@ -90,7 +96,7 @@ public class GenerativeOperationalIT {
                     var("r")
                             .rel("subRole1", var("x"))
                             .rel("subRole2", var("y"))
-                            .isa("binary"),
+                            .isa("ternary"),
                     var("x").isa("subRoleEntity"),
                     var("x").id(id),
                     var("y").isa("subRoleEntity"),
@@ -257,20 +263,19 @@ public class GenerativeOperationalIT {
 
     @Test
     public void whenFuzzyingVariablesWithBindingsPreserved_AlphaEquivalenceIsNotAffected(){
-        try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
-            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
-            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
-            TransactionContext txCtx = new TransactionContext(tx);
-            Set<Pattern> patterns = binaryRelationPatternTree.keySet();
-            Operator fuzzer = Operators.fuzzVariables();
-            for(Pattern pattern : patterns){
+        binaryRelationPatternTree.keySet().parallelStream().forEach(pattern -> {
+            try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+                TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
+                ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+                TransactionContext txCtx = new TransactionContext(tx);
+                Operator fuzzer = Operators.fuzzVariables();
                 List<Pattern> fuzzedPatterns = Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
                         .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
                         .collect(Collectors.toList());
                 int N = fuzzedPatterns.size();
-                for (int i = 0 ; i < N ;i++) {
+                for (int i = 0; i < N; i++) {
                     Pattern p = fuzzedPatterns.get(i);
-                    for (int j = i ; j < N ;j++) {
+                    for (int j = i; j < N; j++) {
                         Pattern p2 = fuzzedPatterns.get(j);
                         ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(p));
                         ReasonerQueryImpl cQuery = reasonerQueryFactory.create(conjunction(p2));
@@ -278,25 +283,25 @@ public class GenerativeOperationalIT {
                         if (pQuery.isAtomic() && cQuery.isAtomic()) {
                             ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
                             ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
-                            QueryTestUtil.unification(queryA, queryB,true, UnifierType.EXACT);
+                            QueryTestUtil.unification(queryA, queryB, true, UnifierType.EXACT);
                             QueryTestUtil.queryEquivalence(queryA, queryB, i == j, ReasonerQueryEquivalence.Equality);
                             QueryTestUtil.queryEquivalence(queryA, queryB, true, ReasonerQueryEquivalence.StructuralEquivalence);
                         }
                     }
                 }
             }
-        }
+        });
     }
 
     @Test
     public void whenFuzzyingIdsWithBindingsPreserved_StructuralEquivalenceIsNotAffected(){
-        try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
-            TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
-            ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
-            TransactionContext txCtx = new TransactionContext(tx);
-            Set<Pattern> patterns = binaryRelationPatternTree.keySet();
-            Operator fuzzer = Operators.fuzzIds();
-            for(Pattern pattern : patterns){
+        binaryRelationPatternTree.keySet().parallelStream().forEach(pattern -> {
+            try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+                TestTransactionProvider.TestTransaction testTx = (TestTransactionProvider.TestTransaction) tx;
+                ReasonerQueryFactory reasonerQueryFactory = testTx.reasonerQueryFactory();
+                TransactionContext txCtx = new TransactionContext(tx);
+
+                Operator fuzzer = Operators.fuzzIds();
                 ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pattern));
                 Stream.concat(Stream.of(pattern), fuzzer.apply(pattern, txCtx))
                         .flatMap(p -> Stream.concat(Stream.of(p), fuzzer.apply(p, txCtx)))
@@ -306,12 +311,12 @@ public class GenerativeOperationalIT {
                             if (pQuery.isAtomic() && cQuery.isAtomic()) {
                                 ReasonerAtomicQuery queryA = (ReasonerAtomicQuery) pQuery;
                                 ReasonerAtomicQuery queryB = (ReasonerAtomicQuery) cQuery;
-                                QueryTestUtil.unification(queryA, queryB,true, UnifierType.STRUCTURAL);
-                                QueryTestUtil.unification(queryA, queryB,true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                                QueryTestUtil.unification(queryA, queryB, true, UnifierType.STRUCTURAL);
+                                QueryTestUtil.unification(queryA, queryB, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
                             }
                         });
-                }
             }
+        });
     }
 
     private void testSubsumptionRelationHoldsBetweenPatternPairs(List<Pair<Pattern, Pattern>> testPairs, int threads) throws ExecutionException, InterruptedException {
@@ -331,6 +336,7 @@ public class GenerativeOperationalIT {
             CompletableFuture<Void> testChunk = CompletableFuture.supplyAsync(() -> {
                 try (Transaction tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
                     ReasonerQueryFactory reasonerQueryFactory = ((TestTransactionProvider.TestTransaction) tx).reasonerQueryFactory();
+                    reasonerQueryFactory.disableInferTypes();
 
                     for (Pair<Pattern, Pattern> pair : subList) {
                         ReasonerQueryImpl pQuery = reasonerQueryFactory.create(conjunction(pair.first()));
@@ -340,9 +346,14 @@ public class GenerativeOperationalIT {
                             ReasonerAtomicQuery parent = (ReasonerAtomicQuery) pQuery;
                             ReasonerAtomicQuery child = (ReasonerAtomicQuery) cQuery;
 
-                            QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
-                            QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
-                            QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            //TODO: if any query is invalid then the unification outcome should automatically be false
+                            //TODO: atm this scenario is not tested and we focus on semantically valid queries
+                            boolean patternsValid = validQuery(parent, tx) && validQuery(child, tx);
+                            if (patternsValid) {
+                                QueryTestUtil.unification(parent, child, true, UnifierType.RULE);
+                                QueryTestUtil.unification(parent, child, true, UnifierType.SUBSUMPTIVE);
+                                QueryTestUtil.unification(parent, child, true, UnifierType.STRUCTURAL_SUBSUMPTIVE);
+                            }
                         }
                     }
                 }
@@ -352,6 +363,23 @@ public class GenerativeOperationalIT {
         }
         CompletableFuture.allOf(testChunks.toArray(new CompletableFuture[]{})).get();
         executorService.shutdown();
+    }
+
+    private boolean validQuery(ReasonerAtomicQuery query, Transaction tx){
+        if (!query.validateOntologically(Label.of("dummy")).isEmpty()) return false;
+        Atom atom = query.getAtom();
+        if (!atom.isRelationAtom()) return false;
+
+        RelationAtom rAtom = (RelationAtom) atom;
+        //if roleplayer concept is specified by id, check if the corresponding type can play its role
+        return rAtom.getRolePlayers().stream().allMatch(rp -> {
+                    IdPredicate id = atom.getIdPredicate(rp);
+                    if (id == null) return true;
+                    Type rpType = tx.getConcept(id.getPredicate()).asThing().type();
+                    List<Role> roles = rAtom.getVarRoleMap().get(rp);
+                    return rpType.playing().anyMatch(roles::contains);
+                }
+            );
     }
 
     private Conjunction<Statement> conjunction(Pattern pattern) {

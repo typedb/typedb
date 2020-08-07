@@ -6,7 +6,7 @@ URL: https://grakn.ai
 License: Apache License, v2.0
 AutoReqProv: no
 
-Requires: grakn-console = %{@graknlabs_console}
+Requires: grakn-console = %{@graknlabs_console_artifact}
 Requires: grakn-core-server = %{version}
 
 %description

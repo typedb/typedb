@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
@@ -87,6 +88,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+
+import static grakn.core.core.Schema.PLACEHOLDER_ID;
 
 /**
  *
@@ -577,7 +580,6 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         );
     }
 
-    private static final String PLACEHOLDER_ID = "000000";
 
     /**
      * @return true if this query has complete entries in the cache

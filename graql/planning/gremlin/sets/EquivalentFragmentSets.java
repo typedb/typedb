@@ -40,12 +40,10 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
-//            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
             AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
             SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
-//            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
     );
 
     /**

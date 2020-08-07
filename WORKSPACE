@@ -30,45 +30,20 @@ load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
 # Load Bazel
-load("@graknlabs_dependencies//builder/bazel:deps.bzl","bazel_common", "bazel_deps", "bazel_toolchain")
-bazel_common()
-bazel_deps()
+load("@graknlabs_dependencies//builder/bazel:deps.bzl", "bazel_toolchain")
 bazel_toolchain()
-
-# Load gRPC
-load("@graknlabs_dependencies//builder/grpc:deps.bzl", grpc_deps = "deps")
-grpc_deps()
-load("@com_github_grpc_grpc//bazel:grpc_deps.bzl",
-com_github_grpc_grpc_deps = "grpc_deps")
-com_github_grpc_grpc_deps()
-load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
-java_grpc_compile()
-load("@stackb_rules_proto//node:deps.bzl", "node_grpc_compile")
-node_grpc_compile()
 
 # Load Java
 load("@graknlabs_dependencies//builder/java:deps.bzl", java_deps = "deps")
 java_deps()
 load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
 
-# Load NodeJS
-load("@graknlabs_dependencies//builder/nodejs:deps.bzl", nodejs_deps = "deps")
-nodejs_deps()
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
-node_repositories()
-
-# Load Python
-load("@graknlabs_dependencies//builder/python:deps.bzl", python_deps = "deps")
-python_deps()
-load("@rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
-pip_repositories()
-pip3_import(
-    name = "graknlabs_dependencies_ci_pip",
-    requirements = "@graknlabs_dependencies//tool:requirements.txt",
-)
-load("@graknlabs_dependencies_ci_pip//:requirements.bzl",
-graknlabs_dependencies_ci_pip_install = "pip_install")
-graknlabs_dependencies_ci_pip_install()
+# Load Kotlin
+load("@graknlabs_dependencies//builder/kotlin:deps.bzl", kotlin_deps = "deps")
+kotlin_deps()
+load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_register_toolchains")
+kotlin_repositories()
+kt_register_toolchains()
 
 # Load Docker
 load("@graknlabs_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
@@ -91,14 +66,6 @@ unuseddeps_deps()
 #####################################################################
 load("@graknlabs_dependencies//distribution:deps.bzl", distribution_deps = "deps")
 distribution_deps()
-
-pip3_import(
-    name = "graknlabs_bazel_distribution_pip",
-    requirements = "@graknlabs_bazel_distribution//pip:requirements.txt",
-)
-load("@graknlabs_bazel_distribution_pip//:requirements.bzl",
-graknlabs_bazel_distribution_pip_install = "pip_install")
-graknlabs_bazel_distribution_pip_install()
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "tcnksm_ghr")
 tcnksm_ghr()
@@ -173,9 +140,6 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl",
 com_github_grpc_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_deps()
 
-load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
-java_grpc_compile()
-
 load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol_artifacts = "artifacts")
 
 #################################
@@ -183,6 +147,7 @@ load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol
 #################################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
+load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
 
 ###############################
 # Load @graknlabs_client_java #
@@ -191,11 +156,11 @@ load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
 load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
 
-###########################
-# Load @graknlabs_console #
-###########################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_console")
-graknlabs_console()
+####################################
+# Load @graknlabs_console_artifact #
+####################################
+load("//dependencies/graknlabs:artifacts.bzl", "graknlabs_console_artifact")
+graknlabs_console_artifact()
 
 ##############################
 # Load @graknlabs_simulation #
@@ -206,20 +171,43 @@ graknlabs_console()
 ################################
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
 graknlabs_verification()
+load("@graknlabs_verification//dependencies/maven:artifacts.bzl", graknlabs_verification_artifacts = "artifacts")
 
 ##############################
 # Load @graknlabs_grakn_core #
 ##############################
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+load("@graknlabs_grakn_core//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
+
+# Override libraries conflicting with versions defined in @graknlabs_dependencies
+OVERRIDES = {
+    "org.scala-lang:scala-library": "2.11.8",
+    "com.fasterxml.jackson.core:jackson-core": "2.9.10",
+    "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
+
+    "io.netty:netty-all": "4.1.38.Final",
+    "io.netty:netty-buffer": "4.1.38.Final",
+    "io.netty:netty-codec": "4.1.38.Final",
+    "io.netty:netty-codec-http2": "4.1.38.Final",
+    "io.netty:netty-codec-http": "4.1.38.Final",
+    "io.netty:netty-codec-socks": "4.1.38.Final",
+    "io.netty:netty-common": "4.1.38.Final",
+    "io.netty:netty-handler": "4.1.38.Final",
+    "io.netty:netty-handler-proxy": "4.1.38.Final",
+    "io.netty:netty-resolver": "4.1.38.Final",
+    "io.netty:netty-transport": "4.1.38.Final",
+}
 
 ###############
 # Load @maven #
 ###############
-maven_dependencies()
 maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
-    graknlabs_client_java_artifacts
+    graknlabs_client_java_artifacts +
+    graknlabs_grabl_tracing_artifacts +
+    graknlabs_verification_artifacts +
+    graknlabs_grakn_core_artifacts,
+    OVERRIDES
 )
 
 ###############################################

@@ -39,6 +39,8 @@ import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
@@ -55,6 +57,7 @@ import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -151,6 +154,13 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                     Role parentRole = parentRoleLabel != null ? conceptManager.getRole(parentRoleLabel) : null;
                     Variable parentRolePlayer = prp.getPlayer().var();
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
+                    Type parentTypeExact = parentAtom.getPredicates(parentRolePlayer, IdPredicate.class)
+                            .filter(idPredicate ->  !idPredicate.isPlaceholder())
+                            .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
+                            .filter(Objects::nonNull)
+                            .filter(Concept::isThing)
+                            .map(concept -> concept.asThing().type())
+                            .findAny().orElse(null);
 
                     Set<RelationProperty.RolePlayer> compatibleRelationPlayers = new HashSet<>();
                     childAtom.getRelationPlayers().stream()
@@ -182,15 +192,16 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                             .filter(crp -> {
                                 Variable childVar = crp.getPlayer().var();
                                 Set<Type> childTypes = childVarTypeMap.get(childVar);
+
                                 return unifierType.typeCompatibility(parentTypes, childTypes)
-                                        && unifierType.typePlayabilityWithInsertSemantics(childAtom, childVar, parentTypes);
+                                        && unifierType.typePlayabilityWithInsertSemantics(childAtom, childVar, parentTypes, parentTypeExact);
                             })
                             //rule body playability - match semantics
                             .filter(crp -> {
                                 Variable childVar = crp.getPlayer().var();
                                 return childQuery.getAtoms(RelationAtom.class)
                                         .filter(at -> !at.equals(childAtom))
-                                        .allMatch(at -> unifierType.typePlayabilityWithMatchSemantics(childAtom, childVar, parentTypes));
+                                        .allMatch(at -> unifierType.typePlayabilityWithMatchSemantics(childAtom, childVar, parentTypes, parentTypeExact));
                             })
                             //check for substitution compatibility
                             .filter(crp -> {
@@ -214,12 +225,6 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                                 Set<Atomic> parentVP = parentAtom.getPredicates(prp.getPlayer().var(), ValuePredicate.class).collect(Collectors.toSet());
                                 Set<Atomic> childVP = childAtom.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(Collectors.toSet());
                                 return unifierType.valueCompatibility(parentVP, childVP);
-                            })
-                            //check linked resources
-                            .filter(crp -> {
-                                Variable parentVar = prp.getPlayer().var();
-                                Variable childVar = crp.getPlayer().var();
-                                return unifierType.attributeCompatibility(parentAtom.getParentQuery(), childAtom.getParentQuery(), parentVar, childVar);
                             })
                             //TODO check substitution roleplayer connectedness
                             .forEach(compatibleRelationPlayers::add);

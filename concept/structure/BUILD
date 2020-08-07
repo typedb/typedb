@@ -28,9 +28,9 @@ java_library(
         "//graph",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_apache_tinkerpop_gremlin_core",
+        "@maven//:com_google_guava_guava",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept-structure:{pom_version}"],
 

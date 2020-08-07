@@ -25,33 +25,21 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
-    ],
-)
-
-java_library(
-    name = "dual-linear-transitivity-graph",
-    srcs = ["DualLinearTransitivityMatrixGraph.java"],
-    resources = ["//test/integration/graql/reasoner/resources:dual-linear-transitivity"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
 java_library(
     name = "generic-schema-graph",
     srcs = ["GenericSchemaGraph.java"],
-    data = ["//test/integration/graql/reasoner/resources:generic-schema"],
+    data = ["//test/integration/graql/reasoner/resources:generic-schema-refactored"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
         "//test/integration/graql/reasoner:pattern",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -75,20 +63,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
-    ],
-)
-
-java_library(
-    name = "nguyen-graph",
-    srcs = ["NguyenGraph.java"],
-    resources = ["//test/integration/graql/reasoner/resources/recursion:nguyen"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -98,10 +73,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:path-test"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -111,10 +86,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:path-test"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -127,38 +102,10 @@ java_library(
     resources = ["//test/integration/graql/reasoner/resources:path-test-symmetric"],
     visibility = ["//test/integration:__subpackages__"],
     deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
+        "@maven//:com_google_guava_guava",
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
-    ],
-)
-
-java_library(
-    name = "reachability-graph",
-    srcs = [
-        "ReachabilityGraph.java",
-    ],
-    resources = ["//test/integration/graql/reasoner/stubs:reasoning-stubs"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/integration/util:graql-test-util",
-    ],
-)
-
-java_library(
-    name = "tail-recursion-graph",
-    srcs = ["TailRecursionGraph.java"],
-    resources = ["//test/integration/graql/reasoner/resources/recursion:tail-recursion"],
-    visibility = ["//test/integration:__subpackages__"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/concept/api",
-        "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -170,7 +117,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -182,7 +129,7 @@ java_library(
     deps = [
         "//kb/concept/api",
         "//kb/server",
-        "//test/integration/util:graql-test-util",
+        "//test/common:graql-test-util",
     ],
 )
 
@@ -190,16 +137,12 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":diagonal-graph",
-        ":dual-linear-transitivity-graph",
         ":generic-schema-graph",
         ":geo-graph",
         ":linear-transitivity-matrix-graph",
-        ":nguyen-graph",
         ":path-matrix-graph",
         ":path-tree-graph",
         ":path-tree-symmetric-graph",
-        ":reachability-graph",
-        ":tail-recursion-graph",
         ":transitivity-chain-graph",
         ":transitivity-matrix-graph",
     ],

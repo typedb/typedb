@@ -193,6 +193,9 @@ public interface AttributeType<D> extends Type {
     @Override
     Stream<Attribute<D>> instances();
 
+    @Override
+    Stream<Attribute<D>> instancesDirect();
+
     /**
      * Get the value type to which instances of the AttributeType must conform.
      *

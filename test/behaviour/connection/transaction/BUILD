@@ -28,13 +28,14 @@ java_library(
         # Internal Package Dependencies
         "//kb/server",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/util:util",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",
 
         # External Maven Dependencies
-        "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-java",
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber_java",
     ]
 )
 
@@ -49,7 +50,7 @@ java_test(
         "//test/behaviour/server:server",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/io/cucumber:cucumber-junit",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
         ":steps",

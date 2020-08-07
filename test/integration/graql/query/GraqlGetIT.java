@@ -17,24 +17,15 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.exception.GraqlSemanticException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.test.rule.GraknTestServer;
 import graql.lang.Graql;
-import graql.lang.exception.GraqlException;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Variable;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -42,15 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
-import java.util.List;
-
 import static graql.lang.Graql.var;
-import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
 public class GraqlGetIT {
