@@ -17,6 +17,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -65,7 +66,7 @@ java_library(
         "//graql/planning",
         "//graql/reasoner",
         "//graph",
-
+        "//server/migrate/proto:migrate-proto-java",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -77,9 +78,16 @@ java_library(
         "@maven//:org_apache_hadoop_hadoop_annotations",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
+        "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:commons_cli_commons_cli",
         "@maven//:commons_configuration_commons_configuration",
         "@maven//:commons_lang_commons_lang",
+        "@maven//:io_grpc_grpc_core",
+        "@maven//:io_grpc_grpc_netty",
+        "@maven//:io_grpc_grpc_stub",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:io_grpc_grpc_protobuf",
+        "@maven//:io_netty_netty_all",
         "@maven//:org_apache_cassandra_cassandra_all",
         "@maven//:org_apache_commons_commons_lang3",
         "@maven//:org_apache_hadoop_hadoop_common",
@@ -93,11 +101,6 @@ java_library(
         "@maven//:org_scala_lang_scala_library",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:com_datastax_oss_java_driver_core",
-        "@maven//:io_grpc_grpc_core",
-        "@maven//:io_grpc_grpc_netty",
-        "@maven//:io_grpc_grpc_stub",
-        "@maven//:io_grpc_grpc_api",
-        "@maven//:io_netty_netty_all",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",

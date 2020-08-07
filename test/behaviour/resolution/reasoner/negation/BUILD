@@ -41,7 +41,7 @@ java_test(
         "@graknlabs_verification//behaviour/graql/reasoner:negation.feature",
     ],
     classpath_resources = ["//test/resources:logback-test"],
-    size = "medium",
+    size = "large",
     visibility = ["//visibility:public"]
 )
 

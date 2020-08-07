@@ -18,7 +18,6 @@
 
 package grakn.core.graql.planning.gremlin.fragment;
 
-import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
@@ -27,9 +26,7 @@ import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -40,7 +37,6 @@ import java.util.Collection;
  */
 public class InAttributeFragment extends EdgeFragment {
     private Variable edgeVariable;
-    // for backwards compatibility
 
     public InAttributeFragment(VarProperty varProperty, Variable attribute, Variable owner, Variable edge) {
         super(varProperty, attribute, owner);
@@ -63,22 +59,19 @@ public class InAttributeFragment extends EdgeFragment {
     }
 
     @Override
-    GraphTraversal<Vertex, ? extends Element> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // (start) ATTR <-[edge] - OWNER
-        return Fragments.union(
-                Fragments.isVertex(traversal),
-                ImmutableSet.of(attributeToOwners())
-        );
+        return attributeToOwners(traversal);
     }
 
-    private GraphTraversal<Vertex, Vertex> attributeToOwners() {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
+    private GraphTraversal<Vertex, Vertex> attributeToOwners(GraphTraversal<Vertex, Vertex> traversal) {
+        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(Schema.EdgeLabel.ATTRIBUTE.getLabel());
         return edgeTraversal.outV();
     }
 
     @Override
     public String name() {
-        return "<-[has-xxx]-";
+        return "<-[has]-";
     }
 
     @Override

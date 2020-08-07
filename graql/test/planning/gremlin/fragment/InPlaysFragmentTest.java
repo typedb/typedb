@@ -46,7 +46,6 @@ public class InPlaysFragmentTest {
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 
         GraphTraversal<Object, Object> expected = __.V()
-                .filter(e -> e.get() instanceof Edge)
                 .in(PLAYS.getLabel())
                 .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.in(SUB.getLabel())).emit()).unfold();;
 

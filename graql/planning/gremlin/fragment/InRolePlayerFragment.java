@@ -25,7 +25,6 @@ import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -90,12 +89,10 @@ class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    public GraphTraversal<Vertex, Vertex> applyTraversalInner(
+            GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
-        return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
-                relationTraversal(conceptManager, vars)
-        ));
+        return Fragments.union(traversal, ImmutableSet.of(relationTraversal(conceptManager, vars)));
     }
 
     private GraphTraversal<Vertex, Vertex> relationTraversal(ConceptManager conceptManager, Collection<Variable> vars) {

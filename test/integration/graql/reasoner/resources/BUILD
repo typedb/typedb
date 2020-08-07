@@ -109,8 +109,3 @@ filegroup(
     name = "reasoner-logback-test",
     srcs = ["logback.xml"],
 )
-
-filegroup(
-    name = "reachability",
-    srcs = ["reachability.gql"],
-)

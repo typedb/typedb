@@ -57,6 +57,7 @@ import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -155,11 +156,11 @@ public class RelationSemanticProcessor implements SemanticProcessor<RelationAtom
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
                     Type parentTypeExact = parentAtom.getPredicates(parentRolePlayer, IdPredicate.class)
                             .filter(idPredicate ->  !idPredicate.isPlaceholder())
-                            .findAny()
                             .map(idPredicate -> (Concept)ctx.conceptManager().getConcept(idPredicate.getPredicate()))
+                            .filter(Objects::nonNull)
                             .filter(Concept::isThing)
                             .map(concept -> concept.asThing().type())
-                            .orElse(null);
+                            .findAny().orElse(null);
 
                     Set<RelationProperty.RolePlayer> compatibleRelationPlayers = new HashSet<>();
                     childAtom.getRelationPlayers().stream()

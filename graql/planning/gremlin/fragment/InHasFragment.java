@@ -26,7 +26,6 @@ import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -60,14 +59,14 @@ public class InHasFragment extends EdgeFragment {
     }
 
     @Override
-    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
+    GraphTraversal<Vertex, Vertex> applyTraversalInner(GraphTraversal<Vertex, Vertex> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         // anyone that can own this directly or any of their subs is a valid owner
         return Fragments.inSubs(traversal.in(Schema.EdgeLabel.HAS.getLabel(), Schema.EdgeLabel.KEY.getLabel()));
    }
 
     @Override
     public String name() {
-        return "<-[has]-";
+        return "<-[has/key]-";
     }
 
     @Override

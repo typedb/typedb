@@ -120,6 +120,8 @@ public interface Type extends SchemaConcept {
      */
     @CheckReturnValue
     Stream<? extends Thing> instances();
+
+    @CheckReturnValue
     Stream<? extends Thing> instancesDirect();
 
     /**
