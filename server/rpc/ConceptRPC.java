@@ -119,6 +119,7 @@ class ConceptRPC {
                 return;
             case RELATIONTYPE_ROLE_REQ:
                 con.asRelationType().role(req.getRelationTypeRoleReq().getLabel());
+                return;
             case RELATIONTYPE_RELATES_REQ:
                 con.asRelationType().relates(req.getRelationTypeRelatesReq().getLabel());
                 return;
