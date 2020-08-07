@@ -79,7 +79,6 @@ java_test(
         "@maven//:org_hamcrest_hamcrest_library",
         "@maven//:org_zeroturnaround_zt_exec",
         "//server/migrate/proto:migrate-proto-java",
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
 )

@@ -18,9 +18,7 @@
 package grakn.core.test.assembly;
 
 import com.google.protobuf.Parser;
-import grakn.client.GraknClient;
 import grakn.core.server.migrate.proto.DataProto;
-import graql.lang.Graql;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -83,13 +80,6 @@ public class MigrationTest {
 
         System.out.println("Performing import");
         assertExecutes(GRAKN, "server", "import", "--no-anim", "simulation", IMPORT_PATH.toString(), "value=monetary-value");
-
-        System.out.println("Smoke test that something was inserted");
-        GraknClient graknClient = new GraknClient("localhost:48555");
-        GraknClient.Session session = graknClient.session("simulation");
-        try (GraknClient.Transaction tx = session.transaction().read()) {
-            assertThat(tx.execute(Graql.compute().count().in("thing")).get().get(0).number().longValue(), greaterThan(0L));
-        }
 
         Path exportPath = Paths.get("simulationexport.grakn");
 
