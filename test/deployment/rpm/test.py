@@ -98,7 +98,6 @@ try:
     gcloud_ssh(instance, 'sudo yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm')
     gcloud_ssh(instance, 'sudo yum update -y')
     gcloud_ssh(instance, 'sudo yum install -y sudo procps which gcc gcc-c++ python-devel python3 unzip git java-1.8.0-openjdk-devel rpm-build yum-utils')
-    gcloud_ssh(instance, 'echo "3.3.1" >')
     gcloud_ssh(instance, 'curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh')
     gcloud_ssh(instance, 'sudo bash ./linux.sh')
 
@@ -119,7 +118,7 @@ try:
     gcloud_ssh(instance, 'sudo chown -R $USER:$USER /opt/grakn')
 
     gcloud_ssh(instance, 'grakn server start')
-    gcloud_ssh(instance, 'pushd /tmp/grakn && echo "3.3.1" >> .bazelversion && bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no && popd')
+    gcloud_ssh(instance, 'pushd /tmp/grakn && echo "3.3.1" > .bazelversion && bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no && popd')
     gcloud_ssh(instance, 'grakn server stop')
 finally:
     lprint('Copying logs from CentOS instance')
