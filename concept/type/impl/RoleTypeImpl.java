@@ -31,8 +31,8 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
-import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.stream;
 

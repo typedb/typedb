@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.exception.Error.Transaction.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
 

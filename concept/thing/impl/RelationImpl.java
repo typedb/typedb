@@ -18,7 +18,7 @@
 
 package grakn.core.concept.thing.impl;
 
-import grakn.core.common.exception.Error;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.ThingWrite.RELATION_NO_PLAYER;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_NO_PLAYER;
 import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;
@@ -66,7 +66,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public RelationImpl relate(RoleType roleType, Thing player) {
         if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
             throw new GraknException(
-                    Error.ThingWrite.RELATION_UNRELATED_ROLE.message(this.type().label(), roleType.label())
+                    ErrorMessage.ThingWrite.RELATION_UNRELATED_ROLE.message(this.type().label(), roleType.label())
             );
         }
 

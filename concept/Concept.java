@@ -30,8 +30,8 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 
-import static grakn.core.common.exception.Error.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.common.exception.Error.TypeRead.INVALID_TYPE_CASTING;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 
 public interface Concept {
 

@@ -40,8 +40,8 @@ import grakn.core.graph.vertex.Vertex;
 import java.util.ArrayList;
 import java.util.List;
 
-import static grakn.core.common.exception.Error.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.Error.Transaction.UNSUPPORTED_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 
 public final class Concepts {
 

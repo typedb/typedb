@@ -28,7 +28,7 @@ import org.rocksdb.UInt64AddOperator;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.exception.Error.DatabaseManager.DATABASE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.DatabaseManager.DATABASE_NOT_FOUND;
 
 /**
  * A Grakn implementation with RocksDB

@@ -38,17 +38,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.Error.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
-import static grakn.core.common.exception.Error.ThingWrite.ILLEGAL_STRING_SIZE;
-import static grakn.core.common.exception.Error.TypeRead.INVALID_TYPE_CASTING;
-import static grakn.core.common.exception.Error.TypeRead.TYPE_ROOT_MISMATCH;
-import static grakn.core.common.exception.Error.TypeRead.VALUE_TYPE_MISMATCH;
-import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
-import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
-import static grakn.core.common.exception.Error.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
-import static grakn.core.common.exception.Error.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.common.exception.Error.TypeWrite.SUPERTYPE_SELF;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.stream;
 

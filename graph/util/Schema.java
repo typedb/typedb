@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Objects;
 
-import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Schema {

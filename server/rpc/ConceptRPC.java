@@ -19,7 +19,7 @@ package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
-import grakn.core.common.exception.Error;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Attribute;
@@ -170,7 +170,7 @@ class ConceptRPC {
 
             default:
             case REQ_NOT_SET:
-                throw new GraknException(Error.Server.UNKNOWN_REQUEST_TYPE);
+                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -236,7 +236,7 @@ class ConceptRPC {
 
             default:
             case REQ_NOT_SET:
-                throw new GraknException(Error.Server.UNKNOWN_REQUEST_TYPE);
+                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -651,7 +651,7 @@ class ConceptRPC {
                         break;
                     case VALUE_NOT_SET:
                     default:
-                        throw new GraknException(Error.Server.BAD_VALUE_TYPE);
+                        throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
                 }
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
@@ -681,7 +681,7 @@ class ConceptRPC {
                         break;
                     case VALUE_NOT_SET:
                     default:
-                        throw new GraknException(Error.Server.BAD_VALUE_TYPE);
+                        throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
                 }
 
                 ConceptProto.AttributeType.Attribute.Res.Builder methodResponse = ConceptProto.AttributeType.Attribute.Res.newBuilder();
@@ -930,7 +930,7 @@ class ConceptRPC {
 
     @Nonnull
     private static <T extends Concept> T conceptExists(@Nullable T concept) {
-        if (concept == null) throw new GraknException(Error.Server.MISSING_CONCEPT);
+        if (concept == null) throw new GraknException(ErrorMessage.Server.MISSING_CONCEPT);
         return concept;
     }
 }

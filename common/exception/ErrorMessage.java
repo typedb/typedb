@@ -18,53 +18,13 @@
 
 package grakn.core.common.exception;
 
-import java.util.HashMap;
-import java.util.Map;
+public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
-public abstract class Error {
-
-    private static Map<String, Map<Integer, Error>> errors = new HashMap<>();
-    private static int maxCodeNumber = 0;
-    private static int maxCodeDigits = 0;
-
-    final int codeNumber;
-    private final String codePrefix;
-    private final String description;
-    private String code = null;
-
-    Error(String codePrefix, int codeNumber, String descriptionPrefix, String descriptionBody) {
-        this.codePrefix = codePrefix;
-        this.codeNumber = codeNumber;
-        this.description = descriptionPrefix + ": " + descriptionBody;
-
-        assert errors.get(codePrefix) == null || errors.get(codePrefix).get(codeNumber) == null;
-        errors.computeIfAbsent(codePrefix, s -> new HashMap<>()).put(codeNumber, this);
-        maxCodeNumber = Math.max(codeNumber, maxCodeNumber);
-        maxCodeDigits = (int) Math.ceil(Math.log10(maxCodeNumber));
+    private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
+        super(codePrefix, codeNumber, messagePrefix, messageBody);
     }
 
-    public String code() {
-        if (code != null) return code;
-
-        StringBuilder zeros = new StringBuilder();
-        for (int digits = (int) Math.floor(Math.log10(codeNumber)) + 1; digits < maxCodeDigits; digits++) {
-            zeros.append("0");
-        }
-
-        code = codePrefix + zeros.toString() + codeNumber;
-        return code;
-    }
-
-    public String message(Object... parameters) {
-        return String.format(toString(), parameters);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("[%s] %s", code(), description);
-    }
-
-    public static class Server extends Error {
+    public static class Server extends ErrorMessage {
         public static final Server EXITED_WITH_ERROR =
                 new Server(1, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =
@@ -87,14 +47,14 @@ public abstract class Error {
                 new Server(10, "The request message was not recognized.");
 
         private static final String codePrefix = "SRV";
-        private static final String descriptionPrefix = "Server Error";
+        private static final String messagePrefix = "Server Error";
 
-        Server(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        Server(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class Internal extends Error {
+    public static class Internal extends ErrorMessage {
         public static final Internal ILLEGAL_STATE =
                 new Internal(1, "Illegal internal state!");
         public static final Internal UNRECOGNISED_VALUE =
@@ -105,14 +65,14 @@ public abstract class Error {
                 new Internal(4, "Illegal argument provided.");
 
         private static final String codePrefix = "INT";
-        private static final String descriptionPrefix = "Invalid Internal State";
+        private static final String messagePrefix = "Invalid Internal State";
 
-        Internal(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        Internal(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class DatabaseManager extends Error {
+    public static class DatabaseManager extends ErrorMessage {
         public static final DatabaseManager DATABASE_EXISTS =
                 new DatabaseManager(1, "The database with the name '%s' already exists.");
         public static final DatabaseManager DATABASE_NOT_FOUND =
@@ -121,26 +81,26 @@ public abstract class Error {
                 new DatabaseManager(3, "Database with the name '%s' has been deleted.");
 
         private static final String codePrefix = "DBS";
-        private static final String descriptionPrefix = "Invalid Database Operations";
+        private static final String messagePrefix = "Invalid Database Operations";
 
-        DatabaseManager(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        DatabaseManager(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class Session extends Error {
+    public static class Session extends ErrorMessage {
         public static final Server SESSION_NOT_FOUND =
                 new Server(1, "Session with UUID '%s' does not exist.");
 
         private static final String codePrefix = "SSN";
-        private static final String descriptionPrefix = "Invalid Session Operation";
+        private static final String messagePrefix = "Invalid Session Operation";
 
-        Session(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        Session(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class Transaction extends Error {
+    public static class Transaction extends ErrorMessage {
         public static final Transaction UNSUPPORTED_OPERATION =
                 new Transaction(1, "Unsupported operation: calling '%s' for '%s' is not supported.");
         public static final Transaction ILLEGAL_OPERATION =
@@ -159,14 +119,14 @@ public abstract class Error {
                 new Transaction(8, "Unexpected NULL object.");
 
         private static final String codePrefix = "TXN";
-        private static final String descriptionPrefix = "Invalid Transaction Operation";
+        private static final String messagePrefix = "Invalid Transaction Operation";
 
-        Transaction(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        Transaction(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class ThingRead extends Error {
+    public static class ThingRead extends ErrorMessage {
         public static final ThingRead INVALID_IID_CASTING =
                 new ThingRead(1, "'Invalid IID casting to '%s'.");
         public static final ThingRead INVALID_VERTEX_CASTING =
@@ -175,14 +135,14 @@ public abstract class Error {
                 new ThingRead(3, "Invalid concept conversion to '%s'.");
 
         private static final String codePrefix = "THR";
-        private static final String descriptionPrefix = "Invalid Thing Read";
+        private static final String messagePrefix = "Invalid Thing Read";
 
-        ThingRead(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        ThingRead(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class ThingWrite extends Error {
+    public static class ThingWrite extends ErrorMessage {
         public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
@@ -204,14 +164,14 @@ public abstract class Error {
         public static final ThingWrite ATTRIBUTE_VALUE_UNSATISFIES_REGEX =
                 new ThingWrite(10, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
         private static final String codePrefix = "THW";
-        private static final String descriptionPrefix = "Invalid Thing Write";
+        private static final String messagePrefix = "Invalid Thing Write";
 
-        ThingWrite(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        ThingWrite(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class TypeRead extends Error {
+    public static class TypeRead extends ErrorMessage {
         public static final TypeRead INVALID_TYPE_CASTING =
                 new TypeRead(1, "Invalid concept conversion to '%s'.");
         public static final TypeRead TYPE_ROOT_MISMATCH =
@@ -219,14 +179,14 @@ public abstract class Error {
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(3, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         private static final String codePrefix = "TYR";
-        private static final String descriptionPrefix = "Invalid Type Read";
+        private static final String messagePrefix = "Invalid Type Read";
 
-        TypeRead(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        TypeRead(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 
-    public static class TypeWrite extends Error {
+    public static class TypeWrite extends ErrorMessage {
         public static final TypeWrite ROOT_TYPE_MUTATION =
                 new TypeWrite(1, "Root types are immutable.");
         public static final TypeWrite TYPE_HAS_SUBTYPES =
@@ -270,10 +230,10 @@ public abstract class Error {
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
                 new TypeWrite(21, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         private static final String codePrefix = "TYW";
-        private static final String descriptionPrefix = "Invalid Type Write";
+        private static final String messagePrefix = "Invalid Type Write";
 
-        TypeWrite(int number, String description) {
-            super(codePrefix, number, descriptionPrefix, description);
+        TypeWrite(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
         }
     }
 }

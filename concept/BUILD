@@ -37,7 +37,7 @@ java_library(
         "//graph:graph",
 
         # Internal Repository Dependencies
-         "@graknlabs_common//:common",
+        "@graknlabs_common//:common",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",

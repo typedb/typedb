@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
-import grakn.core.common.exception.Error;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concept;
@@ -49,9 +49,9 @@ import java.util.stream.Stream;
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.collection.Bytes.bytesToUUID;
-import static grakn.core.common.exception.Error.Session.SESSION_NOT_FOUND;
-import static grakn.core.common.exception.Error.Transaction.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.common.exception.Error.Transaction.UNEXPECTED_NULL;
+import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
+import static grakn.core.common.exception.ErrorMessage.Transaction.UNEXPECTED_NULL;
 
 /**
  * A StreamObserver that implements the transaction connection between a client
@@ -182,7 +182,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //                break;
             default:
             case REQ_NOT_SET:
-                throw new GraknException(Error.Server.UNKNOWN_REQUEST_TYPE);
+                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -200,7 +200,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
                 break;
             default:
             case REQ_NOT_SET:
-                throw new GraknException(Error.Server.UNKNOWN_REQUEST_TYPE);
+                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 

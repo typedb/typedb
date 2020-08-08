@@ -18,7 +18,7 @@
 
 package grakn.core.rocks;
 
-import grakn.common.util.Pair;
+import grakn.common.collection.Pair;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.options.GraknOptions;
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.Internal.DIRTY_INITIALISATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 
 public class RocksDatabase implements Grakn.Database {
 

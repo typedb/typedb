@@ -36,12 +36,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.util.Collections.list;
-import static grakn.core.common.exception.Error.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.Error.ThingWrite.THING_ATTRIBUTE_UNDEFINED;
-import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_MISSING;
-import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_OVER;
-import static grakn.core.common.exception.Error.ThingWrite.THING_KEY_TAKEN;
+import static grakn.common.collection.Collections.list;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ATTRIBUTE_UNDEFINED;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.stream;
 import static java.util.stream.Collectors.toList;

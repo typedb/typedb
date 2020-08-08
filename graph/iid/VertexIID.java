@@ -37,7 +37,7 @@ import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static grakn.core.common.collection.Bytes.stringToBytes;
-import static grakn.core.common.exception.Error.ThingRead.INVALID_IID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_IID_CASTING;
 import static grakn.core.graph.util.Schema.STRING_ENCODING;
 import static grakn.core.graph.util.Schema.STRING_MAX_LENGTH;
 import static grakn.core.graph.util.Schema.TIME_ZONE_ID;

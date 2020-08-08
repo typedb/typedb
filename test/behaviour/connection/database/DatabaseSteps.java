@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static grakn.common.util.Collections.list;
-import static grakn.common.util.Collections.set;
+import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.grakn;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;

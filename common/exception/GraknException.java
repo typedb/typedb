@@ -26,7 +26,7 @@ public class GraknException extends RuntimeException {
         super(error);
     }
 
-    public GraknException(Error error) {
+    public GraknException(ErrorMessage error) {
         super(error.toString());
         assert !getMessage().contains("%s");
     }

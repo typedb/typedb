@@ -42,10 +42,10 @@ import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.collection.Bytes.longToSortedBytes;
-import static grakn.core.common.exception.Error.Transaction.DIRTY_DATA_WRITES;
-import static grakn.core.common.exception.Error.Transaction.DIRTY_SCHEMA_WRITES;
-import static grakn.core.common.exception.Error.Transaction.ILLEGAL_COMMIT;
-import static grakn.core.common.exception.Error.Transaction.TRANSACTION_CLOSED;
+import static grakn.core.common.exception.ErrorMessage.Transaction.DIRTY_DATA_WRITES;
+import static grakn.core.common.exception.ErrorMessage.Transaction.DIRTY_SCHEMA_WRITES;
+import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
 class RocksTransaction implements Grakn.Transaction {
 

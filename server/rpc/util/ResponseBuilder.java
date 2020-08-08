@@ -18,7 +18,7 @@
 package grakn.core.server.rpc.util;
 
 import com.google.protobuf.ByteString;
-import grakn.core.common.exception.Error;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -240,7 +240,7 @@ public class ResponseBuilder {
 //            } else if (concept.isRule()) {
 //                return ConceptProto.Concept.SCHEMA.RULE;
             } else {
-                throw new GraknException(Error.Internal.ILLEGAL_STATE);
+                throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
             }
         }
 
@@ -258,7 +258,7 @@ public class ResponseBuilder {
                 builder.setDatetime(
                         ((Attribute.DateTime) attribute).value().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
             } else {
-                throw new GraknException(Error.Server.BAD_VALUE_TYPE);
+                throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
 
             return builder.build();
@@ -279,7 +279,7 @@ public class ResponseBuilder {
                 case OBJECT:
                     return ConceptProto.AttributeType.VALUE_TYPE.UNRECOGNIZED;
                 default:
-                    throw new GraknException(Error.Server.BAD_VALUE_TYPE);
+                    throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
         }
 
@@ -313,7 +313,7 @@ public class ResponseBuilder {
             } else if (attribute instanceof Attribute.DateTime) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
             } else {
-                throw new GraknException(Error.Server.BAD_VALUE_TYPE);
+                throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
         }
     }

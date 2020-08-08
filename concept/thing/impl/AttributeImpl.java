@@ -30,7 +30,7 @@ import grakn.core.graph.vertex.AttributeVertex;
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.Error.ThingRead.INVALID_THING_CASTING;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static grakn.core.common.iterator.Iterators.stream;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {

@@ -33,8 +33,8 @@ import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.exception.Error.ThingRead.INVALID_VERTEX_CASTING;
-import static grakn.core.common.exception.Error.Transaction.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_VERTEX_CASTING;
+import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 

@@ -17,7 +17,7 @@
 
 package grakn.core.common.options;
 
-import grakn.core.common.exception.Error;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 
 public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends GraknOptions> {
@@ -90,7 +90,7 @@ public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends Gra
         }
 
         public void parent(GraknOptions parent) {
-            throw new GraknException(Error.Internal.ILLEGAL_ARGUMENT);
+            throw new GraknException(ErrorMessage.Internal.ILLEGAL_ARGUMENT);
         }
     }
 

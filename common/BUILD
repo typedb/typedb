@@ -22,7 +22,10 @@ package(default_visibility = ["//visibility:public"])
 java_library(
     name = "common",
     srcs = glob(["*/*.java"]),
-    deps = [],
+    deps = [
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+    ],
     tags = ["maven_coordinates=grakn.core:grakn-core-common:{pom_version}"],
 )
 

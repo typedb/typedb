@@ -21,7 +21,7 @@ package grakn.core.server;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
-import grakn.common.util.Pair;
+import grakn.common.collection.Pair;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
@@ -50,12 +50,12 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static grakn.core.common.exception.Error.Server.ENV_VAR_NOT_FOUND;
-import static grakn.core.common.exception.Error.Server.EXITED_WITH_ERROR;
-import static grakn.core.common.exception.Error.Server.FAILED_AT_STOPPING;
-import static grakn.core.common.exception.Error.Server.FAILED_PARSE_PROPERTIES;
-import static grakn.core.common.exception.Error.Server.PROPERTIES_FILE_NOT_FOUND;
-import static grakn.core.common.exception.Error.Server.UNCAUGHT_EXCEPTION;
+import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
+import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
+import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
+import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 
 
 public class GraknServer implements AutoCloseable {
