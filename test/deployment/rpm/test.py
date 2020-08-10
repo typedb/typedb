@@ -98,15 +98,10 @@ try:
     gcloud_ssh(instance, 'sudo yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm')
     gcloud_ssh(instance, 'sudo yum update -y')
     gcloud_ssh(instance, 'sudo yum install -y sudo procps which gcc gcc-c++ python-devel python3 unzip git java-1.8.0-openjdk-devel rpm-build yum-utils')
-    gcloud_ssh(instance, 'curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh')
-    gcloud_ssh(instance, 'sudo bash ./linux.sh')
 
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
 
     sp.check_call(['cat', 'VERSION'])
-    sp.check_call(['zip', '-r', 'grakn.zip', '--exclude=*.git*', '.'])
-    gcloud_scp(instance, local='grakn.zip', remote='~')
-    gcloud_ssh(instance, 'mkdir /tmp/grakn && unzip grakn.zip -d /tmp/grakn')
 
     lprint('Installing RPM packages. Grakn will be available system-wide')
     gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/rpm-snapshot.repo')
@@ -118,17 +113,8 @@ try:
     gcloud_ssh(instance, 'sudo chown -R $USER:$USER /opt/grakn')
 
     gcloud_ssh(instance, 'grakn server start')
-
-    cmd="define person sub entity;" \
-        "insert $x isa person;" \
-        "commit" \
-        "match $x sub thing; get;" \
-        "rollback" \
-        "compute count in person;" \
-        "exit;"
-    gcloud_ssh(instance, 'pushd /tmp/grakn && '
-                         'echo "$cmd" | ./grakn console && '
-                         'popd')
+    # start console, should be good enough to confirm server starts and server starts
+    gcloud_ssh(instance, 'grakn console')
     gcloud_ssh(instance, 'grakn server stop')
 
 finally:

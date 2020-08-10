@@ -277,7 +277,7 @@ jobs:
       - run: bazel run //test/deployment/apt:install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=local --cache_test_results=no
+      - run: grakn console  # we consider being able to start console a sufficient test
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
