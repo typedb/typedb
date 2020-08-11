@@ -38,6 +38,7 @@ java_library(
         # External dependencies from @graknlabs
         "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/query",
     ],
     tags = ["maven_coordinates=grakn.core:grakn-core-query:{pom_version}"],
     visibility = [ "//visibility:public" ]
