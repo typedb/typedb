@@ -613,7 +613,7 @@ workflows:
                 - master
           requires:
             - deploy-rpm-snapshot
-      - sync-dependencies-snapshot:
+      - release-approval:
           filters:
             branches:
               only:
@@ -622,13 +622,6 @@ workflows:
             - deploy-artifact-snapshot
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
-      - release-approval:
-          filters:
-            branches:
-              only:
-                - master
-          requires:
-            - sync-dependencies-snapshot
 
   grakn-core-release:
     jobs:
@@ -679,7 +672,7 @@ workflows:
               only: grakn-release-branch
           requires:
             - deploy-approval
-      - sync-dependencies-release:
+      - release-notification:
           filters:
             branches:
               only: grakn-release-branch
@@ -688,12 +681,6 @@ workflows:
             - deploy-rpm
             - deploy-brew
             - deploy-docker
-      - release-notification:
-          filters:
-            branches:
-              only: grakn-release-branch
-          requires:
-            - sync-dependencies-release
       - release-cleanup:
           filters:
             branches:
