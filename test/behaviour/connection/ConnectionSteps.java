@@ -89,12 +89,12 @@ public class ConnectionSteps {
         assertTrue(grakn.isOpen());
     }
 
-    @Given("connection delete all keyspaces")
+    @Given("connection delete all databases")
     public void connection_delete_all_databases() {
         grakn.databases().all().forEach(RocksDatabase::delete);
     }
 
-    @Given("connection does not have any keyspace")
+    @Given("connection does not have any database")
     public void connection_does_not_have_any_database() {
         assertTrue(grakn.databases().all().isEmpty());
     }

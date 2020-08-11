@@ -27,8 +27,8 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/connection/keyspace.feature",
-        tags = "not @ignore and not @ignore-grakn"
+        features = "external/graknlabs_verification/behaviour/connection/database.feature",
+        tags = "not @ignore and not @ignore-grakn-2.0"
 )
 public class DatabaseTest {
     // ATTENTION:

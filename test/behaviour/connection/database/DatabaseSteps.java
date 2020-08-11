@@ -33,22 +33,23 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class DatabaseSteps {
 
-    @When("connection create keyspace: {word}")
+    @When("connection create database: {word}")
     public void connection_create_database(String name) {
         connection_create_databases(list(name));
     }
 
-    @When("connection create keyspace(s):")
+    @When("connection create database(s):")
     public void connection_create_databases(List<String> names) {
         for (String name : names) {
             grakn.databases().create(name);
         }
     }
 
-    @When("connection create keyspaces in parallel:")
+    @When("connection create databases in parallel:")
     public void connection_create_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
@@ -61,14 +62,26 @@ public class DatabaseSteps {
         CompletableFuture.allOf(creations).join();
     }
 
-    @When("connection delete keyspace(s):")
+    @When("connection delete database(s):")
     public void connection_delete_databases(List<String> names) {
         for (String databaseName : names) {
             grakn.databases().get(databaseName).delete();
         }
     }
 
-    @When("connection delete keyspaces in parallel:")
+    @Then("connection delete database(s); throws exception")
+    public void connection_delete_databases_throws_exception(List<String> names) {
+        for (String databaseName : names) {
+            try {
+                grakn.databases().get(databaseName).delete();
+                fail();
+            } catch (Exception e) {
+                // successfully failed
+            }
+        }
+    }
+
+    @When("connection delete databases in parallel:")
     public void connection_delete_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
@@ -87,7 +100,7 @@ public class DatabaseSteps {
         CompletableFuture.allOf(deletions).join();
     }
 
-    @Then("connection has keyspace(s):")
+    @Then("connection has database(s):")
     public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
                      grakn.databases().all().stream()
@@ -95,7 +108,7 @@ public class DatabaseSteps {
                              .collect(Collectors.toSet()));
     }
 
-    @Then("connection does not have keyspace(s):")
+    @Then("connection does not have database(s):")
     public void connection_does_not_have_databases(List<String> names) {
         for (String name : names) {
             assertNull(grakn.databases().get(name));

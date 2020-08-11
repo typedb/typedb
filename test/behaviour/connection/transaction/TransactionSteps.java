@@ -64,6 +64,15 @@ public class TransactionSteps {
         }
     }
 
+    @Then("for each session, open transaction(s) of type; throws exception")
+    public void for_each_session_open_transactions_of_type_throws_exception(List<Grakn.Transaction.Type> types) {
+        for (Grakn.Session session : sessions) {
+            for (Grakn.Transaction.Type type : types) {
+                assertThrows(() -> session.transaction(type));
+            }
+        }
+    }
+
     @Then("for each session, transaction(s) is/are null: {bool}")
     public void for_each_session_transactions_are_null(boolean isNull) {
         for_each_session_transactions_are(transaction -> assertEquals(isNull, isNull(transaction)));
