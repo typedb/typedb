@@ -113,13 +113,13 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Map<RoleTypeImpl, ? extends List<ThingImpl>> playersMap() {
-        Map<RoleTypeImpl, List<ThingImpl>> playersMap = new HashMap<>();
+    public Map<RoleTypeImpl, ? extends List<ThingImpl>> playersByRole() {
+        Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
         type().roles().forEach(rt -> {
             List<ThingImpl> players = players(rt).collect(toList());
-            if (!players.isEmpty()) playersMap.put(rt, players);
+            if (!players.isEmpty()) playersByRole.put(rt, players);
         });
-        return playersMap;
+        return playersByRole;
     }
 
     @Override

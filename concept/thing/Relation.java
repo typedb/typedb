@@ -62,6 +62,6 @@ public interface Relation extends Thing {
 
     Stream<? extends Thing> players(List<RoleType> roleTypes);
 
-    Map<? extends RoleType, ? extends List<? extends Thing>> playersMap();
+    Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole();
 
 }

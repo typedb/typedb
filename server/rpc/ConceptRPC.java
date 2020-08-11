@@ -222,11 +222,14 @@ class ConceptRPC {
                 return;
 
             // Relation methods
-            case RELATION_PLAYERSMAP_ITER_REQ:
-                con.asRelation().playersMap();
-                return;
             case RELATION_PLAYERS_ITER_REQ:
-                con.asRelation().players(req.getRelationPlayersIterReq().getRolesList());
+                con.asRelation().players();
+                return;
+            case RELATION_PLAYERSFORROLES_ITER_REQ:
+                con.asRelation().players(req.getRelationPlayersForRolesIterReq().getRolesList());
+                return;
+            case RELATION_PLAYERSBYROLE_ITER_REQ:
+                con.asRelation().playersByRole();
                 return;
 
             // Attribute methods
@@ -834,14 +837,14 @@ class ConceptRPC {
         private class RelationHolder {
             private final Relation concept = ConceptHolder.this.concept.asRelation();
 
-            private void playersMap() {
-                Map<? extends RoleType, ? extends List<? extends Thing>> playersMap = concept.playersMap();
+            private void playersByRole() {
+                Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = concept.playersByRole();
                 Stream.Builder<TransactionProto.Transaction.Res> responses = Stream.builder();
 
-                for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> players : playersMap.entrySet()) {
+                for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> players : playersByRole.entrySet()) {
                     for (grakn.core.concept.thing.Thing player : players.getValue()) {
                         ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                                .setRelationPlayersMapIterRes(ConceptProto.Relation.PlayersMap.Iter.Res.newBuilder()
+                                .setRelationPlayersByRoleIterRes(ConceptProto.Relation.PlayersByRole.Iter.Res.newBuilder()
                                                                       .setRole(ResponseBuilder.Concept.concept(players.getKey()))
                                                                       .setPlayer(ResponseBuilder.Concept.concept(player))).build();
 
@@ -852,17 +855,30 @@ class ConceptRPC {
                 iterators.startBatchIterating(responses.build().iterator(), options);
             }
 
+            private void players() {
+                final Stream<? extends Thing> concepts = concept.players();
+
+                final Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
+                    final ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
+                            .setRelationPlayersIterRes(ConceptProto.Relation.Players.Iter.Res.newBuilder()
+                                                               .setThing(ResponseBuilder.Concept.concept(con))).build();
+                    return ResponseBuilder.Transaction.Iter.conceptMethod(res);
+                });
+
+                iterators.startBatchIterating(responses.iterator(), options);
+            }
+
             private void players(List<ConceptProto.Concept> protoRoles) {
-                List<RoleType> roles = protoRoles.stream()
+                final List<RoleType> roles = protoRoles.stream()
                         .map(ConceptHolder.this::convert)
                         .map(ConceptRPC::conceptExists)
                         .map(Concept::asRoleType)
                         .collect(Collectors.toList());
-                Stream<? extends Thing> concepts = concept.players(roles);
+                final Stream<? extends Thing> concepts = concept.players(roles);
 
-                Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
-                    ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
-                            .setRelationPlayersIterRes(ConceptProto.Relation.Players.Iter.Res.newBuilder()
+                final Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
+                    final ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
+                            .setRelationPlayersForRolesIterRes(ConceptProto.Relation.PlayersForRoles.Iter.Res.newBuilder()
                                                                .setThing(ResponseBuilder.Concept.concept(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
