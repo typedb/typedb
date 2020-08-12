@@ -73,37 +73,37 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Nullable
     @Override
-    public RoleTypeImpl sup() {
+    public RoleTypeImpl getSup() {
         return super.sup(RoleTypeImpl::of);
     }
 
     @Override
-    public Stream<RoleTypeImpl> sups() {
+    public Stream<RoleTypeImpl> getSups() {
         return super.sups(RoleTypeImpl::of);
     }
 
     @Override
-    public Stream<RoleTypeImpl> subs() {
+    public Stream<RoleTypeImpl> getSubs() {
         return super.subs(RoleTypeImpl::of);
     }
 
     @Override
-    public String scopedLabel() {
+    public String getScopedLabel() {
         return vertex.scopedLabel();
     }
 
     @Override
-    public RelationTypeImpl relation() {
+    public RelationTypeImpl getRelation() {
         return RelationTypeImpl.of(vertex.ins().edge(Schema.Edge.Type.RELATES).from().next());
     }
 
     @Override
-    public Stream<RelationTypeImpl> relations() {
-        return relation().subs().filter(rel -> rel.roles().anyMatch(rol -> rol.equals(this)));
+    public Stream<RelationTypeImpl> getRelations() {
+        return getRelation().getSubs().filter(rel -> rel.getRelates().anyMatch(rol -> rol.equals(this)));
     }
 
     @Override
-    public Stream<ThingTypeImpl> players() {
+    public Stream<ThingTypeImpl> getPlayers() {
         return stream(apply(vertex.ins().edge(Schema.Edge.Type.PLAYS).from(), ThingTypeImpl::of));
     }
 
@@ -138,7 +138,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void setLabel(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
         void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }

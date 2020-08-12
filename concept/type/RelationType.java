@@ -28,26 +28,26 @@ public interface RelationType extends ThingType {
     default RelationType asRelationType() { return this; }
 
     @Override
-    RelationType sup();
+    RelationType getSup();
 
     @Override
-    Stream<? extends RelationType> sups();
+    Stream<? extends RelationType> getSups();
 
     @Override
-    Stream<? extends RelationType> subs();
+    Stream<? extends RelationType> getSubs();
 
     @Override
-    Stream<? extends Relation> instances();
+    Stream<? extends Relation> getInstances();
 
-    void sup(RelationType superType);
+    void setSup(RelationType superType);
 
-    RoleType relates(String roleLabel);
+    void setRelates(String roleLabel);
 
-    RoleType relates(String roleLabel, String overriddenLabel);
+    void setRelates(String roleLabel, String overriddenLabel);
 
-    Stream<? extends RoleType> roles();
+    Stream<? extends RoleType> getRelates();
 
-    RoleType role(String roleLabel);
+    RoleType getRelates(String roleLabel);
 
     Relation create();
 

@@ -64,28 +64,28 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public void sup(EntityType superType) {
+    public void setSup(EntityType superType) {
         super.superTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
     @Nullable
     @Override
-    public EntityTypeImpl sup() {
+    public EntityTypeImpl getSup() {
         return super.sup(EntityTypeImpl::of);
     }
 
     @Override
-    public Stream<EntityTypeImpl> sups() {
+    public Stream<EntityTypeImpl> getSups() {
         return super.sups(EntityTypeImpl::of);
     }
 
     @Override
-    public Stream<EntityTypeImpl> subs() {
+    public Stream<EntityTypeImpl> getSubs() {
         return super.subs(EntityTypeImpl::of);
     }
 
     @Override
-    public Stream<EntityImpl> instances() {
+    public Stream<EntityImpl> getInstances() {
         return super.instances(EntityImpl::of);
     }
 
@@ -117,7 +117,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(String label) {
+        public void setLabel(String label) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
@@ -127,32 +127,32 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public void sup(EntityType superType) {
+        public void setSup(EntityType superType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void has(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, boolean isKey) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void plays(RoleType roleType) {
+        public void setPlays(RoleType roleType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void plays(RoleType roleType, RoleType overriddenType) {
+        public void setPlays(RoleType roleType, RoleType overriddenType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void unplay(RoleType roleType) {
+        public void unsetPlays(RoleType roleType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
     }

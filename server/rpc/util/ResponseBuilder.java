@@ -180,29 +180,29 @@ public class ResponseBuilder {
 
         public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
             return ConceptProto.Concept.newBuilder()
-                    .setIid(ByteString.copyFrom(concept.iid()))
+                    .setIid(ByteString.copyFrom(concept.getIID()))
                     .setBaseType(getBaseType(concept))
                     .build();
         }
 
         public static ConceptProto.Concept conceptPrefilled(grakn.core.concept.Concept concept) {
             ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
-                    .setIid(ByteString.copyFrom(concept.iid()))
+                    .setIid(ByteString.copyFrom(concept.getIID()))
                     .setBaseType(getBaseType(concept));
 
             if (concept instanceof Type) {
                 builder.setLabelRes(ConceptProto.Type.GetLabel.Res.newBuilder()
-                                            .setLabel(concept.asType().label()));
+                                            .setLabel(concept.asType().getLabel()));
             } else if (concept instanceof Thing) {
-                builder.setTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
-                                           .setThingType(conceptPrefilled(concept.asThing().type())));
+                builder.setTypeRes(ConceptProto.Thing.GetType.Res.newBuilder()
+                                           .setThingType(conceptPrefilled(concept.asThing().getType())));
                 builder.setInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
                                                .setInferred(concept.asThing().isInferred()));
 
                 if (concept instanceof Attribute) {
-                    builder.setValueRes(ConceptProto.Attribute.Value.Res.newBuilder()
+                    builder.setValueRes(ConceptProto.Attribute.GetValue.Res.newBuilder()
                                                 .setValue(attributeValue((Attribute) concept)));
-                    builder.setValueTypeRes(ConceptProto.AttributeType.ValueType.Res.newBuilder()
+                    builder.setValueTypeRes(ConceptProto.AttributeType.GetValueType.Res.newBuilder()
                                                     .setValueType(valueType((Attribute) concept)));
                 }
             }
@@ -236,7 +236,7 @@ public class ResponseBuilder {
             } else if (concept instanceof Attribute) {
                 return ConceptProto.Concept.SCHEMA.ATTRIBUTE;
             } else if (concept instanceof RoleType) {
-                return ConceptProto.Concept.SCHEMA.ROLE;
+                return ConceptProto.Concept.SCHEMA.ROLE_TYPE;
 //            } else if (concept.isRule()) {
 //                return ConceptProto.Concept.SCHEMA.RULE;
             } else {
@@ -247,16 +247,16 @@ public class ResponseBuilder {
         static ConceptProto.ValueObject attributeValue(Attribute attribute) {
             ConceptProto.ValueObject.Builder builder = ConceptProto.ValueObject.newBuilder();
             if (attribute instanceof Attribute.String) {
-                builder.setString(((Attribute.String) attribute).value());
+                builder.setString(((Attribute.String) attribute).getValue());
             } else if (attribute instanceof Attribute.Boolean) {
-                builder.setBoolean(((Attribute.Boolean) attribute).value());
+                builder.setBoolean(((Attribute.Boolean) attribute).getValue());
             } else if (attribute instanceof Attribute.Long) {
-                builder.setLong(((Attribute.Long) attribute).value());
+                builder.setLong(((Attribute.Long) attribute).getValue());
             } else if (attribute instanceof Attribute.Double) {
-                builder.setDouble(((Attribute.Double) attribute).value());
+                builder.setDouble(((Attribute.Double) attribute).getValue());
             } else if (attribute instanceof Attribute.DateTime) {
                 builder.setDatetime(
-                        ((Attribute.DateTime) attribute).value().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
+                        ((Attribute.DateTime) attribute).getValue().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
             } else {
                 throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }

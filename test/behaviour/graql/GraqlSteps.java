@@ -668,7 +668,7 @@ public class GraqlSteps {
 
         public boolean check(Concept concept) {
             return concept.isAttribute()
-                    && type.equals(concept.asAttribute().type().label().toString())
+                    && type.equals(concept.asAttribute().getType().getLabel().toString())
                     && value.equals(concept.asAttribute().value().toString());
         }
     }
@@ -688,13 +688,13 @@ public class GraqlSteps {
         public boolean check(Concept concept) {
             if (!concept.isThing()) { return false; }
 
-            Set<Attribute> keys = concept.asThing().attributes(true).collect(Collectors.toSet());
+            Set<Attribute> keys = concept.asThing().getHas(true).collect(Collectors.toSet());
 
             HashMap<String, String> keyMap = new HashMap<>();
 
             for (Attribute<?> key : keys) {
                 keyMap.put(
-                        key.type().label().toString(),
+                        key.getType().getLabel().toString(),
                         key.value().toString());
             }
             return value.equals(keyMap.get(type));

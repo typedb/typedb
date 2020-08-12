@@ -69,7 +69,7 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public byte[] iid() {
+    public byte[] getIID() {
         return vertex.iid().bytes();
     }
 
@@ -87,12 +87,12 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public void label(String label) {
+    public void setLabel(String label) {
         vertex.label(label);
     }
 
     @Override
-    public String label() {
+    public String getLabel() {
         return vertex.label();
     }
 
@@ -103,7 +103,7 @@ public abstract class TypeImpl implements Type {
 
     void superTypeVertex(TypeVertex superTypeVertex) {
         if (vertex.equals(superTypeVertex)) throw new GraknException(SUPERTYPE_SELF.message(vertex.label()));
-        vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) sup()).vertex).delete();
+        vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) getSup()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 
@@ -139,7 +139,7 @@ public abstract class TypeImpl implements Type {
         if (vertex.status().equals(Schema.Status.BUFFERED)) {
             throw new GraknException(DIRTY_DATA_WRITES);
         } else if (isAbstract()) {
-            throw new GraknException(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), label()));
+            throw new GraknException(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));
         }
     }
 

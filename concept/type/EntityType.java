@@ -28,18 +28,18 @@ public interface EntityType extends ThingType {
     default EntityType asEntityType() { return this; }
 
     @Override
-    EntityType sup();
+    EntityType getSup();
 
     @Override
-    Stream<? extends EntityType> sups();
+    Stream<? extends EntityType> getSups();
 
     @Override
-    Stream<? extends EntityType> subs();
+    Stream<? extends EntityType> getSubs();
 
     @Override
-    Stream<? extends Entity> instances();
+    Stream<? extends Entity> getInstances();
 
-    void sup(EntityType superType);
+    void setSup(EntityType superType);
 
     Entity create();
 

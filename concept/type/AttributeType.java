@@ -30,22 +30,22 @@ public interface AttributeType extends ThingType {
     default AttributeType asAttributeType() { return this; }
 
     @Override
-    AttributeType sup();
+    AttributeType getSup();
 
     @Override
-    Stream<? extends AttributeType> sups();
+    Stream<? extends AttributeType> getSups();
 
     @Override
-    Stream<? extends AttributeType> subs();
+    Stream<? extends AttributeType> getSubs();
 
     @Override
-    Stream<? extends Attribute> instances();
+    Stream<? extends Attribute> getInstances();
 
-    void sup(AttributeType superType);
+    void setSup(AttributeType superType);
 
     boolean isKeyable();
 
-    ValueType valueType();
+    ValueType getValueType();
 
     AttributeType asObject();
 
@@ -84,7 +84,7 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
-        public Class<?> valueClass() {
+        public Class<?> getValueClass() {
             return valueClass;
         }
 
@@ -96,16 +96,16 @@ public interface AttributeType extends ThingType {
     interface Boolean extends AttributeType {
 
         @Override
-        AttributeType.Boolean sup();
+        AttributeType.Boolean getSup();
 
         @Override
-        Stream<? extends AttributeType.Boolean> sups();
+        Stream<? extends AttributeType.Boolean> getSups();
 
         @Override
-        Stream<? extends AttributeType.Boolean> subs();
+        Stream<? extends AttributeType.Boolean> getSubs();
 
         @Override
-        Stream<? extends Attribute.Boolean> instances();
+        Stream<? extends Attribute.Boolean> getInstances();
 
         Attribute.Boolean put(boolean value);
 
@@ -117,16 +117,16 @@ public interface AttributeType extends ThingType {
     interface Long extends AttributeType {
 
         @Override
-        AttributeType.Long sup();
+        AttributeType.Long getSup();
 
         @Override
-        Stream<? extends AttributeType.Long> sups();
+        Stream<? extends AttributeType.Long> getSups();
 
         @Override
-        Stream<? extends AttributeType.Long> subs();
+        Stream<? extends AttributeType.Long> getSubs();
 
         @Override
-        Stream<? extends Attribute.Long> instances();
+        Stream<? extends Attribute.Long> getInstances();
 
         Attribute.Long put(long value);
 
@@ -138,16 +138,16 @@ public interface AttributeType extends ThingType {
     interface Double extends AttributeType {
 
         @Override
-        AttributeType.Double sup();
+        AttributeType.Double getSup();
 
         @Override
-        Stream<? extends AttributeType.Double> sups();
+        Stream<? extends AttributeType.Double> getSups();
 
         @Override
-        Stream<? extends AttributeType.Double> subs();
+        Stream<? extends AttributeType.Double> getSubs();
 
         @Override
-        Stream<? extends Attribute.Double> instances();
+        Stream<? extends Attribute.Double> getInstances();
 
         Attribute.Double put(double value);
 
@@ -159,16 +159,16 @@ public interface AttributeType extends ThingType {
     interface String extends AttributeType {
 
         @Override
-        AttributeType.String sup();
+        AttributeType.String getSup();
 
         @Override
-        Stream<? extends AttributeType.String> sups();
+        Stream<? extends AttributeType.String> getSups();
 
         @Override
-        Stream<? extends AttributeType.String> subs();
+        Stream<? extends AttributeType.String> getSubs();
 
         @Override
-        Stream<? extends Attribute.String> instances();
+        Stream<? extends Attribute.String> getInstances();
 
         void regex(java.lang.String regex);
 
@@ -184,16 +184,16 @@ public interface AttributeType extends ThingType {
     interface DateTime extends AttributeType {
 
         @Override
-        AttributeType.DateTime sup();
+        AttributeType.DateTime getSup();
 
         @Override
-        Stream<? extends AttributeType.DateTime> sups();
+        Stream<? extends AttributeType.DateTime> getSups();
 
         @Override
-        Stream<? extends AttributeType.DateTime> subs();
+        Stream<? extends AttributeType.DateTime> getSubs();
 
         @Override
-        Stream<? extends Attribute.DateTime> instances();
+        Stream<? extends Attribute.DateTime> getInstances();
 
         Attribute.DateTime put(LocalDateTime value);
 

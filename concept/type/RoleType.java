@@ -26,19 +26,19 @@ public interface RoleType extends Type {
     default RoleType asRoleType() { return this; }
 
     @Override
-    RoleType sup();
+    RoleType getSup();
 
     @Override
-    Stream<? extends RoleType> sups();
+    Stream<? extends RoleType> getSups();
 
     @Override
-    Stream<? extends RoleType> subs();
+    Stream<? extends RoleType> getSubs();
 
-    String scopedLabel();
+    String getScopedLabel();
 
-    RelationType relation();
+    RelationType getRelation();
 
-    Stream<? extends RelationType> relations();
+    Stream<? extends RelationType> getRelations();
 
-    Stream<? extends ThingType> players();
+    Stream<? extends ThingType> getPlayers();
 }

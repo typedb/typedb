@@ -30,23 +30,23 @@ public interface Type extends Concept {
     default Type asType() { return this; }
 
     @Override
-    byte[] iid();
+    byte[] getIID();
 
     Long count();
 
     boolean isRoot();
 
-    void label(String label);
+    void setLabel(String label);
 
-    String label();
+    String getLabel();
 
     boolean isAbstract();
 
-    Type sup();
+    Type getSup();
 
-    Stream<? extends Type> sups();
+    Stream<? extends Type> getSups();
 
-    Stream<? extends Type> subs();
+    Stream<? extends Type> getSubs();
 
     List<GraknException> validate();
 }

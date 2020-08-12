@@ -91,16 +91,16 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Nullable
     @Override
-    public abstract AttributeTypeImpl sup();
+    public abstract AttributeTypeImpl getSup();
 
     @Override
-    public abstract Stream<? extends AttributeTypeImpl> sups();
+    public abstract Stream<? extends AttributeTypeImpl> getSups();
 
     @Override
-    public abstract Stream<? extends AttributeTypeImpl> subs();
+    public abstract Stream<? extends AttributeTypeImpl> getSubs();
 
     @Override
-    public abstract Stream<? extends AttributeImpl<?>> instances();
+    public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
     Iterator<TypeVertex> subTypeVertices(Schema.ValueType valueType) {
         return Iterators.tree(vertex, v -> Iterators.filter(v.ins().edge(Schema.Edge.Type.SUB).from(),
@@ -108,17 +108,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public void sup(AttributeType superType) {
-        if (!superType.isRoot() && !Objects.equals(this.valueType(), superType.valueType())) {
+    public void setSup(AttributeType superType) {
+        if (!superType.isRoot() && !Objects.equals(this.getValueType(), superType.getValueType())) {
             throw new GraknException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.message(
-                    label(), valueType().name(), superType.label(), superType.valueType().name()
+                    getLabel(), getValueType().name(), superType.getLabel(), superType.getValueType().name()
             ));
         } else if (this.equals(superType)) {
-            throw new GraknException(SUPERTYPE_SELF.message(label()));
+            throw new GraknException(SUPERTYPE_SELF.message(getLabel()));
         } else if (!superType.isAbstract()) {
-            throw new GraknException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.message(superType.label()));
+            throw new GraknException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.message(superType.getLabel()));
         }
-        vertex.outs().edge(Schema.Edge.Type.SUB, sup().vertex).delete();
+        vertex.outs().edge(Schema.Edge.Type.SUB, getSup().vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, ((AttributeTypeImpl) superType).vertex);
     }
 
@@ -128,7 +128,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public ValueType valueType() {
+    public ValueType getValueType() {
         return null;
     }
 
@@ -139,7 +139,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl.Root asObject() {
-        if (this.valueType() == ValueType.OBJECT) return new AttributeTypeImpl.Root(this.vertex);
+        if (this.getValueType() == ValueType.OBJECT) return new AttributeTypeImpl.Root(this.vertex);
         else throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
     }
 
@@ -188,7 +188,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             assert vertex.label().equals(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         }
 
-        public ValueType valueType() { return ValueType.OBJECT; }
+        public ValueType getValueType() { return ValueType.OBJECT; }
 
         @Override
         public AttributeTypeImpl.Root asObject() { return this; }
@@ -212,27 +212,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public boolean isRoot() { return true; }
 
         @Override
-        public void label(java.lang.String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void setLabel(java.lang.String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
         public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void sup(AttributeType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void setSup(AttributeType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Nullable
         @Override
-        public AttributeTypeImpl sup() {
+        public AttributeTypeImpl getSup() {
             return null;
         }
 
         @Override
-        public Stream<AttributeTypeImpl> sups() {
+        public Stream<AttributeTypeImpl> getSups() {
             return Stream.of(this);
         }
 
         @Override
-        public Stream<AttributeTypeImpl> subs() {
+        public Stream<AttributeTypeImpl> getSubs() {
             return subs(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
@@ -255,32 +255,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeImpl<?>> instances() {
+        public Stream<AttributeImpl<?>> getInstances() {
             return super.instances(v -> AttributeImpl.of(v.asAttribute()));
         }
 
         @Override
-        public void has(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, boolean isKey) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void plays(RoleType roleType) {
+        public void setPlays(RoleType roleType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void plays(RoleType roleType, RoleType overriddenType) {
+        public void setPlays(RoleType roleType, RoleType overriddenType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
         @Override
-        public void unplay(RoleType roleType) {
+        public void unsetPlays(RoleType roleType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
     }
@@ -311,27 +311,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.Boolean sup() {
+        public AttributeTypeImpl.Boolean getSup() {
             return super.sup(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Boolean> sups() {
+        public Stream<AttributeTypeImpl.Boolean> getSups() {
             return super.sups(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Boolean> subs() {
+        public Stream<AttributeTypeImpl.Boolean> getSubs() {
             return super.subs(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
-        public Stream<AttributeImpl.Boolean> instances() {
+        public Stream<AttributeImpl.Boolean> getInstances() {
             return super.instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
         @Override
-        public ValueType valueType() { return ValueType.BOOLEAN; }
+        public ValueType getValueType() { return ValueType.BOOLEAN; }
 
         @Override
         public AttributeTypeImpl.Boolean asBoolean() { return this; }
@@ -366,7 +366,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Boolean> subs() {
+            public Stream<AttributeTypeImpl.Boolean> getSubs() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.BOOLEAN),
                         AttributeTypeImpl.Boolean::of
@@ -374,7 +374,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void label(java.lang.String label) {
+            public void setLabel(java.lang.String label) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -384,32 +384,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void sup(AttributeType superType) {
+            public void setSup(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType) {
+            public void setPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(RoleType roleType, RoleType overriddenType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void unplay(RoleType roleType) {
+            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
@@ -441,27 +441,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.Long sup() {
+        public AttributeTypeImpl.Long getSup() {
             return super.sup(AttributeTypeImpl.Long::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Long> sups() {
+        public Stream<AttributeTypeImpl.Long> getSups() {
             return super.sups(AttributeTypeImpl.Long::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Long> subs() {
+        public Stream<AttributeTypeImpl.Long> getSubs() {
             return super.subs(AttributeTypeImpl.Long::of);
         }
 
         @Override
-        public Stream<AttributeImpl.Long> instances() {
+        public Stream<AttributeImpl.Long> getInstances() {
             return super.instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
 
         @Override
-        public ValueType valueType() {
+        public ValueType getValueType() {
             return ValueType.LONG;
         }
 
@@ -498,7 +498,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Long> subs() {
+            public Stream<AttributeTypeImpl.Long> getSubs() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.LONG),
                         AttributeTypeImpl.Long::of
@@ -506,7 +506,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void label(java.lang.String label) {
+            public void setLabel(java.lang.String label) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -516,32 +516,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void sup(AttributeType superType) {
+            public void setSup(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType) {
+            public void setPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(RoleType roleType, RoleType overriddenType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void unplay(RoleType roleType) {
+            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
@@ -573,27 +573,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.Double sup() {
+        public AttributeTypeImpl.Double getSup() {
             return super.sup(AttributeTypeImpl.Double::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Double> sups() {
+        public Stream<AttributeTypeImpl.Double> getSups() {
             return super.sups(AttributeTypeImpl.Double::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Double> subs() {
+        public Stream<AttributeTypeImpl.Double> getSubs() {
             return super.subs(AttributeTypeImpl.Double::of);
         }
 
         @Override
-        public Stream<AttributeImpl.Double> instances() {
+        public Stream<AttributeImpl.Double> getInstances() {
             return super.instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
 
         @Override
-        public ValueType valueType() {
+        public ValueType getValueType() {
             return ValueType.DOUBLE;
         }
 
@@ -630,7 +630,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Double> subs() {
+            public Stream<AttributeTypeImpl.Double> getSubs() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.DOUBLE),
                         AttributeTypeImpl.Double::of
@@ -638,7 +638,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void label(java.lang.String label) {
+            public void setLabel(java.lang.String label) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -648,32 +648,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void sup(AttributeType superType) {
+            public void setSup(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType) {
+            public void setPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(RoleType roleType, RoleType overriddenType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void unplay(RoleType roleType) {
+            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
@@ -707,22 +707,22 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.String sup() {
+        public AttributeTypeImpl.String getSup() {
             return super.sup(AttributeTypeImpl.String::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.String> sups() {
+        public Stream<AttributeTypeImpl.String> getSups() {
             return super.sups(AttributeTypeImpl.String::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.String> subs() {
+        public Stream<AttributeTypeImpl.String> getSubs() {
             return super.subs(AttributeTypeImpl.String::of);
         }
 
         @Override
-        public Stream<AttributeImpl.String> instances() {
+        public Stream<AttributeImpl.String> getInstances() {
             return super.instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
@@ -733,10 +733,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public void regex(java.lang.String regex) {
             if (regex != null) {
                 Pattern pattern = Pattern.compile(regex);
-                instances().parallel().forEach(attribute -> {
-                    Matcher matcher = pattern.matcher(attribute.value());
+                getInstances().parallel().forEach(attribute -> {
+                    Matcher matcher = pattern.matcher(attribute.getValue());
                     if (!matcher.matches()) {
-                        throw new GraknException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.message(label(), regex, attribute.value()));
+                        throw new GraknException(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.message(getLabel(), regex, attribute.getValue()));
                     }
                 });
             }
@@ -762,7 +762,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !regexPattern().matcher(value).matches()) {
-                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(label(), value, regex()));
+                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(getLabel(), value, regex()));
             }
             if (value.length() > Schema.STRING_MAX_LENGTH) {
                 throw new GraknException(ILLEGAL_STRING_SIZE);
@@ -779,7 +779,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public ValueType valueType() {
+        public ValueType getValueType() {
             return ValueType.STRING;
         }
 
@@ -794,7 +794,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.String> subs() {
+            public Stream<AttributeTypeImpl.String> getSubs() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.STRING),
                         AttributeTypeImpl.String::of
@@ -802,7 +802,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void label(java.lang.String label) {
+            public void setLabel(java.lang.String label) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -812,32 +812,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void sup(AttributeType superType) {
+            public void setSup(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType) {
+            public void setPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(RoleType roleType, RoleType overriddenType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void unplay(RoleType roleType) {
+            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -874,27 +874,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.DateTime sup() {
+        public AttributeTypeImpl.DateTime getSup() {
             return super.sup(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.DateTime> sups() {
+        public Stream<AttributeTypeImpl.DateTime> getSups() {
             return super.sups(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.DateTime> subs() {
+        public Stream<AttributeTypeImpl.DateTime> getSubs() {
             return super.subs(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
-        public Stream<AttributeImpl.DateTime> instances() {
+        public Stream<AttributeImpl.DateTime> getInstances() {
             return super.instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
         @Override
-        public ValueType valueType() {
+        public ValueType getValueType() {
             return ValueType.DATETIME;
         }
 
@@ -932,7 +932,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.DateTime> subs() {
+            public Stream<AttributeTypeImpl.DateTime> getSubs() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.DATETIME),
                         AttributeTypeImpl.DateTime::of
@@ -940,7 +940,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void label(java.lang.String label) {
+            public void setLabel(java.lang.String label) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -950,32 +950,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void sup(AttributeType superType) {
+            public void setSup(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType) {
+            public void setPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void plays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(RoleType roleType, RoleType overriddenType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
             @Override
-            public void unplay(RoleType roleType) {
+            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }

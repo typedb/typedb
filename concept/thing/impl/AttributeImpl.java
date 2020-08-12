@@ -60,26 +60,26 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
     }
 
-    public abstract VALUE value();
+    public abstract VALUE getValue();
 
     @Override
-    public AttributeTypeImpl type() {
+    public AttributeTypeImpl getType() {
         return AttributeTypeImpl.of(vertex.type());
     }
 
     @Override
-    public AttributeImpl has(Attribute attribute) {
-        return (AttributeImpl) super.has(attribute).asAttribute();
+    public AttributeImpl setHas(Attribute attribute) {
+        return (AttributeImpl) super.setHas(attribute).asAttribute();
     }
 
     @Override
-    public Stream<ThingImpl> owners() {
+    public Stream<ThingImpl> getOwners() {
         return stream(vertex.ins().edge(Schema.Edge.Thing.HAS).from()).map(ThingImpl::of);
     }
 
     @Override
-    public Stream<ThingImpl> owners(ThingType ownerType) {
-        return ownerType.subs().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(v -> stream(vertex.ins().edge(
+    public Stream<ThingImpl> getOwners(ThingType ownerType) {
+        return ownerType.getSubs().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(v -> stream(vertex.ins().edge(
                 Schema.Edge.Thing.HAS, PrefixIID.of(v.schema().instance()), v.iid()
         ).from())).map(ThingImpl::of);
     }
@@ -122,7 +122,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
-        public java.lang.Boolean value() {
+        public java.lang.Boolean getValue() {
             return attributeVertex.value();
         }
 
@@ -140,7 +140,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
-        public java.lang.Long value() {
+        public java.lang.Long getValue() {
             return attributeVertex.value();
         }
 
@@ -158,7 +158,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
-        public java.lang.Double value() {
+        public java.lang.Double getValue() {
             return attributeVertex.value();
         }
 
@@ -176,7 +176,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
-        public java.lang.String value() {
+        public java.lang.String getValue() {
             return attributeVertex.value();
         }
 
@@ -194,7 +194,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
-        public java.time.LocalDateTime value() {
+        public java.time.LocalDateTime getValue() {
             return attributeVertex.value();
         }
 

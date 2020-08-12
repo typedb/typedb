@@ -51,98 +51,98 @@ public class RelationSteps {
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {bool}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, boolean keyValue) {
         Attribute.Boolean key = tx().concepts().getAttributeType(keyType).asBoolean().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().has(key));
+        put(var, tx().concepts().getRelationType(type).create().setHas(key));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
         Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().has(key));
+        put(var, tx().concepts().getRelationType(type).create().setHas(key));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {double}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, double keyValue) {
         Attribute.Double key = tx().concepts().getAttributeType(keyType).asDouble().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().has(key));
+        put(var, tx().concepts().getRelationType(type).create().setHas(key));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {word}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
         Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().has(key));
+        put(var, tx().concepts().getRelationType(type).create().setHas(key));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {datetime}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
         Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().has(key));
+        put(var, tx().concepts().getRelationType(type).create().setHas(key));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, boolean keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asBoolean().get(keyValue).owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+        put(var1, tx().concepts().getAttributeType(keyType).asBoolean().get(keyValue).getOwners()
+                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
                 .findFirst().orElse(null));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {long}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, long keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asLong().get(keyValue).owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+        put(var1, tx().concepts().getAttributeType(keyType).asLong().get(keyValue).getOwners()
+                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
                 .findFirst().orElse(null));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {double}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, double keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asDouble().get(keyValue).owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+        put(var1, tx().concepts().getAttributeType(keyType).asDouble().get(keyValue).getOwners()
+                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
                 .findFirst().orElse(null));
     }
 
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {word}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, String keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asString().get(keyValue).owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+        put(var1, tx().concepts().getAttributeType(keyType).asString().get(keyValue).getOwners()
+                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
                 .findFirst().orElse(null));
     }
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {datetime}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, LocalDateTime keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asDateTime().get(keyValue).owners()
-                .filter(owner -> owner.type().equals(tx().concepts().getRelationType(type)))
+        put(var1, tx().concepts().getAttributeType(keyType).asDateTime().get(keyValue).getOwners()
+                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
                 .findFirst().orElse(null));
     }
 
     @Then("relation\\( ?{type_label} ?) get instances contain: {var}")
     public void relation_type_get_instances_contain(String typeLabel, String var) {
-        assertTrue(tx().concepts().getRelationType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
+        assertTrue(tx().concepts().getRelationType(typeLabel).getInstances().anyMatch(i -> i.equals(get(var))));
     }
 
     @Then("relation\\( ?{type_label} ?) get instances do not contain: {var}")
     public void relation_type_get_instances_do_not_contain(String typeLabel, String var) {
-        assertTrue(tx().concepts().getRelationType(typeLabel).instances().noneMatch(i -> i.equals(get(var))));
+        assertTrue(tx().concepts().getRelationType(typeLabel).getInstances().noneMatch(i -> i.equals(get(var))));
     }
 
     @Then("relation\\( ?{type_label} ?) get instances is empty")
     public void relation_type_get_instances_is_empty(String typeLabel) {
-        assertEquals(0, tx().concepts().getRelationType(typeLabel).instances().count());
+        assertEquals(0, tx().concepts().getRelationType(typeLabel).getInstances().count());
     }
 
     @When("relation {var} set player for role\\( ?{type_label} ?): {var}")
     public void relation_set_player_for_role(String var1, String roleTypeLabel, String var2) {
-        get(var1).asRelation().relate(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
+        get(var1).asRelation().addPlayer(get(var1).asRelation().getType().getRelates(roleTypeLabel), get(var2));
     }
 
     @When("relation {var} remove player for role\\( ?{type_label} ?): {var}")
     public void relation_remove_player_for_role(String var1, String roleTypeLabel, String var2) {
-        get(var1).asRelation().unrelate(get(var1).asRelation().type().role(roleTypeLabel), get(var2));
+        get(var1).asRelation().removePlayer(get(var1).asRelation().getType().getRelates(roleTypeLabel), get(var2));
     }
 
     @Then("relation {var} get players contain:")
     public void relation_get_players_contain(String var, Map<String, String> players) {
         Relation relation = get(var).asRelation();
-        players.forEach((rt, var2) -> assertTrue(relation.playersByRole().get(relation.type().role(rt)).contains(get(var2.substring(1)))));
+        players.forEach((rt, var2) -> assertTrue(relation.getPlayersByRoleType().get(relation.getType().getRelates(rt)).contains(get(var2.substring(1)))));
     }
 
     @Then("relation {var} get players do not contain:")
@@ -150,7 +150,7 @@ public class RelationSteps {
         Relation relation = get(var).asRelation();
         players.forEach((rt, var2) -> {
             List<? extends Thing> p;
-            if ((p = relation.playersByRole().get(relation.type().role(rt))) != null) {
+            if ((p = relation.getPlayersByRoleType().get(relation.getType().getRelates(rt))) != null) {
                 assertFalse(p.contains(get(var2.substring(1))));
             }
         });
@@ -158,21 +158,21 @@ public class RelationSteps {
 
     @Then("relation {var} get players contain: {var}")
     public void relation_get_players_contain(String var1, String var2) {
-        assertTrue(get(var1).asRelation().players().anyMatch(p -> p.equals(get(var2))));
+        assertTrue(get(var1).asRelation().getPlayers().anyMatch(p -> p.equals(get(var2))));
     }
 
     @Then("relation {var} get players do not contain: {var}")
     public void relation_get_players_do_not_contain(String var1, String var2) {
-        assertTrue(get(var1).asRelation().players().noneMatch(p -> p.equals(get(var2))));
+        assertTrue(get(var1).asRelation().getPlayers().noneMatch(p -> p.equals(get(var2))));
     }
 
     @Then("relation {var} get players for role\\( ?{type_label} ?) contain: {var}")
     public void relation_get_player_for_role_contain(String var1, String roleTypeLabel, String var2) {
-        assertTrue(get(var1).asRelation().players(get(var1).asRelation().type().role(roleTypeLabel)).anyMatch(p -> p.equals(get(var2))));
+        assertTrue(get(var1).asRelation().getPlayers(get(var1).asRelation().getType().getRelates(roleTypeLabel)).anyMatch(p -> p.equals(get(var2))));
     }
 
     @Then("relation {var} get players for role\\( ?{type_label} ?) do not contain: {var}")
     public void relation_get_player_for_role_do_not_contain(String var1, String roleTypeLabel, String var2) {
-        assertTrue(get(var1).asRelation().players(get(var1).asRelation().type().role(roleTypeLabel)).noneMatch(p -> p.equals(get(var2))));
+        assertTrue(get(var1).asRelation().getPlayers(get(var1).asRelation().getType().getRelates(roleTypeLabel)).noneMatch(p -> p.equals(get(var2))));
     }
 }

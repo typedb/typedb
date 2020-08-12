@@ -53,20 +53,20 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public RelationTypeImpl type() {
+    public RelationTypeImpl getType() {
         return RelationTypeImpl.of(vertex.type());
     }
 
     @Override
-    public RelationImpl has(Attribute attribute) {
-        return (RelationImpl) super.has(attribute).asRelation();
+    public RelationImpl setHas(Attribute attribute) {
+        return (RelationImpl) super.setHas(attribute).asRelation();
     }
 
     @Override
-    public RelationImpl relate(RoleType roleType, Thing player) {
-        if (this.type().roles().noneMatch(t -> t.equals(roleType))) {
+    public void addPlayer(RoleType roleType, Thing player) {
+        if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw new GraknException(
-                    ErrorMessage.ThingWrite.RELATION_UNRELATED_ROLE.message(this.type().label(), roleType.label())
+                    ErrorMessage.ThingWrite.RELATION_UNRELATED_ROLE.message(this.getType().getLabel(), roleType.getLabel())
             );
         }
 
@@ -74,11 +74,10 @@ public class RelationImpl extends ThingImpl implements Relation {
         vertex.outs().put(Schema.Edge.Thing.RELATES, role.vertex);
         ((ThingImpl) player).vertex.outs().put(Schema.Edge.Thing.PLAYS, role.vertex);
         role.optimise();
-        return this;
     }
 
     @Override
-    public void unrelate(RoleType roleType, Thing player) {
+    public void removePlayer(RoleType roleType, Thing player) {
         Iterator<ThingVertex> role = filter(
                 vertex.outs().edge(Schema.Edge.Thing.RELATES,
                                    PrefixIID.of(Schema.Vertex.Thing.ROLE),
@@ -92,31 +91,31 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Stream<ThingImpl> players() {
+    public Stream<ThingImpl> getPlayers() {
         return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
     }
 
     @Override
-    public Stream<ThingImpl> players(RoleType roleType) {
-        return players(roleType.subs().map(rt -> ((RoleTypeImpl) rt).vertex));
+    public Stream<ThingImpl> getPlayers(RoleType roleType) {
+        return getPlayers(roleType.getSubs().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     @Override
-    public Stream<ThingImpl> players(List<RoleType> roleTypes) {
-        return players(roleTypes.stream().flatMap(RoleType::subs).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+    public Stream<ThingImpl> getPlayers(List<RoleType> roleTypes) {
+        return getPlayers(roleTypes.stream().flatMap(RoleType::getSubs).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
-    private Stream<ThingImpl> players(Stream<TypeVertex> roleTypeVertices) {
+    private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {
         return roleTypeVertices.flatMap(v -> stream(
                 vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, v.iid()).to())
         ).map(ThingImpl::of);
     }
 
     @Override
-    public Map<RoleTypeImpl, ? extends List<ThingImpl>> playersByRole() {
+    public Map<RoleTypeImpl, ? extends List<ThingImpl>> getPlayersByRoleType() {
         Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
-        type().roles().forEach(rt -> {
-            List<ThingImpl> players = players(rt).collect(toList());
+        getType().getRelates().forEach(rt -> {
+            List<ThingImpl> players = getPlayers(rt).collect(toList());
             if (!players.isEmpty()) playersByRole.put(rt, players);
         });
         return playersByRole;
@@ -126,7 +125,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
-            throw new GraknException(RELATION_NO_PLAYER.message(type().label()));
+            throw new GraknException(RELATION_NO_PLAYER.message(getType().getLabel()));
         }
     }
 }

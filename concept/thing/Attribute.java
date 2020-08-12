@@ -39,7 +39,7 @@ public interface Attribute extends Thing {
      * @return the {@code AttributeType} of this {@code Attribute}
      */
     @Override
-    AttributeType type();
+    AttributeType getType();
 
     /**
      * Set an {@code Attribute} to be owned by this {@code Attribute}.
@@ -48,16 +48,16 @@ public interface Attribute extends Thing {
      * @return this {@code Attribute} for further manipulation
      */
     @Override
-    Attribute has(Attribute attribute);
+    Attribute setHas(Attribute attribute);
 
     /**
      * Get a stream of all {@code Thing} instances that own this {@code Attribute}.
      *
      * @return stream of all {@code Thing} instances that own this {@code Attribute}
      */
-    Stream<? extends Thing> owners();
+    Stream<? extends Thing> getOwners();
 
-    Stream<? extends Thing> owners(ThingType ownerType);
+    Stream<? extends Thing> getOwners(ThingType ownerType);
 
     Attribute.Boolean asBoolean();
 
@@ -71,26 +71,26 @@ public interface Attribute extends Thing {
 
     interface Boolean extends Attribute {
 
-        java.lang.Boolean value();
+        java.lang.Boolean getValue();
     }
 
     interface Long extends Attribute {
 
-        java.lang.Long value();
+        java.lang.Long getValue();
     }
 
     interface Double extends Attribute {
 
-        java.lang.Double value();
+        java.lang.Double getValue();
     }
 
     interface String extends Attribute {
 
-        java.lang.String value();
+        java.lang.String getValue();
     }
 
     interface DateTime extends Attribute {
 
-        java.time.LocalDateTime value();
+        java.time.LocalDateTime getValue();
     }
 }

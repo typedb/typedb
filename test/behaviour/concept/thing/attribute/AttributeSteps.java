@@ -35,22 +35,22 @@ public class AttributeSteps {
 
     @When("attribute\\( ?{type_label} ?) get instances contain: {var}")
     public void attribute_type_get_instances_contain(String typeLabel, String var) {
-        assertTrue(tx().concepts().getAttributeType(typeLabel).instances().anyMatch(i -> i.equals(get(var))));
+        assertTrue(tx().concepts().getAttributeType(typeLabel).getInstances().anyMatch(i -> i.equals(get(var))));
     }
 
     @Then("attribute {var} get owners contain: {var}")
     public void attribute_get_owners_contain(String var1, String var2) {
-        assertTrue(get(var1).asAttribute().owners().anyMatch(o -> o.equals(get(var2))));
+        assertTrue(get(var1).asAttribute().getOwners().anyMatch(o -> o.equals(get(var2))));
     }
 
     @Then("attribute {var} get owners do not contain: {var}")
     public void attribute_get_owners_do_not_contain(String var1, String var2) {
-        assertTrue(get(var1).asAttribute().owners().noneMatch(o -> o.equals(get(var2))));
+        assertTrue(get(var1).asAttribute().getOwners().noneMatch(o -> o.equals(get(var2))));
     }
 
     @Then("attribute {var} has value type: {value_type}")
     public void attribute_has_value_type(String var, AttributeType.ValueType valueType) {
-        assertEquals(valueType, get(var).asAttribute().type().valueType());
+        assertEquals(valueType, get(var).asAttribute().getType().getValueType());
     }
 
     @When("{var} = attribute\\( ?{type_label} ?) as\\( ?boolean ?) put: {bool}")
@@ -130,26 +130,26 @@ public class AttributeSteps {
 
     @Then("attribute {var} has boolean value: {bool}")
     public void attribute_has_boolean_value(String var, boolean value) {
-        assertEquals(value, get(var).asAttribute().asBoolean().value());
+        assertEquals(value, get(var).asAttribute().asBoolean().getValue());
     }
 
     @Then("attribute {var} has long value: {long}")
     public void attribute_has_long_value(String var, long value) {
-        assertEquals(value, get(var).asAttribute().asLong().value().longValue());
+        assertEquals(value, get(var).asAttribute().asLong().getValue().longValue());
     }
 
     @Then("attribute {var} has double value: {double}")
     public void attribute_has_double_value(String var, double value) {
-        assertEquals(value, get(var).asAttribute().asDouble().value(), 0.0001);
+        assertEquals(value, get(var).asAttribute().asDouble().getValue(), 0.0001);
     }
 
     @Then("attribute {var} has string value: {word}")
     public void attribute_has_string_value(String var, String value) {
-        assertEquals(value, get(var).asAttribute().asString().value());
+        assertEquals(value, get(var).asAttribute().asString().getValue());
     }
 
     @Then("attribute {var} has datetime value: {datetime}")
     public void attribute_has_datetime_value(String var, LocalDateTime value) {
-        assertEquals(value, get(var).asAttribute().asDateTime().value());
+        assertEquals(value, get(var).asAttribute().asDateTime().getValue());
     }
 }

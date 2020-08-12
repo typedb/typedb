@@ -28,41 +28,41 @@ public interface ThingType extends Type {
     default ThingType asThingType() { return this; }
 
     @Override
-    ThingType sup();
+    ThingType getSup();
 
     @Override
-    Stream<? extends ThingType> sups();
+    Stream<? extends ThingType> getSups();
 
     @Override
-    Stream<? extends ThingType> subs();
+    Stream<? extends ThingType> getSubs();
 
-    Stream<? extends Thing> instances();
+    Stream<? extends Thing> getInstances();
 
     void isAbstract(boolean isAbstract);
 
-    void has(AttributeType attributeType);
+    void setOwns(AttributeType attributeType);
 
-    void has(AttributeType attributeType, boolean isKey);
+    void setOwns(AttributeType attributeType, boolean isKey);
 
-    void has(AttributeType attributeType, AttributeType overriddenType);
+    void setOwns(AttributeType attributeType, AttributeType overriddenType);
 
-    void has(AttributeType attributeType, AttributeType overriddenType, boolean isKey);
+    void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey);
 
-    void unhas(AttributeType attributeType);
+    void unsetOwns(AttributeType attributeType);
 
-    Stream<? extends AttributeType> attributes();
+    Stream<? extends AttributeType> getOwns();
 
-    Stream<? extends AttributeType> attributes(boolean onlyKey);
+    Stream<? extends AttributeType> getOwns(boolean onlyKey);
 
-    Stream<? extends AttributeType> attributes(AttributeType.ValueType valueType);
+    Stream<? extends AttributeType> getOwns(AttributeType.ValueType valueType);
 
-    Stream<? extends AttributeType> attributes(AttributeType.ValueType valueType, boolean onlyKey);
+    Stream<? extends AttributeType> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
 
-    void plays(RoleType roleType);
+    void setPlays(RoleType roleType);
 
-    void plays(RoleType roleType, RoleType overriddenType);
+    void setPlays(RoleType roleType, RoleType overriddenType);
 
-    void unplay(RoleType roleType);
+    void unsetPlays(RoleType roleType);
 
-    Stream<? extends RoleType> playing();
+    Stream<? extends RoleType> getPlays();
 }

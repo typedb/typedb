@@ -35,7 +35,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CAS
 
 public interface Concept {
 
-    byte[] iid();
+    byte[] getIID();
 
     boolean isDeleted();
 

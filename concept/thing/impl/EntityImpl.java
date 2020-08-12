@@ -36,13 +36,13 @@ public class EntityImpl extends ThingImpl implements Entity {
     }
 
     @Override
-    public EntityTypeImpl type() {
+    public EntityTypeImpl getType() {
         return EntityTypeImpl.of(vertex.type());
     }
 
     @Override
-    public EntityImpl has(Attribute attribute) {
-        return (EntityImpl) super.has(attribute).asEntity();
+    public EntityImpl setHas(Attribute attribute) {
+        return (EntityImpl) super.setHas(attribute).asEntity();
     }
 
     @Override

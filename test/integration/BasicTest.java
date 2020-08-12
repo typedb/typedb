@@ -66,44 +66,44 @@ public class BasicTest {
                 tx -> {
                     AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     Util.assertNotNulls(name);
-                    assertEquals(rootAttributeType, name.sup());
+                    assertEquals(rootAttributeType, name.getSup());
                 },
                 tx -> {
                     AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
                     Util.assertNotNulls(age);
-                    assertEquals(rootAttributeType, age.sup());
+                    assertEquals(rootAttributeType, age.getSup());
                 },
                 tx -> {
                     RelationType marriage = tx.concepts().getRelationType("marriage");
-                    RoleType husband = marriage.role("husband");
-                    RoleType wife = marriage.role("wife");
+                    RoleType husband = marriage.getRelates("husband");
+                    RoleType wife = marriage.getRelates("wife");
                     Util.assertNotNulls(marriage, husband, wife);
-                    assertEquals(rootRelationType, marriage.sup());
-                    assertEquals(rootRelationType.role("role"), husband.sup());
-                    assertEquals(rootRelationType.role("role"), wife.sup());
+                    assertEquals(rootRelationType, marriage.getSup());
+                    assertEquals(rootRelationType.getRelates("role"), husband.getSup());
+                    assertEquals(rootRelationType.getRelates("role"), wife.getSup());
                 },
                 tx -> {
                     RelationType employment = tx.concepts().getRelationType("employment");
-                    RoleType employee = employment.role("employee");
-                    RoleType employer = employment.role("employer");
+                    RoleType employee = employment.getRelates("employee");
+                    RoleType employer = employment.getRelates("employer");
                     Util.assertNotNulls(employment, employee, employer);
-                    assertEquals(rootRelationType, employment.sup());
+                    assertEquals(rootRelationType, employment.getSup());
                 },
                 tx -> {
                     EntityType person = tx.concepts().getEntityType("person");
                     Util.assertNotNulls(person);
-                    assertEquals(rootEntityType, person.sup());
+                    assertEquals(rootEntityType, person.getSup());
 
                     Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                             tx2 -> {
                                 EntityType man = tx2.concepts().getEntityType("man");
                                 Util.assertNotNulls(man);
-                                assertEquals(person, man.sup());
+                                assertEquals(person, man.getSup());
                             },
                             tx2 -> {
                                 EntityType woman = tx2.concepts().getEntityType("woman");
                                 Util.assertNotNulls(woman);
-                                assertEquals(person, woman.sup());
+                                assertEquals(person, woman.getSup());
                             }
                     );
                     subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
@@ -111,7 +111,7 @@ public class BasicTest {
                 tx -> {
                     EntityType company = tx.concepts().getEntityType("company");
                     Util.assertNotNulls(company);
-                    assertEquals(rootEntityType, company.sup());
+                    assertEquals(rootEntityType, company.getSup());
                 }
         );
 
@@ -154,17 +154,17 @@ public class BasicTest {
                             tx -> {
                                 EntityType rootEntityType = tx.concepts().getRootEntityType();
                                 assertNotNull(rootEntityType);
-                                assertNull(rootEntityType.sup());
+                                assertNull(rootEntityType.getSup());
                             },
                             tx -> {
                                 RelationType rootRelationType = tx.concepts().getRootRelationType();
                                 assertNotNull(rootRelationType);
-                                assertNull(rootRelationType.sup());
+                                assertNull(rootRelationType.getSup());
                             },
                             tx -> {
                                 AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
                                 assertNotNull(rootAttributeType);
-                                assertNull(rootAttributeType.sup());
+                                assertNull(rootAttributeType.getSup());
                             }
                     );
 
@@ -185,44 +185,44 @@ public class BasicTest {
                             tx -> {
                                 AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
                                 Util.assertNotNulls(name);
-                                assertEquals(rootAttributeType, name.sup());
+                                assertEquals(rootAttributeType, name.getSup());
                             },
                             tx -> {
                                 AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
                                 Util.assertNotNulls(age);
-                                assertEquals(rootAttributeType, age.sup());
+                                assertEquals(rootAttributeType, age.getSup());
                             },
                             tx -> {
                                 RelationType marriage = tx.concepts().putRelationType("marriage");
-                                marriage.relates("husband");
-                                marriage.relates("wife");
+                                marriage.setRelates("husband");
+                                marriage.setRelates("wife");
                                 Util.assertNotNulls(marriage);
-                                assertEquals(rootRelationType, marriage.sup());
+                                assertEquals(rootRelationType, marriage.getSup());
                             },
                             tx -> {
                                 RelationType employment = tx.concepts().putRelationType("employment");
-                                employment.relates("employee");
-                                employment.relates("employer");
+                                employment.setRelates("employee");
+                                employment.setRelates("employer");
                                 Util.assertNotNulls(employment);
-                                assertEquals(rootRelationType, employment.sup());
+                                assertEquals(rootRelationType, employment.getSup());
                             },
                             tx -> {
                                 EntityType person = tx.concepts().putEntityType("person");
                                 Util.assertNotNulls(person);
-                                assertEquals(rootEntityType, person.sup());
+                                assertEquals(rootEntityType, person.getSup());
 
                                 Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
                                             EntityType man = tx2.concepts().putEntityType("man");
-                                            man.sup(person);
+                                            man.setSup(person);
                                             Util.assertNotNulls(man);
-                                            assertEquals(person, man.sup());
+                                            assertEquals(person, man.getSup());
                                         },
                                         tx2 -> {
                                             EntityType woman = tx2.concepts().putEntityType("woman");
-                                            woman.sup(person);
+                                            woman.setSup(person);
                                             Util.assertNotNulls(woman);
-                                            assertEquals(person, woman.sup());
+                                            assertEquals(person, woman.getSup());
                                         }
                                 );
                                 subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
@@ -230,7 +230,7 @@ public class BasicTest {
                             tx -> {
                                 EntityType company = tx.concepts().putEntityType("company");
                                 Util.assertNotNulls(company);
-                                assertEquals(rootEntityType, company.sup());
+                                assertEquals(rootEntityType, company.getSup());
                             }
                     );
 
@@ -264,10 +264,10 @@ public class BasicTest {
                     AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
-                    teaching.relates("teacher");
-                    teaching.relates("student");
-                    RoleType teacher = teaching.role("teacher");
-                    RoleType student = teaching.role("student");
+                    teaching.setRelates("teacher");
+                    teaching.setRelates("student");
+                    RoleType teacher = teaching.getRelates("teacher");
+                    RoleType student = teaching.getRelates("student");
                     Util.assertNotNulls(gender, school, teaching, teacher, student);
                     transaction.commit();
                 }
@@ -277,8 +277,8 @@ public class BasicTest {
                     AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
                     EntityType school = transaction.concepts().getEntityType("school");
                     RelationType teaching = transaction.concepts().getRelationType("teaching");
-                    RoleType teacher = teaching.role("teacher");
-                    RoleType student = teaching.role("student");
+                    RoleType teacher = teaching.getRelates("teacher");
+                    RoleType student = teaching.getRelates("student");
                     Util.assertNotNulls(gender, school, teaching, teacher, student);
                 }
             }
@@ -345,20 +345,20 @@ public class BasicTest {
                     name(txn).put("alice");
                     dob(txn).put(date_1991_1_1_0_0);
 
-                    assertEquals(1, isAlive(txn).instances().count());
-                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+                    assertEquals(1, isAlive(txn).getInstances().count());
+                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(true)));
 
-                    assertEquals(1, age(txn).instances().count());
-                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 18));
+                    assertEquals(1, age(txn).getInstances().count());
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 18));
 
-                    assertEquals(1, score(txn).instances().count());
-                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 90.5));
+                    assertEquals(1, score(txn).getInstances().count());
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 90.5));
 
-                    assertEquals(1, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
 
-                    assertEquals(1, dob(txn).instances().count());
-                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1991_1_1_0_0)));
+                    assertEquals(1, dob(txn).getInstances().count());
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1991_1_1_0_0)));
 
                     txn.commit();
                 }
@@ -373,26 +373,26 @@ public class BasicTest {
                     Attribute.DateTime dob = dob(txn).get(dateTime);
 
                     assertNotNulls(isAlive, age, score, name, dob);
-                    assertEquals(true, isAlive.value());
-                    assertEquals(18, age.value().longValue());
-                    assertEquals(90.5, score.value(), 0.001);
-                    assertEquals("alice", name.value());
-                    assertEquals(dateTime, dob.value());
+                    assertEquals(true, isAlive.getValue());
+                    assertEquals(18, age.getValue().longValue());
+                    assertEquals(90.5, score.getValue(), 0.001);
+                    assertEquals("alice", name.getValue());
+                    assertEquals(dateTime, dob.getValue());
 
-                    assertEquals(1, isAlive(txn).instances().count());
-                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+                    assertEquals(1, isAlive(txn).getInstances().count());
+                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(true)));
 
-                    assertEquals(1, age(txn).instances().count());
-                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 18));
+                    assertEquals(1, age(txn).getInstances().count());
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 18));
 
-                    assertEquals(1, score(txn).instances().count());
-                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 90.5));
+                    assertEquals(1, score(txn).getInstances().count());
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 90.5));
 
-                    assertEquals(1, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
 
-                    assertEquals(1, dob(txn).instances().count());
-                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1991_1_1_0_0)));
+                    assertEquals(1, dob(txn).getInstances().count());
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1991_1_1_0_0)));
                 }
             }
         }
@@ -435,38 +435,38 @@ public class BasicTest {
                 dob(txn2).put(date_1992_3_4_5_6);
                 dob(txn3).put(date_1993_4_5_6_7);
 
-                assertEquals(1, isAlive(txn1).instances().count());
-                assertTrue(isAlive(txn1).instances().anyMatch(att -> att.value().equals(true)));
-                assertEquals(1, isAlive(txn2).instances().count());
-                assertTrue(isAlive(txn2).instances().anyMatch(att -> att.value().equals(false)));
+                assertEquals(1, isAlive(txn1).getInstances().count());
+                assertTrue(isAlive(txn1).getInstances().anyMatch(att -> att.getValue().equals(true)));
+                assertEquals(1, isAlive(txn2).getInstances().count());
+                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(false)));
 
-                assertEquals(1, age(txn1).instances().count());
-                assertTrue(age(txn1).instances().anyMatch(att -> att.value() == 17));
-                assertEquals(1, age(txn2).instances().count());
-                assertTrue(age(txn2).instances().anyMatch(att -> att.value() == 18));
-                assertEquals(1, age(txn3).instances().count());
-                assertTrue(age(txn3).instances().anyMatch(att -> att.value() == 19));
+                assertEquals(1, age(txn1).getInstances().count());
+                assertTrue(age(txn1).getInstances().anyMatch(att -> att.getValue() == 17));
+                assertEquals(1, age(txn2).getInstances().count());
+                assertTrue(age(txn2).getInstances().anyMatch(att -> att.getValue() == 18));
+                assertEquals(1, age(txn3).getInstances().count());
+                assertTrue(age(txn3).getInstances().anyMatch(att -> att.getValue() == 19));
 
-                assertEquals(1, score(txn1).instances().count());
-                assertTrue(score(txn1).instances().anyMatch(att -> att.value() == 70.5));
-                assertEquals(1, score(txn2).instances().count());
-                assertTrue(score(txn2).instances().anyMatch(att -> att.value() == 80.6));
-                assertEquals(1, score(txn3).instances().count());
-                assertTrue(score(txn3).instances().anyMatch(att -> att.value() == 90.7));
+                assertEquals(1, score(txn1).getInstances().count());
+                assertTrue(score(txn1).getInstances().anyMatch(att -> att.getValue() == 70.5));
+                assertEquals(1, score(txn2).getInstances().count());
+                assertTrue(score(txn2).getInstances().anyMatch(att -> att.getValue() == 80.6));
+                assertEquals(1, score(txn3).getInstances().count());
+                assertTrue(score(txn3).getInstances().anyMatch(att -> att.getValue() == 90.7));
 
-                assertEquals(1, name(txn1).instances().count());
-                assertTrue(name(txn1).instances().anyMatch(att -> att.value().equals("alice")));
-                assertEquals(1, name(txn2).instances().count());
-                assertTrue(name(txn2).instances().anyMatch(att -> att.value().equals("bob")));
-                assertEquals(1, name(txn3).instances().count());
-                assertTrue(name(txn3).instances().anyMatch(att -> att.value().equals("charlie")));
+                assertEquals(1, name(txn1).getInstances().count());
+                assertTrue(name(txn1).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                assertEquals(1, name(txn2).getInstances().count());
+                assertTrue(name(txn2).getInstances().anyMatch(att -> att.getValue().equals("bob")));
+                assertEquals(1, name(txn3).getInstances().count());
+                assertTrue(name(txn3).getInstances().anyMatch(att -> att.getValue().equals("charlie")));
 
-                assertEquals(1, dob(txn1).instances().count());
-                assertTrue(dob(txn1).instances().anyMatch(att -> att.value().equals(date_1991_2_3_4_5)));
-                assertEquals(1, dob(txn2).instances().count());
-                assertTrue(dob(txn2).instances().anyMatch(att -> att.value().equals(date_1992_3_4_5_6)));
-                assertEquals(1, dob(txn3).instances().count());
-                assertTrue(dob(txn3).instances().anyMatch(att -> att.value().equals(date_1993_4_5_6_7)));
+                assertEquals(1, dob(txn1).getInstances().count());
+                assertTrue(dob(txn1).getInstances().anyMatch(att -> att.getValue().equals(date_1991_2_3_4_5)));
+                assertEquals(1, dob(txn2).getInstances().count());
+                assertTrue(dob(txn2).getInstances().anyMatch(att -> att.getValue().equals(date_1992_3_4_5_6)));
+                assertEquals(1, dob(txn3).getInstances().count());
+                assertTrue(dob(txn3).getInstances().anyMatch(att -> att.getValue().equals(date_1993_4_5_6_7)));
 
                 txn1.commit();
                 txn2.commit();
@@ -477,44 +477,44 @@ public class BasicTest {
                     LocalDateTime d2 = LocalDateTime.of(1992, 3, 4, 5, 6);
                     LocalDateTime d3 = LocalDateTime.of(1993, 4, 5, 6, 7);
 
-                    assertEquals(true, isAlive(txn).get(true).value());
-                    assertEquals(false, isAlive(txn).get(false).value());
-                    assertEquals(17, age(txn).get(17).value().longValue());
-                    assertEquals(18, age(txn).get(18).value().longValue());
-                    assertEquals(19, age(txn).get(19).value().longValue());
-                    assertEquals(70.5, score(txn).get(70.5).value(), 0.001);
-                    assertEquals(80.6, score(txn).get(80.6).value(), 0.001);
-                    assertEquals(90.7, score(txn).get(90.7).value(), 0.001);
-                    assertEquals("alice", name(txn).get("alice").value());
-                    assertEquals("bob", name(txn).get("bob").value());
-                    assertEquals("charlie", name(txn).get("charlie").value());
-                    assertEquals(d1, dob(txn).get(d1).value());
-                    assertEquals(d2, dob(txn).get(d2).value());
-                    assertEquals(d3, dob(txn).get(d3).value());
+                    assertEquals(true, isAlive(txn).get(true).getValue());
+                    assertEquals(false, isAlive(txn).get(false).getValue());
+                    assertEquals(17, age(txn).get(17).getValue().longValue());
+                    assertEquals(18, age(txn).get(18).getValue().longValue());
+                    assertEquals(19, age(txn).get(19).getValue().longValue());
+                    assertEquals(70.5, score(txn).get(70.5).getValue(), 0.001);
+                    assertEquals(80.6, score(txn).get(80.6).getValue(), 0.001);
+                    assertEquals(90.7, score(txn).get(90.7).getValue(), 0.001);
+                    assertEquals("alice", name(txn).get("alice").getValue());
+                    assertEquals("bob", name(txn).get("bob").getValue());
+                    assertEquals("charlie", name(txn).get("charlie").getValue());
+                    assertEquals(d1, dob(txn).get(d1).getValue());
+                    assertEquals(d2, dob(txn).get(d2).getValue());
+                    assertEquals(d3, dob(txn).get(d3).getValue());
 
-                    assertEquals(2, isAlive(txn).instances().count());
-                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
-                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(false)));
+                    assertEquals(2, isAlive(txn).getInstances().count());
+                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(true)));
+                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(false)));
 
-                    assertEquals(3, age(txn).instances().count());
-                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 17));
-                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 18));
-                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 19));
+                    assertEquals(3, age(txn).getInstances().count());
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 17));
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 18));
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 19));
 
-                    assertEquals(3, score(txn).instances().count());
-                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 70.5));
-                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 80.6));
-                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 90.7));
+                    assertEquals(3, score(txn).getInstances().count());
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 70.5));
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 80.6));
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 90.7));
 
-                    assertEquals(3, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("bob")));
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("charlie")));
+                    assertEquals(3, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("bob")));
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("charlie")));
 
-                    assertEquals(3, dob(txn).instances().count());
-                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1991_2_3_4_5)));
-                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1992_3_4_5_6)));
-                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1993_4_5_6_7)));
+                    assertEquals(3, dob(txn).getInstances().count());
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1991_2_3_4_5)));
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1992_3_4_5_6)));
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1993_4_5_6_7)));
                 }
             }
         }
@@ -555,40 +555,40 @@ public class BasicTest {
                 dob(txn2).put(date_1992_2_3_4_5);
                 dob(txn3).put(date_1992_2_3_4_5);
 
-                assertEquals(1, isAlive(txn1).instances().count());
-                assertTrue(isAlive(txn1).instances().anyMatch(att -> att.value().equals(true)));
-                assertEquals(1, isAlive(txn2).instances().count());
-                assertTrue(isAlive(txn2).instances().anyMatch(att -> att.value().equals(true)));
-                assertEquals(1, isAlive(txn3).instances().count());
-                assertTrue(isAlive(txn2).instances().anyMatch(att -> att.value().equals(true)));
+                assertEquals(1, isAlive(txn1).getInstances().count());
+                assertTrue(isAlive(txn1).getInstances().anyMatch(att -> att.getValue().equals(true)));
+                assertEquals(1, isAlive(txn2).getInstances().count());
+                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(true)));
+                assertEquals(1, isAlive(txn3).getInstances().count());
+                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(true)));
 
-                assertEquals(1, age(txn1).instances().count());
-                assertTrue(age(txn1).instances().anyMatch(att -> att.value() == 17));
-                assertEquals(1, age(txn2).instances().count());
-                assertTrue(age(txn2).instances().anyMatch(att -> att.value() == 17));
-                assertEquals(1, age(txn3).instances().count());
-                assertTrue(age(txn3).instances().anyMatch(att -> att.value() == 17));
+                assertEquals(1, age(txn1).getInstances().count());
+                assertTrue(age(txn1).getInstances().anyMatch(att -> att.getValue() == 17));
+                assertEquals(1, age(txn2).getInstances().count());
+                assertTrue(age(txn2).getInstances().anyMatch(att -> att.getValue() == 17));
+                assertEquals(1, age(txn3).getInstances().count());
+                assertTrue(age(txn3).getInstances().anyMatch(att -> att.getValue() == 17));
 
-                assertEquals(1, score(txn1).instances().count());
-                assertTrue(score(txn1).instances().anyMatch(att -> att.value() == 70.5));
-                assertEquals(1, score(txn2).instances().count());
-                assertTrue(score(txn2).instances().anyMatch(att -> att.value() == 70.5));
-                assertEquals(1, score(txn3).instances().count());
-                assertTrue(score(txn3).instances().anyMatch(att -> att.value() == 70.5));
+                assertEquals(1, score(txn1).getInstances().count());
+                assertTrue(score(txn1).getInstances().anyMatch(att -> att.getValue() == 70.5));
+                assertEquals(1, score(txn2).getInstances().count());
+                assertTrue(score(txn2).getInstances().anyMatch(att -> att.getValue() == 70.5));
+                assertEquals(1, score(txn3).getInstances().count());
+                assertTrue(score(txn3).getInstances().anyMatch(att -> att.getValue() == 70.5));
 
-                assertEquals(1, name(txn1).instances().count());
-                assertTrue(name(txn1).instances().anyMatch(att -> att.value().equals("alice")));
-                assertEquals(1, name(txn2).instances().count());
-                assertTrue(name(txn2).instances().anyMatch(att -> att.value().equals("alice")));
-                assertEquals(1, name(txn3).instances().count());
-                assertTrue(name(txn3).instances().anyMatch(att -> att.value().equals("alice")));
+                assertEquals(1, name(txn1).getInstances().count());
+                assertTrue(name(txn1).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                assertEquals(1, name(txn2).getInstances().count());
+                assertTrue(name(txn2).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                assertEquals(1, name(txn3).getInstances().count());
+                assertTrue(name(txn3).getInstances().anyMatch(att -> att.getValue().equals("alice")));
 
-                assertEquals(1, dob(txn1).instances().count());
-                assertTrue(dob(txn1).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
-                assertEquals(1, dob(txn2).instances().count());
-                assertTrue(dob(txn2).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
-                assertEquals(1, dob(txn3).instances().count());
-                assertTrue(dob(txn3).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn1).getInstances().count());
+                assertTrue(dob(txn1).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn2).getInstances().count());
+                assertTrue(dob(txn2).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn3).getInstances().count());
+                assertTrue(dob(txn3).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
 
                 txn1.commit();
                 txn2.commit();
@@ -596,26 +596,26 @@ public class BasicTest {
 
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
 
-                    assertEquals(true, isAlive(txn).get(true).value());
-                    assertEquals(17, age(txn).get(17).value().longValue());
-                    assertEquals(70.5, score(txn).get(70.5).value(), 0.001);
-                    assertEquals("alice", name(txn).get("alice").value());
-                    assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).value());
+                    assertEquals(true, isAlive(txn).get(true).getValue());
+                    assertEquals(17, age(txn).get(17).getValue().longValue());
+                    assertEquals(70.5, score(txn).get(70.5).getValue(), 0.001);
+                    assertEquals("alice", name(txn).get("alice").getValue());
+                    assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).getValue());
 
-                    assertEquals(1, isAlive(txn).instances().count());
-                    assertTrue(isAlive(txn).instances().anyMatch(att -> att.value().equals(true)));
+                    assertEquals(1, isAlive(txn).getInstances().count());
+                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(true)));
 
-                    assertEquals(1, age(txn).instances().count());
-                    assertTrue(age(txn).instances().anyMatch(att -> att.value() == 17));
+                    assertEquals(1, age(txn).getInstances().count());
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 17));
 
-                    assertEquals(1, score(txn).instances().count());
-                    assertTrue(score(txn).instances().anyMatch(att -> att.value() == 70.5));
+                    assertEquals(1, score(txn).getInstances().count());
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 70.5));
 
-                    assertEquals(1, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
 
-                    assertEquals(1, dob(txn).instances().count());
-                    assertTrue(dob(txn).instances().anyMatch(att -> att.value().equals(date_1992_2_3_4_5)));
+                    assertEquals(1, dob(txn).getInstances().count());
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
                 }
             }
         }
@@ -644,9 +644,9 @@ public class BasicTest {
                 txn2.commit();
 
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
-                    assertEquals("alice", name(txn).get("alice").value());
-                    assertEquals(1, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertEquals("alice", name(txn).get("alice").getValue());
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
                 }
 
                 txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -655,9 +655,9 @@ public class BasicTest {
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
 
-                assertEquals(0, name(txn2).instances().count());
-                assertEquals(1, name(txn1).instances().count());
-                assertTrue(name(txn1).instances().anyMatch(att -> att.value().equals("alice")));
+                assertEquals(0, name(txn2).getInstances().count());
+                assertEquals(1, name(txn1).getInstances().count());
+                assertTrue(name(txn1).getInstances().anyMatch(att -> att.getValue().equals("alice")));
 
                 txn1.commit(); // write before delete
                 try {
@@ -668,9 +668,9 @@ public class BasicTest {
                 }
 
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
-                    assertEquals("alice", name(txn).get("alice").value());
-                    assertEquals(1, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertEquals("alice", name(txn).get("alice").getValue());
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
                 }
 
                 txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -683,9 +683,9 @@ public class BasicTest {
                 txn1.commit();
 
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
-                    assertEquals("alice", name(txn).get("alice").value());
-                    assertEquals(1, name(txn).instances().count());
-                    assertTrue(name(txn).instances().anyMatch(att -> att.value().equals("alice")));
+                    assertEquals("alice", name(txn).get("alice").getValue());
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
                 }
 
                 txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
@@ -704,7 +704,7 @@ public class BasicTest {
 
                 try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
                     assertNull(name(txn).get("alice"));
-                    assertEquals(0, name(txn).instances().count());
+                    assertEquals(0, name(txn).getInstances().count());
                 }
             }
         }
