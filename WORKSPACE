@@ -195,9 +195,14 @@ OVERRIDES = {
     "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
 
     "io.netty:netty-all": "4.1.38.Final",
+    "io.netty:netty-codec-http": "4.1.38.Final",
     "io.netty:netty-codec-http2": "4.1.38.Final",
-    "io.netty:netty-handler": "4.1.38.Final",
     "io.netty:netty-handler-proxy": "4.1.38.Final",
+    "io.netty:netty-buffer": "4.1.38.Final",
+    "io.netty:netty-codec": "4.1.38.Final",
+    "io.netty:netty-handler": "4.1.38.Final",
+    "io.netty:netty-codec-socks": "4.1.38.Final",
+    "io.netty:netty-common": "4.1.38.Final",
 }
 
 ###############
@@ -208,8 +213,8 @@ maven(
     graknlabs_protocol_artifacts +
     graknlabs_grabl_tracing_artifacts +
     graknlabs_verification_artifacts +
-    graknlabs_grakn_core_artifacts +
-    graknlabs_dependencies_artifacts,
+    graknlabs_dependencies_artifacts +
+    graknlabs_grakn_core_artifacts,
     OVERRIDES
 )
 

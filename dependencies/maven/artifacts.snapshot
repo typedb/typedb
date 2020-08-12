@@ -20,6 +20,8 @@
 @maven//:com_datastax_oss_java_driver_shaded_guava_25_1_jre
 @maven//:com_datastax_oss_native_protocol
 @maven//:com_datastax_oss_native_protocol_1_4_7
+@maven//:com_eclipsesource_minimal_json_minimal_json
+@maven//:com_eclipsesource_minimal_json_minimal_json_0_9_5
 @maven//:com_esotericsoftware_kryo_shaded
 @maven//:com_esotericsoftware_kryo_shaded_3_0_3
 @maven//:com_esotericsoftware_minlog
