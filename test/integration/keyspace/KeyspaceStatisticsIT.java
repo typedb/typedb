@@ -18,7 +18,6 @@
 
 package grakn.core.keyspace;
 
-import grakn.client.GraknClient;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -51,25 +50,19 @@ import static org.junit.Assert.assertSame;
 
 public class KeyspaceStatisticsIT {
 
-    private GraknClient graknClient;
     private Session localSession;
-    private GraknClient.Session remoteSession;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     @Before
     public void setUp() {
-        graknClient = new GraknClient(server.grpcUri());
         localSession = SessionUtil.serverlessSessionWithNewKeyspace(server.serverConfig());
-        remoteSession = graknClient.session(localSession.keyspace().toString());
     }
 
     @After
     public void closeSession() {
-        remoteSession.close();
         localSession.close();
-        graknClient.close();
     }
 
     @Test
@@ -253,10 +246,9 @@ public class KeyspaceStatisticsIT {
         testTx.close();
 
         localSession.close();
-        remoteSession.close();
 
         // at this point, the graph and keyspace should be deleted from Grakn server cache
-        localSession = SessionUtil.serverlessSession(server.serverConfig(), remoteSession.keyspace().name());
+        localSession = SessionUtil.serverlessSession(server.serverConfig(), localSession.keyspace().name());
 
         testTx = (TestTransactionProvider.TestTransaction) localSession.transaction(Transaction.Type.WRITE);
         long personCountReopened = localSession.keyspaceStatistics().count(testTx.conceptManager(), Label.of("person"));
@@ -298,16 +290,6 @@ public class KeyspaceStatisticsIT {
         RelationType friendshipType = testTx.putRelationType("friendship").relates(friend);
         testTx.commit();
 
-        // TODO fix the schema label cache to be a read-through, meanwhile close and reopen session
-        remoteSession.close();
-        remoteSession = graknClient.session(localSession.keyspace().toString());
-
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            tx.getAttributeType("age").instances().forEach(concept -> concept.delete());
-            tx.commit();
-        }
-        ;
-
         localSession.close();
         // because we haven't solved statistics beyond a single node, refresh the session here to clear cached counts
         localSession = SessionUtil.serverlessSession(server.serverConfig(), localSession.keyspace().name());
@@ -319,15 +301,16 @@ public class KeyspaceStatisticsIT {
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
 
         CompletableFuture<Void> future1 = CompletableFuture.supplyAsync(() -> {
-            GraknClient.Transaction tx1 = remoteSession.transaction().write();
+            Session session = server.session(localSession.keyspace());
+            Transaction tx1 = session.transaction(Transaction.Type.WRITE);
             /*
 
             To debug this: set a breakpoint in `getSchemaConcept` in the server
             Somehow the age isn't being looked up properly because the label is not in the schema label cache?
 
              */
-            grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx1.<Integer>getAttributeType("age").asRemote(tx1);
-            grakn.client.concept.type.EntityType.Remote personT = tx1.getEntityType("person").asRemote(tx1);
+            AttributeType<Integer> ageT = tx1.<Integer>getAttributeType("age");
+            EntityType personT = tx1.getEntityType("person");
             ageT.create(2);
             ageT.create(3);
             personT.create();
@@ -336,9 +319,10 @@ public class KeyspaceStatisticsIT {
         }, parallelExecutor);
 
         CompletableFuture<Void> future2 = CompletableFuture.supplyAsync(() -> {
-            GraknClient.Transaction tx2 = remoteSession.transaction().write();
-            grakn.client.concept.type.AttributeType.Remote<Integer> ageT = tx2.<Integer>getAttributeType("age").asRemote(tx2);
-            grakn.client.concept.type.EntityType.Remote personT = tx2.getEntityType("person").asRemote(tx2);
+            Session session = server.session(localSession.keyspace());
+            Transaction tx2 = session.transaction(Transaction.Type.WRITE);
+            AttributeType<Integer> ageT = tx2.<Integer>getAttributeType("age");
+            EntityType personT = tx2.getEntityType("person");
             ageT.create(3); // tricky case - this will be merge
             ageT.create(4);
             personT.create();

@@ -221,7 +221,7 @@
 @maven//:javax_activation_activation
 @maven//:javax_activation_activation_1_1_1
 @maven//:javax_annotation_javax_annotation_api
-@maven//:javax_annotation_javax_annotation_api_1_3_2
+@maven//:javax_annotation_javax_annotation_api_1_2
 @maven//:javax_inject_javax_inject
 @maven//:javax_inject_javax_inject_1
 @maven//:javax_mail_mail
@@ -508,8 +508,6 @@
 @maven//:org_slf4j_log4j_over_slf4j_1_7_20
 @maven//:org_slf4j_slf4j_api
 @maven//:org_slf4j_slf4j_api_1_7_28
-@maven//:org_slf4j_slf4j_simple
-@maven//:org_slf4j_slf4j_simple_1_7_20
 @maven//:org_spark_project_spark_unused
 @maven//:org_spark_project_spark_unused_1_0_0
 @maven//:org_xerial_snappy_snappy_java

@@ -18,8 +18,8 @@
 package grakn.core.server.uniqueness.element;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.client.concept.ConceptId;
 import grakn.common.util.Pair;
+import grakn.core.kb.concept.api.ConceptId;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;

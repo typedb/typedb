@@ -29,10 +29,12 @@ java_test(
     deps = [
         "//common",
         "//server",
+        "@graknlabs_protocol//grpc/java:protocol",
+        "@maven//:io_grpc_grpc_api",
+        "@maven//:io_grpc_grpc_stub",
         "@maven//:commons_io_commons_io",
         "@maven//:org_hamcrest_hamcrest_library",
         "@maven//:org_zeroturnaround_zt_exec",
-        "@graknlabs_client_java//:client-java",
     ],
 )
 
@@ -77,8 +79,6 @@ java_test(
         "@maven//:org_hamcrest_hamcrest_library",
         "@maven//:org_zeroturnaround_zt_exec",
         "//server/migrate/proto:migrate-proto-java",
-        "@graknlabs_client_java//:client-java",
-        "@graknlabs_graql//java:graql",
     ],
 )
 

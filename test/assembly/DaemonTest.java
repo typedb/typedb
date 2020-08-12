@@ -18,8 +18,12 @@
 
 package grakn.core.test.assembly;
 
-import grakn.client.GraknClient;
 import grakn.core.server.Version;
+import grakn.protocol.session.SessionProto;
+import grakn.protocol.session.SessionServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -37,6 +41,8 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import static grakn.core.test.assembly.AssemblyConstants.GRAKN_UNZIPPED_DIRECTORY;
@@ -229,16 +235,56 @@ public class DaemonTest {
     /**
      * Grakn should stop correctly when there are client connections still open
      */
-
     @Test
     public void grakn_whenThereAreOpenConnections_shouldBeAbleToStop() throws InterruptedException, TimeoutException, IOException {
         commandExecutor.command("./grakn", "server", "start").execute();
         String host = "localhost:48555";
-        GraknClient graknClient = new GraknClient(host);
-        GraknClient.Transaction test = graknClient.session("test").transaction().write();
+        String keyspace = "test";
+
+        // open a session and tx to the server
+        // don't use client-java to avoid a circular dependency
+
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(host)
+                .usePlaintext().build();
+        SessionServiceGrpc.SessionServiceBlockingStub session = SessionServiceGrpc.newBlockingStub(channel);
+        SessionProto.Session.Open.Res sessionOpenResponse = session.open(SessionProto.Session.Open.Req.newBuilder().setKeyspace(keyspace).build());
+        String sessionId = sessionOpenResponse.getSessionId();
+
+        SessionServiceGrpc.SessionServiceStub asyncStub = SessionServiceGrpc.newStub(channel);
+
+        SessionProto.Transaction.Open.Req openTxRequest = SessionProto.Transaction.Open.Req.newBuilder()
+                .setSessionId(sessionId)
+                .setType(SessionProto.Transaction.Type.READ)
+                .build();
+        SessionProto.Transaction.Req openTx = SessionProto.Transaction.Req.newBuilder().setOpenReq(openTxRequest).build();
+
+        BlockingResponseObserver responseObserver = new BlockingResponseObserver();
+        StreamObserver<SessionProto.Transaction.Req> txStream = asyncStub.transaction(responseObserver);
+        txStream.onNext(openTx);
+        // block until response
+        responseObserver.getNext();
+
         commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
     }
+
+    static class BlockingResponseObserver implements StreamObserver<SessionProto.Transaction.Res> {
+        BlockingQueue<SessionProto.Transaction.Res> responses = new LinkedBlockingQueue<>();
+        public SessionProto.Transaction.Res getNext() throws InterruptedException {
+            return responses.take();
+        }
+        @Override
+        public void onNext(SessionProto.Transaction.Res res) {
+            responses.add(res);
+        }
+        @Override
+        public void onError(Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
+        @Override
+        public void onCompleted() {}
+    }
+
 
     @Test
     public void grakn_shouldBeAbleToExecuteGraknServerClean_withCustomDbDirectory() throws IOException, TimeoutException, InterruptedException {

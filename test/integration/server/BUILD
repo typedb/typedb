@@ -18,37 +18,6 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "grakn-client-it",
-    size = "large",
-    srcs = ["GraknClientIT.java"],
-    classpath_resources = [
-        "//test/resources:logback-test",
-        "//test/resources:cassandra-embedded",
-        "//server:conf/grakn.properties",
-    ],
-    test_class = "grakn.core.server.GraknClientIT",
-    deps = [
-        # Package dependencies
-        "@graknlabs_client_java//:client-java",
-
-        # Internal dependencies
-        "//kb/server",
-        "//kb/concept/api",
-        "//test/rule:grakn-test-server",
-
-        # External depencies from @graknlabs
-        "@graknlabs_graql//java:graql",
-
-        # External depencncies from Maven
-        "@maven//:org_hamcrest_hamcrest_library",
-        "@maven//:org_slf4j_slf4j_api",
-        "@maven//:com_google_guava_guava",
-    ],
-)
-
-
-
-java_test(
     name = "validator-it",
     size = "large",
     srcs = ["ValidatorIT.java"],
@@ -103,7 +72,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-client-it",
         ":validator-it",
         ":validate-global-rules-it",
         ":rule-validation-it",

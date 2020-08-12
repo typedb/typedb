@@ -149,12 +149,6 @@ load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
 load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
 
-###############################
-# Load @graknlabs_client_java #
-###############################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
-graknlabs_client_java()
-load("@graknlabs_client_java//dependencies/maven:artifacts.bzl", graknlabs_client_java_artifacts = "artifacts")
 
 ####################################
 # Load @graknlabs_console_artifact #
@@ -185,16 +179,9 @@ OVERRIDES = {
     "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
 
     "io.netty:netty-all": "4.1.38.Final",
-    "io.netty:netty-buffer": "4.1.38.Final",
-    "io.netty:netty-codec": "4.1.38.Final",
     "io.netty:netty-codec-http2": "4.1.38.Final",
-    "io.netty:netty-codec-http": "4.1.38.Final",
-    "io.netty:netty-codec-socks": "4.1.38.Final",
-    "io.netty:netty-common": "4.1.38.Final",
     "io.netty:netty-handler": "4.1.38.Final",
     "io.netty:netty-handler-proxy": "4.1.38.Final",
-    "io.netty:netty-resolver": "4.1.38.Final",
-    "io.netty:netty-transport": "4.1.38.Final",
 }
 
 ###############
@@ -203,7 +190,6 @@ OVERRIDES = {
 maven(
     graknlabs_graql_artifacts +
     graknlabs_protocol_artifacts +
-    graknlabs_client_java_artifacts +
     graknlabs_grabl_tracing_artifacts +
     graknlabs_verification_artifacts +
     graknlabs_grakn_core_artifacts,

@@ -26,7 +26,6 @@ java_test(
         "//kb/server",
         "//kb/concept/api",
         "//test/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
     ],
 )
 
@@ -87,7 +86,6 @@ java_test(
         "//kb/keyspace",
         "//kb/server",
         "//test/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
 )
