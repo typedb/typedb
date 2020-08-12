@@ -17,6 +17,7 @@
 
 exports_files(["VERSION", "deployment.properties", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"], visibility = ["//visibility:public"])
 load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "deploy_artifact")
+load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
@@ -202,4 +203,16 @@ container_bundle(
 docker_push(
     name = "deploy-docker",
     bundle = ":assemble-docker-bundle",
+)
+
+release_validate_deps(
+    name = "release-validate-deps",
+    refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+    tagged_deps = [
+        "graknlabs_common",
+        "graknlabs_graql",
+        "graknlabs_protocol",
+        "graknlabs_console_artifact",
+    ],
+    tags = ["manual"]  # in order for bazel test //... to not fail
 )
