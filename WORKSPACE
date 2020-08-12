@@ -45,6 +45,18 @@ load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_reg
 kotlin_repositories()
 kt_register_toolchains()
 
+# Load Python
+load("@graknlabs_dependencies//builder/python:deps.bzl", python_deps = "deps")
+python_deps()
+load("@rules_python//python:pip.bzl", "pip3_import")
+pip3_import(
+    name = "graknlabs_dependencies_ci_pip",
+    requirements = "@graknlabs_dependencies//tool:requirements.txt",
+)
+load("@graknlabs_dependencies_ci_pip//:requirements.bzl",
+graknlabs_dependencies_ci_pip_install = "pip_install")
+graknlabs_dependencies_ci_pip_install()
+
 # Load Docker
 load("@graknlabs_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
@@ -59,6 +71,10 @@ sonarcloud_dependencies()
 
 # Load Unused Deps
 load("@graknlabs_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
+unuseddeps_deps()
+
+# Load Dependencies Kotlin Dependencies
+load("@graknlabs_dependencies//dependencies/maven:artifacts.bzl", graknlabs_dependencies_artifacts = "artifacts")
 unuseddeps_deps()
 
 #####################################################################
@@ -179,9 +195,14 @@ OVERRIDES = {
     "com.fasterxml.jackson.core:jackson-databind": "2.9.10.1",
 
     "io.netty:netty-all": "4.1.38.Final",
+    "io.netty:netty-codec-http": "4.1.38.Final",
     "io.netty:netty-codec-http2": "4.1.38.Final",
-    "io.netty:netty-handler": "4.1.38.Final",
     "io.netty:netty-handler-proxy": "4.1.38.Final",
+    "io.netty:netty-buffer": "4.1.38.Final",
+    "io.netty:netty-codec": "4.1.38.Final",
+    "io.netty:netty-handler": "4.1.38.Final",
+    "io.netty:netty-codec-socks": "4.1.38.Final",
+    "io.netty:netty-common": "4.1.38.Final",
 }
 
 ###############
@@ -192,6 +213,7 @@ maven(
     graknlabs_protocol_artifacts +
     graknlabs_grabl_tracing_artifacts +
     graknlabs_verification_artifacts +
+    graknlabs_dependencies_artifacts +
     graknlabs_grakn_core_artifacts,
     OVERRIDES
 )
