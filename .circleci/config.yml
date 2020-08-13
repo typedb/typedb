@@ -136,4 +136,4 @@ workflows:
       - test-basic
       - test-connection
       - test-concept
-      - test-query
+#      - test-query
