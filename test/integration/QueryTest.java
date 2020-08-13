@@ -18,12 +18,46 @@
 
 package grakn.core.test.integration;
 
+import grakn.core.Grakn;
+import grakn.core.rocks.RocksGrakn;
+import graql.lang.Graql;
+import graql.lang.query.GraqlInsert;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static org.junit.Assert.assertNotNull;
 
 public class QueryTest {
 
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static String database = "query-test";
+
     @Test
-    public void hello_world() {
-        System.out.println("Hello World");
+    public void hello_world() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+
+            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
+
+                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
+                    String queryStr = "define " +
+                            "person sub entity, has email @key, has name, has age, plays friend; " +
+                            "friendship sub relation, relates friend;";
+                    GraqlInsert query = Graql.parse(queryStr);
+                    transaction.query().stream(query);
+                    transaction.commit();
+                }
+
+                try (Grakn.Transaction tx = session.transaction(Grakn.Transaction.Type.READ)) {
+                    assertNotNull(tx.concepts().getEntityType("person"));
+                    assertNotNull(tx.concepts().getRelationType("friendship"));
+                }
+            }
+        }
     }
 }

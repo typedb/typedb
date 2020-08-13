@@ -21,10 +21,16 @@ package grakn.core.query;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.options.GraknOptions;
 import grakn.core.concept.Concepts;
+import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Void;
 import grakn.core.graph.Graphs;
 import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
+import graql.lang.query.GraqlUndefine;
 
 import java.util.stream.Stream;
 
@@ -46,18 +52,72 @@ public class Query {
         }
     }
 
-    public Stream<ConceptMap> stream(String query, GraknOptions.Query queryOptions) {
+    public Stream<? extends Answer> stream(String query, GraknOptions.Query options) {
         GraqlQuery graql = parse(query);
-        return stream(graql, queryOptions);
+        return stream(graql, options);
     }
 
-    public Stream<ConceptMap> stream(GraqlQuery query) {
+    public Stream<? extends Answer> stream(GraqlQuery query) {
         return stream(query, new GraknOptions.Query());
     }
 
-    public Stream<ConceptMap> stream(GraqlQuery query, GraknOptions.Query queryOptions) {
-        try (ThreadTrace ignored = traceOnThread("stream")) {
-            queryOptions.parent(graphs.storage().options());
+    public Stream<? extends Answer> stream(GraqlQuery query, GraknOptions.Query options) {
+        options.parent(graphs.storage().options());
+
+        if (query instanceof GraqlInsert) {
+            return stream((GraqlInsert) query, options);
+        } else if (query instanceof GraqlDelete) {
+            return stream((GraqlDelete) query, options);
+        } else if (query instanceof GraqlDefine) {
+            return stream((GraqlDefine) query, options);
+        } else if (query instanceof GraqlUndefine) {
+            return stream((GraqlUndefine) query, options);
+        } else {
+            assert false;
+            return null;
+        }
+    }
+
+    public Stream<ConceptMap> stream(GraqlInsert query) {
+        return stream(query, new GraknOptions.Query());
+    }
+
+    public Stream<ConceptMap> stream(GraqlInsert query, GraknOptions.Query options) {
+        try (ThreadTrace ignored = traceOnThread("stream.define")) {
+            options.parent(graphs.storage().options());
+            return null; // TODO
+        }
+    }
+
+    public Stream<Void> stream(GraqlDelete query) {
+        return stream(query, new GraknOptions.Query());
+    }
+
+    public Stream<Void> stream(GraqlDelete query, GraknOptions.Query options) {
+        try (ThreadTrace ignored = traceOnThread("stream.define")) {
+            options.parent(graphs.storage().options());
+            return null; // TODO
+        }
+    }
+
+    public Stream<ConceptMap> stream(GraqlDefine query) {
+        return stream(query, new GraknOptions.Query());
+    }
+
+    public Stream<ConceptMap> stream(GraqlDefine query, GraknOptions.Query options) {
+        try (ThreadTrace ignored = traceOnThread("stream.define")) {
+            options.parent(graphs.storage().options());
+            return null; // TODO
+        }
+    }
+
+    public Stream<ConceptMap> stream(GraqlUndefine query) {
+        return stream(query, new GraknOptions.Query());
+    }
+
+    public Stream<ConceptMap> stream(GraqlUndefine query, GraknOptions.Query options) {
+        try (ThreadTrace ignored = traceOnThread("stream.define")) {
+            options.parent(graphs.storage().options());
             return null; // TODO
         }
     }

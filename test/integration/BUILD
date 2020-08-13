@@ -25,6 +25,7 @@ java_test(
     ],
     test_class = "grakn.core.test.integration.BasicTest",
     deps = [
+        # Internal package dependencies
         "//:grakn",
         "//concept:concept",
         "//rocks:rocks",
@@ -34,8 +35,20 @@ java_test(
 
 java_test(
     name = "test-query",
-    srcs = ["QueryTest.java"],
+    srcs = [
+        "QueryTest.java",
+        "Util.java",
+    ],
     test_class = "grakn.core.test.integration.QueryTest",
+    deps = [
+        # Internal package dependencies
+        "//:grakn",
+        "//rocks:rocks",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_graql//java/query:query",
+        "@graknlabs_graql//java:graql",
+    ]
 )
 
 checkstyle_test(

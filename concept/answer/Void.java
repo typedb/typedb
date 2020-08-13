@@ -18,6 +18,14 @@
 
 package grakn.core.concept.answer;
 
-public class ConceptMap extends Answer {
+public class Void extends Answer {
+    private final String message;
 
+    public Void(String message) {
+        this.message = message;
+    }
+
+    public String message() {
+        return message;
+    }
 }
