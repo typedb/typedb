@@ -28,6 +28,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
@@ -228,6 +229,12 @@ public class ResponseBuilder {
                     return ConceptProto.Concept.SCHEMA.META_TYPE;
                 } else {
                     return ConceptProto.Concept.SCHEMA.ATTRIBUTE_TYPE;
+                }
+            } else if (concept instanceof ThingType) {
+                if (((ThingType) concept).isRoot()) {
+                    return ConceptProto.Concept.SCHEMA.META_TYPE;
+                } else {
+                    throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
                 }
             } else if (concept instanceof Entity) {
                 return ConceptProto.Concept.SCHEMA.ENTITY;
