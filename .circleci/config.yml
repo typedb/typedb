@@ -123,6 +123,16 @@ jobs:
       - run-bazel:
           command: bazel test //test/integration:test-query --test_output=errors
 
+  deploy-artifact-snapshot:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel
+      - checkout
+      - run: |
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
+
 workflows:
   grakn:
     jobs:
@@ -137,3 +147,8 @@ workflows:
       - test-connection
       - test-concept
 #      - test-query
+      - deploy-artifact-snapshot:
+          filters:
+            branches:
+              only:
+                - master
