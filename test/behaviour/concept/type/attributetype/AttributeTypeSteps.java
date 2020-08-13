@@ -52,7 +52,7 @@ public class AttributeTypeSteps {
 
     @Then("attribute\\( ?{type_label} ?) get supertype value type: {value_type}")
     public void attribute_type_get_supertype_value_type(String typeLabel, AttributeType.ValueType valueType) {
-        AttributeType supertype = tx().concepts().getAttributeType(typeLabel).getSup();
+        AttributeType supertype = tx().concepts().getAttributeType(typeLabel).getSupertype();
         assertEquals(valueType, supertype.getValueType());
     }
 
@@ -80,14 +80,14 @@ public class AttributeTypeSteps {
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes contain:")
     public void attribute_type_as_value_type_get_subtypes_contain(String typeLabel, AttributeType.ValueType valueType, List<String> subLabels) {
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        Set<String> actuals = attributeType.getSubs().map(ThingType::getLabel).collect(toSet());
+        Set<String> actuals = attributeType.getSubtypes().map(ThingType::getLabel).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes do not contain:")
     public void attribute_type_as_value_type_get_subtypes_do_not_contain(String typeLabel, AttributeType.ValueType valueType, List<String> subLabels) {
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        Set<String> actuals = attributeType.getSubs().map(ThingType::getLabel).collect(toSet());
+        Set<String> actuals = attributeType.getSubtypes().map(ThingType::getLabel).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
         }

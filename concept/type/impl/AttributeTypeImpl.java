@@ -91,13 +91,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Nullable
     @Override
-    public abstract AttributeTypeImpl getSup();
+    public abstract AttributeTypeImpl getSupertype();
 
     @Override
-    public abstract Stream<? extends AttributeTypeImpl> getSups();
+    public abstract Stream<? extends AttributeTypeImpl> getSupertypes();
 
     @Override
-    public abstract Stream<? extends AttributeTypeImpl> getSubs();
+    public abstract Stream<? extends AttributeTypeImpl> getSubtypes();
 
     @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
@@ -108,7 +108,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public void setSup(AttributeType superType) {
+    public void setSupertype(AttributeType superType) {
         if (!superType.isRoot() && !Objects.equals(this.getValueType(), superType.getValueType())) {
             throw new GraknException(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.message(
                     getLabel(), getValueType().name(), superType.getLabel(), superType.getValueType().name()
@@ -118,7 +118,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         } else if (!superType.isAbstract()) {
             throw new GraknException(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.message(superType.getLabel()));
         }
-        vertex.outs().edge(Schema.Edge.Type.SUB, getSup().vertex).delete();
+        vertex.outs().edge(Schema.Edge.Type.SUB, getSupertype().vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, ((AttributeTypeImpl) superType).vertex);
     }
 
@@ -218,21 +218,21 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void setSup(AttributeType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void setSupertype(AttributeType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Nullable
         @Override
-        public AttributeTypeImpl getSup() {
+        public AttributeTypeImpl getSupertype() {
             return null;
         }
 
         @Override
-        public Stream<AttributeTypeImpl> getSups() {
+        public Stream<AttributeTypeImpl> getSupertypes() {
             return Stream.of(this);
         }
 
         @Override
-        public Stream<AttributeTypeImpl> getSubs() {
+        public Stream<AttributeTypeImpl> getSubtypes() {
             return subs(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
@@ -311,17 +311,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.Boolean getSup() {
+        public AttributeTypeImpl.Boolean getSupertype() {
             return super.sup(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Boolean> getSups() {
+        public Stream<AttributeTypeImpl.Boolean> getSupertypes() {
             return super.sups(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Boolean> getSubs() {
+        public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
             return super.subs(AttributeTypeImpl.Boolean::of);
         }
 
@@ -366,7 +366,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Boolean> getSubs() {
+            public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.BOOLEAN),
                         AttributeTypeImpl.Boolean::of
@@ -384,7 +384,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSup(AttributeType superType) {
+            public void setSupertype(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -441,17 +441,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.Long getSup() {
+        public AttributeTypeImpl.Long getSupertype() {
             return super.sup(AttributeTypeImpl.Long::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Long> getSups() {
+        public Stream<AttributeTypeImpl.Long> getSupertypes() {
             return super.sups(AttributeTypeImpl.Long::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Long> getSubs() {
+        public Stream<AttributeTypeImpl.Long> getSubtypes() {
             return super.subs(AttributeTypeImpl.Long::of);
         }
 
@@ -498,7 +498,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Long> getSubs() {
+            public Stream<AttributeTypeImpl.Long> getSubtypes() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.LONG),
                         AttributeTypeImpl.Long::of
@@ -516,7 +516,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSup(AttributeType superType) {
+            public void setSupertype(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -573,17 +573,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.Double getSup() {
+        public AttributeTypeImpl.Double getSupertype() {
             return super.sup(AttributeTypeImpl.Double::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Double> getSups() {
+        public Stream<AttributeTypeImpl.Double> getSupertypes() {
             return super.sups(AttributeTypeImpl.Double::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Double> getSubs() {
+        public Stream<AttributeTypeImpl.Double> getSubtypes() {
             return super.subs(AttributeTypeImpl.Double::of);
         }
 
@@ -630,7 +630,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Double> getSubs() {
+            public Stream<AttributeTypeImpl.Double> getSubtypes() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.DOUBLE),
                         AttributeTypeImpl.Double::of
@@ -648,7 +648,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSup(AttributeType superType) {
+            public void setSupertype(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -707,17 +707,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.String getSup() {
+        public AttributeTypeImpl.String getSupertype() {
             return super.sup(AttributeTypeImpl.String::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.String> getSups() {
+        public Stream<AttributeTypeImpl.String> getSupertypes() {
             return super.sups(AttributeTypeImpl.String::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.String> getSubs() {
+        public Stream<AttributeTypeImpl.String> getSubtypes() {
             return super.subs(AttributeTypeImpl.String::of);
         }
 
@@ -794,7 +794,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.String> getSubs() {
+            public Stream<AttributeTypeImpl.String> getSubtypes() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.STRING),
                         AttributeTypeImpl.String::of
@@ -812,7 +812,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSup(AttributeType superType) {
+            public void setSupertype(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -874,17 +874,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Nullable
         @Override
-        public AttributeTypeImpl.DateTime getSup() {
+        public AttributeTypeImpl.DateTime getSupertype() {
             return super.sup(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.DateTime> getSups() {
+        public Stream<AttributeTypeImpl.DateTime> getSupertypes() {
             return super.sups(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
-        public Stream<AttributeTypeImpl.DateTime> getSubs() {
+        public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
             return super.subs(AttributeTypeImpl.DateTime::of);
         }
 
@@ -932,7 +932,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.DateTime> getSubs() {
+            public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
                 return stream(apply(
                         super.subTypeVertices(Schema.ValueType.DATETIME),
                         AttributeTypeImpl.DateTime::of
@@ -950,7 +950,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSup(AttributeType superType) {
+            public void setSupertype(AttributeType superType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 

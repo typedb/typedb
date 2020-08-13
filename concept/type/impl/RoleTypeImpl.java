@@ -73,17 +73,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Nullable
     @Override
-    public RoleTypeImpl getSup() {
+    public RoleTypeImpl getSupertype() {
         return super.sup(RoleTypeImpl::of);
     }
 
     @Override
-    public Stream<RoleTypeImpl> getSups() {
+    public Stream<RoleTypeImpl> getSupertypes() {
         return super.sups(RoleTypeImpl::of);
     }
 
     @Override
-    public Stream<RoleTypeImpl> getSubs() {
+    public Stream<RoleTypeImpl> getSubtypes() {
         return super.subs(RoleTypeImpl::of);
     }
 
@@ -99,7 +99,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<RelationTypeImpl> getRelations() {
-        return getRelation().getSubs().filter(rel -> rel.getRelates().anyMatch(rol -> rol.equals(this)));
+        return getRelation().getSubtypes().filter(rel -> rel.getRelates().anyMatch(rol -> rol.equals(this)));
     }
 
     @Override

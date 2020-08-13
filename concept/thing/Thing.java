@@ -138,7 +138,7 @@ public interface Thing extends Concept {
      *
      * @return a stream of {@code RoleType} types that this {@code Thing} plays.
      */
-    Stream<? extends RoleType> getRoleTypes();
+    Stream<? extends RoleType> getPlays();
 
     /**
      * Get all {@code Relation} instances that this {@code Thing} is playing a role in.

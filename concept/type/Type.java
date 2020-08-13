@@ -42,11 +42,11 @@ public interface Type extends Concept {
 
     boolean isAbstract();
 
-    Type getSup();
+    Type getSupertype();
 
-    Stream<? extends Type> getSups();
+    Stream<? extends Type> getSupertypes();
 
-    Stream<? extends Type> getSubs();
+    Stream<? extends Type> getSubtypes();
 
     List<GraknException> validate();
 }

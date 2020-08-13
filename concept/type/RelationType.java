@@ -28,18 +28,18 @@ public interface RelationType extends ThingType {
     default RelationType asRelationType() { return this; }
 
     @Override
-    RelationType getSup();
+    RelationType getSupertype();
 
     @Override
-    Stream<? extends RelationType> getSups();
+    Stream<? extends RelationType> getSupertypes();
 
     @Override
-    Stream<? extends RelationType> getSubs();
+    Stream<? extends RelationType> getSubtypes();
 
     @Override
     Stream<? extends Relation> getInstances();
 
-    void setSup(RelationType superType);
+    void setSupertype(RelationType superType);
 
     void setRelates(String roleLabel);
 

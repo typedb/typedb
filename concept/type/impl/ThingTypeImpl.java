@@ -100,10 +100,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Nullable
-    public abstract ThingTypeImpl getSup();
+    public abstract ThingTypeImpl getSupertype();
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubs().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
+        return getSubtypes().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
     }
 
     @Override
@@ -138,7 +138,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
-        if (type.getSups().noneMatch(t -> t.equals(overriddenType))) {
+        if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw new GraknException(OVERRIDDEN_NOT_SUPERTYPE.message(type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
             throw new GraknException(OVERRIDE_NOT_AVAILABLE.message(type.getLabel(), overriddenType.getLabel()));
@@ -155,13 +155,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 vertex.outs().edge(Schema.Edge.Type.HAS).overridden()
         ));
 
-        return concat(stream(link(overriddenAttributes).apply(AttributeTypeImpl::of)), getSup().overriddenAttributes());
+        return concat(stream(link(overriddenAttributes).apply(AttributeTypeImpl::of)), getSupertype().overriddenAttributes());
     }
 
     private void hasKey(AttributeTypeImpl attributeType) {
         if (!attributeType.isKeyable()) {
             throw new GraknException(HAS_KEY_VALUE_TYPE.message(attributeType.getLabel(), attributeType.getValueType().name()));
-        } else if (concat(getSup().getOwns(attributeType.getValueType(), true), getSup().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
+        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
             throw new GraknException(HAS_KEY_NOT_AVAILABLE.message(attributeType.getLabel()));
         }
 
@@ -178,18 +178,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             hasEdge.delete();
         }
         keyEdge = vertex.outs().put(Schema.Edge.Type.KEY, attVertex);
-        if (getSup().declaredAttributes().anyMatch(a -> a.equals(attributeType))) keyEdge.overridden(attVertex);
+        if (getSupertype().declaredAttributes().anyMatch(a -> a.equals(attributeType))) keyEdge.overridden(attVertex);
     }
 
     private void hasKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.hasKey(attributeType);
         override(Schema.Edge.Type.KEY, attributeType, overriddenType,
-                 getSup().getOwns(attributeType.getValueType()),
+                 getSupertype().getOwns(attributeType.getValueType()),
                  declaredAttributes());
     }
 
     private void hasAttribute(AttributeTypeImpl attributeType) {
-        if (getSups().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
+        if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
             throw new GraknException(HAS_ATT_NOT_AVAILABLE.message(attributeType.getLabel()));
         }
 
@@ -202,8 +202,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void hasAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.hasAttribute(attributeType);
         override(Schema.Edge.Type.HAS, attributeType, overriddenType,
-                 getSup().getOwns(attributeType.getValueType()),
-                 concat(getSup().getOwns(true), declaredAttributes()));
+                 getSupertype().getOwns(attributeType.getValueType()),
+                 concat(getSupertype().getOwns(true), declaredAttributes()));
     }
 
     private Stream<AttributeTypeImpl> declaredAttributes() {
@@ -234,7 +234,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else if (onlyKey) {
             Set<TypeVertex> overridden = new HashSet<>();
             filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
-            return concat(declaredKeys(), getSup().getOwns(true).filter(key -> !overridden.contains(key.vertex)));
+            return concat(declaredKeys(), getSupertype().getOwns(true).filter(key -> !overridden.contains(key.vertex)));
         } else if (isRoot()) {
             return declaredAttributes();
         } else {
@@ -242,7 +242,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             link(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(),
                  vertex.outs().edge(Schema.Edge.Type.HAS).overridden()
             ).filter(Objects::nonNull).forEachRemaining(overridden::add);
-            return concat(declaredAttributes(), getSup().getOwns().filter(att -> !overridden.contains(att.vertex)));
+            return concat(declaredAttributes(), getSupertype().getOwns().filter(att -> !overridden.contains(att.vertex)));
         }
     }
 
@@ -252,7 +252,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setPlays(RoleType roleType) {
-        if (getSups().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
+        if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
             throw new GraknException(PLAYS_ROLE_NOT_AVAILABLE.message(roleType.getLabel()));
         }
         vertex.outs().put(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -261,7 +261,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         setPlays(roleType);
-        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, getSup().getPlays(),
+        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
                  stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of)));
     }
 
@@ -278,15 +278,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else {
             Set<TypeVertex> overridden = new HashSet<>();
             filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
-            return concat(declared, getSup().getPlays().filter(att -> !overridden.contains(att.vertex)));
+            return concat(declared, getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex)));
         }
     }
 
     @Override
     public void delete() {
-        if (getSubs().anyMatch(s -> !s.equals(this))) {
+        if (getSubtypes().anyMatch(s -> !s.equals(this))) {
             throw new GraknException(TYPE_HAS_SUBTYPES.message(getLabel()));
-        } else if (getSubs().flatMap(ThingType::getInstances).findFirst().isPresent()) {
+        } else if (getSubtypes().flatMap(ThingType::getInstances).findFirst().isPresent()) {
             throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
         } else {
             vertex.delete();
@@ -332,15 +332,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public ThingTypeImpl getSup() { return null; }
+        public ThingTypeImpl getSupertype() { return null; }
 
         @Override
-        public Stream<ThingTypeImpl> getSups() {
+        public Stream<ThingTypeImpl> getSupertypes() {
             return Stream.of(this);
         }
 
         @Override
-        public Stream<ThingTypeImpl> getSubs() {
+        public Stream<ThingTypeImpl> getSubtypes() {
             return subs(v -> {
                 switch (v.schema()) {
                     case THING_TYPE:

@@ -152,7 +152,7 @@ public abstract class ThingImpl implements Thing {
     private Stream<AttributeVertex> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
             return attributeTypes.stream()
-                    .flatMap(AttributeType::getSubs).distinct()
+                    .flatMap(AttributeType::getSubtypes).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
                     .flatMap(type -> stream(vertex.outs().edge(
                             Schema.Edge.Thing.HAS, PrefixIID.of(type.schema().instance()), type.iid()
@@ -163,7 +163,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<RoleType> getRoleTypes() {
+    public Stream<RoleType> getPlays() {
         return stream(apply(apply(vertex.outs().edge(Schema.Edge.Thing.PLAYS).to(), ThingVertex::type), RoleTypeImpl::of));
     }
 
@@ -172,7 +172,7 @@ public abstract class ThingImpl implements Thing {
         if (roleTypes.isEmpty()) {
             return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
         } else {
-            return roleTypes.stream().flatMap(RoleType::getSubs).distinct().flatMap(rt -> stream(
+            return roleTypes.stream().flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
                     vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             )).map(RelationImpl::of);
         }

@@ -29,7 +29,6 @@ import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -356,11 +355,16 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
 
         ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Schema.ValueType valueType) {
             switch (valueType) {
-                case BOOLEAN: return booleans;
-                case LONG: return longs;
-                case DOUBLE: return doubles;
-                case STRING: return strings;
-                case DATETIME: return dateTimes;
+                case BOOLEAN:
+                    return booleans;
+                case LONG:
+                    return longs;
+                case DOUBLE:
+                    return doubles;
+                case STRING:
+                    return strings;
+                case DATETIME:
+                    return dateTimes;
                 default:
                     assert false;
                     return null;

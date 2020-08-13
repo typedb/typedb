@@ -108,11 +108,11 @@ public class RelationTypeSteps {
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertype: {scoped_label}")
     public void relation_type_get_role_type_get_supertype(String relationLabel, String roleLabel, Parameters.ScopedLabel superLabel) {
         RoleType superType = tx().concepts().getRelationType(superLabel.scope()).getRelates(superLabel.role());
-        assertEquals(superType, tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSup());
+        assertEquals(superType, tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSupertype());
     }
 
     private Set<Parameters.ScopedLabel> relation_type_get_role_type_supertypes_actuals(String relationLabel, String roleLabel) {
-        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSups()
+        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSupertypes()
                 .map(role -> new Parameters.ScopedLabel(role.getScopedLabel().split(":")[0],
                                                         role.getScopedLabel().split(":")[1])).collect(toSet());
     }
@@ -150,7 +150,7 @@ public class RelationTypeSteps {
     }
 
     private Set<Parameters.ScopedLabel> relation_type_get_role_type_subtypes_actuals(String relationLabel, String roleLabel) {
-        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSubs()
+        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSubtypes()
                 .map(role -> new Parameters.ScopedLabel(role.getScopedLabel().split(":")[0],
                                                         role.getScopedLabel().split(":")[1])).collect(toSet());
     }

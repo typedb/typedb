@@ -103,7 +103,7 @@ public abstract class TypeImpl implements Type {
 
     void superTypeVertex(TypeVertex superTypeVertex) {
         if (vertex.equals(superTypeVertex)) throw new GraknException(SUPERTYPE_SELF.message(vertex.label()));
-        vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) getSup()).vertex).delete();
+        vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
 

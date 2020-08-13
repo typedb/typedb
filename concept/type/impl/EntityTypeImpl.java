@@ -64,23 +64,23 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public void setSup(EntityType superType) {
+    public void setSupertype(EntityType superType) {
         super.superTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
     @Nullable
     @Override
-    public EntityTypeImpl getSup() {
+    public EntityTypeImpl getSupertype() {
         return super.sup(EntityTypeImpl::of);
     }
 
     @Override
-    public Stream<EntityTypeImpl> getSups() {
+    public Stream<EntityTypeImpl> getSupertypes() {
         return super.sups(EntityTypeImpl::of);
     }
 
     @Override
-    public Stream<EntityTypeImpl> getSubs() {
+    public Stream<EntityTypeImpl> getSubtypes() {
         return super.subs(EntityTypeImpl::of);
     }
 
@@ -127,7 +127,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public void setSup(EntityType superType) {
+        public void setSupertype(EntityType superType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 

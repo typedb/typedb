@@ -94,23 +94,23 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void setSup(RelationType superType) {
+    public void setSupertype(RelationType superType) {
         super.superTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
     @Nullable
     @Override
-    public RelationTypeImpl getSup() {
+    public RelationTypeImpl getSupertype() {
         return super.sup(RelationTypeImpl::of);
     }
 
     @Override
-    public Stream<RelationTypeImpl> getSups() {
+    public Stream<RelationTypeImpl> getSupertypes() {
         return super.sups(RelationTypeImpl::of);
     }
 
     @Override
-    public Stream<RelationTypeImpl> getSubs() {
+    public Stream<RelationTypeImpl> getSubtypes() {
         return super.subs(RelationTypeImpl::of);
     }
 
@@ -123,13 +123,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setRelates(String roleLabel) {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
-            if (getSups().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().equals(roleLabel))) {
+            if (getSupertypes().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().equals(roleLabel))) {
                 throw new GraknException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.message(roleLabel));
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
                 roleType.isAbstract(this.isAbstract());
                 vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
-                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.getSup().vertex);
+                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
             }
         }
     }
@@ -141,7 +141,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         final Optional<RoleTypeImpl> inherited;
         if (declaredRoles().anyMatch(r -> r.getLabel().equals(overriddenLabel)) ||
-                !(inherited = getSup().getRelates().filter(role -> role.getLabel().equals(overriddenLabel)).findFirst()).isPresent()) {
+                !(inherited = getSupertype().getRelates().filter(role -> role.getLabel().equals(overriddenLabel)).findFirst()).isPresent()) {
             throw new GraknException(RELATION_RELATES_ROLE_NOT_AVAILABLE.message(roleLabel, overriddenLabel));
         }
 
@@ -160,7 +160,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull)
                     .apply(RoleTypeImpl::of)
                     .forEachRemaining(overridden::add);
-            return Stream.concat(direct.stream(), getSup().getRelates().filter(role -> !overridden.contains(role)));
+            return Stream.concat(direct.stream(), getSupertype().getRelates().filter(role -> !overridden.contains(role)));
         }
     }
 
@@ -191,9 +191,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void delete() {
-        if (getSubs().anyMatch(s -> !s.equals(this))) {
+        if (getSubtypes().anyMatch(s -> !s.equals(this))) {
             throw new GraknException(TYPE_HAS_SUBTYPES.message(getLabel()));
-        } else if (getSubs().flatMap(RelationTypeImpl::getInstances).findFirst().isPresent()) {
+        } else if (getSubtypes().flatMap(RelationTypeImpl::getInstances).findFirst().isPresent()) {
             throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
         } else {
             declaredRoles().forEach(RoleTypeImpl::delete);
@@ -247,7 +247,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
-        public void setSup(RelationType superType) {
+        public void setSupertype(RelationType superType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 

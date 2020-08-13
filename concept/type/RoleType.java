@@ -26,13 +26,13 @@ public interface RoleType extends Type {
     default RoleType asRoleType() { return this; }
 
     @Override
-    RoleType getSup();
+    RoleType getSupertype();
 
     @Override
-    Stream<? extends RoleType> getSups();
+    Stream<? extends RoleType> getSupertypes();
 
     @Override
-    Stream<? extends RoleType> getSubs();
+    Stream<? extends RoleType> getSubtypes();
 
     String getScopedLabel();
 

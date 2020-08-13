@@ -30,18 +30,18 @@ public interface AttributeType extends ThingType {
     default AttributeType asAttributeType() { return this; }
 
     @Override
-    AttributeType getSup();
+    AttributeType getSupertype();
 
     @Override
-    Stream<? extends AttributeType> getSups();
+    Stream<? extends AttributeType> getSupertypes();
 
     @Override
-    Stream<? extends AttributeType> getSubs();
+    Stream<? extends AttributeType> getSubtypes();
 
     @Override
     Stream<? extends Attribute> getInstances();
 
-    void setSup(AttributeType superType);
+    void setSupertype(AttributeType superType);
 
     boolean isKeyable();
 
@@ -96,13 +96,13 @@ public interface AttributeType extends ThingType {
     interface Boolean extends AttributeType {
 
         @Override
-        AttributeType.Boolean getSup();
+        AttributeType.Boolean getSupertype();
 
         @Override
-        Stream<? extends AttributeType.Boolean> getSups();
+        Stream<? extends AttributeType.Boolean> getSupertypes();
 
         @Override
-        Stream<? extends AttributeType.Boolean> getSubs();
+        Stream<? extends AttributeType.Boolean> getSubtypes();
 
         @Override
         Stream<? extends Attribute.Boolean> getInstances();
@@ -117,13 +117,13 @@ public interface AttributeType extends ThingType {
     interface Long extends AttributeType {
 
         @Override
-        AttributeType.Long getSup();
+        AttributeType.Long getSupertype();
 
         @Override
-        Stream<? extends AttributeType.Long> getSups();
+        Stream<? extends AttributeType.Long> getSupertypes();
 
         @Override
-        Stream<? extends AttributeType.Long> getSubs();
+        Stream<? extends AttributeType.Long> getSubtypes();
 
         @Override
         Stream<? extends Attribute.Long> getInstances();
@@ -138,13 +138,13 @@ public interface AttributeType extends ThingType {
     interface Double extends AttributeType {
 
         @Override
-        AttributeType.Double getSup();
+        AttributeType.Double getSupertype();
 
         @Override
-        Stream<? extends AttributeType.Double> getSups();
+        Stream<? extends AttributeType.Double> getSupertypes();
 
         @Override
-        Stream<? extends AttributeType.Double> getSubs();
+        Stream<? extends AttributeType.Double> getSubtypes();
 
         @Override
         Stream<? extends Attribute.Double> getInstances();
@@ -159,13 +159,13 @@ public interface AttributeType extends ThingType {
     interface String extends AttributeType {
 
         @Override
-        AttributeType.String getSup();
+        AttributeType.String getSupertype();
 
         @Override
-        Stream<? extends AttributeType.String> getSups();
+        Stream<? extends AttributeType.String> getSupertypes();
 
         @Override
-        Stream<? extends AttributeType.String> getSubs();
+        Stream<? extends AttributeType.String> getSubtypes();
 
         @Override
         Stream<? extends Attribute.String> getInstances();
@@ -184,13 +184,13 @@ public interface AttributeType extends ThingType {
     interface DateTime extends AttributeType {
 
         @Override
-        AttributeType.DateTime getSup();
+        AttributeType.DateTime getSupertype();
 
         @Override
-        Stream<? extends AttributeType.DateTime> getSups();
+        Stream<? extends AttributeType.DateTime> getSupertypes();
 
         @Override
-        Stream<? extends AttributeType.DateTime> getSubs();
+        Stream<? extends AttributeType.DateTime> getSubtypes();
 
         @Override
         Stream<? extends Attribute.DateTime> getInstances();

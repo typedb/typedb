@@ -20,8 +20,8 @@ package grakn.core.server;
 
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.common.concurrent.NamedThreadFactory;
 import grakn.common.collection.Pair;
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;

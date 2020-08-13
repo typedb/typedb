@@ -66,44 +66,44 @@ public class BasicTest {
                 tx -> {
                     AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     Util.assertNotNulls(name);
-                    assertEquals(rootAttributeType, name.getSup());
+                    assertEquals(rootAttributeType, name.getSupertype());
                 },
                 tx -> {
                     AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
                     Util.assertNotNulls(age);
-                    assertEquals(rootAttributeType, age.getSup());
+                    assertEquals(rootAttributeType, age.getSupertype());
                 },
                 tx -> {
                     RelationType marriage = tx.concepts().getRelationType("marriage");
                     RoleType husband = marriage.getRelates("husband");
                     RoleType wife = marriage.getRelates("wife");
                     Util.assertNotNulls(marriage, husband, wife);
-                    assertEquals(rootRelationType, marriage.getSup());
-                    assertEquals(rootRelationType.getRelates("role"), husband.getSup());
-                    assertEquals(rootRelationType.getRelates("role"), wife.getSup());
+                    assertEquals(rootRelationType, marriage.getSupertype());
+                    assertEquals(rootRelationType.getRelates("role"), husband.getSupertype());
+                    assertEquals(rootRelationType.getRelates("role"), wife.getSupertype());
                 },
                 tx -> {
                     RelationType employment = tx.concepts().getRelationType("employment");
                     RoleType employee = employment.getRelates("employee");
                     RoleType employer = employment.getRelates("employer");
                     Util.assertNotNulls(employment, employee, employer);
-                    assertEquals(rootRelationType, employment.getSup());
+                    assertEquals(rootRelationType, employment.getSupertype());
                 },
                 tx -> {
                     EntityType person = tx.concepts().getEntityType("person");
                     Util.assertNotNulls(person);
-                    assertEquals(rootEntityType, person.getSup());
+                    assertEquals(rootEntityType, person.getSupertype());
 
                     Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                             tx2 -> {
                                 EntityType man = tx2.concepts().getEntityType("man");
                                 Util.assertNotNulls(man);
-                                assertEquals(person, man.getSup());
+                                assertEquals(person, man.getSupertype());
                             },
                             tx2 -> {
                                 EntityType woman = tx2.concepts().getEntityType("woman");
                                 Util.assertNotNulls(woman);
-                                assertEquals(person, woman.getSup());
+                                assertEquals(person, woman.getSupertype());
                             }
                     );
                     subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
@@ -111,7 +111,7 @@ public class BasicTest {
                 tx -> {
                     EntityType company = tx.concepts().getEntityType("company");
                     Util.assertNotNulls(company);
-                    assertEquals(rootEntityType, company.getSup());
+                    assertEquals(rootEntityType, company.getSupertype());
                 }
         );
 
@@ -154,17 +154,17 @@ public class BasicTest {
                             tx -> {
                                 EntityType rootEntityType = tx.concepts().getRootEntityType();
                                 assertNotNull(rootEntityType);
-                                assertNull(rootEntityType.getSup());
+                                assertNull(rootEntityType.getSupertype());
                             },
                             tx -> {
                                 RelationType rootRelationType = tx.concepts().getRootRelationType();
                                 assertNotNull(rootRelationType);
-                                assertNull(rootRelationType.getSup());
+                                assertNull(rootRelationType.getSupertype());
                             },
                             tx -> {
                                 AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
                                 assertNotNull(rootAttributeType);
-                                assertNull(rootAttributeType.getSup());
+                                assertNull(rootAttributeType.getSupertype());
                             }
                     );
 
@@ -185,44 +185,44 @@ public class BasicTest {
                             tx -> {
                                 AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
                                 Util.assertNotNulls(name);
-                                assertEquals(rootAttributeType, name.getSup());
+                                assertEquals(rootAttributeType, name.getSupertype());
                             },
                             tx -> {
                                 AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
                                 Util.assertNotNulls(age);
-                                assertEquals(rootAttributeType, age.getSup());
+                                assertEquals(rootAttributeType, age.getSupertype());
                             },
                             tx -> {
                                 RelationType marriage = tx.concepts().putRelationType("marriage");
                                 marriage.setRelates("husband");
                                 marriage.setRelates("wife");
                                 Util.assertNotNulls(marriage);
-                                assertEquals(rootRelationType, marriage.getSup());
+                                assertEquals(rootRelationType, marriage.getSupertype());
                             },
                             tx -> {
                                 RelationType employment = tx.concepts().putRelationType("employment");
                                 employment.setRelates("employee");
                                 employment.setRelates("employer");
                                 Util.assertNotNulls(employment);
-                                assertEquals(rootRelationType, employment.getSup());
+                                assertEquals(rootRelationType, employment.getSupertype());
                             },
                             tx -> {
                                 EntityType person = tx.concepts().putEntityType("person");
                                 Util.assertNotNulls(person);
-                                assertEquals(rootEntityType, person.getSup());
+                                assertEquals(rootEntityType, person.getSupertype());
 
                                 Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
                                             EntityType man = tx2.concepts().putEntityType("man");
-                                            man.setSup(person);
+                                            man.setSupertype(person);
                                             Util.assertNotNulls(man);
-                                            assertEquals(person, man.getSup());
+                                            assertEquals(person, man.getSupertype());
                                         },
                                         tx2 -> {
                                             EntityType woman = tx2.concepts().putEntityType("woman");
-                                            woman.setSup(person);
+                                            woman.setSupertype(person);
                                             Util.assertNotNulls(woman);
-                                            assertEquals(person, woman.getSup());
+                                            assertEquals(person, woman.getSupertype());
                                         }
                                 );
                                 subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
@@ -230,7 +230,7 @@ public class BasicTest {
                             tx -> {
                                 EntityType company = tx.concepts().putEntityType("company");
                                 Util.assertNotNulls(company);
-                                assertEquals(rootEntityType, company.getSup());
+                                assertEquals(rootEntityType, company.getSupertype());
                             }
                     );
 

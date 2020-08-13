@@ -79,7 +79,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public Stream<ThingImpl> getOwners(ThingType ownerType) {
-        return ownerType.getSubs().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(v -> stream(vertex.ins().edge(
+        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(v -> stream(vertex.ins().edge(
                 Schema.Edge.Thing.HAS, PrefixIID.of(v.schema().instance()), v.iid()
         ).from())).map(ThingImpl::of);
     }

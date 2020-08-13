@@ -97,12 +97,12 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public Stream<ThingImpl> getPlayers(RoleType roleType) {
-        return getPlayers(roleType.getSubs().map(rt -> ((RoleTypeImpl) rt).vertex));
+        return getPlayers(roleType.getSubtypes().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     @Override
     public Stream<ThingImpl> getPlayers(List<RoleType> roleTypes) {
-        return getPlayers(roleTypes.stream().flatMap(RoleType::getSubs).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+        return getPlayers(roleTypes.stream().flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {

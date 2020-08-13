@@ -28,13 +28,13 @@ public interface ThingType extends Type {
     default ThingType asThingType() { return this; }
 
     @Override
-    ThingType getSup();
+    ThingType getSupertype();
 
     @Override
-    Stream<? extends ThingType> getSups();
+    Stream<? extends ThingType> getSupertypes();
 
     @Override
-    Stream<? extends ThingType> getSubs();
+    Stream<? extends ThingType> getSubtypes();
 
     Stream<? extends Thing> getInstances();
 
