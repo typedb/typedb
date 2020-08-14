@@ -1,0 +1,57 @@
+build:
+  quality:
+    job:
+      build-analysis:
+        machine: grabl-ubuntu-2004
+        script: |
+          SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
+            bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
+            --organisation=$SONARCLOUD_ORGANISATION \
+            --project-key=$SONARCLOUD_PROJECT_KEY \
+            --commit-id=$GRABL_COMMIT \
+            --branch=$GRABL_BRANCH
+  correctness:
+    jobs:
+      build:
+        machine: grabl-ubuntu-2004
+        script: |
+          bazel build --config=rbe //...
+          bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+          bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)')
+      build-dependency:
+        machine: grabl-ubuntu-2004
+        script: |
+          dependencies/maven/update.sh
+          git diff --exit-code dependencies/maven/artifacts.snapshot
+          bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
+      test-basic:
+        machine: grabl-ubuntu-2004
+        script: |
+          bazel test --config=rbe //test/integration:test-basic --test_output=errors
+      test-behaviour:
+        machine: grabl-ubuntu-2004
+        script: |
+          bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
+          bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
+      deploy-artifact-snapshot:
+        machine: grabl-ubuntu-2004
+        script: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
+    execution:
+      - build
+      - build-dependency
+      - test-behaviour
+      - deploy-artifact-snapshot:
+          depends: [build, build-dependency, test-behaviour]
+
+release:
+  validation:
+    job:
+      validate-dependencies:
+        machine: grabl-ubuntu-2004
+        script: |
+          bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
+            @graknlabs_common @graknlabs_protocol @graknlabs_graql
