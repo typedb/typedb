@@ -51,9 +51,9 @@ build:
       - deploy-artifact-snapshot:
           depends: [build, build-dependency, test-behaviour]
 
-release:
-  validation:
-    job:
-      validate-dependencies:
-        machine: grabl-ubuntu-2004
-        script: bazel test //:release-validate-deps --test_output=streamed
+#release:
+#  validation:
+#    job:
+#      validate-dependencies:
+#        machine: grabl-ubuntu-2004
+#        script: bazel test //:release-validate-deps --test_output=streamed
