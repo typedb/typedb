@@ -130,6 +130,8 @@ jobs:
       - install-bazel
       - checkout
       - run: |
+          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
           bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
 
