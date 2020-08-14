@@ -4,8 +4,6 @@ build:
       build-analysis:
         machine: grabl-ubuntu-2004
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/grabl/.credentials/ && sudo chmod a+w /home/grabl/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
             --organisation=$SONARCLOUD_ORGANISATION \
@@ -25,8 +23,6 @@ build:
       build-dependency:
         machine: grabl-ubuntu-2004
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/grabl/.credentials/ && sudo chmod a+w /home/grabl/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           dependencies/maven/update.sh
           git diff --exit-code dependencies/maven/artifacts.snapshot
           bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
@@ -46,8 +42,6 @@ build:
       deploy-artifact-snapshot:
         machine: grabl-ubuntu-2004
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/grabl/.credentials/ && sudo chmod a+w /home/grabl/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
@@ -65,7 +59,5 @@ release:
       validate-dependencies:
         machine: grabl-ubuntu-2004
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/grabl/.credentials/ && sudo chmod a+w /home/grabl/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel run @graknlabs_dependencies//tool/release:validate-deps -- \
             @graknlabs_common @graknlabs_protocol @graknlabs_graql
