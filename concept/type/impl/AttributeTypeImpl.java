@@ -730,7 +730,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.String asString() { return this; }
 
         @Override
-        public void regex(java.lang.String regex) {
+        public void setRegex(java.lang.String regex) {
             if (regex != null) {
                 Pattern pattern = Pattern.compile(regex);
                 getInstances().parallel().forEach(attribute -> {
@@ -744,7 +744,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public java.lang.String regex() {
+        public java.lang.String getRegex() {
             return vertex.regex();
         }
 
@@ -762,7 +762,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !regexPattern().matcher(value).matches()) {
-                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(getLabel(), value, regex()));
+                throw new GraknException(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(getLabel(), value, getRegex()));
             }
             if (value.length() > Schema.STRING_MAX_LENGTH) {
                 throw new GraknException(ILLEGAL_STRING_SIZE);
@@ -842,7 +842,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void regex(java.lang.String regex) {
+            public void setRegex(java.lang.String regex) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }

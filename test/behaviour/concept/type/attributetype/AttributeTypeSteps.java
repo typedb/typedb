@@ -97,13 +97,13 @@ public class AttributeTypeSteps {
     public void attribute_type_as_value_type_set_regex(String typeLabel, AttributeType.ValueType valueType, String regex) {
         if (!valueType.equals(AttributeType.ValueType.STRING)) fail();
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        attributeType.asString().regex(regex);
+        attributeType.asString().setRegex(regex);
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get regex: {}")
     public void attribute_type_as_value_type_get_regex(String typeLabel, AttributeType.ValueType valueType, String regex) {
         if (!valueType.equals(AttributeType.ValueType.STRING)) fail();
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        assertEquals(regex, attributeType.asString().regex());
+        assertEquals(regex, attributeType.asString().getRegex());
     }
 }

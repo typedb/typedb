@@ -170,9 +170,9 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends Attribute.String> getInstances();
 
-        void regex(java.lang.String regex);
+        void setRegex(java.lang.String regex);
 
-        java.lang.String regex();
+        java.lang.String getRegex();
 
         Attribute.String put(java.lang.String value);
 

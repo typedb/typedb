@@ -714,7 +714,7 @@ class ConceptRPC {
             }
 
             private void getRegex() {
-                String regex = concept.asString().regex();
+                String regex = concept.asString().getRegex();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeTypeGetRegexRes(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
@@ -725,9 +725,9 @@ class ConceptRPC {
 
             private void setRegex(String regex) {
                 if (regex.isEmpty()) {
-                    concept.asString().regex(null);
+                    concept.asString().setRegex(null);
                 } else {
-                    concept.asString().regex(regex);
+                    concept.asString().setRegex(regex);
                 }
                 responseSender.accept(null);
             }
