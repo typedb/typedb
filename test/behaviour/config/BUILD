@@ -23,7 +23,6 @@ java_library(
     srcs = ["Parameters.java"],
     deps = [
         # Internal Package Dependencies
-        "//:grakn",
         "//common:common",
         "//concept:concept",
 
