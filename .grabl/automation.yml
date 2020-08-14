@@ -4,6 +4,8 @@ build:
       build-analysis:
         machine: grabl-ubuntu-2004
         script: |
+          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
+          sudo mkdir -p /home/grabl/.credentials/ && sudo chmod a+w /home/grabl/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
             --organisation=$SONARCLOUD_ORGANISATION \
