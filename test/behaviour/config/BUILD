@@ -24,7 +24,8 @@ java_library(
     deps = [
         # Internal Package Dependencies
         "//:grakn",
-        "//concept",
+        "//common:common",
+        "//concept:concept",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

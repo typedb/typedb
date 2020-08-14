@@ -19,7 +19,8 @@ package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.DatabaseProto.Database;
 import grakn.protocol.GraknGrpc;
@@ -125,8 +126,8 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     @Override
     public void sessionOpen(Session.Open.Req request, StreamObserver<Session.Open.Res> responseObserver) {
         try {
-            Grakn.Session.Type sessionType = Grakn.Session.Type.of(request.getType().getNumber());
-            GraknOptions.Session options = getOptions(GraknOptions.Session::new, request.getOptions());
+            Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
+            Options.Session options = getOptions(Options.Session::new, request.getOptions());
             SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase(), sessionType, options);
             sessions.put(sessionRPC.session().uuid(), sessionRPC);
             ByteString uuid = copyFrom(uuidToBytes(sessionRPC.session().uuid()));

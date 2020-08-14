@@ -21,7 +21,9 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Context;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.util.KeyGenerator;
@@ -51,34 +53,33 @@ class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
     private final RocksSession session;
-    private final GraknOptions.Transaction options;
-    private final OptimisticTransactionOptions optOptions;
+    private final Context.Transaction context;
+    private final OptimisticTransactionOptions rocksTxOptions;
     private final WriteOptions writeOptions;
     private final ReadOptions readOptions;
     private final Transaction rocksTransaction;
-    private final Type type;
+    private final Arguments.Transaction.Type type;
     private final CoreStorage storage;
     private final Graphs graph;
     private final Concepts concepts;
     private final Query query;
     private final AtomicBoolean isOpen;
 
-    RocksTransaction(RocksSession session, Type type, GraknOptions.Transaction options) {
+    RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.type = type;
         this.session = session;
-        this.options = options;
-        this.options.parent(session.options());
+        this.context = new Context.Transaction(session.context(), options);
 
         readOptions = new ReadOptions();
         writeOptions = new WriteOptions();
-        optOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
-        rocksTransaction = session.rocks().beginTransaction(writeOptions, optOptions);
+        rocksTxOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
+        rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
 
         storage = new CoreStorage();
         graph = new Graphs(storage);
         concepts = new Concepts(graph);
-        query = new Query(graph, concepts);
+        query = new Query(graph, concepts, context);
 
         isOpen = new AtomicBoolean(true);
     }
@@ -93,13 +94,12 @@ class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public Type type() {
+    public Arguments.Transaction.Type type() {
         return type;
     }
 
-    @Override
-    public GraknOptions.Transaction options() {
-        return options;
+    public Context.Transaction context() {
+        return context;
     }
 
     @Override
@@ -140,21 +140,21 @@ class RocksTransaction implements Grakn.Transaction {
     public void commit() {
         if (isOpen.compareAndSet(true, false)) {
             try {
-                if (type.equals(Type.READ)) {
+                if (type.equals(Arguments.Transaction.Type.READ)) {
                     throw new GraknException(ILLEGAL_COMMIT);
-                } else if (session.type().equals(Grakn.Session.Type.DATA) && graph.type().isModified()) {
+                } else if (session.type().equals(Arguments.Session.Type.DATA) && graph.type().isModified()) {
                     throw new GraknException(DIRTY_SCHEMA_WRITES);
-                } else if (session.type().equals(Grakn.Session.Type.SCHEMA) && graph.thing().isModified()) {
+                } else if (session.type().equals(Arguments.Session.Type.SCHEMA) && graph.thing().isModified()) {
                     throw new GraknException(DIRTY_DATA_WRITES);
                 }
 
                 // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
                 // TODO: We should benchmark this
                 rocksTransaction.disableIndexing();
-                if (session.type().equals(Grakn.Session.Type.SCHEMA)) {
+                if (session.type().equals(Arguments.Session.Type.SCHEMA)) {
                     concepts.validateTypes();
                     graph.type().commit();
-                } else if (session.type().equals(Grakn.Session.Type.DATA)) {
+                } else if (session.type().equals(Arguments.Session.Type.DATA)) {
                     concepts.validateThings();
                     graph.thing().commit();
                 } else {
@@ -193,7 +193,7 @@ class RocksTransaction implements Grakn.Transaction {
 
     private void closeResources() {
         storage.close();
-        optOptions.close();
+        rocksTxOptions.close();
         writeOptions.close();
         readOptions.close();
         rocksTransaction.close();
@@ -208,11 +208,6 @@ class RocksTransaction implements Grakn.Transaction {
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
             iterators = ConcurrentHashMap.newKeySet();
-        }
-
-        @Override
-        public GraknOptions.Transaction options() {
-            return options;
         }
 
         @Override

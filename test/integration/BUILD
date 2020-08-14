@@ -27,6 +27,7 @@ java_test(
     deps = [
         # Internal package dependencies
         "//:grakn",
+        "//common:common",
         "//concept:concept",
         "//rocks:rocks",
     ],
@@ -43,6 +44,7 @@ java_test(
     deps = [
         # Internal package dependencies
         "//:grakn",
+        "//common:common",
         "//rocks:rocks",
 
         # External dependencies from @graknlabs

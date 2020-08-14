@@ -19,7 +19,9 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Context;
+import grakn.core.common.parameters.Options;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 
@@ -30,21 +32,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RocksSession implements Grakn.Session {
     private final RocksDatabase database;
-    private final Type type;
-    private final GraknOptions.Session options;
+    private final Arguments.Session.Type type;
+    private final Context.Session context;
     private final ConcurrentMap<RocksTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
     private final UUID uuid;
 
-    RocksSession(RocksDatabase database, Type type, GraknOptions.Session options) {
+    RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
         this.type = type;
-        this.options = options;
-        this.options.parent(database.options());
+        this.context = new Context.Session(database.options(), options);
 
         uuid = UUID.randomUUID();
         transactions = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
+    }
+
+    Context.Session context() {
+        return context;
     }
 
     OptimisticTransactionDB rocks() {
@@ -57,19 +62,14 @@ public class RocksSession implements Grakn.Session {
 
     void remove(RocksTransaction transaction) {
         long schemaReadLockStamp = transactions.remove(transaction);
-        if (this.type.equals(Type.DATA) && transaction.type().equals(Grakn.Transaction.Type.WRITE)) {
+        if (this.type.equals(Arguments.Session.Type.DATA) && transaction.type().equals(Arguments.Transaction.Type.WRITE)) {
             database.releaseSchemaReadLock(schemaReadLockStamp);
         }
     }
 
     @Override
-    public Type type() {
+    public Arguments.Session.Type type() {
         return type;
-    }
-
-    @Override
-    public GraknOptions.Session options() {
-        return options;
     }
 
     @Override
@@ -78,14 +78,14 @@ public class RocksSession implements Grakn.Session {
     }
 
     @Override
-    public RocksTransaction transaction(Grakn.Transaction.Type type) {
-        return transaction(type, new GraknOptions.Transaction());
+    public RocksTransaction transaction(Arguments.Transaction.Type type) {
+        return transaction(type, new Options.Transaction());
     }
 
     @Override
-    public RocksTransaction transaction(Grakn.Transaction.Type type, GraknOptions.Transaction options) {
+    public RocksTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options) {
         long schemaReadLockStamp = 0;
-        if (this.type.equals(Type.DATA) && type.equals(Grakn.Transaction.Type.WRITE)) {
+        if (this.type.equals(Arguments.Session.Type.DATA) && type.equals(Arguments.Transaction.Type.WRITE)) {
             schemaReadLockStamp = database.acquireSchemaReadLock();
         }
         RocksTransaction transaction = new RocksTransaction(this, type, options);

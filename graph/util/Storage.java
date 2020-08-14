@@ -18,14 +18,10 @@
 
 package grakn.core.graph.util;
 
-import grakn.core.common.options.GraknOptions;
-
 import java.util.Iterator;
 import java.util.function.BiFunction;
 
 public interface Storage {
-
-    GraknOptions.Transaction options();
 
     boolean isOpen();
 

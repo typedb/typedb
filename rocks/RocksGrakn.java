@@ -20,8 +20,8 @@ package grakn.core.rocks;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.options.GraknOptions;
-import org.rocksdb.Options;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 
@@ -40,15 +40,15 @@ public class RocksGrakn implements Grakn {
     }
 
     private final Path directory;
-    private final GraknOptions.Global options;
-    private final Options rocksConfig;
+    private final Options.Database options;
+    private final org.rocksdb.Options rocksConfig;
     private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
 
-    private RocksGrakn(Path directory, GraknOptions.Global options) {
+    private RocksGrakn(Path directory, Options.Database options) {
         this.directory = directory;
         this.options = options;
-        this.rocksConfig = new Options()
+        this.rocksConfig = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
                 .setMergeOperator(new UInt64AddOperator());
 
@@ -59,10 +59,10 @@ public class RocksGrakn implements Grakn {
     }
 
     public static RocksGrakn open(Path directory) {
-        return open(directory, new GraknOptions.Global());
+        return open(directory, new Options.Database());
     }
 
-    public static RocksGrakn open(Path directory, GraknOptions.Global options) {
+    public static RocksGrakn open(Path directory, Options.Database options) {
         return new RocksGrakn(directory, options);
     }
 
@@ -70,22 +70,21 @@ public class RocksGrakn implements Grakn {
         return directory;
     }
 
-    Options rocksConfig() {
+    org.rocksdb.Options rocksOptions() {
         return rocksConfig;
     }
 
-    @Override
-    public GraknOptions.Global options() {
+    public Options.Database options() {
         return options;
     }
 
     @Override
-    public RocksSession session(String database, Grakn.Session.Type type) {
-        return session(database, type, new GraknOptions.Session());
+    public RocksSession session(String database, Arguments.Session.Type type) {
+        return session(database, type, new Options.Session());
     }
 
     @Override
-    public RocksSession session(String database, Session.Type type, GraknOptions.Session options) {
+    public RocksSession session(String database, Arguments.Session.Type type, Options.Session options) {
         if (databaseMgr.contains(database)) {
             return databaseMgr.get(database).createAndOpenSession(type, options);
         } else {

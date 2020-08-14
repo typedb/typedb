@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.connection.session;
 
 import grakn.core.Grakn;
+import grakn.core.common.parameters.Arguments;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -52,14 +53,14 @@ public class SessionSteps {
     @When("connection open schema session(s) for database(s):")
     public void connection_open_schema_sessions_for_databases(List<String> names) {
         for (String name : names) {
-            sessions.add(grakn.session(name, Grakn.Session.Type.SCHEMA));
+            sessions.add(grakn.session(name, Arguments.Session.Type.SCHEMA));
         }
     }
 
     @When("connection open (data )session(s) for database(s):")
     public void connection_open_data_sessions_for_databases(List<String> names) {
         for (String name : names) {
-            sessions.add(grakn.session(name, Grakn.Session.Type.DATA));
+            sessions.add(grakn.session(name, Arguments.Session.Type.DATA));
         }
     }
 
@@ -69,7 +70,7 @@ public class SessionSteps {
 
         for (String name : names) {
             sessionsParallel.add(CompletableFuture.supplyAsync(
-                    () -> grakn.session(name, Grakn.Session.Type.DATA), threadPool)
+                    () -> grakn.session(name, Arguments.Session.Type.DATA), threadPool)
             );
         }
     }

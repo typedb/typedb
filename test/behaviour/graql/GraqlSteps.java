@@ -20,7 +20,8 @@ package grakn.core.test.behaviour.graql;
 
 import com.google.common.collect.Iterators;
 import grakn.core.Grakn;
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
@@ -78,7 +79,7 @@ public class GraqlSteps {
     @Given("transaction is initialised")
     public void transaction_is_initialised() {
         session = Iterators.getOnlyElement(ConnectionSteps.sessions.iterator());
-        tx = session.transaction(Grakn.Transaction.Type.WRITE);
+        tx = session.transaction(Arguments.Transaction.Type.WRITE);
         assertTrue(tx.isOpen());
     }
 
@@ -156,10 +157,10 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
 
-        GraknOptions.Query options = new GraknOptions.Query().infer(true).explain(true);
+        Options.Query options = new Options.Query().infer(true).explain(true);
         answers = tx.query().stream(graqlQuery, options).collect(toList());
         tx.commit();
-        tx = session.transaction(Grakn.Transaction.Type.WRITE);
+        tx = session.transaction(Arguments.Transaction.Type.WRITE);
     }
 
     @When("get answers of graql query")
@@ -172,7 +173,7 @@ public class GraqlSteps {
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlGet) {
 
-            answers = tx.query().stream(graqlQuery.asGet(), new GraknOptions.Query().explain(true)); // always use inference and have explanations
+            answers = tx.query().stream(graqlQuery.asGet(), new Options.Query().explain(true)); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlGet.Aggregate) {
@@ -541,7 +542,7 @@ public class GraqlSteps {
         final TQuery graqlQuery = queryTypeFn.apply(Graql.parse(String.join("\n", queryStatements)));
         tx.query().stream(graqlQuery);
         tx.commit();
-        tx = session.transaction(Grakn.Transaction.Type.WRITE);
+        tx = session.transaction(Arguments.Transaction.Type.WRITE);
     }
 
     private <TQuery extends GraqlQuery> void executeGraqlQueryWithoutCommit(
@@ -561,7 +562,7 @@ public class GraqlSteps {
             threw = true;
         } finally {
             tx.close();
-            tx = session.transaction(Grakn.Transaction.Type.WRITE);
+            tx = session.transaction(Arguments.Transaction.Type.WRITE);
         }
         assertTrue(threw);
     }

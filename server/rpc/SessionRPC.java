@@ -18,7 +18,8 @@
 package grakn.core.server.rpc;
 
 import grakn.core.Grakn;
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -29,7 +30,7 @@ public class SessionRPC {
     private final Grakn.Session session;
     private final Set<TransactionRPC> transactionRPCs;
 
-    SessionRPC(Grakn grakn, String database, Grakn.Session.Type type, GraknOptions.Session options) {
+    SessionRPC(Grakn grakn, String database, Arguments.Session.Type type, Options.Session options) {
         this.session = grakn.session(database, type, options);
         transactionRPCs = ConcurrentHashMap.newKeySet();
     }

@@ -17,14 +17,14 @@
 
 package grakn.core.server.rpc.util;
 
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Options;
 import grakn.protocol.OptionsProto;
 
 import java.util.function.Supplier;
 
 public class RequestReader {
 
-    public static <T extends GraknOptions> T getOptions(Supplier<T> optionsConstructor, OptionsProto.Options requestOptions) {
+    public static <T extends Options> T getOptions(Supplier<T> optionsConstructor, OptionsProto.Options requestOptions) {
         T options = optionsConstructor.get();
         if (requestOptions.getInferOptCase().equals(OptionsProto.Options.InferOptCase.INFER)) {
             options.infer(requestOptions.getInfer());

@@ -22,7 +22,8 @@ import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -68,8 +69,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
     private SessionRPC sessionRPC;
     private Grakn.Transaction transaction;
-    private Grakn.Transaction.Type transactionType;
-    private GraknOptions.Transaction transactionOptions;
+    private Arguments.Transaction.Type transactionType;
+    private Options.Transaction transactionOptions;
 
     TransactionRPC(Function<UUID, SessionRPC> sessionRPCSupplier, StreamObserver<Transaction.Res> responseSender) {
         this.sessionRPCSupplier = sessionRPCSupplier;
@@ -78,11 +79,11 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         isOpen = new AtomicBoolean(false);
     }
 
-    public Grakn.Transaction.Type type() {
+    public Arguments.Transaction.Type type() {
         return transactionType;
     }
 
-    public GraknOptions.Transaction options() {
+    public Options.Transaction options() {
         return transactionOptions;
     }
 
@@ -211,8 +212,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         if (sessionRPC == null) {
             throw Status.NOT_FOUND.withDescription(SESSION_NOT_FOUND.message(sessionID)).asRuntimeException();
         } else if (isOpen.compareAndSet(false, true)) {
-            transactionType = Grakn.Transaction.Type.of(request.getType().getNumber());
-            transactionOptions = RequestReader.getOptions(GraknOptions.Transaction::new, request.getOptions());
+            transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
+            transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
             if (transactionType == null) throw Status.INVALID_ARGUMENT.asRuntimeException();
 
             transaction = sessionRPC.transaction(this);
@@ -244,7 +245,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
     private void query(Transaction.Query.Iter.Req request, Transaction.Iter.Req.Options queryOptions) {
         try (ThreadTrace ignored = traceOnThread("query")) {
-            GraknOptions.Query options = RequestReader.getOptions(GraknOptions.Query::new, request.getOptions());
+            Options.Query options = RequestReader.getOptions(Options.Query::new, request.getOptions());
 
             Stream<Transaction.Res> responseStream = transaction().query().stream(request.getQuery(), options)
                     .map(ResponseBuilder.Transaction.Iter::query);
@@ -339,7 +340,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
                     return options.getNumber();
                 case BATCHSIZE_NOT_SET:
                 default:
-                    return GraknOptions.DEFAULT_BATCH_SIZE;
+                    return Options.DEFAULT_BATCH_SIZE;
             }
         }
 

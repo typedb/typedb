@@ -19,6 +19,7 @@
 package grakn.core.test.integration;
 
 import grakn.core.Grakn;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
@@ -42,9 +43,9 @@ public class QueryTest {
         try (Grakn grakn = RocksGrakn.open(directory)) {
             grakn.databases().create(database);
 
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String queryStr = "define " +
                             "person sub entity, has email @key, has name, has age, plays friend; " +
                             "friendship sub relation, relates friend;";
@@ -53,7 +54,7 @@ public class QueryTest {
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction tx = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertNotNull(tx.concepts().getEntityType("person"));
                     assertNotNull(tx.concepts().getRelationType("friendship"));
                 }

@@ -19,6 +19,7 @@
 package grakn.core.test.integration;
 
 import grakn.core.Grakn;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -54,7 +55,7 @@ public class BasicTest {
 
     private static void assert_transaction_read(Grakn.Transaction transaction) {
         assertTrue(transaction.isOpen());
-        assertEquals(RocksGrakn.Transaction.Type.READ, transaction.type());
+        assertEquals(Arguments.Transaction.Type.READ, transaction.type());
 
         ThingType rootType = transaction.concepts().getRootType();
         EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -137,14 +138,14 @@ public class BasicTest {
             assertEquals(1, grakn.databases().all().size());
             assertEquals(database, grakn.databases().all().iterator().next().name());
 
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals(database, session.database().name());
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(RocksGrakn.Transaction.Type.READ, transaction.type());
+                    assertEquals(Arguments.Transaction.Type.READ, transaction.type());
 
                     Stream<Consumer<Grakn.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
@@ -171,9 +172,9 @@ public class BasicTest {
                     rootTypeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(RocksGrakn.Transaction.Type.WRITE, transaction.type());
+                    assertEquals(Arguments.Transaction.Type.WRITE, transaction.type());
 
                     ThingType rootType = transaction.concepts().getRootType();
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -238,7 +239,7 @@ public class BasicTest {
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
                 }
             }
@@ -251,16 +252,16 @@ public class BasicTest {
             assertEquals(1, grakn.databases().all().size());
             assertEquals(database, grakn.databases().all().iterator().next().name());
 
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 assertTrue(session.isOpen());
                 assertEquals(database, session.database().name());
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.WRITE)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
                     EntityType school = transaction.concepts().putEntityType("school");
                     RelationType teaching = transaction.concepts().putRelationType("teaching");
@@ -272,7 +273,7 @@ public class BasicTest {
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
                     AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
                     EntityType school = transaction.concepts().getEntityType("school");
@@ -290,8 +291,8 @@ public class BasicTest {
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
             grakn.databases().create(database);
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     txn.concepts().putAttributeType("is-alive", BOOLEAN);
                     txn.concepts().putAttributeType("age", LONG);
                     txn.concepts().putAttributeType("score", DOUBLE);
@@ -337,8 +338,8 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.WRITE)) {
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
                     age(txn).put(18);
                     score(txn).put(90.5);
@@ -363,7 +364,7 @@ public class BasicTest {
                     txn.commit();
                 }
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LocalDateTime dateTime = LocalDateTime.of(1991, 1, 1, 0, 0);
 
                     Attribute.Boolean isAlive = isAlive(txn).get(true);
@@ -415,10 +416,10 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
-                Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
-                Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
-                Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 isAlive(txn1).put(true);
                 isAlive(txn2).put(false);
@@ -472,7 +473,7 @@ public class BasicTest {
                 txn2.commit();
                 txn3.commit();
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LocalDateTime d1 = LocalDateTime.of(1991, 2, 3, 4, 5);
                     LocalDateTime d2 = LocalDateTime.of(1992, 3, 4, 5, 6);
                     LocalDateTime d3 = LocalDateTime.of(1993, 4, 5, 6, 7);
@@ -534,10 +535,10 @@ public class BasicTest {
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
-                Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
-                Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
-                Grakn.Transaction txn3 = session.transaction(Grakn.Transaction.Type.WRITE);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 isAlive(txn1).put(true);
                 isAlive(txn2).put(true);
@@ -594,7 +595,7 @@ public class BasicTest {
                 txn2.commit();
                 txn3.commit();
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
 
                     assertEquals(true, isAlive(txn).get(true).getValue());
                     assertEquals(17, age(txn).get(17).getValue().longValue());
@@ -633,9 +634,9 @@ public class BasicTest {
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-            try (Grakn.Session session = grakn.session(database, Grakn.Session.Type.DATA)) {
-                Grakn.Transaction txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
-                Grakn.Transaction txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 name(txn1).put("alice");
                 name(txn2).put("alice");
@@ -643,14 +644,14 @@ public class BasicTest {
                 txn1.commit();
                 txn2.commit();
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").getValue());
                     assertEquals(1, name(txn).getInstances().count());
                     assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
                 }
 
-                txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
-                txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
+                txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
@@ -667,14 +668,14 @@ public class BasicTest {
                     assertTrue(true);
                 }
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").getValue());
                     assertEquals(1, name(txn).getInstances().count());
                     assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
                 }
 
-                txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
-                txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
+                txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
@@ -682,14 +683,14 @@ public class BasicTest {
                 txn2.commit(); // delete before write
                 txn1.commit();
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertEquals("alice", name(txn).get("alice").getValue());
                     assertEquals(1, name(txn).getInstances().count());
                     assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
                 }
 
-                txn1 = session.transaction(Grakn.Transaction.Type.WRITE);
-                txn2 = session.transaction(Grakn.Transaction.Type.WRITE);
+                txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 name(txn1).get("alice").delete();
                 name(txn2).get("alice").delete();
@@ -702,7 +703,7 @@ public class BasicTest {
                     assertTrue(true);
                 }
 
-                try (Grakn.Transaction txn = session.transaction(Grakn.Transaction.Type.READ)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertNull(name(txn).get("alice"));
                     assertEquals(0, name(txn).getInstances().count());
                 }

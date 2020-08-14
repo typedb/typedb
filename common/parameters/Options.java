@@ -15,12 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.options;
+package grakn.core.common.parameters;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 
-public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends GraknOptions> {
+public abstract class Options<PARENT extends Options, SELF extends Options> {
 
     public static final boolean DEFAULT_INFER = true;
     public static final boolean DEFAULT_EXPLAIN = false;
@@ -33,8 +33,9 @@ public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends Gra
 
     abstract SELF getThis();
 
-    public void parent(PARENT parent) {
+    public SELF parent(PARENT parent) {
         this.parent = parent;
+        return getThis();
     }
 
     public Boolean infer() {
@@ -82,19 +83,19 @@ public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends Gra
         return getThis();
     }
 
-    public static class Global extends GraknOptions<GraknOptions, Global> {
+    public static class Database extends Options<Options, Database> {
 
         @Override
-        Global getThis() {
+        Database getThis() {
             return this;
         }
 
-        public void parent(GraknOptions parent) {
+        public Database parent(Options parent) {
             throw new GraknException(ErrorMessage.Internal.ILLEGAL_ARGUMENT);
         }
     }
 
-    public static class Session extends GraknOptions<Global, Session> {
+    public static class Session extends Options<Database, Session> {
 
         @Override
         Session getThis() {
@@ -102,7 +103,7 @@ public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends Gra
         }
     }
 
-    public static class Transaction extends GraknOptions<Session, Transaction> {
+    public static class Transaction extends Options<Session, Transaction> {
 
         @Override
         Transaction getThis() {
@@ -110,7 +111,7 @@ public abstract class GraknOptions<PARENT extends GraknOptions, SELF extends Gra
         }
     }
 
-    public static class Query extends GraknOptions<Transaction, Query> {
+    public static class Query extends Options<Transaction, Query> {
 
         @Override
         Query getThis() {

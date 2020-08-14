@@ -18,7 +18,8 @@
 
 package grakn.core;
 
-import grakn.core.common.options.GraknOptions;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
 import grakn.core.query.Query;
 
@@ -34,11 +35,9 @@ import java.util.stream.Stream;
  */
 public interface Grakn extends AutoCloseable {
 
-    GraknOptions.Global options();
+    Session session(String database, Arguments.Session.Type type);
 
-    Session session(String database, Session.Type type);
-
-    Session session(String database, Session.Type type, GraknOptions.Session options);
+    Session session(String database, Arguments.Session.Type type, Options.Session options);
 
     DatabaseManager databases();
 
@@ -69,8 +68,6 @@ public interface Grakn extends AutoCloseable {
 
         String name();
 
-        GraknOptions.Global options();
-
         boolean contains(UUID sessionID);
 
         Session get(UUID sessionID);
@@ -88,45 +85,19 @@ public interface Grakn extends AutoCloseable {
      */
     interface Session extends AutoCloseable {
 
-        Transaction transaction(Transaction.Type type);
+        Transaction transaction(Arguments.Transaction.Type type);
 
-        Transaction transaction(Transaction.Type type, GraknOptions.Transaction options);
+        Transaction transaction(Arguments.Transaction.Type type, Options.Transaction options);
 
         UUID uuid();
 
-        Session.Type type();
-
-        GraknOptions.Session options();
+        Arguments.Session.Type type();
 
         Database database();
 
         boolean isOpen();
 
         void close();
-
-        enum Type {
-            DATA(0),
-            SCHEMA(1);
-
-            private final int id;
-            private final boolean isSchema;
-
-            Type(int id) {
-                this.id = id;
-                this.isSchema = id == 1;
-            }
-
-            public static Session.Type of(int value) {
-                for (Session.Type t : Session.Type.values()) {
-                    if (t.id == value) return t;
-                }
-                return null;
-            }
-
-            public boolean isData() { return !isSchema; }
-
-            public boolean isSchema() { return isSchema; }
-        }
     }
 
     /**
@@ -134,9 +105,7 @@ public interface Grakn extends AutoCloseable {
      */
     interface Transaction extends AutoCloseable {
 
-        Transaction.Type type();
-
-        GraknOptions.Transaction options();
+        Arguments.Transaction.Type type();
 
         boolean isOpen();
 
@@ -149,30 +118,5 @@ public interface Grakn extends AutoCloseable {
         void rollback();
 
         void close();
-
-        enum Type {
-            READ(0),
-            WRITE(1);
-
-            private final int id;
-            private final boolean isWrite;
-
-            Type(int id) {
-                this.id = id;
-                this.isWrite = id == 1;
-            }
-
-            public static Type of(int value) {
-                for (Type t : Type.values()) {
-                    if (t.id == value) return t;
-                }
-                return null;
-            }
-
-            public boolean isRead() { return !isWrite; }
-
-            public boolean isWrite() { return isWrite; }
-        }
     }
-
 }
