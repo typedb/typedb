@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//visibility:public"])
 
@@ -33,6 +34,17 @@ java_library(
         "//concept:concept",
     ],
     tags = ["maven_coordinates=grakn.core:grakn-core:{pom_version}"],
+)
+
+release_validate_deps(
+    name = "release-validate-deps",
+    refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+    tagged_deps = [
+        "@graknlabs_common",
+        "@graknlabs_graql",
+        "@graknlabs_protocol",
+    ],
+    tags = ["manual"]  # in order for bazel test //... to not fail
 )
 
 checkstyle_test(

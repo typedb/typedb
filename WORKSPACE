@@ -107,28 +107,34 @@ skydoc_repositories()
 # Load Grakn Labs Dependencies #
 ################################
 
+load("@graknlabs_dependencies//dependencies/maven:artifacts.bzl",
+graknlabs_dependencies_artifacts = "artifacts")
+
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common")
 graknlabs_common()
+load("@graknlabs_common//dependencies/maven:artifacts.bzl",
+graknlabs_common_artifacts = "artifacts")
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_graql")
 graknlabs_graql()
-
-load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
+load("@graknlabs_graql//dependencies/maven:artifacts.bzl",
+graknlabs_graql_artifacts = "artifacts")
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_protocol")
 graknlabs_protocol()
-
-load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol_artifacts = "artifacts")
+load("@graknlabs_protocol//dependencies/maven:artifacts.bzl",
+graknlabs_protocol_artifacts = "artifacts")
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
-
-load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
+load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl",
+graknlabs_grabl_tracing_artifacts = "artifacts")
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_verification")
 graknlabs_verification()
 
 load("//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
+
 GRAKN_CORE_OVERRIDES = {
     "io.netty:netty-all": "4.1.38.Final",
     "io.netty:netty-buffer": "4.1.38.Final",
@@ -144,8 +150,17 @@ GRAKN_CORE_OVERRIDES = {
 }
 
 maven(
-    graknlabs_grakn_core_artifacts +
+    graknlabs_dependencies_artifacts +
+    graknlabs_common_artifacts +
+    graknlabs_grabl_tracing_artifacts +
     graknlabs_graql_artifacts +
-    graknlabs_grabl_tracing_artifacts,
+    graknlabs_grakn_core_artifacts,
     GRAKN_CORE_OVERRIDES
 )
+
+###############################################
+# Create @graknlabs_grakn_core_workspace_refs #
+###############################################
+
+load("@graknlabs_bazel_distribution//common:rules.bzl", "workspace_refs")
+workspace_refs(name = "graknlabs_grakn_core_workspace_refs")
