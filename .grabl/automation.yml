@@ -6,10 +6,8 @@ build:
         script: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-            --organisation=$SONARCLOUD_ORGANISATION \
-            --project-key=$SONARCLOUD_PROJECT_KEY \
-            --commit-id=$GRABL_COMMIT \
-            --branch=$GRABL_BRANCH
+            --project-key=graknlabs_grakn_core_2 \
+            --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
   correctness:
     jobs:
       build:

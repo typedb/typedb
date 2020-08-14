@@ -110,10 +110,10 @@ skydoc_repositories()
 load("@graknlabs_dependencies//dependencies/maven:artifacts.bzl",
 graknlabs_dependencies_artifacts = "artifacts")
 
+# We don't load Maven artifacts for @graknlabs_common as they are only needed
+# if you depend on @graknlabs_common//test/server
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common")
 graknlabs_common()
-load("@graknlabs_common//dependencies/maven:artifacts.bzl",
-graknlabs_common_artifacts = "artifacts")
 
 load("//dependencies/graknlabs:repositories.bzl", "graknlabs_graql")
 graknlabs_graql()
@@ -151,7 +151,6 @@ GRAKN_CORE_OVERRIDES = {
 
 maven(
     graknlabs_dependencies_artifacts +
-    graknlabs_common_artifacts +
     graknlabs_grabl_tracing_artifacts +
     graknlabs_graql_artifacts +
     graknlabs_grakn_core_artifacts,
