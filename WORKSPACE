@@ -20,7 +20,7 @@ workspace(name = "graknlabs_grakn_core")
 ################################
 # Load @graknlabs_dependencies #
 ################################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_dependencies")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_dependencies")
 graknlabs_dependencies()
 
 # Load Antlr
@@ -74,8 +74,8 @@ load("@graknlabs_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "dep
 unuseddeps_deps()
 
 # Load Dependencies Kotlin Dependencies
-load("@graknlabs_dependencies//dependencies/maven:artifacts.bzl", graknlabs_dependencies_artifacts = "artifacts")
-unuseddeps_deps()
+load("@graknlabs_dependencies//dependencies/maven:artifacts.bzl",
+graknlabs_dependencies_artifacts = "artifacts")
 
 #####################################################################
 # Load @graknlabs_bazel_distribution from (@graknlabs_dependencies) #
@@ -132,7 +132,7 @@ container_pull(
 #########################
 # Load @graknlabs_graql #
 #########################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_graql")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_graql")
 graknlabs_graql()
 
 load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artifacts = "artifacts")
@@ -140,13 +140,13 @@ load("@graknlabs_graql//dependencies/maven:artifacts.bzl", graknlabs_graql_artif
 ##########################
 # Load @graknlabs_common #
 ##########################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_common")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_common")
 graknlabs_common()
 
 ############################
 # Load @graknlabs_protocol #
 ############################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_protocol")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_protocol")
 graknlabs_protocol()
 
 load("@graknlabs_dependencies//builder/grpc:deps.bzl", grpc_deps = "deps")
@@ -161,7 +161,7 @@ load("@graknlabs_protocol//dependencies/maven:artifacts.bzl", graknlabs_protocol
 #################################
 # Load @graknlabs_grabl_tracing #
 #################################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_grabl_tracing")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_grabl_tracing")
 graknlabs_grabl_tracing()
 load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl", graknlabs_grabl_tracing_artifacts = "artifacts")
 
@@ -179,7 +179,7 @@ graknlabs_console_artifact()
 ################################
 # Load @graknlabs_verification #
 ################################
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_verification")
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_verification")
 graknlabs_verification()
 load("@graknlabs_verification//dependencies/maven:artifacts.bzl", graknlabs_verification_artifacts = "artifacts")
 
@@ -221,7 +221,6 @@ maven(
 ###############################################
 # Create @graknlabs_grakn_core_workspace_refs #
 ###############################################
+
 load("@graknlabs_bazel_distribution//common:rules.bzl", "workspace_refs")
-workspace_refs(
-    name = "graknlabs_grakn_core_workspace_refs"
-)
+workspace_refs(name = "graknlabs_grakn_core_workspace_refs")

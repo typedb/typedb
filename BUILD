@@ -209,10 +209,10 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     tagged_deps = [
-        "graknlabs_common",
-        "graknlabs_graql",
-        "graknlabs_protocol",
-        "graknlabs_console_artifact",
+        "@graknlabs_common",
+        "@graknlabs_graql",
+        "@graknlabs_protocol",
+        "@graknlabs_console_artifact",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
