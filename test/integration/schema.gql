@@ -1,0 +1,366 @@
+define
+
+symbol sub attribute, value string;
+name sub attribute, value string;
+full-name sub attribute, value string;
+description sub attribute, value string;
+priority sub attribute, value long;
+access-token sub attribute, value string;
+github-token sub attribute, value string;
+permission sub attribute, value string;
+fork sub attribute, value boolean;
+default sub attribute, value boolean;
+sha sub attribute, value string;
+created sub attribute, value datetime;
+version-candidate sub attribute, value string;
+reference-type sub attribute, value string;
+format sub attribute, value string;
+content sub attribute, value string;
+script sub attribute, value string;
+status sub attribute, value string;
+job-type sub attribute, value string;
+started sub attribute, value datetime;
+ended sub attribute, value datetime;
+duration sub attribute, value long;
+idr sub attribute, value string;
+analysis-id sub attribute, value long;
+run sub attribute, value long;
+latest sub attribute, value boolean;
+path sub attribute, value string;
+label sub attribute, value string;
+iteration sub attribute, value long;
+data sub attribute, value string;
+config sub attribute, value string;
+installation-id sub attribute, value string;
+active sub attribute, value boolean;
+private sub attribute, value boolean;
+alias sub attribute, value string;
+publisher sub attribute, value string;
+offer sub attribute, value string;
+sku sub attribute, value string;
+os-type sub attribute, value string;
+resource-group sub attribute, value string;
+ssh-key sub attribute, value string;
+environment-variable sub attribute, value string;
+build-correctness-wait-for-quality sub attribute, value boolean;
+build-performance-wait-for-quality sub attribute, value boolean;
+build-performance-wait-for-correctness sub attribute, value boolean;
+heads sub attribute, value string;
+ip sub attribute, value string;
+is-approved sub attribute, value boolean;
+pattern sub attribute, value string;
+index sub attribute, value long;
+
+organisation sub entity,
+    owns name @key,
+    owns access-token,
+    owns installation-id,
+    owns environment-variable,
+    owns full-name,
+    plays org-team:org,
+    plays repo-owner:owner,
+    plays org-member:org;
+
+org-team sub relation,
+    relates org,
+    relates team;
+
+org-member sub relation,
+    relates org,
+    relates member;
+
+team sub entity,
+    owns symbol @key,
+    owns name,
+    plays org-team:team,
+    plays team-member:team,
+    plays repo-team:team;
+
+team-member sub relation,
+    relates team,
+    relates member;
+
+user sub entity,
+    owns name @key,
+    owns full-name,
+    owns access-token,
+    owns github-token,
+    owns installation-id,
+    owns ssh-key,
+    owns environment-variable,
+    plays team-member:member,
+    plays repo-owner:owner,
+    plays repo-collaborator:collaborator,
+    plays commit-author:author,
+    plays org-member:member;
+
+repository sub entity,
+    owns symbol @key,
+    owns name,
+    owns description,
+    owns fork,
+    owns active,
+    owns private,
+    owns environment-variable,
+    plays repo-owner:repo,
+    plays repo-team:repo,
+    plays repo-collaborator:repo,
+    plays repo-commit:repo,
+    plays repo-reference:repo,
+    plays repo-branch-rule:repo,
+    plays repo-fork:parent,
+    plays repo-fork:child,
+    plays repo-dependency:dependee,
+    plays repo-dependency:dependant;
+
+repo-fork sub relation,
+    relates parent,
+    relates child;
+
+repo-dependency sub relation,
+    owns reference-type,
+    relates dependee,
+    relates dependant;
+
+repo-dependency-direct sub repo-dependency;
+
+repo-dependency-transitive sub repo-dependency;
+
+repo-owner sub relation,
+    relates repo,
+    relates owner;
+
+repo-team sub relation,
+    relates repo,
+    relates team,
+    owns permission;
+
+repo-collaborator sub relation,
+    relates repo,
+    relates collaborator,
+    owns permission;
+
+repo-reference sub relation,
+    relates repo,
+    relates reference;
+
+repo-commit sub relation,
+    relates repo,
+    relates commit;
+
+repo-branch-rule sub relation,
+    relates repo,
+    relates rule;
+
+branch-rule sub entity,
+    owns symbol @key, # graknlabs/grakn/settings/branch-rule/master
+    owns priority,
+    owns pattern,
+    owns build-correctness-wait-for-quality,
+    owns build-performance-wait-for-quality,
+    owns build-performance-wait-for-correctness,
+    plays repo-branch-rule:rule;
+
+branch sub entity,
+    owns symbol @key,
+    owns name,
+    owns default,
+    owns heads,
+    plays repo-reference:reference,
+    plays commit-reference:reference,
+    plays pipeline-automation:branch;
+
+tag sub entity,
+    owns symbol @key,
+    owns name,
+    owns created,
+    owns heads,
+    plays repo-reference:reference,
+    plays commit-reference:reference,
+    plays pipeline-automation:trigger;
+
+commit sub entity,
+    owns symbol @key,
+    owns sha,
+    owns created,
+    owns version-candidate,
+    plays commit-file:commit,
+    plays repo-commit:commit,
+    plays pipeline-automation:trigger,
+    plays commit-author:commit,
+    plays commit-reference:commit,
+    plays commit-analysis:commit,
+    plays commit-link:previous,
+    plays commit-link:next,
+    plays commit-dependency:dependee,
+    plays commit-dependency:dependant;
+
+commit-author sub relation,
+    relates commit,
+    relates author;
+
+commit-dependency sub relation,
+    relates dependee,
+    relates dependant,
+    relates analysis,
+    owns status;
+
+commit-reference sub relation,
+    relates reference,
+    relates commit;
+
+commit-link sub relation,
+    relates previous,
+    relates next;
+
+file sub entity,
+    owns name,
+    owns format,
+    owns content,
+    plays commit-file:file;
+
+commit-file sub relation,
+    relates commit,
+    relates file;
+
+pipeline-automation sub relation,
+    relates pipeline,
+    relates trigger,
+    relates branch;
+
+automation sub entity, abstract,
+    owns symbol @key,
+    owns run, # atomic
+    owns latest,
+    owns name,
+    owns status,
+    owns index,
+    owns started,
+    owns ended;
+
+pipeline sub automation,
+    plays pipeline-automation:pipeline,
+    plays pipeline-dependency:dependee,
+    plays pipeline-dependency:dependant,
+    plays pipeline-workflow:pipeline;
+
+pipeline-release sub pipeline,
+    owns is-approved;
+
+pipeline-dependency sub relation,
+    relates dependee,
+    relates dependant;
+
+pipeline-workflow sub relation,
+    relates pipeline,
+    relates workflow;
+
+workflow sub automation,
+    plays pipeline-workflow:workflow,
+    plays workflow-job:workflow,
+    plays commit-analysis:producer,
+    plays workflow-dependency:dependee,
+    plays workflow-dependency:dependant;
+
+workflow-dependency sub relation,
+    relates dependee,
+    relates dependant;
+
+workflow-job sub relation,
+    relates workflow,
+    relates job;
+
+job sub automation,
+    owns job-type,
+    owns script,
+    owns environment-variable,
+    owns ip,
+    plays workflow-job:job,
+    plays job-image:job,
+    plays job-dependency:dependee,
+    plays job-dependency:dependant;
+
+job-dependency sub relation,
+    relates dependee,
+    relates dependant;
+
+job-image sub relation,
+    relates job,
+    relates image;
+
+image sub entity, abstract,
+    owns os-type,
+    owns alias,
+    owns active,
+    plays job-image:image;
+
+marketplace-image sub image,
+    owns publisher,
+    owns offer,
+    owns sku;
+
+custom-image sub image,
+    owns resource-group,
+    owns name;
+
+commit-analysis sub relation,
+    relates producer,
+    relates commit,
+    relates analysis;
+
+analysis sub entity, abstract,
+    owns analysis-id @key,
+    owns created,
+    plays commit-analysis:analysis;
+
+dependency-analysis sub analysis,
+    owns status,
+    plays commit-dependency:analysis;
+
+performance-analysis sub analysis,
+    plays performance-tracker:analysis,
+    plays performance-trace:analysis;
+
+performance-trace sub relation,
+    relates analysis,
+    relates trace;
+
+performance-tracker sub relation,
+    relates analysis,
+    relates tracker;
+
+trace sub entity,
+    owns idr @key, # TODO: rename to 'id' after completion of: https://github.com/graknlabs/graql/issues/95
+    owns name,
+    owns path,
+    owns label,
+    owns iteration,
+    owns started,
+    owns ended,
+    owns duration,
+    owns data,
+    plays performance-trace:trace,
+    plays trace-tracker:trace,
+    plays trace-tree:parent,
+    plays trace-tree:child;
+
+trace-tree sub relation,
+    relates parent,
+    relates child;
+
+tracker sub entity,
+    owns idr @key,
+    owns name,
+    owns path,
+    plays trace-tracker:tracker,
+    plays performance-tracker:tracker,
+    plays tracker-tree:parent,
+    plays tracker-tree:child;
+
+tracker-tree sub relation,
+    relates parent,
+    relates child;
+
+trace-tracker sub relation,
+    relates tracker,
+    relates trace;

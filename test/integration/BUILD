@@ -45,12 +45,14 @@ java_test(
         # Internal package dependencies
         "//:grakn",
         "//common:common",
+        "//concept:concept",
         "//rocks:rocks",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
-    ]
+    ],
+    data = [":schema.gql"]
 )
 
 checkstyle_test(

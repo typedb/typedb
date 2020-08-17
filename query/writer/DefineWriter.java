@@ -194,6 +194,7 @@ public class DefineWriter {
     private void definePlays(TypeVariable variable) {
         ThingType thingType = concepts.getType(variable.labelProperty().get().label()).asThingType();
         variable.playsProperty().forEach(plays -> {
+            define(plays.relation().get().identity());
             RoleType roleType = define(plays.role().identity()).asRoleType();
             if (plays.overridden().isPresent()) {
                 RoleType overriddenType = define(plays.overridden().get().identity()).asRoleType();

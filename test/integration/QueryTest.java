@@ -20,16 +20,23 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
-import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlDefine;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertNotNull;
+import static grakn.core.test.integration.Util.assertNotNulls;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
 
@@ -46,17 +53,49 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    String queryStr = "define " +
-                            "person sub entity, has email @key, has name, has age, plays friend; " +
-                            "friendship sub relation, relates friend;";
-                    GraqlInsert query = Graql.parse(queryStr);
-                    transaction.query().insert(query);
+                    GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+
+                    transaction.query().define(query);
                     transaction.commit();
                 }
 
                 try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                    assertNotNull(tx.concepts().getEntityType("person"));
-                    assertNotNull(tx.concepts().getRelationType("friendship"));
+                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
+                    AttributeType.String symbol = tx.concepts().getAttributeType("symbol").asString();
+                    AttributeType.Boolean active = tx.concepts().getAttributeType("active").asBoolean();
+                    AttributeType.Long priority = tx.concepts().getAttributeType("priority").asLong();
+                    assertNotNulls(name, symbol, active, priority);
+
+                    EntityType organisation = tx.concepts().getEntityType("organisation");
+                    EntityType team = tx.concepts().getEntityType("team");
+                    EntityType user = tx.concepts().getEntityType("user");
+                    EntityType repository = tx.concepts().getEntityType("repository");
+                    EntityType branchRule = tx.concepts().getEntityType("branch-rule");
+                    EntityType commit = tx.concepts().getEntityType("commit");
+                    assertNotNulls(organisation, team, user, repository, branchRule, commit);
+
+                    assertTrue(organisation.getOwns().anyMatch(a -> a.equals(name)));
+                    assertTrue(team.getOwns().anyMatch(a -> a.equals(symbol)));
+                    assertTrue(user.getOwns().anyMatch(a -> a.equals(name)));
+                    assertTrue(repository.getOwns().anyMatch(a -> a.equals(active)));
+                    assertTrue(branchRule.getOwns().anyMatch(a -> a.equals(priority)));
+                    assertTrue(commit.getOwns().anyMatch(a -> a.equals(symbol)));
+
+                    RelationType orgTeam = tx.concepts().getRelationType("org-team");
+                    RelationType teamMember = tx.concepts().getRelationType("team-member");
+                    RelationType repoDependency = tx.concepts().getRelationType("repo-dependency");
+                    assertNotNulls(orgTeam, teamMember, repoDependency);
+
+                    RoleType orgTeam_org = orgTeam.getRelates("org");
+                    RoleType orgTeam_team = orgTeam.getRelates("team");
+                    RoleType teamMember_team = teamMember.getRelates("team");
+                    RoleType teamMember_member = teamMember.getRelates("member");
+                    assertNotNulls(orgTeam_org, orgTeam_team, teamMember_team, teamMember_member);
+
+                    assertTrue(organisation.getPlays().anyMatch(r -> r.equals(orgTeam_org)));
+                    assertTrue(team.getPlays().anyMatch(r -> r.equals(orgTeam_team)));
+                    assertTrue(team.getPlays().anyMatch(r -> r.equals(teamMember_team)));
+                    assertTrue(user.getPlays().anyMatch(r -> r.equals(teamMember_member)));
                 }
             }
         }
