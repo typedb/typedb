@@ -2,7 +2,7 @@ build:
   quality:
     job:
       build-analysis:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         script: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
@@ -11,34 +11,28 @@ build:
   correctness:
     jobs:
       build:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel build --config=rbe //...
           bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
           bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)')
       build-dependency:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         script: |
           dependencies/maven/update.sh
           git diff --exit-code dependencies/maven/artifacts.snapshot
           bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
       test-basic:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //test/integration:test-basic --test_output=errors
       test-behaviour:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
           bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
       deploy-artifact-snapshot:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         script: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -51,9 +45,9 @@ build:
       - deploy-artifact-snapshot:
           depends: [build, build-dependency, test-behaviour]
 
-#release:
-#  validation:
-#    job:
-#      validate-dependencies:
-#        machine: grabl-ubuntu-2004
-#        script: bazel test //:release-validate-deps --test_output=streamed
+release:
+  validation:
+    job:
+      validate-dependencies:
+        machine: graknlabs-ubuntu-20.04
+        script: bazel test //:release-validate-deps --test_output=streamed
