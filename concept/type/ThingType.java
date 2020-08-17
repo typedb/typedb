@@ -38,7 +38,9 @@ public interface ThingType extends Type {
 
     Stream<? extends Thing> getInstances();
 
-    void isAbstract(boolean isAbstract);
+    void setAbstract();
+
+    void unsetAbstract();
 
     void setOwns(AttributeType attributeType);
 

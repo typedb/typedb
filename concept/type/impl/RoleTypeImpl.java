@@ -63,8 +63,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return new RoleTypeImpl(graph, label, relation);
     }
 
-    void isAbstract(boolean isAbstract) {
-        vertex.isAbstract(isAbstract);
+    void setAbstract() {
+        vertex.isAbstract(true);
+    }
+
+    void unsetAbstract() {
+        vertex.isAbstract(false);
     }
 
     void sup(RoleType superType) {
@@ -141,7 +145,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public void setLabel(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        void unsetAbstract() { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
         void sup(RoleType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }

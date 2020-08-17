@@ -28,7 +28,10 @@ package(
 
 java_library(
     name = "query",
-    srcs = glob(["*.java"]),
+    srcs = glob([
+        "*.java",
+        "writer/*.java",
+    ]),
     deps = [
         # Internal package dependencies
         "//common:common",
@@ -36,9 +39,11 @@ java_library(
         "//graph:graph",
 
         # External dependencies from @graknlabs
+        "@graknlabs_common//:common",
         "@graknlabs_grabl_tracing//client:client",
+        "@graknlabs_graql//java/pattern:pattern",
+        "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query",
     ],
     tags = ["maven_coordinates=grakn.core:grakn-core-query:{pom_version}"],
     visibility = [ "//visibility:public" ]

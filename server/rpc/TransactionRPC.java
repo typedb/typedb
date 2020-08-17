@@ -247,9 +247,10 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         try (ThreadTrace ignored = traceOnThread("query")) {
             Options.Query options = RequestReader.getOptions(Options.Query::new, request.getOptions());
 
-            Stream<Transaction.Res> responseStream = transaction().query().stream(request.getQuery(), options)
-                    .map(ResponseBuilder.Transaction.Iter::query);
-            iterators.startBatchIterating(responseStream.iterator(), queryOptions);
+            // TODO
+            // Stream<Transaction.Res> responseStream = transaction().query().insert(request.getQuery(), options)
+            //        .map(ResponseBuilder.Transaction.Iter::query);
+            // iterators.startBatchIterating(responseStream.iterator(), queryOptions);
         }
     }
 

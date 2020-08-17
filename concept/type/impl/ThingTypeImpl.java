@@ -92,11 +92,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public void isAbstract(boolean isAbstract) {
-        if (isAbstract && getInstances().findFirst().isPresent()) {
+    public void setAbstract() {
+        if (getInstances().findFirst().isPresent()) {
             throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
         }
-        vertex.isAbstract(isAbstract);
+        vertex.isAbstract(true);
+    }
+
+    @Override
+    public void unsetAbstract() {
+        vertex.isAbstract(false);
     }
 
     @Nullable
@@ -329,7 +334,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public void setLabel(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void unsetAbstract() { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
         public ThingTypeImpl getSupertype() { return null; }

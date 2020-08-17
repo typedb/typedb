@@ -24,6 +24,8 @@ import grakn.core.concept.Concept;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
+
 public interface Type extends Concept {
 
     @Override
@@ -49,4 +51,24 @@ public interface Type extends Concept {
     Stream<? extends Type> getSubtypes();
 
     List<GraknException> validate();
+
+    default ThingType asThingType() {
+        throw new GraknException(INVALID_TYPE_CASTING.message(ThingType.class.getCanonicalName()));
+    }
+
+    default EntityType asEntityType() {
+        throw new GraknException(INVALID_TYPE_CASTING.message(EntityType.class.getCanonicalName()));
+    }
+
+    default AttributeType asAttributeType() {
+        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
+    }
+
+    default RelationType asRelationType() {
+        throw new GraknException(INVALID_TYPE_CASTING.message(RelationType.class.getCanonicalName()));
+    }
+
+    default RoleType asRoleType() {
+        throw new GraknException(INVALID_TYPE_CASTING.message(RoleType.class.getCanonicalName()));
+    }
 }

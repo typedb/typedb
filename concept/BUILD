@@ -38,6 +38,7 @@ java_library(
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common:common",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",

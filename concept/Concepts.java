@@ -42,6 +42,7 @@ import java.util.List;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 
 public final class Concepts {
 
@@ -100,9 +101,9 @@ public final class Concepts {
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
-        if (!valueType.isWritable()) {
-            throw new GraknException(UNSUPPORTED_OPERATION);
-        }
+        if (valueType == null) throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
+        if (!valueType.isWritable()) throw new GraknException(UNSUPPORTED_OPERATION);
+
         TypeVertex vertex = graph.type().get(label);
         switch (valueType) {
             case BOOLEAN:

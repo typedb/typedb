@@ -431,7 +431,7 @@ class ConceptRPC {
 //         * A utility class to execute methods on grakn.core.concept.type.RoleType
 //         */
         private class RoleTypeHolder {
-            private final RoleType concept = ConceptHolder.this.concept.asRoleType();
+            private final RoleType concept = ConceptHolder.this.concept.asType().asRoleType();
 
             private void getRelations() {
                 Stream<? extends RelationType> concepts = concept.getRelations();
@@ -464,7 +464,7 @@ class ConceptRPC {
          * A utility class to execute methods on grakn.core.concept.type.Type
          */
         private class ThingTypeHolder {
-            private final ThingType concept = ConceptHolder.this.concept.asThingType();
+            private final ThingType concept = ConceptHolder.this.concept.asType().asThingType();
 
             private void getInstances() {
                 LOG.trace("{} instances", Thread.currentThread());
@@ -492,7 +492,8 @@ class ConceptRPC {
             }
 
             private void setAbstract(boolean isAbstract) {
-                concept.isAbstract(isAbstract);
+                if (isAbstract) concept.setAbstract();
+                else concept.unsetAbstract();
 
                 responseSender.accept(null);
             }
@@ -524,12 +525,12 @@ class ConceptRPC {
             }
 
             private void setOwns(ConceptProto.ThingType.SetOwns.Req req) {
-                final AttributeType attributeType = convert(req.getAttributeType()).asAttributeType();
+                final AttributeType attributeType = convert(req.getAttributeType()).asType().asAttributeType();
                 final boolean isKey = req.getIsKey();
 
                 switch (req.getOverriddenCase()) {
                     case OVERRIDDENTYPE:
-                        AttributeType overriddenType = convert(req.getOverriddenType()).asAttributeType();
+                        AttributeType overriddenType = convert(req.getOverriddenType()).asType().asAttributeType();
                         concept.setOwns(attributeType, overriddenType, isKey);
                         break;
                     case NULL:
@@ -543,19 +544,19 @@ class ConceptRPC {
             }
 
             private void setPlays(ConceptProto.Concept protoRole) {
-                RoleType role = convert(protoRole).asRoleType();
+                RoleType role = convert(protoRole).asType().asRoleType();
                 concept.setPlays(role);
                 responseSender.accept(null);
             }
 
             private void unsetOwns(ConceptProto.Concept protoAttribute) {
-                AttributeType attributeType = convert(protoAttribute).asAttributeType();
+                AttributeType attributeType = convert(protoAttribute).asType().asAttributeType();
                 concept.unsetOwns(attributeType);
                 responseSender.accept(null);
             }
 
             private void unsetPlays(ConceptProto.Concept protoRole) {
-                RoleType role = convert(protoRole).asRoleType();
+                RoleType role = convert(protoRole).asType().asRoleType();
                 concept.unsetPlays(role);
                 responseSender.accept(null);
             }
@@ -565,7 +566,7 @@ class ConceptRPC {
          * A utility class to execute methods on grakn.core.kb.concept.api.EntityType
          */
         private class EntityTypeHolder {
-            private final EntityType entityType = concept.asEntityType();
+            private final EntityType entityType = concept.asType().asEntityType();
 
             private void create() {
                 Entity entity = entityType.create();
@@ -582,7 +583,7 @@ class ConceptRPC {
          * A utility class to execute methods on grakn.core.concept.type.RelationType
          */
         private class RelationTypeHolder {
-            private final RelationType concept = ConceptHolder.this.concept.asRelationType();
+            private final RelationType concept = ConceptHolder.this.concept.asType().asRelationType();
 
             private void create() {
                 Relation relation = concept.asRelationType().create();
@@ -633,7 +634,7 @@ class ConceptRPC {
          * A utility class to execute methods on grakn.core.concept.type.AttributeType
          */
         private class AttributeTypeHolder {
-            private final AttributeType concept = ConceptHolder.this.concept.asAttributeType();
+            private final AttributeType concept = ConceptHolder.this.concept.asType().asAttributeType();
 
             private void put(ConceptProto.ValueObject protoValue) {
                 final Attribute attribute;
@@ -769,7 +770,8 @@ class ConceptRPC {
                     List<AttributeType> attributeTypes = protoTypes.stream()
                             .map(ConceptHolder.this::convert)
                             .map(ConceptRPC::conceptExists)
-                            .map(grakn.core.concept.Concept::asAttributeType)
+                            .map(grakn.core.concept.Concept::asType)
+                            .map(grakn.core.concept.type.Type::asAttributeType)
                             .collect(Collectors.toList());
                     attributes = concept.getHas(attributeTypes);
                 }
@@ -788,7 +790,8 @@ class ConceptRPC {
                 List<RoleType> roles = protoRoles.stream()
                         .map(ConceptHolder.this::convert)
                         .map(ConceptRPC::conceptExists)
-                        .map(Concept::asRoleType)
+                        .map(grakn.core.concept.Concept::asType)
+                        .map(grakn.core.concept.type.Type::asRoleType)
                         .collect(Collectors.toList());
                 Stream<? extends Relation> concepts = concept.getRelations(roles);
 
@@ -816,7 +819,7 @@ class ConceptRPC {
             }
 
             private void setHas(ConceptProto.Concept protoAttribute) {
-                Attribute attribute = convert(protoAttribute).asAttribute();
+                Attribute attribute = convert(protoAttribute).asThing().asAttribute();
                 concept.setHas(attribute);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
@@ -826,7 +829,7 @@ class ConceptRPC {
             }
 
             private void unsetHas(ConceptProto.Concept protoAttribute) {
-                Attribute attribute = convert(protoAttribute).asAttribute();
+                Attribute attribute = convert(protoAttribute).asThing().asAttribute();
                 concept.asThing().unsetHas(attribute);
                 responseSender.accept(null);
             }
@@ -836,7 +839,7 @@ class ConceptRPC {
          * A utility class to execute methods on grakn.core.concept.thing.Relation
          */
         private class RelationHolder {
-            private final Relation concept = ConceptHolder.this.concept.asRelation();
+            private final Relation concept = ConceptHolder.this.concept.asThing().asRelation();
 
             private void getPlayersByRoleType() {
                 Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = concept.getPlayersByRoleType();
@@ -873,7 +876,8 @@ class ConceptRPC {
                 final List<RoleType> roles = protoRoles.stream()
                         .map(ConceptHolder.this::convert)
                         .map(ConceptRPC::conceptExists)
-                        .map(Concept::asRoleType)
+                        .map(grakn.core.concept.Concept::asType)
+                        .map(grakn.core.concept.type.Type::asRoleType)
                         .collect(Collectors.toList());
                 final Stream<? extends Thing> concepts = concept.getPlayers(roles);
 
@@ -888,14 +892,14 @@ class ConceptRPC {
             }
 
             private void addPlayer(ConceptProto.Relation.AddPlayer.Req request) {
-                final RoleType role = convert(request.getRoleType()).asRoleType();
+                final RoleType role = convert(request.getRoleType()).asType().asRoleType();
                 final Thing player = convert(request.getPlayer()).asThing();
                 concept.addPlayer(role, player);
                 responseSender.accept(null);
             }
 
             private void removePlayer(ConceptProto.Relation.RemovePlayer.Req request) {
-                final RoleType role = convert(request.getRoleType()).asRoleType();
+                final RoleType role = convert(request.getRoleType()).asType().asRoleType();
                 final Thing player = convert(request.getPlayer()).asThing();
                 concept.asRelation().removePlayer(role, player);
                 responseSender.accept(null);
@@ -907,7 +911,7 @@ class ConceptRPC {
 //         * A utility class to execute methods on grakn.core.concept.thing.Attribute
 //         */
         private class AttributeHolder {
-            private final Attribute concept = ConceptHolder.this.concept.asAttribute();
+            private final Attribute concept = ConceptHolder.this.concept.asThing().asAttribute();
 
             private void getValue() {
                 final ConceptProto.ValueObject.Builder value = ConceptProto.ValueObject.newBuilder();

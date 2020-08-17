@@ -215,7 +215,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public void setLabel(java.lang.String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
-        public void isAbstract(boolean isAbstract) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void unsetAbstract() { throw new GraknException(ROOT_TYPE_MUTATION); }
 
         @Override
         public void setSupertype(AttributeType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
@@ -379,7 +379,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
+            public void unsetAbstract() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -511,7 +511,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
+            public void unsetAbstract() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -643,7 +643,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
+            public void unsetAbstract() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -807,7 +807,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
+            public void unsetAbstract() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 
@@ -945,7 +945,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void isAbstract(boolean isAbstract) {
+            public void unsetAbstract() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
 

@@ -18,6 +18,7 @@
 
 package grakn.core.concept.thing;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
@@ -26,6 +27,8 @@ import grakn.core.concept.type.ThingType;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
+
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 
 public interface Thing extends Concept {
 
@@ -178,4 +181,16 @@ public interface Thing extends Concept {
      * Validates and throws an exception if there is any violation.
      */
     void validate();
+
+    default Entity asEntity() {
+        throw new GraknException(INVALID_THING_CASTING.message(Entity.class.getCanonicalName()));
+    }
+
+    default Attribute asAttribute() {
+        throw new GraknException(INVALID_THING_CASTING.message(Attribute.class.getCanonicalName()));
+    }
+
+    default Relation asRelation() {
+        throw new GraknException(INVALID_THING_CASTING.message(Relation.class.getCanonicalName()));
+    }
 }

@@ -85,12 +85,16 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void isAbstract(boolean isAbstract) {
-        if (isAbstract && getInstances().findFirst().isPresent()) {
-            throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
-        }
-        vertex.isAbstract(isAbstract);
-        declaredRoles().forEach(role -> role.isAbstract(isAbstract));
+    public void setAbstract() {
+        if (getInstances().findFirst().isPresent()) throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
+        vertex.isAbstract(true);
+        declaredRoles().forEach(role -> role.setAbstract());
+    }
+
+    @Override
+    public void unsetAbstract() {
+        vertex.isAbstract(false);
+        declaredRoles().forEach(role -> role.unsetAbstract());
     }
 
     @Override
@@ -127,7 +131,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 throw new GraknException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.message(roleLabel));
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
-                roleType.isAbstract(this.isAbstract());
+                if (this.isAbstract()) roleType.setAbstract();
                 vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
                 vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
             }
@@ -242,7 +246,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
-        public void isAbstract(boolean isAbstract) {
+        public void unsetAbstract() {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 

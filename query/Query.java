@@ -22,17 +22,15 @@ import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
-import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Void;
-import grakn.core.graph.Graphs;
-import graql.lang.Graql;
+import grakn.core.concept.type.Type;
+import grakn.core.query.writer.DefineWriter;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
@@ -43,87 +41,53 @@ public class Query {
     private static final String TRACE_STREAM_UNDEFINE = "stream.undefine";
     private static final String TRACE_STREAM_INSERT = "stream.insert";
     private static final String TRACE_STREAM_DELETE = "stream.delete";
-    private final Graphs graphs;
     private final Concepts concepts;
     private final Context.Transaction transactionContext;
 
-    public Query(Graphs graphs, Concepts concepts, Context.Transaction transactionContext) {
+    public Query(Concepts concepts, Context.Transaction transactionContext) {
         this.concepts = concepts;
-        this.graphs = graphs;
         this.transactionContext = transactionContext;
     }
 
-    private GraqlQuery parse(String query) {
-        try (ThreadTrace ignored2 = traceOnThread("parse")) {
-            return Graql.parse(query);
-        }
+    public Stream<ConceptMap> insert(GraqlInsert query) {
+        return insert(query, new Options.Query());
     }
 
-    public Stream<? extends Answer> stream(String query, Options.Query options) {
-        GraqlQuery graql = parse(query);
-        return stream(graql, options);
-    }
-
-    public Stream<? extends Answer> stream(GraqlQuery query) {
-        return stream(query, new Options.Query());
-    }
-
-    public Stream<? extends Answer> stream(GraqlQuery query, Options.Query options) {
-        if (query instanceof GraqlInsert) {
-            return stream((GraqlInsert) query, options);
-        } else if (query instanceof GraqlDelete) {
-            return stream((GraqlDelete) query, options);
-        } else if (query instanceof GraqlDefine) {
-            return stream((GraqlDefine) query, options);
-        } else if (query instanceof GraqlUndefine) {
-            return stream((GraqlUndefine) query, options);
-        } else {
-            assert false;
-            return null;
-        }
-    }
-
-    public Stream<ConceptMap> stream(GraqlInsert query) {
-        return stream(query, new Options.Query());
-    }
-
-    public Stream<ConceptMap> stream(GraqlInsert query, Options.Query options) {
+    public Stream<ConceptMap> insert(GraqlInsert query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_INSERT)) {
             Context.Query context = new Context.Query(transactionContext, options);
             return null; // TODO
         }
     }
 
-    public Stream<Void> stream(GraqlDelete query) {
-        return stream(query, new Options.Query());
+    public void delete(GraqlDelete query) {
+        delete(query, new Options.Query());
     }
 
-    public Stream<Void> stream(GraqlDelete query, Options.Query options) {
+    public void delete(GraqlDelete query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DELETE)) {
             Context.Query context = new Context.Query(transactionContext, options);
-            return null; // TODO
         }
     }
 
-    public Stream<ConceptMap> stream(GraqlDefine query) {
-        return stream(query, new Options.Query());
+    public List<Type> define(GraqlDefine query) {
+        return define(query, new Options.Query());
     }
 
-    public Stream<ConceptMap> stream(GraqlDefine query, Options.Query options) {
+    public List<Type> define(GraqlDefine query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DEFINE)) {
-            Context.Query context = new Context.Query(transactionContext, options);
-            return null; // TODO
+            DefineWriter writer = new DefineWriter(concepts, query, new Context.Query(transactionContext, options));
+            return writer.write();
         }
     }
 
-    public Stream<ConceptMap> stream(GraqlUndefine query) {
-        return stream(query, new Options.Query());
+    public void undefine(GraqlUndefine query) {
+        undefine(query, new Options.Query());
     }
 
-    public Stream<ConceptMap> stream(GraqlUndefine query, Options.Query options) {
+    public void undefine(GraqlUndefine query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_UNDEFINE)) {
             Context.Query context = new Context.Query(transactionContext, options);
-            return null; // TODO
         }
     }
 }

@@ -189,46 +189,54 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class TypeWrite extends ErrorMessage {
         public static final TypeWrite ROOT_TYPE_MUTATION =
                 new TypeWrite(1, "Root types are immutable.");
+        public static final TypeWrite TYPE_UNDEFINED =
+                new TypeWrite(2, "The type '%s' does not exist and has not been defined.");
         public static final TypeWrite TYPE_HAS_SUBTYPES =
-                new TypeWrite(2, "The type '%s' has subtypes, and cannot be deleted.");
+                new TypeWrite(3, "The type '%s' has subtypes, and cannot be deleted.");
         public static final TypeWrite TYPE_HAS_INSTANCES =
-                new TypeWrite(3, "The type '%s' has instances, and cannot be deleted.");
+                new TypeWrite(4, "The type '%s' has instances, and cannot be deleted.");
         public static final TypeWrite SUPERTYPE_SELF =
-                new TypeWrite(4, "The type '%s' cannot be a subtype of itself.");
+                new TypeWrite(5, "The type '%s' cannot be a subtype of itself.");
         public static final TypeWrite HAS_ABSTRACT_ATT_TYPE =
-                new TypeWrite(5, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
+                new TypeWrite(6, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
         public static final TypeWrite OVERRIDDEN_NOT_SUPERTYPE =
-                new TypeWrite(6, "The type '%s' cannot override '%s' as it is not a supertype.");
+                new TypeWrite(7, "The type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDE_NOT_AVAILABLE = // TODO: this can be split between 'has', 'key' and 'plays' once pushed to commit
-                new TypeWrite(7, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
+                new TypeWrite(8, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
-                new TypeWrite(8, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
+                new TypeWrite(9, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
+        public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
+                new TypeWrite(10, "The attribute type '%s' is missing a value type.");
+        public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MODIFIED =
+                new TypeWrite(11, "The value type '%s' can only be set onto attribute type '%s' when it was newly defined.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
-                new TypeWrite(9, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
+                new TypeWrite(12, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
-                new TypeWrite(10, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
+                new TypeWrite(13, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
         public static final TypeWrite HAS_KEY_VALUE_TYPE =
-                new TypeWrite(11, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
+                new TypeWrite(14, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
         public static final TypeWrite HAS_KEY_NOT_AVAILABLE =
-                new TypeWrite(12, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
+                new TypeWrite(15, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
         public static final TypeWrite HAS_KEY_PRECONDITION_OWNERSHIP =
-                new TypeWrite(13, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key.");
+                new TypeWrite(16, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key.");
         public static final TypeWrite HAS_ATT_NOT_AVAILABLE =
-                new TypeWrite(14, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
+                new TypeWrite(17, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
         public static final TypeWrite HAS_KEY_PRECONDITION_UNIQUENESS =
-                new TypeWrite(15, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
+                new TypeWrite(18, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(16, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
+                new TypeWrite(19, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
-                new TypeWrite(17, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
+                new TypeWrite(20, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(18, "The relation type '%s' does not relate any role type.");
+                new TypeWrite(21, "The relation type '%s' does not relate any role type.");
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
-                new TypeWrite(19, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
+                new TypeWrite(22, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
-                new TypeWrite(20, "The role type '%s' is already declared by a supertype.");
+                new TypeWrite(23, "The role type '%s' is already declared by a supertype.");
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
-                new TypeWrite(21, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
+                new TypeWrite(24, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
+        public static final TypeWrite ROLE_DEFINED_OUTSIDE_OF_RELATION =
+                new TypeWrite(25, "The role type '%s' cannot be defined outside the scope of a relation type.");
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
 

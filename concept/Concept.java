@@ -19,15 +19,7 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
@@ -48,39 +40,10 @@ public interface Concept {
         throw new GraknException(INVALID_TYPE_CASTING.message(Type.class.getCanonicalName()));
     }
 
-    default ThingType asThingType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(ThingType.class.getCanonicalName()));
-    }
-
-    default EntityType asEntityType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(EntityType.class.getCanonicalName()));
-    }
-
-    default AttributeType asAttributeType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
-    }
-
-    default RelationType asRelationType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(RelationType.class.getCanonicalName()));
-    }
-
-    default RoleType asRoleType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(RoleType.class.getCanonicalName()));
-    }
 
     default Thing asThing() {
         throw new GraknException(INVALID_THING_CASTING.message(Thing.class.getCanonicalName()));
     }
 
-    default Entity asEntity() {
-        throw new GraknException(INVALID_THING_CASTING.message(Entity.class.getCanonicalName()));
-    }
 
-    default Attribute asAttribute() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.class.getCanonicalName()));
-    }
-
-    default Relation asRelation() {
-        throw new GraknException(INVALID_THING_CASTING.message(Relation.class.getCanonicalName()));
-    }
 }

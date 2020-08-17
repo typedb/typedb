@@ -20,8 +20,10 @@ package grakn.core.concept.type;
 
 import grakn.core.concept.thing.Attribute;
 import grakn.core.graph.util.Schema;
+import graql.lang.common.GraqlArg;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public interface AttributeType extends ThingType {
@@ -60,24 +62,35 @@ public interface AttributeType extends ThingType {
     AttributeType.DateTime asDateTime();
 
     enum ValueType {
-        OBJECT(Schema.ValueType.OBJECT),
-        BOOLEAN(Schema.ValueType.BOOLEAN),
-        LONG(Schema.ValueType.LONG),
-        DOUBLE(Schema.ValueType.DOUBLE),
-        STRING(Schema.ValueType.STRING),
-        DATETIME(Schema.ValueType.DATETIME);
+        OBJECT(Schema.ValueType.OBJECT, null),
+        BOOLEAN(Schema.ValueType.BOOLEAN, GraqlArg.ValueType.BOOLEAN),
+        LONG(Schema.ValueType.LONG, GraqlArg.ValueType.LONG),
+        DOUBLE(Schema.ValueType.DOUBLE, GraqlArg.ValueType.DOUBLE),
+        STRING(Schema.ValueType.STRING, GraqlArg.ValueType.STRING),
+        DATETIME(Schema.ValueType.DATETIME, GraqlArg.ValueType.DATETIME);
 
         private final Class<?> valueClass;
         private final boolean isWritable;
+        private final GraqlArg.ValueType graqlValueType;
 
-        ValueType(Schema.ValueType valueType) {
-            this.valueClass = valueType.valueClass();
-            this.isWritable = valueType.isWritable();
+        ValueType(Schema.ValueType schemValueType, GraqlArg.ValueType graqlValueType) {
+            this.valueClass = schemValueType.valueClass();
+            this.isWritable = schemValueType.isWritable();
+            this.graqlValueType = graqlValueType;
         }
 
-        public ValueType of(Class<?> valueClass) {
+        public static ValueType of(Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.valueClass.equals(valueClass)) {
+                    return vt;
+                }
+            }
+            return null;
+        }
+
+        public static ValueType of(GraqlArg.ValueType valueType) {
+            for (ValueType vt : ValueType.values()) {
+                if (Objects.equals(vt.graqlValueType, valueType)) {
                     return vt;
                 }
             }

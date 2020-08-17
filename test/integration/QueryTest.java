@@ -50,7 +50,7 @@ public class QueryTest {
                             "person sub entity, has email @key, has name, has age, plays friend; " +
                             "friendship sub relation, relates friend;";
                     GraqlInsert query = Graql.parse(queryStr);
-                    transaction.query().stream(query);
+                    transaction.query().insert(query);
                     transaction.commit();
                 }
 

@@ -79,7 +79,7 @@ class RocksTransaction implements Grakn.Transaction {
         storage = new CoreStorage();
         graph = new Graphs(storage);
         concepts = new Concepts(graph);
-        query = new Query(graph, concepts, context);
+        query = new Query(concepts, context);
 
         isOpen = new AtomicBoolean(true);
     }

@@ -158,7 +158,7 @@ public class GraqlSteps {
         numericAnswerGroups = null;
 
         Options.Query options = new Options.Query().infer(true).explain(true);
-        answers = tx.query().stream(graqlQuery, options).collect(toList());
+        answers = tx.query().insert(graqlQuery, options).collect(toList());
         tx.commit();
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
     }
@@ -173,15 +173,15 @@ public class GraqlSteps {
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlGet) {
 
-            answers = tx.query().stream(graqlQuery.asGet(), new Options.Query().explain(true)); // always use inference and have explanations
+            answers = tx.query().insert(graqlQuery.asGet(), new Options.Query().explain(true)); // always use inference and have explanations
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlGet.Aggregate) {
-            numericAnswers = tx.query().stream(graqlQuery.asGetAggregate());
+            numericAnswers = tx.query().insert(graqlQuery.asGetAggregate());
         } else if (graqlQuery instanceof GraqlGet.Group) {
-            answerGroups = tx.query().stream(graqlQuery.asGetGroup());
+            answerGroups = tx.query().insert(graqlQuery.asGetGroup());
         } else if (graqlQuery instanceof GraqlGet.Group.Aggregate) {
-            numericAnswerGroups = tx.query().stream(graqlQuery.asGetGroupAggregate());
+            numericAnswerGroups = tx.query().insert(graqlQuery.asGetGroupAggregate());
         } else {
             throw new ScenarioDefinitionException("Only match-get, aggregate, group and group aggregate supported for now");
         }
@@ -531,7 +531,7 @@ public class GraqlSteps {
         for (ConceptMap answer : getAnswers()) {
             String query = applyQueryTemplate(templatedQuery, answer);
             GraqlQuery graqlQuery = Graql.parse(query);
-            List<? extends Answer> answers = tx.query().stream(graqlQuery).collect(toList());
+            List<? extends Answer> answers = tx.query().insert(graqlQuery).collect(toList());
             assertEquals(1, answers.size());
         }
     }
@@ -540,7 +540,7 @@ public class GraqlSteps {
             final String queryStatements,
             final Function<GraqlQuery, TQuery> queryTypeFn) {
         final TQuery graqlQuery = queryTypeFn.apply(Graql.parse(String.join("\n", queryStatements)));
-        tx.query().stream(graqlQuery);
+        tx.query().insert(graqlQuery);
         tx.commit();
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
     }
@@ -549,7 +549,7 @@ public class GraqlSteps {
             final String queryStatements,
             final Function<GraqlQuery, TQuery> queryTypeFn) {
         final TQuery graqlQuery = queryTypeFn.apply(Graql.parse(String.join("\n", queryStatements)));
-        tx.query().stream(graqlQuery);
+        tx.query().insert(graqlQuery);
     }
 
     private <TQuery extends GraqlQuery> void assertGraqlQueryThrows(

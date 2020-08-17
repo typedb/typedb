@@ -18,6 +18,6 @@
 
 package grakn.core.concept.answer;
 
-public class ConceptMap extends Answer {
+public class ConceptMap implements Answer {
 
 }

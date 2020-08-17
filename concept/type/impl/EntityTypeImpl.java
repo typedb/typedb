@@ -122,7 +122,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public void isAbstract(boolean isAbstract) {
+        public void unsetAbstract() {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 
