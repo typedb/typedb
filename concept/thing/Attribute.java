@@ -42,15 +42,6 @@ public interface Attribute extends Thing {
     AttributeType getType();
 
     /**
-     * Set an {@code Attribute} to be owned by this {@code Attribute}.
-     *
-     * @param attribute that will be owned by this {@code Attribute}
-     * @return this {@code Attribute} for further manipulation
-     */
-    @Override
-    Attribute setHas(Attribute attribute);
-
-    /**
      * Get a stream of all {@code Thing} instances that own this {@code Attribute}.
      *
      * @return stream of all {@code Thing} instances that own this {@code Attribute}

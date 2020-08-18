@@ -71,11 +71,13 @@ public interface AttributeType extends ThingType {
 
         private final Class<?> valueClass;
         private final boolean isWritable;
+        private final boolean isKeyable;
         private final GraqlArg.ValueType graqlValueType;
 
-        ValueType(Schema.ValueType schemValueType, GraqlArg.ValueType graqlValueType) {
-            this.valueClass = schemValueType.valueClass();
-            this.isWritable = schemValueType.isWritable();
+        ValueType(Schema.ValueType schemaValueType, GraqlArg.ValueType graqlValueType) {
+            this.valueClass = schemaValueType.valueClass();
+            this.isWritable = schemaValueType.isWritable();
+            this.isKeyable = schemaValueType.isKeyable();
             this.graqlValueType = graqlValueType;
         }
 
@@ -103,6 +105,10 @@ public interface AttributeType extends ThingType {
 
         public boolean isWritable() {
             return isWritable;
+        }
+
+        public boolean isKeyable() {
+            return isKeyable;
         }
     }
 

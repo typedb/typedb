@@ -73,9 +73,8 @@ public interface Thing extends Concept {
      * another {@code Thing} of the same {@code ThingType} as this one.
      *
      * @param attribute that will be owned by this {@code Thing}
-     * @return this {@code Thing} for further manipulation
      */
-    Thing setHas(Attribute attribute);
+    void setHas(Attribute attribute);
 
     /**
      * Remove an {@code Attribute} from being owned by this {@code Thing}.
@@ -97,22 +96,7 @@ public interface Thing extends Concept {
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> getHas();
-
-    /**
-     * Get all {@code Attribute} instances owned by this {@code Thing}.
-     *
-     * @return a stream of {@code Attribute} instances owned by this {@code Thing}
-     */
     Stream<? extends Attribute> getHas(boolean onlyKey);
-
-    /**
-     * Get all {@code Attribute} instances owned by this {@code Thing} filtered
-     * by an {@code AttributeType} type.
-     *
-     * @return a stream of {@code Attribute} instances owned by this {@code Thing}
-     */
-    Stream<? extends Attribute> getHas(AttributeType attributeType);
 
     Stream<? extends Attribute.Boolean> getHas(AttributeType.Boolean attributeType);
 
@@ -126,7 +110,7 @@ public interface Thing extends Concept {
 
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing} filtered
-     * by their {@code AttributeType} types.
+     * by their {@code AttributeType} types. If no types are filtered, all types are retrieved.
      *
      * The {@code Attribute} instances
      * owned by this {@code Thing} include {@code Attribute} instances that
@@ -134,7 +118,7 @@ public interface Thing extends Concept {
      *
      * @return a stream of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> getHas(List<AttributeType> attributeType);
+    Stream<? extends Attribute> getHas(AttributeType... attributeType);
 
     /**
      * Get all {@code RoleType} types that this {@code Thing} plays in a {@code Relation}.
@@ -144,31 +128,13 @@ public interface Thing extends Concept {
     Stream<? extends RoleType> getPlays();
 
     /**
-     * Get all {@code Relation} instances that this {@code Thing} is playing a role in.
-     *
-     * @return a stream of {@code Relation} that this {@code Thing} is playing a role in
-     */
-    default Stream<? extends Relation> getRelations() {
-        return getRelations(Collections.emptyList());
-    }
-
-    /**
-     * Get all {@code Relation} instances that this {@code Thing} is playing the specified role in.
-     *
-     * @param roleType The role type that this {@code Thing} can play
-     * @return a stream of {@code Relation} that this {@code Thing} plays the specified role in
-     */
-    default Stream<? extends Relation> getRelations(RoleType roleType) {
-        return getRelations(Collections.singletonList(roleType));
-    }
-
-    /**
      * Get all {@code Relation} instances that this {@code Thing} is playing any of the specified roles in.
+     * If no roles are specified, all Relations are retrieved regardless of role.
      *
      * @param roleTypes The role types that this {@code Thing} can play
      * @return a stream of {@code Relation} that this {@code Thing} plays a specified role in
      */
-    Stream<? extends Relation> getRelations(List<RoleType> roleTypes);
+    Stream<? extends Relation> getRelations(RoleType... roleTypes);
 
     /**
      * Returns true if this {@code Thing} has been deleted.

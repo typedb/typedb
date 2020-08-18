@@ -37,15 +37,4 @@ public interface Entity extends Thing {
      */
     @Override
     EntityType getType();
-
-    /**
-     * Set an {@code Attribute} to be owned by this {@code Entity}.
-     *
-     * @param attribute that will be owned by this {@code Entity}
-     * @return this {@code Entity} for further manipulation
-     */
-    @Override
-    Entity setHas(Attribute attribute);
-
-
 }

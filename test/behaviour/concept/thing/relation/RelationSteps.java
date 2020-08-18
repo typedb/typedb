@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.concept.thing.relation;
 
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import io.cucumber.java.en.Then;
@@ -51,31 +52,41 @@ public class RelationSteps {
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {bool}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, boolean keyValue) {
         Attribute.Boolean key = tx().concepts().getAttributeType(keyType).asBoolean().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().setHas(key));
+        final Relation relation = tx().concepts().getRelationType(type).create();
+        relation.setHas(key);
+        put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
         Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().setHas(key));
+        final Relation relation = tx().concepts().getRelationType(type).create();
+        relation.setHas(key);
+        put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {double}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, double keyValue) {
         Attribute.Double key = tx().concepts().getAttributeType(keyType).asDouble().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().setHas(key));
+        final Relation relation = tx().concepts().getRelationType(type).create();
+        relation.setHas(key);
+        put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {word}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
         Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().setHas(key));
+        final Relation relation = tx().concepts().getRelationType(type).create();
+        relation.setHas(key);
+        put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {datetime}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
         Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
-        put(var, tx().concepts().getRelationType(type).create().setHas(key));
+        final Relation relation = tx().concepts().getRelationType(type).create();
+        relation.setHas(key);
+        put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")

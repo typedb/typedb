@@ -31,6 +31,7 @@ import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -84,7 +85,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Thing setHas(Attribute attribute) {
+    public void setHas(Attribute attribute) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw new GraknException(THING_ATTRIBUTE_UNDEFINED.message(vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
@@ -96,7 +97,6 @@ public abstract class ThingImpl implements Thing {
         }
 
         vertex.outs().put(Schema.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex);
-        return this;
     }
 
     @Override
@@ -105,18 +105,8 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<AttributeImpl> getHas() {
-        return getHas(false);
-    }
-
-    @Override
     public Stream<AttributeImpl> getHas(boolean onlyKey) {
-        return getHas(getType().getOwns(onlyKey).collect(toList()));
-    }
-
-    @Override
-    public Stream<AttributeImpl> getHas(AttributeType attributeType) {
-        return getAttributeVertices(list(attributeType)).map(AttributeImpl::of);
+        return getHas(getType().getOwns(onlyKey).toArray(AttributeType[]::new));
     }
 
     @Override
@@ -145,8 +135,11 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<AttributeImpl> getHas(List<AttributeType> attributeType) {
-        return getAttributeVertices(attributeType).map(AttributeImpl::of);
+    public Stream<AttributeImpl> getHas(AttributeType... attributeTypes) {
+        if (attributeTypes.length == 0) {
+            return getAttributeVertices(getType().getOwns().collect(toList())).map(AttributeImpl::of);
+        }
+        return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
     }
 
     private Stream<AttributeVertex> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
@@ -168,11 +161,11 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<RelationImpl> getRelations(List<RoleType> roleTypes) {
-        if (roleTypes.isEmpty()) {
+    public Stream<RelationImpl> getRelations(RoleType... roleTypes) {
+        if (roleTypes.length == 0) {
             return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
         } else {
-            return roleTypes.stream().flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
+            return Arrays.stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
                     vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             )).map(RelationImpl::of);
         }

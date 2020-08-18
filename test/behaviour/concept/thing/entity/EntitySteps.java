@@ -19,6 +19,8 @@
 package grakn.core.test.behaviour.concept.thing.entity;
 
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.EntityType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -46,31 +48,41 @@ public class EntitySteps {
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {bool}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, boolean keyValue) {
         Attribute.Boolean key = tx().concepts().getAttributeType(keyType).asBoolean().put(keyValue);
-        put(var, tx().concepts().getEntityType(type).create().setHas(key));
+        final Entity entity = tx().concepts().getEntityType(type).create();
+        entity.setHas(key);
+        put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
         Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
-        put(var, tx().concepts().getEntityType(type).create().setHas(key));
+        final Entity entity = tx().concepts().getEntityType(type).create();
+        entity.setHas(key);
+        put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {double}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, double keyValue) {
         Attribute.Double key = tx().concepts().getAttributeType(keyType).asDouble().put(keyValue);
-        put(var, tx().concepts().getEntityType(type).create().setHas(key));
+        final Entity entity = tx().concepts().getEntityType(type).create();
+        entity.setHas(key);
+        put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {word}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
         Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
-        put(var, tx().concepts().getEntityType(type).create().setHas(key));
+        final Entity entity = tx().concepts().getEntityType(type).create();
+        entity.setHas(key);
+        put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {datetime}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
         Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
-        put(var, tx().concepts().getEntityType(type).create().setHas(key));
+        final Entity entity = tx().concepts().getEntityType(type).create();
+        entity.setHas(key);
+        put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")

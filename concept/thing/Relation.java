@@ -43,24 +43,11 @@ public interface Relation extends Thing {
     @Override
     RelationType getType();
 
-    /**
-     * Set an {@code Attribute} to be owned by this {@code Relation}.
-     *
-     * @param attribute that will be owned by this {@code Relation}
-     * @return this {@code Relation} for further manipulation
-     */
-    @Override
-    Relation setHas(Attribute attribute);
-
     void addPlayer(RoleType roleType, Thing player);
 
     void removePlayer(RoleType roleType, Thing player);
 
-    Stream<? extends Thing> getPlayers();
-
-    Stream<? extends Thing> getPlayers(RoleType roleTypes);
-
-    Stream<? extends Thing> getPlayers(List<RoleType> roleTypes);
+    Stream<? extends Thing> getPlayers(RoleType... roleTypes);
 
     Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();
 

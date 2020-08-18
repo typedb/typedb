@@ -17,6 +17,7 @@
 
 package grakn.core.server.rpc;
 
+import com.google.protobuf.ByteString;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
@@ -28,8 +29,10 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.server.rpc.ConceptRPC.ConceptHolder;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.core.server.rpc.util.ResponseBuilder;
+import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -303,11 +306,27 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //    }
 
     private void conceptMethod(Transaction.ConceptMethod.Req request) {
-        ConceptRPC.run(request.getIid(), request.getMethod(), iterators, transaction(), responseSender::onNext);
+        final ConceptHolder con;
+        if (request.getIid() != null) {
+            con = new ConceptHolder(request.getIid(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
+        } else if (request.getLabel() != null) {
+            con = new ConceptHolder(request.getLabel(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
+        } else {
+            throw new UnsupportedOperationException("A concept method must have either an iid or a type label");
+        }
+        ConceptRPC.run(con, request.getMethod());
     }
 
     private void conceptIterMethod(Transaction.ConceptMethod.Iter.Req request, Transaction.Iter.Req.Options options) {
-        ConceptRPC.iter(request.getIid(), request.getMethod(), iterators, transaction(), responseSender::onNext, options);
+        final ConceptHolder con;
+        if (request.getIid() != null) {
+            con = new ConceptHolder(request.getIid(), transaction(), iterators, responseSender::onNext, options);
+        } else if (request.getLabel() != null) {
+            con = new ConceptHolder(request.getLabel(), transaction(), iterators, responseSender::onNext, options);
+        } else {
+            throw new UnsupportedOperationException("A concept iter method must have either an iid or a type label");
+        }
+        ConceptRPC.iter(con, request.getMethod());
     }
 
 //    /**

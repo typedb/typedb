@@ -31,6 +31,7 @@ import grakn.core.graph.util.Schema;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -55,11 +56,6 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public RelationTypeImpl getType() {
         return RelationTypeImpl.of(vertex.type());
-    }
-
-    @Override
-    public RelationImpl setHas(Attribute attribute) {
-        return (RelationImpl) super.setHas(attribute).asRelation();
     }
 
     @Override
@@ -91,18 +87,11 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Stream<ThingImpl> getPlayers() {
-        return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
-    }
-
-    @Override
-    public Stream<ThingImpl> getPlayers(RoleType roleType) {
-        return getPlayers(roleType.getSubtypes().map(rt -> ((RoleTypeImpl) rt).vertex));
-    }
-
-    @Override
-    public Stream<ThingImpl> getPlayers(List<RoleType> roleTypes) {
-        return getPlayers(roleTypes.stream().flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+    public Stream<ThingImpl> getPlayers(RoleType... roleTypes) {
+        if (roleTypes.length == 0) {
+            return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
+        }
+        return getPlayers(Arrays.stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {

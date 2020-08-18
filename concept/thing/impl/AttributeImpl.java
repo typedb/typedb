@@ -68,11 +68,6 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
-    public AttributeImpl setHas(Attribute attribute) {
-        return (AttributeImpl) super.setHas(attribute).asAttribute();
-    }
-
-    @Override
     public Stream<ThingImpl> getOwners() {
         return stream(vertex.ins().edge(Schema.Edge.Thing.HAS).from()).map(ThingImpl::of);
     }

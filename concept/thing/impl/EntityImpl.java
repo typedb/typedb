@@ -41,11 +41,6 @@ public class EntityImpl extends ThingImpl implements Entity {
     }
 
     @Override
-    public EntityImpl setHas(Attribute attribute) {
-        return (EntityImpl) super.setHas(attribute).asEntity();
-    }
-
-    @Override
     public void validate() {
         super.validate();
     }
