@@ -139,8 +139,8 @@ public class RelationSteps {
         assertEquals(0, tx().concepts().getRelationType(typeLabel).getInstances().count());
     }
 
-    @When("relation {var} set player for role\\( ?{type_label} ?): {var}")
-    public void relation_set_player_for_role(String var1, String roleTypeLabel, String var2) {
+    @When("relation {var} add player for role\\( ?{type_label} ?): {var}")
+    public void relation_add_player_for_role(String var1, String roleTypeLabel, String var2) {
         get(var1).asRelation().addPlayer(get(var1).asRelation().getType().getRelates(roleTypeLabel), get(var2));
     }
 

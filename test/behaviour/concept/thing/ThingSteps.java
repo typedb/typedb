@@ -83,8 +83,8 @@ public class ThingSteps {
         assertThrows(() -> get(var1).setHas(get(var2).asAttribute()));
     }
 
-    @When("entity/attribute/relation {var} remove has: {var}")
-    public void thing_remove_has(String var1, String var2) {
+    @When("entity/attribute/relation {var} unset has: {var}")
+    public void thing_unset_has(String var1, String var2) {
         get(var1).unsetHas(get(var2).asAttribute());
     }
 

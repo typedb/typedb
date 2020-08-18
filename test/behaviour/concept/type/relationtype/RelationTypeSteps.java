@@ -60,8 +60,8 @@ public class RelationTypeSteps {
         assertThrows(() -> tx().concepts().getRelationType(relationLabel).setRelates(roleLabel, superRole));
     }
 
-    @When("relation\\( ?{type_label} ?) remove related role: {type_label}")
-    public void relation_type_remove_related_role(String relationLabel, String roleLabel) {
+    @When("relation\\( ?{type_label} ?) unset related role: {type_label}")
+    public void relation_type_unset_related_role(String relationLabel, String roleLabel) {
         tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).delete();
     }
 
