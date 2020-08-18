@@ -159,13 +159,16 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         if (isRoot()) {
             return stream(roles);
         } else {
-            Set<RoleTypeImpl> direct = new HashSet<>(), overridden = new HashSet<>();
+            Set<RoleTypeImpl> direct = new HashSet<>();
             roles.forEachRemaining(direct::add);
-            filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull)
-                    .apply(RoleTypeImpl::of)
-                    .forEachRemaining(overridden::add);
-            return Stream.concat(direct.stream(), getSupertype().getRelates().filter(role -> !overridden.contains(role)));
+            return Stream.concat(direct.stream(), getSupertype().getRelates().filter(
+                    role -> overriddenRoles().noneMatch(o -> o.equals(role))
+            ));
         }
+    }
+
+    Stream<RoleTypeImpl> overriddenRoles() {
+        return stream(filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull).apply(RoleTypeImpl::of));
     }
 
     private Stream<RoleTypeImpl> declaredRoles() {
