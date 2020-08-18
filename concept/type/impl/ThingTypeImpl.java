@@ -155,7 +155,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void ownsKey(AttributeTypeImpl attributeType) {
         if (!attributeType.isKeyable()) {
             throw new GraknException(OWNS_KEY_VALUE_TYPE.message(attributeType.getLabel(), attributeType.getValueType().name()));
-        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenAttributes()).anyMatch(a -> a.equals(attributeType))) {
+        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenOwns(false)).anyMatch(a -> a.equals(attributeType))) {
             throw new GraknException(OWNS_KEY_NOT_AVAILABLE.message(attributeType.getLabel()));
         }
 
@@ -213,15 +213,19 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    private Stream<AttributeTypeImpl> overriddenAttributes() {
+    private Stream<AttributeTypeImpl> overriddenOwns(boolean onlyKey) {
         if (isRoot()) return Stream.empty();
 
-        Iterator<AttributeTypeImpl> overriddenAttributes = apply(distinct(link(
-                vertex.outs().edge(Schema.Edge.Type.OWNS_KEY).overridden(),
-                vertex.outs().edge(Schema.Edge.Type.OWNS).overridden()
-        )), AttributeTypeImpl::of);
+        if (onlyKey) {
+            return null;
+        } else {
+            Iterator<AttributeTypeImpl> overriddenAttributes = apply(distinct(link(
+                    vertex.outs().edge(Schema.Edge.Type.OWNS_KEY).overridden(),
+                    vertex.outs().edge(Schema.Edge.Type.OWNS).overridden()
+            )), AttributeTypeImpl::of);
 
-        return concat(stream(overriddenAttributes), getSupertype().overriddenAttributes());
+            return concat(stream(overriddenAttributes), getSupertype().overriddenOwns(false));
+        }
     }
 
     @Override
