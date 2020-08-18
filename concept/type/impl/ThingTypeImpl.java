@@ -234,14 +234,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Stream<AttributeTypeImpl> getOwns(boolean onlyKey) {
-        if (onlyKey && isRoot()) {
-            return declaredKeys();
-        } else if (onlyKey) {
+        if (isRoot()) return Stream.of();
+
+        if (onlyKey) {
             Set<TypeVertex> overridden = new HashSet<>();
             filter(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
             return concat(declaredKeys(), getSupertype().getOwns(true).filter(key -> !overridden.contains(key.vertex)));
-        } else if (isRoot()) {
-            return declaredAttributes();
         } else {
             Set<TypeVertex> overridden = new HashSet<>();
             link(vertex.outs().edge(Schema.Edge.Type.KEY).overridden(),
@@ -277,14 +275,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Stream<RoleTypeImpl> getPlays() {
-        Stream<RoleTypeImpl> declared = stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of));
-        if (isRoot()) {
-            return declared;
-        } else {
-            Set<TypeVertex> overridden = new HashSet<>();
-            filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
-            return concat(declared, getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex)));
-        }
+        if (isRoot()) return Stream.of();
+
+        Set<TypeVertex> overridden = new HashSet<>();
+        filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
+        return concat(stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of)),
+                      getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex)));
     }
 
     @Override
