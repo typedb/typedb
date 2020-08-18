@@ -212,36 +212,20 @@ public class ResponseBuilder {
         }
 
         private static ConceptProto.Concept.SCHEMA getBaseType(grakn.core.concept.Concept concept) {
-            if (concept instanceof EntityType) {
-                if (((EntityType) concept).isRoot()) {
-                    return ConceptProto.Concept.SCHEMA.META_TYPE;
-                } else {
-                    return ConceptProto.Concept.SCHEMA.ENTITY_TYPE;
-                }
-            } else if (concept instanceof RelationType) {
-                if (((RelationType) concept).isRoot()) {
-                    return ConceptProto.Concept.SCHEMA.META_TYPE;
-                } else {
-                    return ConceptProto.Concept.SCHEMA.RELATION_TYPE;
-                }
-            } else if (concept instanceof AttributeType) {
-                if (((AttributeType) concept).isRoot()) {
-                    return ConceptProto.Concept.SCHEMA.META_TYPE;
-                } else {
-                    return ConceptProto.Concept.SCHEMA.ATTRIBUTE_TYPE;
-                }
-            } else if (concept instanceof ThingType) {
-                if (((ThingType) concept).isRoot()) {
-                    return ConceptProto.Concept.SCHEMA.META_TYPE;
-                } else {
-                    throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
-                }
-            } else if (concept instanceof Entity) {
+            if (concept instanceof Entity) {
                 return ConceptProto.Concept.SCHEMA.ENTITY;
             } else if (concept instanceof Relation) {
                 return ConceptProto.Concept.SCHEMA.RELATION;
             } else if (concept instanceof Attribute) {
                 return ConceptProto.Concept.SCHEMA.ATTRIBUTE;
+            } else if (concept instanceof EntityType) {
+                return ConceptProto.Concept.SCHEMA.ENTITY_TYPE;
+            } else if (concept instanceof RelationType) {
+                return ConceptProto.Concept.SCHEMA.RELATION_TYPE;
+            } else if (concept instanceof AttributeType) {
+                return ConceptProto.Concept.SCHEMA.ATTRIBUTE_TYPE;
+            } else if (concept instanceof ThingType) {
+                return ConceptProto.Concept.SCHEMA.THING_TYPE;
             } else if (concept instanceof RoleType) {
                 return ConceptProto.Concept.SCHEMA.ROLE_TYPE;
 //            } else if (concept.isRule()) {

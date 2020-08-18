@@ -75,6 +75,9 @@ class ConceptRPC {
             case TYPE_SETSUPERTYPE_REQ:
                 con.asType().setSup(req.getTypeSetSupertypeReq().getType());
                 return;
+            case TYPE_ISROOT_REQ:
+                con.asType().isRoot();
+                return;
 
 //            // Rule methods
 //            case RULE_WHEN_REQ:
@@ -398,6 +401,16 @@ class ConceptRPC {
                 });
 
                 iterators.startBatchIterating(responses.iterator(), options);
+            }
+
+            private void isRoot() {
+                boolean isRoot = type.isRoot();
+
+                ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setTypeIsRootRes(ConceptProto.Type.IsRoot.Res.newBuilder()
+                                                           .setRoot(isRoot)).build();
+
+                responseSender.accept(transactionRes(response));
             }
         }
 
