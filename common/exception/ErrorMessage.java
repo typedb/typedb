@@ -197,7 +197,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(4, "The type '%s' has instances, and cannot be deleted.");
         public static final TypeWrite SUPERTYPE_SELF =
                 new TypeWrite(5, "The type '%s' cannot be a subtype of itself.");
-        public static final TypeWrite HAS_ABSTRACT_ATT_TYPE =
+        public static final TypeWrite OWNS_ABSTRACT_ATT_TYPE =
                 new TypeWrite(6, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
         public static final TypeWrite OVERRIDDEN_NOT_SUPERTYPE =
                 new TypeWrite(7, "The type '%s' cannot override '%s' as it is not a supertype.");
@@ -213,15 +213,15 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(12, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
                 new TypeWrite(13, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
-        public static final TypeWrite HAS_KEY_VALUE_TYPE =
+        public static final TypeWrite OWNS_KEY_VALUE_TYPE =
                 new TypeWrite(14, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
-        public static final TypeWrite HAS_KEY_NOT_AVAILABLE =
+        public static final TypeWrite OWNS_KEY_NOT_AVAILABLE =
                 new TypeWrite(15, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
-        public static final TypeWrite HAS_KEY_PRECONDITION_OWNERSHIP =
+        public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP =
                 new TypeWrite(16, "The instances of type '%s' does not have exactly one attribute of type '%s' to convert to key.");
-        public static final TypeWrite HAS_ATT_NOT_AVAILABLE =
+        public static final TypeWrite OWNS_ATT_NOT_AVAILABLE =
                 new TypeWrite(17, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
-        public static final TypeWrite HAS_KEY_PRECONDITION_UNIQUENESS =
+        public static final TypeWrite OWNS_KEY_PRECONDITION_UNIQUENESS =
                 new TypeWrite(18, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
                 new TypeWrite(19, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");

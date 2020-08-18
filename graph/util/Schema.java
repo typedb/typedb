@@ -164,14 +164,16 @@ public class Schema {
         EDGE_ISA_IN(-20, InfixType.EDGE), // EDGE_ISA_OUT does not exist by design
         EDGE_SUB_OUT(30, InfixType.EDGE),
         EDGE_SUB_IN(-30, InfixType.EDGE),
-        EDGE_KEY_OUT(40, InfixType.EDGE),
-        EDGE_KEY_IN(-40, InfixType.EDGE),
-        EDGE_HAS_OUT(50, InfixType.EDGE),
-        EDGE_HAS_IN(-50, InfixType.EDGE),
-        EDGE_PLAYS_OUT(60, InfixType.EDGE),
-        EDGE_PLAYS_IN(-60, InfixType.EDGE),
-        EDGE_RELATES_OUT(70, InfixType.EDGE),
-        EDGE_RELATES_IN(-70, InfixType.EDGE),
+        EDGE_OWNS_OUT(40, InfixType.EDGE),
+        EDGE_OWNS_IN(-40, InfixType.EDGE),
+        EDGE_OWNS_KEY_OUT(50, InfixType.EDGE),
+        EDGE_OWNS_KEY_IN(-50, InfixType.EDGE),
+        EDGE_HAS_OUT(60, InfixType.EDGE),
+        EDGE_HAS_IN(-60, InfixType.EDGE),
+        EDGE_PLAYS_OUT(70, InfixType.EDGE),
+        EDGE_PLAYS_IN(-70, InfixType.EDGE),
+        EDGE_RELATES_OUT(80, InfixType.EDGE),
+        EDGE_RELATES_IN(-80, InfixType.EDGE),
         EDGE_ROLEPLAYER_OUT(100, InfixType.EDGE, true),
         EDGE_ROLEPLAYER_IN(-100, InfixType.EDGE, true);
 
@@ -487,8 +489,8 @@ public class Schema {
 
         enum Type implements Edge {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
-            KEY(Infix.EDGE_KEY_OUT, Infix.EDGE_KEY_IN),
-            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+            OWNS(Infix.EDGE_OWNS_OUT, Infix.EDGE_OWNS_IN),
+            OWNS_KEY(Infix.EDGE_OWNS_KEY_OUT, Infix.EDGE_OWNS_KEY_IN),
             PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
             RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN);
 
