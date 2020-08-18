@@ -213,15 +213,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    private Stream<AttributeType> overriddenAttributes() {
+    private Stream<AttributeTypeImpl> overriddenAttributes() {
         if (isRoot()) return Stream.empty();
 
-        Iterator<TypeVertex> overriddenAttributes = distinct(link(
+        Iterator<AttributeTypeImpl> overriddenAttributes = apply(distinct(link(
                 vertex.outs().edge(Schema.Edge.Type.OWNS_KEY).overridden(),
                 vertex.outs().edge(Schema.Edge.Type.OWNS).overridden()
-        ));
+        )), AttributeTypeImpl::of);
 
-        return concat(stream(link(overriddenAttributes).apply(AttributeTypeImpl::of)), getSupertype().overriddenAttributes());
+        return concat(stream(overriddenAttributes), getSupertype().overriddenAttributes());
     }
 
     @Override
