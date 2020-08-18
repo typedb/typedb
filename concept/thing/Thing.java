@@ -24,8 +24,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;

@@ -49,6 +49,10 @@ public interface AttributeType extends ThingType {
 
     ValueType getValueType();
 
+    Stream<? extends ThingType> getOwners();
+
+    Stream<? extends ThingType> getOwners(boolean onlyKey);
+
     AttributeType asObject();
 
     AttributeType.Boolean asBoolean();

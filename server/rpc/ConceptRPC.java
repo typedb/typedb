@@ -445,7 +445,7 @@ class ConceptRPC {
 
                 final ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRoleTypeGetRelationRes(ConceptProto.RoleType.GetRelation.Res.newBuilder()
-                                .setRelationType(ResponseBuilder.Concept.concept(relationType))).build();
+                                                           .setRelationType(ResponseBuilder.Concept.concept(relationType))).build();
 
                 responseSender.accept(transactionRes(response));
             }

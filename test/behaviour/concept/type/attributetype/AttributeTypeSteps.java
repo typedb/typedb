@@ -106,4 +106,36 @@ public class AttributeTypeSteps {
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
         assertEquals(regex, attributeType.asString().getRegex());
     }
+
+    @Then("attribute\\( ?{type_label} ?) get key owners contain:")
+    public void attribute_type_get_owners_as_key_contains(String typeLabel, List<String> ownerLabels) {
+        AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
+        Set<String> actuals = attributeType.getOwners(true).map(ThingType::getLabel).collect(toSet());
+        assertTrue(actuals.containsAll(ownerLabels));
+    }
+
+    @Then("attribute\\( ?{type_label} ?) get key owners do not contain:")
+    public void attribute_type_get_owners_as_key_do_not_contains(String typeLabel, List<String> ownerLabels) {
+        AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
+        Set<String> actuals = attributeType.getOwners(true).map(ThingType::getLabel).collect(toSet());
+        for (String ownerLabel : ownerLabels) {
+            assertFalse(actuals.contains(ownerLabel));
+        }
+    }
+
+    @Then("attribute\\( ?{type_label} ?) get attribute owners contain:")
+    public void attribute_type_get_owners_as_attribute_contains(String typeLabel, List<String> ownerLabels) {
+        AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
+        Set<String> actuals = attributeType.getOwners(false).map(ThingType::getLabel).collect(toSet());
+        assertTrue(actuals.containsAll(ownerLabels));
+    }
+
+    @Then("attribute\\( ?{type_label} ?) get attribute owners do not contain:")
+    public void attribute_type_get_owners_as_attribute_do_not_contains(String typeLabel, List<String> ownerLabels) {
+        AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
+        Set<String> actuals = attributeType.getOwners(false).map(ThingType::getLabel).collect(toSet());
+        for (String ownerLabel : ownerLabels) {
+            assertFalse(actuals.contains(ownerLabel));
+        }
+    }
 }

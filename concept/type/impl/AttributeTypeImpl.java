@@ -50,6 +50,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPER
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
 import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.stream;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
@@ -128,8 +129,33 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public ValueType getValueType() {
-        return null;
+    public abstract ValueType getValueType();
+
+    @Override
+    public Stream<? extends ThingTypeImpl> getOwners() {
+        return getOwners(false);
+    }
+
+    @Override
+    public Stream<? extends ThingTypeImpl> getOwners(boolean onlyKey) {
+        if (isRoot()) return Stream.of();
+
+        return directOwners(onlyKey)
+                .flatMap(ThingTypeImpl::getSubtypes)
+                .filter(t -> t.overriddenOwns(onlyKey, true).noneMatch(o -> o.equals(this)));
+    }
+
+    private Stream<? extends ThingTypeImpl> directOwners(boolean onlyKey) {
+        if (isRoot()) return Stream.of();
+
+        if (onlyKey) {
+            return stream(apply(vertex.ins().edge(Schema.Edge.Type.OWNS_KEY).from(), ThingTypeImpl::of));
+        } else {
+            return stream(apply(link(
+                    vertex.ins().edge(Schema.Edge.Type.OWNS_KEY).from(),
+                    vertex.ins().edge(Schema.Edge.Type.OWNS).from()
+            ), ThingTypeImpl::of));
+        }
     }
 
     @Override

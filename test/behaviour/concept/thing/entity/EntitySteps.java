@@ -20,7 +20,6 @@ package grakn.core.test.behaviour.concept.thing.entity;
 
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.EntityType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 

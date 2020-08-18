@@ -19,7 +19,6 @@
 package grakn.core.test.behaviour.concept.thing.relation;
 
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import io.cucumber.java.en.Then;

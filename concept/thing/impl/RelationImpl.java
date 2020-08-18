@@ -20,7 +20,6 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;

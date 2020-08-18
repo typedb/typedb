@@ -115,7 +115,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> stream(((TypeImpl) t).vertex.instances())).map(thingConstructor);
+        return getSubtypes().flatMap(t -> stream(t.vertex.instances())).map(thingConstructor);
     }
 
     @Override

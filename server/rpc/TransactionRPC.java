@@ -17,7 +17,6 @@
 
 package grakn.core.server.rpc;
 
-import com.google.protobuf.ByteString;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
@@ -48,7 +47,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
