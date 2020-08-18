@@ -84,6 +84,11 @@ class ConceptRPC {
 //                con.asRule().then();
 //                return;
 
+            // RoleType methods
+            case ROLETYPE_GETRELATION_REQ:
+                con.asRoleType().getRelation();
+                return;
+
             // Type methods
             case THINGTYPE_ISABSTRACT_REQ:
                 con.asThingType().isAbstract();
@@ -434,6 +439,16 @@ class ConceptRPC {
 //         */
         private class RoleTypeHolder {
             private final RoleType roleType = ConceptHolder.this.concept.asType().asRoleType();
+
+            private void getRelation() {
+                final RelationType relationType = roleType.getRelation();
+
+                final ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
+                        .setRoleTypeGetRelationRes(ConceptProto.RoleType.GetRelation.Res.newBuilder()
+                                .setRelationType(ResponseBuilder.Concept.concept(relationType))).build();
+
+                responseSender.accept(transactionRes(response));
+            }
 
             private void getRelations() {
                 Stream<? extends RelationType> concepts = roleType.getRelations();
