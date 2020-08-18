@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-public class DistinctIterator<T> implements Iterator<T> {
+// TODO: verify (and potentially fix) this class to be able to hand null objects
+public class DistinctIterator<T> implements Iterators.Composable<T> {
 
     private T next;
     private Set<T> consumed;
