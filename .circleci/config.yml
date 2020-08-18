@@ -506,62 +506,62 @@ workflows:
             - test-graql
             - test-behaviour
             - test-integration
-      - test-assembly-mac-zip:
-          filters:
-            branches:
-              only:
-                - master
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-graql
-            - test-behaviour
-            - test-integration
-      - test-assembly-windows-zip:
-          filters:
-            branches:
-              only:
-                - master
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-graql
-            - test-behaviour
-            - test-integration
-      - test-assembly-linux-targz:
-          filters:
-            branches:
-              only:
-                - master
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-graql
-            - test-behaviour
-            - test-integration
-      - test-assembly-docker:
-          filters:
-            branches:
-              only:
-                - master
-          requires:
-            - build
-            - build-checkstyle
-            - build-analysis
-            - test-common
-            - test-server
-            - test-graql
-            - test-behaviour
-            - test-integration
+#      - test-assembly-mac-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#          requires:
+#            - build
+#            - build-checkstyle
+#            - build-analysis
+#            - test-common
+#            - test-server
+#            - test-graql
+#            - test-behaviour
+#            - test-integration
+#      - test-assembly-windows-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#          requires:
+#            - build
+#            - build-checkstyle
+#            - build-analysis
+#            - test-common
+#            - test-server
+#            - test-graql
+#            - test-behaviour
+#            - test-integration
+#      - test-assembly-linux-targz:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#          requires:
+#            - build
+#            - build-checkstyle
+#            - build-analysis
+#            - test-common
+#            - test-server
+#            - test-graql
+#            - test-behaviour
+#            - test-integration
+#      - test-assembly-docker:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#          requires:
+#            - build
+#            - build-checkstyle
+#            - build-analysis
+#            - test-common
+#            - test-server
+#            - test-graql
+#            - test-behaviour
+#            - test-integration
       - deploy-artifact-snapshot:
           filters:
             branches:
@@ -569,10 +569,10 @@ workflows:
                 - master
                 - rewrite
           requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
+#            - test-assembly-mac-zip
+#            - test-assembly-windows-zip
+#            - test-assembly-linux-targz
+#            - test-assembly-docker
             - test-assembly
       - deploy-apt-snapshot:
           filters:
@@ -580,10 +580,10 @@ workflows:
               only:
                 - master
           requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
+#            - test-assembly-mac-zip
+#            - test-assembly-windows-zip
+#            - test-assembly-linux-targz
+#            - test-assembly-docker
             - test-assembly
       - deploy-rpm-snapshot:
           filters:
@@ -591,10 +591,10 @@ workflows:
               only:
                 - master
           requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
+#            - test-assembly-mac-zip
+#            - test-assembly-windows-zip
+#            - test-assembly-linux-targz
+#            - test-assembly-docker
             - test-assembly
       - test-deployment-linux-apt:
           filters:
