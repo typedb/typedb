@@ -189,8 +189,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class TypeWrite extends ErrorMessage {
         public static final TypeWrite ROOT_TYPE_MUTATION =
                 new TypeWrite(1, "Root types are immutable.");
-        public static final TypeWrite TYPE_UNDEFINED =
-                new TypeWrite(2, "The type '%s' does not exist and has not been defined.");
+        public static final TypeWrite TYPE_NOT_EXIST =
+                new TypeWrite(2, "The type '%s' does not exist.");
         public static final TypeWrite TYPE_HAS_SUBTYPES =
                 new TypeWrite(3, "The type '%s' has subtypes, and cannot be deleted.");
         public static final TypeWrite TYPE_HAS_INSTANCES =
