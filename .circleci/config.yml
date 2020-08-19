@@ -461,6 +461,12 @@ workflows:
     jobs:
       - deploy-apt-snapshot
       - deploy-rpm-snapshot
+      - test-deployment-linux-apt:
+          requires:
+            - deploy-apt-snapshot
+      - test-deployment-linux-rpm:
+          requires:
+            - deploy-rpm-snapshot
 #   grakn-core:
 #     jobs:
 #       - build:
