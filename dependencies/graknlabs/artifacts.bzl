@@ -22,5 +22,5 @@ def graknlabs_console_artifact():
         name = "graknlabs_console_artifact",
         group_name = "graknlabs_console",
         artifact_name = "console-artifact.tgz",
-        tag = "1.0.7",
+        commit = "bb2af3c18a0beafd7371ac0461174d1d302baa32",
     )
