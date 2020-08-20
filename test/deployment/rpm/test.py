@@ -101,20 +101,21 @@ try:
 
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
 
-    sp.check_call(['cat', 'VERSION'])
+    with open("VERSION", "r") as version_file:
+        version = version_file.readline()
 
     lprint('Installing RPM packages. Grakn will be available system-wide')
     gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/rpm-snapshot.repo')
     gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/rpm.repo')
     gcloud_ssh(instance, 'sudo yum -y update')
-    gcloud_ssh(instance, 'sudo yum -y install grakn-core-all-$(cat /tmp/grakn/VERSION)')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-all-{0}'.format(version))
 
     # TODO: how do we avoid having to chown?
     gcloud_ssh(instance, 'sudo chown -R $USER:$USER /opt/grakn')
 
     gcloud_ssh(instance, 'grakn server start')
     # start console, should be good enough to confirm server starts and server starts
-    gcloud_ssh(instance, 'grakn console')
+    gcloud_ssh(instance, 'echo "exit" | grakn console')
     gcloud_ssh(instance, 'grakn server stop')
 
 finally:
