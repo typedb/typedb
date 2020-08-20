@@ -17,20 +17,24 @@
 
 build:
   quality:
+    filter:
+      owner: graknlabs
+      branch: master
     job:
       build-analysis:
         machine: graknlabs-ubuntu-20.04
         script: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-            --project-key=graknlabs_grakn_core_2 \
+            --project-key=SONARCLOUD_PROJECT_KEY \
             --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
+
   correctness:
     jobs:
       build:
         machine: graknlabs-ubuntu-20.04
         script: |
-          bazel build --config=rbe //...
+          bazel build --config=rbe //... --test_output=errors
           bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
           bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
       build-dependency:
@@ -51,6 +55,9 @@ build:
           bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
       deploy-artifact-snapshot:
         machine: graknlabs-ubuntu-20.04
+        filter:
+          owner: graknlabs
+          branch: master
         script: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -64,6 +71,9 @@ build:
           depends: [build, build-dependency, test-behaviour]
 
 release:
+  filter:
+    owner: graknlabs
+    branch: master
   validation:
     job:
       validate-dependencies:
