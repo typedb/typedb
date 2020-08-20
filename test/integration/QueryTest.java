@@ -44,7 +44,7 @@ public class QueryTest {
     private static String database = "query-test";
 
     @Test
-    public void hello_world() throws IOException {
+    public void test_query_define() throws IOException {
         Util.resetDirectory(directory);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
@@ -54,7 +54,6 @@ public class QueryTest {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
-
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -96,6 +95,32 @@ public class QueryTest {
                     assertTrue(team.getPlays().anyMatch(r -> r.equals(orgTeam_team)));
                     assertTrue(team.getPlays().anyMatch(r -> r.equals(teamMember_team)));
                     assertTrue(user.getPlays().anyMatch(r -> r.equals(teamMember_member)));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void test_query_undefine() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    transaction.query().define(query);
+                    transaction.commit();
+                }
+
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+
+                }
+
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+
                 }
             }
         }

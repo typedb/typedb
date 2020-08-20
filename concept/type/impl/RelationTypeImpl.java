@@ -154,6 +154,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
+    public void unsetRelates(String roleLabel) {
+        this.getRelates(roleLabel).delete();
+    }
+
+    @Override
     public Stream<RoleTypeImpl> getRelates() {
         Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
         if (isRoot()) {
@@ -255,6 +260,21 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         @Override
         public void setSupertype(RelationType superType) {
+            throw new GraknException(ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void setRelates(String roleLabel) {
+            throw new GraknException(ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void setRelates(String roleLabel, String overriddenLabel) {
+            throw new GraknException(ROOT_TYPE_MUTATION);
+        }
+
+        @Override
+        public void unsetRelates(String roleLabel) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
 

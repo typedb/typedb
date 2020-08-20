@@ -45,6 +45,8 @@ public interface RelationType extends ThingType {
 
     void setRelates(String roleLabel, String overriddenLabel);
 
+    void unsetRelates(String roleLabel);
+
     Stream<? extends RoleType> getRelates();
 
     RoleType getRelates(String roleLabel);

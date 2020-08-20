@@ -210,7 +210,9 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
                 new TypeWrite(10, "The attribute type '%s' is missing a value type.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MODIFIED =
-                new TypeWrite(11, "The value type '%s' can only be set onto attribute type '%s' when it was newly defined.");
+                new TypeWrite(11, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
+        public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
+                new TypeWrite(11, "An attribute value type (in this case '%s') cannot be undefine. You can only undefine the attribute type (in this case '%s') itself.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
                 new TypeWrite(12, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
@@ -238,7 +240,19 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
                 new TypeWrite(24, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         public static final TypeWrite ROLE_DEFINED_OUTSIDE_OF_RELATION =
-                new TypeWrite(25, "The role type '%s' cannot be defined outside the scope of a relation type.");
+                new TypeWrite(25, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
+        public static final TypeWrite INVALID_UNDEFINE_SUB =
+                new TypeWrite(26, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
+        public static final TypeWrite INVALID_UNDEFINE_REGEX =
+                new TypeWrite(27, "The attribute type '%s' does have regular express '%s' to be undefined.");
+        public static final TypeWrite INVALID_UNDEFINE_RELATES_OVERRIDE =
+                new TypeWrite(28, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
+        public static final TypeWrite INVALID_UNDEFINE_PLAYS_OVERRIDE =
+                new TypeWrite(29, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
+        public static final TypeWrite INVALID_UNDEFINE_OWNS_OVERRIDE =
+                new TypeWrite(30, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
+        public static final TypeWrite INVALID_UNDEFINE_OWNS_KEY =
+                new TypeWrite(31, "The annotation @key on attribute type '%s' cannot be undefined. You should re-define owning '%s' without @key annotation.");
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
 

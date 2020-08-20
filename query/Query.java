@@ -25,6 +25,7 @@ import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.query.writer.DefineWriter;
+import grakn.core.query.writer.UndefineWriter;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -76,7 +77,8 @@ public class Query {
 
     public List<Type> define(GraqlDefine query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DEFINE)) {
-            DefineWriter writer = new DefineWriter(concepts, query, new Context.Query(transactionContext, options));
+            Context.Query context = new Context.Query(transactionContext, options);
+            DefineWriter writer = new DefineWriter(concepts, query, context);
             return writer.write();
         }
     }
@@ -88,6 +90,8 @@ public class Query {
     public void undefine(GraqlUndefine query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_UNDEFINE)) {
             Context.Query context = new Context.Query(transactionContext, options);
+            UndefineWriter writer = new UndefineWriter(concepts, query, context);
+            writer.write();
         }
     }
 }

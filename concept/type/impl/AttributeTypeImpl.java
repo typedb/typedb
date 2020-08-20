@@ -770,6 +770,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public void unsetRegex() {
+            vertex.regex(null);
+        }
+
+        @Override
         public java.lang.String getRegex() {
             return vertex.regex();
         }
@@ -869,6 +874,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setRegex(java.lang.String regex) {
+                throw new GraknException(ROOT_TYPE_MUTATION);
+            }
+
+            @Override
+            public void unsetRegex() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }

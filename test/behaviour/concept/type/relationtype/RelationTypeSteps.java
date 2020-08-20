@@ -62,7 +62,7 @@ public class RelationTypeSteps {
 
     @When("relation\\( ?{type_label} ?) unset related role: {type_label}")
     public void relation_type_unset_related_role(String relationLabel, String roleLabel) {
-        tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).delete();
+        tx().concepts().getRelationType(relationLabel).unsetRelates(roleLabel);
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) is null: {bool}")

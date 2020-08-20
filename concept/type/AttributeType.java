@@ -195,6 +195,8 @@ public interface AttributeType extends ThingType {
 
         void setRegex(java.lang.String regex);
 
+        void unsetRegex();
+
         java.lang.String getRegex();
 
         Attribute.String put(java.lang.String value);
