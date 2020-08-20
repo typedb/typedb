@@ -18,7 +18,6 @@
 
 package grakn.core.query.writer;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.Concepts;
