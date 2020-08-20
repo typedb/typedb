@@ -115,13 +115,13 @@ public class QueryTest {
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-
-                }
-
-                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-
-                }
+//                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+//
+//                }
+//
+//                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+//
+//                }
             }
         }
     }
