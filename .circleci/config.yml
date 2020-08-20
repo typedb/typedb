@@ -275,8 +275,9 @@ jobs:
       - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: bazel run //test/deployment/apt:install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-      - run: nohup grakn server start
-      - run: grakn console  # we consider being able to start console a sufficient test
+      - run: |
+          nohup grakn server start
+          echo 'exit' | grakn console  # we consider being able to start console a sufficient test
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
