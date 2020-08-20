@@ -115,7 +115,7 @@ try:
 
     gcloud_ssh(instance, 'grakn server start')
     # start console, should be good enough to confirm server starts and server starts
-    gcloud_ssh(instance, 'grakn console')
+    gcloud_ssh(instance, 'echo "exit" | grakn console')
     gcloud_ssh(instance, 'grakn server stop')
 
 finally:
