@@ -108,7 +108,8 @@ public class UndefineWriter {
         // We always assume that Role Types already exist,
         // defined by their Relation Types ahead of time
         assert label.scope().isPresent();
-        Type type; RoleType roleType;
+        Type type;
+        RoleType roleType;
         if ((type = concepts.getType(label.scope().get())) == null ||
                 (roleType = type.asRelationType().getRelates(label.label())) == null) {
             throw new GraknException(TYPE_NOT_EXIST.message(label.scopedLabel()));

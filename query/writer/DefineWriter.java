@@ -18,7 +18,6 @@
 
 package grakn.core.query.writer;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.Concepts;
@@ -33,6 +32,7 @@ import graql.lang.pattern.variable.Identity;
 import graql.lang.pattern.variable.TypeVariable;
 import graql.lang.query.GraqlDefine;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +42,7 @@ import java.util.Set;
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_NOT_EXIST;
 
@@ -79,8 +80,10 @@ public class DefineWriter {
         else if (visited.contains(identity)) return concepts.getType(labelProperty.scopedLabel());
 
         ThingType type = getTypeByLabel(labelProperty);
-        if (variable.subProperty().isPresent()) type = defineSub(variable);
-        else if (variable.valueTypeProperty().isPresent()) {
+        if (variable.subProperty().isPresent()) {
+            type = defineSub(type, labelProperty, variable.subProperty().get(),
+                             variable.valueTypeProperty().orElse(null));
+        } else if (variable.valueTypeProperty().isPresent()) {
             throw new GraknException(ATTRIBUTE_VALUE_TYPE_MODIFIED.message(
                     variable.valueTypeProperty().get().valueType().name(),
                     variable.labelProperty().get().label()
@@ -89,14 +92,15 @@ public class DefineWriter {
             throw new GraknException(TYPE_NOT_EXIST.message(labelProperty.label()));
         }
 
-        if (variable.abstractProperty().isPresent()) defineAbstract(variable);
-        if (variable.regexProperty().isPresent()) defineRegex(variable);
+        if (variable.abstractProperty().isPresent()) defineAbstract(type);
+        if (variable.regexProperty().isPresent())
+            defineRegex(type.asAttributeType().asString(), variable.regexProperty().get());
         // TODO: if (variable.whenProperty().isPresent()) defineWhen(variable);
         // TODO: if (variable.thenProperty().isPresent()) defineThen(variable);
 
-        if (!variable.relatesProperty().isEmpty()) defineRelates(variable);
-        if (!variable.ownsProperty().isEmpty()) defineOwns(variable);
-        if (!variable.playsProperty().isEmpty()) definePlays(variable);
+        if (!variable.relatesProperty().isEmpty()) defineRelates(type.asRelationType(), variable.relatesProperty());
+        if (!variable.ownsProperty().isEmpty()) defineOwns(type, variable.ownsProperty());
+        if (!variable.playsProperty().isEmpty()) definePlays(type, variable.playsProperty());
 
         // if this variable had more properties beyond being referred to using a label, add to list of defined types
         if (variable.properties().size() > 1) defined.add(type);
@@ -114,7 +118,8 @@ public class DefineWriter {
         // We always assume that Role Types already exist,
         // defined by their Relation Types ahead of time
         assert label.scope().isPresent();
-        Type type; RoleType roleType;
+        Type type;
+        RoleType roleType;
         if ((type = concepts.getType(label.scope().get())) == null ||
                 (roleType = type.asRelationType().getRelates(label.label())) == null) {
             throw new GraknException(TYPE_NOT_EXIST.message(label.scopedLabel()));
@@ -126,48 +131,44 @@ public class DefineWriter {
         return AttributeType.ValueType.of(valueTypeProperty.valueType());
     }
 
-    private ThingType defineSub(TypeVariable variable) {
-        assert variable.subProperty().isPresent();
-        ThingType supertype = define(variable.subProperty().get().type().identity()).asThingType();
-        String label = variable.labelProperty().get().label();
-        ThingType thingType;
+    private ThingType defineSub(ThingType thingType, TypeProperty.Label labelProperty,
+                                TypeProperty.Sub subProperty, @Nullable TypeProperty.ValueType valueTypeProperty) {
+        ThingType supertype = define(subProperty.type().identity()).asThingType();
         if (supertype instanceof EntityType) {
-            thingType = concepts.putEntityType(label);
+            if (thingType == null) thingType = concepts.putEntityType(labelProperty.label());
             thingType.asEntityType().setSupertype(supertype.asEntityType());
         } else if (supertype instanceof RelationType) {
-            thingType = concepts.putRelationType(label);
+            if (thingType == null) thingType = concepts.putRelationType(labelProperty.label());
             thingType.asRelationType().setSupertype(supertype.asRelationType());
         } else if (supertype instanceof AttributeType) {
             AttributeType.ValueType valueType;
-            if (variable.valueTypeProperty().isPresent()) {
-                valueType = getValueType(variable.valueTypeProperty().get());
+            if (valueTypeProperty != null) {
+                valueType = getValueType(valueTypeProperty);
             } else if (!supertype.isRoot()) {
                 valueType = supertype.asAttributeType().getValueType();
             } else {
-                throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(variable.labelProperty().get().label()));
+                throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(labelProperty.label()));
             }
-            thingType = concepts.putAttributeType(label, valueType);
+            thingType = concepts.putAttributeType(labelProperty.label(), valueType);
             thingType.asAttributeType().setSupertype(supertype.asAttributeType());
         } else {
-            throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(label));
+            throw new GraknException(INVALID_DEFINE_SUB.message(
+                    labelProperty.scopedLabel(), supertype.asRoleType().getScopedLabel()
+            ));
         }
         return thingType;
     }
 
-    private void defineAbstract(TypeVariable variable) {
-        assert variable.abstractProperty().isPresent();
-        concepts.getType(variable.labelProperty().get().label()).asThingType().setAbstract();
+    private void defineAbstract(ThingType thingType) {
+        thingType.setAbstract();
     }
 
-    private void defineRegex(TypeVariable variable) {
-        assert variable.regexProperty().isPresent();
-        Type type = concepts.getType(variable.labelProperty().get().label());
-        type.asAttributeType().asString().setRegex(variable.regexProperty().get().regex());
+    private void defineRegex(AttributeType.String attributeType, TypeProperty.Regex regexProperty) {
+        attributeType.setRegex(regexProperty.regex());
     }
 
-    private void defineRelates(TypeVariable variable) {
-        RelationType relationType = concepts.getRelationType(variable.labelProperty().get().label());
-        variable.relatesProperty().forEach(relates -> {
+    private void defineRelates(RelationType relationType, List<TypeProperty.Relates> relatesProperties) {
+        relatesProperties.forEach(relates -> {
             String roleTypeLabel = relates.role().labelProperty().get().label();
             if (relates.overridden().isPresent()) {
                 String overriddenTypeLabel = relates.overridden().get().labelProperty().get().label();
@@ -180,9 +181,8 @@ public class DefineWriter {
         });
     }
 
-    private void defineOwns(TypeVariable variable) {
-        ThingType thingType = concepts.getType(variable.labelProperty().get().label()).asThingType();
-        variable.ownsProperty().forEach(owns -> {
+    private void defineOwns(ThingType thingType, List<TypeProperty.Owns> ownsProperties) {
+        ownsProperties.forEach(owns -> {
             AttributeType attributeType = define(owns.attribute().identity()).asAttributeType();
             if (owns.overridden().isPresent()) {
                 AttributeType overriddenType = define(owns.overridden().get().identity()).asAttributeType();
@@ -193,9 +193,8 @@ public class DefineWriter {
         });
     }
 
-    private void definePlays(TypeVariable variable) {
-        ThingType thingType = concepts.getType(variable.labelProperty().get().label()).asThingType();
-        variable.playsProperty().forEach(plays -> {
+    private void definePlays(ThingType thingType, List<TypeProperty.Plays> playsProperties) {
+        playsProperties.forEach(plays -> {
             define(plays.relation().get().identity());
             RoleType roleType = getTypeByScopedLabel(plays.role().labelProperty().get()).asRoleType();
             if (plays.overridden().isPresent()) {

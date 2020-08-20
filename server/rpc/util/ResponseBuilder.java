@@ -164,15 +164,15 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.ThingMethod.Iter.Res methodResponse) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodThingIterRes(TransactionProto.Transaction.ConceptMethod.Thing.Iter.Res.newBuilder()
-                                        .setResponse(methodResponse))).build();
+                                            .setConceptMethodThingIterRes(TransactionProto.Transaction.ConceptMethod.Thing.Iter.Res.newBuilder()
+                                                                                  .setResponse(methodResponse))).build();
             }
 
             public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.TypeMethod.Iter.Res methodResponse) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodTypeIterRes(TransactionProto.Transaction.ConceptMethod.Type.Iter.Res.newBuilder()
-                                        .setResponse(methodResponse))).build();
+                                            .setConceptMethodTypeIterRes(TransactionProto.Transaction.ConceptMethod.Type.Iter.Res.newBuilder()
+                                                                                 .setResponse(methodResponse))).build();
             }
         }
     }

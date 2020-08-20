@@ -42,6 +42,9 @@ java_library(
         "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java/query:query",
+
+        # External dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
     tags = ["maven_coordinates=grakn.core:grakn-core-query:{pom_version}"],
     visibility = [ "//visibility:public" ]

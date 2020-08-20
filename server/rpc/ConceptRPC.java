@@ -286,13 +286,13 @@ class ConceptRPC {
         private static TransactionProto.Transaction.Res transactionRes(ConceptProto.ThingMethod.Res response) {
             return TransactionProto.Transaction.Res.newBuilder()
                     .setConceptMethodThingRes(TransactionProto.Transaction.ConceptMethod.Thing.Res.newBuilder()
-                            .setResponse(response)).build();
+                                                      .setResponse(response)).build();
         }
 
         private static TransactionProto.Transaction.Res transactionRes(ConceptProto.TypeMethod.Res response) {
             return TransactionProto.Transaction.Res.newBuilder()
                     .setConceptMethodTypeRes(TransactionProto.Transaction.ConceptMethod.Type.Res.newBuilder()
-                            .setResponse(response)).build();
+                                                     .setResponse(response)).build();
         }
 
         private Thing convertThing(ConceptProto.Thing protoThing) {
@@ -398,7 +398,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = supertypes.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setTypeGetSupertypesIterRes(ConceptProto.Type.GetSupertypes.Iter.Res.newBuilder()
-                                    .setType(ResponseBuilder.Concept.type(con))).build();
+                                                                 .setType(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -411,7 +411,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = subtypes.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setTypeGetSubtypesIterRes(ConceptProto.Type.GetSubtypes.Iter.Res.newBuilder()
-                                    .setType(ResponseBuilder.Concept.type(con))).build();
+                                                               .setType(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -463,7 +463,7 @@ class ConceptRPC {
 
                 final ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setRoleTypeGetRelationRes(ConceptProto.RoleType.GetRelation.Res.newBuilder()
-                                .setRelationType(ResponseBuilder.Concept.type(relationType))).build();
+                                                           .setRelationType(ResponseBuilder.Concept.type(relationType))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -474,7 +474,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = relationTypes.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setRoleTypeGetRelationsIterRes(ConceptProto.RoleType.GetRelations.Iter.Res.newBuilder()
-                                    .setRelationType(ResponseBuilder.Concept.type(con))).build();
+                                                                    .setRelationType(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -487,7 +487,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = players.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setRoleTypeGetPlayersIterRes(ConceptProto.RoleType.GetPlayers.Iter.Res.newBuilder()
-                                    .setThingType(ResponseBuilder.Concept.type(con))).build();
+                                                                  .setThingType(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -508,7 +508,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setThingTypeGetInstancesIterRes(ConceptProto.ThingType.GetInstances.Iter.Res.newBuilder()
-                                    .setThing(ResponseBuilder.Concept.thing(con))).build();
+                                                                     .setThing(ResponseBuilder.Concept.thing(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -521,7 +521,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setThingTypeIsAbstractRes(ConceptProto.ThingType.IsAbstract.Res.newBuilder()
-                                .setAbstract(isAbstract)).build();
+                                                           .setAbstract(isAbstract)).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -542,7 +542,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = ownedTypes.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setThingTypeGetOwnsIterRes(ConceptProto.ThingType.GetOwns.Iter.Res.newBuilder()
-                                    .setAttributeType(ResponseBuilder.Concept.type(con))).build();
+                                                                .setAttributeType(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -555,7 +555,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = roleTypes.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setThingTypeGetPlaysIterRes(ConceptProto.ThingType.GetPlays.Iter.Res.newBuilder()
-                                    .setRole(ResponseBuilder.Concept.type(con))).build();
+                                                                 .setRole(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -610,7 +610,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setEntityTypeCreateRes(ConceptProto.EntityType.Create.Res.newBuilder()
-                                .setEntity(ResponseBuilder.Concept.thing(entity))).build();
+                                                        .setEntity(ResponseBuilder.Concept.thing(entity))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -627,7 +627,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setRelationTypeCreateRes(ConceptProto.RelationType.Create.Res.newBuilder()
-                                .setRelation(ResponseBuilder.Concept.thing(relation))).build();
+                                                          .setRelation(ResponseBuilder.Concept.thing(relation))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -638,7 +638,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = roleTypes.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                             .setRelationTypeGetRelatesIterRes(ConceptProto.RelationType.GetRelates.Iter.Res.newBuilder()
-                                    .setRole(ResponseBuilder.Concept.type(con))).build();
+                                                                      .setRole(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -650,7 +650,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setRelationTypeGetRelatesForRoleLabelRes(ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder()
-                                .setRole(ResponseBuilder.Concept.type(roleType))).build();
+                                                                          .setRole(ResponseBuilder.Concept.type(roleType))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -661,7 +661,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setRelationTypeSetRelatesRes(ConceptProto.RelationType.SetRelates.Res.newBuilder()
-                                .setRole(ResponseBuilder.Concept.type(roleType))).build();
+                                                              .setRole(ResponseBuilder.Concept.type(roleType))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -698,7 +698,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setAttributeTypePutRes(ConceptProto.AttributeType.Put.Res.newBuilder()
-                                .setAttribute(ResponseBuilder.Concept.thing(attribute))).build();
+                                                        .setAttribute(ResponseBuilder.Concept.thing(attribute))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -740,7 +740,7 @@ class ConceptRPC {
 
                 ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setAttributeTypeGetRegexRes(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
-                                .setRegex((regex != null) ? regex : "")).build();
+                                                             .setRegex((regex != null) ? regex : "")).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -766,7 +766,7 @@ class ConceptRPC {
 
                 ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
                         .setThingIsInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
-                                .setInferred(inferred)).build();
+                                                       .setInferred(inferred)).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -776,7 +776,7 @@ class ConceptRPC {
 
                 ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
                         .setThingGetTypeRes(ConceptProto.Thing.GetType.Res.newBuilder()
-                                .setThingType(ResponseBuilder.Concept.type(thingType))).build();
+                                                    .setThingType(ResponseBuilder.Concept.type(thingType))).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -800,7 +800,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = attributes.map(con -> {
                     ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                             .setThingGetHasIterRes(ConceptProto.Thing.GetHas.Iter.Res.newBuilder()
-                                    .setAttribute(ResponseBuilder.Concept.thing(con))).build();
+                                                           .setAttribute(ResponseBuilder.Concept.thing(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -817,7 +817,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                             .setThingGetRelationsIterRes(ConceptProto.Thing.GetRelations.Iter.Res.newBuilder()
-                                    .setRelation(ResponseBuilder.Concept.thing(con))).build();
+                                                                 .setRelation(ResponseBuilder.Concept.thing(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -830,7 +830,7 @@ class ConceptRPC {
                 Stream<TransactionProto.Transaction.Res> responses = roleTypes.map(con -> {
                     ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                             .setThingGetPlaysIterRes(ConceptProto.Thing.GetPlays.Iter.Res.newBuilder()
-                                    .setRoleType(ResponseBuilder.Concept.type(con))).build();
+                                                             .setRoleType(ResponseBuilder.Concept.type(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -868,8 +868,8 @@ class ConceptRPC {
                     for (grakn.core.concept.thing.Thing player : players.getValue()) {
                         ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                                 .setRelationGetPlayersByRoleTypeIterRes(ConceptProto.Relation.GetPlayersByRoleType.Iter.Res.newBuilder()
-                                        .setRoleType(ResponseBuilder.Concept.type(players.getKey()))
-                                        .setPlayer(ResponseBuilder.Concept.thing(player))).build();
+                                                                                .setRoleType(ResponseBuilder.Concept.type(players.getKey()))
+                                                                                .setPlayer(ResponseBuilder.Concept.thing(player))).build();
 
                         responses.add(ResponseBuilder.Transaction.Iter.conceptMethod(res));
                     }
@@ -888,7 +888,7 @@ class ConceptRPC {
                 final Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
                     final ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                             .setRelationGetPlayersIterRes(ConceptProto.Relation.GetPlayers.Iter.Res.newBuilder()
-                                    .setThing(ResponseBuilder.Concept.thing(con))).build();
+                                                                  .setThing(ResponseBuilder.Concept.thing(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
@@ -920,7 +920,7 @@ class ConceptRPC {
             private void getValue() {
                 final ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
                         .setAttributeGetValueRes(ConceptProto.Attribute.GetValue.Res.newBuilder()
-                                .setValue(ResponseBuilder.Concept.attributeValue(attribute))).build();
+                                                         .setValue(ResponseBuilder.Concept.attributeValue(attribute))).build();
                 responseSender.accept(transactionRes(response));
             }
 
@@ -938,7 +938,7 @@ class ConceptRPC {
                 final Stream<TransactionProto.Transaction.Res> responses = things.map(con -> {
                     ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                             .setAttributeGetOwnersIterRes(ConceptProto.Attribute.GetOwners.Iter.Res.newBuilder()
-                                    .setThing(ResponseBuilder.Concept.thing(con))).build();
+                                                                  .setThing(ResponseBuilder.Concept.thing(con))).build();
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
