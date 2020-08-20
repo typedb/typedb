@@ -19,6 +19,7 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -133,24 +134,15 @@ public final class Concepts {
     }
 
     public Type getType(String label) {
-        TypeVertex vertex = graph.type().get(label);
+        final TypeVertex vertex = graph.type().get(label);
         if (vertex != null) return TypeImpl.of(vertex);
         else return null;
     }
 
-    public Concept getConcept(final byte[] iid) {
-        switch (Schema.Prefix.of(iid[0]).type()) {
-            case TYPE:
-                TypeVertex typeVertex = graph.type().get(VertexIID.Type.of(iid));
-                if (typeVertex != null) return TypeImpl.of(typeVertex);
-                else return null;
-            case THING:
-                ThingVertex thingVertex = graph.thing().get(VertexIID.Thing.of(iid));
-                if (thingVertex != null) return ThingImpl.of(thingVertex);
-                else return null;
-            default:
-                return null;
-        }
+    public Thing getThing(final byte[] iid) {
+        final ThingVertex thingVertex = graph.thing().get(VertexIID.Thing.of(iid));
+        if (thingVertex != null) return ThingImpl.of(thingVertex);
+        else return null;
     }
 
     public void validateTypes() {

@@ -50,6 +50,7 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static grakn.core.common.exception.ErrorMessage.Server.DATABASE_DIRECTORY_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
@@ -71,6 +72,9 @@ public class GraknServer implements AutoCloseable {
 
     private GraknServer(ServerOptions options) {
         this.options = options;
+        if (!Files.isDirectory(this.options.databaseDirectory())) {
+            throw new GraknException(DATABASE_DIRECTORY_NOT_FOUND.message(this.options.databaseDirectory()));
+        }
         if (this.options.grablTrace()) enableGrablTracing();
         grakn = RocksGrakn.open(options.databaseDirectory());
         graknRPC = new GraknRPC(grakn);

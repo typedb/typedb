@@ -24,13 +24,15 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concept;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.ConceptRPC.ConceptHolder;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.core.server.rpc.util.ResponseBuilder;
+import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
@@ -54,6 +56,7 @@ import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNEXPECTED_NULL;
+import static java.lang.String.format;
 
 /**
  * A StreamObserver that implements the transaction connection between a client
@@ -161,8 +164,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
             case GETTYPE_REQ:
                 getType(request.getGetTypeReq());
                 break;
-            case GETCONCEPT_REQ:
-                getConcept(request.getGetConceptReq());
+            case GETTHING_REQ:
+                getThing(request.getGetThingReq());
                 break;
             case PUTENTITYTYPE_REQ:
                 putEntityType(request.getPutEntityTypeReq());
@@ -176,8 +179,11 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //            case PUTRULE_REQ:
 //                putRule(request.getPutRuleReq());
 //                break;
-            case CONCEPTMETHOD_REQ:
-                conceptMethod(request.getConceptMethodReq());
+            case CONCEPTMETHOD_THING_REQ:
+                conceptMethod(request.getConceptMethodThingReq());
+                break;
+            case CONCEPTMETHOD_TYPE_REQ:
+                conceptMethod(request.getConceptMethodTypeReq());
                 break;
 //            case EXPLANATION_REQ:
 //                explanation(request.getExplanationReq());
@@ -196,9 +202,11 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
             case QUERY_ITER_REQ:
                 query(request.getQueryIterReq(), request.getOptions());
                 break;
-            // TODO: add cases
-            case CONCEPTMETHOD_ITER_REQ:
-                conceptIterMethod(request.getConceptMethodIterReq(), request.getOptions());
+            case CONCEPTMETHOD_THING_ITER_REQ:
+                conceptIterMethod(request.getConceptMethodThingIterReq(), request.getOptions());
+                break;
+            case CONCEPTMETHOD_TYPE_ITER_REQ:
+                conceptIterMethod(request.getConceptMethodTypeIterReq(), request.getOptions());
                 break;
             default:
             case REQ_NOT_SET:
@@ -261,29 +269,48 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     }
 
     private void getType(Transaction.GetType.Req request) {
-        Concept concept = transaction().concepts().getType(request.getLabel());
-        Transaction.Res response = ResponseBuilder.Transaction.getType(concept);
+        final Type type = transaction().concepts().getType(request.getLabel());
+        final Transaction.Res response = ResponseBuilder.Transaction.getType(type);
         responseSender.onNext(response);
     }
 
-    private void getConcept(Transaction.GetConcept.Req request) {
-        Concept concept = transaction().concepts().getConcept(request.getId().toByteArray());
-        Transaction.Res response = ResponseBuilder.Transaction.getConcept(concept);
+    private void getThing(Transaction.GetThing.Req request) {
+        final Thing thing = transaction().concepts().getThing(request.getIid().toByteArray());
+        final Transaction.Res response = ResponseBuilder.Transaction.getThing(thing);
         responseSender.onNext(response);
     }
 
     private void putEntityType(Transaction.PutEntityType.Req request) {
-        EntityType entityType = transaction().concepts().putEntityType(request.getLabel());
-        Transaction.Res response = ResponseBuilder.Transaction.putEntityType(entityType);
+        final EntityType entityType = transaction().concepts().putEntityType(request.getLabel());
+        final Transaction.Res response = ResponseBuilder.Transaction.putEntityType(entityType);
         responseSender.onNext(response);
     }
 
     private void putAttributeType(Transaction.PutAttributeType.Req request) {
-        AttributeType.ValueType valueType = ResponseBuilder.Concept.VALUE_TYPE(request.getValueType());
-
-        AttributeType attributeType = transaction.concepts().putAttributeType(request.getLabel(), valueType);
-
-        Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
+        final ConceptProto.AttributeType.VALUE_TYPE valueTypeProto = request.getValueType();
+        final AttributeType.ValueType valueType;
+        switch (valueTypeProto) {
+            case STRING:
+                valueType = AttributeType.ValueType.STRING;
+                break;
+            case BOOLEAN:
+                valueType = AttributeType.ValueType.BOOLEAN;
+                break;
+            case LONG:
+                valueType = AttributeType.ValueType.LONG;
+                break;
+            case DOUBLE:
+                valueType = AttributeType.ValueType.DOUBLE;
+                break;
+            case DATETIME:
+                valueType = AttributeType.ValueType.DATETIME;
+                break;
+            default:
+            case UNRECOGNIZED:
+                throw Status.UNIMPLEMENTED.withDescription(format("Unsupported value type '%s'", valueTypeProto)).asRuntimeException();
+        }
+        final AttributeType attributeType = transaction.concepts().putAttributeType(request.getLabel(), valueType);
+        final Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
         responseSender.onNext(response);
     }
 
@@ -303,28 +330,24 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //        responseSender.onNext(response);
 //    }
 
-    private void conceptMethod(Transaction.ConceptMethod.Req request) {
-        final ConceptHolder con;
-        if (request.getIid() != null) {
-            con = new ConceptHolder(request.getIid(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
-        } else if (request.getLabel() != null) {
-            con = new ConceptHolder(request.getLabel(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
-        } else {
-            throw new UnsupportedOperationException("A concept method must have either an iid or a type label");
-        }
-        ConceptRPC.run(con, request.getMethod());
+    private void conceptMethod(Transaction.ConceptMethod.Thing.Req thingReq) {
+        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
+        ConceptRPC.run(con, thingReq.getMethod());
     }
 
-    private void conceptIterMethod(Transaction.ConceptMethod.Iter.Req request, Transaction.Iter.Req.Options options) {
-        final ConceptHolder con;
-        if (request.getIid() != null) {
-            con = new ConceptHolder(request.getIid(), transaction(), iterators, responseSender::onNext, options);
-        } else if (request.getLabel() != null) {
-            con = new ConceptHolder(request.getLabel(), transaction(), iterators, responseSender::onNext, options);
-        } else {
-            throw new UnsupportedOperationException("A concept iter method must have either an iid or a type label");
-        }
-        ConceptRPC.iter(con, request.getMethod());
+    private void conceptMethod(Transaction.ConceptMethod.Type.Req typeReq) {
+        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
+        ConceptRPC.run(con, typeReq.getMethod());
+    }
+
+    private void conceptIterMethod(Transaction.ConceptMethod.Thing.Iter.Req thingReq, Transaction.Iter.Req.Options options) {
+        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext, options);
+        ConceptRPC.iter(con, thingReq.getMethod());
+    }
+
+    private void conceptIterMethod(Transaction.ConceptMethod.Type.Iter.Req typeReq, Transaction.Iter.Req.Options options) {
+        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext, options);
+        ConceptRPC.iter(con, typeReq.getMethod());
     }
 
 //    /**

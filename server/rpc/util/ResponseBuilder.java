@@ -76,41 +76,37 @@ public class ResponseBuilder {
                     .build();
         }
 
-        public static TransactionProto.Transaction.Res getType(@Nullable grakn.core.concept.Concept concept) {
+        public static TransactionProto.Transaction.Res getThing(@Nullable Thing thing) {
+            TransactionProto.Transaction.GetThing.Res.Builder res = TransactionProto.Transaction.GetThing.Res.newBuilder();
+            if (thing != null) {
+                res.setThing(ResponseBuilder.Concept.thing(thing));
+            }
+            return TransactionProto.Transaction.Res.newBuilder().setGetThingRes(res).build();
+        }
+
+        public static TransactionProto.Transaction.Res getType(@Nullable Type type) {
             TransactionProto.Transaction.GetType.Res.Builder res = TransactionProto.Transaction.GetType.Res.newBuilder();
-            if (concept == null) {
-                res.setNull(ConceptProto.Null.getDefaultInstance());
-            } else {
-                res.setType(ResponseBuilder.Concept.concept(concept));
+            if (type != null) {
+                res.setType(ResponseBuilder.Concept.type(type));
             }
             return TransactionProto.Transaction.Res.newBuilder().setGetTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res getConcept(@Nullable grakn.core.concept.Concept concept) {
-            TransactionProto.Transaction.GetConcept.Res.Builder res = TransactionProto.Transaction.GetConcept.Res.newBuilder();
-            if (concept == null) {
-                res.setNull(ConceptProto.Null.getDefaultInstance());
-            } else {
-                res.setConcept(ResponseBuilder.Concept.concept(concept));
-            }
-            return TransactionProto.Transaction.Res.newBuilder().setGetConceptRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res putEntityType(grakn.core.concept.Concept concept) {
+        public static TransactionProto.Transaction.Res putEntityType(EntityType entityType) {
             TransactionProto.Transaction.PutEntityType.Res.Builder res = TransactionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setEntityType(ResponseBuilder.Concept.concept(concept));
+                    .setEntityType(ResponseBuilder.Concept.type(entityType));
             return TransactionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putAttributeType(grakn.core.concept.Concept concept) {
+        public static TransactionProto.Transaction.Res putAttributeType(AttributeType attributeType) {
             TransactionProto.Transaction.PutAttributeType.Res.Builder res = TransactionProto.Transaction.PutAttributeType.Res.newBuilder()
-                    .setAttributeType(ResponseBuilder.Concept.concept(concept));
+                    .setAttributeType(ResponseBuilder.Concept.type(attributeType));
             return TransactionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putRelationType(grakn.core.concept.Concept concept) {
+        public static TransactionProto.Transaction.Res putRelationType(RelationType relationType) {
             TransactionProto.Transaction.PutRelationType.Res.Builder res = TransactionProto.Transaction.PutRelationType.Res.newBuilder()
-                    .setRelationType(ResponseBuilder.Concept.concept(concept));
+                    .setRelationType(ResponseBuilder.Concept.type(relationType));
             return TransactionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
@@ -165,11 +161,18 @@ public class ResponseBuilder {
 //                                                                     .setAnswer(Answer.answer(object)))).build();
             }
 
-            public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.Method.Iter.Res methodResponse) {
+            public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.ThingMethod.Iter.Res methodResponse) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodIterRes(TransactionProto.Transaction.ConceptMethod.Iter.Res.newBuilder()
-                                                                             .setResponse(methodResponse))).build();
+                                .setConceptMethodThingIterRes(TransactionProto.Transaction.ConceptMethod.Thing.Iter.Res.newBuilder()
+                                        .setResponse(methodResponse))).build();
+            }
+
+            public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.TypeMethod.Iter.Res methodResponse) {
+                return TransactionProto.Transaction.Res.newBuilder()
+                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
+                                .setConceptMethodTypeIterRes(TransactionProto.Transaction.ConceptMethod.Type.Iter.Res.newBuilder()
+                                        .setResponse(methodResponse))).build();
             }
         }
     }
@@ -179,17 +182,44 @@ public class ResponseBuilder {
      */
     public static class Concept {
 
-        public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
-            return ConceptProto.Concept.newBuilder()
-                    .setIid(ByteString.copyFrom(concept.getIID()))
-                    .setBaseType(getBaseType(concept))
-                    .build();
+        public static ConceptProto.Thing thing(Thing thing) {
+            final ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
+                    .setIid(ByteString.copyFrom(thing.getIID()))
+                    .setSchema(getSchema(thing));
+
+            if (thing instanceof Attribute) {
+                final Attribute attribute = thing.asAttribute();
+                builder.setValueType(valueType(attribute))
+                        .setValue(attributeValue(attribute));
+            }
+
+            return builder.build();
         }
 
-        public static ConceptProto.Concept conceptPrefilled(grakn.core.concept.Concept concept) {
+        public static ConceptProto.Type type(Type type) {
+            final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
+                    .setLabel(type.getLabel())
+                    .setSchema(getSchema(type));
+
+            if (type instanceof AttributeType) {
+                builder.setValueType(valueType(type.asAttributeType()));
+            }
+
+            if (type instanceof RoleType) {
+                builder.setScopedLabel(type.asRoleType().getScopedLabel());
+            }
+
+            if (type.isRoot()) {
+                builder.setRoot(true);
+            }
+
+            return builder.build();
+        }
+
+        /* public static ConceptProto.Concept conceptPrefilled(grakn.core.concept.Concept concept) {
             ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
                     .setIid(ByteString.copyFrom(concept.getIID()))
-                    .setBaseType(getBaseType(concept));
+                    .setBaseType(getSchema(concept));
 
             if (concept instanceof Type) {
                 builder.setLabelRes(ConceptProto.Type.GetLabel.Res.newBuilder()
@@ -209,25 +239,31 @@ public class ResponseBuilder {
             }
 
             return builder.build();
+        } */
+
+        private static ConceptProto.Thing.SCHEMA getSchema(Thing thing) {
+            if (thing instanceof Entity) {
+                return ConceptProto.Thing.SCHEMA.ENTITY;
+            } else if (thing instanceof Relation) {
+                return ConceptProto.Thing.SCHEMA.RELATION;
+            } else if (thing instanceof Attribute) {
+                return ConceptProto.Thing.SCHEMA.ATTRIBUTE;
+            } else {
+                throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
+            }
         }
 
-        private static ConceptProto.Concept.SCHEMA getBaseType(grakn.core.concept.Concept concept) {
-            if (concept instanceof Entity) {
-                return ConceptProto.Concept.SCHEMA.ENTITY;
-            } else if (concept instanceof Relation) {
-                return ConceptProto.Concept.SCHEMA.RELATION;
-            } else if (concept instanceof Attribute) {
-                return ConceptProto.Concept.SCHEMA.ATTRIBUTE;
-            } else if (concept instanceof EntityType) {
-                return ConceptProto.Concept.SCHEMA.ENTITY_TYPE;
-            } else if (concept instanceof RelationType) {
-                return ConceptProto.Concept.SCHEMA.RELATION_TYPE;
-            } else if (concept instanceof AttributeType) {
-                return ConceptProto.Concept.SCHEMA.ATTRIBUTE_TYPE;
-//            } else if (concept instanceof ThingType) {
-//                return ConceptProto.Concept.SCHEMA.THING_TYPE;
-            } else if (concept instanceof RoleType) {
-                return ConceptProto.Concept.SCHEMA.ROLE_TYPE;
+        private static ConceptProto.Type.SCHEMA getSchema(Type type) {
+            if (type instanceof EntityType) {
+                return ConceptProto.Type.SCHEMA.ENTITY_TYPE;
+            } else if (type instanceof RelationType) {
+                return ConceptProto.Type.SCHEMA.RELATION_TYPE;
+            } else if (type instanceof AttributeType) {
+                return ConceptProto.Type.SCHEMA.ATTRIBUTE_TYPE;
+            } else if (type instanceof ThingType) {
+                return ConceptProto.Type.SCHEMA.THING_TYPE;
+            } else if (type instanceof RoleType) {
+                return ConceptProto.Type.SCHEMA.ROLE_TYPE;
 //            } else if (concept.isRule()) {
 //                return ConceptProto.Concept.SCHEMA.RULE;
             } else {
@@ -235,19 +271,19 @@ public class ResponseBuilder {
             }
         }
 
-        static ConceptProto.ValueObject attributeValue(Attribute attribute) {
-            ConceptProto.ValueObject.Builder builder = ConceptProto.ValueObject.newBuilder();
+        public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
+            final ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
+
             if (attribute instanceof Attribute.String) {
-                builder.setString(((Attribute.String) attribute).getValue());
-            } else if (attribute instanceof Attribute.Boolean) {
-                builder.setBoolean(((Attribute.Boolean) attribute).getValue());
+                builder.setString(attribute.asString().getValue());
             } else if (attribute instanceof Attribute.Long) {
-                builder.setLong(((Attribute.Long) attribute).getValue());
-            } else if (attribute instanceof Attribute.Double) {
-                builder.setDouble(((Attribute.Double) attribute).getValue());
+                builder.setLong(attribute.asLong().getValue());
+            } else if (attribute instanceof Attribute.Boolean) {
+                builder.setBoolean(attribute.asBoolean().getValue());
             } else if (attribute instanceof Attribute.DateTime) {
-                builder.setDatetime(
-                        ((Attribute.DateTime) attribute).getValue().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
+                builder.setDatetime(attribute.asDateTime().getValue().toInstant(ZoneOffset.UTC).toEpochMilli());
+            } else if (attribute instanceof Attribute.Double) {
+                builder.setDouble(attribute.asDouble().getValue());
             } else {
                 throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
@@ -255,26 +291,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE VALUE_TYPE(AttributeType.ValueType valueType) {
-            switch (valueType) {
-                case STRING:
-                    return ConceptProto.AttributeType.VALUE_TYPE.STRING;
-                case BOOLEAN:
-                    return ConceptProto.AttributeType.VALUE_TYPE.BOOLEAN;
-                case LONG:
-                    return ConceptProto.AttributeType.VALUE_TYPE.LONG;
-                case DOUBLE:
-                    return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
-                case DATETIME:
-                    return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
-                case OBJECT:
-                    return ConceptProto.AttributeType.VALUE_TYPE.UNRECOGNIZED;
-                default:
-                    throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
-            }
-        }
-
-        public static AttributeType.ValueType VALUE_TYPE(ConceptProto.AttributeType.VALUE_TYPE valueType) {
+        public static AttributeType.ValueType valueType(ConceptProto.AttributeType.VALUE_TYPE valueType) {
             switch (valueType) {
                 case STRING:
                     return AttributeType.ValueType.STRING;
@@ -293,15 +310,19 @@ public class ResponseBuilder {
         }
 
         public static ConceptProto.AttributeType.VALUE_TYPE valueType(Attribute attribute) {
-            if (attribute instanceof Attribute.String) {
+            return valueType(attribute.getType());
+        }
+
+        public static ConceptProto.AttributeType.VALUE_TYPE valueType(AttributeType attributeType) {
+            if (attributeType instanceof AttributeType.String) {
                 return ConceptProto.AttributeType.VALUE_TYPE.STRING;
-            } else if (attribute instanceof Attribute.Boolean) {
+            } else if (attributeType instanceof AttributeType.Boolean) {
                 return ConceptProto.AttributeType.VALUE_TYPE.BOOLEAN;
-            } else if (attribute instanceof Attribute.Long) {
+            } else if (attributeType instanceof AttributeType.Long) {
                 return ConceptProto.AttributeType.VALUE_TYPE.LONG;
-            } else if (attribute instanceof Attribute.Double) {
+            } else if (attributeType instanceof AttributeType.Double) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
-            } else if (attribute instanceof Attribute.DateTime) {
+            } else if (attributeType instanceof AttributeType.DateTime) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
             } else {
                 throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);

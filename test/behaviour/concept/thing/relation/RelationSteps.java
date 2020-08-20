@@ -48,25 +48,9 @@ public class RelationSteps {
         assertThrows(() -> tx().concepts().getRelationType(typeLabel).create());
     }
 
-    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {bool}")
-    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, boolean keyValue) {
-        Attribute.Boolean key = tx().concepts().getAttributeType(keyType).asBoolean().put(keyValue);
-        final Relation relation = tx().concepts().getRelationType(type).create();
-        relation.setHas(key);
-        put(var, relation);
-    }
-
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
         Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
-        final Relation relation = tx().concepts().getRelationType(type).create();
-        relation.setHas(key);
-        put(var, relation);
-    }
-
-    @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {double}")
-    public void relation_type_create_new_instance_with_key(String var, String type, String keyType, double keyValue) {
-        Attribute.Double key = tx().concepts().getAttributeType(keyType).asDouble().put(keyValue);
         final Relation relation = tx().concepts().getRelationType(type).create();
         relation.setHas(key);
         put(var, relation);
@@ -88,27 +72,12 @@ public class RelationSteps {
         put(var, relation);
     }
 
-    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {bool}")
-    public void relation_type_get_instance_with_key(String var1, String type, String keyType, boolean keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asBoolean().get(keyValue).getOwners()
-                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
-                .findFirst().orElse(null));
-    }
-
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {long}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, long keyValue) {
         put(var1, tx().concepts().getAttributeType(keyType).asLong().get(keyValue).getOwners()
                 .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
                 .findFirst().orElse(null));
     }
-
-    @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {double}")
-    public void relation_type_get_instance_with_key(String var1, String type, String keyType, double keyValue) {
-        put(var1, tx().concepts().getAttributeType(keyType).asDouble().get(keyValue).getOwners()
-                .filter(owner -> owner.getType().equals(tx().concepts().getRelationType(type)))
-                .findFirst().orElse(null));
-    }
-
 
     @When("{var} = relation\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {word}")
     public void relation_type_get_instance_with_key(String var1, String type, String keyType, String keyValue) {
