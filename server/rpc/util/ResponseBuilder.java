@@ -224,8 +224,8 @@ public class ResponseBuilder {
                 return ConceptProto.Concept.SCHEMA.RELATION_TYPE;
             } else if (concept instanceof AttributeType) {
                 return ConceptProto.Concept.SCHEMA.ATTRIBUTE_TYPE;
-            } else if (concept instanceof ThingType) {
-                return ConceptProto.Concept.SCHEMA.THING_TYPE;
+//            } else if (concept instanceof ThingType) {
+//                return ConceptProto.Concept.SCHEMA.THING_TYPE;
             } else if (concept instanceof RoleType) {
                 return ConceptProto.Concept.SCHEMA.ROLE_TYPE;
 //            } else if (concept.isRule()) {
