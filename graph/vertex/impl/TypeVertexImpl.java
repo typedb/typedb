@@ -390,9 +390,9 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public String regex() {
             if (regexLookedUp) return regex;
-            regexLookedUp = true;
             byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
             if (val != null) regex = new String(val);
+            regexLookedUp = true;
             return regex;
         }
 

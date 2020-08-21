@@ -50,6 +50,7 @@ ip sub attribute, value string;
 is-approved sub attribute, value boolean;
 pattern sub attribute, value string;
 index sub attribute, value long;
+gender sub attribute, value string, regex "(fe)?male";
 
 organisation sub entity,
     owns name @key,

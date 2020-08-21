@@ -27,6 +27,8 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlUndefine;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,6 +38,8 @@ import java.nio.file.Paths;
 
 import static grakn.core.test.integration.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
@@ -115,13 +119,44 @@ public class QueryTest {
                     transaction.commit();
                 }
 
-//                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-//
-//                }
-//
-//                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-//
-//                }
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    String queryString = "undefine analysis abstract, owns created, plays commit-analysis:analysis;";
+                    GraqlUndefine query = Graql.parse(queryString);
+                    transaction.query().undefine(query);
+
+                    queryString = "undefine performance-tracker relates tracker;";
+                    query = Graql.parse(queryString);
+                    transaction.query().undefine(query);
+
+                    queryString = "undefine gender regex '(fe)?male';";
+                    query = Graql.parse(queryString);
+                    transaction.query().undefine(query);
+
+                    queryString = "undefine index sub attribute, value long;";
+                    query = Graql.parse(queryString);
+                    transaction.query().undefine(query);
+
+                    transaction.commit();
+                }
+
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                    EntityType analysis = tx.concepts().getEntityType("analysis");
+                    RelationType performanceTracker = tx.concepts().getRelationType("performance-tracker");
+                    RoleType commitAnalysisAnalysis = tx.concepts().getRelationType("commit-analysis").getRelates("analysis");
+                    AttributeType.DateTime created = tx.concepts().getAttributeType("created").asDateTime();
+                    AttributeType.String gender = tx.concepts().getAttributeType("gender").asString();
+                    assertNotNulls(analysis, performanceTracker, commitAnalysisAnalysis, created, gender);
+
+                    assertFalse(analysis.isAbstract());
+                    assertTrue(analysis.getOwns().noneMatch(att -> att.equals(created)));
+                    assertTrue(analysis.getPlays().noneMatch(rol -> rol.equals(commitAnalysisAnalysis)));
+                    assertTrue(performanceTracker.getRelates().noneMatch(rol -> rol.getLabel().equals("tracker")));
+                    assertNull(gender.getRegex());
+
+                    AttributeType index = tx.concepts().getAttributeType("index");
+                    assertNull(index);
+
+                }
             }
         }
     }
