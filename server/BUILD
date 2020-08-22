@@ -16,7 +16,7 @@
 #
 
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
-load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "deploy_artifact")
+load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//visibility:private",])
 
@@ -91,7 +91,7 @@ java_deps(
 
 targets = [
     ":deps",
-    "@graknlabs_dependencies//distribution:assemble-bash-targz",
+    "@graknlabs_common//binary:assemble-bash-targz",
 ]
 
 additional_files = {
@@ -123,8 +123,8 @@ deploy_artifact(
     target = ":assemble-linux-targz",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-linux-{version}.tar.gz",
-    release_repository_url = "https://repo.grakn.ai/repository/private-artifact",
-    snapshot_repository_url = "https://repo.grakn.ai/repository/private-artifact-snapshot",
+    release = "https://repo.grakn.ai/repository/private-artifact",
+    snapshot = "https://repo.grakn.ai/repository/private-artifact-snapshot",
     visibility = ["//visibility:public"],
 )
 
@@ -133,8 +133,8 @@ deploy_artifact(
     target = ":assemble-mac-zip",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-mac-{version}.tar.gz",
-    release_repository_url = "https://repo.grakn.ai/repository/private-artifact",
-    snapshot_repository_url = "https://repo.grakn.ai/repository/private-artifact-snapshot",
+    release = "https://repo.grakn.ai/repository/private-artifact",
+    snapshot = "https://repo.grakn.ai/repository/private-artifact-snapshot",
     visibility = ["//visibility:public"],
 )
 
