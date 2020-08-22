@@ -32,7 +32,6 @@ import graql.lang.pattern.variable.Identity;
 import graql.lang.pattern.variable.TypeVariable;
 import graql.lang.query.GraqlDefine;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,22 +39,22 @@ import java.util.Map;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_NOT_EXIST;
 
 public class DefineWriter {
 
-    private final Concepts concepts;
+    private final Concepts conceptMgr;
     private final Context.Query context;
     private final Set<Identity> visited;
     private final List<Type> defined;
-    private final Map<Identity.Label, TypeVariable> variables;
+    private final Map<Identity, TypeVariable> variables;
 
-    public DefineWriter(Concepts concepts, GraqlDefine query, Context.Query context) {
-        this.concepts = concepts;
+    public DefineWriter(Concepts conceptMgr, GraqlDefine query, Context.Query context) {
+        this.conceptMgr = conceptMgr;
         this.context = context;
         this.variables = query.asGraph();
         this.visited = new HashSet<>();
@@ -69,7 +68,7 @@ public class DefineWriter {
         return list(defined);
     }
 
-    private Type define(Identity.Label identity) {
+    private Type define(Identity identity) {
         TypeVariable variable = variables.get(identity);
         assert variable.labelProperty().isPresent();
         TypeProperty.Label labelProperty = variable.labelProperty().get();
@@ -77,19 +76,18 @@ public class DefineWriter {
         if (labelProperty.scope().isPresent() && variable.properties().size() > 1) {
             throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelProperty.scopedLabel()));
         } else if (labelProperty.scope().isPresent()) return null; // do nothing
-        else if (visited.contains(identity)) return concepts.getType(labelProperty.scopedLabel());
+        else if (visited.contains(identity)) return conceptMgr.getType(labelProperty.scopedLabel());
 
-        ThingType type = getTypeByLabel(labelProperty);
+        ThingType type = getThingTypeByLabel(labelProperty);
         if (variable.subProperty().isPresent()) {
-            type = defineSub(type, labelProperty, variable.subProperty().get(),
-                             variable.valueTypeProperty().orElse(null));
+            type = defineSub(type, variable.subProperty().get(), variable);
         } else if (variable.valueTypeProperty().isPresent()) {
             throw new GraknException(ATTRIBUTE_VALUE_TYPE_MODIFIED.message(
                     variable.valueTypeProperty().get().valueType().name(),
                     variable.labelProperty().get().label()
             ));
         } else if (type == null) {
-            throw new GraknException(TYPE_NOT_EXIST.message(labelProperty.label()));
+            throw new GraknException(TYPE_NOT_FOUND.message(labelProperty.label()));
         }
 
         if (variable.abstractProperty().isPresent()) defineAbstract(type);
@@ -98,9 +96,9 @@ public class DefineWriter {
         // TODO: if (variable.whenProperty().isPresent()) defineWhen(variable);
         // TODO: if (variable.thenProperty().isPresent()) defineThen(variable);
 
-        if (!variable.relatesProperty().isEmpty()) defineRelates(type.asRelationType(), variable.relatesProperty());
-        if (!variable.ownsProperty().isEmpty()) defineOwns(type, variable.ownsProperty());
-        if (!variable.playsProperty().isEmpty()) definePlays(type, variable.playsProperty());
+        if (!variable.relatesProperties().isEmpty()) defineRelates(type.asRelationType(), variable.relatesProperties());
+        if (!variable.ownsProperties().isEmpty()) defineOwns(type, variable.ownsProperties());
+        if (!variable.playsProperties().isEmpty()) definePlays(type, variable.playsProperties());
 
         // if this variable had more properties beyond being referred to using a label, add to list of defined types
         if (variable.properties().size() > 1) defined.add(type);
@@ -108,21 +106,21 @@ public class DefineWriter {
         return type;
     }
 
-    private ThingType getTypeByLabel(TypeProperty.Label label) {
+    private ThingType getThingTypeByLabel(TypeProperty.Label label) {
         Type type;
-        if ((type = concepts.getType(label.label())) != null) return type.asThingType();
+        if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
         else return null;
     }
 
-    private RoleType getTypeByScopedLabel(TypeProperty.Label label) {
+    private RoleType getRoleTypeByScopedLabel(TypeProperty.Label label) {
         // We always assume that Role Types already exist,
         // defined by their Relation Types ahead of time
         assert label.scope().isPresent();
         Type type;
         RoleType roleType;
-        if ((type = concepts.getType(label.scope().get())) == null ||
+        if ((type = conceptMgr.getType(label.scope().get())) == null ||
                 (roleType = type.asRelationType().getRelates(label.label())) == null) {
-            throw new GraknException(TYPE_NOT_EXIST.message(label.scopedLabel()));
+            throw new GraknException(TYPE_NOT_FOUND.message(label.scopedLabel()));
         }
         return roleType;
     }
@@ -131,25 +129,25 @@ public class DefineWriter {
         return AttributeType.ValueType.of(valueTypeProperty.valueType());
     }
 
-    private ThingType defineSub(ThingType thingType, TypeProperty.Label labelProperty,
-                                TypeProperty.Sub subProperty, @Nullable TypeProperty.ValueType valueTypeProperty) {
+    private ThingType defineSub(ThingType thingType, TypeProperty.Sub subProperty, TypeVariable variable) {
+        TypeProperty.Label labelProperty = variable.labelProperty().get();
         ThingType supertype = define(subProperty.type().identity()).asThingType();
         if (supertype instanceof EntityType) {
-            if (thingType == null) thingType = concepts.putEntityType(labelProperty.label());
+            if (thingType == null) thingType = conceptMgr.putEntityType(labelProperty.label());
             thingType.asEntityType().setSupertype(supertype.asEntityType());
         } else if (supertype instanceof RelationType) {
-            if (thingType == null) thingType = concepts.putRelationType(labelProperty.label());
+            if (thingType == null) thingType = conceptMgr.putRelationType(labelProperty.label());
             thingType.asRelationType().setSupertype(supertype.asRelationType());
         } else if (supertype instanceof AttributeType) {
             AttributeType.ValueType valueType;
-            if (valueTypeProperty != null) {
-                valueType = getValueType(valueTypeProperty);
+            if (variable.valueTypeProperty().isPresent()) {
+                valueType = getValueType(variable.valueTypeProperty().get());
             } else if (!supertype.isRoot()) {
                 valueType = supertype.asAttributeType().getValueType();
             } else {
                 throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(labelProperty.label()));
             }
-            thingType = concepts.putAttributeType(labelProperty.label(), valueType);
+            if (thingType == null) thingType = conceptMgr.putAttributeType(labelProperty.label(), valueType);
             thingType.asAttributeType().setSupertype(supertype.asAttributeType());
         } else {
             throw new GraknException(INVALID_DEFINE_SUB.message(
@@ -196,9 +194,9 @@ public class DefineWriter {
     private void definePlays(ThingType thingType, List<TypeProperty.Plays> playsProperties) {
         playsProperties.forEach(plays -> {
             define(plays.relation().get().identity());
-            RoleType roleType = getTypeByScopedLabel(plays.role().labelProperty().get()).asRoleType();
+            RoleType roleType = getRoleTypeByScopedLabel(plays.role().labelProperty().get()).asRoleType();
             if (plays.overridden().isPresent()) {
-                RoleType overriddenType = getTypeByScopedLabel(plays.overridden().get().labelProperty().get()).asRoleType();
+                RoleType overriddenType = getRoleTypeByScopedLabel(plays.overridden().get().labelProperty().get()).asRoleType();
                 thingType.setPlays(roleType, overriddenType);
             } else {
                 thingType.setPlays(roleType);

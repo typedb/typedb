@@ -43,6 +43,21 @@ load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_reg
 kotlin_repositories()
 kt_register_toolchains()
 
+load("@graknlabs_dependencies//builder/python:deps.bzl", python_deps = "deps")
+python_deps()
+
+load("@rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
+pip_repositories()
+
+pip3_import(
+    name = "graknlabs_dependencies_ci_pip",
+    requirements = "@graknlabs_dependencies//tool:requirements.txt",
+)
+
+load("@graknlabs_dependencies_ci_pip//:requirements.bzl",
+graknlabs_dependencies_ci_pip_install = "pip_install")
+graknlabs_dependencies_ci_pip_install()
+
 load("@graknlabs_dependencies//tool/checkstyle:deps.bzl", checkstyle_deps = "deps")
 checkstyle_deps()
 
@@ -63,29 +78,11 @@ com_github_grpc_grpc_deps()
 # Load Distribution Dependencies #
 ##################################
 
-load("@graknlabs_dependencies//builder/python:deps.bzl", python_deps = "deps")
-python_deps()
-
-load("@graknlabs_dependencies//distribution:deps.bzl", distribution_deps = "deps")
-distribution_deps()
+load("@graknlabs_dependencies//dependencies/graknlabs:repositories.bzl", "graknlabs_bazel_distribution")
+graknlabs_bazel_distribution()
 
 load("@graknlabs_bazel_distribution//common:dependencies.bzl", "bazelbuild_rules_pkg")
 bazelbuild_rules_pkg()
-
-load("@rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
-pip_repositories()
-
-pip3_import(
-    name = "graknlabs_dependencies_ci_pip",
-    requirements = "@graknlabs_dependencies//tool:requirements.txt",
-)
-
-load("@graknlabs_dependencies_ci_pip//:requirements.bzl",
-graknlabs_dependencies_ci_pip_install = "pip_install")
-graknlabs_dependencies_ci_pip_install()
-
-load("@graknlabs_dependencies//distribution:deps.bzl", distribution_deps = "deps")
-distribution_deps()
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "tcnksm_ghr")
 tcnksm_ghr()

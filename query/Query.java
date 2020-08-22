@@ -25,12 +25,14 @@ import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.query.writer.DefineWriter;
+import grakn.core.query.writer.InsertWriter;
 import grakn.core.query.writer.UndefineWriter;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -42,11 +44,11 @@ public class Query {
     private static final String TRACE_STREAM_UNDEFINE = "stream.undefine";
     private static final String TRACE_STREAM_INSERT = "stream.insert";
     private static final String TRACE_STREAM_DELETE = "stream.delete";
-    private final Concepts concepts;
+    private final Concepts conceptMgr;
     private final Context.Transaction transactionContext;
 
-    public Query(Concepts concepts, Context.Transaction transactionContext) {
-        this.concepts = concepts;
+    public Query(Concepts conceptMgr, Context.Transaction transactionContext) {
+        this.conceptMgr = conceptMgr;
         this.transactionContext = transactionContext;
     }
 
@@ -57,7 +59,18 @@ public class Query {
     public Stream<ConceptMap> insert(GraqlInsert query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_INSERT)) {
             Context.Query context = new Context.Query(transactionContext, options);
-            return null; // TODO
+
+            if (query.match().isPresent()) {
+                // TODO: replace with real execution of MatchClause once traversal is implemented
+                List<ConceptMap> matched = Collections.emptyList();
+                return matched.stream().map(answers -> {
+                    InsertWriter writer = new InsertWriter(conceptMgr, query, context, answers);
+                    return writer.write();
+                });
+            } else {
+                InsertWriter writer = new InsertWriter(conceptMgr, query, context);
+                return Stream.of(writer.write());
+            }
         }
     }
 
@@ -78,7 +91,7 @@ public class Query {
     public List<Type> define(GraqlDefine query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DEFINE)) {
             Context.Query context = new Context.Query(transactionContext, options);
-            DefineWriter writer = new DefineWriter(concepts, query, context);
+            DefineWriter writer = new DefineWriter(conceptMgr, query, context);
             return writer.write();
         }
     }
@@ -90,7 +103,7 @@ public class Query {
     public void undefine(GraqlUndefine query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_UNDEFINE)) {
             Context.Query context = new Context.Query(transactionContext, options);
-            UndefineWriter writer = new UndefineWriter(concepts, query, context);
+            UndefineWriter writer = new UndefineWriter(conceptMgr, query, context);
             writer.write();
         }
     }
