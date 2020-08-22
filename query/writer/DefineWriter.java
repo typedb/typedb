@@ -52,7 +52,7 @@ public class DefineWriter {
     private final Context.Query context;
     private final Set<Identity> visited;
     private final List<Type> defined;
-    private Map<Identity.Label, TypeVariable> variables;
+    private final Map<Identity.Label, TypeVariable> variables;
 
     public DefineWriter(Concepts concepts, GraqlDefine query, Context.Query context) {
         this.concepts = concepts;

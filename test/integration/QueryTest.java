@@ -128,7 +128,7 @@ public class QueryTest {
                     query = Graql.parse(queryString);
                     transaction.query().undefine(query);
 
-                    queryString = "undefine gender regex '(fe)?male';";
+                    queryString = "undefine email regex '.+\\@.+\\..+';";
                     query = Graql.parse(queryString);
                     transaction.query().undefine(query);
 
@@ -144,14 +144,14 @@ public class QueryTest {
                     RelationType performanceTracker = tx.concepts().getRelationType("performance-tracker");
                     RoleType commitAnalysisAnalysis = tx.concepts().getRelationType("commit-analysis").getRelates("analysis");
                     AttributeType.DateTime created = tx.concepts().getAttributeType("created").asDateTime();
-                    AttributeType.String gender = tx.concepts().getAttributeType("gender").asString();
-                    assertNotNulls(analysis, performanceTracker, commitAnalysisAnalysis, created, gender);
+                    AttributeType.String email = tx.concepts().getAttributeType("email").asString();
+                    assertNotNulls(analysis, performanceTracker, commitAnalysisAnalysis, created, email);
 
                     assertFalse(analysis.isAbstract());
                     assertTrue(analysis.getOwns().noneMatch(att -> att.equals(created)));
                     assertTrue(analysis.getPlays().noneMatch(rol -> rol.equals(commitAnalysisAnalysis)));
                     assertTrue(performanceTracker.getRelates().noneMatch(rol -> rol.getLabel().equals("tracker")));
-                    assertNull(gender.getRegex());
+                    assertNull(email.getRegex());
 
                     AttributeType index = tx.concepts().getAttributeType("index");
                     assertNull(index);
