@@ -20,6 +20,8 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -38,6 +40,7 @@ import java.nio.file.Paths;
 
 import static grakn.core.test.integration.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -191,6 +194,29 @@ public class QueryTest {
                     transaction.query().insert(query);
 
                     transaction.commit();
+                }
+
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    Attribute.String name_graknlabs = transaction.concepts().getAttributeType("name").asString().get("graknlabs");
+                    Attribute.String symbol_engineers = transaction.concepts().getAttributeType("symbol").asString().get("graknlabs/engineers");
+                    Attribute.String email_grabl = transaction.concepts().getAttributeType("email").asString().get("grabl@grakn.ai");
+                    assertNotNulls(name_graknlabs, symbol_engineers, email_grabl);
+
+                    Entity organisation_graknlabs = name_graknlabs.getOwners().findAny().get().asEntity();
+                    Entity team_engineers = symbol_engineers.getOwners().findAny().get().asEntity();
+                    Entity user_grabl = email_grabl.getOwners().findAny().get().asEntity();
+                    assertNotNulls(organisation_graknlabs, team_engineers, user_grabl);
+
+                    RoleType orgTeam_org = transaction.concepts().getRelationType("org-team").getRelates("org");
+                    RoleType orgTeam_team = transaction.concepts().getRelationType("org-team").getRelates("team");
+                    RoleType orgMember_org = transaction.concepts().getRelationType("org-member").getRelates("org");
+                    RoleType orgMember_member = transaction.concepts().getRelationType("org-member").getRelates("member");
+                    RoleType teamMember_team = transaction.concepts().getRelationType("team-member").getRelates("team");
+                    RoleType teamMember_member = transaction.concepts().getRelationType("team-member").getRelates("member");
+
+                    assertEquals(organisation_graknlabs.getRelations(orgTeam_org).findAny().get().getPlayers(orgTeam_team).findAny().get(), team_engineers);
+                    assertEquals(organisation_graknlabs.getRelations(orgMember_org).findAny().get().getPlayers(orgMember_member).findAny().get(), user_grabl);
+                    assertEquals(team_engineers.getRelations(teamMember_team).findAny().get().getPlayers(teamMember_member).findAny().get(), user_grabl);
                 }
             }
         }
