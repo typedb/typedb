@@ -24,7 +24,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.state.PartialAtomicState;
+import grakn.core.graql.reasoner.state.PartialQueryState;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -268,7 +268,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 Collections.emptyIterator();
 
         Iterator<ResolutionState> partialAtomicState = getAtom().requiresDecomposition() ?
-                Iterators.singletonIterator(new PartialAtomicState(this, new ConceptMap(), null, parent, visitedSubGoals)) :
+                Iterators.singletonIterator(new PartialQueryState(this, new ConceptMap(), null, parent, visitedSubGoals)) :
                 Collections.emptyIterator();
 
         if (!visited) visitedSubGoals.add(this);

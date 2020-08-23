@@ -22,6 +22,7 @@ import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 
 import java.util.Collections;
@@ -30,30 +31,34 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Query state produced by AtomicState
- * It is used to allow rule application to Atomics where only part of the Atomic matches the rule head
- * Answers produced by the partial atomic that is resolved are checked against the full Atomic query
+ * Query state produced by AtomicState.
+ * Used for queries that require role-player decomposition - only part of the atom matches the rule head.
+ * As the decomposition may alter query semantics, answers produced by the partial state are checked against the full Atomic query.
  */
-public class PartialAtomicState extends AnswerPropagatorState<ReasonerAtomicQuery>{
+public class PartialQueryState extends AnswerPropagatorState<ResolvableQuery>{
 
-    public PartialAtomicState(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
+    public PartialQueryState(ResolvableQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         super(query, sub, u, parent, subGoals);
     }
 
     @Override
+    public String toString(){
+        return super.toString() + "\n" + getQuery() + "\n" +
+                "rewrite:\n" + getQuery().rewrite() + "\n";
+    }
+
+    @Override
     Iterator<ResolutionState> generateChildStateIterator() {
-        ReasonerQueryImpl split = getQuery().rewrite();
-        // if the decomposition produced multiple sub-atoms
-        if (!split.isAtomic()) {
-            return Iterators.singletonIterator(split.resolutionState(getSubstitution(), getUnifier(), this, getVisitedSubGoals()));
-        } else {
-            return Collections.emptyIterator();
-        }
+        ResolvableQuery split = getQuery().rewrite();
+        // if the decomposition is atomic then it is trivial
+        if (split.isAtomic()) return Collections.emptyIterator();
+
+        return Iterators.singletonIterator(split.resolutionState(getSubstitution(), getUnifier(), this, getVisitedSubGoals()));
     }
 
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
-        // we take the provided answer, and apply it to the non-rewritten/simplified Atomic query
+        //as the query rewrite can possibly alter the semantics of the query, we take the combined answer, and apply it to the original Atomic query
         ConceptMap answer = consumeAnswer(state);
         Optional<ConceptMap> satisfiesFullQuery = getQuery().withSubstitution(answer).resolve(false).findFirst();
         if (satisfiesFullQuery.isPresent()) {

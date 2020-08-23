@@ -188,6 +188,12 @@ public class RelationAtom extends Atom {
     }
 
     @Override
+    public boolean requiresDecomposition() {
+        if (getRelationPlayers().size() == 1) return false;
+        return super.requiresDecomposition();
+    }
+
+    @Override
     public Stream<Atom> rewriteToAtoms() {
         // we keep duplicate role players together as part of a single atom, as the alternative,
         // splitting them into sub-atoms, would change the semantics

@@ -70,7 +70,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
 
-            LOG.trace("state: {}", state);
+            System.out.printf("%s\n", state);
 
             if (state.isAnswerState() && state.isTopState()) {
                 return state.getSubstitution();
