@@ -27,8 +27,8 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -156,6 +156,41 @@ public class QueryTest {
                     AttributeType index = tx.concepts().getAttributeType("index");
                     assertNull(index);
 
+                }
+            }
+        }
+    }
+
+    @Test
+    public void test_query_insert() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    transaction.query().define(query);
+                    transaction.commit();
+                }
+            }
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    String queryString = "insert " +
+                            "$n 'graknlabs' isa name; " +
+                            "$o isa organisation, has name $n; " +
+                            "$t isa team, has name 'engineers', has symbol 'graknlabs/engineers'; " +
+                            "$u isa user, has name 'grabl', has email 'grabl@grakn.ai'; " +
+                            "($o, $t) isa org-team; " +
+                            "($o, $u) isa org-member; " +
+                            "($t, $u) isa team-member;";
+
+                    GraqlInsert query = Graql.parse(queryString);
+                    transaction.query().insert(query);
+
+                    transaction.commit();
                 }
             }
         }

@@ -106,6 +106,8 @@ public class InsertWriter {
         else throw new GraknException(THING_ISA_MISSING.message(identity.toString()));
 
         if (!variable.hasProperties().isEmpty()) insertHas(thing, variable.hasProperties());
+
+        inserted.put(identity, thing);
         return thing;
     }
 
