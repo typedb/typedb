@@ -93,29 +93,20 @@ public class InsertWriter {
         ThingVariable<?> variable = variables.get(identity).asThing();
         Thing thing;
 
-        if (variable.iidProperty().isPresent() && variable.isaProperty().isPresent()) {
+        if (variable.iid().isPresent() && variable.isa().isPresent()) {
             throw new GraknException(THING_ISA_IID_CONFLICT.message(
-                    variable.iidProperty().get(),
-                    variable.isaProperty().get().type().labelProperty().get().label()
-            ));
-        } else if (variable.neqProperty().isPresent()) {
+                    variable.iid().get(), variable.isa().get().type().label().get().label())
+            );
+        } else if (variable.neq().isPresent()) {
             throw new GraknException(THING_PROPERTY_UNACCEPTED.message(GraqlToken.Comparator.NEQ));
-        }
-        else if (variable.iidProperty().isPresent()) thing = getThingByIID(variable.iidProperty().get());
-        else if (variable.isaProperty().isPresent()) thing = insertIsa(variable.isaProperty().get(), variable);
+        } else if (variable.iid().isPresent()) thing = getThingByIID(variable.iid().get());
+        else if (variable.isa().isPresent()) thing = insertIsa(variable.isa().get(), variable);
         else throw new GraknException(THING_ISA_MISSING.message(identity.toString()));
 
-        if (!variable.hasProperties().isEmpty()) insertHas(thing, variable.hasProperties());
+        if (!variable.has().isEmpty()) insertHas(thing, variable.has(), identity);
 
         inserted.put(identity, thing);
         return thing;
-    }
-
-    private void insertHas(Thing thing, List<ThingProperty.Has> hasProperties) {
-        hasProperties.forEach(has -> {
-            Attribute attribute = insert(has.variable().identity()).asAttribute();
-            thing.setHas(attribute);
-        });
     }
 
     private Thing getThingByIID(ThingProperty.IID iidProperty) {
@@ -126,9 +117,9 @@ public class InsertWriter {
 
     private ThingType getThingTypeByVariable(TypeVariable variable) {
         if (variable.isLabelled()) {
-            assert variable.labelProperty().isPresent();
-            Type type = conceptMgr.getType(variable.labelProperty().get().label());
-            if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(variable.labelProperty().get().label()));
+            assert variable.label().isPresent();
+            Type type = conceptMgr.getType(variable.label().get().label());
+            if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(variable.label().get().label()));
             else return type.asThingType();
         } else {
             throw new GraknException(THING_PROPERTY_TYPE_VARIABLE.message(variable.identity()));
@@ -137,13 +128,13 @@ public class InsertWriter {
 
     private RoleType getRoleTypeByVariable(TypeVariable variable) {
         if (variable.isLabelled()) {
-            assert variable.labelProperty().isPresent();
+            assert variable.label().isPresent();
             RelationType relationType; RoleType roleType;
-            if ((relationType = conceptMgr.getRelationType(variable.labelProperty().get().scope().get())) != null &&
-                    (roleType = relationType.getRelates(variable.labelProperty().get().label())) != null) {
+            if ((relationType = conceptMgr.getRelationType(variable.label().get().scope().get())) != null &&
+                    (roleType = relationType.getRelates(variable.label().get().label())) != null) {
                 return roleType;
             } else {
-                throw new GraknException(TYPE_NOT_FOUND.message(variable.labelProperty().get().scopedLabel()));
+                throw new GraknException(TYPE_NOT_FOUND.message(variable.label().get().scopedLabel()));
             }
         } else {
             throw new GraknException(THING_PROPERTY_TYPE_VARIABLE.message(variable.identity()));
@@ -171,7 +162,7 @@ public class InsertWriter {
 
     private Attribute insertAttribute(AttributeType attributeType, ThingVariable<?> variable) {
         ThingProperty.Value<?> valueProperty;
-        if (variable.valueProperty().isPresent() && (valueProperty = variable.valueProperty().get()).operation().isAssignment()) {
+        if (variable.value().isPresent() && (valueProperty = variable.value().get()).operation().isAssignment()) {
             ValueOperation.Assignment valueAssignment = valueProperty.operation().asAssignment();
             switch (attributeType.getValueType()) {
                 case LONG:
@@ -194,9 +185,9 @@ public class InsertWriter {
     }
 
     private Relation insertRelation(RelationType relationType, ThingVariable<?> variable) {
-        if (variable.relationProperty().isPresent()) {
+        if (variable.relation().isPresent()) {
             Relation relation = relationType.create();
-            variable.relationProperty().get().players().forEach(rolePlayer -> {
+            variable.relation().get().players().forEach(rolePlayer -> {
                 RoleType roleType;
                 Thing player = insert(rolePlayer.player().identity());
                 Set<RoleType> inferred;
@@ -219,5 +210,19 @@ public class InsertWriter {
         } else {
             throw new GraknException(ErrorMessage.ThingWrite.RELATION_PROPERTY_MISSING.message(variable.identity()));
         }
+    }
+
+    private void insertHas(Thing thing, List<ThingProperty.Has> hasProperties, Identity identity) {
+        hasProperties.forEach(has -> {
+            AttributeType attributeType = getThingTypeByVariable(has.type()).asAttributeType();
+            Attribute attribute = insert(has.attribute().identity()).asAttribute();
+            if (!attributeType.equals(attribute.getType()) &&
+                    attribute.getType().getSupertypes().noneMatch(sup -> sup.equals(attributeType))) {
+                throw new GraknException(ErrorMessage.ThingWrite.ATTRIBUTE_TYPE_MISMATCH.message(
+                        identity, attribute.getType().getLabel(), attributeType.getLabel()
+                ));
+            }
+            thing.setHas(attribute);
+        });
     }
 }

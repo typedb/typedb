@@ -183,6 +183,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(17, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
                 new ThingWrite(18, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+        public static final ThingWrite ATTRIBUTE_TYPE_MISMATCH =
+                new ThingWrite(19, "The attribute '%s' with type '%s' cannot be owned as type '%s'.");
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
 

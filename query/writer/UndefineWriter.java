@@ -72,8 +72,8 @@ public class UndefineWriter {
         if (this.sorted.contains(identity)) return;
         TypeVariable variable = query.asGraph().get(identity);
 
-        if (variable.subProperty().isPresent()) {
-            sort(variable.subProperty().get().type().identity());
+        if (variable.sub().isPresent()) {
+            sort(variable.sub().get().type().identity());
         }
 
         this.variables.addFirst(variable);
@@ -85,8 +85,8 @@ public class UndefineWriter {
     }
 
     private void undefine(TypeVariable variable) {
-        assert variable.labelProperty().isPresent();
-        TypeProperty.Label labelProperty = variable.labelProperty().get();
+        assert variable.label().isPresent();
+        TypeProperty.Label labelProperty = variable.label().get();
 
         if (labelProperty.scope().isPresent() && variable.properties().size() > 1) {
             throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelProperty.scopedLabel()));
@@ -96,21 +96,21 @@ public class UndefineWriter {
         ThingType type = getTypeByLabel(labelProperty);
         if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(labelProperty.label()));
 
-        if (!variable.playsProperties().isEmpty()) undefinePlays(type, variable.playsProperties());
-        if (!variable.ownsProperties().isEmpty()) undefineOwns(type, variable.ownsProperties());
-        if (!variable.relatesProperties().isEmpty()) undefineRelates(type.asRelationType(), variable.relatesProperties());
+        if (!variable.plays().isEmpty()) undefinePlays(type, variable.plays());
+        if (!variable.owns().isEmpty()) undefineOwns(type, variable.owns());
+        if (!variable.relates().isEmpty()) undefineRelates(type.asRelationType(), variable.relates());
 
-        // TODO: if (variable.thenProperty().isPresent()) undefineThen(variable);
-        // TODO: if (variable.whenProperty().isPresent()) undefineWhen(variable);
-        if (variable.regexProperty().isPresent())
-            undefineRegex(type.asAttributeType().asString(), variable.regexProperty().get());
-        if (variable.abstractProperty().isPresent()) undefineAbstract(type);
+        // TODO: if (variable.then().isPresent()) undefineThen(variable);
+        // TODO: if (variable.when().isPresent()) undefineWhen(variable);
+        if (variable.regex().isPresent())
+            undefineRegex(type.asAttributeType().asString(), variable.regex().get());
+        if (variable.abstractFlag().isPresent()) undefineAbstract(type);
 
-        if (variable.subProperty().isPresent()) undefineSub(type, variable.subProperty().get());
-        else if (variable.valueTypeProperty().isPresent()) {
+        if (variable.sub().isPresent()) undefineSub(type, variable.sub().get());
+        else if (variable.valueType().isPresent()) {
             throw new GraknException(ATTRIBUTE_VALUE_TYPE_UNDEFINED.message(
-                    variable.valueTypeProperty().get().valueType().name(),
-                    variable.labelProperty().get().label()
+                    variable.valueType().get().valueType().name(),
+                    variable.label().get().label()
             ));
         }
 
@@ -140,10 +140,10 @@ public class UndefineWriter {
         if (thingType instanceof RoleType) {
             throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(thingType.getLabel()));
         }
-        ThingType supertype = getTypeByLabel(subProperty.type().labelProperty().get());
+        ThingType supertype = getTypeByLabel(subProperty.type().label().get());
 
         if (supertype == null) {
-            throw new GraknException(TYPE_NOT_FOUND.message(subProperty.type().labelProperty().get()));
+            throw new GraknException(TYPE_NOT_FOUND.message(subProperty.type().label().get()));
         } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
             throw new GraknException(INVALID_UNDEFINE_SUB.message(thingType.getLabel(), supertype.getLabel()));
         }
@@ -164,13 +164,13 @@ public class UndefineWriter {
 
     private void undefineRelates(RelationType relationType, List<TypeProperty.Relates> relatesProperties) {
         relatesProperties.forEach(relates -> {
-            String roleTypeLabel = relates.role().labelProperty().get().label();
+            String roleTypeLabel = relates.role().label().get().label();
             if (roleTypeLabel == null) {
-                throw new GraknException(TYPE_NOT_FOUND.message(relates.role().labelProperty().get().label()));
+                throw new GraknException(TYPE_NOT_FOUND.message(relates.role().label().get().label()));
             } else if (relates.overridden().isPresent()) {
                 throw new GraknException(INVALID_UNDEFINE_RELATES_OVERRIDE.message(
-                        relates.overridden().get().labelProperty().get().label(),
-                        relates.role().labelProperty().get()
+                        relates.overridden().get().label().get().label(),
+                        relates.role().label().get()
                 ));
             } else {
                 relationType.unsetRelates(roleTypeLabel);
@@ -181,16 +181,16 @@ public class UndefineWriter {
 
     private void undefineOwns(ThingType thingType, List<TypeProperty.Owns> ownsProperties) {
         ownsProperties.forEach(owns -> {
-            AttributeType attributeType = getTypeByLabel(owns.attribute().labelProperty().get()).asAttributeType();
+            AttributeType attributeType = getTypeByLabel(owns.attribute().label().get()).asAttributeType();
             if (attributeType == null && !undefined.contains(owns.attribute().identity())) {
-                throw new GraknException(TYPE_NOT_FOUND.message(owns.attribute().labelProperty().get().label()));
+                throw new GraknException(TYPE_NOT_FOUND.message(owns.attribute().label().get().label()));
             } else if (owns.overridden().isPresent()) {
                 throw new GraknException(INVALID_UNDEFINE_OWNS_OVERRIDE.message(
-                        owns.overridden().get().labelProperty().get().label(),
-                        owns.attribute().labelProperty().get()
+                        owns.overridden().get().label().get().label(),
+                        owns.attribute().label().get()
                 ));
             } else if (owns.isKey()) {
-                throw new GraknException(INVALID_UNDEFINE_OWNS_KEY.message(owns.attribute().labelProperty().get()));
+                throw new GraknException(INVALID_UNDEFINE_OWNS_KEY.message(owns.attribute().label().get()));
             } else if (attributeType != null){
                 thingType.unsetOwns(attributeType);
             }
@@ -199,13 +199,13 @@ public class UndefineWriter {
 
     private void undefinePlays(ThingType thingType, List<TypeProperty.Plays> playsProperties) {
         playsProperties.forEach(plays -> {
-            RoleType roleType = getTypeByScopedLabel(plays.role().labelProperty().get()).asRoleType();
+            RoleType roleType = getTypeByScopedLabel(plays.role().label().get()).asRoleType();
             if (roleType == null && !undefined.contains(plays.role().identity())) {
-                throw new GraknException(TYPE_NOT_FOUND.message(plays.role().labelProperty().get().label()));
+                throw new GraknException(TYPE_NOT_FOUND.message(plays.role().label().get().label()));
             } else if (plays.overridden().isPresent()) {
                 throw new GraknException(INVALID_UNDEFINE_PLAYS_OVERRIDE.message(
-                        plays.overridden().get().labelProperty().get().label(),
-                        plays.role().labelProperty().get()
+                        plays.overridden().get().label().get().label(),
+                        plays.role().label().get()
                 ));
             } else if (roleType != null) {
                 thingType.unsetPlays(roleType);
