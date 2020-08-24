@@ -45,8 +45,10 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.stream;
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.concat;
 
 public abstract class ThingImpl implements Thing {
 
@@ -161,11 +163,19 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
+    public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
+        return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
+            String[] label = scopedLabel.split(":");
+            return RoleTypeImpl.of(vertex.graph().type().get(label[1], label[0]));
+        }).toArray(RoleType[]::new));
+    }
+
+    @Override
     public Stream<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
             return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
         } else {
-            return Arrays.stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
+            return stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
                     vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             )).map(RelationImpl::of);
         }

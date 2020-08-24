@@ -132,6 +132,15 @@ public interface Thing extends Concept {
      * @param roleTypes The role types that this {@code Thing} can play
      * @return a stream of {@code Relation} that this {@code Thing} plays a specified role in
      */
+    Stream<? extends Relation> getRelations(String roleType, String... roleTypes);
+
+    /**
+     * Get all {@code Relation} instances that this {@code Thing} is playing any of the specified roles in.
+     * If no roles are specified, all Relations are retrieved regardless of role.
+     *
+     * @param roleTypes The role types that this {@code Thing} can play
+     * @return a stream of {@code Relation} that this {@code Thing} plays a specified role in
+     */
     Stream<? extends Relation> getRelations(RoleType... roleTypes);
 
     /**

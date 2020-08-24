@@ -47,6 +47,8 @@ public interface Relation extends Thing {
 
     void removePlayer(RoleType roleType, Thing player);
 
+    Stream<? extends Thing> getPlayers(String roleType, String... roleTypes);
+
     Stream<? extends Thing> getPlayers(RoleType... roleTypes);
 
     Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();

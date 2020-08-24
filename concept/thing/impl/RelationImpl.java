@@ -40,7 +40,9 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_NO_PLAYER;
 import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.stream;
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
@@ -86,11 +88,18 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
+    public Stream<ThingImpl> getPlayers(String roleType, String... roleTypes) {
+        return getPlayers(concat(Stream.of(roleType), stream(roleTypes))
+                                  .map(label -> getType().getRelates(label))
+                                  .toArray(RoleType[]::new));
+    }
+
+    @Override
     public Stream<ThingImpl> getPlayers(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
             return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
         }
-        return getPlayers(Arrays.stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+        return getPlayers(stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {
