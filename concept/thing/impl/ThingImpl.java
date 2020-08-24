@@ -18,6 +18,7 @@
 
 package grakn.core.concept.thing.impl;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
@@ -165,6 +166,9 @@ public abstract class ThingImpl implements Thing {
     @Override
     public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
         return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
+            if (!scopedLabel.contains(":")) {
+                throw new GraknException(ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
+            }
             String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graph().type().get(label[1], label[0]));
         }).toArray(RoleType[]::new));

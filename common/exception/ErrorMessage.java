@@ -135,8 +135,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingRead(2, "Invalid ThingVertex casting to '%s'.");
         public static final ThingRead INVALID_THING_CASTING =
                 new ThingRead(3, "Invalid concept conversion to '%s'.");
-        public static final ThingWrite THING_NOT_FOUND =
-                new ThingWrite(4, "The thing with IID '%s' is not found.");
+        public static final ThingRead THING_NOT_FOUND =
+                new ThingRead(4, "The thing with IID '%s' is not found.");
+        public static final ThingRead INVALID_ROLE_TYPE_LABEL =
+                new ThingRead(5, "The role type '%s' is not scoped by its relation type.");
 
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";
