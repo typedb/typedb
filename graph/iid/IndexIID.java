@@ -107,33 +107,36 @@ public abstract class IndexIID extends IID {
 
         @Override
         public String toString() {
-            Schema.ValueType valueType = Schema.ValueType.of(bytes[PrefixIID.LENGTH]);
-            String value;
-            switch (valueType) {
-                case BOOLEAN:
-                    value = byteToBoolean(bytes[VALUE_INDEX]).toString();
-                    break;
-                case LONG:
-                    value = sortedBytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
-                    break;
-                case DOUBLE:
-                    value = sortedBytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
-                    break;
-                case STRING:
-                    value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), STRING_ENCODING);
-                    break;
-                case DATETIME:
-                    value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
-                    break;
-                default:
-                    value = "";
-                    break;
-            }
+            if (readableString == null) {
+                Schema.ValueType valueType = Schema.ValueType.of(bytes[PrefixIID.LENGTH]);
+                String value;
+                switch (valueType) {
+                    case BOOLEAN:
+                        value = byteToBoolean(bytes[VALUE_INDEX]).toString();
+                        break;
+                    case LONG:
+                        value = sortedBytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                        break;
+                    case DOUBLE:
+                        value = sortedBytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                        break;
+                    case STRING:
+                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), STRING_ENCODING);
+                        break;
+                    case DATETIME:
+                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
+                        break;
+                    default:
+                        value = "";
+                        break;
+                }
 
-            return "[" + PrefixIID.LENGTH + ": " + Schema.Index.ATTRIBUTE.toString() + "]" +
-                    "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
-                    "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
-                    "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length)).toString() + "]";
+                readableString = "[" + PrefixIID.LENGTH + ": " + Schema.Index.ATTRIBUTE.toString() + "]" +
+                        "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
+                        "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
+                        "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length)).toString() + "]";
+            }
+            return readableString;
         }
     }
 }
