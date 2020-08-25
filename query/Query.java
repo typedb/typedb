@@ -41,10 +41,10 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
 public class Query {
 
-    private static final String TRACE_STREAM_DEFINE = "stream.define";
-    private static final String TRACE_STREAM_UNDEFINE = "stream.undefine";
-    private static final String TRACE_STREAM_INSERT = "stream.insert";
-    private static final String TRACE_STREAM_DELETE = "stream.delete";
+    private static final String TRACE_QUERY_DEFINE = "query.define";
+    private static final String TRACE_QUERY_UNDEFINE = "query.undefine";
+    private static final String TRACE_QUERY_INSERT = "query.insert";
+    private static final String TRACE_QUERY_DELETE = "query.delete";
     private final Concepts conceptMgr;
     private final Context.Transaction transactionContext;
 
@@ -58,7 +58,7 @@ public class Query {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_INSERT)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_QUERY_INSERT)) {
             Context.Query context = new Context.Query(transactionContext, options);
 
             if (query.match().isPresent()) {
@@ -80,7 +80,7 @@ public class Query {
     }
 
     public void delete(GraqlDelete query, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DELETE)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_QUERY_DELETE)) {
             Context.Query context = new Context.Query(transactionContext, options);
 
             // TODO: replace with real execution of MatchClause once traversal is implemented
@@ -97,7 +97,7 @@ public class Query {
     }
 
     public List<Type> define(GraqlDefine query, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DEFINE)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_QUERY_DEFINE)) {
             Context.Query context = new Context.Query(transactionContext, options);
             DefineWriter writer = new DefineWriter(conceptMgr, query, context);
             return writer.write();
@@ -109,7 +109,7 @@ public class Query {
     }
 
     public void undefine(GraqlUndefine query, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_UNDEFINE)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_QUERY_UNDEFINE)) {
             Context.Query context = new Context.Query(transactionContext, options);
             UndefineWriter writer = new UndefineWriter(conceptMgr, query, context);
             writer.write();
