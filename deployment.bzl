@@ -14,5 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-repo.github.organisation=graknlabs
-repo.github.repository=grakn
+
+deployment = {
+  'github.organisation': 'graknlabs',
+  'github.repository': 'grakn'
+}

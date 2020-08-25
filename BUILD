@@ -20,7 +20,7 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//visibility:public"])
 
 exports_files(
-    ["VERSION", "deployment.properties", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
+    ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
     visibility = ["//visibility:public"]
 )
 

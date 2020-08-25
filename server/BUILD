@@ -18,6 +18,8 @@
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private")
+
 package(default_visibility = ["//visibility:private",])
 
 genrule(
@@ -123,8 +125,8 @@ deploy_artifact(
     target = ":assemble-linux-targz",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-linux-{version}.tar.gz",
-    release = "https://repo.grakn.ai/repository/private-artifact",
-    snapshot = "https://repo.grakn.ai/repository/private-artifact-snapshot",
+    release = deployment_private['artifact.release'],
+    snapshot = deployment_private['artifact.snapshot'],
     visibility = ["//visibility:public"],
 )
 
@@ -133,8 +135,8 @@ deploy_artifact(
     target = ":assemble-mac-zip",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-mac-{version}.tar.gz",
-    release = "https://repo.grakn.ai/repository/private-artifact",
-    snapshot = "https://repo.grakn.ai/repository/private-artifact-snapshot",
+    release = deployment_private['artifact.release'],
+    snapshot = deployment_private['artifact.snapshot'],
     visibility = ["//visibility:public"],
 )
 
