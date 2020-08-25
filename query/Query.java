@@ -25,6 +25,7 @@ import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.query.writer.DefineWriter;
+import grakn.core.query.writer.DeleteWriter;
 import grakn.core.query.writer.InsertWriter;
 import grakn.core.query.writer.UndefineWriter;
 import graql.lang.query.GraqlDefine;
@@ -81,6 +82,13 @@ public class Query {
     public void delete(GraqlDelete query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_STREAM_DELETE)) {
             Context.Query context = new Context.Query(transactionContext, options);
+
+            // TODO: replace with real execution of MatchClause once traversal is implemented
+            List<ConceptMap> matched = Collections.emptyList();
+            matched.forEach(existing -> {
+                DeleteWriter writer = new DeleteWriter(conceptMgr, query, context, existing);
+                writer.write();
+            });
         }
     }
 
