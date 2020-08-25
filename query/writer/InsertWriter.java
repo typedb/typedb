@@ -52,8 +52,10 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.THING_NOT_FOUND
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISSING;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_REASSERTION;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_IID_CONFLICT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REASSERTION;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_PROPERTY_TYPE_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_PROPERTY_UNACCEPTED;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -89,17 +91,15 @@ public class InsertWriter {
 
     private Thing insert(Identity identity) {
         if (inserted.containsKey(identity)) return inserted.get(identity);
-        else if (existing.contains(identity)) return existing.get(identity).asThing();
+        else if (existing.contains(identity) && !variables.get(identity).properties().isEmpty()) {
+            return existing.get(identity).asThing();
+        } else validate(identity);
+
         ThingVariable<?> variable = variables.get(identity).asThing();
         Thing thing;
 
-        if (variable.iid().isPresent() && variable.isa().isPresent()) {
-            throw new GraknException(THING_ISA_IID_CONFLICT.message(
-                    variable.iid().get(), variable.isa().get().type().label().get().label())
-            );
-        } else if (variable.neq().isPresent()) {
-            throw new GraknException(THING_PROPERTY_UNACCEPTED.message(GraqlToken.Comparator.NEQ));
-        } else if (variable.iid().isPresent()) thing = getThingByIID(variable.iid().get());
+        if (existing.contains(identity)) thing = existing.get(identity).asThing();
+        else if (variable.iid().isPresent()) thing = getThingByIID(variable.iid().get());
         else if (variable.isa().isPresent()) thing = insertIsa(variable.isa().get(), variable);
         else throw new GraknException(THING_ISA_MISSING.message(identity.toString()));
 
@@ -107,6 +107,25 @@ public class InsertWriter {
 
         inserted.put(identity, thing);
         return thing;
+    }
+
+    private void validate(Identity identity) {
+        ThingVariable<?> variable = variables.get(identity).asThing();
+        if (existing.contains(identity) && (variable.iid().isPresent() || variable.isa().isPresent())) {
+            if (variable.iid().isPresent()) {
+                throw new GraknException(THING_IID_REASSERTION.message(identity, variable.iid().get().iid()));
+            } else {
+                throw new GraknException(THING_ISA_REASSERTION.message(
+                        identity, variable.isa().get().type().label().get().label())
+                );
+            }
+        } else if (variable.iid().isPresent() && variable.isa().isPresent()) {
+            throw new GraknException(THING_ISA_IID_CONFLICT.message(
+                    variable.iid().get(), variable.isa().get().type().label().get().label())
+            );
+        } else if (variable.neq().isPresent()) {
+            throw new GraknException(THING_PROPERTY_UNACCEPTED.message(GraqlToken.Comparator.NEQ));
+        }
     }
 
     private Thing getThingByIID(ThingProperty.IID iidProperty) {
