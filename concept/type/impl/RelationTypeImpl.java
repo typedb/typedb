@@ -88,13 +88,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setAbstract() {
         if (getInstances().findFirst().isPresent()) throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
         vertex.isAbstract(true);
-        declaredRoles().forEach(role -> role.setAbstract());
+        declaredRoles().forEach(RoleTypeImpl::setAbstract);
     }
 
     @Override
     public void unsetAbstract() {
         vertex.isAbstract(false);
-        declaredRoles().forEach(role -> role.unsetAbstract());
+        declaredRoles().forEach(RoleTypeImpl::unsetAbstract);
     }
 
     @Override

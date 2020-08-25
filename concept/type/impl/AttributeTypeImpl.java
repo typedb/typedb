@@ -45,10 +45,12 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CAS
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUBTYPE_NOT_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.stream;
@@ -88,6 +90,16 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             default:
                 throw new GraknException(UNRECOGNISED_VALUE);
         }
+    }
+
+    @Override
+    public void setAbstract() {
+        if (getSubtypes().filter(sub -> !sub.equals(this)).anyMatch(sub -> !sub.isAbstract())) {
+            throw new GraknException(ATTRIBUTE_SUBTYPE_NOT_ABSTRACT.message(getLabel()));
+        } else if (getInstances().findFirst().isPresent()) {
+            throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
+        }
+        vertex.isAbstract(true);
     }
 
     @Nullable
