@@ -49,18 +49,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OU
 
 public class DefineWriter {
 
-    private static final String TRACE_DEFINEWRITER_CONSTRUCT = "definewriter.construtor";
-    private static final String TRACE_DEFINEWRITER_WRITE = "definewriter.write";
-    private static final String TRACE_DEFINEWRITER_DEFINE = "definewriter.define";
-    private static final String TRACE_DEFINEWRITER_GETTHINGTYPE = "definewriter.getthingtype";
-    private static final String TRACE_DEFINEWRITER_GETROLETYPE = "definewriter.getroletype";
-    private static final String TRACE_DEFINEWRITER_GETVALUETYPE = "definewriter.getvaluetype";
-    private static final String TRACE_DEFINEWRITER_DEFINESUB = "definewriter.definesub";
-    private static final String TRACE_DEFINEWRITER_DEFINEABSTRACT = "definewriter.defineabstract";
-    private static final String TRACE_DEFINEWRITER_DEFINEREGEX = "definewriter.defineregex";
-    private static final String TRACE_DEFINEWRITER_DEFINERELATES = "definewriter.definerelates";
-    private static final String TRACE_DEFINEWRITER_DEFINEOWNS = "definewriter.defineowns";
-    private static final String TRACE_DEFINEWRITER_DEFINEPLAYS = "defienwriter.defineplays";
+    private static final String TRACE_PREFIX = "definewriter.";
 
     private final Concepts conceptMgr;
     private final Context.Query context;
@@ -69,7 +58,7 @@ public class DefineWriter {
     private final Map<Identity, TypeVariable> variables;
 
     public DefineWriter(Concepts conceptMgr, GraqlDefine query, Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_CONSTRUCT)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.context = context;
             this.variables = query.asGraph();
@@ -79,7 +68,7 @@ public class DefineWriter {
     }
 
     public List<Type> write() {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_WRITE)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
             variables.keySet().forEach(identity -> {
                 if (!visited.contains(identity)) define(identity);
             });
@@ -88,7 +77,7 @@ public class DefineWriter {
     }
 
     private Type define(Identity identity) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINE)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             TypeVariable variable = variables.get(identity);
             assert variable.label().isPresent();
             TypeProperty.Label labelProperty = variable.label().get();
@@ -98,7 +87,7 @@ public class DefineWriter {
             } else if (labelProperty.scope().isPresent()) return null; // do nothing
             else if (visited.contains(identity)) return conceptMgr.getType(labelProperty.scopedLabel());
 
-            ThingType type = getThingTypeByLabel(labelProperty);
+            ThingType type = getThingType(labelProperty);
             if (variable.sub().isPresent()) {
                 type = defineSub(type, variable.sub().get(), variable);
             } else if (variable.valueType().isPresent()) {
@@ -126,16 +115,16 @@ public class DefineWriter {
         }
     }
 
-    private ThingType getThingTypeByLabel(TypeProperty.Label label) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_GETTHINGTYPE)) {
+    private ThingType getThingType(TypeProperty.Label label) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
             Type type;
             if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
             else return null;
         }
     }
 
-    private RoleType getRoleTypeByScopedLabel(TypeProperty.Label label) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_GETROLETYPE)) {
+    private RoleType getRoleType(TypeProperty.Label label) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             // We always assume that Role Types already exist,
             // defined by their Relation Types ahead of time
             assert label.scope().isPresent();
@@ -150,13 +139,13 @@ public class DefineWriter {
     }
 
     private AttributeType.ValueType getValueType(TypeProperty.ValueType valueTypeProperty) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_GETVALUETYPE)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getvaluetype")) {
             return AttributeType.ValueType.of(valueTypeProperty.valueType());
         }
     }
 
     private ThingType defineSub(ThingType thingType, TypeProperty.Sub subProperty, TypeVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINESUB)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "definesub")) {
             TypeProperty.Label labelProperty = variable.label().get();
             ThingType supertype = define(subProperty.type().identity()).asThingType();
             if (supertype instanceof EntityType) {
@@ -186,19 +175,19 @@ public class DefineWriter {
     }
 
     private void defineAbstract(ThingType thingType) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINEABSTRACT)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineabstract")) {
             thingType.setAbstract();
         }
     }
 
     private void defineRegex(AttributeType.String attributeType, TypeProperty.Regex regexProperty) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINEREGEX)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineregex")) {
             attributeType.setRegex(regexProperty.regex());
         }
     }
 
     private void defineRelates(RelationType relationType, List<TypeProperty.Relates> relatesProperties) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINERELATES)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "definerelates")) {
             relatesProperties.forEach(relates -> {
                 String roleTypeLabel = relates.role().label().get().label();
                 if (relates.overridden().isPresent()) {
@@ -214,7 +203,7 @@ public class DefineWriter {
     }
 
     private void defineOwns(ThingType thingType, List<TypeProperty.Owns> ownsProperties) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINEOWNS)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineowns")) {
             ownsProperties.forEach(owns -> {
                 AttributeType attributeType = define(owns.attribute().identity()).asAttributeType();
                 if (owns.overridden().isPresent()) {
@@ -228,12 +217,12 @@ public class DefineWriter {
     }
 
     private void definePlays(ThingType thingType, List<TypeProperty.Plays> playsProperties) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_DEFINEWRITER_DEFINEPLAYS)) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineplays")) {
             playsProperties.forEach(plays -> {
                 define(plays.relation().get().identity());
-                RoleType roleType = getRoleTypeByScopedLabel(plays.role().label().get()).asRoleType();
+                RoleType roleType = getRoleType(plays.role().label().get()).asRoleType();
                 if (plays.overridden().isPresent()) {
-                    RoleType overriddenType = getRoleTypeByScopedLabel(plays.overridden().get().label().get()).asRoleType();
+                    RoleType overriddenType = getRoleType(plays.overridden().get().label().get()).asRoleType();
                     thingType.setPlays(roleType, overriddenType);
                 } else {
                     thingType.setPlays(roleType);
