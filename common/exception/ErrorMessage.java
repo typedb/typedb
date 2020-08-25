@@ -155,7 +155,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(2, "Attempted to insert a string larger than the maximum size.");
         public static final ThingWrite CONCURRENT_ATTRIBUTE_WRITE_DELETE =
                 new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes).");
-        public static final ThingWrite THING_ATTRIBUTE_UNDEFINED =
+        public static final ThingWrite THING_ATTRIBUTE_UNOWNED =
                 new ThingWrite(4, "Attempted to assign an attribute to a(n) '%s' that is not defined to have that attribute type.");
         public static final ThingWrite THING_KEY_OVER =
                 new ThingWrite(5, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
@@ -163,30 +163,32 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(6, "Attempted to assign a key of type '%s' that had been taken by another '%s'.");
         public static final ThingWrite THING_KEY_MISSING =
                 new ThingWrite(7, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
-        public static final ThingWrite RELATION_UNRELATED_ROLE =
-                new ThingWrite(8, "Relation type '%s' does not relate role type '%s'.");
-        public static final ThingWrite RELATION_NO_PLAYER =
-                new ThingWrite(9, "Relation instance of type '%s' does not have any role player");
+        public static final ThingWrite THING_ROLE_UNPLAYED =
+                new ThingWrite(8, "The thing type '%s' does not play the role type '%s'.");
+        public static final ThingWrite RELATION_ROLE_UNRELATED =
+                new ThingWrite(9, "Relation type '%s' does not relate role type '%s'.");
+        public static final ThingWrite RELATION_PLAYER_MISSING =
+                new ThingWrite(10, "Relation instance of type '%s' does not have any role player");
         public static final ThingWrite ATTRIBUTE_VALUE_UNSATISFIES_REGEX =
-                new ThingWrite(10, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
+                new ThingWrite(11, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
         public static final ThingWrite THING_ISA_IID_CONFLICT =
-                new ThingWrite(11, "Attempted to refer to a thing with IID '%s' and assert it as a new instance (isa) of type '%s' at the same time.");
+                new ThingWrite(12, "Attempted to refer to a thing with IID '%s' and assert it as a new instance (isa) of type '%s' at the same time.");
         public static final ThingWrite THING_ISA_MISSING =
-                new ThingWrite(12, "The thing variable '%s' cannot be asserted as a new instance with providing its type (isa).");
+                new ThingWrite(13, "The thing variable '%s' cannot be asserted as a new instance with providing its type (isa).");
         public static final ThingWrite THING_PROPERTY_TYPE_VARIABLE =
-                new ThingWrite(13, "Types can only be referred to by their labels in insert queries, unlike the the type variable '%s'.");
+                new ThingWrite(14, "Types can only be referred to by their labels in insert queries, unlike the the type variable '%s'.");
         public static final ThingWrite THING_PROPERTY_UNACCEPTED =
-                new ThingWrite(14, "The thing property '%s' is not accepted in an insert query.");
+                new ThingWrite(15, "The thing property '%s' is not accepted in an insert query.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(15, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+                new ThingWrite(16, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite RELATION_PROPERTY_MISSING =
-                new ThingWrite(16, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(17, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(17, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(18, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(18, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(19, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite ATTRIBUTE_TYPE_MISMATCH =
-                new ThingWrite(19, "The attribute '%s' with type '%s' cannot be owned as type '%s'.");
+                new ThingWrite(20, "The attribute '%s' with type '%s' cannot be owned as type '%s'.");
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
 

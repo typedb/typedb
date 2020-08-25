@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ATTRIBUTE_UNDEFINED;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ATTRIBUTE_UNOWNED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
@@ -90,7 +90,7 @@ public abstract class ThingImpl implements Thing {
     @Override
     public void setHas(Attribute attribute) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
-            throw new GraknException(THING_ATTRIBUTE_UNDEFINED.message(vertex.type().label()));
+            throw new GraknException(THING_ATTRIBUTE_UNOWNED.message(vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).findAny().isPresent()) {
                 throw new GraknException(THING_KEY_OVER.message(attribute.getType().getLabel(), getType().getLabel()));
