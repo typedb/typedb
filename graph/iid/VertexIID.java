@@ -37,6 +37,7 @@ import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static grakn.core.common.collection.Bytes.stringToBytes;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_IID_CASTING;
 import static grakn.core.graph.util.Schema.STRING_ENCODING;
 import static grakn.core.graph.util.Schema.STRING_MAX_LENGTH;
@@ -213,7 +214,7 @@ public abstract class VertexIID extends IID {
                     return new Attribute.DateTime(bytes);
                 default:
                     assert false;
-                    return null;
+                    throw new GraknException(UNRECOGNISED_VALUE);
             }
         }
 
@@ -231,7 +232,7 @@ public abstract class VertexIID extends IID {
                     return VertexIID.Attribute.DateTime.extract(bytes, from);
                 default:
                     assert false;
-                    return null;
+                    throw new GraknException(UNRECOGNISED_VALUE);
             }
         }
 

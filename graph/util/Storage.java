@@ -18,6 +18,8 @@
 
 package grakn.core.graph.util;
 
+import grakn.core.common.exception.GraknException;
+
 import java.util.Iterator;
 import java.util.function.BiFunction;
 
@@ -41,7 +43,7 @@ public interface Storage {
 
     void putUntracked(byte[] key, byte[] value);
 
-    void mergeUntracked(byte[] key, long increment);
-
     <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
+
+    GraknException exception(String message);
 }

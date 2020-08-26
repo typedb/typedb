@@ -18,6 +18,7 @@
 
 package grakn.core.graph;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.traversal.Traversal;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
@@ -67,5 +68,9 @@ public class Graphs {
 
     public void initialise() {
         typeGraph.initialise();
+    }
+
+    public GraknException exception(String message) {
+        return storage.exception(message);
     }
 }

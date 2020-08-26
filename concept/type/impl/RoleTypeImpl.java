@@ -42,7 +42,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super(vertex);
         assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
         if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
-            throw new GraknException(TYPE_ROOT_MISMATCH.message(
+            throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
                     Schema.Vertex.Type.ROLE_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -142,12 +142,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void setLabel(String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
-        void unsetAbstract() { throw new GraknException(ROOT_TYPE_MUTATION); }
+        void unsetAbstract() { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
-        void sup(RoleType superType) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        void sup(RoleType superType) { throw exception(ROOT_TYPE_MUTATION.message()); }
     }
 }

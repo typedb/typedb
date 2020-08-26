@@ -18,6 +18,7 @@
 
 package grakn.core.graph;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Schema;
 import grakn.core.graph.util.Storage;
@@ -277,6 +278,11 @@ public class ThingGraph implements Graph<VertexIID.Thing, ThingVertex> {
     public void clear() {
         thingsByIID.clear();
         attributesByIID.clear();
+    }
+
+    @Override
+    public GraknException exception(String errorMessage) {
+        return graphManager.exception(errorMessage);
     }
 
     /**

@@ -234,4 +234,9 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         typesByIID.clear();
         typesByLabel.clear();
     }
+
+    @Override
+    public GraknException exception(String message) {
+        return graphManager.exception(message);
+    }
 }

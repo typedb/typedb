@@ -57,7 +57,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     private RelationTypeImpl(TypeVertex vertex) {
         super(vertex);
         if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
-            throw new GraknException(TYPE_ROOT_MISMATCH.message(
+            throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
                     Schema.Vertex.Type.RELATION_TYPE.root().label(),
                     vertex.schema().root().label()
@@ -86,7 +86,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setAbstract() {
-        if (getInstances().findFirst().isPresent()) throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
+        if (getInstances().findFirst().isPresent()) throw exception(TYPE_HAS_INSTANCES.message(getLabel()));
         vertex.isAbstract(true);
         declaredRoles().forEach(RoleTypeImpl::setAbstract);
     }
@@ -128,7 +128,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         TypeVertex roleTypeVertex = vertex.graph().get(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (getSupertypes().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().equals(roleLabel))) {
-                throw new GraknException(RELATION_RELATES_ROLE_FROM_SUPERTYPE.message(roleLabel));
+                throw exception(RELATION_RELATES_ROLE_FROM_SUPERTYPE.message(roleLabel));
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
                 if (this.isAbstract()) roleType.setAbstract();
@@ -146,7 +146,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         final Optional<RoleTypeImpl> inherited;
         if (declaredRoles().anyMatch(r -> r.getLabel().equals(overriddenLabel)) ||
                 !(inherited = getSupertype().getRelates().filter(role -> role.getLabel().equals(overriddenLabel)).findFirst()).isPresent()) {
-            throw new GraknException(RELATION_RELATES_ROLE_NOT_AVAILABLE.message(roleLabel, overriddenLabel));
+            throw exception(RELATION_RELATES_ROLE_NOT_AVAILABLE.message(roleLabel, overriddenLabel));
         }
 
         roleType.sup(inherited.get());
@@ -204,9 +204,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void delete() {
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
-            throw new GraknException(TYPE_HAS_SUBTYPES.message(getLabel()));
+            throw exception(TYPE_HAS_SUBTYPES.message(getLabel()));
         } else if (getSubtypes().flatMap(RelationTypeImpl::getInstances).findFirst().isPresent()) {
-            throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
+            throw exception(TYPE_HAS_INSTANCES.message(getLabel()));
         } else {
             declaredRoles().forEach(RoleTypeImpl::delete);
             vertex.delete();
@@ -250,57 +250,57 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         @Override
         public void setLabel(String label) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void unsetAbstract() {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setSupertype(RelationType superType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setRelates(String roleLabel) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setRelates(String roleLabel, String overriddenLabel) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void unsetRelates(String roleLabel) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setPlays(RoleType roleType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void unsetPlays(RoleType roleType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
     }
 }

@@ -97,7 +97,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setAbstract() {
         if (getInstances().findFirst().isPresent()) {
-            throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
+            throw exception(TYPE_HAS_INSTANCES.message(getLabel()));
         }
         vertex.isAbstract(true);
     }
@@ -151,9 +151,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
                                            Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw new GraknException(OVERRIDDEN_NOT_SUPERTYPE.message(type.getLabel(), overriddenType.getLabel()));
+            throw exception(OVERRIDDEN_NOT_SUPERTYPE.message(type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw new GraknException(OVERRIDE_NOT_AVAILABLE.message(type.getLabel(), overriddenType.getLabel()));
+            throw exception(OVERRIDE_NOT_AVAILABLE.message(type.getLabel(), overriddenType.getLabel()));
         }
 
         vertex.outs().edge(schema, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
@@ -161,9 +161,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void ownsKey(AttributeTypeImpl attributeType) {
         if (!attributeType.isKeyable()) {
-            throw new GraknException(OWNS_KEY_VALUE_TYPE.message(attributeType.getLabel(), attributeType.getValueType().name()));
+            throw exception(OWNS_KEY_VALUE_TYPE.message(attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
-            throw new GraknException(OWNS_KEY_NOT_AVAILABLE.message(attributeType.getLabel()));
+            throw exception(OWNS_KEY_NOT_AVAILABLE.message(attributeType.getLabel()));
         }
 
         TypeVertex attVertex = attributeType.vertex;
@@ -172,9 +172,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
             if (getInstances().anyMatch(thing -> compareSize(thing.getHas(attributeType), 1) != 0)) {
-                throw new GraknException(OWNS_KEY_PRECONDITION_OWNERSHIP.message(vertex.label(), attVertex.label()));
+                throw exception(OWNS_KEY_PRECONDITION_OWNERSHIP.message(vertex.label(), attVertex.label()));
             } else if (attributeType.getInstances().anyMatch(att -> compareSize(att.getOwners(this), 1) != 0)) {
-                throw new GraknException(OWNS_KEY_PRECONDITION_UNIQUENESS.message(attVertex.label(), vertex.label()));
+                throw exception(OWNS_KEY_PRECONDITION_UNIQUENESS.message(attVertex.label(), vertex.label()));
             }
             ownsEdge.delete();
         }
@@ -192,7 +192,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
-            throw new GraknException(OWNS_ATT_NOT_AVAILABLE.message(attributeType.getLabel()));
+            throw exception(OWNS_ATT_NOT_AVAILABLE.message(attributeType.getLabel()));
         }
 
         TypeVertex attVertex = attributeType.vertex;
@@ -259,7 +259,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
-            throw new GraknException(PLAYS_ROLE_NOT_AVAILABLE.message(roleType.getLabel()));
+            throw exception(PLAYS_ROLE_NOT_AVAILABLE.message(roleType.getLabel()));
         }
         vertex.outs().put(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
@@ -289,9 +289,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void delete() {
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
-            throw new GraknException(TYPE_HAS_SUBTYPES.message(getLabel()));
+            throw exception(TYPE_HAS_SUBTYPES.message(getLabel()));
         } else if (getSubtypes().flatMap(ThingType::getInstances).findFirst().isPresent()) {
-            throw new GraknException(TYPE_HAS_INSTANCES.message(getLabel()));
+            throw exception(TYPE_HAS_INSTANCES.message(getLabel()));
         } else {
             vertex.delete();
         }
@@ -330,10 +330,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(String label) { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void setLabel(String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
-        public void unsetAbstract() { throw new GraknException(ROOT_TYPE_MUTATION); }
+        public void unsetAbstract() { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
         public ThingTypeImpl getSupertype() { return null; }
@@ -357,7 +357,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case RELATION_TYPE:
                         return RelationTypeImpl.of(v);
                     default:
-                        throw new GraknException(UNRECOGNISED_VALUE);
+                        throw exception(UNRECOGNISED_VALUE.message());
                 }
             });
         }
@@ -374,34 +374,34 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         return RelationImpl.of(v);
                     default:
                         assert false;
-                        throw new GraknException(UNRECOGNISED_VALUE);
+                        throw exception(UNRECOGNISED_VALUE.message());
                 }
             });
         }
 
         @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setPlays(RoleType roleType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
         public void unsetPlays(RoleType roleType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
+            throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         /**

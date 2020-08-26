@@ -18,7 +18,6 @@
 
 package grakn.core.concept.thing.impl;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
@@ -86,27 +85,27 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.Boolean.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Attribute.Boolean.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.Long asLong() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.Long.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Attribute.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.Double asDouble() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.Double.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Attribute.Double.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.String asString() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.Long.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Attribute.Long.class.getCanonicalName()));
     }
 
     @Override
     public AttributeImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.DateTime.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Attribute.DateTime.class.getCanonicalName()));
     }
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {

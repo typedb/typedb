@@ -56,25 +56,25 @@ public final class Concepts {
     public ThingType getRootType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
-        else throw new GraknException(ILLEGAL_STATE);
+        else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(vertex);
-        else throw new GraknException(ILLEGAL_STATE);
+        else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public RelationType getRootRelationType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(vertex);
-        else throw new GraknException(ILLEGAL_STATE);
+        else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(vertex);
-        else throw new GraknException(ILLEGAL_STATE);
+        else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType putEntityType(String label) {
@@ -102,8 +102,8 @@ public final class Concepts {
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
-        if (valueType == null) throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
-        if (!valueType.isWritable()) throw new GraknException(UNSUPPORTED_OPERATION);
+        if (valueType == null) throw graph.exception(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
+        if (!valueType.isWritable()) throw graph.exception(UNSUPPORTED_OPERATION.message());
 
         TypeVertex vertex = graph.type().get(label);
         switch (valueType) {
@@ -123,7 +123,7 @@ public final class Concepts {
                 if (vertex != null) return AttributeTypeImpl.DateTime.of(vertex);
                 else return new AttributeTypeImpl.DateTime(graph.type(), label);
             default:
-                throw new GraknException(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.name()));
+                throw graph.exception(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.name()));
         }
     }
 
@@ -150,12 +150,16 @@ public final class Concepts {
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        if (!exceptions.isEmpty()) throw new GraknException(exceptions);
+        if (!exceptions.isEmpty()) throw graph.exception(GraknException.getMessages(exceptions));
     }
 
     public void validateThings() {
         graph.thing().vertices().parallel()
                 .filter(v -> !v.isInferred() && v.isModified() && !v.schema().equals(Schema.Vertex.Thing.ROLE))
                 .forEach(v -> ThingImpl.of(v).validate());
+    }
+
+    public GraknException exception(String errorMessage) {
+        return graph.exception(errorMessage);
     }
 }

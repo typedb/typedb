@@ -39,7 +39,7 @@ public class GraknException extends RuntimeException {
         super(getMessages(exceptions));
     }
 
-    private static String getMessages(List<GraknException> exceptions) {
+    public static String getMessages(List<GraknException> exceptions) {
         StringBuilder messages = new StringBuilder();
         for (GraknException exception : exceptions) {
             messages.append(exception.getMessage()).append("\n");

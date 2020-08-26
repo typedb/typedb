@@ -163,7 +163,8 @@ public class InsertWriter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             if (variable.isLabelled()) {
                 assert variable.label().isPresent();
-                RelationType relationType; RoleType roleType;
+                RelationType relationType;
+                RoleType roleType;
                 if ((relationType = conceptMgr.getRelationType(variable.label().get().scope().get())) != null &&
                         (roleType = relationType.getRelates(variable.label().get().label())) != null) {
                     return roleType;

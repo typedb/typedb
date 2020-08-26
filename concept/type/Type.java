@@ -50,22 +50,22 @@ public interface Type extends Concept {
     List<GraknException> validate();
 
     default ThingType asThingType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(ThingType.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(ThingType.class.getCanonicalName()));
     }
 
     default EntityType asEntityType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(EntityType.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(EntityType.class.getCanonicalName()));
     }
 
     default AttributeType asAttributeType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
     }
 
     default RelationType asRelationType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(RelationType.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(RelationType.class.getCanonicalName()));
     }
 
     default RoleType asRoleType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(RoleType.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(RoleType.class.getCanonicalName()));
     }
 }

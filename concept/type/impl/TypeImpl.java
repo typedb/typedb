@@ -97,7 +97,7 @@ public abstract class TypeImpl implements Type {
     }
 
     void superTypeVertex(TypeVertex superTypeVertex) {
-        if (vertex.equals(superTypeVertex)) throw new GraknException(SUPERTYPE_SELF.message(vertex.label()));
+        if (vertex.equals(superTypeVertex)) throw exception(SUPERTYPE_SELF.message(vertex.label()));
         vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
     }
@@ -132,10 +132,15 @@ public abstract class TypeImpl implements Type {
 
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Schema.Status.BUFFERED)) {
-            throw new GraknException(DIRTY_DATA_WRITES);
+            throw exception(DIRTY_DATA_WRITES.message());
         } else if (isAbstract()) {
-            throw new GraknException(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));
+            throw exception(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));
         }
+    }
+
+    @Override
+    public GraknException exception(String message) {
+        return vertex.graph().exception(message);
     }
 
     @Override

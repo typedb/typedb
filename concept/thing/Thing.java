@@ -18,7 +18,6 @@
 
 package grakn.core.concept.thing;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
@@ -155,14 +154,14 @@ public interface Thing extends Concept {
     void validate();
 
     default Entity asEntity() {
-        throw new GraknException(INVALID_THING_CASTING.message(Entity.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Entity.class.getCanonicalName()));
     }
 
     default Attribute asAttribute() {
-        throw new GraknException(INVALID_THING_CASTING.message(Attribute.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Attribute.class.getCanonicalName()));
     }
 
     default Relation asRelation() {
-        throw new GraknException(INVALID_THING_CASTING.message(Relation.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Relation.class.getCanonicalName()));
     }
 }

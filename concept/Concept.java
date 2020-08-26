@@ -35,10 +35,12 @@ public interface Concept {
     void delete();
 
     default Type asType() {
-        throw new GraknException(INVALID_TYPE_CASTING.message(Type.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(Type.class.getCanonicalName()));
     }
 
     default Thing asThing() {
-        throw new GraknException(INVALID_THING_CASTING.message(Thing.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(Thing.class.getCanonicalName()));
     }
+
+    GraknException exception(String errorMessage);
 }

@@ -18,7 +18,6 @@
 
 package grakn.core.concept.thing.impl;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
@@ -62,9 +61,9 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void addPlayer(RoleType roleType, Thing player) {
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
-            throw new GraknException(RELATION_ROLE_UNRELATED.message(this.getType().getLabel(), roleType.getLabel()));
+            throw exception(RELATION_ROLE_UNRELATED.message(this.getType().getLabel(), roleType.getLabel()));
         } else if (player.getType().getPlays().noneMatch(t -> t.equals(roleType))) {
-            throw new GraknException(THING_ROLE_UNPLAYED.message(this.getType().getLabel(), roleType.getLabel()));
+            throw exception(THING_ROLE_UNPLAYED.message(this.getType().getLabel(), roleType.getLabel()));
         }
 
         RoleImpl role = ((RoleTypeImpl) roleType).create();
@@ -122,7 +121,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
-            throw new GraknException(RELATION_PLAYER_MISSING.message(getType().getLabel()));
+            throw exception(RELATION_PLAYER_MISSING.message(getType().getLabel()));
         }
     }
 }

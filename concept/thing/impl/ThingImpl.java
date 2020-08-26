@@ -90,12 +90,12 @@ public abstract class ThingImpl implements Thing {
     @Override
     public void setHas(Attribute attribute) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
-            throw new GraknException(THING_ATTRIBUTE_UNOWNED.message(vertex.type().label()));
+            throw exception(THING_ATTRIBUTE_UNOWNED.message(vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).findAny().isPresent()) {
-                throw new GraknException(THING_KEY_OVER.message(attribute.getType().getLabel(), getType().getLabel()));
+                throw exception(THING_KEY_OVER.message(attribute.getType().getLabel(), getType().getLabel()));
             } else if (attribute.getOwners(getType()).findAny().isPresent()) {
-                throw new GraknException(THING_KEY_TAKEN.message(attribute.getType().getLabel(), getType().getLabel()));
+                throw exception(THING_KEY_TAKEN.message(attribute.getType().getLabel(), getType().getLabel()));
             }
         }
 
@@ -167,7 +167,7 @@ public abstract class ThingImpl implements Thing {
     public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
         return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
             if (!scopedLabel.contains(":")) {
-                throw new GraknException(ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
+                throw exception(ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
             }
             String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graph().type().get(label[1], label[0]));
@@ -195,7 +195,7 @@ public abstract class ThingImpl implements Thing {
         if (getHas(true).map(Attribute::getType).count() < getType().getOwns(true).count()) {
             Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
-            throw new GraknException(THING_KEY_MISSING.message(getType().getLabel(), printTypeSet(missing)));
+            throw exception(THING_KEY_MISSING.message(getType().getLabel(), printTypeSet(missing)));
         }
     }
 
@@ -207,6 +207,11 @@ public abstract class ThingImpl implements Thing {
             if (i < array.length - 1) string.append(", ");
         }
         return string.toString();
+    }
+
+    @Override
+    public GraknException exception(String message) {
+        return vertex.graph().exception(message);
     }
 
     @Override

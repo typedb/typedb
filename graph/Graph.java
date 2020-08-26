@@ -18,6 +18,7 @@
 
 package grakn.core.graph;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Storage;
 import grakn.core.graph.vertex.Vertex;
@@ -44,4 +45,6 @@ public interface Graph<VERTEX_IID extends VertexIID,
     void commit();
 
     void clear();
+
+    GraknException exception(String errorMessage);
 }
