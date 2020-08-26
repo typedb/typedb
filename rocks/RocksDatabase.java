@@ -40,6 +40,11 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
+import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
+import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
+import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
+import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static java.util.Comparator.reverseOrder;
 
 public class RocksDatabase implements Grakn.Database {
 
@@ -75,11 +80,9 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     private RocksDatabase initialiseAndOpen() {
-        try (RocksSession session = createAndOpenSession(Arguments.Session.Type.SCHEMA, new Options.Session())) {
-            try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                if (txn.graph().isInitialised()) {
-                    throw new GraknException(DIRTY_INITIALISATION);
-                }
+        try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
+            try (RocksTransaction txn = session.transaction(WRITE)) {
+                if (txn.graph().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
             }
@@ -89,8 +92,8 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     private RocksDatabase loadAndOpen() {
-        try (RocksSession session = createAndOpenSession(Arguments.Session.Type.DATA, new Options.Session())) {
-            try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+        try (RocksSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (RocksTransaction txn = session.transaction(READ)) {
                 keyGenerator.sync(txn.storage());
             }
         }
@@ -100,9 +103,7 @@ public class RocksDatabase implements Grakn.Database {
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         long schemaWriteLockStamp = 0;
-        if (type.equals(Arguments.Session.Type.SCHEMA)) {
-            schemaWriteLockStamp = schemaLock.writeLock();
-        }
+        if (type.isSchema()) schemaWriteLockStamp = schemaLock.writeLock();
         RocksSession session = new RocksSession(this, type, options);
         sessions.put(session.uuid(), new Pair<>(session, schemaWriteLockStamp));
         return session;
@@ -134,9 +135,7 @@ public class RocksDatabase implements Grakn.Database {
 
     void remove(RocksSession session) {
         long schemaWriteLockStamp = sessions.remove(session.uuid()).second();
-        if (session.type().equals(Arguments.Session.Type.SCHEMA)) {
-            schemaLock.unlockWrite(schemaWriteLockStamp);
-        }
+        if (session.type().isSchema()) schemaLock.unlockWrite(schemaWriteLockStamp);
     }
 
     void close() {
@@ -172,8 +171,7 @@ public class RocksDatabase implements Grakn.Database {
         close();
         rocksGrakn.databases().remove(this);
         try {
-            Files.walk(directory()).sorted(Comparator.reverseOrder())
-                    .map(Path::toFile).forEach(File::delete);
+            Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
             throw new GraknException(e);
         }

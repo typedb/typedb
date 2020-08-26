@@ -62,7 +62,7 @@ public class RocksSession implements Grakn.Session {
 
     void remove(RocksTransaction transaction) {
         long schemaReadLockStamp = transactions.remove(transaction);
-        if (this.type.equals(Arguments.Session.Type.DATA) && transaction.type().equals(Arguments.Transaction.Type.WRITE)) {
+        if (this.type.isData() && transaction.type().isWrite()) {
             database.releaseSchemaReadLock(schemaReadLockStamp);
         }
     }
@@ -85,9 +85,7 @@ public class RocksSession implements Grakn.Session {
     @Override
     public RocksTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options) {
         long schemaReadLockStamp = 0;
-        if (this.type.equals(Arguments.Session.Type.DATA) && type.equals(Arguments.Transaction.Type.WRITE)) {
-            schemaReadLockStamp = database.acquireSchemaReadLock();
-        }
+        if (this.type.isData() && type.isWrite()) schemaReadLockStamp = database.acquireSchemaReadLock();
         RocksTransaction transaction = new RocksTransaction(this, type, options);
         transactions.put(transaction, schemaReadLockStamp);
         return transaction;

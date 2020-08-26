@@ -139,21 +139,21 @@ class RocksTransaction implements Grakn.Transaction {
     public void commit() {
         if (isOpen.compareAndSet(true, false)) {
             try {
-                if (type.equals(Arguments.Transaction.Type.READ)) {
+                if (type.isRead()) {
                     throw new GraknException(ILLEGAL_COMMIT);
-                } else if (session.type().equals(Arguments.Session.Type.DATA) && graph.type().isModified()) {
+                } else if (session.type().isData() && graph.type().isModified()) {
                     throw new GraknException(SESSION_DATA_VIOLATION);
-                } else if (session.type().equals(Arguments.Session.Type.SCHEMA) && graph.thing().isModified()) {
+                } else if (session.type().isSchema() && graph.thing().isModified()) {
                     throw new GraknException(SESSION_SCHEMA_VIOLATION);
                 }
 
                 // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
                 // TODO: We should benchmark this
                 rocksTransaction.disableIndexing();
-                if (session.type().equals(Arguments.Session.Type.SCHEMA)) {
+                if (session.type().isSchema()) {
                     concepts.validateTypes();
                     graph.type().commit();
-                } else if (session.type().equals(Arguments.Session.Type.DATA)) {
+                } else if (session.type().isData()) {
                     concepts.validateThings();
                     graph.thing().commit();
                 } else {

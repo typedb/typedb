@@ -55,7 +55,7 @@ public class BasicTest {
 
     private static void assert_transaction_read(Grakn.Transaction transaction) {
         assertTrue(transaction.isOpen());
-        assertEquals(Arguments.Transaction.Type.READ, transaction.type());
+        assertTrue(transaction.type().isRead());
 
         ThingType rootType = transaction.concepts().getRootType();
         EntityType rootEntityType = transaction.concepts().getRootEntityType();
@@ -145,7 +145,7 @@ public class BasicTest {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(Arguments.Transaction.Type.READ, transaction.type());
+                    assertTrue(transaction.type().isRead());
 
                     Stream<Consumer<Grakn.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
@@ -174,7 +174,7 @@ public class BasicTest {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     assertTrue(transaction.isOpen());
-                    assertEquals(Arguments.Transaction.Type.WRITE, transaction.type());
+                    assertTrue(transaction.type().isWrite());
 
                     ThingType rootType = transaction.concepts().getRootType();
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
