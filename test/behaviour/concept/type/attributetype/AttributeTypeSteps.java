@@ -61,7 +61,7 @@ public class AttributeTypeSteps {
 
         switch (valueType) {
             case OBJECT:
-                return attributeType.asObject();
+                return attributeType;
             case BOOLEAN:
                 return attributeType.asBoolean();
             case LONG:

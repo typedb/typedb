@@ -53,8 +53,6 @@ public interface AttributeType extends ThingType {
 
     Stream<? extends ThingType> getOwners(boolean onlyKey);
 
-    AttributeType asObject();
-
     AttributeType.Boolean asBoolean();
 
     AttributeType.Long asLong();

@@ -306,6 +306,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
                 valueType = AttributeType.ValueType.DATETIME;
                 break;
             default:
+            case OBJECT:
             case UNRECOGNIZED:
                 throw Status.UNIMPLEMENTED.withDescription(format("Unsupported value type '%s'", valueTypeProto)).asRuntimeException();
         }

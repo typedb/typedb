@@ -31,9 +31,6 @@ public interface Type extends Concept {
     @Override
     default Type asType() { return this; }
 
-    @Override
-    byte[] getIID();
-
     Long count();
 
     boolean isRoot();

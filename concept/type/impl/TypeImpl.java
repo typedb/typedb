@@ -69,11 +69,6 @@ public abstract class TypeImpl implements Type {
     }
 
     @Override
-    public byte[] getIID() {
-        return vertex.iid().bytes();
-    }
-
-    @Override
     public boolean isDeleted() {
         return vertex.isDeleted();
     }
@@ -108,14 +103,14 @@ public abstract class TypeImpl implements Type {
     }
 
     @Nullable
-    <TYPE> TYPE sup(Function<TypeVertex, TYPE> typeConstructor) {
-        Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
+    <TYPE extends Type> TYPE sup(final Function<TypeVertex, TYPE> typeConstructor) {
+        final Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
                                                          v -> v.schema().equals(vertex.schema()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
 
-    <TYPE> Stream<TYPE> sups(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends Type> Stream<TYPE> sups(final Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(loop(
                 vertex,
                 v -> v != null && v.schema().equals(this.vertex.schema()),
@@ -126,7 +121,7 @@ public abstract class TypeImpl implements Type {
                 }), typeConstructor));
     }
 
-    <TYPE> Stream<TYPE> subs(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends Type> Stream<TYPE> subs(final Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()), typeConstructor));
     }
 

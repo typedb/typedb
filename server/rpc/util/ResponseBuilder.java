@@ -293,6 +293,8 @@ public class ResponseBuilder {
 
         public static AttributeType.ValueType valueType(ConceptProto.AttributeType.VALUE_TYPE valueType) {
             switch (valueType) {
+                case OBJECT:
+                    return AttributeType.ValueType.OBJECT;
                 case STRING:
                     return AttributeType.ValueType.STRING;
                 case BOOLEAN:
@@ -324,6 +326,8 @@ public class ResponseBuilder {
                 return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
             } else if (attributeType instanceof AttributeType.DateTime) {
                 return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
+            } else if (attributeType.isRoot()) {
+                return ConceptProto.AttributeType.VALUE_TYPE.OBJECT;
             } else {
                 throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }

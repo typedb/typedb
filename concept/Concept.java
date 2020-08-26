@@ -27,8 +27,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CAS
 
 public interface Concept {
 
-    byte[] getIID();
-
     boolean isDeleted();
 
     /**
@@ -40,10 +38,7 @@ public interface Concept {
         throw new GraknException(INVALID_TYPE_CASTING.message(Type.class.getCanonicalName()));
     }
 
-
     default Thing asThing() {
         throw new GraknException(INVALID_THING_CASTING.message(Thing.class.getCanonicalName()));
     }
-
-
 }

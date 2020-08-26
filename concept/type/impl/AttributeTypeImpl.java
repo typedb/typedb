@@ -176,12 +176,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public AttributeTypeImpl.Root asObject() {
-        if (this.getValueType() == ValueType.OBJECT) return new AttributeTypeImpl.Root(this.vertex);
-        else throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
-    }
-
-    @Override
     public AttributeTypeImpl.Boolean asBoolean() {
         throw new GraknException(INVALID_TYPE_CASTING.message(AttributeType.Boolean.class.getCanonicalName()));
     }
@@ -227,9 +221,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         public ValueType getValueType() { return ValueType.OBJECT; }
-
-        @Override
-        public AttributeTypeImpl.Root asObject() { return this; }
 
         @Override
         public AttributeTypeImpl.Boolean asBoolean() { return AttributeTypeImpl.Boolean.of(this.vertex); }
@@ -314,11 +305,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw new GraknException(ROOT_TYPE_MUTATION);
-        }
-
-        @Override
-        public void unsetPlays(RoleType roleType) {
             throw new GraknException(ROOT_TYPE_MUTATION);
         }
     }
@@ -443,11 +429,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw new GraknException(ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
@@ -577,11 +558,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public void setPlays(RoleType roleType, RoleType overriddenType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
-
-            @Override
-            public void unsetPlays(RoleType roleType) {
-                throw new GraknException(ROOT_TYPE_MUTATION);
-            }
         }
     }
 
@@ -707,11 +683,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw new GraknException(ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
@@ -880,17 +851,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void unsetPlays(RoleType roleType) {
-                throw new GraknException(ROOT_TYPE_MUTATION);
-            }
-
-            @Override
             public void setRegex(java.lang.String regex) {
-                throw new GraknException(ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public void unsetRegex() {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
@@ -1019,11 +980,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw new GraknException(ROOT_TYPE_MUTATION);
-            }
-
-            @Override
-            public void unsetPlays(RoleType roleType) {
                 throw new GraknException(ROOT_TYPE_MUTATION);
             }
         }
