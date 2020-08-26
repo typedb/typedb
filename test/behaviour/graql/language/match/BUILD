@@ -35,7 +35,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/language:match.feature",
+        "@graknlabs_behaviour//graql/language:match.feature",
     ],
     classpath_resources = ["//test/conf:logback"],
     size = "large",

@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/explanation/language.feature",
+        features = "external/graknlabs_behaviour/graql/explanation/language.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class LanguageTest {

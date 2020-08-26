@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/concept/thing/attribute.feature",
+        features = "external/graknlabs_behaviour/concept/thing/attribute.feature",
         tags = "not @ignore and not @ignore-grakn"
 )
 public class AttributeTest {

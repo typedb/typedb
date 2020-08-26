@@ -36,7 +36,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/explanation:reasoner.feature",
+        "@graknlabs_behaviour//graql/explanation:reasoner.feature",
     ],
     classpath_resources = ["//test/conf:logback"],
     size = "medium",

@@ -58,7 +58,7 @@ java_test(
         "//test/behaviour/connection/transaction:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/concept/type:attributetype.feature",
+        "@graknlabs_behaviour//concept/type:attributetype.feature",
     ],
     size = "medium",
 )

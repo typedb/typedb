@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/language/insert.feature",
+        features = "external/graknlabs_behaviour/graql/language/insert.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class InsertTest {

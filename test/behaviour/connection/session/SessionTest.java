@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/connection/session.feature",
+        features = "external/graknlabs_behaviour/connection/session.feature",
         tags = "not @ignore and not @ignore-grakn"
 )
 public class SessionTest {

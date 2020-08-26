@@ -127,8 +127,8 @@ graknlabs_grabl_tracing()
 load("@graknlabs_grabl_tracing//dependencies/maven:artifacts.bzl",
 graknlabs_grabl_tracing_artifacts = "artifacts")
 
-load("//dependencies/graknlabs:repositories.bzl", "graknlabs_verification")
-graknlabs_verification()
+load("//dependencies/graknlabs:repositories.bzl", "graknlabs_behaviour")
+graknlabs_behaviour()
 
 load("//dependencies/maven:artifacts.bzl", graknlabs_grakn_core_artifacts = "artifacts")
 

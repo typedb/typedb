@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/connection/transaction.feature",
+        features = "external/graknlabs_behaviour/connection/transaction.feature",
         tags = "not @ignore and not @ignore-grakn-2.0"
 )
 public class TransactionTest {

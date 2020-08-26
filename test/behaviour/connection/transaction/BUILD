@@ -56,7 +56,7 @@ java_test(
         "//test/behaviour/connection/session:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/connection:transaction.feature",
+        "@graknlabs_behaviour//connection:transaction.feature",
     ],
     size = "large",
 )

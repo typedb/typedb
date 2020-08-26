@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/concept/type/entitytype.feature",
+        features = "external/graknlabs_behaviour/concept/type/entitytype.feature",
         tags = "not @ignore and not @ignore-grakn"
 )
 public class EntityTypeTest {
