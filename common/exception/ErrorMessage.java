@@ -113,9 +113,9 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Transaction(4, "The transaction has been closed and no further operation is allowed.");
         public static final Transaction ILLEGAL_COMMIT =
                 new Transaction(5, "Only write transactions can be committed.");
-        public static final Transaction DIRTY_SCHEMA_WRITES =
+        public static final Transaction SESSION_DATA_VIOLATION =
                 new Transaction(6, "Attempted schema writes when session type does not allow.");
-        public static final Transaction DIRTY_DATA_WRITES =
+        public static final Transaction SESSION_SCHEMA_VIOLATION =
                 new Transaction(7, "Attempted data writes when session type does not allow.");
         public static final Transaction UNEXPECTED_NULL =
                 new Transaction(8, "Unexpected NULL object.");

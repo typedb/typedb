@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 
 public class Query {
 
@@ -55,6 +57,7 @@ public class Query {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query, Options.Query options) {
+        if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             Context.Query context = new Context.Query(transactionContext, options);
 
@@ -77,6 +80,7 @@ public class Query {
     }
 
     public void delete(GraqlDelete query, Options.Query options) {
+        if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             Context.Query context = new Context.Query(transactionContext, options);
 
@@ -94,6 +98,7 @@ public class Query {
     }
 
     public List<Type> define(GraqlDefine query, Options.Query options) {
+        if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             Context.Query context = new Context.Query(transactionContext, options);
             DefineWriter writer = new DefineWriter(conceptMgr, query, context);
@@ -106,6 +111,7 @@ public class Query {
     }
 
     public void undefine(GraqlUndefine query, Options.Query options) {
+        if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             Context.Query context = new Context.Query(transactionContext, options);
             UndefineWriter writer = new UndefineWriter(conceptMgr, query, context);

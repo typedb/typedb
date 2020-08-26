@@ -43,8 +43,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
-import static grakn.core.common.exception.ErrorMessage.Transaction.DIRTY_DATA_WRITES;
-import static grakn.core.common.exception.ErrorMessage.Transaction.DIRTY_SCHEMA_WRITES;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
@@ -142,9 +142,9 @@ class RocksTransaction implements Grakn.Transaction {
                 if (type.equals(Arguments.Transaction.Type.READ)) {
                     throw new GraknException(ILLEGAL_COMMIT);
                 } else if (session.type().equals(Arguments.Session.Type.DATA) && graph.type().isModified()) {
-                    throw new GraknException(DIRTY_SCHEMA_WRITES);
+                    throw new GraknException(SESSION_DATA_VIOLATION);
                 } else if (session.type().equals(Arguments.Session.Type.SCHEMA) && graph.thing().isModified()) {
-                    throw new GraknException(DIRTY_DATA_WRITES);
+                    throw new GraknException(SESSION_SCHEMA_VIOLATION);
                 }
 
                 // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading

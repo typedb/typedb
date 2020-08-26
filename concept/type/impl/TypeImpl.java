@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.DIRTY_DATA_WRITES;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.loop;
@@ -132,7 +132,7 @@ public abstract class TypeImpl implements Type {
 
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Schema.Status.BUFFERED)) {
-            throw exception(DIRTY_DATA_WRITES.message());
+            throw exception(SESSION_SCHEMA_VIOLATION.message());
         } else if (isAbstract()) {
             throw exception(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));
         }
