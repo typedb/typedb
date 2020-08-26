@@ -222,10 +222,11 @@ class RocksTransaction implements Grakn.Transaction {
         @Override
         public byte[] get(byte[] key) {
             try {
+                // We don't need to check isOpen.get() as tx.commit() does not involve this method
                 if (type.isWrite()) readWriteLock.lockRead();
                 return rocksTransaction.get(readOptions, key);
             } catch (RocksDBException | InterruptedException e) {
-                throw new GraknException(e);
+                throw exception(e);
             } finally {
                 if (type.isWrite()) readWriteLock.unlockRead();
             }
@@ -247,12 +248,12 @@ class RocksTransaction implements Grakn.Transaction {
         @Override
         public void delete(byte[] key) {
             try {
-                readWriteLock.lockWrite();
+                if (isOpen.get()) readWriteLock.lockWrite();
                 rocksTransaction.delete(key);
             } catch (RocksDBException | InterruptedException e) {
-                throw new GraknException(e);
+                throw exception(e);
             } finally {
-                readWriteLock.unlockWrite();
+                if (isOpen.get()) readWriteLock.unlockWrite();
             }
         }
 
@@ -264,12 +265,12 @@ class RocksTransaction implements Grakn.Transaction {
         @Override
         public void put(byte[] key, byte[] value) {
             try {
-                readWriteLock.lockWrite();
+                if (isOpen.get()) readWriteLock.lockWrite();
                 rocksTransaction.put(key, value);
             } catch (RocksDBException | InterruptedException e) {
-                throw new GraknException(e);
+                throw exception(e);
             } finally {
-                readWriteLock.unlockWrite();
+                if (isOpen.get()) readWriteLock.unlockWrite();
             }
         }
 
@@ -281,12 +282,12 @@ class RocksTransaction implements Grakn.Transaction {
         @Override
         public void putUntracked(byte[] key, byte[] value) {
             try {
-                readWriteLock.lockWrite();
+                if (isOpen.get()) readWriteLock.lockWrite();
                 rocksTransaction.putUntracked(key, value);
             } catch (RocksDBException | InterruptedException e) {
-                throw new GraknException(e);
+                throw exception(e);
             } finally {
-                readWriteLock.unlockWrite();
+                if (isOpen.get()) readWriteLock.unlockWrite();
             }
         }
 
@@ -301,6 +302,11 @@ class RocksTransaction implements Grakn.Transaction {
         public GraknException exception(String message) {
             RocksTransaction.this.close();
             return new GraknException(message);
+        }
+
+        GraknException exception(Exception exception) {
+            RocksTransaction.this.close();
+            return new GraknException(exception);
         }
 
         org.rocksdb.RocksIterator newRocksIterator() {
