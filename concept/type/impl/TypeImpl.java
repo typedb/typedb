@@ -105,7 +105,7 @@ public abstract class TypeImpl implements Type {
     @Nullable
     <TYPE extends Type> TYPE sup(final Function<TypeVertex, TYPE> typeConstructor) {
         final Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
-                                                         v -> v.schema().equals(vertex.schema()));
+                                                               v -> v.schema().equals(vertex.schema()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }

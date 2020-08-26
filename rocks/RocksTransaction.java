@@ -43,9 +43,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
 class RocksTransaction implements Grakn.Transaction {
@@ -67,7 +67,7 @@ class RocksTransaction implements Grakn.Transaction {
     RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.type = type;
         this.session = session;
-        this.context = new Context.Transaction(session.context(), options);
+        this.context = new Context.Transaction(session.context(), options).type(type);
 
         readOptions = new ReadOptions();
         writeOptions = new WriteOptions();

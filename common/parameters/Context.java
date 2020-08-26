@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 
 public class Context<PARENT extends Context, OPTIONS extends Options> {
 
-    private final Arguments.Session.Type sessionType;
-    private final Arguments.Transaction.Type transactionType;
+    Arguments.Session.Type sessionType;
+    Arguments.Transaction.Type transactionType;
     private final OPTIONS options;
 
     private Context(@Nullable PARENT parent, OPTIONS options) {
@@ -54,12 +54,22 @@ public class Context<PARENT extends Context, OPTIONS extends Options> {
         public Session(Options.Database databaseOptions, Options.Session sessionOptions) {
             super(null, sessionOptions.parent(databaseOptions));
         }
+
+        public Session type(Arguments.Session.Type sessionType) {
+            this.sessionType = sessionType;
+            return this;
+        }
     }
 
     public static class Transaction extends Context<Context.Session, Options.Transaction> {
 
         public Transaction(Context.Session context, Options.Transaction options) {
             super(context, options.parent(context.options()));
+        }
+
+        public Transaction type(Arguments.Transaction.Type transactionType) {
+            this.transactionType = transactionType;
+            return this;
         }
     }
 

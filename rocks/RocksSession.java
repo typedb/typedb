@@ -41,7 +41,7 @@ public class RocksSession implements Grakn.Session {
     RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
         this.type = type;
-        this.context = new Context.Session(database.options(), options);
+        this.context = new Context.Session(database.options(), options).type(type);
 
         uuid = UUID.randomUUID();
         transactions = new ConcurrentHashMap<>();
