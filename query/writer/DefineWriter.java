@@ -29,7 +29,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import graql.lang.pattern.property.TypeProperty;
-import graql.lang.pattern.variable.Identity;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.TypeVariable;
 import graql.lang.query.GraqlDefine;
 
@@ -53,9 +53,9 @@ public class DefineWriter {
 
     private final Concepts conceptMgr;
     private final Context.Query context;
-    private final Set<Identity> visited;
+    private final Set<Reference> visited;
     private final List<Type> defined;
-    private final Map<Identity, TypeVariable> variables;
+    private final Map<Reference, TypeVariable> variables;
 
     public DefineWriter(Concepts conceptMgr, GraqlDefine query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
@@ -69,23 +69,23 @@ public class DefineWriter {
 
     public List<Type> write() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
-            variables.keySet().forEach(identity -> {
-                if (!visited.contains(identity)) define(identity);
+            variables.keySet().forEach(reference -> {
+                if (!visited.contains(reference)) define(reference);
             });
             return list(defined);
         }
     }
 
-    private Type define(Identity identity) {
+    private Type define(Reference reference) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
-            TypeVariable variable = variables.get(identity);
+            TypeVariable variable = variables.get(reference);
             assert variable.label().isPresent();
             TypeProperty.Label labelProperty = variable.label().get();
 
             if (labelProperty.scope().isPresent() && variable.properties().size() > 1) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelProperty.scopedLabel()));
             } else if (labelProperty.scope().isPresent()) return null; // do nothing
-            else if (visited.contains(identity)) return conceptMgr.getType(labelProperty.scopedLabel());
+            else if (visited.contains(reference)) return conceptMgr.getType(labelProperty.scopedLabel());
 
             ThingType type = getThingType(labelProperty);
             if (variable.sub().isPresent()) {
@@ -110,7 +110,7 @@ public class DefineWriter {
 
             // if this variable had more properties beyond being referred to using a label, add to list of defined types
             if (variable.properties().size() > 1) defined.add(type);
-            visited.add(identity);
+            visited.add(reference);
             return type;
         }
     }
@@ -147,7 +147,7 @@ public class DefineWriter {
     private ThingType defineSub(ThingType thingType, TypeProperty.Sub subProperty, TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "definesub")) {
             TypeProperty.Label labelProperty = variable.label().get();
-            ThingType supertype = define(subProperty.type().identity()).asThingType();
+            ThingType supertype = define(subProperty.type().reference()).asThingType();
             if (supertype instanceof EntityType) {
                 if (thingType == null) thingType = conceptMgr.putEntityType(labelProperty.label());
                 thingType.asEntityType().setSupertype(supertype.asEntityType());
@@ -193,11 +193,11 @@ public class DefineWriter {
                 if (relates.overridden().isPresent()) {
                     String overriddenTypeLabel = relates.overridden().get().label().get().label();
                     relationType.setRelates(roleTypeLabel, overriddenTypeLabel);
-                    visited.add(relates.overridden().get().identity());
+                    visited.add(relates.overridden().get().reference());
                 } else {
                     relationType.setRelates(roleTypeLabel);
                 }
-                visited.add(relates.role().identity());
+                visited.add(relates.role().reference());
             });
         }
     }
@@ -205,9 +205,9 @@ public class DefineWriter {
     private void defineOwns(ThingType thingType, List<TypeProperty.Owns> ownsProperties) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineowns")) {
             ownsProperties.forEach(owns -> {
-                AttributeType attributeType = define(owns.attribute().identity()).asAttributeType();
+                AttributeType attributeType = define(owns.attribute().reference()).asAttributeType();
                 if (owns.overridden().isPresent()) {
-                    AttributeType overriddenType = define(owns.overridden().get().identity()).asAttributeType();
+                    AttributeType overriddenType = define(owns.overridden().get().reference()).asAttributeType();
                     thingType.setOwns(attributeType, overriddenType, owns.isKey());
                 } else {
                     thingType.setOwns(attributeType, owns.isKey());
@@ -219,7 +219,7 @@ public class DefineWriter {
     private void definePlays(ThingType thingType, List<TypeProperty.Plays> playsProperties) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineplays")) {
             playsProperties.forEach(plays -> {
-                define(plays.relation().get().identity());
+                define(plays.relation().get().reference());
                 RoleType roleType = getRoleType(plays.role().label().get()).asRoleType();
                 if (plays.overridden().isPresent()) {
                     RoleType overriddenType = getRoleType(plays.overridden().get().label().get()).asRoleType();

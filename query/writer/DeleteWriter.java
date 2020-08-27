@@ -24,7 +24,7 @@ import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import graql.lang.pattern.variable.BoundVariable;
-import graql.lang.pattern.variable.Identity;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.query.GraqlDelete;
 
 import java.util.HashMap;
@@ -38,8 +38,8 @@ public class DeleteWriter {
     private final Concepts conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
-    private final Map<Identity, Thing> deleted;
-    private Map<Identity, BoundVariable<?>> variables;
+    private final Map<Reference, Thing> deleted;
+    private Map<Reference, BoundVariable<?>> variables;
 
     public DeleteWriter(Concepts conceptMgr, GraqlDelete query, Context.Query context, ConceptMap existing) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {

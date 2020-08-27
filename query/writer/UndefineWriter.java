@@ -28,7 +28,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import graql.lang.pattern.property.TypeProperty;
-import graql.lang.pattern.variable.Identity;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.TypeVariable;
 import graql.lang.query.GraqlUndefine;
 
@@ -55,8 +55,8 @@ public class UndefineWriter {
     private final Context.Query context;
     private final GraqlUndefine query;
     private final LinkedList<TypeVariable> variables;
-    private final Set<Identity> undefined;
-    private final Set<Identity> sorted;
+    private final Set<Reference> undefined;
+    private final Set<Reference> sorted;
 
     public UndefineWriter(Concepts conceptMgr, GraqlUndefine query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
@@ -67,19 +67,19 @@ public class UndefineWriter {
             this.undefined = new HashSet<>();
             this.sorted = new HashSet<>();
 
-            query.asGraph().keySet().forEach(identity -> {
-                if (!sorted.contains(identity)) sort(identity);
+            query.asGraph().keySet().forEach(reference -> {
+                if (!sorted.contains(reference)) sort(reference);
             });
         }
     }
 
-    private void sort(Identity identity) {
+    private void sort(Reference reference) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "sort")) {
-            if (this.sorted.contains(identity)) return;
-            TypeVariable variable = query.asGraph().get(identity);
-            if (variable.sub().isPresent()) sort(variable.sub().get().type().identity());
+            if (this.sorted.contains(reference)) return;
+            TypeVariable variable = query.asGraph().get(reference);
+            if (variable.sub().isPresent()) sort(variable.sub().get().type().reference());
             this.variables.addFirst(variable);
-            this.sorted.add(variable.identity());
+            this.sorted.add(variable.reference());
         }
     }
 
@@ -97,7 +97,7 @@ public class UndefineWriter {
             if (labelProperty.scope().isPresent() && variable.properties().size() > 1) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelProperty.scopedLabel()));
             } else if (labelProperty.scope().isPresent()) return; // do nothing
-            else if (undefined.contains(variable.identity())) return; // do nothing
+            else if (undefined.contains(variable.reference())) return; // do nothing
 
             ThingType type = getType(labelProperty);
             if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(labelProperty.label()));
@@ -120,7 +120,7 @@ public class UndefineWriter {
                 ));
             }
 
-            undefined.add(variable.identity());
+            undefined.add(variable.reference());
         }
     }
 
@@ -190,7 +190,7 @@ public class UndefineWriter {
                     ));
                 } else {
                     relationType.unsetRelates(roleTypeLabel);
-                    undefined.add(relates.role().identity());
+                    undefined.add(relates.role().reference());
                 }
             });
         }
@@ -200,7 +200,7 @@ public class UndefineWriter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineowns")) {
             ownsProperties.forEach(owns -> {
                 AttributeType attributeType = getType(owns.attribute().label().get()).asAttributeType();
-                if (attributeType == null && !undefined.contains(owns.attribute().identity())) {
+                if (attributeType == null && !undefined.contains(owns.attribute().reference())) {
                     throw new GraknException(TYPE_NOT_FOUND.message(owns.attribute().label().get().label()));
                 } else if (owns.overridden().isPresent()) {
                     throw new GraknException(INVALID_UNDEFINE_OWNS_OVERRIDE.message(
@@ -220,7 +220,7 @@ public class UndefineWriter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineplays")) {
             playsProperties.forEach(plays -> {
                 RoleType roleType = getRoleType(plays.role().label().get()).asRoleType();
-                if (roleType == null && !undefined.contains(plays.role().identity())) {
+                if (roleType == null && !undefined.contains(plays.role().reference())) {
                     throw new GraknException(TYPE_NOT_FOUND.message(plays.role().label().get().label()));
                 } else if (plays.overridden().isPresent()) {
                     throw new GraknException(INVALID_UNDEFINE_PLAYS_OVERRIDE.message(

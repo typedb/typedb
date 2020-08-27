@@ -20,28 +20,28 @@ package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Thing;
-import graql.lang.pattern.variable.Identity;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ConceptMap implements Answer {
 
-    private final Map<Identity, Thing> concepts;
+    private final Map<Reference, Thing> concepts;
 
     public ConceptMap() {
         this(new HashMap<>());
     }
 
-    public ConceptMap(Map<Identity, Thing> concepts) {
+    public ConceptMap(Map<Reference, Thing> concepts) {
         this.concepts = concepts;
     }
 
-    public boolean contains(Identity variableIdentity) {
-        return concepts.containsKey(variableIdentity);
+    public boolean contains(Reference variable) {
+        return concepts.containsKey(variable);
     }
 
-    public Concept get(Identity variableIdentity) {
-        return concepts.get(variableIdentity);
+    public Concept get(Reference variable) {
+        return concepts.get(variable);
     }
 }
