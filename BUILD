@@ -53,3 +53,13 @@ checkstyle_test(
         ":grakn",
     ]
 )
+
+# CI targets that are not declared in any BUILD file, but are called externally
+filegroup(
+    name = "ci",
+    data = [
+        "@graknlabs_dependencies//tool/sonarcloud:code-analysis",
+        "@graknlabs_dependencies//tool/checkstyle:test-coverage",
+        "@graknlabs_dependencies//tool/unuseddeps:unused-deps",
+    ],
+)
