@@ -33,7 +33,7 @@ import grakn.core.server.rpc.ConceptRPC.ConceptHolder;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
-import grakn.protocol.TransactionProto;
+import grakn.protocol.OptionsProto;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -79,7 +79,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     TransactionRPC(Function<UUID, SessionRPC> sessionRPCSupplier, StreamObserver<Transaction.Res> responseSender) {
         this.sessionRPCSupplier = sessionRPCSupplier;
         this.responseSender = responseSender;
-        this.iterators = new Iterators(responseSender::onNext);
+        this.iterators = new Iterators(responseSender::onNext, transaction.options().batchSize());
         isOpen = new AtomicBoolean(false);
     }
 
@@ -197,16 +197,16 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     private void handleIterRequest(Transaction.Iter.Req request) {
         switch (request.getReqCase()) {
             case ITERATORID:
-                iterators.resumeBatchIterating(request.getIteratorID(), request.getOptions());
+                iterators.resumeBatchIterating(request.getIteratorID());
                 break;
             case QUERY_ITER_REQ:
-                query(request.getQueryIterReq(), request.getOptions());
+                query(request.getQueryIterReq());
                 break;
             case CONCEPTMETHOD_THING_ITER_REQ:
-                conceptIterMethod(request.getConceptMethodThingIterReq(), request.getOptions());
+                conceptIterMethod(request.getConceptMethodThingIterReq());
                 break;
             case CONCEPTMETHOD_TYPE_ITER_REQ:
-                conceptIterMethod(request.getConceptMethodTypeIterReq(), request.getOptions());
+                conceptIterMethod(request.getConceptMethodTypeIterReq());
                 break;
             default:
             case REQ_NOT_SET:
@@ -252,7 +252,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         return nonNull(transaction);
     }
 
-    private void query(Transaction.Query.Iter.Req request, Transaction.Iter.Req.Options queryOptions) {
+    private void query(Transaction.Query.Iter.Req request) {
         try (ThreadTrace ignored = traceOnThread("query")) {
             Options.Query options = RequestReader.getOptions(Options.Query::new, request.getOptions());
 
@@ -332,22 +332,22 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //    }
 
     private void conceptMethod(Transaction.ConceptMethod.Thing.Req thingReq) {
-        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
+        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext);
         ConceptRPC.run(con, thingReq.getMethod());
     }
 
     private void conceptMethod(Transaction.ConceptMethod.Type.Req typeReq) {
-        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext, TransactionProto.Transaction.Iter.Req.Options.getDefaultInstance());
+        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext);
         ConceptRPC.run(con, typeReq.getMethod());
     }
 
-    private void conceptIterMethod(Transaction.ConceptMethod.Thing.Iter.Req thingReq, Transaction.Iter.Req.Options options) {
-        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext, options);
+    private void conceptIterMethod(Transaction.ConceptMethod.Thing.Iter.Req thingReq) {
+        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext);
         ConceptRPC.iter(con, thingReq.getMethod());
     }
 
-    private void conceptIterMethod(Transaction.ConceptMethod.Type.Iter.Req typeReq, Transaction.Iter.Req.Options options) {
-        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext, options);
+    private void conceptIterMethod(Transaction.ConceptMethod.Type.Iter.Req typeReq) {
+        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext);
         ConceptRPC.iter(con, typeReq.getMethod());
     }
 
@@ -366,42 +366,32 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
      * The iterators operate by batching results to reduce total round-trips.
      */
     public static class Iterators {
+        private final int batchSize;
         private final Consumer<Transaction.Res> responseSender;
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(0);
         private final Map<Integer, BatchingIterator> iterators = new ConcurrentHashMap<>();
 
-        Iterators(Consumer<Transaction.Res> responseSender) {
+        Iterators(Consumer<Transaction.Res> responseSender, final int batchSize) {
             this.responseSender = responseSender;
-        }
-
-        private static int getSizeFrom(Transaction.Iter.Req.Options options) {
-            switch (options.getBatchSizeCase()) {
-                case ALL:
-                    return Integer.MAX_VALUE;
-                case NUMBER:
-                    return options.getNumber();
-                case BATCHSIZE_NOT_SET:
-                default:
-                    return Options.DEFAULT_BATCH_SIZE;
-            }
+            this.batchSize = batchSize;
         }
 
         /**
          * Hand off an iterator and begin batch iterating.
          */
-        void startBatchIterating(Iterator<Transaction.Res> iterator, Transaction.Iter.Req.Options options) {
-            new BatchingIterator(iterator).iterateBatch(options);
+        void startBatchIterating(Iterator<Transaction.Res> iterator) {
+            new BatchingIterator(iterator).iterateBatch();
         }
 
         /**
          * Iterate the next batch of an existing iterator.
          */
-        void resumeBatchIterating(int iteratorId, Transaction.Iter.Req.Options options) {
+        void resumeBatchIterating(int iteratorId) {
             BatchingIterator iterator = iterators.get(iteratorId);
             if (iterator == null) {
                 throw Status.FAILED_PRECONDITION.asRuntimeException();
             }
-            iterator.iterateBatch(options);
+            iterator.iterateBatch();
         }
 
         void stop(int iteratorId) {
@@ -426,8 +416,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
                 return id != -1;
             }
 
-            void iterateBatch(Transaction.Iter.Req.Options options) {
-                int batchSize = getSizeFrom(options);
+            void iterateBatch() {
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
                     responseSender.accept(iterator.next());
                 }

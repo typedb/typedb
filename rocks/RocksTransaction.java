@@ -92,13 +92,18 @@ class RocksTransaction implements Grakn.Transaction {
         return storage;
     }
 
+    public Context.Transaction context() {
+        return context;
+    }
+
     @Override
     public Arguments.Transaction.Type type() {
         return type;
     }
 
-    public Context.Transaction context() {
-        return context;
+    @Override
+    public Options.Transaction options() {
+        return context.options();
     }
 
     @Override

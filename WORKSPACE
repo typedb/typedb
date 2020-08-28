@@ -126,11 +126,12 @@ graknlabs_grabl_tracing_artifacts = "artifacts")
 ############################
 load("@graknlabs_dependencies//library/maven:rules.bzl", "maven")
 maven(
-    artifacts_list = graknlabs_dependencies_tool_maven_artifacts +
+    graknlabs_dependencies_tool_maven_artifacts +
         graknlabs_grabl_tracing_artifacts +
         graknlabs_graql_artifacts +
         graknlabs_grakn_core_artifacts,
-    overrides = graknlabs_grakn_core_overrides
+
+    graknlabs_grakn_core_overrides
 )
 
 ###############################################

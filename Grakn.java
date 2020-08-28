@@ -107,6 +107,8 @@ public interface Grakn extends AutoCloseable {
 
         Arguments.Transaction.Type type();
 
+        Options.Transaction options();
+
         boolean isOpen();
 
         Concepts concepts();

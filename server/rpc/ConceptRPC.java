@@ -273,22 +273,19 @@ class ConceptRPC {
         private final grakn.core.Grakn.Transaction tx;
         private final TransactionRPC.Iterators iterators;
         private final Consumer<TransactionProto.Transaction.Res> responseSender;
-        private final TransactionProto.Transaction.Iter.Req.Options options;
 
-        ConceptHolder(ByteString conceptId, grakn.core.Grakn.Transaction tx, TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender, TransactionProto.Transaction.Iter.Req.Options options) {
+        ConceptHolder(ByteString conceptId, grakn.core.Grakn.Transaction tx, TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender) {
             this.concept = conceptExists(tx.concepts().getThing(conceptId.toByteArray()));
             this.tx = tx;
             this.iterators = iterators;
             this.responseSender = responseSender;
-            this.options = options;
         }
 
-        ConceptHolder(String label, grakn.core.Grakn.Transaction tx, TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender, TransactionProto.Transaction.Iter.Req.Options options) {
+        ConceptHolder(String label, grakn.core.Grakn.Transaction tx, TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender) {
             this.concept = conceptExists(tx.concepts().getType(label));
             this.tx = tx;
             this.iterators = iterators;
             this.responseSender = responseSender;
-            this.options = options;
         }
 
         private static TransactionProto.Transaction.Res transactionRes(ConceptProto.ThingMethod.Res response) {
@@ -420,7 +417,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void getSubtypes() {
@@ -433,7 +430,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
         }
 
@@ -496,7 +493,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void getPlayers() {
@@ -509,7 +506,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
         }
 
@@ -530,7 +527,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
                 LOG.trace("{} end instances", Thread.currentThread());
             }
 
@@ -554,7 +551,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void getPlays() {
@@ -567,7 +564,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void setOwns(final ConceptProto.ThingType.SetOwns.Req req) {
@@ -650,7 +647,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void getRelates(final String label) {
@@ -705,7 +702,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void put(final ConceptProto.Attribute.Value protoValue) {
@@ -839,7 +836,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void getRelations(List<ConceptProto.Type> protoRoleTypes) {
@@ -856,7 +853,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void getPlays() {
@@ -869,7 +866,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void setHas(ConceptProto.Thing protoAttribute) {
@@ -910,7 +907,7 @@ class ConceptRPC {
                     }
                 }
 
-                iterators.startBatchIterating(responses.build().iterator(), options);
+                iterators.startBatchIterating(responses.build().iterator());
             }
 
             private void getPlayers(List<ConceptProto.Type> protoRoleTypes) {
@@ -927,7 +924,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
 
             private void addPlayer(ConceptProto.Relation.AddPlayer.Req request) {
@@ -977,7 +974,7 @@ class ConceptRPC {
                     return ResponseBuilder.Transaction.Iter.conceptMethod(res);
                 });
 
-                iterators.startBatchIterating(responses.iterator(), options);
+                iterators.startBatchIterating(responses.iterator());
             }
         }
     }
