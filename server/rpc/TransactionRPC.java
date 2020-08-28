@@ -67,7 +67,6 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionRPC.class);
     private final StreamObserver<Transaction.Res> responseSender;
-    private final Iterators iterators;
     private final AtomicBoolean isOpen;
     private final Function<UUID, SessionRPC> sessionRPCSupplier;
 
@@ -75,11 +74,11 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     private Grakn.Transaction transaction;
     private Arguments.Transaction.Type transactionType;
     private Options.Transaction transactionOptions;
+    private Iterators iterators;
 
     TransactionRPC(Function<UUID, SessionRPC> sessionRPCSupplier, StreamObserver<Transaction.Res> responseSender) {
         this.sessionRPCSupplier = sessionRPCSupplier;
         this.responseSender = responseSender;
-        this.iterators = new Iterators(responseSender::onNext, transaction.options().batchSize());
         isOpen = new AtomicBoolean(false);
     }
 
@@ -226,6 +225,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
             if (transactionType == null) throw Status.INVALID_ARGUMENT.asRuntimeException();
 
             transaction = sessionRPC.transaction(this);
+            iterators = new Iterators(responseSender::onNext, transaction.options().batchSize());
             responseSender.onNext(ResponseBuilder.Transaction.open());
         } else {
             throw Status.ALREADY_EXISTS.withDescription(TRANSACTION_ALREADY_OPENED.message()).asRuntimeException();
