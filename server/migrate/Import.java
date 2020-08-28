@@ -365,7 +365,7 @@ public class Import extends AbstractJob {
 
     private void insertMissingAttributeOwnershipsAtEnd() {
         for (Pair<String, List<String>> attributeKeyOwnership : allMissingAttributeOwnerships) {
-            Attribute<?> owner = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
+            Thing owner = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
 
             for (String attributeIdString : attributeKeyOwnership.second()) {
                 Attribute<?> owned = (Attribute<?>) thingCache.computeIfAbsent(
