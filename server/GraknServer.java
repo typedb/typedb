@@ -55,7 +55,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
-import static grakn.core.server.util.ServerDefaults.GRAKN_LOGO_FILE;
+import static grakn.core.server.util.ServerDefaults.ASCII_LOGO_FILE;
 import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 
 
@@ -105,9 +105,9 @@ public class GraknServer implements AutoCloseable {
         }
     }
 
-    private static void printGraknLogo() throws IOException {
-        if (GRAKN_LOGO_FILE.exists()) {
-            LOG.info(new String(Files.readAllBytes(GRAKN_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
+    private static void printASCIILogo() throws IOException {
+        if (ASCII_LOGO_FILE.exists()) {
+            LOG.info(new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
         }
     }
 
@@ -171,7 +171,7 @@ public class GraknServer implements AutoCloseable {
         try {
             long start = System.nanoTime();
 
-            printGraknLogo();
+            printASCIILogo();
             Pair<Boolean, ServerOptions> result = parseCommandLine(parseProperties(), args);
             if (!result.first()) System.exit(0);
 
