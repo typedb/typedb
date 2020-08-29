@@ -31,15 +31,16 @@ import grakn.core.query.writer.UndefineWriter;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static java.util.stream.Collectors.toList;
 
 public class Query {
 
@@ -52,6 +53,14 @@ public class Query {
         this.transactionContext = transactionContext;
     }
 
+    public Stream<ConceptMap> match(GraqlMatch query) {
+        return match(query, new Options.Query());
+    }
+
+    public Stream<ConceptMap> match(GraqlMatch query, Options.Query options) {
+        return null; // TODO
+    }
+
     public Stream<ConceptMap> insert(GraqlInsert query) {
         return insert(query, new Options.Query());
     }
@@ -62,8 +71,7 @@ public class Query {
             Context.Query context = new Context.Query(transactionContext, options);
 
             if (query.match().isPresent()) {
-                // TODO: replace with real execution of MatchClause once traversal is implemented
-                List<ConceptMap> matched = Collections.emptyList();
+                List<ConceptMap> matched = match(query.match().get()).collect(toList());
                 return matched.stream().map(answers -> {
                     InsertWriter writer = new InsertWriter(conceptMgr, query, context, answers);
                     return writer.write();
@@ -83,9 +91,7 @@ public class Query {
         if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             Context.Query context = new Context.Query(transactionContext, options);
-
-            // TODO: replace with real execution of MatchClause once traversal is implemented
-            List<ConceptMap> matched = Collections.emptyList();
+            List<ConceptMap> matched = match(query.match()).collect(toList());
             matched.forEach(existing -> {
                 DeleteWriter writer = new DeleteWriter(conceptMgr, query, context, existing);
                 writer.write();

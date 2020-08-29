@@ -33,7 +33,6 @@ import grakn.core.server.rpc.ConceptRPC.ConceptHolder;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
-import grakn.protocol.OptionsProto;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
