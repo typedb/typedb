@@ -47,7 +47,7 @@ java_library(
         # External dependencies
         "@maven//:com_google_code_findbugs_jsr305",
     ],
-    tags = ["maven_coordinates=grakn.core:grakn-core-query:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-query:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
 

@@ -25,8 +25,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     }
 
     public static class Server extends ErrorMessage {
-        public static final Server DATABASE_DIRECTORY_NOT_FOUND =
-                new Server(1, "The database directory '%s' does not exist.");
+        public static final Server DATA_DIRECTORY_NOT_FOUND =
+                new Server(1, "The expected data directory '%s' does not exist.");
         public static final Server EXITED_WITH_ERROR =
                 new Server(2, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =

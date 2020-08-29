@@ -33,7 +33,7 @@ java_library(
         "//query:query",
         "//concept:concept",
     ],
-    tags = ["maven_coordinates=grakn.core:grakn-core:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
 )
 
 release_validate_deps(
@@ -58,8 +58,8 @@ checkstyle_test(
 filegroup(
     name = "ci",
     data = [
-        "@graknlabs_dependencies//tool/sonarcloud:code-analysis",
         "@graknlabs_dependencies//tool/checkstyle:test-coverage",
+        "@graknlabs_dependencies//tool/sonarcloud:code-analysis",
         "@graknlabs_dependencies//tool/unuseddeps:unused-deps",
     ],
 )

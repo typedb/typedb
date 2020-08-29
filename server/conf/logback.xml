@@ -17,7 +17,8 @@
 
 <configuration debug="false" scan="true">
 
-    <property name="directory" value="logs"/>
+    <property resource="grakn.properties"/>
+    <property name="directory" value="${grakn.dir}/${server.logs}"/>
     <property name="filename" value="grakn.log"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
@@ -29,7 +30,7 @@
     <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${directory}/${filename}</file>
         <encoder>
-            <pattern>%date{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>

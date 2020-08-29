@@ -29,7 +29,7 @@ java_library(
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
     ],
-    tags = ["maven_coordinates=grakn.core:grakn-core-common:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],
 )
 
 checkstyle_test(

@@ -61,61 +61,49 @@ java_library(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    tags = ["maven_coordinates=grakn.core:grakn-core-server:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
 
 java_binary(
-    name = "binary",
+    name = "server-bin",
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server"],
-    tags = ["maven_coordinates=grakn.core:grakn-core-server-binary:{pom_version}"],
-)
-
-java_binary(
-    name = "start",
-    main_class = "grakn.core.server.GraknServer",
-    runtime_deps = [":server"],
-    data = [
-        "//server/conf:grakn.properties",
-        "//server/resources:logo",
-    ],
-    classpath_resources = ["//server/conf:logback"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
 )
 
 java_deps(
-    name = "deps",
-    target = ":binary",
+    name = "server-deps",
+    target = ":server-bin",
     java_deps_root = "server/lib/",
-    visibility = ["//visibility:public"],
+    visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
-targets = [
-    ":deps",
+assemble_deps = [
+    ":server-deps",
     "@graknlabs_common//binary:assemble-bash-targz",
 ]
 
-additional_files = {
+assemble_files = {
     "//server/conf:logback.xml": "server/conf/logback.xml",
     "//server/conf:grakn.properties": "server/conf/grakn.properties",
     "//server/resources:logo": "server/resources/grakn-core-ascii.txt",
     "//:LICENSE": "LICENSE",
-    "//:README.md": "README.md",
 }
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = targets,
-    additional_files = additional_files,
+    targets = assemble_deps,
+    additional_files = assemble_files,
     output_filename = "grakn-core-server-linux",
     visibility = ["//visibility:public"]
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = targets,
-    additional_files = additional_files,
+    targets = assemble_deps,
+    additional_files = assemble_files,
     output_filename = "grakn-core-server-mac",
     visibility = ["//visibility:public"]
 )

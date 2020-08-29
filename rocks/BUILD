@@ -41,7 +41,7 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_rocksdb_rocksdbjni",
     ],
-    tags = ["maven_coordinates=grakn.core:grakn-core-rocks:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-rocks:{pom_version}"],
 )
 
 checkstyle_test(

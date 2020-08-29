@@ -28,7 +28,6 @@ build:
             bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
             --project-key=graknlabs_grakn_core_2 \
             --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
-
   correctness:
     jobs:
       build:

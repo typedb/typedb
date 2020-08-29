@@ -26,6 +26,7 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.rpc.GraknRPC;
+import grakn.core.server.util.ServerDefaults;
 import grakn.core.server.util.ServerOptions;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -38,25 +39,24 @@ import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.PropertiesDefaultProvider;
 import picocli.CommandLine.UnmatchedArgumentException;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static grakn.core.common.exception.ErrorMessage.Server.DATABASE_DIRECTORY_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
+import static grakn.core.server.util.ServerDefaults.GRAKN_LOGO_FILE;
+import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 
 
 public class GraknServer implements AutoCloseable {
@@ -70,35 +70,55 @@ public class GraknServer implements AutoCloseable {
     private Server server;
     private ServerOptions options;
 
-    private GraknServer(ServerOptions options) {
+    private GraknServer(ServerOptions options) throws IOException {
         this.options = options;
-        if (!Files.isDirectory(this.options.databaseDirectory())) {
-            throw new GraknException(DATABASE_DIRECTORY_NOT_FOUND.message(this.options.databaseDirectory()));
-        }
-        if (this.options.grablTrace()) enableGrablTracing();
-        grakn = RocksGrakn.open(options.databaseDirectory());
+        configureDataDir();
+        configureTracing();
+
+        grakn = RocksGrakn.open(options.dataDir());
         graknRPC = new GraknRPC(grakn);
         server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
 
+    private void configureDataDir() throws IOException {
+        if (!Files.isDirectory(this.options.dataDir())) {
+            if (this.options.dataDir().equals(ServerDefaults.DATA_DIR)) {
+                Files.createDirectory(this.options.dataDir());
+            } else {
+                throw new GraknException(DATA_DIRECTORY_NOT_FOUND.message(this.options.dataDir()));
+            }
+        }
+    }
+
+    private void configureTracing() {
+        if (this.options.grablTrace()){
+            GrablTracing grablTracingClient;
+            grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                    options.grablURI().toString(),
+                    options.grablUsername(),
+                    options.grablToken()
+            ));
+            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+            GraknServer.LOG.info("Grabl tracing is enabled");
+        }
+    }
+
     private static void printGraknLogo() throws IOException {
-        Path ascii = Paths.get(ServerOptions.GRAKN_LOGO_FILE);
-        if (ascii.toFile().exists()) {
-            LOG.info(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
+        if (GRAKN_LOGO_FILE.exists()) {
+            LOG.info(new String(Files.readAllBytes(GRAKN_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
         }
     }
 
     private static Properties parseProperties() {
         Properties properties = new Properties();
         boolean error = false;
-        File file = Paths.get(ServerOptions.DEFAULT_PROPERTIES_FILE).toFile();
 
         try {
-            properties.load(new FileInputStream(file));
+            properties.load(new FileInputStream(PROPERTIES_FILE));
         } catch (IOException e) {
-            LOG.error(PROPERTIES_FILE_NOT_FOUND.message(file.toString()));
+            LOG.error(PROPERTIES_FILE_NOT_FOUND.message(PROPERTIES_FILE.toString()));
             error = true;
         }
 
@@ -173,20 +193,9 @@ public class GraknServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private void enableGrablTracing() {
-        GrablTracing grablTracingClient;
-        grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
-                options.grablURI().toString(),
-                options.grablUsername(),
-                options.grablToken()
-        ));
-        GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
-        GraknServer.LOG.info("Grabl tracing is enabled");
-    }
-
     private Server rpcServer() {
         NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
-        return NettyServerBuilder.forPort(options.databasePort())
+        return NettyServerBuilder.forPort(options.port())
                 .executor(Executors.newFixedThreadPool(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor")))
                 .workerEventLoopGroup(workerELG)
                 .bossEventLoopGroup(workerELG)

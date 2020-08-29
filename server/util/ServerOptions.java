@@ -29,22 +29,16 @@ import java.nio.file.Paths;
 @Command(name = "grakn", mixinStandardHelpOptions = true, version = {Version.VERSION})
 public class ServerOptions {
 
-    public static final String DEFAULT_PROPERTIES_FILE = "server/conf/grakn.properties";
-    public static final String GRAKN_LOGO_FILE = "server/resources/grakn-core-ascii.txt";
-    public static final String DEFAULT_DATABASE_DIRECTORY = "server/db";
-    public static final int DEFAULT_DATABASE_PORT = 48555;
+    @Option(descriptionKey = "server.data",
+            names = {"--data"},
+            description = "Directory in which database server data will be stored")
+    private String data;
 
-    @Option(descriptionKey = "database.directory",
-            names = {"--database-directory"},
-            defaultValue = DEFAULT_DATABASE_DIRECTORY,
-            description = "Directory to write database files")
-    private String databaseDirectory;
-
-    @Option(descriptionKey = "database.port",
-            names = {"--database-port"},
-            defaultValue = DEFAULT_DATABASE_PORT + "",
-            description = "GRPC port for Grakn clients to connect to the server")
-    private int databasePort;
+    @Option(descriptionKey = "server.port",
+            names = {"--port"},
+            defaultValue = ServerDefaults.DEFAULT_DATABASE_PORT + "",
+            description = "Port number of database server in which GRPC clients will connect to")
+    private int port;
 
     @Option(descriptionKey = "grabl.trace",
             names = {"--grabl-trace"},
@@ -70,12 +64,15 @@ public class ServerOptions {
 
     public ServerOptions() {}
 
-    public Path databaseDirectory() {
-        return Paths.get(databaseDirectory);
+    public Path dataDir() {
+        if (data == null) return ServerDefaults.DATA_DIR;
+        return Paths.get(data).isAbsolute()
+                ? Paths.get(data)
+                : ServerDefaults.GRAKN_DIR.resolve(data);
     }
 
-    public int databasePort() {
-        return databasePort;
+    public int port() {
+        return port;
     }
 
     public boolean grablTrace() {
