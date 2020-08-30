@@ -53,7 +53,7 @@ public final class Concepts {
         this.graph = graph;
     }
 
-    public ThingType getRootType() {
+    public ThingType getRootThingType() {
         TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
         else throw graph.exception(ILLEGAL_STATE.message());

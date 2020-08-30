@@ -53,6 +53,8 @@ public interface TypeVertex extends Vertex<
 
     String label();
 
+    String scope();
+
     String scopedLabel();
 
     TypeVertex label(String label);

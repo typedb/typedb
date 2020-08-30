@@ -75,6 +75,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super.superTypeVertex(((RoleTypeImpl) superType).vertex);
     }
 
+    @Override
+    public String getScope() {
+        return vertex.scope();
+    }
+
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
@@ -89,11 +94,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public Stream<RoleTypeImpl> getSubtypes() {
         return super.subs(RoleTypeImpl::of);
-    }
-
-    @Override
-    public String getScopedLabel() {
-        return vertex.scopedLabel();
     }
 
     @Override

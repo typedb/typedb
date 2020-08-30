@@ -166,9 +166,7 @@ public class DefineWriter {
                 if (thingType == null) thingType = conceptMgr.putAttributeType(labelProperty.label(), valueType);
                 thingType.asAttributeType().setSupertype(supertype.asAttributeType());
             } else {
-                throw new GraknException(INVALID_DEFINE_SUB.message(
-                        labelProperty.scopedLabel(), supertype.asRoleType().getScopedLabel()
-                ));
+                throw new GraknException(INVALID_DEFINE_SUB.message(labelProperty.scopedLabel(), supertype.getLabel()));
             }
             return thingType;
         }

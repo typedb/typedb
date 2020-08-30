@@ -57,7 +57,7 @@ public class BasicTest {
         assertTrue(transaction.isOpen());
         assertTrue(transaction.type().isRead());
 
-        ThingType rootType = transaction.concepts().getRootType();
+        ThingType rootType = transaction.concepts().getRootThingType();
         EntityType rootEntityType = transaction.concepts().getRootEntityType();
         RelationType rootRelationType = transaction.concepts().getRootRelationType();
         AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
@@ -149,7 +149,7 @@ public class BasicTest {
 
                     Stream<Consumer<Grakn.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
-                                ThingType rootType = tx.concepts().getRootType();
+                                ThingType rootType = tx.concepts().getRootThingType();
                                 assertNotNull(rootType);
                             },
                             tx -> {
@@ -176,7 +176,7 @@ public class BasicTest {
                     assertTrue(transaction.isOpen());
                     assertTrue(transaction.type().isWrite());
 
-                    ThingType rootType = transaction.concepts().getRootType();
+                    ThingType rootType = transaction.concepts().getRootThingType();
                     EntityType rootEntityType = transaction.concepts().getRootEntityType();
                     RelationType rootRelationType = transaction.concepts().getRootRelationType();
                     AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();

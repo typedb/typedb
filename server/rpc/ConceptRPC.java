@@ -309,7 +309,7 @@ class ConceptRPC {
         }
 
         private RoleType convertRoleType(ConceptProto.Type protoRole) {
-            final Type type = tx.concepts().getType(protoRole.getScopedLabel());
+            final Type type = tx.concepts().getRelationType(protoRole.getScope()).getRelates(protoRole.getLabel());
             return type != null ? type.asRoleType() : null;
         }
 

@@ -93,7 +93,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private void configureTracing() {
-        if (this.options.grablTrace()){
+        if (this.options.grablTrace()) {
             GrablTracing grablTracingClient;
             grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
                     options.grablURI().toString(),

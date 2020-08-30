@@ -192,17 +192,17 @@ public class ThingSteps {
 
     @Then("root\\( ?thing ?) get instances count: {int}")
     public void root_thing_type_get_instances_contain(int count) {
-        assertEquals(count, tx().concepts().getRootType().getInstances().count());
+        assertEquals(count, tx().concepts().getRootThingType().getInstances().count());
     }
 
     @Then("root\\( ?thing ?) get instances contain: {var}")
     public void root_thing_type_get_instances_contain(String var) {
-        assertTrue(tx().concepts().getRootType().getInstances().anyMatch(i -> i.equals(get(var))));
+        assertTrue(tx().concepts().getRootThingType().getInstances().anyMatch(i -> i.equals(get(var))));
     }
 
     @Then("root\\( ?thing ?) get instances is empty")
     public void root_thing_type_get_instances_is_empty() {
-        assertEquals(0, tx().concepts().getRootType().getInstances().count());
+        assertEquals(0, tx().concepts().getRootThingType().getInstances().count());
     }
 
     @After

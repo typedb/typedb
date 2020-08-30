@@ -62,13 +62,13 @@ public class ThingTypeSteps {
 
     @Then("thing type root get supertypes contain:")
     public void thing_type_root_get_supertypes_contain(List<String> superLabels) {
-        Set<String> actuals = tx().concepts().getRootType().getSupertypes().map(ThingType::getLabel).collect(toSet());
+        Set<String> actuals = tx().concepts().getRootThingType().getSupertypes().map(ThingType::getLabel).collect(toSet());
         assertTrue(actuals.containsAll(superLabels));
     }
 
     @Then("thing type root get supertypes do not contain:")
     public void thing_type_root_get_supertypes_do_not_contain(List<String> superLabels) {
-        Set<String> actuals = tx().concepts().getRootType().getSupertypes().map(ThingType::getLabel).collect(toSet());
+        Set<String> actuals = tx().concepts().getRootThingType().getSupertypes().map(ThingType::getLabel).collect(toSet());
         for (String superLabel : superLabels) {
             assertFalse(actuals.contains(superLabel));
         }
@@ -76,13 +76,13 @@ public class ThingTypeSteps {
 
     @Then("thing type root get subtypes contain:")
     public void thing_type_root_get_subtypes_contain(List<String> subLabels) {
-        Set<String> actuals = tx().concepts().getRootType().getSubtypes().map(ThingType::getLabel).collect(toSet());
+        Set<String> actuals = tx().concepts().getRootThingType().getSubtypes().map(ThingType::getLabel).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("thing type root get subtypes do not contain:")
     public void thing_type_root_get_subtypes_do_not_contain(List<String> subLabels) {
-        Set<String> actuals = tx().concepts().getRootType().getSubtypes().map(ThingType::getLabel).collect(toSet());
+        Set<String> actuals = tx().concepts().getRootThingType().getSubtypes().map(ThingType::getLabel).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
         }
@@ -335,19 +335,17 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles contain:")
     public void thing_type_get_playing_roles_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
-        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlays().map(r -> {
-            String[] labels = r.getScopedLabel().split(":");
-            return new Parameters.ScopedLabel(labels[0], labels[1]);
-        }).collect(toSet());
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlays().map(
+                r -> new Parameters.ScopedLabel(r.getScope(), r.getLabel())
+        ).collect(toSet());
         assertTrue(actuals.containsAll(roleLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles do not contain:")
     public void thing_type_get_playing_roles_do_not_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
-        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlays().map(r -> {
-            String[] labels = r.getScopedLabel().split(":");
-            return new Parameters.ScopedLabel(labels[0], labels[1]);
-        }).collect(toSet());
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlays().map(
+                r -> new Parameters.ScopedLabel(r.getScope(), r.getLabel())
+        ).collect(toSet());
         for (Parameters.ScopedLabel roleLabel : roleLabels) {
             assertFalse(actuals.contains(roleLabel));
         }

@@ -200,19 +200,9 @@ public class ResponseBuilder {
             final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel())
                     .setSchema(getSchema(type));
-
-            if (type instanceof AttributeType) {
-                builder.setValueType(valueType(type.asAttributeType()));
-            }
-
-            if (type instanceof RoleType) {
-                builder.setScopedLabel(type.asRoleType().getScopedLabel());
-            }
-
-            if (type.isRoot()) {
-                builder.setRoot(true);
-            }
-
+            if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
+            if (type instanceof RoleType) builder.setScope(type.asRoleType().getScope());
+            if (type.isRoot()) builder.setRoot(true);
             return builder.build();
         }
 

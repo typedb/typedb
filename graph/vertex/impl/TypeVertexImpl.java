@@ -115,6 +115,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
+    public String scope() {
+        return scope;
+    }
+
+    @Override
     public String scopedLabel() {
         return Schema.Vertex.Type.scopedLabel(label, scope);
     }
