@@ -18,6 +18,7 @@
 package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
+import grakn.core.Grakn;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
@@ -270,22 +271,26 @@ class ConceptRPC {
     static class ConceptHolder {
 
         private final Concept concept;
-        private final grakn.core.Grakn.Transaction tx;
+        private final grakn.core.Grakn.Transaction transaction;
         private final TransactionRPC.Iterators iterators;
         private final Consumer<TransactionProto.Transaction.Res> responseSender;
 
-        ConceptHolder(ByteString conceptId, grakn.core.Grakn.Transaction tx, TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender) {
-            this.concept = conceptExists(tx.concepts().getThing(conceptId.toByteArray()));
-            this.tx = tx;
+        ConceptHolder(Grakn.Transaction transaction, ByteString iid,
+                      TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender) {
+            this.concept = conceptExists(transaction.concepts().getThing(iid.toByteArray()));
+            this.transaction = transaction;
             this.iterators = iterators;
             this.responseSender = responseSender;
         }
 
-        ConceptHolder(String label, grakn.core.Grakn.Transaction tx, TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender) {
-            this.concept = conceptExists(tx.concepts().getType(label));
-            this.tx = tx;
+        ConceptHolder(Grakn.Transaction transaction, String label, @Nullable String scope,
+                      TransactionRPC.Iterators iterators, Consumer<TransactionProto.Transaction.Res> responseSender) {
+            this.transaction = transaction;
             this.iterators = iterators;
             this.responseSender = responseSender;
+            this.concept = scope != null && !scope.isEmpty() ?
+                    conceptExists(transaction.concepts().getRelationType(scope)).getRelates(label) :
+                    conceptExists(transaction.concepts().getType(label));
         }
 
         private static TransactionProto.Transaction.Res transactionRes(ConceptProto.ThingMethod.Res response) {
@@ -301,15 +306,15 @@ class ConceptRPC {
         }
 
         private Thing convertThing(ConceptProto.Thing protoThing) {
-            return tx.concepts().getThing(protoThing.getIid().toByteArray());
+            return transaction.concepts().getThing(protoThing.getIid().toByteArray());
         }
 
         private Type convertType(ConceptProto.Type protoType) {
-            return tx.concepts().getType(protoType.getLabel());
+            return transaction.concepts().getType(protoType.getLabel());
         }
 
         private RoleType convertRoleType(ConceptProto.Type protoRole) {
-            final Type type = tx.concepts().getRelationType(protoRole.getScope()).getRelates(protoRole.getLabel());
+            final Type type = transaction.concepts().getRelationType(protoRole.getScope()).getRelates(protoRole.getLabel());
             return type != null ? type.asRoleType() : null;
         }
 

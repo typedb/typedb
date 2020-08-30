@@ -178,10 +178,10 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //                putRule(request.getPutRuleReq());
 //                break;
             case CONCEPTMETHOD_THING_REQ:
-                conceptMethod(request.getConceptMethodThingReq());
+                conceptThingMethod(request.getConceptMethodThingReq());
                 break;
             case CONCEPTMETHOD_TYPE_REQ:
-                conceptMethod(request.getConceptMethodTypeReq());
+                conceptTypeMethod(request.getConceptMethodTypeReq());
                 break;
 //            case EXPLANATION_REQ:
 //                explanation(request.getExplanationReq());
@@ -201,10 +201,10 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
                 query(request.getQueryIterReq());
                 break;
             case CONCEPTMETHOD_THING_ITER_REQ:
-                conceptIterMethod(request.getConceptMethodThingIterReq());
+                conceptThingIterMethod(request.getConceptMethodThingIterReq());
                 break;
             case CONCEPTMETHOD_TYPE_ITER_REQ:
-                conceptIterMethod(request.getConceptMethodTypeIterReq());
+                conceptTypeIterMethod(request.getConceptMethodTypeIterReq());
                 break;
             default:
             case REQ_NOT_SET:
@@ -330,23 +330,23 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 //        responseSender.onNext(response);
 //    }
 
-    private void conceptMethod(Transaction.ConceptMethod.Thing.Req thingReq) {
-        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext);
+    private void conceptThingMethod(Transaction.ConceptMethod.Thing.Req thingReq) {
+        final ConceptHolder con = new ConceptHolder(transaction(), thingReq.getIid(), iterators, responseSender::onNext);
         ConceptRPC.run(con, thingReq.getMethod());
     }
 
-    private void conceptMethod(Transaction.ConceptMethod.Type.Req typeReq) {
-        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext);
-        ConceptRPC.run(con, typeReq.getMethod());
-    }
-
-    private void conceptIterMethod(Transaction.ConceptMethod.Thing.Iter.Req thingReq) {
-        final ConceptHolder con = new ConceptHolder(thingReq.getIid(), transaction(), iterators, responseSender::onNext);
+    private void conceptThingIterMethod(Transaction.ConceptMethod.Thing.Iter.Req thingReq) {
+        final ConceptHolder con = new ConceptHolder(transaction(), thingReq.getIid(), iterators, responseSender::onNext);
         ConceptRPC.iter(con, thingReq.getMethod());
     }
 
-    private void conceptIterMethod(Transaction.ConceptMethod.Type.Iter.Req typeReq) {
-        final ConceptHolder con = new ConceptHolder(typeReq.getLabel(), transaction(), iterators, responseSender::onNext);
+    private void conceptTypeMethod(Transaction.ConceptMethod.Type.Req typeReq) {
+        final ConceptHolder con = new ConceptHolder(transaction(), typeReq.getLabel(), typeReq.getScope(), iterators, responseSender::onNext);
+        ConceptRPC.run(con, typeReq.getMethod());
+    }
+
+    private void conceptTypeIterMethod(Transaction.ConceptMethod.Type.Iter.Req typeReq) {
+        final ConceptHolder con = new ConceptHolder(transaction(), typeReq.getLabel(), typeReq.getScope(), iterators, responseSender::onNext);
         ConceptRPC.iter(con, typeReq.getMethod());
     }
 
