@@ -82,6 +82,34 @@ public class ReasoningIT {
         }
     }
 
+    @Test
+    public void whenAppendingRolePlayers_conjunctionsWithAppendableRelationsAreResolvedCorrectly() {
+        try (Session session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "appendingRPsConjunctive.gql", session);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                List<ConceptMap> explicitAnswers = tx.execute(Graql.parse(
+                        "match" +
+                                "    $g1 isa gene, has gene-id 'gene1';" +
+                                "    $d isa disease, has disease-id 'disease1';" +
+                                "    $rel (hypothesized-target: $g1, disease-of-interest: $d) isa hypothesis;" +
+                                "    $g2 isa gene; " +
+                                "    $holo (homologue: $g1, homologue: $g2) isa homology;" +
+                                "    $a (assay-target: $g2, modeled-disease: $d) isa assay;" +
+                                "get $rel, $a;"
+                ).asGet(), false);
+                
+                List<ConceptMap> ruleAnswers = tx.execute(Graql.parse(
+                        "match" +
+                                "$t isa gene, has gene-id 'gene1';" +
+                                "$d isa disease, has disease-id 'disease1';" +
+                                "$rel (hypothesized-target: $t, disease-of-interest: $d, indirectly-supporting-evidence: $a) isa hypothesis;" +
+                                "get $rel, $a;")
+                        .asGet());
+                assertCollectionsNonTriviallyEqual(explicitAnswers, ruleAnswers);
+            }
+        }
+    }
+
     // TODO: maybe migrate this to a reasoner cache test suite?
     @Test
     public void whenAppendingRolePlayers_executingQueriesDoesNotModifyResults() {

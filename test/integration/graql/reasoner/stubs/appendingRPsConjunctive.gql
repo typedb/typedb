@@ -1,0 +1,80 @@
+define
+
+identifier sub attribute, value string;
+
+# entities
+gene sub entity,
+    has gene-id,
+    plays hypothesized-target, # in hypothesis
+    plays homologue, # in homology
+    plays assay-target; # in assay
+gene-id sub identifier;
+
+disease sub entity,
+    has disease-id,
+    plays disease-of-interest, # in hypothesis
+    plays modeled-disease; # in assay
+disease-id sub identifier;
+
+# materialized relations
+hypothesis sub relation,
+    relates hypothesized-target,
+    relates disease-of-interest,
+    relates directly-supporting-evidence,
+    relates indirectly-supporting-evidence;
+
+assay sub relation,
+    has assay-id,
+    relates assay-target,
+    relates modeled-disease,
+    plays directly-supporting-evidence, # in direct-evidence inference
+    plays indirectly-supporting-evidence; # in indirect-evidence inference
+assay-id sub identifier;
+
+homology sub relation,
+    relates homologue;
+
+implies-indirect-evidence-by-homology sub rule,
+when {
+    $h (hypothesized-target: $g1, disease-of-interest: $d) isa hypothesis;
+    (homologue: $g1, homologue: $g2) isa homology;
+    $a (assay-target: $g2, modeled-disease: $d) isa assay;
+}, then {
+    $h (indirectly-supporting-evidence: $a) isa hypothesis;
+};
+
+insert
+$g1 isa gene, has gene-id "gene1";
+$g2 isa gene, has gene-id "gene2";
+$g3 isa gene, has gene-id "gene3";
+$g4 isa gene, has gene-id "gene4";
+$g5 isa gene, has gene-id "gene5";
+
+$d1 isa disease, has disease-id "disease1";
+$d2 isa disease, has disease-id "disease2";
+$d3 isa disease, has disease-id "disease3";
+$d4 isa disease, has disease-id "disease4";
+$d5 isa disease, has disease-id "disease5";
+
+### hypotheses
+$hypo-1 (hypothesized-target: $g1, disease-of-interest: $d1) isa hypothesis;
+$hypo-2 (hypothesized-target: $g1, disease-of-interest: $d2) isa hypothesis;
+$hypo-3 (hypothesized-target: $g2, disease-of-interest: $d4) isa hypothesis;
+
+### homologies
+$holo1 (homologue: $g1, homologue: $g2) isa homology;
+$holo2 (homologue: $g1, homologue: $g3) isa homology;
+$holo3 (homologue: $g2, homologue: $g5) isa homology;
+
+### assays
+# direct-evidence #1
+$a1 (assay-target: $g1, modeled-disease: $d1) isa assay, has assay-id "assay-1";
+$a3 (assay-target: $g1, modeled-disease: $d1) isa assay, has assay-id "assay-3";
+$a5 (assay-target: $g2, modeled-disease: $d1) isa assay, has assay-id "assay-5";
+
+# indirect-evidence #2
+$a6 (assay-target: $g2, modeled-disease: $d1) isa assay, has assay-id "assay-6";
+
+### distracting evidence...
+$a2 (assay-target: $g1, modeled-disease: $d2) isa assay, has assay-id "assay-2";
+$a7 (assay-target: $g3, modeled-disease: $d2) isa assay, has assay-id "assay-7";
