@@ -1,80 +1,76 @@
 define
 
-identifier sub attribute, value string;
+identifier sub attribute, value string, plays id-mapping;
 
 # entities
-gene sub entity,
-    has gene-id,
-    plays hypothesized-target, # in hypothesis
-    plays homologue, # in homology
-    plays assay-target; # in assay
-gene-id sub identifier;
+cause sub entity,
+    has cause-id,
+    plays hypothesis-target, # in hypothesis
+    plays equivalent, # in equivalence
+    plays evidence-target; # in evidence
+cause-id sub identifier;
 
-disease sub entity,
-    has disease-id,
-    plays disease-of-interest, # in hypothesis
-    plays modeled-disease; # in assay
-disease-id sub identifier;
+effect sub entity,
+    has effect-id,
+    plays hypothesis-source, # in hypothesis
+    plays evidence-source; # in evidence
+effect-id sub identifier;
 
 # materialized relations
 hypothesis sub relation,
-    relates hypothesized-target,
-    relates disease-of-interest,
-    relates directly-supporting-evidence,
-    relates indirectly-supporting-evidence;
+    relates hypothesis-target,
+    relates hypothesis-source,
+    relates supporting-evidence;
 
-assay sub relation,
-    has assay-id,
-    relates assay-target,
-    relates modeled-disease,
-    plays directly-supporting-evidence, # in direct-evidence inference
-    plays indirectly-supporting-evidence; # in indirect-evidence inference
-assay-id sub identifier;
+evidence sub relation,
+    has evidence-id,
+    relates evidence-target,
+    relates evidence-source,
+    plays supporting-evidence; # in indirect-evidence inference
+evidence-id sub identifier;
 
-homology sub relation,
-    relates homologue;
+equivalence sub relation,
+    relates equivalent;
 
-implies-indirect-evidence-by-homology sub rule,
+id-association sub relation,
+    relates id-mapping;
+
+implies-indirect-evidence-by-equivalence sub rule,
 when {
-    $h (hypothesized-target: $g1, disease-of-interest: $d) isa hypothesis;
-    (homologue: $g1, homologue: $g2) isa homology;
-    $a (assay-target: $g2, modeled-disease: $d) isa assay;
+    $h (hypothesis-target: $g1, hypothesis-source: $d) isa hypothesis;
+    (equivalent: $g1, equivalent: $g2) isa equivalence;
+    $a (evidence-target: $g2, evidence-source: $d) isa evidence;
 }, then {
-    $h (indirectly-supporting-evidence: $a) isa hypothesis;
+    $h (supporting-evidence: $a) isa hypothesis;
+};
+
+wrapper-rule sub rule,
+when {
+    $h (supporting-evidence: $a, hypothesis-target: $g1, hypothesis-source: $d) isa hypothesis;
+    $a has evidence-id $a_id;
+    $g1 has cause-id $g1_id;
+    $d has effect-id $d_id;
+}, then {
+    (id-mapping: $a_id, id-mapping: $g1_id, id-mapping: $d_id) isa id-association;
 };
 
 insert
-$g1 isa gene, has gene-id "gene1";
-$g2 isa gene, has gene-id "gene2";
-$g3 isa gene, has gene-id "gene3";
-$g4 isa gene, has gene-id "gene4";
-$g5 isa gene, has gene-id "gene5";
+$g1 isa cause, has cause-id "cause1";
+$g2 isa cause, has cause-id "cause2";
+$g3 isa cause, has cause-id "cause3";
 
-$d1 isa disease, has disease-id "disease1";
-$d2 isa disease, has disease-id "disease2";
-$d3 isa disease, has disease-id "disease3";
-$d4 isa disease, has disease-id "disease4";
-$d5 isa disease, has disease-id "disease5";
+$d1 isa effect, has effect-id "effect1";
+$d2 isa effect, has effect-id "effect2";
+$d3 isa effect, has effect-id "effect3";
 
-### hypotheses
-$hypo-1 (hypothesized-target: $g1, disease-of-interest: $d1) isa hypothesis;
-$hypo-2 (hypothesized-target: $g1, disease-of-interest: $d2) isa hypothesis;
-$hypo-3 (hypothesized-target: $g2, disease-of-interest: $d4) isa hypothesis;
+(hypothesis-target: $g1, hypothesis-source: $d1) isa hypothesis;
+(hypothesis-target: $g1, hypothesis-source: $d2) isa hypothesis;
+(hypothesis-target: $g2, hypothesis-source: $d3) isa hypothesis;
 
-### homologies
-$holo1 (homologue: $g1, homologue: $g2) isa homology;
-$holo2 (homologue: $g1, homologue: $g3) isa homology;
-$holo3 (homologue: $g2, homologue: $g5) isa homology;
+(equivalent: $g1, equivalent: $g2) isa equivalence;
+(equivalent: $g1, equivalent: $g3) isa equivalence;
 
-### assays
-# direct-evidence #1
-$a1 (assay-target: $g1, modeled-disease: $d1) isa assay, has assay-id "assay-1";
-$a3 (assay-target: $g1, modeled-disease: $d1) isa assay, has assay-id "assay-3";
-$a5 (assay-target: $g2, modeled-disease: $d1) isa assay, has assay-id "assay-5";
-
-# indirect-evidence #2
-$a6 (assay-target: $g2, modeled-disease: $d1) isa assay, has assay-id "assay-6";
-
-### distracting evidence...
-$a2 (assay-target: $g1, modeled-disease: $d2) isa assay, has assay-id "assay-2";
-$a7 (assay-target: $g3, modeled-disease: $d2) isa assay, has assay-id "assay-7";
+(evidence-target: $g1, evidence-source: $d1) isa evidence, has evidence-id "evidence1";
+(evidence-target: $g1, evidence-source: $d1) isa evidence, has evidence-id "evidence2";
+(evidence-target: $g2, evidence-source: $d1) isa evidence, has evidence-id "evidence3";
+(evidence-target: $g2, evidence-source: $d1) isa evidence, has evidence-id "evidence4";

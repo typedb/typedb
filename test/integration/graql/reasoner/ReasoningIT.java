@@ -83,28 +83,57 @@ public class ReasoningIT {
     }
 
     @Test
-    public void whenAppendingRolePlayers_conjunctionsWithAppendableRelationsAreResolvedCorrectly() {
+    public void whenAppendingRolePlayers_NonAppendableRelationsAreResolvedCorrectly() {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPsConjunctive.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 List<ConceptMap> explicitAnswers = tx.execute(Graql.parse(
                         "match" +
-                                "    $g1 isa gene, has gene-id 'gene1';" +
-                                "    $d isa disease, has disease-id 'disease1';" +
-                                "    $rel (hypothesized-target: $g1, disease-of-interest: $d) isa hypothesis;" +
-                                "    $g2 isa gene; " +
-                                "    $holo (homologue: $g1, homologue: $g2) isa homology;" +
-                                "    $a (assay-target: $g2, modeled-disease: $d) isa assay;" +
-                                "get $rel, $a;"
+                                "    $c1 isa cause, has cause-id 'cause1';" +
+                                "    $eff isa effect, has effect-id 'effect1';" +
+                                "    $rel (hypothesis-target: $c1, hypothesis-source: $eff) isa hypothesis;" +
+                                "    $c2 isa cause; " +
+                                "    (equivalent: $c1, equivalent: $c2) isa equivalence;" +
+                                "    $e (evidence-target: $c2, evidence-source: $eff) isa evidence;" +
+                                "get $rel, $e;"
                 ).asGet(), false);
                 
                 List<ConceptMap> ruleAnswers = tx.execute(Graql.parse(
                         "match" +
-                                "$t isa gene, has gene-id 'gene1';" +
-                                "$d isa disease, has disease-id 'disease1';" +
-                                "$rel (hypothesized-target: $t, disease-of-interest: $d, indirectly-supporting-evidence: $a) isa hypothesis;" +
-                                "get $rel, $a;")
+                                "$t isa cause, has cause-id 'cause1';" +
+                                "$d isa effect, has effect-id 'effect1';" +
+                                "$rel (hypothesis-target: $t, hypothesis-source: $d, supporting-evidence: $e) isa hypothesis;" +
+                                "get $rel, $e;")
                         .asGet());
+                assertCollectionsNonTriviallyEqual(explicitAnswers, ruleAnswers);
+            }
+
+        }
+    }
+    @Test
+    public void whenAppendingRolePlayers_conjunctionsWithAppendableRelationsAreResolvedCorrectly() {
+        try (Session session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "appendingRPsConjunctive.gql", session);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                List<ConceptMap> explicitAnswers = tx.execute(Graql.parse(
+                        "match " +
+                                "$eid isa identifier;" +
+                                "$cid isa identifier;" +
+                                "$effid isa identifier;" +
+                                "{$eid 'evidence3';} or { $eid 'evidence4';};" +
+                                "$cid 'cause1';" +
+                                "$effid 'effect1';" +
+                                "get;"
+                ).asGet(), false);
+
+                List<ConceptMap> ruleAnswers = tx.execute(Graql.parse(
+                        "match " +
+                                "(id-mapping: $eid, id-mapping: $cid, id-mapping: $effid) isa id-association;" +
+                                "$eid isa evidence-id;" +
+                                "$cid isa cause-id;" +
+                                "$effid isa effect-id;" +
+                                "get;"
+                ).asGet());
                 assertCollectionsNonTriviallyEqual(explicitAnswers, ruleAnswers);
             }
         }

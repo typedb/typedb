@@ -43,8 +43,7 @@ public class PartialQueryState extends AnswerPropagatorState<ResolvableQuery>{
 
     @Override
     public String toString(){
-        return super.toString() + "\n" + getQuery() + "\n" +
-                "rewrite:\n" + getQuery().rewrite() + "\n";
+        return super.toString() + "rewrite:\n" + getQuery().rewrite() + "\n";
     }
 
     @Override

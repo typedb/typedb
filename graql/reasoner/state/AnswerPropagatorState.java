@@ -59,7 +59,7 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
     }
 
     public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString();
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString() + "\n";
     }
 
     @Override
