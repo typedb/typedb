@@ -325,22 +325,13 @@ public class InferenceRule {
         return this;
     }
 
-    private InferenceRule rewriteBodyAtoms(){
-        if (getBody().requiresDecomposition()) {
-            return new InferenceRule(getHead(), getBody().rewrite(), rule, reasonerQueryFactory);
-        }
-        return this;
-    }
-
     /**
      * rewrite the rule to a form with user defined variables
      * @param parentAtom reference parent atom
      * @return rewritten rule
      */
     public InferenceRule rewrite(Atom parentAtom){
-        return this
-                .rewriteBodyAtoms()
-                .rewriteVariables(parentAtom);
+        return rewriteVariables(parentAtom);
     }
 
     /**

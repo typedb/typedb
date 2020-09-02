@@ -29,6 +29,7 @@ import com.google.common.collect.Streams;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.util.ConceptUtils;
+import grakn.core.graql.reasoner.state.PartialQueryState;
 import grakn.core.kb.graql.executor.TraversalExecutor;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasoningContext;
@@ -569,10 +570,9 @@ public class ReasonerQueryImpl extends ResolvableQuery {
      */
     @Override
     public ReasonerQueryImpl rewrite(){
-        if (!requiresDecomposition()) return this;
         return new ReasonerQueryImpl(
                 this.selectAtoms()
-                        .flatMap(at -> at.rewriteToAtoms())
+                        .flatMap(at -> at.requiresDecomposition()? at.rewriteToAtoms() : Stream.of(at))
                         .collect(Collectors.toList()),
                 traversalPlanFactory,
                 traversalExecutor,
@@ -685,7 +685,12 @@ public class ReasonerQueryImpl extends ResolvableQuery {
             ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(context().queryFactory(), this);
             subGoalIterator = Iterators.singletonIterator(new JoinState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals));
         }
-        return Iterators.concat(dbIterator, subGoalIterator);
+
+        Iterator<ResolutionState> partialStateIterator = requiresDecomposition()?
+                Iterators.singletonIterator(new PartialQueryState(this, new ConceptMap(), null, parent, subGoals)) :
+                Collections.emptyIterator();
+
+        return Iterators.concat(dbIterator, subGoalIterator, partialStateIterator);
     }
 
     /**
