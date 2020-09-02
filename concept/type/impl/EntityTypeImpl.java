@@ -71,17 +71,17 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Nullable
     @Override
     public EntityTypeImpl getSupertype() {
-        return super.sup(EntityTypeImpl::of);
+        return super.getSupertype(EntityTypeImpl::of);
     }
 
     @Override
     public Stream<EntityTypeImpl> getSupertypes() {
-        return super.sups(EntityTypeImpl::of);
+        return super.getSupertypes(EntityTypeImpl::of);
     }
 
     @Override
     public Stream<EntityTypeImpl> getSubtypes() {
-        return super.subs(EntityTypeImpl::of);
+        return super.getSubtypes(EntityTypeImpl::of);
     }
 
     @Override

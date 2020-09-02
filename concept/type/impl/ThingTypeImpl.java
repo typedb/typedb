@@ -345,7 +345,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<ThingTypeImpl> getSubtypes() {
-            return subs(v -> {
+            return getSubtypes(v -> {
                 switch (v.schema()) {
                     case THING_TYPE:
                         assert this.vertex == v;

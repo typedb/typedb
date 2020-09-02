@@ -105,17 +105,17 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Nullable
     @Override
     public RelationTypeImpl getSupertype() {
-        return super.sup(RelationTypeImpl::of);
+        return super.getSupertype(RelationTypeImpl::of);
     }
 
     @Override
     public Stream<RelationTypeImpl> getSupertypes() {
-        return super.sups(RelationTypeImpl::of);
+        return super.getSupertypes(RelationTypeImpl::of);
     }
 
     @Override
     public Stream<RelationTypeImpl> getSubtypes() {
-        return super.subs(RelationTypeImpl::of);
+        return super.getSubtypes(RelationTypeImpl::of);
     }
 
     @Override

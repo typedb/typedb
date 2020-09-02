@@ -262,7 +262,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl> getSubtypes() {
-            return subs(v -> {
+            return getSubtypes(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
                         assert this.vertex == v;
@@ -341,17 +341,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Boolean getSupertype() {
-            return super.sup(AttributeTypeImpl.Boolean::of);
+            return super.getSupertype(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.Boolean> getSupertypes() {
-            return super.sups(AttributeTypeImpl.Boolean::of);
+            return super.getSupertypes(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
-            return super.subs(AttributeTypeImpl.Boolean::of);
+            return super.getSubtypes(AttributeTypeImpl.Boolean::of);
         }
 
         @Override
@@ -471,17 +471,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Long getSupertype() {
-            return super.sup(AttributeTypeImpl.Long::of);
+            return super.getSupertype(AttributeTypeImpl.Long::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.Long> getSupertypes() {
-            return super.sups(AttributeTypeImpl.Long::of);
+            return super.getSupertypes(AttributeTypeImpl.Long::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.Long> getSubtypes() {
-            return super.subs(AttributeTypeImpl.Long::of);
+            return super.getSubtypes(AttributeTypeImpl.Long::of);
         }
 
         @Override
@@ -603,17 +603,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.Double getSupertype() {
-            return super.sup(AttributeTypeImpl.Double::of);
+            return super.getSupertype(AttributeTypeImpl.Double::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.Double> getSupertypes() {
-            return super.sups(AttributeTypeImpl.Double::of);
+            return super.getSupertypes(AttributeTypeImpl.Double::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.Double> getSubtypes() {
-            return super.subs(AttributeTypeImpl.Double::of);
+            return super.getSubtypes(AttributeTypeImpl.Double::of);
         }
 
         @Override
@@ -737,17 +737,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.String getSupertype() {
-            return super.sup(AttributeTypeImpl.String::of);
+            return super.getSupertype(AttributeTypeImpl.String::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.String> getSupertypes() {
-            return super.sups(AttributeTypeImpl.String::of);
+            return super.getSupertypes(AttributeTypeImpl.String::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.String> getSubtypes() {
-            return super.subs(AttributeTypeImpl.String::of);
+            return super.getSubtypes(AttributeTypeImpl.String::of);
         }
 
         @Override
@@ -914,17 +914,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Nullable
         @Override
         public AttributeTypeImpl.DateTime getSupertype() {
-            return super.sup(AttributeTypeImpl.DateTime::of);
+            return super.getSupertype(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.DateTime> getSupertypes() {
-            return super.sups(AttributeTypeImpl.DateTime::of);
+            return super.getSupertypes(AttributeTypeImpl.DateTime::of);
         }
 
         @Override
         public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
-            return super.subs(AttributeTypeImpl.DateTime::of);
+            return super.getSubtypes(AttributeTypeImpl.DateTime::of);
         }
 
         @Override

@@ -83,17 +83,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
-        return super.sup(RoleTypeImpl::of);
+        return super.getSupertype(RoleTypeImpl::of);
     }
 
     @Override
     public Stream<RoleTypeImpl> getSupertypes() {
-        return super.sups(RoleTypeImpl::of);
+        return super.getSupertypes(RoleTypeImpl::of);
     }
 
     @Override
     public Stream<RoleTypeImpl> getSubtypes() {
-        return super.subs(RoleTypeImpl::of);
+        return super.getSubtypes(RoleTypeImpl::of);
     }
 
     @Override
