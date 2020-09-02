@@ -31,9 +31,9 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Query state produced by AtomicState.
+ * Query state produced by atomic or conjunctive queries.
  * Used for queries that require role-player decomposition - only part of the atom matches the rule head.
- * As the decomposition may alter query semantics, answers produced by the partial state are checked against the full Atomic query.
+ * As the decomposition may alter query semantics, answers produced by the partial state are checked against the original full query.
  */
 public class PartialQueryState extends AnswerPropagatorState<ResolvableQuery>{
 
