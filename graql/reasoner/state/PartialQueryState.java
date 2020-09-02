@@ -57,7 +57,7 @@ public class PartialQueryState extends AnswerPropagatorState<ResolvableQuery>{
 
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
-        //as the query rewrite can possibly alter the semantics of the query, we take the combined answer, and apply it to the original Atomic query
+        //as the query rewrite can possibly alter the semantics of the query, we take the combined answer, and execute it against to the original query
         ConceptMap answer = consumeAnswer(state);
         Optional<ConceptMap> satisfiesFullQuery = getQuery().withSubstitution(answer).resolve(false).findFirst();
         if (satisfiesFullQuery.isPresent()) {
