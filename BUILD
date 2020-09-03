@@ -58,6 +58,8 @@ checkstyle_test(
 filegroup(
     name = "ci",
     data = [
+        "@graknlabs_dependencies//image/rbe:ubuntu-1604",
+        "@graknlabs_dependencies//library/maven:update",
         "@graknlabs_dependencies//tool/checkstyle:test-coverage",
         "@graknlabs_dependencies//tool/sonarcloud:code-analysis",
         "@graknlabs_dependencies//tool/unuseddeps:unused-deps",
