@@ -63,14 +63,14 @@ public abstract class KeyGenerator {
     public static class Buffered extends KeyGenerator {
 
         public Buffered() {
-            super(Schema.Key.BUFFERED.initialValue(), Schema.Key.BUFFERED.isIncrement() ? 1 : -1);
+            super(Encoding.Key.BUFFERED.initialValue(), Encoding.Key.BUFFERED.isIncrement() ? 1 : -1);
         }
     }
 
     public static class Persisted extends KeyGenerator {
 
         public Persisted() {
-            super(Schema.Key.PERSISTED.initialValue(), Schema.Key.PERSISTED.isIncrement() ? 1 : -1);
+            super(Encoding.Key.PERSISTED.initialValue(), Encoding.Key.PERSISTED.isIncrement() ? 1 : -1);
         }
 
         public void sync(Storage storage) {
@@ -79,28 +79,28 @@ public abstract class KeyGenerator {
         }
 
         private void syncTypeKeys(Storage storage) {
-            for (Schema.Vertex.Type schema : Schema.Vertex.Type.values()) {
-                byte[] prefix = schema.prefix().bytes();
+            for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
+                byte[] prefix = encoding.prefix().bytes();
                 byte[] lastIID = storage.getLastKey(prefix);
                 AtomicInteger nextValue = lastIID != null ?
                         new AtomicInteger(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)).getShort() + delta) :
                         new AtomicInteger(initialValue);
-                typeKeys.put(PrefixIID.of(schema), nextValue);
+                typeKeys.put(PrefixIID.of(encoding), nextValue);
             }
         }
 
         private void syncThingKeys(Storage storage) {
-            Schema.Vertex.Thing[] thingsWithGeneratedIID = new Schema.Vertex.Thing[]{
-                    Schema.Vertex.Thing.ENTITY, Schema.Vertex.Thing.RELATION, Schema.Vertex.Thing.ROLE
+            Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{
+                    Encoding.Vertex.Thing.ENTITY, Encoding.Vertex.Thing.RELATION, Encoding.Vertex.Thing.ROLE
             };
 
-            for (Schema.Vertex.Thing thingSchema : thingsWithGeneratedIID) {
-                byte[] typeSchema = Schema.Vertex.Type.of(thingSchema).prefix().bytes();
-                Iterator<byte[]> typeIterator = filter(storage.iterate(typeSchema, (iid, value) -> iid),
+            for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
+                byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
+                Iterator<byte[]> typeIterator = filter(storage.iterate(typeEncoding, (iid, value) -> iid),
                                                        iid -> iid.length == VertexIID.Type.LENGTH);
                 while (typeIterator.hasNext()) {
                     byte[] typeIID = typeIterator.next();
-                    byte[] prefix = join(thingSchema.prefix().bytes(), typeIID);
+                    byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
                     byte[] lastIID = storage.getLastKey(prefix);
                     AtomicLong nextValue = lastIID != null ?
                             new AtomicLong(wrap(

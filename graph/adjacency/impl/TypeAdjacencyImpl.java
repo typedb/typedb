@@ -25,7 +25,7 @@ import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.edge.impl.TypeEdgeImpl;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.Collections;
@@ -46,7 +46,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     final TypeVertex owner;
     final Adjacency.Direction direction;
-    final ConcurrentMap<Schema.Edge.Type, Set<TypeEdge>> edges;
+    final ConcurrentMap<Encoding.Edge.Type, Set<TypeEdge>> edges;
 
     TypeAdjacencyImpl(TypeVertex owner, Adjacency.Direction direction) {
         this.owner = owner;
@@ -60,11 +60,11 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
     }
 
     @Override
-    public TypeEdgeImpl put(Schema.Edge.Type schema, TypeVertex adjacent) {
+    public TypeEdgeImpl put(Encoding.Edge.Type encoding, TypeVertex adjacent) {
         TypeVertex from = direction.isOut() ? owner : adjacent;
         TypeVertex to = direction.isOut() ? adjacent : owner;
-        TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(schema, from, to);
-        edges.computeIfAbsent(schema, e -> ConcurrentHashMap.newKeySet()).add(edge);
+        TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(encoding, from, to);
+        edges.computeIfAbsent(encoding, e -> ConcurrentHashMap.newKeySet()).add(edge);
         if (direction.isOut()) ((TypeAdjacencyImpl) to.ins()).putNonRecursive(edge);
         else ((TypeAdjacencyImpl) from.outs()).putNonRecursive(edge);
         owner.setModified();
@@ -73,20 +73,20 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     @Override
     public void loadToBuffer(TypeEdge edge) {
-        edges.computeIfAbsent(edge.schema(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        edges.computeIfAbsent(edge.encoding(), e -> ConcurrentHashMap.newKeySet()).add(edge);
     }
 
     @Override
     public void removeFromBuffer(TypeEdge edge) {
-        if (edges.containsKey(edge.schema())) {
-            edges.get(edge.schema()).remove(edge);
+        if (edges.containsKey(edge.encoding())) {
+            edges.get(edge.encoding()).remove(edge);
             owner.setModified();
         }
     }
 
     @Override
     public void deleteAll() {
-        for (Schema.Edge.Type schema : Schema.Edge.Type.values()) delete(schema);
+        for (Encoding.Edge.Type encoding : Encoding.Edge.Type.values()) delete(encoding);
     }
 
     static class TypeIteratorBuilderImpl implements TypeAdjacency.TypeIteratorBuilder {
@@ -119,26 +119,26 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         }
 
         @Override
-        public TypeIteratorBuilder edge(Schema.Edge.Type schema) {
+        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
             Set<TypeEdge> t;
-            if ((t = edges.get(schema)) != null) return new TypeIteratorBuilderImpl(t.iterator());
+            if ((t = edges.get(encoding)) != null) return new TypeIteratorBuilderImpl(t.iterator());
             return new TypeIteratorBuilderImpl(Collections.emptyIterator());
         }
 
         @Override
-        public TypeEdge edge(Schema.Edge.Type schema, TypeVertex adjacent) {
-            if (edges.containsKey(schema)) {
+        public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+            if (edges.containsKey(encoding)) {
                 Predicate<TypeEdge> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
                         : e -> e.from().equals(adjacent);
-                return edges.get(schema).stream().filter(predicate).findAny().orElse(null);
+                return edges.get(encoding).stream().filter(predicate).findAny().orElse(null);
             }
             return null;
         }
 
         @Override
-        public void delete(Schema.Edge.Type schema) {
-            if (edges.containsKey(schema)) edges.get(schema).forEach(Edge::delete);
+        public void delete(Encoding.Edge.Type encoding) {
+            if (edges.containsKey(encoding)) edges.get(encoding).forEach(Edge::delete);
         }
 
         @Override
@@ -153,9 +153,9 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             super(owner, direction);
         }
 
-        private byte[] edgeIID(Schema.Edge.Type schema, TypeVertex adjacent) {
+        private byte[] edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
             return join(owner.iid().bytes(),
-                        direction.isOut() ? schema.out().bytes() : schema.in().bytes(),
+                        direction.isOut() ? encoding.out().bytes() : encoding.in().bytes(),
                         adjacent.iid().bytes());
         }
 
@@ -164,35 +164,35 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             return new TypeEdgeImpl.Persisted(owner.graph(), EdgeIID.Type.of(key), overridden);
         }
 
-        private Iterator<TypeEdge> edgeIterator(Schema.Edge.Type schema) {
+        private Iterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
             Iterator<TypeEdge> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
+                    join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
                     this::newPersistedEdge
             );
 
-            if (edges.get(schema) == null) {
+            if (edges.get(encoding) == null) {
                 return storageIterator;
             } else {
-                return distinct(link(edges.get(schema).iterator(), storageIterator));
+                return distinct(link(edges.get(encoding).iterator(), storageIterator));
             }
         }
 
         @Override
-        public TypeIteratorBuilder edge(Schema.Edge.Type schema) {
-            return new TypeIteratorBuilderImpl(edgeIterator(schema));
+        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
+            return new TypeIteratorBuilderImpl(edgeIterator(encoding));
         }
 
         @Override
-        public TypeEdge edge(Schema.Edge.Type schema, TypeVertex adjacent) {
+        public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
             Optional<TypeEdge> container;
             Predicate<TypeEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(schema) && (container = edges.get(schema).stream().filter(predicate).findAny()).isPresent()) {
+            if (edges.containsKey(encoding) && (container = edges.get(encoding).stream().filter(predicate).findAny()).isPresent()) {
                 return container.get();
             } else {
-                byte[] edgeIID = edgeIID(schema, adjacent);
+                byte[] edgeIID = edgeIID(encoding, adjacent);
                 byte[] overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
                     return newPersistedEdge(edgeIID, overriddenIID);
@@ -203,10 +203,10 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         }
 
         @Override
-        public void delete(Schema.Edge.Type schema) {
-            if (edges.containsKey(schema)) edges.get(schema).parallelStream().forEach(Edge::delete);
+        public void delete(Encoding.Edge.Type encoding) {
+            if (edges.containsKey(encoding)) edges.get(encoding).parallelStream().forEach(Edge::delete);
             Iterator<TypeEdge> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? schema.out().bytes() : schema.in().bytes()),
+                    join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
                     this::newPersistedEdge
             );
             storageIterator.forEachRemaining(Edge::delete);
@@ -214,8 +214,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
         @Override
         public void forEach(Consumer<TypeEdge> function) {
-            for (Schema.Edge.Type schema : Schema.Edge.Type.values()) {
-                edgeIterator(schema).forEachRemaining(function);
+            for (Encoding.Edge.Type encoding : Encoding.Edge.Type.values()) {
+                edgeIterator(encoding).forEachRemaining(function);
             }
         }
     }

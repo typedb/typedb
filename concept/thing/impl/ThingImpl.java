@@ -28,7 +28,7 @@ import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 
@@ -60,7 +60,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     public static ThingImpl of(ThingVertex vertex) {
-        switch (vertex.schema()) {
+        switch (vertex.encoding()) {
             case ENTITY:
                 return EntityImpl.of(vertex);
             case ATTRIBUTE:
@@ -99,12 +99,12 @@ public abstract class ThingImpl implements Thing {
             }
         }
 
-        vertex.outs().put(Schema.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex);
+        vertex.outs().put(Encoding.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex);
     }
 
     @Override
     public void unsetHas(Attribute attribute) {
-        vertex.outs().edge(Schema.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex).delete();
+        vertex.outs().edge(Encoding.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex).delete();
     }
 
     @Override
@@ -151,16 +151,16 @@ public abstract class ThingImpl implements Thing {
                     .flatMap(AttributeType::getSubtypes).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
                     .flatMap(type -> stream(vertex.outs().edge(
-                            Schema.Edge.Thing.HAS, PrefixIID.of(type.schema().instance()), type.iid()
+                            Encoding.Edge.Thing.HAS, PrefixIID.of(type.encoding().instance()), type.iid()
                     ).to())).map(ThingVertex::asAttribute);
         } else {
-            return stream(apply(vertex.outs().edge(Schema.Edge.Thing.HAS).to(), ThingVertex::asAttribute));
+            return stream(apply(vertex.outs().edge(Encoding.Edge.Thing.HAS).to(), ThingVertex::asAttribute));
         }
     }
 
     @Override
     public Stream<RoleType> getPlays() {
-        return stream(apply(apply(vertex.outs().edge(Schema.Edge.Thing.PLAYS).to(), ThingVertex::type), RoleTypeImpl::of));
+        return stream(apply(apply(vertex.outs().edge(Encoding.Edge.Thing.PLAYS).to(), ThingVertex::type), RoleTypeImpl::of));
     }
 
     @Override
@@ -177,10 +177,10 @@ public abstract class ThingImpl implements Thing {
     @Override
     public Stream<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return stream(apply(vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
+            return stream(apply(vertex.ins().edge(Encoding.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
         } else {
             return stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
-                    vertex.ins().edge(Schema.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
+                    vertex.ins().edge(Encoding.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             )).map(RelationImpl::of);
         }
     }

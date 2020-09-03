@@ -19,20 +19,20 @@
 package grakn.core.graph.edge;
 
 import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 
 public interface Edge<
-        EDGE_SCHEMA extends Schema.Edge,
-        EDGE_IID extends EdgeIID<EDGE_SCHEMA, ?, ?, ?>,
+        EDGE_ENCODING extends Encoding.Edge,
+        EDGE_IID extends EdgeIID<EDGE_ENCODING, ?, ?, ?>,
         VERTEX extends Vertex<?, ?, ?, ?, ?>> {
 
     /**
-     * Returns the schema of this edge.
+     * Returns the encoding of this edge.
      *
-     * @return the schema of this edge
+     * @return the encoding of this edge
      */
-    EDGE_SCHEMA schema();
+    EDGE_ENCODING encoding();
 
     /**
      * Returns the {@code iid} of this edge pointing outwards.

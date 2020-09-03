@@ -26,7 +26,7 @@ import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -55,7 +55,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
-        if (iid.schema().equals(Schema.Vertex.Thing.ATTRIBUTE)) {
+        if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
             return AttributeVertexImpl.of(graph, iid.asAttribute());
         } else {
             return new ThingVertexImpl.Persisted(graph, iid);
@@ -77,8 +77,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public Schema.Vertex.Thing schema() {
-        return iid.schema();
+    public Encoding.Vertex.Thing encoding() {
+        return iid.encoding();
     }
 
     @Override
@@ -162,8 +162,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public Schema.Status status() {
-            return Schema.Status.BUFFERED;
+        public Encoding.Status status() {
+            return Encoding.Status.BUFFERED;
         }
 
         @Override
@@ -205,8 +205,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public Schema.Status status() {
-            return Schema.Status.PERSISTED;
+        public Encoding.Status status() {
+            return Encoding.Status.PERSISTED;
         }
 
         @Override

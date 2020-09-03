@@ -18,7 +18,7 @@
 
 package grakn.core.graph.iid;
 
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -36,8 +36,8 @@ import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.stringToBytes;
-import static grakn.core.graph.util.Schema.STRING_ENCODING;
-import static grakn.core.graph.util.Schema.TIME_ZONE_ID;
+import static grakn.core.graph.util.Encoding.STRING_ENCODING;
+import static grakn.core.graph.util.Encoding.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
@@ -60,13 +60,13 @@ public abstract class IndexIID extends IID {
          * @return a byte array representing the index address of a {@code TypeVertex}
          */
         public static Type of(String label, @Nullable String scope) {
-            return new Type(join(Schema.Index.TYPE.prefix().bytes(), Schema.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
+            return new Type(join(Encoding.Index.TYPE.prefix().bytes(), Encoding.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
         }
 
         @Override
         public String toString() {
             if (readableString == null) {
-                readableString = "[" + PrefixIID.LENGTH + ": " + Schema.Index.TYPE.toString() + "]" +
+                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.TYPE.toString() + "]" +
                         "[" + (bytes.length - PrefixIID.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
             }
             return readableString;
@@ -82,33 +82,33 @@ public abstract class IndexIID extends IID {
         }
 
         private static Attribute newAttributeIndex(byte[] valueType, byte[] value, byte[] typeIID) {
-            return new Attribute(join(Schema.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
+            return new Attribute(join(Encoding.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
         }
 
         public static Attribute of(boolean value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), typeIID.bytes);
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Schema.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
         public String toString() {
             if (readableString == null) {
-                Schema.ValueType valueType = Schema.ValueType.of(bytes[PrefixIID.LENGTH]);
+                Encoding.ValueType valueType = Encoding.ValueType.of(bytes[PrefixIID.LENGTH]);
                 String value;
                 switch (valueType) {
                     case BOOLEAN:
@@ -131,7 +131,7 @@ public abstract class IndexIID extends IID {
                         break;
                 }
 
-                readableString = "[" + PrefixIID.LENGTH + ": " + Schema.Index.ATTRIBUTE.toString() + "]" +
+                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
                         "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length)).toString() + "]";

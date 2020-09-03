@@ -60,7 +60,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Internal ILLEGAL_STATE =
                 new Internal(1, "Illegal internal state!");
         public static final Internal UNRECOGNISED_VALUE =
-                new Internal(2, "Unrecognised schema value!");
+                new Internal(2, "Unrecognised encoding value!");
         public static final Internal DIRTY_INITIALISATION =
                 new Internal(3, "Invalid Database Initialisation.");
         public static final Internal ILLEGAL_ARGUMENT =

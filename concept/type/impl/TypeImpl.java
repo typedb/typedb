@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.TypeGraph;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -49,18 +49,18 @@ public abstract class TypeImpl implements Type {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema) {
-        this(graph, label, schema, null);
+    TypeImpl(TypeGraph graph, String label, Encoding.Vertex.Type encoding) {
+        this(graph, label, encoding, null);
     }
 
-    TypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema, String scope) {
-        this.vertex = graph.create(schema, label, scope);
-        TypeVertex superTypeVertex = graph.get(schema.root().label(), schema.root().scope());
-        vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
+    TypeImpl(TypeGraph graph, String label, Encoding.Vertex.Type encoding, String scope) {
+        this.vertex = graph.create(encoding, label, scope);
+        TypeVertex superTypeVertex = graph.get(encoding.root().label(), encoding.root().scope());
+        vertex.outs().put(Encoding.Edge.Type.SUB, superTypeVertex);
     }
 
     public static TypeImpl of(TypeVertex vertex) {
-        switch (vertex.schema()) {
+        switch (vertex.encoding()) {
             case ROLE_TYPE:
                 return RoleTypeImpl.of(vertex);
             default:
@@ -98,14 +98,14 @@ public abstract class TypeImpl implements Type {
 
     void superTypeVertex(TypeVertex superTypeVertex) {
         if (vertex.equals(superTypeVertex)) throw exception(SUPERTYPE_SELF.message(vertex.label()));
-        vertex.outs().edge(Schema.Edge.Type.SUB, ((TypeImpl) getSupertype()).vertex).delete();
-        vertex.outs().put(Schema.Edge.Type.SUB, superTypeVertex);
+        vertex.outs().edge(Encoding.Edge.Type.SUB, ((TypeImpl) getSupertype()).vertex).delete();
+        vertex.outs().put(Encoding.Edge.Type.SUB, superTypeVertex);
     }
 
     @Nullable
     <TYPE extends Type> TYPE getSupertype(final Function<TypeVertex, TYPE> typeConstructor) {
-        final Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Schema.Edge.Type.SUB).to(),
-                                                               v -> v.schema().equals(vertex.schema()));
+        final Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Encoding.Edge.Type.SUB).to(),
+                                                               v -> v.encoding().equals(vertex.encoding()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
@@ -113,16 +113,16 @@ public abstract class TypeImpl implements Type {
     <TYPE extends Type> Stream<TYPE> getSupertypes(final Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(loop(
                 vertex,
-                v -> v != null && v.schema().equals(this.vertex.schema()),
+                v -> v != null && v.encoding().equals(this.vertex.encoding()),
                 v -> {
-                    Iterator<TypeVertex> p = v.outs().edge(Schema.Edge.Type.SUB).to();
+                    Iterator<TypeVertex> p = v.outs().edge(Encoding.Edge.Type.SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
                 }), typeConstructor));
     }
 
     <TYPE extends Type> Stream<TYPE> getSubtypes(final Function<TypeVertex, TYPE> typeConstructor) {
-        return stream(apply(tree(vertex, v -> v.ins().edge(Schema.Edge.Type.SUB).from()), typeConstructor));
+        return stream(apply(tree(vertex, v -> v.ins().edge(Encoding.Edge.Type.SUB).from()), typeConstructor));
     }
 
     @Override
@@ -131,7 +131,7 @@ public abstract class TypeImpl implements Type {
     }
 
     void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
-        if (vertex.status().equals(Schema.Status.BUFFERED)) {
+        if (vertex.status().equals(Encoding.Status.BUFFERED)) {
             throw exception(SESSION_SCHEMA_VIOLATION.message());
         } else if (isAbstract()) {
             throw exception(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));

@@ -23,7 +23,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.TypeGraph;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -40,22 +40,22 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     private RoleTypeImpl(TypeVertex vertex) {
         super(vertex);
-        assert vertex.schema() == Schema.Vertex.Type.ROLE_TYPE;
-        if (vertex.schema() != Schema.Vertex.Type.ROLE_TYPE) {
+        assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
+        if (vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
-                    Schema.Vertex.Type.ROLE_TYPE.root().label(),
-                    vertex.schema().root().label()
+                    Encoding.Vertex.Type.ROLE_TYPE.root().label(),
+                    vertex.encoding().root().label()
             ));
         }
     }
 
     private RoleTypeImpl(TypeGraph graph, String label, String relation) {
-        super(graph, label, Schema.Vertex.Type.ROLE_TYPE, relation);
+        super(graph, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
     }
 
     public static RoleTypeImpl of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(vertex);
+        if (vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(vertex);
         else return new RoleTypeImpl(vertex);
     }
 
@@ -98,7 +98,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public RelationTypeImpl getRelation() {
-        return RelationTypeImpl.of(vertex.ins().edge(Schema.Edge.Type.RELATES).from().next());
+        return RelationTypeImpl.of(vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }
 
     @Override
@@ -108,7 +108,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<ThingTypeImpl> getPlayers() {
-        return stream(apply(vertex.ins().edge(Schema.Edge.Type.PLAYS).from(), ThingTypeImpl::of));
+        return stream(apply(vertex.ins().edge(Encoding.Edge.Type.PLAYS).from(), ThingTypeImpl::of));
     }
 
     @Override
@@ -135,7 +135,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
         Root(TypeVertex vertex) {
             super(vertex);
-            assert vertex.label().equals(Schema.Vertex.Type.Root.ROLE.label());
+            assert vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label());
         }
 
         @Override

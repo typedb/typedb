@@ -20,14 +20,14 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.impl.EntityTypeImpl;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 public class EntityImpl extends ThingImpl implements Entity {
 
     private EntityImpl(ThingVertex vertex) {
         super(vertex);
-        assert vertex.schema().equals(Schema.Vertex.Thing.ENTITY);
+        assert vertex.encoding().equals(Encoding.Vertex.Thing.ENTITY);
     }
 
     public static EntityImpl of(ThingVertex vertex) {

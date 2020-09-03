@@ -24,24 +24,24 @@ import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.InfixIID;
 import grakn.core.graph.iid.SuffixIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.graph.util.Schema.Status.BUFFERED;
+import static grakn.core.graph.util.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
 
     final ThingGraph graph;
-    final Schema.Edge.Thing schema;
+    final Encoding.Edge.Thing encoding;
     final AtomicBoolean deleted;
 
-    ThingEdgeImpl(ThingGraph graph, Schema.Edge.Thing schema) {
+    ThingEdgeImpl(ThingGraph graph, Encoding.Edge.Thing encoding) {
         this.graph = graph;
-        this.schema = schema;
+        this.encoding = encoding;
         deleted = new AtomicBoolean(false);
     }
 
@@ -56,12 +56,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Default constructor for {@code ThingEdgeImpl.Buffered}.
          *
-         * @param schema the edge {@code Schema}
+         * @param encoding the edge {@code Encoding}
          * @param from   the tail vertex
          * @param to     the head vertex
          */
-        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to) {
-            super(from.graph(), schema);
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
+            super(from.graph(), encoding);
             assert this.graph == to.graph();
             this.from = from;
             this.to = to;
@@ -71,39 +71,39 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Constructor for an optimised {@code ThingEdgeImpl.Buffered}.
          *
-         * @param schema    the edge {@code Schema}
+         * @param encoding    the edge {@code Encoding}
          * @param from      the tail vertex
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Schema.Edge.Thing schema, ThingVertex from, ThingVertex to, ThingVertex optimised) {
-            this(schema, from, to);
-            assert schema.isOptimisation() && optimised != null;
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, ThingVertex optimised) {
+            this(encoding, from, to);
+            assert encoding.isOptimisation() && optimised != null;
             this.optimised = optimised;
         }
 
         @Override
-        public Schema.Edge.Thing schema() {
-            return schema;
+        public Encoding.Edge.Thing encoding() {
+            return encoding;
         }
 
         @Override
         public EdgeIID.Thing outIID() {
-            if (schema.isOptimisation()) {
-                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out(), optimised.type().iid()),
+            if (encoding.isOptimisation()) {
+                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(encoding.out(), optimised.type().iid()),
                                         to.iid(), SuffixIID.of(optimised.iid().key()));
             } else {
-                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(schema.out()), to.iid());
+                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(encoding.out()), to.iid());
             }
         }
 
         @Override
         public EdgeIID.Thing inIID() {
-            if (schema.isOptimisation()) {
-                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in(), optimised.type().iid()),
+            if (encoding.isOptimisation()) {
+                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(encoding.in(), optimised.type().iid()),
                                         from.iid(), SuffixIID.of(optimised.iid().key()));
             } else {
-                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(schema.in()), from.iid());
+                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(encoding.in()), from.iid());
             }
         }
 
@@ -146,7 +146,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Determine the equality of a {@code ThingEdgeImpl.Buffered} against another.
          *
-         * We only use {@code schema}, {@code from} and {@code to} as the are
+         * We only use {@code encoding}, {@code from} and {@code to} as the are
          * the fixed properties that do not change, unlike {@code overridden}.
          * They are also the canonical properties required to uniquely identify
          * a {@code ThingEdgeImpl.Buffered} uniquely.
@@ -159,7 +159,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
-            return (this.schema.equals(that.schema) &&
+            return (this.encoding.equals(that.encoding) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
                     Objects.equals(this.optimised, that.optimised));
@@ -168,7 +168,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Determine the equality of a {@code Edge.Buffered} against another.
          *
-         * We only use {@code schema}, {@code from} and {@code to} as the are
+         * We only use {@code encoding}, {@code from} and {@code to} as the are
          * the fixed properties that do not change, unlike {@code overridden}.
          * They are also the canonical properties required to uniquely identify
          * a {@code ThingEdgeImpl.Buffered}.
@@ -177,7 +177,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(schema, from, to, optimised);
+            if (hash == 0) hash = hash(encoding, from, to, optimised);
             return hash;
         }
     }
@@ -208,7 +208,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param iid   the {@code iid} of a persisted edge
          */
         public Persisted(ThingGraph graph, EdgeIID.Thing iid) {
-            super(graph, iid.schema());
+            super(graph, iid.encoding());
 
             if (iid.isOutwards()) {
                 fromIID = iid.start();
@@ -224,8 +224,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Schema.Edge.Thing schema() {
-            return schema;
+        public Encoding.Edge.Thing encoding() {
+            return encoding;
         }
 
         @Override
@@ -286,7 +286,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Determine the equality of a {@code Edge} against another.
          *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the
+         * We only use {@code encoding}, {@code fromIID} and {@code toIID} as the
          * are the fixed properties that do not change, unlike
          * {@code overriddenIID} and {@code isDeleted}. They are also the
          * canonical properties required to identify a {@code Persisted} edge.
@@ -299,7 +299,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;
-            return (this.schema.equals(that.schema) &&
+            return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
                     this.toIID.equals(that.toIID));
         }
@@ -307,7 +307,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * HashCode of a {@code ThingEdgeImpl.Persisted}.
          *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the
+         * We only use {@code encoding}, {@code fromIID} and {@code toIID} as the
          * are the fixed properties that do not change, unlike
          * {@code overriddenIID} and {@code isDeleted}. They are also the
          * canonical properties required to uniquely identify an
@@ -317,7 +317,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(schema, fromIID.hashCode(), toIID.hashCode());
+            if (hash == 0) hash = hash(encoding, fromIID.hashCode(), toIID.hashCode());
             return hash;
         }
     }

@@ -22,14 +22,14 @@ import grakn.core.graph.TypeGraph;
 import grakn.core.graph.adjacency.TypeAdjacency;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 import java.util.Iterator;
 
 public interface TypeVertex extends Vertex<
         VertexIID.Type,
-        Schema.Vertex.Type, TypeVertex,
-        Schema.Edge.Type, TypeEdge> {
+        Encoding.Vertex.Type, TypeVertex,
+        Encoding.Edge.Type, TypeEdge> {
 
     /**
      * Get the {@code Graph} containing all {@code TypeVertex}
@@ -65,9 +65,9 @@ public interface TypeVertex extends Vertex<
 
     TypeVertex isAbstract(boolean isAbstract);
 
-    Schema.ValueType valueType();
+    Encoding.ValueType valueType();
 
-    TypeVertex valueType(Schema.ValueType valueType);
+    TypeVertex valueType(Encoding.ValueType valueType);
 
     String regex();
 

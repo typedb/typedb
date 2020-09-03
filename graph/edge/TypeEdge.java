@@ -19,15 +19,15 @@
 package grakn.core.graph.edge;
 
 import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 /**
  * An edge between two {@code TypeVertex}.
  *
- * This edge can only have a schema of type {@code Schema.Edge.Type}.
+ * This edge can only have a encoding of type {@code Encoding.Edge.Type}.
  */
-public interface TypeEdge extends Edge<Schema.Edge.Type, EdgeIID.Type, TypeVertex> {
+public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVertex> {
 
     /**
      * Returns the type vertex overridden by the head of this type edge.

@@ -24,7 +24,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.impl.RelationTypeImpl;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -67,22 +67,22 @@ public class RelationImpl extends ThingImpl implements Relation {
         }
 
         RoleImpl role = ((RoleTypeImpl) roleType).create();
-        vertex.outs().put(Schema.Edge.Thing.RELATES, role.vertex);
-        ((ThingImpl) player).vertex.outs().put(Schema.Edge.Thing.PLAYS, role.vertex);
+        vertex.outs().put(Encoding.Edge.Thing.RELATES, role.vertex);
+        ((ThingImpl) player).vertex.outs().put(Encoding.Edge.Thing.PLAYS, role.vertex);
         role.optimise();
     }
 
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
         Iterator<ThingVertex> role = filter(
-                vertex.outs().edge(Schema.Edge.Thing.RELATES,
-                                   PrefixIID.of(Schema.Vertex.Thing.ROLE),
+                vertex.outs().edge(Encoding.Edge.Thing.RELATES,
+                                   PrefixIID.of(Encoding.Vertex.Thing.ROLE),
                                    ((RoleTypeImpl) roleType).vertex.iid()).to(),
-                v -> v.ins().edge(Schema.Edge.Thing.PLAYS, ((ThingImpl) player).vertex) != null
+                v -> v.ins().edge(Encoding.Edge.Thing.PLAYS, ((ThingImpl) player).vertex) != null
         );
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
-            if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) this.delete();
+            if (!vertex.outs().edge(Encoding.Edge.Thing.RELATES).to().hasNext()) this.delete();
         }
     }
 
@@ -96,14 +96,14 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public Stream<ThingImpl> getPlayers(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return stream(vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
+            return stream(vertex.outs().edge(Encoding.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
         }
         return getPlayers(stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {
         return roleTypeVertices.flatMap(v -> stream(
-                vertex.outs().edge(Schema.Edge.Thing.ROLEPLAYER, v.iid()).to())
+                vertex.outs().edge(Encoding.Edge.Thing.ROLEPLAYER, v.iid()).to())
         ).map(ThingImpl::of);
     }
 
@@ -120,7 +120,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void validate() {
         super.validate();
-        if (!vertex.outs().edge(Schema.Edge.Thing.RELATES).to().hasNext()) {
+        if (!vertex.outs().edge(Encoding.Edge.Thing.RELATES).to().hasNext()) {
             throw exception(RELATION_PLAYER_MISSING.message(getType().getLabel()));
         }
     }

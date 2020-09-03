@@ -19,7 +19,7 @@
 package grakn.core.graph.vertex;
 
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 import java.time.LocalDateTime;
 
@@ -38,7 +38,7 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      *
      * @return the {@code ValueType} of this {@code Attribute}
      */
-    Schema.ValueType valueType();
+    Encoding.ValueType valueType();
 
     /**
      * Returns the literal value stored in the vertex, if it represents an attribute.

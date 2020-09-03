@@ -22,12 +22,12 @@ import grakn.core.graph.ThingGraph;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 public interface ThingVertex extends Vertex<
         VertexIID.Thing,
-        Schema.Vertex.Thing, ThingVertex,
-        Schema.Edge.Thing, ThingEdge> {
+        Encoding.Vertex.Thing, ThingVertex,
+        Encoding.Edge.Thing, ThingEdge> {
 
     /**
      * Returns the {@code Graph} containing all {@code ThingVertex}.

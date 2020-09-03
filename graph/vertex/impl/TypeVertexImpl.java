@@ -27,7 +27,7 @@ import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -42,11 +42,11 @@ import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Schema.Property.ABSTRACT;
-import static grakn.core.graph.util.Schema.Property.LABEL;
-import static grakn.core.graph.util.Schema.Property.REGEX;
-import static grakn.core.graph.util.Schema.Property.SCOPE;
-import static grakn.core.graph.util.Schema.Property.VALUE_TYPE;
+import static grakn.core.graph.util.Encoding.Property.ABSTRACT;
+import static grakn.core.graph.util.Encoding.Property.LABEL;
+import static grakn.core.graph.util.Encoding.Property.REGEX;
+import static grakn.core.graph.util.Encoding.Property.SCOPE;
+import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 
@@ -58,7 +58,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     protected String label;
     protected String scope;
     protected Boolean isAbstract; // needs to be declared as the Boolean class
-    protected Schema.ValueType valueType;
+    protected Encoding.ValueType valueType;
     protected String regex;
 
 
@@ -87,8 +87,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
-    public Schema.Vertex.Type schema() {
-        return iid.schema();
+    public Encoding.Vertex.Type encoding() {
+        return iid.encoding();
     }
 
     @Override
@@ -121,7 +121,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public String scopedLabel() {
-        return Schema.Vertex.Type.scopedLabel(label, scope);
+        return Encoding.Vertex.Type.scopedLabel(label, scope);
     }
 
     @Override
@@ -188,8 +188,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Schema.Status status() {
-            return isCommitted.get() ? Schema.Status.COMMITTED : Schema.Status.BUFFERED;
+        public Encoding.Status status() {
+            return isCommitted.get() ? Encoding.Status.COMMITTED : Encoding.Status.BUFFERED;
         }
 
         @Override
@@ -205,12 +205,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Schema.ValueType valueType() {
+        public Encoding.ValueType valueType() {
             return valueType;
         }
 
         @Override
-        public TypeVertexImpl valueType(Schema.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -322,7 +322,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Iterator<ThingVertex> instances() {
             Iterator<ThingVertex> storageIterator = graph.storage().iterate(
-                    join(iid.bytes(), Schema.Edge.ISA.in().bytes()),
+                    join(iid.bytes(), Encoding.Edge.ISA.in().bytes()),
                     (key, value) -> graph.thing().convert(EdgeIID.InwardsISA.of(key).end())
             );
             if (instances.isEmpty()) return storageIterator;
@@ -335,8 +335,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Schema.Status status() {
-            return Schema.Status.PERSISTED;
+        public Encoding.Status status() {
+            return Encoding.Status.PERSISTED;
         }
 
         @Override
@@ -377,15 +377,15 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Schema.ValueType valueType() {
+        public Encoding.ValueType valueType() {
             if (valueType != null) return valueType;
             byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
-            if (val != null) valueType = Schema.ValueType.of(val[0]);
+            if (val != null) valueType = Encoding.ValueType.of(val[0]);
             return valueType;
         }
 
         @Override
-        public TypeVertexImpl valueType(Schema.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
             this.setModified();

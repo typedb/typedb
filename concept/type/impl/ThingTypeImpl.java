@@ -29,7 +29,7 @@ import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.TypeGraph;
 import grakn.core.graph.edge.TypeEdge;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -64,8 +64,8 @@ import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.stream;
-import static grakn.core.graph.util.Schema.Edge.Type.OWNS;
-import static grakn.core.graph.util.Schema.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 
@@ -75,12 +75,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         super(vertex);
     }
 
-    ThingTypeImpl(TypeGraph graph, String label, Schema.Vertex.Type schema) {
-        super(graph, label, schema);
+    ThingTypeImpl(TypeGraph graph, String label, Encoding.Vertex.Type encoding) {
+        super(graph, label, encoding);
     }
 
     public static ThingTypeImpl of(TypeVertex vertex) {
-        switch (vertex.schema()) {
+        switch (vertex.encoding()) {
             case ENTITY_TYPE:
                 return EntityTypeImpl.of(vertex);
             case ATTRIBUTE_TYPE:
@@ -148,7 +148,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
     }
 
-    private <T extends Type> void override(Schema.Edge.Type schema, T type, T overriddenType,
+    private <T extends Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
                                            Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw exception(OVERRIDDEN_NOT_SUPERTYPE.message(type.getLabel(), overriddenType.getLabel()));
@@ -156,7 +156,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(OVERRIDE_NOT_AVAILABLE.message(type.getLabel(), overriddenType.getLabel()));
         }
 
-        vertex.outs().edge(schema, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
+        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
     }
 
     private void ownsKey(AttributeTypeImpl attributeType) {
@@ -261,19 +261,19 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
             throw exception(PLAYS_ROLE_NOT_AVAILABLE.message(roleType.getLabel()));
         }
-        vertex.outs().put(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
 
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         setPlays(roleType);
-        override(Schema.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of)));
+        override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
+                 stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), RoleTypeImpl::of)));
     }
 
     @Override
     public void unsetPlays(RoleType roleType) {
-        vertex.outs().edge(Schema.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex).delete();
+        vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex).delete();
     }
 
     @Override
@@ -281,8 +281,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return Stream.of();
 
         Set<TypeVertex> overridden = new HashSet<>();
-        filter(vertex.outs().edge(Schema.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
-        return concat(stream(apply(vertex.outs().edge(Schema.Edge.Type.PLAYS).to(), RoleTypeImpl::of)),
+        filter(vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
+        return concat(stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), RoleTypeImpl::of)),
                       getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex)));
     }
 
@@ -323,7 +323,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         public Root(TypeVertex vertex) {
             super(vertex);
-            assert vertex.label().equals(Schema.Vertex.Type.Root.THING.label());
+            assert vertex.label().equals(Encoding.Vertex.Type.Root.THING.label());
         }
 
         @Override
@@ -346,7 +346,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public Stream<ThingTypeImpl> getSubtypes() {
             return getSubtypes(v -> {
-                switch (v.schema()) {
+                switch (v.encoding()) {
                     case THING_TYPE:
                         assert this.vertex == v;
                         return this;
@@ -365,7 +365,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public Stream<ThingImpl> getInstances() {
             return super.instances(v -> {
-                switch (v.schema()) {
+                switch (v.encoding()) {
                     case ENTITY:
                         return EntityImpl.of(v);
                     case ATTRIBUTE:

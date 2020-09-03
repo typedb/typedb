@@ -19,61 +19,61 @@
 package grakn.core.graph.adjacency;
 
 import grakn.core.graph.edge.Edge;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 
 import java.util.Iterator;
 import java.util.function.Consumer;
 
 public interface Adjacency<
-        EDGE_SCHEMA extends Schema.Edge,
+        EDGE_ENCODING extends Encoding.Edge,
         EDGE extends Edge<?, ?, VERTEX>,
-        VERTEX extends Vertex<?, ?, VERTEX, EDGE_SCHEMA, EDGE>> {
+        VERTEX extends Vertex<?, ?, VERTEX, EDGE_ENCODING, EDGE>> {
 
     /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      *
      * This method allows us to traverse the graph, by going from one vertex to
-     * another, that are connected by edges that match the provided {@code schema}.
+     * another, that are connected by edges that match the provided {@code encoding}.
      *
-     * @param schema the {@code Schema} to filter the type of edges
+     * @param encoding the {@code Encoding} to filter the type of edges
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    IteratorBuilder<VERTEX> edge(EDGE_SCHEMA schema);
+    IteratorBuilder<VERTEX> edge(EDGE_ENCODING encoding);
 
     /**
-     * Returns an edge of type {@code schema} that connects to an {@code adjacent}
+     * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
      * vertex.
      *
-     * @param schema   type of the edge to filter by
+     * @param encoding   type of the edge to filter by
      * @param adjacent vertex that the edge connects to
-     * @return an edge of type {@code schema} that connects to {@code adjacent}.
+     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    EDGE edge(EDGE_SCHEMA schema, VERTEX adjacent);
+    EDGE edge(EDGE_ENCODING encoding, VERTEX adjacent);
 
     /**
-     * Puts an adjacent vertex over an edge with a given schema.
+     * Puts an adjacent vertex over an edge with a given encoding.
      *
      * The owner of this {@code Adjacency} map will also be added as an adjacent
      * vertex to the provided vertex, through an opposite facing edge stored in
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param schema   of the edge that will connect the owner to the adjacent vertex
+     * @param encoding   of the edge that will connect the owner to the adjacent vertex
      * @param adjacent the adjacent vertex
      */
-    EDGE put(EDGE_SCHEMA schema, VERTEX adjacent);
+    EDGE put(EDGE_ENCODING encoding, VERTEX adjacent);
 
     /**
-     * Deletes all edges with a given schema from the {@code Adjacency} map.
+     * Deletes all edges with a given encoding from the {@code Adjacency} map.
      *
      * This is a recursive delete operation. Deleting the edges from this
      * {@code Adjacency} map will also delete it from the {@code Adjacency} map
      * of the previously adjacent vertex.
      *
-     * @param schema type of the edge to the adjacent vertex
+     * @param encoding type of the edge to the adjacent vertex
      */
-    void delete(EDGE_SCHEMA schema);
+    void delete(EDGE_ENCODING encoding);
 
     void deleteAll();
 

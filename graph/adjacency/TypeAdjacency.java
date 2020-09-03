@@ -19,15 +19,15 @@
 package grakn.core.graph.adjacency;
 
 import grakn.core.graph.edge.TypeEdge;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
 
-public interface TypeAdjacency extends Adjacency<Schema.Edge.Type, TypeEdge, TypeVertex> {
+public interface TypeAdjacency extends Adjacency<Encoding.Edge.Type, TypeEdge, TypeVertex> {
 
     @Override
-    TypeIteratorBuilder edge(Schema.Edge.Type schema);
+    TypeIteratorBuilder edge(Encoding.Edge.Type encoding);
 
     interface TypeIteratorBuilder extends IteratorBuilder<TypeVertex> {
 

@@ -22,13 +22,13 @@ import grakn.core.graph.Graph;
 import grakn.core.graph.adjacency.Adjacency;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 public interface Vertex<
         VERTEX_IID extends VertexIID,
-        VERTEX_SCHEMA extends Schema.Vertex,
-        VERTEX extends Vertex<VERTEX_IID, VERTEX_SCHEMA, VERTEX, EDGE_SCHEMA, EDGE>,
-        EDGE_SCHEMA extends Schema.Edge,
+        VERTEX_ENCODING extends Encoding.Vertex,
+        VERTEX extends Vertex<VERTEX_IID, VERTEX_ENCODING, VERTEX, EDGE_ENCODING, EDGE>,
+        EDGE_ENCODING extends Encoding.Edge,
         EDGE extends Edge<?, ?, VERTEX>> {
 
     /**
@@ -42,13 +42,13 @@ public interface Vertex<
 
     void iid(VERTEX_IID iid);
 
-    Schema.Status status();
+    Encoding.Status status();
 
-    VERTEX_SCHEMA schema();
+    VERTEX_ENCODING encoding();
 
-    Adjacency<EDGE_SCHEMA, EDGE, VERTEX> outs();
+    Adjacency<EDGE_ENCODING, EDGE, VERTEX> outs();
 
-    Adjacency<EDGE_SCHEMA, EDGE, VERTEX> ins();
+    Adjacency<EDGE_ENCODING, EDGE, VERTEX> ins();
 
     void setModified();
 

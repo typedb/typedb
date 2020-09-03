@@ -26,7 +26,7 @@ import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
@@ -75,13 +75,13 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public Schema.ValueType valueType() {
+    public Encoding.ValueType valueType() {
         return attributeIID.valueType();
     }
 
     @Override
-    public Schema.Status status() {
-        return Schema.Status.IMMUTABLE;
+    public Encoding.Status status() {
+        return Encoding.Status.IMMUTABLE;
     }
 
     @Override

@@ -20,37 +20,37 @@ package grakn.core.graph.adjacency;
 
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.IID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
-public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, ThingVertex> {
+public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge, ThingVertex> {
 
     /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      *
      * This method allows us to traverse the graph, by going from one vertex to
-     * another, that are connected by edges that match the provided {@code schema}
+     * another, that are connected by edges that match the provided {@code encoding}
      * and {@code lookahead}.
      *
-     * @param schema    type of the edge to filter by
+     * @param encoding    type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    IteratorBuilder<ThingVertex> edge(Schema.Edge.Thing schema, IID... lookAhead);
+    IteratorBuilder<ThingVertex> edge(Encoding.Edge.Thing encoding, IID... lookAhead);
 
     /**
-     * Returns an edge of type {@code schema} that connects to an {@code adjacent}
+     * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
      * vertex, that is an optimisation edge over a given {@code optimised} vertex.
      *
-     * @param schema    type of the edge to filter by
+     * @param encoding    type of the edge to filter by
      * @param adjacent  vertex that the edge connects to
      * @param optimised vertex that this optimised edge is compressing
-     * @return an edge of type {@code schema} that connects to {@code adjacent}.
+     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge edge(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised);
+    ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
     /**
-     * Puts an edge of type {@code schema} from the owner to an adjacent vertex,
+     * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
      * which is an optimisation edge over a given {@code optimised} vertex.
      *
      * The owner of this {@code Adjacency} map will also be added as an adjacent
@@ -58,17 +58,17 @@ public interface ThingAdjacency extends Adjacency<Schema.Edge.Thing, ThingEdge, 
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param schema    type of the edge
+     * @param encoding    type of the edge
      * @param adjacent  the adjacent vertex
      * @param optimised vertex that this optimised edge is compressing
      */
-    void put(Schema.Edge.Thing schema, ThingVertex adjacent, ThingVertex optimised);
+    void put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
     /**
      * Deletes a set of edges that match the provided properties.
      *
-     * @param schema    type of the edge to filter by
+     * @param encoding    type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      */
-    void delete(Schema.Edge.Thing schema, IID... lookAhead);
+    void delete(Encoding.Edge.Thing encoding, IID... lookAhead);
 }

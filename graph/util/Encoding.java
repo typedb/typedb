@@ -29,7 +29,7 @@ import java.util.Objects;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class Schema {
+public class Encoding {
 
     public static final int STRING_MAX_LENGTH = 255;
     public static final Charset STRING_ENCODING = UTF_8;

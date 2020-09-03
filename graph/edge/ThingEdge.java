@@ -19,12 +19,12 @@
 package grakn.core.graph.edge;
 
 import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 /**
  * An edge between two {@code ThingVertex}.
  *
- * This edge can only have a schema of type {@code Schema.Edge.Thing}.
+ * This edge can only have a encoding of type {@code Encoding.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<Schema.Edge.Thing, EdgeIID.Thing, ThingVertex> {}
+public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {}

@@ -18,9 +18,9 @@
 
 package grakn.core.graph.vertex;
 
-//public abstract class RuleVertex extends Vertex<Schema.Vertex.Rule, Schema.Edge.Type, TypeEdge> {
+//public abstract class RuleVertex extends Vertex<Encoding.Vertex.Rule, Encoding.Edge.Type, TypeEdge> {
 //
-//    RuleVertex(Storage storage, Schema.Status status, byte[] iid) {
-//        super(storage,Schema.Vertex.Rule.RULE, iid);
+//    RuleVertex(Storage storage, Encoding.Status status, byte[] iid) {
+//        super(storage,Encoding.Vertex.Rule.RULE, iid);
 //    }
 //}

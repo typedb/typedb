@@ -22,7 +22,7 @@ import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.Storage;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.impl.TypeVertexImpl;
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
 import static grakn.core.graph.iid.VertexIID.Type.generate;
-import static grakn.core.graph.util.Schema.Vertex.Type.scopedLabel;
+import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
 
 public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
 
@@ -62,31 +62,31 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
     }
 
     public boolean isInitialised() throws GraknException {
-        return get(Schema.Vertex.Type.Root.THING.label()) != null;
+        return get(Encoding.Vertex.Type.Root.THING.label()) != null;
     }
 
     public void initialise() throws GraknException {
         TypeVertex rootThingType = create(
-                Schema.Vertex.Type.THING_TYPE,
-                Schema.Vertex.Type.Root.THING.label()).isAbstract(true);
+                Encoding.Vertex.Type.THING_TYPE,
+                Encoding.Vertex.Type.Root.THING.label()).isAbstract(true);
         TypeVertex rootEntityType = create(
-                Schema.Vertex.Type.ENTITY_TYPE,
-                Schema.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
+                Encoding.Vertex.Type.ENTITY_TYPE,
+                Encoding.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
         TypeVertex rootAttributeType = create(
-                Schema.Vertex.Type.ATTRIBUTE_TYPE,
-                Schema.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Schema.ValueType.OBJECT);
+                Encoding.Vertex.Type.ATTRIBUTE_TYPE,
+                Encoding.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Encoding.ValueType.OBJECT);
         TypeVertex rootRelationType = create(
-                Schema.Vertex.Type.RELATION_TYPE,
-                Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
+                Encoding.Vertex.Type.RELATION_TYPE,
+                Encoding.Vertex.Type.Root.RELATION.label()).isAbstract(true);
         TypeVertex rootRoleType = create(
-                Schema.Vertex.Type.ROLE_TYPE,
-                Schema.Vertex.Type.Root.ROLE.label(),
-                Schema.Vertex.Type.Root.RELATION.label()).isAbstract(true);
+                Encoding.Vertex.Type.ROLE_TYPE,
+                Encoding.Vertex.Type.Root.ROLE.label(),
+                Encoding.Vertex.Type.Root.RELATION.label()).isAbstract(true);
 
-        rootEntityType.outs().put(Schema.Edge.Type.SUB, rootThingType);
-        rootAttributeType.outs().put(Schema.Edge.Type.SUB, rootThingType);
-        rootRelationType.outs().put(Schema.Edge.Type.SUB, rootThingType);
-        rootRelationType.outs().put(Schema.Edge.Type.RELATES, rootRoleType);
+        rootEntityType.outs().put(Encoding.Edge.Type.SUB, rootThingType);
+        rootAttributeType.outs().put(Encoding.Edge.Type.SUB, rootThingType);
+        rootRelationType.outs().put(Encoding.Edge.Type.SUB, rootThingType);
+        rootRelationType.outs().put(Encoding.Edge.Type.RELATES, rootRoleType);
     }
 
     @Override
@@ -144,11 +144,11 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
         }
     }
 
-    public TypeVertex create(Schema.Vertex.Type type, String label) {
+    public TypeVertex create(Encoding.Vertex.Type type, String label) {
         return create(type, label, null);
     }
 
-    public TypeVertex create(Schema.Vertex.Type type, String label, @Nullable String scope) {
+    public TypeVertex create(Encoding.Vertex.Type type, String label, @Nullable String scope) {
         assert storage().isOpen();
         String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
@@ -222,8 +222,8 @@ public class TypeGraph implements Graph<VertexIID.Type, TypeVertex> {
      */
     @Override
     public void commit() {
-        typesByIID.values().parallelStream().filter(v -> v.status().equals(Schema.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.schema()))
+        typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
+                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again

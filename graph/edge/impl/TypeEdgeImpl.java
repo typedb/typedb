@@ -22,7 +22,7 @@ import grakn.core.graph.TypeGraph;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -36,11 +36,11 @@ import static java.util.Objects.hash;
 public abstract class TypeEdgeImpl implements TypeEdge {
 
     final TypeGraph graph;
-    final Schema.Edge.Type schema;
+    final Encoding.Edge.Type encoding;
 
-    TypeEdgeImpl(TypeGraph graph, Schema.Edge.Type schema) {
+    TypeEdgeImpl(TypeGraph graph, Encoding.Edge.Type encoding) {
         this.graph = graph;
-        this.schema = schema;
+        this.encoding = encoding;
     }
 
     /**
@@ -59,11 +59,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * Default constructor for {@code EdgeImpl.Buffered}.
          *
          * @param from   the tail vertex
-         * @param schema the edge {@code Schema}
+         * @param encoding the edge {@code Encoding}
          * @param to     the head vertex
          */
-        public Buffered(Schema.Edge.Type schema, TypeVertex from, TypeVertex to) {
-            super(from.graph(), schema);
+        public Buffered(Encoding.Edge.Type encoding, TypeVertex from, TypeVertex to) {
+            super(from.graph(), encoding);
             assert this.graph == to.graph();
             this.from = from;
             this.to = to;
@@ -72,18 +72,18 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Schema.Edge.Type schema() {
-            return schema;
+        public Encoding.Edge.Type encoding() {
+            return encoding;
         }
 
         @Override
         public EdgeIID.Type outIID() {
-            return EdgeIID.Type.of(from().iid(), schema.out(), to().iid());
+            return EdgeIID.Type.of(from().iid(), encoding.out(), to().iid());
         }
 
         @Override
         public EdgeIID.Type inIID() {
-            return EdgeIID.Type.of(to().iid(), schema.in(), from().iid());
+            return EdgeIID.Type.of(to().iid(), encoding.in(), from().iid());
         }
 
         @Override
@@ -129,17 +129,17 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          *
          * This operation can only be performed once, and thus protected by {@code committed} boolean.
          * Then we check for each direction of this edge, whether they need to be persisted to storage.
-         * It's possible that an edge only has a {@code schema.out()} (most likely an optimisation edge)
+         * It's possible that an edge only has a {@code encoding.out()} (most likely an optimisation edge)
          * and therefore will not have an inward edge to be persisted onto storage.
          */
         @Override
         public void commit() {
             if (committed.compareAndSet(false, true)) {
-                if (schema.out() != null) {
+                if (encoding.out() != null) {
                     if (overridden != null) graph.storage().put(outIID().bytes(), overridden.iid().bytes());
                     else graph.storage().put(outIID().bytes());
                 }
-                if (schema.in() != null) {
+                if (encoding.in() != null) {
                     graph.storage().put(inIID().bytes());
                 }
             }
@@ -148,7 +148,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         /**
          * Determine the equality of a {@code TypeEdgeImpl.Buffered} against another.
          *
-         * We only use {@code schema}, {@code from} and {@code to} as the are
+         * We only use {@code encoding}, {@code from} and {@code to} as the are
          * the fixed properties that do not change, unlike {@code overridden}.
          * They are also the canonical properties required to uniquely identify
          * a {@code TypeEdgeImpl.Buffered} uniquely.
@@ -161,7 +161,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
-            return (this.schema.equals(that.schema) &&
+            return (this.encoding.equals(that.encoding) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to));
         }
@@ -169,7 +169,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         /**
          * Determine the equality of a {@code Edge.Buffered} against another.
          *
-         * We only use {@code schema}, {@code from} and {@code to} as the are
+         * We only use {@code encoding}, {@code from} and {@code to} as the are
          * the fixed properties that do not change, unlike {@code overridden}.
          * They are also the canonical properties required to uniquely identify
          * a {@code TypeEdgeImpl.Buffered}.
@@ -178,7 +178,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(schema, from, to);
+            if (hash == 0) hash = hash(encoding, from, to);
             return hash;
         }
     }
@@ -215,18 +215,18 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param iid   the {@code iid} of a persisted edge
          */
         public Persisted(TypeGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
-            super(graph, iid.schema());
+            super(graph, iid.encoding());
 
             if (iid.isOutwards()) {
                 fromIID = iid.start();
                 toIID = iid.end();
                 outIID = iid;
-                inIID = EdgeIID.Type.of(iid.end(), iid.schema().in(), iid.start());
+                inIID = EdgeIID.Type.of(iid.end(), iid.encoding().in(), iid.start());
             } else {
                 fromIID = iid.end();
                 toIID = iid.start();
                 inIID = iid;
-                outIID = EdgeIID.Type.of(iid.end(), iid.schema().out(), iid.start());
+                outIID = EdgeIID.Type.of(iid.end(), iid.encoding().out(), iid.start());
             }
 
             deleted = new AtomicBoolean(false);
@@ -240,8 +240,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Schema.Edge.Type schema() {
-            return schema;
+        public Encoding.Edge.Type encoding() {
+            return encoding;
         }
 
         @Override
@@ -326,7 +326,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         /**
          * Determine the equality of a {@code Edge} against another.
          *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the
+         * We only use {@code encoding}, {@code fromIID} and {@code toIID} as the
          * are the fixed properties that do not change, unlike
          * {@code overriddenIID} and {@code isDeleted}. They are also the
          * canonical properties required to identify a {@code Persisted} edge.
@@ -339,7 +339,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
-            return (this.schema.equals(that.schema) &&
+            return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
                     this.toIID.equals(that.toIID));
         }
@@ -347,7 +347,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         /**
          * HashCode of a {@code TypeEdgeImpl.Persisted}.
          *
-         * We only use {@code schema}, {@code fromIID} and {@code toIID} as the
+         * We only use {@code encoding}, {@code fromIID} and {@code toIID} as the
          * are the fixed properties that do not change, unlike
          * {@code overriddenIID} and {@code isDeleted}. They are also the
          * canonical properties required to uniquely identify an
@@ -357,7 +357,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(schema, fromIID.hashCode(), toIID.hashCode());
+            if (hash == 0) hash = hash(encoding, fromIID.hashCode(), toIID.hashCode());
             return hash;
         }
     }

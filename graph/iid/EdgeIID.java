@@ -18,14 +18,14 @@
 
 package grakn.core.graph.iid;
 
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 import static grakn.core.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class EdgeIID<
-        EDGE_SCHEMA extends Schema.Edge,
-        EDGE_INFIX extends InfixIID<EDGE_SCHEMA>,
+        EDGE_ENCODING extends Encoding.Edge,
+        EDGE_INFIX extends InfixIID<EDGE_ENCODING>,
         VERTEX_IID_START extends VertexIID,
         VERTEX_IID_END extends VertexIID> extends IID {
 
@@ -60,8 +60,8 @@ public abstract class EdgeIID<
         return suffixIndex;
     }
 
-    public EDGE_SCHEMA schema() {
-        return infix().schema();
+    public EDGE_ENCODING encoding() {
+        return infix().encoding();
     }
 
     public boolean isOutwards() {
@@ -78,7 +78,7 @@ public abstract class EdgeIID<
         return readableString;
     }
 
-    public static class Type extends EdgeIID<Schema.Edge.Type, InfixIID.Type, VertexIID.Type, VertexIID.Type> {
+    public static class Type extends EdgeIID<Encoding.Edge.Type, InfixIID.Type, VertexIID.Type, VertexIID.Type> {
 
         Type(byte[] bytes) {
             super(bytes);
@@ -88,7 +88,7 @@ public abstract class EdgeIID<
             return new Type(bytes);
         }
 
-        public static Type of(VertexIID.Type start, Schema.Infix infix, VertexIID.Type end) {
+        public static Type of(VertexIID.Type start, Encoding.Infix infix, VertexIID.Type end) {
             return new Type(join(start.bytes, infix.bytes(), end.bytes));
         }
 
@@ -112,7 +112,7 @@ public abstract class EdgeIID<
         }
     }
 
-    public static class Thing extends EdgeIID<Schema.Edge.Thing, InfixIID.Thing, VertexIID.Thing, VertexIID.Thing> {
+    public static class Thing extends EdgeIID<Encoding.Edge.Thing, InfixIID.Thing, VertexIID.Thing, VertexIID.Thing> {
 
         Thing(byte[] bytes) {
             super(bytes);
@@ -166,7 +166,7 @@ public abstract class EdgeIID<
         }
     }
 
-    public static class InwardsISA extends EdgeIID<Schema.Edge.Thing, InfixIID.Thing, VertexIID.Type, VertexIID.Thing> {
+    public static class InwardsISA extends EdgeIID<Encoding.Edge.Thing, InfixIID.Thing, VertexIID.Type, VertexIID.Thing> {
 
         private VertexIID.Type start;
         private VertexIID.Thing end;
@@ -180,12 +180,12 @@ public abstract class EdgeIID<
         }
 
         public static InwardsISA of(VertexIID.Type start, VertexIID.Thing end) {
-            return new InwardsISA(join(start.bytes, Schema.Edge.ISA.in().bytes(), end.bytes));
+            return new InwardsISA(join(start.bytes, Encoding.Edge.ISA.in().bytes(), end.bytes));
         }
 
         @Override
         public InfixIID.Thing infix() {
-            return InfixIID.Thing.of(Schema.Edge.ISA.in());
+            return InfixIID.Thing.of(Encoding.Edge.ISA.in());
         }
 
         @Override

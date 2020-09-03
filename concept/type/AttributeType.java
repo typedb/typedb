@@ -19,7 +19,7 @@
 package grakn.core.concept.type;
 
 import grakn.core.concept.thing.Attribute;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import graql.lang.common.GraqlArg;
 
 import java.time.LocalDateTime;
@@ -64,22 +64,22 @@ public interface AttributeType extends ThingType {
     AttributeType.DateTime asDateTime();
 
     enum ValueType {
-        OBJECT(Schema.ValueType.OBJECT, null),
-        BOOLEAN(Schema.ValueType.BOOLEAN, GraqlArg.ValueType.BOOLEAN),
-        LONG(Schema.ValueType.LONG, GraqlArg.ValueType.LONG),
-        DOUBLE(Schema.ValueType.DOUBLE, GraqlArg.ValueType.DOUBLE),
-        STRING(Schema.ValueType.STRING, GraqlArg.ValueType.STRING),
-        DATETIME(Schema.ValueType.DATETIME, GraqlArg.ValueType.DATETIME);
+        OBJECT(Encoding.ValueType.OBJECT, null),
+        BOOLEAN(Encoding.ValueType.BOOLEAN, GraqlArg.ValueType.BOOLEAN),
+        LONG(Encoding.ValueType.LONG, GraqlArg.ValueType.LONG),
+        DOUBLE(Encoding.ValueType.DOUBLE, GraqlArg.ValueType.DOUBLE),
+        STRING(Encoding.ValueType.STRING, GraqlArg.ValueType.STRING),
+        DATETIME(Encoding.ValueType.DATETIME, GraqlArg.ValueType.DATETIME);
 
         private final Class<?> valueClass;
         private final boolean isWritable;
         private final boolean isKeyable;
         private final GraqlArg.ValueType graqlValueType;
 
-        ValueType(Schema.ValueType schemaValueType, GraqlArg.ValueType graqlValueType) {
-            this.valueClass = schemaValueType.valueClass();
-            this.isWritable = schemaValueType.isWritable();
-            this.isKeyable = schemaValueType.isKeyable();
+        ValueType(Encoding.ValueType encodingValueType, GraqlArg.ValueType graqlValueType) {
+            this.valueClass = encodingValueType.valueClass();
+            this.isWritable = encodingValueType.isWritable();
+            this.isKeyable = encodingValueType.isKeyable();
             this.graqlValueType = graqlValueType;
         }
 

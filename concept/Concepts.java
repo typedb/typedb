@@ -33,7 +33,7 @@ import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
@@ -54,25 +54,25 @@ public final class Concepts {
     }
 
     public ThingType getRootThingType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.THING.label());
+        TypeVertex vertex = graph.type().get(Encoding.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(vertex);
         else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType getRootEntityType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ENTITY.label());
+        TypeVertex vertex = graph.type().get(Encoding.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(vertex);
         else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public RelationType getRootRelationType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.RELATION.label());
+        TypeVertex vertex = graph.type().get(Encoding.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(vertex);
         else throw graph.exception(ILLEGAL_STATE.message());
     }
 
     public AttributeType getRootAttributeType() {
-        TypeVertex vertex = graph.type().get(Schema.Vertex.Type.Root.ATTRIBUTE.label());
+        TypeVertex vertex = graph.type().get(Encoding.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(vertex);
         else throw graph.exception(ILLEGAL_STATE.message());
     }
@@ -155,7 +155,7 @@ public final class Concepts {
 
     public void validateThings() {
         graph.thing().vertices().parallel()
-                .filter(v -> !v.isInferred() && v.isModified() && !v.schema().equals(Schema.Vertex.Thing.ROLE))
+                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Vertex.Thing.ROLE))
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 

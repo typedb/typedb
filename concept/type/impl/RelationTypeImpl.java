@@ -26,7 +26,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.TypeGraph;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -50,27 +50,27 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYP
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.stream;
-import static grakn.core.graph.util.Schema.Vertex.Type.Root.ROLE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     private RelationTypeImpl(TypeVertex vertex) {
         super(vertex);
-        if (vertex.schema() != Schema.Vertex.Type.RELATION_TYPE) {
+        if (vertex.encoding() != Encoding.Vertex.Type.RELATION_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
-                    Schema.Vertex.Type.RELATION_TYPE.root().label(),
-                    vertex.schema().root().label()
+                    Encoding.Vertex.Type.RELATION_TYPE.root().label(),
+                    vertex.encoding().root().label()
             ));
         }
     }
 
     private RelationTypeImpl(TypeGraph graph, String label) {
-        super(graph, label, Schema.Vertex.Type.RELATION_TYPE);
+        super(graph, label, Encoding.Vertex.Type.RELATION_TYPE);
     }
 
     public static RelationTypeImpl of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label())) return new RelationTypeImpl.Root(vertex);
+        if (vertex.label().equals(Encoding.Vertex.Type.Root.RELATION.label())) return new RelationTypeImpl.Root(vertex);
         else return new RelationTypeImpl(vertex);
     }
 
@@ -81,7 +81,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setLabel(String label) {
         vertex.label(label);
-        vertex.outs().edge(Schema.Edge.Type.RELATES).to().forEachRemaining(v -> v.scope(label));
+        vertex.outs().edge(Encoding.Edge.Type.RELATES).to().forEachRemaining(v -> v.scope(label));
     }
 
     @Override
@@ -132,8 +132,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(vertex.graph(), roleLabel, vertex.label());
                 if (this.isAbstract()) roleType.setAbstract();
-                vertex.outs().put(Schema.Edge.Type.RELATES, roleType.vertex);
-                vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
+                vertex.outs().put(Encoding.Edge.Type.RELATES, roleType.vertex);
+                vertex.outs().edge(Encoding.Edge.Type.RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
             }
         }
     }
@@ -150,7 +150,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         roleType.sup(inherited.get());
-        vertex.outs().edge(Schema.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
+        vertex.outs().edge(Encoding.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RoleTypeImpl> getRelates() {
-        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of);
+        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Encoding.Edge.Type.RELATES).to(), RoleTypeImpl::of);
         if (isRoot()) {
             return stream(roles);
         } else {
@@ -173,11 +173,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     Stream<RoleTypeImpl> overriddenRoles() {
-        return stream(filter(vertex.outs().edge(Schema.Edge.Type.RELATES).overridden(), Objects::nonNull).apply(RoleTypeImpl::of));
+        return stream(filter(vertex.outs().edge(Encoding.Edge.Type.RELATES).overridden(), Objects::nonNull).apply(RoleTypeImpl::of));
     }
 
     private Stream<RoleTypeImpl> declaredRoles() {
-        return stream(apply(vertex.outs().edge(Schema.Edge.Type.RELATES).to(), RoleTypeImpl::of));
+        return stream(apply(vertex.outs().edge(Encoding.Edge.Type.RELATES).to(), RoleTypeImpl::of));
     }
 
     /**
@@ -242,7 +242,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         Root(TypeVertex vertex) {
             super(vertex);
-            assert vertex.label().equals(Schema.Vertex.Type.Root.RELATION.label());
+            assert vertex.label().equals(Encoding.Vertex.Type.Root.RELATION.label());
         }
 
         @Override

@@ -18,7 +18,7 @@
 
 package grakn.core.graph.iid;
 
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 
 public class PrefixIID extends IID {
 
@@ -29,17 +29,17 @@ public class PrefixIID extends IID {
         assert bytes.length == LENGTH;
     }
 
-    public static PrefixIID of(Schema.Prefix prefix) {
+    public static PrefixIID of(Encoding.Prefix prefix) {
         return new PrefixIID(prefix.bytes());
     }
 
-    public static PrefixIID of(Schema.Vertex schema) {
-        return new PrefixIID(schema.prefix().bytes());
+    public static PrefixIID of(Encoding.Vertex encoding) {
+        return new PrefixIID(encoding.prefix().bytes());
     }
 
     @Override
     public String toString() {
-        if (readableString == null) readableString = "[" + Schema.Prefix.of(bytes[0]).toString() + "]";
+        if (readableString == null) readableString = "[" + Encoding.Prefix.of(bytes[0]).toString() + "]";
         return readableString;
     }
 }

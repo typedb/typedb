@@ -25,7 +25,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.TypeGraph;
-import grakn.core.graph.util.Schema;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -40,22 +40,22 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private EntityTypeImpl(TypeVertex vertex) {
         super(vertex);
-        if (vertex.schema() != Schema.Vertex.Type.ENTITY_TYPE) {
+        if (vertex.encoding() != Encoding.Vertex.Type.ENTITY_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
-                    Schema.Vertex.Type.ENTITY_TYPE.root().label(),
-                    vertex.schema().root().label()
+                    Encoding.Vertex.Type.ENTITY_TYPE.root().label(),
+                    vertex.encoding().root().label()
             ));
         }
     }
 
     private EntityTypeImpl(TypeGraph graph, String label) {
-        super(graph, label, Schema.Vertex.Type.ENTITY_TYPE);
-        assert !label.equals(Schema.Vertex.Type.Root.ENTITY.label());
+        super(graph, label, Encoding.Vertex.Type.ENTITY_TYPE);
+        assert !label.equals(Encoding.Vertex.Type.Root.ENTITY.label());
     }
 
     public static EntityTypeImpl of(TypeVertex vertex) {
-        if (vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label())) return new EntityTypeImpl.Root(vertex);
+        if (vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label())) return new EntityTypeImpl.Root(vertex);
         else return new EntityTypeImpl(vertex);
     }
 
@@ -110,7 +110,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         private Root(TypeVertex vertex) {
             super(vertex);
-            assert vertex.label().equals(Schema.Vertex.Type.Root.ENTITY.label());
+            assert vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label());
         }
 
         @Override
