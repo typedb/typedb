@@ -40,7 +40,6 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":graph",
-    ]
+    include = glob(["*"]),
+    license_type = "agpl",
 )

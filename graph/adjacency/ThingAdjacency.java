@@ -32,7 +32,7 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
      * another, that are connected by edges that match the provided {@code encoding}
      * and {@code lookahead}.
      *
-     * @param encoding    type of the edge to filter by
+     * @param encoding  type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
@@ -42,7 +42,7 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
      * vertex, that is an optimisation edge over a given {@code optimised} vertex.
      *
-     * @param encoding    type of the edge to filter by
+     * @param encoding  type of the edge to filter by
      * @param adjacent  vertex that the edge connects to
      * @param optimised vertex that this optimised edge is compressing
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
@@ -58,7 +58,7 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param encoding    type of the edge
+     * @param encoding  type of the edge
      * @param adjacent  the adjacent vertex
      * @param optimised vertex that this optimised edge is compressing
      */
@@ -67,7 +67,7 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
     /**
      * Deletes a set of edges that match the provided properties.
      *
-     * @param encoding    type of the edge to filter by
+     * @param encoding  type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      */
     void delete(Encoding.Edge.Thing encoding, IID... lookAhead);

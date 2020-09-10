@@ -24,6 +24,7 @@ import graql.lang.common.GraqlArg;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public interface AttributeType extends ThingType {
@@ -191,11 +192,11 @@ public interface AttributeType extends ThingType {
         @Override
         Stream<? extends Attribute.String> getInstances();
 
-        void setRegex(java.lang.String regex);
+        void setRegex(Pattern regex);
 
         void unsetRegex();
 
-        java.lang.String getRegex();
+        Pattern getRegex();
 
         Attribute.String put(java.lang.String value);
 

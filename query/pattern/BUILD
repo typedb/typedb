@@ -15,31 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_test(
-    name = "test",
-    srcs = [
-        "MatchTest.java",
-    ],
-    test_class = "grakn.core.test.behaviour.graql.language.match.MatchTest",
+java_library(
+    name = "pattern",
+    srcs = glob([
+        "*.java",
+        "constraint/*.java",
+        "variable/*.java",
+    ]),
     deps = [
-        # External dependencies from Maven
-        "@maven//:io_cucumber_cucumber_junit",
+        # Internal package dependencies
+        "//common:common",
+        "//concept:concept",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common:common",
+        "@graknlabs_graql//java/pattern:pattern",
+        "@graknlabs_graql//java/query:query",
+
+        # External dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
-    runtime_deps = [
-#        "//test/behaviour/graql:steps",
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/config:parameters",
-    ],
-    data = [
-        "@graknlabs_behaviour//graql/language:match.feature",
-    ],
-    classpath_resources = ["//test/conf:logback"],
-    size = "large",
-    visibility = ["//visibility:public"]
+    tags = ["maven_coordinates=io.grakn.core:grakn-query:{pom_version}"],
+    visibility = [ "//visibility:public" ]
 )
 
 checkstyle_test(

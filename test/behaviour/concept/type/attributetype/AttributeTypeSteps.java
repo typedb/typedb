@@ -26,6 +26,7 @@ import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
@@ -97,7 +98,7 @@ public class AttributeTypeSteps {
     public void attribute_type_as_value_type_set_regex(String typeLabel, AttributeType.ValueType valueType, String regex) {
         if (!valueType.equals(AttributeType.ValueType.STRING)) fail();
         AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        attributeType.asString().setRegex(regex);
+        attributeType.asString().setRegex(Pattern.compile(regex));
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get regex: {}")

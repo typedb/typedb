@@ -42,7 +42,6 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":steps",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

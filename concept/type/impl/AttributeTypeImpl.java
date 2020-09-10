@@ -759,11 +759,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.String asString() { return this; }
 
         @Override
-        public void setRegex(java.lang.String regex) {
+        public void setRegex(Pattern regex) {
             if (regex != null) {
-                Pattern pattern = Pattern.compile(regex);
                 getInstances().parallel().forEach(attribute -> {
-                    Matcher matcher = pattern.matcher(attribute.getValue());
+                    Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {
                         throw exception(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.message(getLabel(), regex, attribute.getValue()));
                     }
@@ -778,13 +777,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public java.lang.String getRegex() {
+        public Pattern getRegex() {
             return vertex.regex();
-        }
-
-        private Pattern regexPattern() {
-            if (vertex.regex() == null || regexPattern != null) return regexPattern;
-            return (regexPattern = Pattern.compile(vertex.regex()));
         }
 
         @Override
@@ -795,7 +789,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateIsCommitedAndNotAbstract(Attribute.class);
-            if (vertex.regex() != null && !regexPattern().matcher(value).matches()) {
+            if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(getLabel(), value, getRegex()));
             }
             if (value.length() > Encoding.STRING_MAX_LENGTH) {
@@ -876,7 +870,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setRegex(java.lang.String regex) {
+            public void setRegex(Pattern regex) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 

@@ -45,7 +45,6 @@ java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":test",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

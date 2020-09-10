@@ -50,7 +50,6 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":concept",
-    ]
+    include = glob(["*"]),
+    license_type = "agpl",
 )

@@ -39,6 +39,14 @@ public class GraknException extends RuntimeException {
         super(getMessages(exceptions));
     }
 
+    public static GraknException of(ErrorMessage errorMessage) {
+        return new GraknException(errorMessage.message());
+    }
+
+    public static GraknException of(String error) {
+        return new GraknException(error);
+    }
+
     public static String getMessages(List<GraknException> exceptions) {
         StringBuilder messages = new StringBuilder();
         for (GraknException exception : exceptions) {

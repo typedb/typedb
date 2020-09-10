@@ -45,7 +45,7 @@ public interface Adjacency<
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
      * vertex.
      *
-     * @param encoding   type of the edge to filter by
+     * @param encoding type of the edge to filter by
      * @param adjacent vertex that the edge connects to
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
@@ -59,7 +59,7 @@ public interface Adjacency<
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param encoding   of the edge that will connect the owner to the adjacent vertex
+     * @param encoding of the edge that will connect the owner to the adjacent vertex
      * @param adjacent the adjacent vertex
      */
     EDGE put(EDGE_ENCODING encoding, VERTEX adjacent);

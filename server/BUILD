@@ -130,7 +130,6 @@ deploy_artifact(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":server",
-    ]
+    include = glob(["*"]),
+    license_type = "agpl",
 )

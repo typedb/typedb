@@ -57,8 +57,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * Default constructor for {@code ThingEdgeImpl.Buffered}.
          *
          * @param encoding the edge {@code Encoding}
-         * @param from   the tail vertex
-         * @param to     the head vertex
+         * @param from     the tail vertex
+         * @param to       the head vertex
          */
         public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
             super(from.graph(), encoding);
@@ -71,7 +71,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Constructor for an optimised {@code ThingEdgeImpl.Buffered}.
          *
-         * @param encoding    the edge {@code Encoding}
+         * @param encoding  the edge {@code Encoding}
          * @param from      the tail vertex
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing

@@ -25,6 +25,7 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
 import java.util.Iterator;
+import java.util.regex.Pattern;
 
 public interface TypeVertex extends Vertex<
         VertexIID.Type,
@@ -69,7 +70,7 @@ public interface TypeVertex extends Vertex<
 
     TypeVertex valueType(Encoding.ValueType valueType);
 
-    String regex();
+    Pattern regex();
 
-    TypeVertex regex(String regex);
+    TypeVertex regex(Pattern regex);
 }

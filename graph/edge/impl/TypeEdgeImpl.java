@@ -58,9 +58,9 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
          *
-         * @param from   the tail vertex
+         * @param from     the tail vertex
          * @param encoding the edge {@code Encoding}
-         * @param to     the head vertex
+         * @param to       the head vertex
          */
         public Buffered(Encoding.Edge.Type encoding, TypeVertex from, TypeVertex to) {
             super(from.graph(), encoding);

@@ -45,6 +45,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -773,11 +774,11 @@ class ConceptRPC {
             }
 
             private void getRegex() {
-                final String regex = attributeType.asString().getRegex();
+                final Pattern regex = attributeType.asString().getRegex();
 
                 final ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                         .setAttributeTypeGetRegexRes(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
-                                                             .setRegex((regex != null) ? regex : "")).build();
+                                                             .setRegex((regex != null) ? regex.pattern() : "")).build();
 
                 responseSender.accept(transactionRes(response));
             }
@@ -786,7 +787,7 @@ class ConceptRPC {
                 if (regex.isEmpty()) {
                     attributeType.asString().setRegex(null);
                 } else {
-                    attributeType.asString().setRegex(regex);
+                    attributeType.asString().setRegex(Pattern.compile(regex));
                 }
                 responseSender.accept(null);
             }

@@ -23,30 +23,30 @@ import grakn.core.common.parameters.Context;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
-import graql.lang.pattern.variable.BoundVariable;
+import grakn.core.query.pattern.Conjunction;
+import grakn.core.query.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.query.GraqlDelete;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
-public class DeleteWriter {
+public class Deleter {
 
     private static final String TRACE_PREFIX = "deletewriter.";
     private final Concepts conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
+    private final Conjunction<Variable> variables;
     private final Map<Reference, Thing> deleted;
-    private Map<Reference, BoundVariable<?>> variables;
 
-    public DeleteWriter(Concepts conceptMgr, GraqlDelete query, Context.Query context, ConceptMap existing) {
+    public Deleter(Concepts conceptMgr, Conjunction<Variable> variables, Context.Query context, ConceptMap existing) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.context = context;
             this.existing = existing;
-            this.variables = query.asGraph();
+            this.variables = variables;
             this.deleted = new HashMap<>();
         }
     }

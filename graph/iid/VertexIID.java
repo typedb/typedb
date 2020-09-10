@@ -19,8 +19,8 @@
 package grakn.core.graph.iid;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.util.KeyGenerator;
 
 import static grakn.core.common.collection.Bytes.DATETIME_SIZE;
 import static grakn.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -88,7 +88,7 @@ public abstract class VertexIID extends IID {
          * Generate an IID for a {@code TypeVertex} for a given {@code Encoding}
          *
          * @param keyGenerator to generate the IID for a {@code TypeVertex}
-         * @param encoding       of the {@code TypeVertex} in which the IID will be used for
+         * @param encoding     of the {@code TypeVertex} in which the IID will be used for
          * @return a byte array representing a new IID for a {@code TypeVertex}
          */
         public static Type generate(KeyGenerator keyGenerator, Encoding.Vertex.Type encoding) {

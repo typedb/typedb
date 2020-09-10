@@ -49,9 +49,8 @@ release_validate_deps(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":grakn",
-    ]
+    include = glob(["*"]),
+    license_type = "agpl",
 )
 
 # CI targets that are not declared in any BUILD file, but are called externally

@@ -36,6 +36,7 @@ java_library(
         # Internal package dependencies
         "//common:common",
         "//concept:concept",
+        "//query/pattern:pattern",
 
         # External dependencies from @graknlabs
         "@graknlabs_common//:common",
@@ -53,7 +54,6 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":query",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

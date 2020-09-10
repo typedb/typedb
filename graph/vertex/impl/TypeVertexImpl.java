@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
@@ -59,7 +60,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     protected String scope;
     protected Boolean isAbstract; // needs to be declared as the Boolean class
     protected Encoding.ValueType valueType;
-    protected String regex;
+    protected Pattern regex;
 
 
     TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
@@ -217,12 +218,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public String regex() {
+        public Pattern regex() {
             return regex;
         }
 
         @Override
-        public TypeVertexImpl regex(String regex) {
+        public TypeVertexImpl regex(Pattern regex) {
             this.regex = regex;
             this.setModified();
             return this;
@@ -255,7 +256,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             if (scope != null) commitPropertyScope();
             if (isAbstract != null && isAbstract) commitPropertyAbstract();
             if (valueType != null) commitPropertyValueType();
-            if (regex != null && !regex.isEmpty()) commitPropertyRegex();
+            if (regex != null) commitPropertyRegex();
         }
 
         private void commitPropertyScope() {
@@ -275,7 +276,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitPropertyRegex() {
-            graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.getBytes());
+            graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
         }
     }
 
@@ -393,18 +394,18 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public String regex() {
+        public Pattern regex() {
             if (regexLookedUp) return regex;
             byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
-            if (val != null) regex = new String(val);
+            if (val != null) regex = Pattern.compile(new String(val));
             regexLookedUp = true;
             return regex;
         }
 
         @Override
-        public TypeVertexImpl regex(String regex) {
-            if (regex == null || regex.isEmpty()) graph.storage().delete(join(iid.bytes(), REGEX.infix().bytes()));
-            else graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.getBytes());
+        public TypeVertexImpl regex(Pattern regex) {
+            if (regex == null) graph.storage().delete(join(iid.bytes(), REGEX.infix().bytes()));
+            else graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
             this.regex = regex;
             this.setModified();
             return this;
