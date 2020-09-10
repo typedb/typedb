@@ -20,6 +20,8 @@ package grakn.core.graph.vertex.impl;
 
 import grakn.core.graph.iid.VertexIID;
 
+import static grakn.common.util.Objects.className;
+
 public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     VERTEX_IID iid;
@@ -43,7 +45,7 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName()
+        return className(this.getClass())
                 .substring(this.getClass().getPackage().getName().length() + 1) + ": " +
                 iid.toString();
     }

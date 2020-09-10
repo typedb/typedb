@@ -31,6 +31,7 @@ import grakn.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_VERTEX_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 
@@ -131,27 +132,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(Boolean.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(className(Boolean.class)));
     }
 
     @Override
     public AttributeVertexImpl.Long asLong() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(Long.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(className(Long.class)));
     }
 
     @Override
     public AttributeVertexImpl.Double asDouble() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(Double.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(className(Double.class)));
     }
 
     @Override
     public AttributeVertexImpl.String asString() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(String.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(className(String.class)));
     }
 
     @Override
     public AttributeVertexImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(DateTime.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(className(DateTime.class)));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {

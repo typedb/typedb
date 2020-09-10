@@ -38,6 +38,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
@@ -176,28 +177,31 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
+    public AttributeTypeImpl asAttributeType() { return this; }
+
+    @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        throw exception(INVALID_TYPE_CASTING.message(AttributeType.Boolean.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.Boolean.class)));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        throw exception(INVALID_TYPE_CASTING.message(AttributeType.Long.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.Long.class)));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        throw exception(INVALID_TYPE_CASTING.message(AttributeType.Double.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.Double.class)));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        throw exception(INVALID_TYPE_CASTING.message(AttributeType.String.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        throw exception(INVALID_TYPE_CASTING.message(AttributeType.DateTime.class.getCanonicalName()));
+        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.DateTime.class)));
     }
 
     @Override
@@ -372,7 +376,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
-            validateIsCommitedAndNotAbstract(Attribute.class);
+            validateIsCommittedAndNotAbstract(Attribute.class);
             AttributeVertex<java.lang.Boolean> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
@@ -504,7 +508,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
-            validateIsCommitedAndNotAbstract(Attribute.class);
+            validateIsCommittedAndNotAbstract(Attribute.class);
             AttributeVertex<java.lang.Long> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
@@ -636,7 +640,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
-            validateIsCommitedAndNotAbstract(Attribute.class);
+            validateIsCommittedAndNotAbstract(Attribute.class);
             AttributeVertex<java.lang.Double> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
@@ -788,7 +792,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.String put(java.lang.String value, boolean isInferred) {
-            validateIsCommitedAndNotAbstract(Attribute.class);
+            validateIsCommittedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(getLabel(), value, getRegex()));
             }
@@ -941,7 +945,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
-            validateIsCommitedAndNotAbstract(Attribute.class);
+            validateIsCommittedAndNotAbstract(Attribute.class);
             AttributeVertex<LocalDateTime> attVertex = vertex.graph().thing().put(vertex, value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);

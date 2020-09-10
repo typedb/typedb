@@ -28,6 +28,9 @@ java_library(
     name = "graph",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
+        # Grakn Labs Dependencies
+        "@graknlabs_common//:common",
+
         # Internal Package Dependencies
         "//common:common",
 

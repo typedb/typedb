@@ -28,14 +28,6 @@ import java.util.stream.Stream;
 public interface Relation extends Thing {
 
     /**
-     * Cast the {@code Concept} down to {@code Relation}
-     *
-     * @return this {@code Relation}
-     */
-    @Override
-    default Relation asRelation() { return this; }
-
-    /**
      * Get the immediate {@code RelationType} in which this this {@code Relation} is an instance of.
      *
      * @return the {@code RelationType} of this {@code Relation}
@@ -52,5 +44,4 @@ public interface Relation extends Thing {
     Stream<? extends Thing> getPlayers(RoleType... roleTypes);
 
     Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();
-
 }

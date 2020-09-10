@@ -21,6 +21,8 @@ package grakn.core.concept.thing.impl;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
@@ -39,7 +41,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ATTRIBUTE_UNOWNED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
@@ -199,6 +203,24 @@ public abstract class ThingImpl implements Thing {
         }
     }
 
+    @Override
+    public ThingImpl asThing() { return this; }
+
+    @Override
+    public EntityImpl asEntity() {
+        throw exception(INVALID_THING_CASTING.message(className(Entity.class)));
+    }
+
+    @Override
+    public AttributeImpl<?> asAttribute() {
+        throw exception(INVALID_THING_CASTING.message(className(Attribute.class)));
+    }
+
+    @Override
+    public RelationImpl asRelation() {
+        throw exception(INVALID_THING_CASTING.message(className(Relation.class)));
+    }
+
     private String printTypeSet(Set<? extends Type> types) {
         Type[] array = types.toArray(new Type[0]);
         StringBuilder string = new StringBuilder();
@@ -216,7 +238,7 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName() + " {" + vertex.toString() + "}";
+        return className(this.getClass()) + " {" + vertex.toString() + "}";
     }
 
     @Override

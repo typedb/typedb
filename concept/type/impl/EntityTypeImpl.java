@@ -101,10 +101,13 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityImpl create(boolean isInferred) {
-        validateIsCommitedAndNotAbstract(Entity.class);
+        validateIsCommittedAndNotAbstract(Entity.class);
         ThingVertex instance = vertex.graph().thing().create(vertex.iid(), isInferred);
         return EntityImpl.of(instance);
     }
+
+    @Override
+    public EntityTypeImpl asEntityType() { return this; }
 
     private static class Root extends EntityTypeImpl {
 

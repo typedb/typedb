@@ -25,9 +25,6 @@ import java.util.stream.Stream;
 public interface ThingType extends Type {
 
     @Override
-    default ThingType asThingType() { return this; }
-
-    @Override
     ThingType getSupertype();
 
     @Override

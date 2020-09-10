@@ -30,9 +30,6 @@ import java.util.stream.Stream;
 public interface AttributeType extends ThingType {
 
     @Override
-    default AttributeType asAttributeType() { return this; }
-
-    @Override
     AttributeType getSupertype();
 
     @Override

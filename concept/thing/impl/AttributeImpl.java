@@ -29,6 +29,7 @@ import grakn.core.graph.vertex.AttributeVertex;
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static grakn.core.common.iterator.Iterators.stream;
 
@@ -84,28 +85,33 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
+    public AttributeImpl<?> asAttribute() {
+        return this;
+    }
+
+    @Override
     public AttributeImpl.Boolean asBoolean() {
-        throw exception(INVALID_THING_CASTING.message(Attribute.Boolean.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(className(Attribute.Boolean.class)));
     }
 
     @Override
     public AttributeImpl.Long asLong() {
-        throw exception(INVALID_THING_CASTING.message(Attribute.Long.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(className(Attribute.Long.class)));
     }
 
     @Override
     public AttributeImpl.Double asDouble() {
-        throw exception(INVALID_THING_CASTING.message(Attribute.Double.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(className(Attribute.Double.class)));
     }
 
     @Override
     public AttributeImpl.String asString() {
-        throw exception(INVALID_THING_CASTING.message(Attribute.Long.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(className(Attribute.String.class)));
     }
 
     @Override
     public AttributeImpl.DateTime asDateTime() {
-        throw exception(INVALID_THING_CASTING.message(Attribute.DateTime.class.getCanonicalName()));
+        throw exception(INVALID_THING_CASTING.message(className(Attribute.DateTime.class)));
     }
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {

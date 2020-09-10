@@ -124,4 +124,9 @@ public class RelationImpl extends ThingImpl implements Relation {
             throw exception(RELATION_PLAYER_MISSING.message(getType().getLabel()));
         }
     }
+
+    @Override
+    public RelationImpl asRelation() {
+        return this;
+    }
 }

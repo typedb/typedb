@@ -23,9 +23,6 @@ import java.util.stream.Stream;
 public interface RoleType extends Type {
 
     @Override
-    default RoleType asRoleType() { return this; }
-
-    @Override
     RoleType getSupertype();
 
     @Override

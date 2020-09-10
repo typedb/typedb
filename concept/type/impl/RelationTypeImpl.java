@@ -233,10 +233,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationImpl create(boolean isInferred) {
-        validateIsCommitedAndNotAbstract(Relation.class);
+        validateIsCommittedAndNotAbstract(Relation.class);
         ThingVertex instance = vertex.graph().thing().create(vertex.iid(), isInferred);
         return RelationImpl.of(instance);
     }
+
+    @Override
+    public RelationTypeImpl asRelationType() { return this; }
 
     public static class Root extends RelationTypeImpl {
 

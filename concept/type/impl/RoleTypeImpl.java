@@ -121,12 +121,15 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return super.validate();
     }
 
+    @Override
+    public RoleTypeImpl asRoleType() { return this; }
+
     public RoleImpl create() {
         return create(false);
     }
 
     public RoleImpl create(boolean isInferred) {
-        validateIsCommitedAndNotAbstract(Entity.class);
+        validateIsCommittedAndNotAbstract(Entity.class);
         ThingVertex instance = vertex.graph().thing().create(vertex.iid(), isInferred);
         return RoleImpl.of(instance);
     }

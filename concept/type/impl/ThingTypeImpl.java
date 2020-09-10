@@ -307,6 +307,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return exceptions;
     }
 
+    @Override
+    public ThingTypeImpl asThingType() { return this; }
+
     private List<GraknException> exceptions_ownsAbstractAttType() {
         return getOwns().filter(TypeImpl::isAbstract)
                 .map(attType -> new GraknException(OWNS_ABSTRACT_ATT_TYPE.message(getLabel(), attType.getLabel())))

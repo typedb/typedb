@@ -33,6 +33,7 @@ import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_VERTEX_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 
@@ -122,7 +123,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl asAttribute() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(AttributeVertex.class.getCanonicalName()));
+        throw new GraknException(INVALID_VERTEX_CASTING.message(className(AttributeVertex.class)));
     }
 
     void deleteEdges() {

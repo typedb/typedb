@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.collection.Bytes.DATETIME_SIZE;
 import static grakn.core.common.collection.Bytes.DOUBLE_SIZE;
 import static grakn.core.common.collection.Bytes.LONG_SIZE;
@@ -160,7 +161,7 @@ public abstract class VertexIID extends IID {
 
         public VertexIID.Attribute<?> asAttribute() {
             if (!encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
-                throw new GraknException(INVALID_IID_CASTING.message(VertexIID.Attribute.class.getCanonicalName()));
+                throw new GraknException(INVALID_IID_CASTING.message(className(VertexIID.Attribute.class)));
             }
 
             return VertexIID.Attribute.of(bytes);
@@ -243,23 +244,23 @@ public abstract class VertexIID extends IID {
         }
 
         public VertexIID.Attribute.Boolean asBoolean() {
-            throw new GraknException(INVALID_IID_CASTING.message(Boolean.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(className(Boolean.class)));
         }
 
         public VertexIID.Attribute.Long asLong() {
-            throw new GraknException(INVALID_IID_CASTING.message(Long.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(className(Long.class)));
         }
 
         public VertexIID.Attribute.Double asDouble() {
-            throw new GraknException(INVALID_IID_CASTING.message(Double.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(className(Double.class)));
         }
 
         public VertexIID.Attribute.String asString() {
-            throw new GraknException(INVALID_IID_CASTING.message(String.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(className(String.class)));
         }
 
         public VertexIID.Attribute.DateTime asDateTime() {
-            throw new GraknException(INVALID_IID_CASTING.message(DateTime.class.getCanonicalName()));
+            throw new GraknException(INVALID_IID_CASTING.message(className(DateTime.class)));
         }
 
         @Override

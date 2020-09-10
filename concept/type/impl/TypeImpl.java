@@ -20,6 +20,11 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.TypeGraph;
 import grakn.core.graph.util.Encoding;
@@ -33,8 +38,10 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
 import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.loop;
@@ -130,7 +137,35 @@ public abstract class TypeImpl implements Type {
         return new ArrayList<>();
     }
 
-    void validateIsCommitedAndNotAbstract(Class<?> instanceClass) {
+    @Override
+    public TypeImpl asType() { return this; }
+
+    @Override
+    public ThingTypeImpl asThingType() {
+        throw exception(INVALID_TYPE_CASTING.message(className(ThingType.class)));
+    }
+
+    @Override
+    public EntityTypeImpl asEntityType() {
+        throw exception(INVALID_TYPE_CASTING.message(className(EntityType.class)));
+    }
+
+    @Override
+    public AttributeTypeImpl asAttributeType() {
+        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.class)));
+    }
+
+    @Override
+    public RelationTypeImpl asRelationType() {
+        throw exception(INVALID_TYPE_CASTING.message(className(RelationType.class)));
+    }
+
+    @Override
+    public RoleTypeImpl asRoleType() {
+        throw exception(INVALID_TYPE_CASTING.message(className(RoleType.class)));
+    }
+
+    void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
             throw exception(SESSION_SCHEMA_VIOLATION.message());
         } else if (isAbstract()) {
@@ -145,7 +180,7 @@ public abstract class TypeImpl implements Type {
 
     @Override
     public String toString() {
-        return this.getClass().getCanonicalName() + " {" + vertex.toString() + "}";
+        return className(this.getClass()) + " {" + vertex.toString() + "}";
     }
 
     @Override

@@ -24,12 +24,10 @@ import grakn.core.concept.Concept;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 
 public interface Type extends Concept {
-
-    @Override
-    default Type asType() { return this; }
 
     Long count();
 
@@ -49,23 +47,13 @@ public interface Type extends Concept {
 
     List<GraknException> validate();
 
-    default ThingType asThingType() {
-        throw exception(INVALID_TYPE_CASTING.message(ThingType.class.getCanonicalName()));
-    }
+    ThingType asThingType();
 
-    default EntityType asEntityType() {
-        throw exception(INVALID_TYPE_CASTING.message(EntityType.class.getCanonicalName()));
-    }
+    EntityType asEntityType();
 
-    default AttributeType asAttributeType() {
-        throw exception(INVALID_TYPE_CASTING.message(AttributeType.class.getCanonicalName()));
-    }
+    AttributeType asAttributeType();
 
-    default RelationType asRelationType() {
-        throw exception(INVALID_TYPE_CASTING.message(RelationType.class.getCanonicalName()));
-    }
+    RelationType asRelationType();
 
-    default RoleType asRoleType() {
-        throw exception(INVALID_TYPE_CASTING.message(RoleType.class.getCanonicalName()));
-    }
+    RoleType asRoleType();
 }

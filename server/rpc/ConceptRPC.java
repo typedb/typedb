@@ -86,13 +86,8 @@ class ConceptRPC {
                 con.asRelation().removePlayer(req.getRelationRemovePlayerReq());
                 return;
 
-            // Attribute Methods
-            case ATTRIBUTE_GETVALUE_REQ:
-                con.asAttribute().getValue();
-                return;
-
-            default:
             case REQ_NOT_SET:
+            default:
                 throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
@@ -954,13 +949,6 @@ class ConceptRPC {
 //         */
         private class AttributeHolder {
             private final Attribute attribute = ConceptHolder.this.concept.asThing().asAttribute();
-
-            private void getValue() {
-                final ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
-                        .setAttributeGetValueRes(ConceptProto.Attribute.GetValue.Res.newBuilder()
-                                                         .setValue(ResponseBuilder.Concept.attributeValue(attribute))).build();
-                responseSender.accept(transactionRes(response));
-            }
 
             private void getOwners(ConceptProto.Attribute.GetOwners.Iter.Req request) {
                 final Stream<? extends Thing> things;

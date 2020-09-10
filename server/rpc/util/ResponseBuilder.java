@@ -185,7 +185,7 @@ public class ResponseBuilder {
         public static ConceptProto.Thing thing(Thing thing) {
             final ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
-                    .setSchema(getSchema(thing));
+                    .setEncoding(getEncoding(thing));
 
             if (thing instanceof Attribute) {
                 final Attribute attribute = thing.asAttribute();
@@ -199,7 +199,7 @@ public class ResponseBuilder {
         public static ConceptProto.Type type(Type type) {
             final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel())
-                    .setSchema(getSchema(type));
+                    .setEncoding(getEncoding(type));
             if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
             if (type instanceof RoleType) builder.setScope(type.asRoleType().getScope());
             if (type.isRoot()) builder.setRoot(true);
@@ -231,31 +231,31 @@ public class ResponseBuilder {
             return builder.build();
         } */
 
-        private static ConceptProto.Thing.SCHEMA getSchema(Thing thing) {
+        private static ConceptProto.Thing.ENCODING getEncoding(Thing thing) {
             if (thing instanceof Entity) {
-                return ConceptProto.Thing.SCHEMA.ENTITY;
+                return ConceptProto.Thing.ENCODING.ENTITY;
             } else if (thing instanceof Relation) {
-                return ConceptProto.Thing.SCHEMA.RELATION;
+                return ConceptProto.Thing.ENCODING.RELATION;
             } else if (thing instanceof Attribute) {
-                return ConceptProto.Thing.SCHEMA.ATTRIBUTE;
+                return ConceptProto.Thing.ENCODING.ATTRIBUTE;
             } else {
                 throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
             }
         }
 
-        private static ConceptProto.Type.SCHEMA getSchema(Type type) {
+        private static ConceptProto.Type.ENCODING getEncoding(Type type) {
             if (type instanceof EntityType) {
-                return ConceptProto.Type.SCHEMA.ENTITY_TYPE;
+                return ConceptProto.Type.ENCODING.ENTITY_TYPE;
             } else if (type instanceof RelationType) {
-                return ConceptProto.Type.SCHEMA.RELATION_TYPE;
+                return ConceptProto.Type.ENCODING.RELATION_TYPE;
             } else if (type instanceof AttributeType) {
-                return ConceptProto.Type.SCHEMA.ATTRIBUTE_TYPE;
+                return ConceptProto.Type.ENCODING.ATTRIBUTE_TYPE;
             } else if (type instanceof ThingType) {
-                return ConceptProto.Type.SCHEMA.THING_TYPE;
+                return ConceptProto.Type.ENCODING.THING_TYPE;
             } else if (type instanceof RoleType) {
-                return ConceptProto.Type.SCHEMA.ROLE_TYPE;
+                return ConceptProto.Type.ENCODING.ROLE_TYPE;
 //            } else if (concept.isRule()) {
-//                return ConceptProto.Concept.SCHEMA.RULE;
+//                return ConceptProto.Concept.ENCODING.RULE;
             } else {
                 throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
             }

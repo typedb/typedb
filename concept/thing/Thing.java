@@ -25,17 +25,10 @@ import grakn.core.concept.type.ThingType;
 
 import java.util.stream.Stream;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 
 public interface Thing extends Concept {
-
-    /**
-     * Cast the {@code Concept} down to {@code Thing}.
-     *
-     * @return this {@code Thing}
-     */
-    @Override
-    default Thing asThing() { return this; }
 
     /**
      * Returns the {@code IID} of this {@code Thing} has hexadecimal string.
@@ -153,15 +146,9 @@ public interface Thing extends Concept {
      */
     void validate();
 
-    default Entity asEntity() {
-        throw exception(INVALID_THING_CASTING.message(Entity.class.getCanonicalName()));
-    }
+    Entity asEntity();
 
-    default Attribute asAttribute() {
-        throw exception(INVALID_THING_CASTING.message(Attribute.class.getCanonicalName()));
-    }
+    Attribute asAttribute();
 
-    default Relation asRelation() {
-        throw exception(INVALID_THING_CASTING.message(Relation.class.getCanonicalName()));
-    }
+    Relation asRelation();
 }
