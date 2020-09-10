@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2019 Grakn Labs
+# Copyright (C) 2020 Grakn Labs
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -17,8 +17,16 @@
 
 package(default_visibility = ["//visibility:public",])
 
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
 filegroup(
     name = "logback",
     srcs = ["logback.xml"],
     visibility = ["//visibility:public"]
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "agpl",
 )

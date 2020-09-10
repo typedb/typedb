@@ -16,6 +16,8 @@
 #
 
 package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
+
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 #java_library(
@@ -38,10 +40,9 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 #    ],
 #    visibility = ["//visibility:public"],
 #)
-#
-#checkstyle_test(
-#    name = "checkstyle",
-#    targets = [
-#        ":steps",
-#    ],
-#)
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "agpl",
+)
