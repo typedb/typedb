@@ -27,14 +27,14 @@ public class Graphs {
 
     private final Storage storage;
     private final KeyGenerator keyGenerator;
-    private final TypeGraph typeGraph;
-    private final ThingGraph thingGraph;
+    private final SchemaGraph schemaGraph;
+    private final DataGraph dataGraph;
 
     public Graphs(Storage storage) {
         this.storage = storage;
         keyGenerator = new KeyGenerator.Buffered();
-        typeGraph = new TypeGraph(this);
-        thingGraph = new ThingGraph(this);
+        schemaGraph = new SchemaGraph(this);
+        dataGraph = new DataGraph(this);
     }
 
     public Storage storage() {
@@ -45,12 +45,12 @@ public class Graphs {
         return keyGenerator;
     }
 
-    public TypeGraph type() {
-        return typeGraph;
+    public SchemaGraph schema() {
+        return schemaGraph;
     }
 
-    public ThingGraph thing() {
-        return thingGraph;
+    public DataGraph data() {
+        return dataGraph;
     }
 
     public Traversal traversal() {
@@ -58,16 +58,16 @@ public class Graphs {
     }
 
     public void clear() {
-        typeGraph.clear();
-        thingGraph.clear();
+        schemaGraph.clear();
+        dataGraph.clear();
     }
 
     public boolean isInitialised() {
-        return typeGraph.isInitialised();
+        return schemaGraph.isInitialised();
     }
 
     public void initialise() {
-        typeGraph.initialise();
+        schemaGraph.initialise();
     }
 
     public GraknException exception(String message) {

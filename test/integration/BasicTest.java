@@ -20,27 +20,36 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
+import grakn.core.concept.Concepts;
+import grakn.core.concept.data.Attribute;
+import grakn.core.concept.schema.AttributeType;
+import grakn.core.concept.schema.EntityType;
+import grakn.core.concept.schema.RelationType;
+import grakn.core.concept.schema.RoleType;
+import grakn.core.concept.schema.Rule;
+import grakn.core.concept.schema.ThingType;
+import grakn.core.concept.schema.Type;
 import grakn.core.rocks.RocksGrakn;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.concept.type.AttributeType.ValueType.BOOLEAN;
-import static grakn.core.concept.type.AttributeType.ValueType.DATETIME;
-import static grakn.core.concept.type.AttributeType.ValueType.DOUBLE;
-import static grakn.core.concept.type.AttributeType.ValueType.LONG;
-import static grakn.core.concept.type.AttributeType.ValueType.STRING;
+import static grakn.common.collection.Collections.set;
+import static grakn.core.concept.schema.AttributeType.ValueType.BOOLEAN;
+import static grakn.core.concept.schema.AttributeType.ValueType.DATETIME;
+import static grakn.core.concept.schema.AttributeType.ValueType.DOUBLE;
+import static grakn.core.concept.schema.AttributeType.ValueType.LONG;
+import static grakn.core.concept.schema.AttributeType.ValueType.STRING;
 import static grakn.core.test.integration.Util.assertNotNulls;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -300,6 +309,68 @@ public class BasicTest {
                     txn.concepts().putAttributeType("birth-date", DATETIME);
 
                     txn.commit();
+                }
+            }
+        }
+    }
+
+    // TODO: re-enable when writing rule edges is implemented
+    @Ignore
+    @Test
+    public void write_and_retrieve_rules() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    Concepts concepts = txn.concepts();
+
+                    EntityType person = concepts.putEntityType("person");
+                    AttributeType.String name = concepts.putAttributeType("name", STRING).asString();
+                    RelationType friendship = concepts.putRelationType("friendship");
+                    friendship.setRelates("friend");
+                    RoleType friend = friendship.getRelates("friend");
+                    concepts.putRule(
+                            "friendless-have-names",
+                            Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"),
+                            Graql.parsePattern("{$x has name \"i have no friends\";}"));
+                    txn.commit();
+                }
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    Concepts concepts = txn.concepts();
+                    EntityType person = concepts.getEntityType("person");
+                    AttributeType.String name = concepts.getAttributeType("name").asString();
+                    RelationType friendship = concepts.getRelationType("friendship");
+                    RoleType friend = friendship.getRelates("friend");
+
+                    Rule rule = concepts.getRule("friendless-have-names");
+                    Pattern when = rule.getWhen();
+                    Pattern then = rule.getThen();
+                    assertEquals(Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"), when);
+                    assertEquals(Graql.parsePattern("{$x has name \"i have no friends\";}"), then);
+
+                    // assert that the rule contains the correct types
+                    assertEquals(person, rule.positiveConditionTypes().findFirst().get());
+                    Set<Type> negated = set(friend, friendship);
+                    assertEquals(negated, rule.negativeConditionTypes().collect(Collectors.toSet()));
+                    assertEquals(name, rule.conclusionTypes().findFirst().get());
+
+                    // assert the dependencies are correct
+                    assertEquals(rule, person.getPositiveConditionRules().findFirst().get());
+                    assertEquals(0, friendship.getPositiveConditionRules().count());
+                    assertEquals(0, friend.getPositiveConditionRules().count());
+                    assertEquals(0, name.getPositiveConditionRules().count());
+
+                    assertEquals(0, person.getNegativeConditionRules().count());
+                    assertEquals(rule, friendship.getNegativeConditionRules().findFirst().get());
+                    assertEquals(rule, friend.getNegativeConditionRules().findFirst().get());
+                    assertEquals(0, name.getNegativeConditionRules().count());
+
+                    assertEquals(0, person.getConcludingRules().count());
+                    assertEquals(0, friendship.getConcludingRules().count());
+                    assertEquals(0, friend.getConcludingRules().count());
+                    assertEquals(rule, name.getConcludingRules().findFirst().get());
                 }
             }
         }

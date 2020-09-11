@@ -19,8 +19,7 @@
 package grakn.core.graph.vertex.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.ThingGraph;
-import grakn.core.graph.adjacency.Adjacency;
+import grakn.core.graph.DataGraph;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import grakn.core.graph.edge.Edge;
@@ -34,28 +33,28 @@ import grakn.core.graph.vertex.TypeVertex;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_VERTEX_CASTING;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
-    protected final ThingGraph graph;
+    protected final DataGraph graph;
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
     protected final AtomicBoolean isDeleted;
     protected boolean isInferred;
 
-    ThingVertexImpl(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+    ThingVertexImpl(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
         super(iid);
         this.graph = graph;
-        this.outs = newAdjacency(Adjacency.Direction.OUT);
-        this.ins = newAdjacency(Adjacency.Direction.IN);
+        this.outs = newAdjacency(Encoding.Direction.OUT);
+        this.ins = newAdjacency(Encoding.Direction.IN);
         this.isInferred = isInferred;
         this.isModified = false;
         this.isDeleted = new AtomicBoolean(false);
     }
 
-    public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
+    public static ThingVertexImpl of(DataGraph graph, VertexIID.Thing iid) {
         if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
             return AttributeVertexImpl.of(graph, iid.asAttribute());
         } else {
@@ -69,11 +68,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
      * @param direction the direction of the edges held in {@code ThingAdjacency}
      * @return the new {@code ThingAdjacency} class
      */
-    protected abstract ThingAdjacency newAdjacency(Adjacency.Direction direction);
+    protected abstract ThingAdjacency newAdjacency(Encoding.Direction direction);
 
 
     @Override
-    public ThingGraph graph() {
+    public DataGraph graph() {
         return graph;
     }
 
@@ -102,7 +101,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public TypeVertex type() {
-        return graph.type().convert(iid.type());
+        return graph.schema().convert(iid.type());
     }
 
     @Override
@@ -123,7 +122,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl asAttribute() {
-        throw new GraknException(INVALID_VERTEX_CASTING.message(className(AttributeVertex.class)));
+        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(AttributeVertex.class)));
     }
 
     void deleteEdges() {
@@ -151,14 +150,14 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     public static class Buffered extends ThingVertexImpl {
 
-        public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+        public Buffered(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
             this.type().buffer(this);
             setModified();
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
             return new ThingAdjacencyImpl.Buffered(this, direction);
         }
 
@@ -191,12 +190,12 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     public static class Persisted extends ThingVertexImpl {
 
-        public Persisted(ThingGraph graph, VertexIID.Thing iid) {
+        public Persisted(DataGraph graph, VertexIID.Thing iid) {
             super(graph, iid, false);
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Adjacency.Direction direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
             return new ThingAdjacencyImpl.Persisted(this, direction);
         }
 

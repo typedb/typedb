@@ -22,7 +22,7 @@ import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Thing;
+import grakn.core.concept.data.Thing;
 import grakn.core.query.pattern.Conjunction;
 import grakn.core.query.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;

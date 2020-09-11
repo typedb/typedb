@@ -146,9 +146,9 @@ class RocksTransaction implements Grakn.Transaction {
             try {
                 if (type.isRead()) {
                     throw new GraknException(ILLEGAL_COMMIT);
-                } else if (session.type().isData() && graph.type().isModified()) {
+                } else if (session.type().isData() && graph.schema().isModified()) {
                     throw new GraknException(SESSION_DATA_VIOLATION);
-                } else if (session.type().isSchema() && graph.thing().isModified()) {
+                } else if (session.type().isSchema() && graph.data().isModified()) {
                     throw new GraknException(SESSION_SCHEMA_VIOLATION);
                 }
 
@@ -157,10 +157,10 @@ class RocksTransaction implements Grakn.Transaction {
                 rocksTransaction.disableIndexing();
                 if (session.type().isSchema()) {
                     concepts.validateTypes();
-                    graph.type().commit();
+                    graph.schema().commit();
                 } else if (session.type().isData()) {
                     concepts.validateThings();
-                    graph.thing().commit();
+                    graph.data().commit();
                 } else {
                     assert false;
                 }

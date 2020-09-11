@@ -18,7 +18,7 @@
 
 package grakn.core.graph.edge.impl;
 
-import grakn.core.graph.ThingGraph;
+import grakn.core.graph.DataGraph;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.InfixIID;
@@ -35,11 +35,11 @@ import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
 
-    final ThingGraph graph;
+    final DataGraph graph;
     final Encoding.Edge.Thing encoding;
     final AtomicBoolean deleted;
 
-    ThingEdgeImpl(ThingGraph graph, Encoding.Edge.Thing encoding) {
+    ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding) {
         this.graph = graph;
         this.encoding = encoding;
         deleted = new AtomicBoolean(false);
@@ -207,7 +207,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(ThingGraph graph, EdgeIID.Thing iid) {
+        public Persisted(DataGraph graph, EdgeIID.Thing iid) {
             super(graph, iid.encoding());
 
             if (iid.isOutwards()) {

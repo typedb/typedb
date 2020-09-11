@@ -41,6 +41,7 @@ java_library(
         "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/pattern:pattern",
 
+
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
     ],

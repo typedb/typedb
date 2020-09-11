@@ -57,6 +57,25 @@ public class Encoding {
         }
     }
 
+    public enum Direction {
+        OUT(true),
+        IN(false);
+
+        private final boolean isOut;
+
+        Direction(boolean isOut) {
+            this.isOut = isOut;
+        }
+
+        public boolean isOut() {
+            return isOut;
+        }
+
+        public boolean isIn() {
+            return !isOut;
+        }
+    }
+
     public enum PrefixType {
         INDEX(0),
         TYPE(1),
@@ -77,18 +96,20 @@ public class Encoding {
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Prefix {
+        // leave large open range for future indices
         INDEX_TYPE(0, PrefixType.INDEX),
-        INDEX_ATTRIBUTE(5, PrefixType.INDEX),
-        VERTEX_THING_TYPE(10, PrefixType.TYPE),
-        VERTEX_ENTITY_TYPE(20, PrefixType.TYPE),
-        VERTEX_ATTRIBUTE_TYPE(30, PrefixType.TYPE),
-        VERTEX_RELATION_TYPE(40, PrefixType.TYPE),
-        VERTEX_ROLE_TYPE(50, PrefixType.TYPE),
-        VERTEX_ENTITY(60, PrefixType.THING),
-        VERTEX_ATTRIBUTE(70, PrefixType.THING),
-        VERTEX_RELATION(80, PrefixType.THING),
-        VERTEX_ROLE(90, PrefixType.THING),
-        VERTEX_RULE(100, PrefixType.RULE);
+        INDEX_RULE(10, PrefixType.INDEX),
+        INDEX_ATTRIBUTE(20, PrefixType.INDEX),
+        VERTEX_THING_TYPE(100, PrefixType.TYPE),
+        VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
+        VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
+        VERTEX_RELATION_TYPE(130, PrefixType.TYPE),
+        VERTEX_ROLE_TYPE(140, PrefixType.TYPE),
+        VERTEX_ENTITY(150, PrefixType.THING),
+        VERTEX_ATTRIBUTE(160, PrefixType.THING),
+        VERTEX_RELATION(170, PrefixType.THING),
+        VERTEX_ROLE(180, PrefixType.THING),
+        VERTEX_RULE(190, PrefixType.RULE);
 
         private final byte key;
         private final PrefixType type;
@@ -151,6 +172,8 @@ public class Encoding {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
+    // TODO I think we should compress these more
+    // TODO for example, group properties 1-50, schema edges 40-60, instance edges 60-80, reserved for future use 80-127
     public enum Infix {
         PROPERTY_LABEL(0, InfixType.PROPERTY),
         PROPERTY_SCOPE(1, InfixType.PROPERTY),
@@ -175,7 +198,13 @@ public class Encoding {
         EDGE_RELATES_OUT(80, InfixType.EDGE),
         EDGE_RELATES_IN(-80, InfixType.EDGE),
         EDGE_ROLEPLAYER_OUT(100, InfixType.EDGE, true),
-        EDGE_ROLEPLAYER_IN(-100, InfixType.EDGE, true);
+        EDGE_ROLEPLAYER_IN(-100, InfixType.EDGE, true),
+        EDGE_CONDITION_POSITIVE_OUT(120, InfixType.EDGE),
+        EDGE_CONDITION_POSITIVE_IN(-120, InfixType.EDGE),
+        EDGE_CONDITION_NEGATIVE_OUT(121, InfixType.EDGE),
+        EDGE_CONDITION_NEGATIVE_IN(-121, InfixType.EDGE),
+        EDGE_CONCLUSION_POSITIVE_OUT(122, InfixType.EDGE),
+        EDGE_CONCLUSION_POSITIVE_IN(-122, InfixType.EDGE);
 
         private final byte key;
         private final boolean isOptimisation;
@@ -225,6 +254,7 @@ public class Encoding {
 
     public enum Index {
         TYPE(Prefix.INDEX_TYPE),
+        RULE(Prefix.INDEX_RULE),
         ATTRIBUTE(Prefix.INDEX_ATTRIBUTE);
 
         private final Prefix prefix;
@@ -336,7 +366,9 @@ public class Encoding {
 
         Prefix prefix();
 
-        enum Rule implements Vertex {
+        interface Schema extends Vertex {}
+
+        enum Rule implements Schema {
             RULE(Prefix.VERTEX_RULE);
 
             private final Prefix prefix;
@@ -351,7 +383,7 @@ public class Encoding {
             }
         }
 
-        enum Type implements Vertex {
+        enum Type implements Schema {
             THING_TYPE(Prefix.VERTEX_THING_TYPE, Root.THING, null),
             ENTITY_TYPE(Prefix.VERTEX_ENTITY_TYPE, Root.ENTITY, Thing.ENTITY),
             ATTRIBUTE_TYPE(Prefix.VERTEX_ATTRIBUTE_TYPE, Root.ATTRIBUTE, Thing.ATTRIBUTE),
@@ -487,7 +519,26 @@ public class Encoding {
 
         boolean isOptimisation();
 
-        enum Type implements Edge {
+        interface Schema extends Edge {
+
+            // TODO: This is inelegant and suboptimal.
+            //       Once we fix the byte ranges of Infixes, we can determine which range if belongs in first.
+            static Schema of(byte infix) {
+                for (Type t : Type.values()) {
+                    if (t.out.key == infix || t.in.key == infix) {
+                        return t;
+                    }
+                }
+                for (Rule t : Rule.values()) {
+                    if (t.out.key == infix || t.in.key == infix) {
+                        return t;
+                    }
+                }
+                throw new GraknException(UNRECOGNISED_VALUE);
+            }
+        }
+
+        enum Type implements Schema {
             SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
             OWNS(Infix.EDGE_OWNS_OUT, Infix.EDGE_OWNS_IN),
             OWNS_KEY(Infix.EDGE_OWNS_KEY_OUT, Infix.EDGE_OWNS_KEY_IN),
@@ -504,6 +555,44 @@ public class Encoding {
 
             public static Type of(byte infix) {
                 for (Type t : Type.values()) {
+                    if (t.out.key == infix || t.in.key == infix) {
+                        return t;
+                    }
+                }
+                throw new GraknException(UNRECOGNISED_VALUE);
+            }
+
+            @Override
+            public Infix out() {
+                return out;
+            }
+
+            @Override
+            public Infix in() {
+                return in;
+            }
+
+            @Override
+            public boolean isOptimisation() {
+                return false;
+            }
+        }
+
+        enum Rule implements Schema {
+            CONDITION_POSITIVE(Infix.EDGE_CONDITION_POSITIVE_OUT, Infix.EDGE_CONDITION_POSITIVE_IN),
+            CONDITION_NEGATIVE(Infix.EDGE_CONDITION_NEGATIVE_OUT, Infix.EDGE_CONDITION_NEGATIVE_IN),
+            CONCLUSION(Infix.EDGE_CONCLUSION_POSITIVE_OUT, Infix.EDGE_CONCLUSION_POSITIVE_IN);
+
+            private final Infix out;
+            private final Infix in;
+
+            Rule(Infix out, Infix in) {
+                this.out = out;
+                this.in = in;
+            }
+
+            public static Rule of(byte infix) {
+                for (Rule t : Rule.values()) {
                     if (t.out.key == infix || t.in.key == infix) {
                         return t;
                     }

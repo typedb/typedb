@@ -20,62 +20,53 @@ build:
     filter:
       owner: graknlabs
       branch: master
-    job:
-      build-analysis:
-        machine: graknlabs-ubuntu-20.04
-        script: |
-          SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-            --project-key=graknlabs_grakn_core_2 \
-            --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
+    build-analysis:
+      machine: graknlabs-ubuntu-20.04
+      script: |
+        SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
+          bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
+          --project-key=graknlabs_grakn_core_2 \
+          --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
   correctness:
-    jobs:
-      build:
-        machine: graknlabs-ubuntu-20.04
-        script: |
-          bazel build --config=rbe //... --test_output=errors
-          bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
-          bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
-      build-dependency:
-        machine: graknlabs-ubuntu-20.04
-        script: |
-          dependencies/maven/update.sh
-          git diff --exit-code dependencies/maven/artifacts.snapshot
-          bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
-      test-integration:
-        machine: graknlabs-ubuntu-20.04
-        script: |
-          bazel test --config=rbe //test/integration:test-basic --test_output=errors
-          bazel test --config=rbe //test/integration:test-query --test_output=errors
-      test-behaviour:
-        machine: graknlabs-ubuntu-20.04
-        script: |
-          bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
-          bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
-      deploy-artifact-snapshot:
-        machine: graknlabs-ubuntu-20.04
-        filter:
-          owner: graknlabs
-          branch: master
-        script: |
-          export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
-          bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
-    execution:
-      - build
-      - build-dependency
-      - test-integration
-      - test-behaviour
-      - deploy-artifact-snapshot:
-          depends: [build, build-dependency, test-behaviour]
+    build:
+      machine: graknlabs-ubuntu-20.04
+      script: |
+        bazel build --config=rbe //... --test_output=errors
+        bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+        bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
+    build-dependency:
+      machine: graknlabs-ubuntu-20.04
+      script: |
+        dependencies/maven/update.sh
+        git diff --exit-code dependencies/maven/artifacts.snapshot
+        bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
+    test-integration:
+      machine: graknlabs-ubuntu-20.04
+      script: |
+        bazel test --config=rbe //test/integration:test-basic --test_output=errors
+        bazel test --config=rbe //test/integration:test-query --test_output=errors
+    test-behaviour:
+      machine: graknlabs-ubuntu-20.04
+      script: |
+        bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
+        bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
+    deploy-artifact-snapshot:
+      machine: graknlabs-ubuntu-20.04
+      filter:
+        owner: graknlabs
+        branch: master
+      dependencies: [build, build-dependency, test-behaviour]
+      script: |
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
 
 release:
   filter:
     owner: graknlabs
     branch: master
   validation:
-    job:
-      validate-dependencies:
-        machine: graknlabs-ubuntu-20.04
-        script: bazel test //:release-validate-deps --test_output=streamed
+    validate-dependencies:
+      machine: graknlabs-ubuntu-20.04
+      script: bazel test //:release-validate-deps --test_output=streamed

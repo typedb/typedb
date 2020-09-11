@@ -14,53 +14,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
+ *
  */
 
 package grakn.core.graph.vertex;
 
-import grakn.core.graph.TypeGraph;
-import grakn.core.graph.adjacency.TypeAdjacency;
-import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-public interface TypeVertex extends Vertex<
-        VertexIID.Type,
-        Encoding.Vertex.Type, TypeVertex,
-        Encoding.Edge.Type, TypeEdge> {
+public interface TypeVertex extends SchemaVertex<VertexIID.Type, Encoding.Vertex.Type> {
 
-    /**
-     * Get the {@code Graph} containing all {@code TypeVertex}
-     *
-     * @return the {@code Graph} containing all {@code TypeVertex}
-     */
-    @Override
-    TypeGraph graph();
-
-    @Override
-    TypeAdjacency outs();
-
-    @Override
-    TypeAdjacency ins();
+    Iterator<? extends ThingVertex> instances();
 
     void buffer(ThingVertex thingVertex);
 
     void unbuffer(ThingVertex thingVertex);
 
-    Iterator<? extends ThingVertex> instances();
-
-    String label();
-
     String scope();
 
     String scopedLabel();
 
-    TypeVertex label(String label);
-
-    TypeVertex scope(String scope);
+    void scope(String scope);
 
     boolean isAbstract();
 

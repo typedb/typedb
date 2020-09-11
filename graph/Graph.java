@@ -14,29 +14,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
+ *
  */
 
 package grakn.core.graph;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Storage;
-import grakn.core.graph.vertex.Vertex;
 
-import java.util.stream.Stream;
-
-public interface Graph<VERTEX_IID extends VertexIID,
-        VERTEX extends Vertex<VERTEX_IID, ?, VERTEX, ?, ?>> {
+public interface Graph {
 
     Storage storage();
-
-    Stream<VERTEX> vertices();
-
-    VERTEX get(VERTEX_IID iid);
-
-    VERTEX convert(VERTEX_IID iid);
-
-    void delete(VERTEX vertex);
 
     void setModified();
 
@@ -46,5 +34,5 @@ public interface Graph<VERTEX_IID extends VertexIID,
 
     void clear();
 
-    GraknException exception(String errorMessage);
+    GraknException exception(String message);
 }

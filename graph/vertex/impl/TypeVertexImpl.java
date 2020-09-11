@@ -19,11 +19,9 @@
 package grakn.core.graph.vertex.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.TypeGraph;
-import grakn.core.graph.adjacency.Adjacency;
-import grakn.core.graph.adjacency.TypeAdjacency;
-import grakn.core.graph.adjacency.impl.TypeAdjacencyImpl;
-import grakn.core.graph.edge.TypeEdge;
+import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.adjacency.SchemaAdjacency;
+import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
@@ -49,71 +47,24 @@ import static grakn.core.graph.util.Encoding.Property.REGEX;
 import static grakn.core.graph.util.Encoding.Property.SCOPE;
 import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
 
-public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
+public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, Encoding.Vertex.Type> implements TypeVertex {
 
-    protected final TypeGraph graph;
-    protected final TypeAdjacency outs;
-    protected final TypeAdjacency ins;
-    protected final AtomicBoolean isDeleted;
-
-    protected String label;
     protected String scope;
     protected Boolean isAbstract; // needs to be declared as the Boolean class
     protected Encoding.ValueType valueType;
     protected Pattern regex;
 
-
-    TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
-        super(iid);
-        this.graph = graph;
-        this.label = label;
+    TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        super(graph, iid, label);
+        assert iid.isType();
         this.scope = scope;
-        this.outs = newAdjacency(Adjacency.Direction.OUT);
-        this.ins = newAdjacency(Adjacency.Direction.IN);
-        this.isDeleted = new AtomicBoolean(false);
     }
 
-    /**
-     * Instantiates a new {@code TypeAdjacency} class
-     *
-     * @param direction the direction of the edges held in {@code TypeAdjacency}
-     * @return the new {@code TypeAdjacency} class
-     */
-    protected abstract TypeAdjacency newAdjacency(Adjacency.Direction direction);
-
-
-    @Override
-    public TypeGraph graph() {
-        return graph;
-    }
-
-    @Override
     public Encoding.Vertex.Type encoding() {
         return iid.encoding();
     }
 
-    @Override
-    public TypeAdjacency outs() {
-        return outs;
-    }
-
-    @Override
-    public TypeAdjacency ins() {
-        return ins;
-    }
-
-    @Override
-    public void setModified() {
-        if (!isModified) {
-            isModified = true;
-            graph.setModified();
-        }
-    }
-
-    @Override
-    public String label() {
-        return label;
-    }
+    public TypeVertex asType() { return this; }
 
     @Override
     public String scope() {
@@ -125,38 +76,23 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         return Encoding.Vertex.Type.scopedLabel(label, scope);
     }
 
-    @Override
-    public boolean isDeleted() {
-        return isDeleted.get();
-    }
-
-    void deleteEdges() {
-        ins.deleteAll();
-        outs.deleteAll();
-    }
-
     void deleteVertexFromGraph() {
         graph.delete(this);
-    }
-
-    void commitEdges() {
-        outs.forEach(TypeEdge::commit);
-        ins.forEach(TypeEdge::commit);
     }
 
     public static class Buffered extends TypeVertexImpl {
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        public Buffered(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
-            return new TypeAdjacencyImpl.Buffered(this, direction);
+        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+            return new SchemaAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
@@ -175,17 +111,15 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public TypeVertexImpl label(String label) {
+        public void label(String label) {
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
-            return this;
         }
 
         @Override
-        public TypeVertexImpl scope(String scope) {
+        public void scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
-            return this;
         }
 
         @Override
@@ -285,13 +219,13 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         private final Set<ThingVertex> instances;
         private boolean regexLookedUp;
 
-        public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             instances = ConcurrentHashMap.newKeySet();
             regexLookedUp = false;
         }
 
-        public Persisted(TypeGraph graph, VertexIID.Type iid) {
+        public Persisted(SchemaGraph graph, VertexIID.Type iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   getScope(graph, iid));
@@ -299,15 +233,15 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Nullable
-        private static String getScope(TypeGraph graph, VertexIID.Type iid) {
+        private static String getScope(SchemaGraph graph, VertexIID.Type iid) {
             byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Adjacency.Direction direction) {
-            return new TypeAdjacencyImpl.Persisted(this, direction);
+        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+            return new SchemaAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override
@@ -324,15 +258,10 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public Iterator<ThingVertex> instances() {
             Iterator<ThingVertex> storageIterator = graph.storage().iterate(
                     join(iid.bytes(), Encoding.Edge.ISA.in().bytes()),
-                    (key, value) -> graph.thing().convert(EdgeIID.InwardsISA.of(key).end())
+                    (key, value) -> graph.data().convert(EdgeIID.InwardsISA.of(key).end())
             );
             if (instances.isEmpty()) return storageIterator;
             else return distinct(link(instances.iterator(), storageIterator));
-        }
-
-        @Override
-        public void iid(VertexIID.Type iid) {
-            throw new GraknException(ILLEGAL_OPERATION);
         }
 
         @Override
@@ -341,23 +270,21 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public TypeVertexImpl label(String label) {
+        public void label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Type.of(this.label, scope).bytes());
             graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
             this.label = label;
-            return this;
         }
 
         @Override
-        public TypeVertexImpl scope(String scope) {
+        public void scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
             graph.storage().delete(IndexIID.Type.of(label, this.scope).bytes());
             graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
-            return this;
         }
 
         @Override

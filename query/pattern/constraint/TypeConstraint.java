@@ -19,7 +19,7 @@
 package grakn.core.query.pattern.constraint;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.schema.AttributeType;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.VariableRegistry;
 import graql.lang.pattern.Pattern;

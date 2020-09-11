@@ -18,7 +18,6 @@
 
 package grakn.core.graph.adjacency.impl;
 
-import grakn.core.graph.adjacency.Adjacency;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.edge.ThingEdge;
@@ -51,11 +50,11 @@ import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     final ThingVertex owner;
-    final Direction direction;
+    final Encoding.Direction direction;
     final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
     final ConcurrentMap<InfixIID.Thing, Set<ThingEdge>> edges;
 
-    ThingAdjacencyImpl(ThingVertex owner, Direction direction) {
+    ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction direction) {
         this.owner = owner;
         this.direction = direction;
         this.infixes = new ConcurrentHashMap<>();
@@ -191,8 +190,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         for (Encoding.Edge.Thing encoding : Encoding.Edge.Thing.values()) delete(encoding);
     }
 
-    static class ThingIteratorBuilderImpl
-            implements Adjacency.IteratorBuilder<ThingVertex> {
+    static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
 
         private final Iterator<ThingEdge> edgeIterator;
 
@@ -213,7 +211,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     public static class Buffered extends ThingAdjacencyImpl implements ThingAdjacency {
 
-        public Buffered(ThingVertex owner, Direction direction) {
+        public Buffered(ThingVertex owner, Encoding.Direction direction) {
             super(owner, direction);
         }
 
@@ -245,7 +243,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     public static class Persisted extends ThingAdjacencyImpl implements ThingAdjacency {
 
-        public Persisted(ThingVertex owner, Direction direction) {
+        public Persisted(ThingVertex owner, Encoding.Direction direction) {
             super(owner, direction);
         }
 
@@ -266,7 +264,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public IteratorBuilder<ThingVertex> edge(Encoding.Edge.Thing encoding, IID... lookAhead) {
+        public ThingIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead) {
             return new ThingIteratorBuilderImpl(edgeIterator(encoding, lookAhead));
         }
 

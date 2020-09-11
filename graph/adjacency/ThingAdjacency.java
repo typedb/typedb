@@ -23,7 +23,31 @@ import grakn.core.graph.iid.IID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
-public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge, ThingVertex> {
+import java.util.Iterator;
+import java.util.function.Consumer;
+
+public interface ThingAdjacency {
+
+    /**
+     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     *
+     * This method allows us to traverse the graph, by going from one vertex to
+     * another, that are connected by edges that match the provided {@code encoding}.
+     *
+     * @param encoding the {@code Encoding} to filter the type of edges
+     * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     */
+    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding);
+
+    /**
+     * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
+     * vertex.
+     *
+     * @param encoding type of the edge to filter by
+     * @param adjacent vertex that the edge connects to
+     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
+     */
+    ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent);
 
     /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
@@ -36,7 +60,7 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
      * @param lookAhead information of the adjacent edge to filter the edges with
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    IteratorBuilder<ThingVertex> edge(Encoding.Edge.Thing encoding, IID... lookAhead);
+    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -48,6 +72,19 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
     ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
+
+    /**
+     * Puts an adjacent vertex over an edge with a given encoding.
+     *
+     * The owner of this {@code Adjacency} map will also be added as an adjacent
+     * vertex to the provided vertex, through an opposite facing edge stored in
+     * an {@code Adjacency} map with an opposite direction to this one. I.e.
+     * This is a recursive put operation.
+     *
+     * @param encoding of the edge that will connect the owner to the adjacent vertex
+     * @param adjacent the adjacent vertex
+     */
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent);
 
     /**
      * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
@@ -65,10 +102,38 @@ public interface ThingAdjacency extends Adjacency<Encoding.Edge.Thing, ThingEdge
     void put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
     /**
+     * Deletes all edges with a given encoding from the {@code Adjacency} map.
+     *
+     * This is a recursive delete operation. Deleting the edges from this
+     * {@code Adjacency} map will also delete it from the {@code Adjacency} map
+     * of the previously adjacent vertex.
+     *
+     * @param encoding type of the edge to the adjacent vertex
+     */
+    void delete(Encoding.Edge.Thing encoding);
+
+    /**
      * Deletes a set of edges that match the provided properties.
      *
      * @param encoding  type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      */
     void delete(Encoding.Edge.Thing encoding, IID... lookAhead);
+
+    void deleteAll();
+
+    void loadToBuffer(ThingEdge edge);
+
+    void removeFromBuffer(ThingEdge edge);
+
+    void forEach(Consumer<ThingEdge> function);
+
+
+    interface ThingIteratorBuilder {
+
+        Iterator<ThingVertex> from();
+
+        Iterator<ThingVertex> to();
+
+    }
 }

@@ -36,13 +36,15 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class KeyGenerator {
 
+    protected AtomicInteger ruleKey;
     protected final ConcurrentMap<PrefixIID, AtomicInteger> typeKeys;
-    protected final ConcurrentMap<VertexIID.Type, AtomicLong> thingKeys;
+    protected final ConcurrentMap<VertexIID.Schema, AtomicLong> thingKeys;
     protected final int initialValue;
     protected final int delta;
 
     KeyGenerator(int initialValue, int delta) {
         typeKeys = new ConcurrentHashMap<>();
+        ruleKey = new AtomicInteger(initialValue);
         thingKeys = new ConcurrentHashMap<>();
         this.initialValue = initialValue;
         this.delta = delta;
@@ -54,9 +56,13 @@ public abstract class KeyGenerator {
         ).getAndAdd(delta));
     }
 
-    public byte[] forThing(VertexIID.Type typeIID) {
+    public byte[] forRule() {
+        return shortToSortedBytes(ruleKey.getAndAdd(delta));
+    }
+
+    public byte[] forThing(VertexIID.Schema schemaIID) {
         return longToSortedBytes(thingKeys.computeIfAbsent(
-                typeIID, k -> new AtomicLong(initialValue)
+                schemaIID, k -> new AtomicLong(initialValue)
         ).getAndAdd(delta));
     }
 
@@ -75,6 +81,7 @@ public abstract class KeyGenerator {
 
         public void sync(Storage storage) {
             syncTypeKeys(storage);
+            syncRuleKey(storage);
             syncThingKeys(storage);
         }
 
@@ -89,6 +96,14 @@ public abstract class KeyGenerator {
             }
         }
 
+        private void syncRuleKey(Storage storage) {
+            byte[] prefix = Encoding.Vertex.Rule.RULE.prefix().bytes();
+            byte[] lastIID = storage.getLastKey(prefix);
+            ruleKey = lastIID != null ?
+                    new AtomicInteger(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Rule.LENGTH)).getShort() + delta) :
+                    new AtomicInteger(initialValue);
+        }
+
         private void syncThingKeys(Storage storage) {
             Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{
                     Encoding.Vertex.Thing.ENTITY, Encoding.Vertex.Thing.RELATION, Encoding.Vertex.Thing.ROLE
@@ -97,7 +112,7 @@ public abstract class KeyGenerator {
             for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                 byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
                 Iterator<byte[]> typeIterator = filter(storage.iterate(typeEncoding, (iid, value) -> iid),
-                                                       iid -> iid.length == VertexIID.Type.LENGTH);
+                                                       iid -> iid.length == VertexIID.Schema.LENGTH);
                 while (typeIterator.hasNext()) {
                     byte[] typeIID = typeIterator.next();
                     byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
@@ -107,7 +122,7 @@ public abstract class KeyGenerator {
                                     copyOfRange(lastIID, VertexIID.Thing.PREFIX_W_TYPE_LENGTH, VertexIID.Thing.DEFAULT_LENGTH)
                             ).getShort() + delta) :
                             new AtomicLong(initialValue);
-                    thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
+                    thingKeys.put(VertexIID.Schema.of(typeIID), nextValue);
                 }
             }
         }

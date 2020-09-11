@@ -55,24 +55,24 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         return readableString;
     }
 
-    public static class Type extends InfixIID<Encoding.Edge.Type> {
+    public static class Schema extends InfixIID<Encoding.Edge.Schema> {
 
-        private Type(byte[] bytes) {
+        private Schema(byte[] bytes) {
             super(bytes);
             assert bytes.length == LENGTH;
         }
 
-        static InfixIID.Type of(Encoding.Infix infix) {
-            return new InfixIID.Type(infix.bytes());
+        static Schema of(Encoding.Infix infix) {
+            return new Schema(infix.bytes());
         }
 
-        static Type extract(byte[] bytes, int from) {
-            return new InfixIID.Type(new byte[]{bytes[from]});
+        static Schema extract(byte[] bytes, int from) {
+            return new Schema(new byte[]{bytes[from]});
         }
 
         @Override
-        Encoding.Edge.Type encoding() {
-            return Encoding.Edge.Type.of(bytes[0]);
+        Encoding.Edge.Schema encoding() {
+            return Encoding.Edge.Schema.of(bytes[0]);
         }
     }
 
@@ -145,9 +145,9 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             super(bytes);
         }
 
-        public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
-            assert type != null && Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER);
-            return new RolePlayer(join(infix.bytes(), type.bytes()));
+        public static RolePlayer of(Encoding.Infix infix, VertexIID.Schema schema) {
+            assert schema != null && Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER);
+            return new RolePlayer(join(infix.bytes(), schema.bytes()));
         }
 
         static RolePlayer extract(byte[] bytes, int from) {

@@ -18,31 +18,25 @@
 
 package grakn.core.graph.vertex;
 
-import grakn.core.graph.ThingGraph;
+import grakn.core.graph.DataGraph;
 import grakn.core.graph.adjacency.ThingAdjacency;
-import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
-public interface ThingVertex extends Vertex<
-        VertexIID.Thing,
-        Encoding.Vertex.Thing, ThingVertex,
-        Encoding.Edge.Thing, ThingEdge> {
+public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 
     /**
      * Returns the {@code Graph} containing all {@code ThingVertex}.
      *
      * @return the {@code Graph} containing all {@code ThingVertex}
      */
-    @Override
-    ThingGraph graph();
+    DataGraph graph();
 
     /**
      * Returns the {@code ThingAdjacency} set of outgoing edges.
      *
      * @return the {@code ThingAdjacency} set of outgoing edges
      */
-    @Override
     ThingAdjacency outs();
 
     /**
@@ -50,7 +44,6 @@ public interface ThingVertex extends Vertex<
      *
      * @return the {@code ThingAdjacency} set of incoming edges
      */
-    @Override
     ThingAdjacency ins();
 
     /**

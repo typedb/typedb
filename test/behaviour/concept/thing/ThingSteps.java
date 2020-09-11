@@ -18,8 +18,8 @@
 
 package grakn.core.test.behaviour.concept.thing;
 
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.ThingType;
+import grakn.core.concept.data.Thing;
+import grakn.core.concept.schema.ThingType;
 import grakn.core.test.behaviour.config.Parameters.RootLabel;
 import grakn.core.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;

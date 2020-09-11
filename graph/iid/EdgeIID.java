@@ -33,7 +33,7 @@ public abstract class EdgeIID<
     VERTEX_IID_START start;
     VERTEX_IID_END end;
     SuffixIID suffix;
-    int endIndex, infixIndex, suffixIndex;
+    private int endIndex, infixIndex, suffixIndex;
 
     EdgeIID(byte[] bytes) {
         super(bytes);
@@ -78,36 +78,36 @@ public abstract class EdgeIID<
         return readableString;
     }
 
-    public static class Type extends EdgeIID<Encoding.Edge.Type, InfixIID.Type, VertexIID.Type, VertexIID.Type> {
+    public static class Schema extends EdgeIID<Encoding.Edge.Schema, InfixIID.Schema, VertexIID.Schema, VertexIID.Schema> {
 
-        Type(byte[] bytes) {
+        Schema(byte[] bytes) {
             super(bytes);
         }
 
-        public static Type of(byte[] bytes) {
-            return new Type(bytes);
+        public static Schema of(byte[] bytes) {
+            return new Schema(bytes);
         }
 
-        public static Type of(VertexIID.Type start, Encoding.Infix infix, VertexIID.Type end) {
-            return new Type(join(start.bytes, infix.bytes(), end.bytes));
+        public static Schema of(VertexIID.Schema start, Encoding.Infix infix, VertexIID.Schema end) {
+            return new Schema(join(start.bytes, infix.bytes(), end.bytes));
         }
 
         @Override
-        public InfixIID.Type infix() {
-            if (infix == null) infix = InfixIID.Type.extract(bytes, VertexIID.Type.LENGTH);
+        public InfixIID.Schema infix() {
+            if (infix == null) infix = InfixIID.Schema.extract(bytes, VertexIID.Schema.LENGTH);
             return infix;
         }
 
         @Override
-        public VertexIID.Type start() {
-            if (start == null) start = VertexIID.Type.of(copyOfRange(bytes, 0, VertexIID.Type.LENGTH));
+        public VertexIID.Schema start() {
+            if (start == null) start = VertexIID.Schema.of(copyOfRange(bytes, 0, VertexIID.Schema.LENGTH));
             return start;
         }
 
         @Override
-        public VertexIID.Type end() {
+        public VertexIID.Schema end() {
             if (end != null) return end;
-            end = VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length));
+            end = VertexIID.Schema.of(copyOfRange(bytes, bytes.length - VertexIID.Schema.LENGTH, bytes.length));
             return end;
         }
     }

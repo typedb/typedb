@@ -144,9 +144,9 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     }
 
     public static class ThingRead extends ErrorMessage {
-        public static final ThingRead INVALID_IID_CASTING =
-                new ThingRead(1, "'Invalid IID casting to '%s'.");
-        public static final ThingRead INVALID_VERTEX_CASTING =
+        public static final ThingRead INVALID_THING_IID_CASTING =
+                new ThingRead(1, "'Invalid Thing IID casting to '%s'.");
+        public static final ThingRead INVALID_THING_VERTEX_CASTING =
                 new ThingRead(2, "Invalid ThingVertex casting to '%s'.");
         public static final ThingRead INVALID_THING_CASTING =
                 new ThingRead(3, "Invalid concept conversion to '%s'.");
@@ -214,12 +214,29 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(24, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite ATTRIBUTE_TYPE_MISMATCH =
                 new ThingWrite(25, "Attribute of type '%s' cannot be owned as type '%s'.");
+
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
 
         ThingWrite(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
         }
+    }
+
+    public static class SchemaGraph extends ErrorMessage {
+        public static final SchemaGraph INVALID_SCHEMA_IID_CASTING =
+                new SchemaGraph(1, "Invalid Schema IID cast to '%s'.");
+        public static final SchemaGraph INVALID_SCHEMA_IID =
+                new SchemaGraph(2, "IID '%s' is not a known Schema IID");
+        public static final SchemaGraph INVALID_SCHEMA_VERTEX_CASTING =
+                new SchemaGraph(3, "Invalid SchemaVertex cast to '%s'.");
+        public static final SchemaGraph INVALID_SCHEMA_WRITE =
+                new SchemaGraph(4, "The label '%s' is already in use in the schema graph.");
+
+        private static final String codePrefix = "SCG";
+        private static final String messagePrefix = "Invalid Schema Graph Operation";
+
+        SchemaGraph(int number, String message) { super(codePrefix, number, messagePrefix, message); }
     }
 
     public static class TypeRead extends ErrorMessage {
@@ -231,6 +248,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(3, "The type '%s' is not found.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";
 

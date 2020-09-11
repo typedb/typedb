@@ -23,7 +23,7 @@ import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.ThingType;
+import grakn.core.concept.schema.ThingType;
 import grakn.core.query.pattern.Conjunction;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;

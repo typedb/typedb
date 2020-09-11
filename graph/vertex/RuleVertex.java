@@ -18,9 +18,18 @@
 
 package grakn.core.graph.vertex;
 
-//public abstract class RuleVertex extends Vertex<Encoding.Vertex.Rule, Encoding.Edge.Type, TypeEdge> {
-//
-//    RuleVertex(Storage storage, Encoding.Status status, byte[] iid) {
-//        super(storage,Encoding.Vertex.Rule.RULE, iid);
-//    }
-//}
+import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.util.Encoding;
+import graql.lang.pattern.Pattern;
+
+public interface RuleVertex extends SchemaVertex<VertexIID.Rule, Encoding.Vertex.Rule> {
+
+    Pattern when();
+
+    Pattern then();
+
+    void when(Pattern when);
+
+    void then(Pattern then);
+}
+

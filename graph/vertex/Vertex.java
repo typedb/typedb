@@ -18,25 +18,10 @@
 
 package grakn.core.graph.vertex;
 
-import grakn.core.graph.Graph;
-import grakn.core.graph.adjacency.Adjacency;
-import grakn.core.graph.edge.Edge;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
-public interface Vertex<
-        VERTEX_IID extends VertexIID,
-        VERTEX_ENCODING extends Encoding.Vertex,
-        VERTEX extends Vertex<VERTEX_IID, VERTEX_ENCODING, VERTEX, EDGE_ENCODING, EDGE>,
-        EDGE_ENCODING extends Encoding.Edge,
-        EDGE extends Edge<?, ?, VERTEX>> {
-
-    /**
-     * Returns the {@code Graph} containing all the {@code Vertex}.
-     *
-     * @return the {@code Graph} containing all the {@code Vertex}
-     */
-    Graph<VERTEX_IID, VERTEX> graph();
+public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Vertex> {
 
     VERTEX_IID iid();
 
@@ -45,10 +30,6 @@ public interface Vertex<
     Encoding.Status status();
 
     VERTEX_ENCODING encoding();
-
-    Adjacency<EDGE_ENCODING, EDGE, VERTEX> outs();
-
-    Adjacency<EDGE_ENCODING, EDGE, VERTEX> ins();
 
     void setModified();
 

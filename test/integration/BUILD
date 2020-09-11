@@ -30,6 +30,11 @@ java_test(
         "//common:common",
         "//concept:concept",
         "//rocks:rocks",
+
+        # External dependencies from @graknlabs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/pattern:pattern",
+        "@graknlabs_graql//java:graql",
     ],
     size = "large",
 )
