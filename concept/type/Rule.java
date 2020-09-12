@@ -24,6 +24,10 @@ import java.util.stream.Stream;
 
 public interface Rule {
 
+    String getLabel();
+
+    void setLabel(String label);
+
     Pattern getWhen();
 
     Pattern getThen();
@@ -37,4 +41,6 @@ public interface Rule {
     Stream<? extends Type> negativeConditionTypes();
 
     Stream<? extends Type> conclusionTypes();
+
+    void delete();
 }

@@ -28,10 +28,17 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
+import grakn.protocol.TransactionProto.Transaction.GetThing;
+import grakn.protocol.TransactionProto.Transaction.GetType;
+import grakn.protocol.TransactionProto.Transaction.PutAttributeType;
+import grakn.protocol.TransactionProto.Transaction.PutEntityType;
+import grakn.protocol.TransactionProto.Transaction.PutRelationType;
+import grakn.protocol.TransactionProto.Transaction.PutRule;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
@@ -40,9 +47,6 @@ import java.time.ZoneOffset;
 
 import static java.lang.String.format;
 
-/**
- * A utility class to build RPC Responses from a provided set of Grakn concepts.
- */
 public class ResponseBuilder {
 
     public static StatusRuntimeException exception(Throwable e) {
@@ -59,62 +63,52 @@ public class ResponseBuilder {
         return status.withDescription(message + " Please check server logs for the stack trace.").asRuntimeException();
     }
 
-    /**
-     * An RPC Response Builder class for Transaction responses
-     */
     public static class Transaction {
 
         public static TransactionProto.Transaction.Res open() {
             return TransactionProto.Transaction.Res.newBuilder()
-                    .setOpenRes(TransactionProto.Transaction.Open.Res.getDefaultInstance())
-                    .build();
+                    .setOpenRes(TransactionProto.Transaction.Open.Res.getDefaultInstance()).build();
         }
 
         public static TransactionProto.Transaction.Res commit() {
             return TransactionProto.Transaction.Res.newBuilder()
-                    .setCommitRes(TransactionProto.Transaction.Commit.Res.getDefaultInstance())
-                    .build();
+                    .setCommitRes(TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build();
         }
 
         public static TransactionProto.Transaction.Res getThing(@Nullable Thing thing) {
-            TransactionProto.Transaction.GetThing.Res.Builder res = TransactionProto.Transaction.GetThing.Res.newBuilder();
-            if (thing != null) {
-                res.setThing(ResponseBuilder.Concept.thing(thing));
-            }
+            GetThing.Res.Builder res = GetThing.Res.newBuilder();
+            if (thing != null) res.setThing(Concept.thing(thing));
             return TransactionProto.Transaction.Res.newBuilder().setGetThingRes(res).build();
         }
 
         public static TransactionProto.Transaction.Res getType(@Nullable Type type) {
-            TransactionProto.Transaction.GetType.Res.Builder res = TransactionProto.Transaction.GetType.Res.newBuilder();
-            if (type != null) {
-                res.setType(ResponseBuilder.Concept.type(type));
-            }
+            GetType.Res.Builder res = GetType.Res.newBuilder();
+            if (type != null) res.setType(Concept.type(type));
             return TransactionProto.Transaction.Res.newBuilder().setGetTypeRes(res).build();
         }
 
         public static TransactionProto.Transaction.Res putEntityType(EntityType entityType) {
-            TransactionProto.Transaction.PutEntityType.Res.Builder res = TransactionProto.Transaction.PutEntityType.Res.newBuilder()
+            PutEntityType.Res.Builder res = PutEntityType.Res.newBuilder()
                     .setEntityType(ResponseBuilder.Concept.type(entityType));
             return TransactionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
         }
 
         public static TransactionProto.Transaction.Res putAttributeType(AttributeType attributeType) {
-            TransactionProto.Transaction.PutAttributeType.Res.Builder res = TransactionProto.Transaction.PutAttributeType.Res.newBuilder()
+            PutAttributeType.Res.Builder res = PutAttributeType.Res.newBuilder()
                     .setAttributeType(ResponseBuilder.Concept.type(attributeType));
             return TransactionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
         public static TransactionProto.Transaction.Res putRelationType(RelationType relationType) {
-            TransactionProto.Transaction.PutRelationType.Res.Builder res = TransactionProto.Transaction.PutRelationType.Res.newBuilder()
+            PutRelationType.Res.Builder res = PutRelationType.Res.newBuilder()
                     .setRelationType(ResponseBuilder.Concept.type(relationType));
             return TransactionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
-//        static TransactionProto.Transaction.Res putRule(grakn.core.concept.Concept concept) {
-//            TransactionProto.Transaction.PutRule.Res.Builder res = TransactionProto.Transaction.PutRule.Res.newBuilder()
-//                    .setRule(ResponseBuilder.Concept.concept(concept));
-//            return TransactionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
-//        }
+        public static TransactionProto.Transaction.Res putRule(grakn.core.concept.type.Rule rule) {
+            PutRule.Res.Builder res = PutRule.Res.newBuilder().setRule(ResponseBuilder.Concept.rule(rule));
+            return TransactionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
+        }
 //
 //        /**
 //         * @param explanation
@@ -136,9 +130,6 @@ public class ResponseBuilder {
 //            return res.build();
 //        }
 
-        /**
-         * An RPC Response Builder class for Transaction iterator responses
-         */
         public static class Iter {
 
             public static TransactionProto.Transaction.Res done() {
@@ -161,25 +152,20 @@ public class ResponseBuilder {
 //                                                                     .setAnswer(Answer.answer(object)))).build();
             }
 
-            public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.ThingMethod.Iter.Res methodResponse) {
+            public static TransactionProto.Transaction.Res thingMethod(ConceptProto.ThingMethod.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodThingIterRes(TransactionProto.Transaction.ConceptMethod.Thing.Iter.Res.newBuilder()
-                                                                                  .setResponse(methodResponse))).build();
+                                            .setConceptMethodThingIterRes(res)).build();
             }
 
-            public static TransactionProto.Transaction.Res conceptMethod(ConceptProto.TypeMethod.Iter.Res methodResponse) {
+            public static TransactionProto.Transaction.Res typeMethod(ConceptProto.TypeMethod.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodTypeIterRes(TransactionProto.Transaction.ConceptMethod.Type.Iter.Res.newBuilder()
-                                                                                 .setResponse(methodResponse))).build();
+                                            .setConceptMethodTypeIterRes(res)).build();
             }
         }
     }
 
-    /**
-     * An RPC Response Builder class for Concept responses
-     */
     public static class Concept {
 
         public static ConceptProto.Thing thing(Thing thing) {
@@ -203,6 +189,14 @@ public class ResponseBuilder {
             if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
             if (type instanceof RoleType) builder.setScope(type.asRoleType().getScope());
             if (type.isRoot()) builder.setRoot(true);
+            return builder.build();
+        }
+
+        public static ConceptProto.Rule rule(Rule rule) {
+            final ConceptProto.Rule.Builder builder = ConceptProto.Rule.newBuilder()
+                    .setLabel(rule.getLabel())
+                    .setWhen(rule.getWhen().toString())
+                    .setThen(rule.getThen().toString());
             return builder.build();
         }
 
@@ -254,8 +248,6 @@ public class ResponseBuilder {
                 return ConceptProto.Type.ENCODING.THING_TYPE;
             } else if (type instanceof RoleType) {
                 return ConceptProto.Type.ENCODING.ROLE_TYPE;
-//            } else if (concept.isRule()) {
-//                return ConceptProto.Concept.ENCODING.RULE;
             } else {
                 throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
             }

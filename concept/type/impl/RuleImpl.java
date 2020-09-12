@@ -92,6 +92,16 @@ public class RuleImpl implements Rule {
     }
 
     @Override
+    public String getLabel() {
+        return vertex.label();
+    }
+
+    @Override
+    public void setLabel(String label) {
+        vertex.label(label);
+    }
+
+    @Override
     public Pattern getWhen() {
         return vertex.when();
     }
@@ -124,6 +134,11 @@ public class RuleImpl implements Rule {
     @Override
     public Stream<TypeImpl> conclusionTypes() {
         return stream(apply(vertex.outs().edge(Encoding.Edge.Rule.CONCLUSION).to(), TypeImpl::of));
+    }
+
+    @Override
+    public void delete() {
+        vertex.delete();
     }
 
     @Override
