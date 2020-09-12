@@ -18,9 +18,9 @@
 
 package grakn.core.test.behaviour.concept.thing.relation;
 
-import grakn.core.concept.data.Attribute;
-import grakn.core.concept.data.Relation;
-import grakn.core.concept.data.Thing;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 

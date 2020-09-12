@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concept.schema;
+package grakn.core.concept.type;
 
 import java.util.stream.Stream;
 

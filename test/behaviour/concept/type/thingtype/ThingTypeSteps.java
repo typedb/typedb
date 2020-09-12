@@ -19,12 +19,12 @@
 package grakn.core.test.behaviour.concept.type.thingtype;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.EntityType;
-import grakn.core.concept.schema.RelationType;
-import grakn.core.concept.schema.RoleType;
-import grakn.core.concept.schema.ThingType;
-import grakn.core.concept.schema.Type;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

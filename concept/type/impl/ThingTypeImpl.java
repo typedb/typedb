@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.concept.schema.impl;
+package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.data.impl.AttributeImpl;
-import grakn.core.concept.data.impl.EntityImpl;
-import grakn.core.concept.data.impl.RelationImpl;
-import grakn.core.concept.data.impl.ThingImpl;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.RoleType;
-import grakn.core.concept.schema.ThingType;
+import grakn.core.concept.thing.impl.AttributeImpl;
+import grakn.core.concept.thing.impl.EntityImpl;
+import grakn.core.concept.thing.impl.RelationImpl;
+import grakn.core.concept.thing.impl.ThingImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.edge.SchemaEdge;
 import grakn.core.graph.util.Encoding;
@@ -147,8 +147,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
     }
 
-    private <T extends grakn.core.concept.schema.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
-                                                                     Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
+    private <T extends grakn.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
+                                                                   Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw exception(OVERRIDDEN_NOT_SUPERTYPE.message(type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {

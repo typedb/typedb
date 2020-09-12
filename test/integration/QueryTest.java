@@ -20,12 +20,12 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.data.Attribute;
-import grakn.core.concept.data.Entity;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.EntityType;
-import grakn.core.concept.schema.RelationType;
-import grakn.core.concept.schema.RoleType;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;

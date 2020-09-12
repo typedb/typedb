@@ -19,8 +19,8 @@
 package grakn.core.test.behaviour.concept.type.attributetype;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.ThingType;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.ThingType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 

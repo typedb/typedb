@@ -19,7 +19,7 @@
 package grakn.core.test.behaviour.config;
 
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.schema.AttributeType;
+import grakn.core.concept.type.AttributeType;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 

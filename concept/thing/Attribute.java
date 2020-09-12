@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.concept.data;
+package grakn.core.concept.thing;
 
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.ThingType;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.ThingType;
 
 import java.util.stream.Stream;
 

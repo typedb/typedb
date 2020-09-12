@@ -16,25 +16,39 @@
  *
  */
 
-package grakn.core.concept.schema;
+package grakn.core.concept.type;
 
-import graql.lang.pattern.Pattern;
+import grakn.core.concept.thing.Relation;
 
 import java.util.stream.Stream;
 
-public interface Rule {
+public interface RelationType extends ThingType {
 
-    Pattern getWhen();
+    @Override
+    RelationType getSupertype();
 
-    Pattern getThen();
+    @Override
+    Stream<? extends RelationType> getSupertypes();
 
-    void setWhen(Pattern when);
+    @Override
+    Stream<? extends RelationType> getSubtypes();
 
-    void setThen(Pattern then);
+    @Override
+    Stream<? extends Relation> getInstances();
 
-    Stream<? extends Type> positiveConditionTypes();
+    void setSupertype(RelationType superType);
 
-    Stream<? extends Type> negativeConditionTypes();
+    void setRelates(String roleLabel);
 
-    Stream<? extends Type> conclusionTypes();
+    void setRelates(String roleLabel, String overriddenLabel);
+
+    void unsetRelates(String roleLabel);
+
+    Stream<? extends RoleType> getRelates();
+
+    RoleType getRelates(String roleLabel);
+
+    Relation create();
+
+    Relation create(boolean isInferred);
 }

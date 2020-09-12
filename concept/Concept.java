@@ -19,8 +19,8 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.data.Thing;
-import grakn.core.concept.schema.Type;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;

@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.concept.schema.impl;
+package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.data.Attribute;
-import grakn.core.concept.data.impl.AttributeImpl;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.RoleType;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.impl.AttributeImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;

@@ -16,17 +16,29 @@
  *
  */
 
-package grakn.core.concept.data;
+package grakn.core.concept.type;
 
-import grakn.core.concept.schema.EntityType;
+import grakn.core.concept.thing.Entity;
 
-public interface Entity extends Thing {
+import java.util.stream.Stream;
 
-    /**
-     * Get the immediate {@code EntityType} in which this this {@code Entity} is an instance of.
-     *
-     * @return the {@code EntityType} of this {@code Entity}
-     */
+public interface EntityType extends ThingType {
+
     @Override
-    EntityType getType();
+    EntityType getSupertype();
+
+    @Override
+    Stream<? extends EntityType> getSupertypes();
+
+    @Override
+    Stream<? extends EntityType> getSubtypes();
+
+    @Override
+    Stream<? extends Entity> getInstances();
+
+    void setSupertype(EntityType superType);
+
+    Entity create();
+
+    Entity create(boolean isInferred);
 }

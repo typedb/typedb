@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concept.data.impl;
+package grakn.core.concept.thing.impl;
 
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;

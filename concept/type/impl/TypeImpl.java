@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concept.schema.impl;
+package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
@@ -42,7 +42,7 @@ import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.stream;
 import static grakn.core.common.iterator.Iterators.tree;
 
-public abstract class TypeImpl implements grakn.core.concept.schema.Type {
+public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     public final TypeVertex vertex;
 
@@ -121,14 +121,14 @@ public abstract class TypeImpl implements grakn.core.concept.schema.Type {
     }
 
     @Nullable
-    <TYPE extends grakn.core.concept.schema.Type> TYPE getSupertype(final Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends grakn.core.concept.type.Type> TYPE getSupertype(final Function<TypeVertex, TYPE> typeConstructor) {
         final Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Encoding.Edge.Type.SUB).to(),
                                                                v -> v.encoding().equals(vertex.encoding()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
 
-    <TYPE extends grakn.core.concept.schema.Type> Stream<TYPE> getSupertypes(final Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(final Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(loop(
                 vertex,
                 v -> v != null && v.encoding().equals(this.vertex.encoding()),
@@ -139,7 +139,7 @@ public abstract class TypeImpl implements grakn.core.concept.schema.Type {
                 }), typeConstructor));
     }
 
-    <TYPE extends grakn.core.concept.schema.Type> Stream<TYPE> getSubtypes(final Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(final Function<TypeVertex, TYPE> typeConstructor) {
         return stream(apply(tree(vertex, v -> v.ins().edge(Encoding.Edge.Type.SUB).from()), typeConstructor));
     }
 

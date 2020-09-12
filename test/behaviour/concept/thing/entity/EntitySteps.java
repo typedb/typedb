@@ -18,8 +18,8 @@
 
 package grakn.core.test.behaviour.concept.thing.entity;
 
-import grakn.core.concept.data.Attribute;
-import grakn.core.concept.data.Entity;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 

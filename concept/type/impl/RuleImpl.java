@@ -17,9 +17,9 @@
  *
  */
 
-package grakn.core.concept.schema.impl;
+package grakn.core.concept.type.impl;
 
-import grakn.core.concept.schema.Rule;
+import grakn.core.concept.type.Rule;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.RuleVertex;

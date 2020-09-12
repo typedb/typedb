@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.concept.schema;
+package grakn.core.concept.type;
 
-import grakn.core.concept.data.Attribute;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.graph.util.Encoding;
 import graql.lang.common.GraqlArg;
 

@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.concept.data.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.core.concept.data.Attribute;
-import grakn.core.concept.schema.ThingType;
-import grakn.core.concept.schema.impl.AttributeTypeImpl;
-import grakn.core.concept.schema.impl.ThingTypeImpl;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.impl.AttributeTypeImpl;
+import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;

@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.concept.schema.impl;
+package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.data.Entity;
-import grakn.core.concept.data.impl.RoleImpl;
-import grakn.core.concept.schema.RoleType;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.impl.RoleImpl;
+import grakn.core.concept.type.RoleType;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;

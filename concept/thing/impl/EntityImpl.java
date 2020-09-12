@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.concept.data.impl;
+package grakn.core.concept.thing.impl;
 
-import grakn.core.concept.data.Entity;
-import grakn.core.concept.schema.impl.EntityTypeImpl;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 

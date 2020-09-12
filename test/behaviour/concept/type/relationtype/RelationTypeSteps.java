@@ -18,8 +18,8 @@
 
 package grakn.core.test.behaviour.concept.type.relationtype;
 
-import grakn.core.concept.schema.RoleType;
-import grakn.core.concept.schema.Type;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.Type;
 import grakn.core.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

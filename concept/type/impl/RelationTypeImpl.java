@@ -16,15 +16,15 @@
  *
  */
 
-package grakn.core.concept.schema.impl;
+package grakn.core.concept.type.impl;
 
 import grakn.core.common.collection.Streams;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.data.Relation;
-import grakn.core.concept.data.impl.RelationImpl;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.RelationType;
-import grakn.core.concept.schema.RoleType;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.impl.RelationImpl;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;

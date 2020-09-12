@@ -22,16 +22,16 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.data.Attribute;
-import grakn.core.concept.data.Entity;
-import grakn.core.concept.data.Relation;
-import grakn.core.concept.data.Thing;
-import grakn.core.concept.schema.AttributeType;
-import grakn.core.concept.schema.EntityType;
-import grakn.core.concept.schema.RelationType;
-import grakn.core.concept.schema.RoleType;
-import grakn.core.concept.schema.ThingType;
-import grakn.core.concept.schema.Type;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
@@ -519,7 +519,7 @@ class ConceptRPC {
 
             private void getInstances() {
                 LOG.trace("{} instances", Thread.currentThread());
-                Stream<? extends grakn.core.concept.data.Thing> concepts = thingType.getInstances();
+                Stream<? extends grakn.core.concept.thing.Thing> concepts = thingType.getInstances();
 
                 Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
@@ -816,7 +816,7 @@ class ConceptRPC {
                             .map(ConceptHolder.this::convertType)
                             .map(ConceptRPC::conceptExists)
                             .map(grakn.core.concept.Concept::asType)
-                            .map(grakn.core.concept.schema.Type::asAttributeType)
+                            .map(grakn.core.concept.type.Type::asAttributeType)
                             .toArray(AttributeType[]::new);
                     attributes = thing.getHas(attributeTypes);
                 }
@@ -889,7 +889,7 @@ class ConceptRPC {
                 Stream.Builder<TransactionProto.Transaction.Res> responses = Stream.builder();
 
                 for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> players : playersByRole.entrySet()) {
-                    for (grakn.core.concept.data.Thing player : players.getValue()) {
+                    for (grakn.core.concept.thing.Thing player : players.getValue()) {
                         ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                                 .setRelationGetPlayersByRoleTypeIterRes(ConceptProto.Relation.GetPlayersByRoleType.Iter.Res.newBuilder()
                                                                                 .setRoleType(ResponseBuilder.Concept.type(players.getKey()))

@@ -26,7 +26,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.data.Attribute;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.test.behaviour.connection.ConnectionSteps;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;

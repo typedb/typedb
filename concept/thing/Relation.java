@@ -16,47 +16,32 @@
  *
  */
 
-package grakn.core.concept.schema;
+package grakn.core.concept.thing;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
-public interface Type extends Concept {
+public interface Relation extends Thing {
 
-    Long count();
+    /**
+     * Get the immediate {@code RelationType} in which this this {@code Relation} is an instance of.
+     *
+     * @return the {@code RelationType} of this {@code Relation}
+     */
+    @Override
+    RelationType getType();
 
-    boolean isRoot();
+    void addPlayer(RoleType roleType, Thing player);
 
-    void setLabel(String label);
+    void removePlayer(RoleType roleType, Thing player);
 
-    String getLabel();
+    Stream<? extends Thing> getPlayers(String roleType, String... roleTypes);
 
-    boolean isAbstract();
+    Stream<? extends Thing> getPlayers(RoleType... roleTypes);
 
-    Type getSupertype();
-
-    Stream<? extends Type> getSupertypes();
-
-    Stream<? extends Type> getSubtypes();
-
-    Stream<? extends Rule> getPositiveConditionRules();
-
-    Stream<? extends Rule> getNegativeConditionRules();
-
-    Stream<? extends Rule> getConcludingRules();
-
-    List<GraknException> validate();
-
-    ThingType asThingType();
-
-    EntityType asEntityType();
-
-    AttributeType asAttributeType();
-
-    RelationType asRelationType();
-
-    RoleType asRoleType();
+    Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();
 }
