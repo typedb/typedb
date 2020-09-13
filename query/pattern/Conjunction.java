@@ -22,6 +22,7 @@ import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;
 import grakn.core.query.pattern.variable.VariableRegistry;
 import graql.lang.pattern.variable.BoundVariable;
+import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -37,30 +38,17 @@ public class Conjunction<PATTERN extends Pattern> extends Pattern {
     }
 
     public static Conjunction<TypeVariable> fromTypes(final List<graql.lang.pattern.variable.TypeVariable> variables) {
-        VariableRegistry register = new VariableRegistry();
-        LinkedList<graql.lang.pattern.variable.TypeVariable> list = new LinkedList<>(variables);
-        while (!list.isEmpty()) {
-            graql.lang.pattern.variable.TypeVariable variable = list.removeFirst();
-            assert variable.isLabelled();
-            variable.constraints().forEach(c -> list.addAll(c.variables()));
-            register.register(variable);
-        }
-        return new Conjunction<>(register.types());
+        VariableRegistry registry = new VariableRegistry();
+        variables.forEach(registry::register);
+        return new Conjunction<>(registry.types());
     }
 
     public static Conjunction<Variable> fromThings(final List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
-        VariableRegistry register = new VariableRegistry();
+        VariableRegistry registry = new VariableRegistry();
+        variables.forEach(registry::register);
         Set<Variable> output = new HashSet<>();
-        LinkedList<BoundVariable> list = new LinkedList<>(variables);
-
-        while (!list.isEmpty()) {
-            BoundVariable graqlVar = list.removeFirst();
-            graqlVar.constraints().forEach(c -> list.addAll(c.variables()));
-            register.register(graqlVar);
-        }
-
-        output.addAll(register.types());
-        output.addAll(register.things());
+        output.addAll(registry.types());
+        output.addAll(registry.things());
         return new Conjunction<>(output);
     }
 
