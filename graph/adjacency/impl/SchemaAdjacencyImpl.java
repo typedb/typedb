@@ -91,6 +91,11 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         for (Encoding.Edge.Rule encoding : Encoding.Edge.Rule.values()) delete(encoding);
     }
 
+    @Override
+    public void commit() {
+        edges.values().forEach(set -> set.forEach(Edge::commit));
+    }
+
     /**
      * When used in combination with purely retrieving type edges (by infix encoding),
      * this iterator builder performs safe vertex downcasts at both ends of the edge
@@ -178,11 +183,6 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         public void delete(Encoding.Edge.Schema encoding) {
             if (edges.containsKey(encoding)) edges.get(encoding).forEach(Edge::delete);
         }
-
-        @Override
-        public void forEach(Consumer<SchemaEdge> function) {
-            edges.forEach((encoding, edges) -> edges.forEach(function));
-        }
     }
 
     public static class Persisted extends SchemaAdjacencyImpl implements SchemaAdjacency {
@@ -257,16 +257,6 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         public void deleteAll() {
             for (Encoding.Edge.Type type : Encoding.Edge.Type.values()) delete(type);
             for (Encoding.Edge.Rule rule : Encoding.Edge.Rule.values()) delete(rule);
-        }
-
-        @Override
-        public void forEach(Consumer<SchemaEdge> function) {
-            for (Encoding.Edge.Type encoding : Encoding.Edge.Type.values()) {
-                edgeIterator(encoding).forEachRemaining(function);
-            }
-            for (Encoding.Edge.Rule encoding : Encoding.Edge.Rule.values()) {
-                edgeIterator(encoding).forEachRemaining(function);
-            }
         }
     }
 }

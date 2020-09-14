@@ -158,6 +158,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return edge;
     }
 
+    @Override
     public void put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         assert encoding.isOptimisation();
         ThingEdge edge = direction.isOut()
@@ -167,7 +168,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         put(encoding, edge, infixes, true, true);
     }
 
-    public void putNonRecursive(ThingEdge edge) {
+    private void putNonRecursive(ThingEdge edge) {
         put(edge.encoding(), edge, infixTails(edge), true, false);
     }
 
@@ -188,6 +189,11 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     @Override
     public void deleteAll() {
         for (Encoding.Edge.Thing encoding : Encoding.Edge.Thing.values()) delete(encoding);
+    }
+
+    @Override
+    public void commit() {
+        edges.values().forEach(edges -> edges.forEach(Edge::commit));
     }
 
     static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
@@ -233,11 +239,6 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         @Override
         public void delete(Encoding.Edge.Thing encoding, IID... lookAhead) {
             bufferedEdgeIterator(encoding, lookAhead).forEachRemaining(Edge::delete);
-        }
-
-        @Override
-        public void forEach(Consumer<ThingEdge> function) {
-            edges.forEach((key, set) -> set.forEach(function));
         }
     }
 
@@ -299,13 +300,6 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         @Override
         public void delete(Encoding.Edge.Thing encoding, IID... lookAhead) {
             edgeIterator(encoding, lookAhead).forEachRemaining(Edge::delete);
-        }
-
-        @Override
-        public void forEach(Consumer<ThingEdge> function) {
-            for (Encoding.Edge.Thing encoding : Encoding.Edge.Thing.values()) {
-                edgeIterator(encoding).forEachRemaining(function);
-            }
         }
     }
 }

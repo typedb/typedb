@@ -77,7 +77,7 @@ public interface SchemaAdjacency {
 
     void removeFromBuffer(SchemaEdge edge);
 
-    void forEach(Consumer<SchemaEdge> function);
+    void commit();
 
     interface TypeIteratorBuilder {
 

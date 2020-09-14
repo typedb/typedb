@@ -144,8 +144,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     void commitEdges() {
-        outs.forEach(Edge::commit);
-        ins.forEach(Edge::commit);
+        outs.commit();
+        ins.commit();
     }
 
     public static class Buffered extends ThingVertexImpl {

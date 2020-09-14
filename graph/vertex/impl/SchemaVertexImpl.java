@@ -109,8 +109,7 @@ public abstract class SchemaVertexImpl<
     }
 
     void commitEdges() {
-        outs.forEach(SchemaEdge::commit);
-        ins.forEach(SchemaEdge::commit);
+        outs.commit();
+        ins.commit();
     }
-
 }

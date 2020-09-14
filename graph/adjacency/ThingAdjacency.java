@@ -126,8 +126,7 @@ public interface ThingAdjacency {
 
     void removeFromBuffer(ThingEdge edge);
 
-    void forEach(Consumer<ThingEdge> function);
-
+    void commit();
 
     interface ThingIteratorBuilder {
 
