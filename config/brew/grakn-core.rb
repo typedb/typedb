@@ -10,6 +10,14 @@ class GraknCore < Formula
 
   def install
     libexec.install Dir["*"]
+    dbpath = (var/name/"db/")
+    dbpath.mkpath
+    logpath = (var/name/"log/")
+    logpath.mkpath
+    rm_rf libexec/"server/db"
+    rm_rf libexec/"server/logs"
+    ln_s dbpath, libexec/"server/db"
+    ln_s logpath, libexec/"server/logs"
     bin.install libexec/"grakn"
     bin.env_script_all_files(libexec, Language::Java.java_home_env("1.8"))
   end
