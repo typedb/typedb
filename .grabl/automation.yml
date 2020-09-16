@@ -2,69 +2,53 @@ build:
   quality:
     job:
       dependency-analysis:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
           echo "workflow quality: dependency-analysis"
   correctness:
     jobs:
       build:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel build --config=rbe //...
       common:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //common/... --test_output=errors
       server:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //server/... --test_output=errors
       graql:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //graql/... --test_output=errors
       behaviour:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         timeout: "3600"
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //test/behaviour/... --test_output=errors
       integration:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         timeout: "3600"
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //test/integration/... --test_output=errors
       assembly:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel test --config=rbe //test/assembly:test-assembly --test_output=streamed --spawn_strategy=local
       assembly-linux-targz:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
-          curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
-          sudo mkdir -p /home/circleci/.credentials/ && sudo chmod a+w /home/circleci/.credentials/ && bash ./rbe.sh && rm ./rbe.sh
           bazel build --config=rbe //:assemble-linux-targz
           # TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tool/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --get
           tar -xf bazel-bin/grakn-core-all-linux.tar.gz -C bazel-bin
@@ -73,7 +57,7 @@ build:
           bazel-bin/grakn-core-all-linux/grakn server stop
           # TEST_CACHE_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_dependencies//tool/cache:cache -- --file $(pwd)/bazel-bin/grakn-core-all-linux.tar.gz --save-success
       assembly-docker:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
           test/assembly/docker.py
@@ -92,21 +76,21 @@ release:
   validation:
     job:
       validate-dependencies:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
           echo "workflow validation: validate-dependencies"
   deployment:
     job:
       deploy-workbase:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
           echo "workflow deployment: deploy-workbase"
   broadcast:
     job:
       broadcast-version:
-        machine: grabl-ubuntu-2004
+        machine: graknlabs-ubuntu-20.04
         type: foreground
         script: |
           echo "workflow bump: bump-version"

@@ -1,0 +1,76 @@
+define
+
+identifier sub attribute, value string, plays id-mapping;
+
+# entities
+cause sub entity,
+    has cause-id,
+    plays hypothesis-target, # in hypothesis
+    plays equivalent, # in equivalence
+    plays evidence-target; # in evidence
+cause-id sub identifier;
+
+effect sub entity,
+    has effect-id,
+    plays hypothesis-source, # in hypothesis
+    plays evidence-source; # in evidence
+effect-id sub identifier;
+
+# materialized relations
+hypothesis sub relation,
+    relates hypothesis-target,
+    relates hypothesis-source,
+    relates supporting-evidence;
+
+evidence sub relation,
+    has evidence-id,
+    relates evidence-target,
+    relates evidence-source,
+    plays supporting-evidence; # in indirect-evidence inference
+evidence-id sub identifier;
+
+equivalence sub relation,
+    relates equivalent;
+
+id-association sub relation,
+    relates id-mapping;
+
+implies-indirect-evidence-by-equivalence sub rule,
+when {
+    $h (hypothesis-target: $g1, hypothesis-source: $d) isa hypothesis;
+    (equivalent: $g1, equivalent: $g2) isa equivalence;
+    $a (evidence-target: $g2, evidence-source: $d) isa evidence;
+}, then {
+    $h (supporting-evidence: $a) isa hypothesis;
+};
+
+wrapper-rule sub rule,
+when {
+    $h (supporting-evidence: $a, hypothesis-target: $g1, hypothesis-source: $d) isa hypothesis;
+    $a has evidence-id $a_id;
+    $g1 has cause-id $g1_id;
+    $d has effect-id $d_id;
+}, then {
+    (id-mapping: $a_id, id-mapping: $g1_id, id-mapping: $d_id) isa id-association;
+};
+
+insert
+$g1 isa cause, has cause-id "cause1";
+$g2 isa cause, has cause-id "cause2";
+$g3 isa cause, has cause-id "cause3";
+
+$d1 isa effect, has effect-id "effect1";
+$d2 isa effect, has effect-id "effect2";
+$d3 isa effect, has effect-id "effect3";
+
+(hypothesis-target: $g1, hypothesis-source: $d1) isa hypothesis;
+(hypothesis-target: $g1, hypothesis-source: $d2) isa hypothesis;
+(hypothesis-target: $g2, hypothesis-source: $d3) isa hypothesis;
+
+(equivalent: $g1, equivalent: $g2) isa equivalence;
+(equivalent: $g1, equivalent: $g3) isa equivalence;
+
+(evidence-target: $g1, evidence-source: $d1) isa evidence, has evidence-id "evidence1";
+(evidence-target: $g1, evidence-source: $d1) isa evidence, has evidence-id "evidence2";
+(evidence-target: $g2, evidence-source: $d1) isa evidence, has evidence-id "evidence3";
+(evidence-target: $g2, evidence-source: $d1) isa evidence, has evidence-id "evidence4";

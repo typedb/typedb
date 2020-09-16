@@ -21,6 +21,7 @@ filegroup(
     name = "reasoning-stubs",
     srcs = [
         "appendingRPs.gql",
+        "appendingRPsConjunctive.gql",
         "explanations.gql",
         "negation.gql",
         "resourceAttachment.gql",

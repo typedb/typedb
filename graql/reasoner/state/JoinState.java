@@ -59,9 +59,7 @@ public class JoinState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     @Override
     public String toString(){
-        return super.toString() +  "\n" +
-                getSubstitution() + "\n" +
-                getQuery() + "\n" +
+        return super.toString() +
                 subQueries.stream().map(ReasonerQueryImpl::toString).collect(Collectors.joining("\n")) + "\n";
     }
 
