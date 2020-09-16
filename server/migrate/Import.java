@@ -367,10 +367,10 @@ public class Import extends AbstractJob {
         for (Pair<String, List<String>> attributeKeyOwnership : allMissingAttributeOwnerships) {
             Thing owner = currentTransaction.getConcept(ConceptId.of(attributeKeyOwnership.first()));
 
-            for (String attributeIdString : attributeKeyOwnership.second()) {
+            for (String originalAttributeId : attributeKeyOwnership.second()) {
                 Attribute<?> owned = (Attribute<?>) thingCache.computeIfAbsent(
-                        idMap.get(attributeIdString), // Second is foreign ID, remember to map
-                        id -> currentTransaction.getConcept(ConceptId.of(id)));
+                        originalAttributeId,
+                        id -> currentTransaction.getConcept(ConceptId.of(idMap.get(id))));
                 owner.has(owned);
                 ownershipCount++;
             }
