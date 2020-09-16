@@ -126,8 +126,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from.outs().removeFromBuffer(this);
-                to.ins().removeFromBuffer(this);
+                from.outs().remove(this);
+                to.ins().remove(this);
                 if (!(from.status().equals(BUFFERED)) && !(to.status().equals(BUFFERED))) {
                     graph.storage().delete(outIID().bytes());
                     graph.storage().delete(inIID().bytes());
@@ -242,7 +242,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public ThingVertex from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            from.outs().loadToBuffer(this);
+            from.outs().cache(this);
             return from;
         }
 
@@ -250,7 +250,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public ThingVertex to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().loadToBuffer(this);
+            to.ins().cache(this);
             return to;
         }
 
@@ -266,8 +266,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from().outs().removeFromBuffer(this);
-                to().ins().removeFromBuffer(this);
+                from().outs().remove(this);
+                to().ins().remove(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }

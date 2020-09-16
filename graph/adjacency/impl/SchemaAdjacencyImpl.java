@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
@@ -56,7 +55,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
     }
 
     private void putNonRecursive(SchemaEdge edge) {
-        loadToBuffer(edge);
+        cache(edge);
         owner.setModified();
     }
 
@@ -73,12 +72,13 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
     }
 
     @Override
-    public void loadToBuffer(SchemaEdge edge) {
+    public SchemaEdge cache(SchemaEdge edge) {
         edges.computeIfAbsent(edge.encoding(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        return edge;
     }
 
     @Override
-    public void removeFromBuffer(SchemaEdge edge) {
+    public void remove(SchemaEdge edge) {
         if (edges.containsKey(edge.encoding())) {
             edges.get(edge.encoding()).remove(edge);
             owner.setModified();

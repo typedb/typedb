@@ -117,8 +117,8 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from.outs().removeFromBuffer(this);
-                to.ins().removeFromBuffer(this);
+                from.outs().remove(this);
+                to.ins().remove(this);
                 if (from instanceof Persisted && to instanceof Persisted) {
                     graph.storage().delete(outIID().bytes());
                     graph.storage().delete(inIID().bytes());
@@ -260,7 +260,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         public SchemaVertex<?, ?> from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            from.outs().loadToBuffer(this);
+            from.outs().cache(this);
             return from;
         }
 
@@ -268,7 +268,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         public SchemaVertex<?, ?> to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().loadToBuffer(this);
+            to.ins().cache(this);
             return to;
         }
 
@@ -308,8 +308,8 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from().outs().removeFromBuffer(this);
-                to().ins().removeFromBuffer(this);
+                from().outs().remove(this);
+                to().ins().remove(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }

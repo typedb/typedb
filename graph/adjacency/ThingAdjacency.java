@@ -24,7 +24,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.Iterator;
-import java.util.function.Consumer;
 
 public interface ThingAdjacency {
 
@@ -69,7 +68,7 @@ public interface ThingAdjacency {
      * @param encoding  type of the edge to filter by
      * @param adjacent  vertex that the edge connects to
      * @param optimised vertex that this optimised edge is compressing
-     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
+     * @return an edge of type {@code encoding} that connects to {@code adjacent} through {@code optimised}.
      */
     ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
@@ -83,6 +82,7 @@ public interface ThingAdjacency {
      *
      * @param encoding of the edge that will connect the owner to the adjacent vertex
      * @param adjacent the adjacent vertex
+     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
     ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent);
 
@@ -98,8 +98,9 @@ public interface ThingAdjacency {
      * @param encoding  type of the edge
      * @param adjacent  the adjacent vertex
      * @param optimised vertex that this optimised edge is compressing
+     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    void put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.
@@ -122,9 +123,9 @@ public interface ThingAdjacency {
 
     void deleteAll();
 
-    void loadToBuffer(ThingEdge edge);
+    ThingEdge cache(ThingEdge edge);
 
-    void removeFromBuffer(ThingEdge edge);
+    void remove(ThingEdge edge);
 
     void commit();
 

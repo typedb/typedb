@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
@@ -133,7 +132,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return edge;
     }
 
-    private void put(Encoding.Edge.Thing encoding, ThingEdge edge, IID[] infixes, boolean isModified, boolean recurse) {
+    private ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingEdgeImpl edge, IID[] infixes, boolean isModified, boolean recurse) {
         assert encoding.lookAhead() == infixes.length;
         InfixIID.Thing infixIID = infixIID(encoding);
         for (int i = 0; i < encoding.lookAhead(); i++) {
@@ -145,6 +144,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonRecursive(edge);
             else ((ThingAdjacencyImpl) edge.from().outs()).putNonRecursive(edge);
         }
+        return edge;
     }
 
     @Override
@@ -154,31 +154,30 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner);
         IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
-        put(encoding, edge, infixes, true, true);
-        return edge;
+        return put(encoding, edge, infixes, true, true);
     }
 
     @Override
-    public void put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
+    public ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         assert encoding.isOptimisation();
-        ThingEdge edge = direction.isOut()
+        ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised);
         IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
-        put(encoding, edge, infixes, true, true);
+        return put(encoding, edge, infixes, true, true);
     }
 
-    private void putNonRecursive(ThingEdge edge) {
+    private void putNonRecursive(ThingEdgeImpl edge) {
         put(edge.encoding(), edge, infixTails(edge), true, false);
     }
 
     @Override
-    public void loadToBuffer(ThingEdge edge) {
-        put(edge.encoding(), edge, infixTails(edge), false, false);
+    public ThingEdge cache(ThingEdge edge) {
+        return put(edge.encoding(), (ThingEdgeImpl) edge, infixTails(edge), false, false);
     }
 
     @Override
-    public void removeFromBuffer(ThingEdge edge) {
+    public void remove(ThingEdge edge) {
         InfixIID.Thing infixIID = infixIID(edge.encoding(), infixTails(edge));
         if (edges.containsKey(infixIID)) {
             edges.get(infixIID).remove(edge);

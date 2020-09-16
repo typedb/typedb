@@ -25,7 +25,6 @@ import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.Iterator;
-import java.util.function.Consumer;
 
 public interface SchemaAdjacency {
 
@@ -73,9 +72,9 @@ public interface SchemaAdjacency {
 
     void deleteAll();
 
-    void loadToBuffer(SchemaEdge edge);
+    SchemaEdge cache(SchemaEdge edge);
 
-    void removeFromBuffer(SchemaEdge edge);
+    void remove(SchemaEdge edge);
 
     void commit();
 
