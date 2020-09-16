@@ -472,7 +472,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
       - test-common:
           filters:
             branches:
@@ -497,7 +497,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
           requires:
             - build
             - build-checkstyle
@@ -567,7 +567,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
                 - rewrite
           requires:
 #            - test-assembly-mac-zip
@@ -579,7 +579,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
           requires:
 #            - test-assembly-mac-zip
 #            - test-assembly-windows-zip
@@ -590,7 +590,7 @@ workflows:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
           requires:
 #            - test-assembly-mac-zip
 #            - test-assembly-windows-zip
@@ -601,21 +601,21 @@ workflows:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
           requires:
             - deploy-apt-snapshot
       - test-deployment-linux-rpm:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
           requires:
             - deploy-rpm-snapshot
       - release-approval:
           filters:
             branches:
               only:
-                - 1.8.3
+                - master
           requires:
             - deploy-artifact-snapshot
             - test-deployment-linux-apt
