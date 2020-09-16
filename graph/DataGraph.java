@@ -84,7 +84,9 @@ public class DataGraph implements Graph {
     }
 
     public ThingVertex convert(VertexIID.Thing iid) {
-        assert storage().isOpen();
+        // TODO: benchmark caching persisted edges
+        // assert storage().isOpen();
+        // enable the the line above
         if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
             return convert(iid.asAttribute());
         } else {

@@ -250,6 +250,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         private Iterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
             Iterator<ThingEdge> storageIterator = owner.graph().storage().iterate(
                     join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes()),
+                    // TODO: benchmark caching persisted edges
+                    // (key, value) -> cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key)))
+                    // replace the line below with the line above
                     (key, value) -> new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))
             );
 
@@ -276,6 +279,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding), adjacent.iid());
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
+            // TODO: benchmark caching persisted edges
+            // else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
+            // replace the line below with the line above
             else return new ThingEdgeImpl.Persisted(owner.graph(), edgeIID);
         }
 
@@ -288,6 +294,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding, optimised.iid().type()),
                                                      adjacent.iid(), SuffixIID.of(optimised.iid().key()));
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
+            // TODO: benchmark caching persisted edges
+            // else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
+            // replace the line below with the line above
             else return new ThingEdgeImpl.Persisted(owner.graph(), edgeIID);
         }
 

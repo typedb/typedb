@@ -27,6 +27,7 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,8 +51,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final AtomicBoolean committed;
         private final ThingVertex from;
         private final ThingVertex to;
-        private ThingVertex optimised;
-        private int hash;
+        private final ThingVertex optimised;
+        private final int hash;
 
         /**
          * Default constructor for {@code ThingEdgeImpl.Buffered}.
@@ -61,11 +62,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to       the head vertex
          */
         public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
-            super(from.graph(), encoding);
-            assert this.graph == to.graph();
-            this.from = from;
-            this.to = to;
-            committed = new AtomicBoolean(false);
+            this(encoding, from, to, null);
         }
 
         /**
@@ -76,10 +73,15 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, ThingVertex optimised) {
-            this(encoding, from, to);
-            assert encoding.isOptimisation() && optimised != null;
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised) {
+            super(from.graph(), encoding);
+            assert this.graph == to.graph();
+            assert encoding.isOptimisation() || optimised == null;
+            this.from = from;
+            this.to = to;
             this.optimised = optimised;
+            this.hash = hash(Buffered.class, encoding, from, to);
+            committed = new AtomicBoolean(false);
         }
 
         @Override
@@ -177,7 +179,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(encoding, from, to, optimised);
             return hash;
         }
     }
@@ -221,6 +222,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 inIID = iid;
                 outIID = EdgeIID.Thing.of(iid.end(), iid.infix().outwards(), iid.start(), iid.suffix());
             }
+
+            this.hash = hash(Persisted.class, encoding, fromIID.hashCode(), toIID.hashCode());
         }
 
         @Override
@@ -242,7 +245,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public ThingVertex from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            from.outs().cache(this);
+            // TODO: benchmark caching persisted edges
+            // from.outs().cache(this);
+            // enable the the line above
             return from;
         }
 
@@ -250,7 +255,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public ThingVertex to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().cache(this);
+            // TODO: benchmark caching persisted edges
+            // to.ins().cache(this);
+            // enable the the line above
             return to;
         }
 
@@ -266,8 +273,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from().outs().remove(this);
-                to().ins().remove(this);
+                // TODO: benchmark caching persisted edges
+                // from().outs().remove(this);
+                // to().ins().remove(this);
+                // replace the 2 lines below with the 2 lines above
+                from().setModified();
+                to().setModified();
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }
@@ -317,7 +328,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          */
         @Override
         public final int hashCode() {
-            if (hash == 0) hash = hash(encoding, fromIID.hashCode(), toIID.hashCode());
             return hash;
         }
     }
