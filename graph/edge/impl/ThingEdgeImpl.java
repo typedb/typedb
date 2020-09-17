@@ -245,9 +245,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public ThingVertex from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
-            // TODO: benchmark caching persisted edges
-            // from.outs().cache(this);
-            // enable the the line above
+            from.outs().cache(this);
             return from;
         }
 
@@ -255,9 +253,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public ThingVertex to() {
             if (to != null) return to;
             to = graph.convert(toIID);
-            // TODO: benchmark caching persisted edges
-            // to.ins().cache(this);
-            // enable the the line above
+            to.ins().cache(this);
             return to;
         }
 
@@ -273,12 +269,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                // TODO: benchmark caching persisted edges
-                // from().outs().remove(this);
-                // to().ins().remove(this);
-                // replace the 2 lines below with the 2 lines above
-                from().setModified();
-                to().setModified();
+                from().outs().remove(this);
+                to().ins().remove(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
             }
