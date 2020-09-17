@@ -187,8 +187,11 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
     public static class Persisted extends SchemaAdjacencyImpl implements SchemaAdjacency {
 
+        private final ConcurrentHashMap<byte[], Iterator<SchemaEdge>> storageIterators;
+
         public Persisted(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
             super(owner, direction);
+            storageIterators = new ConcurrentHashMap<>();
         }
 
         private byte[] edgeIID(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> adjacent) {
@@ -203,16 +206,14 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         }
 
         private Iterator<SchemaEdge> edgeIterator(Encoding.Edge.Schema encoding) {
-            Iterator<SchemaEdge> storageIterator = owner.graph().storage().iterate(
+            Iterator<SchemaEdge> storageIterator = storageIterators.computeIfAbsent(
                     join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
-                    this::newPersistedEdge
+                    iid -> owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)))
             );
 
-            if (edges.get(encoding) == null) {
-                return storageIterator;
-            } else {
-                return distinct(link(edges.get(encoding).iterator(), storageIterator));
-            }
+            if (edges.get(encoding) == null) return storageIterator;
+            else if (!storageIterator.hasNext()) return edges.get(encoding).iterator();
+            else return distinct(link(edges.get(encoding).iterator(), storageIterator));
         }
 
         @Override
@@ -238,22 +239,19 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
                 byte[] edgeIID = edgeIID(encoding, adjacent);
                 byte[] overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
-                    return newPersistedEdge(edgeIID, overriddenIID);
+                    return cache(newPersistedEdge(edgeIID, overriddenIID));
                 }
             }
 
             return null;
         }
 
+        @Override
         public void delete(Encoding.Edge.Schema encoding) {
-            if (edges.containsKey(encoding)) edges.get(encoding).parallelStream().forEach(Edge::delete);
-            Iterator<SchemaEdge> storageIterator = owner.graph().storage().iterate(
-                    join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
-                    this::newPersistedEdge
-            );
-            storageIterator.forEachRemaining(Edge::delete);
+            edgeIterator(encoding).forEachRemaining(Edge::delete);
         }
 
+        @Override
         public void deleteAll() {
             for (Encoding.Edge.Type type : Encoding.Edge.Type.values()) delete(type);
             for (Encoding.Edge.Rule rule : Encoding.Edge.Rule.values()) delete(rule);

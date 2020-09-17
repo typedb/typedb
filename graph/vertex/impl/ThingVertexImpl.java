@@ -70,7 +70,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
      */
     protected abstract ThingAdjacency newAdjacency(Encoding.Direction direction);
 
-
     @Override
     public DataGraph graph() {
         return graph;
