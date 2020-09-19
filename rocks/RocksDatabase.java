@@ -23,6 +23,7 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
@@ -35,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -54,31 +56,37 @@ public class RocksDatabase implements Grakn.Database {
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
+    private final AtomicReference<SchemaGraph> schemaGraph;
 
-    private RocksDatabase(RocksGrakn rocksGrakn, String name) {
+    private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
         this.name = name;
         this.rocksGrakn = rocksGrakn;
         keyGenerator = new KeyGenerator.Persisted();
         sessions = new ConcurrentHashMap<>();
         schemaLock = new StampedLock();
         isOpen = new AtomicBoolean(false);
+        schemaGraph = new AtomicReference<>();
 
         try {
             rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().toString());
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
+
+        if (isNew) initialise();
+        else load();
+        isOpen.set(true);
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
-        return new RocksDatabase(rocksGrakn, name).initialiseAndOpen();
+        return new RocksDatabase(rocksGrakn, name, true);
     }
 
     static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name) {
-        return new RocksDatabase(rocksGrakn, name).loadAndOpen();
+        return new RocksDatabase(rocksGrakn, name, false);
     }
 
-    private RocksDatabase initialiseAndOpen() {
+    private void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(WRITE)) {
                 if (txn.graph().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
@@ -86,18 +94,14 @@ public class RocksDatabase implements Grakn.Database {
                 txn.commit();
             }
         }
-        isOpen.set(true);
-        return this;
     }
 
-    private RocksDatabase loadAndOpen() {
+    private void load() {
         try (RocksSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(READ)) {
                 keyGenerator.sync(txn.storage());
             }
         }
-        isOpen.set(true);
-        return this;
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
