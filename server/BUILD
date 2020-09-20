@@ -23,7 +23,7 @@ load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private
 package(default_visibility = ["//visibility:private",])
 
 genrule(
-    name = "version",
+    name = "version-src",
     srcs = [
         "templates/Version.java",
         "//:VERSION",
@@ -34,10 +34,16 @@ genrule(
 )
 
 java_library(
+    name = "version",
+    srcs = [":version-src"],
+)
+
+java_library(
     name = "server",
-    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]) + [":version"],
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
     deps = [
         # Internal package dependencies
+        ":version",
         "//:grakn",
         "//common:common",
         "//concept:concept",
