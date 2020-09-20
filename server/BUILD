@@ -36,6 +36,7 @@ genrule(
 java_library(
     name = "version",
     srcs = [":version-src"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-version:{pom_version}"],
 )
 
 java_library(
