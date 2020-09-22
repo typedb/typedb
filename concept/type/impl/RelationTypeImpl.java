@@ -203,14 +203,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void delete() {
-        if (getSubtypes().anyMatch(s -> !s.equals(this))) {
-            throw exception(TYPE_HAS_SUBTYPES.message(getLabel()));
-        } else if (getSubtypes().flatMap(RelationTypeImpl::getInstances).findFirst().isPresent()) {
-            throw exception(TYPE_HAS_INSTANCES.message(getLabel()));
-        } else {
-            declaredRoles().forEach(RoleTypeImpl::delete);
-            vertex.delete();
-        }
+        if (getSubtypes().anyMatch(s -> !s.equals(this))) throw exception(TYPE_HAS_SUBTYPES.message(getLabel()));
+        else if (getInstances().findFirst().isPresent()) throw exception(TYPE_HAS_INSTANCES.message(getLabel()));
+
+        declaredRoles().forEach(RoleTypeImpl::delete);
+        vertex.delete();
     }
 
     @Override
