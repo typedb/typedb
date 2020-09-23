@@ -27,12 +27,6 @@ import java.util.regex.Pattern;
 
 public interface TypeVertex extends SchemaVertex<VertexIID.Type, Encoding.Vertex.Type> {
 
-    Iterator<? extends ThingVertex> instances();
-
-    void buffer(ThingVertex thingVertex);
-
-    void unbuffer(ThingVertex thingVertex);
-
     String scope();
 
     String scopedLabel();

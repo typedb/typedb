@@ -98,7 +98,7 @@ public abstract class VertexIID extends IID {
 
         public abstract Encoding.Vertex.Schema encoding();
 
-        public static VertexIID.Schema of(byte[] bytes) {
+        public static Schema of(byte[] bytes) {
             switch (Encoding.Prefix.of(bytes[0]).type()) {
                 case TYPE:
                     return VertexIID.Type.of(bytes);
@@ -113,7 +113,7 @@ public abstract class VertexIID extends IID {
         public String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "]" +
-                        "[" + (Schema.LENGTH - PrefixIID.LENGTH) + ": " + sortedBytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, Schema.LENGTH)) + "]";
+                        "[" + (VertexIID.Schema.LENGTH - PrefixIID.LENGTH) + ": " + sortedBytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Schema.LENGTH)) + "]";
             }
             return readableString;
         }
@@ -148,7 +148,7 @@ public abstract class VertexIID extends IID {
          * @param encoding     of the {@code TypeVertex} in which the IID will be used for
          * @return a byte array representing a new IID for a {@code TypeVertex}
          */
-        public static Type generate(KeyGenerator keyGenerator, Encoding.Vertex.Type encoding) {
+        public static Type generate(KeyGenerator.Schema keyGenerator, Encoding.Vertex.Type encoding) {
             return of(join(encoding.prefix().bytes(), keyGenerator.forType(PrefixIID.of(encoding))));
         }
 
@@ -186,7 +186,7 @@ public abstract class VertexIID extends IID {
          * @param encoding     of the {@code RuleVertex} in which the IID will be used for
          * @return a byte array representing a new IID for a {@code RuleVertex}
          */
-        public static Rule generate(KeyGenerator keyGenerator, Encoding.Vertex.Rule encoding) {
+        public static Rule generate(KeyGenerator.Schema keyGenerator, Encoding.Vertex.Rule encoding) {
             return of(join(encoding.prefix().bytes(), keyGenerator.forRule()));
         }
 
@@ -197,7 +197,7 @@ public abstract class VertexIID extends IID {
 
     public static class Thing extends VertexIID {
 
-        public static final int PREFIX_W_TYPE_LENGTH = PrefixIID.LENGTH + Schema.LENGTH;
+        public static final int PREFIX_W_TYPE_LENGTH = PrefixIID.LENGTH + VertexIID.Schema.LENGTH;
         public static final int DEFAULT_LENGTH = PREFIX_W_TYPE_LENGTH + LONG_SIZE;
 
         public Thing(byte[] bytes) {
@@ -211,7 +211,7 @@ public abstract class VertexIID extends IID {
          * @param typeIID      of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
          * @return a byte array representing a new IID for a {@code ThingVertex}
          */
-        public static VertexIID.Thing generate(KeyGenerator keyGenerator, Type typeIID) {
+        public static VertexIID.Thing generate(KeyGenerator.Data keyGenerator, Type typeIID) {
             return new Thing(join(typeIID.encoding().instance().prefix().bytes(),
                                   typeIID.bytes(), keyGenerator.forThing(typeIID)));
         }
@@ -256,7 +256,7 @@ public abstract class VertexIID extends IID {
         public String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "]" +
-                        "[" + Schema.LENGTH + ": " + type().toString() + "]" +
+                        "[" + VertexIID.Schema.LENGTH + ": " + type().toString() + "]" +
                         "[" + (DEFAULT_LENGTH - PREFIX_W_TYPE_LENGTH) + ": " +
                         sortedBytesToLong(copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
             }
@@ -267,7 +267,7 @@ public abstract class VertexIID extends IID {
     public static abstract class Attribute<VALUE> extends VertexIID.Thing {
 
         static final int VALUE_TYPE_LENGTH = 1;
-        static final int VALUE_TYPE_INDEX = PrefixIID.LENGTH + Schema.LENGTH;
+        static final int VALUE_TYPE_INDEX = PrefixIID.LENGTH + VertexIID.Schema.LENGTH;
         static final int VALUE_INDEX = VALUE_TYPE_INDEX + VALUE_TYPE_LENGTH;
         private final Encoding.ValueType valueType;
 
@@ -352,7 +352,7 @@ public abstract class VertexIID extends IID {
         public java.lang.String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Vertex.Thing.ATTRIBUTE.toString() + "]" +
-                        "[" + Schema.LENGTH + ": " + type().toString() + "]" +
+                        "[" + VertexIID.Schema.LENGTH + ": " + type().toString() + "]" +
                         "[" + VALUE_TYPE_LENGTH + ": " + valueType().toString() + "]" +
                         "[" + (bytes.length - VALUE_INDEX) + ": " + value().toString() + "]";
             }

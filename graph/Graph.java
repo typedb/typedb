@@ -33,6 +33,4 @@ public interface Graph {
     void commit();
 
     void clear();
-
-    GraknException exception(String message);
 }

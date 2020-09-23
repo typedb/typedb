@@ -19,6 +19,7 @@
 package grakn.core.graph.vertex;
 
 import grakn.core.graph.DataGraph;
+import grakn.core.graph.Graphs;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -26,11 +27,18 @@ import grakn.core.graph.util.Encoding;
 public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 
     /**
-     * Returns the {@code Graph} containing all {@code ThingVertex}.
+     * Returns the {@code DataGraph} containing all {@code ThingVertex}.
      *
-     * @return the {@code Graph} containing all {@code ThingVertex}
+     * @return the {@code DataGraph} containing all {@code ThingVertex}
      */
     DataGraph graph();
+
+    /**
+     * Returns the {@code Graphs} containing both {@code SchemaGraph} and {@code DataGraph}.
+     *
+     * @return the {@code Graphs} containing both {@code SchemaGraph} and {@code DataGraph}
+     */
+    Graphs graphs();
 
     /**
      * Returns the {@code ThingAdjacency} set of outgoing edges.
@@ -66,6 +74,13 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
      * @param isInferred indicating whether this vertex was a result of inference
      */
     void isInferred(boolean isInferred);
+
+    /**
+     * Returns true if this {@code ThingVertex} is an instance of {@code AttributeVertex}.
+     *
+     * @return true if this {@code ThingVertex} is an instance of {@code AttributeVertex}
+     */
+    boolean isAttribute();
 
     /**
      * Casts this {@code ThingVertex} into an {@code AttributeVertex} if it is one.

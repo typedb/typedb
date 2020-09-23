@@ -112,7 +112,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<AttributeImpl> getHas(boolean onlyKey) {
+    public Stream<AttributeImpl<?>> getHas(boolean onlyKey) {
         return getHas(getType().getOwns(onlyKey).toArray(AttributeType[]::new));
     }
 
@@ -142,14 +142,14 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<AttributeImpl> getHas(AttributeType... attributeTypes) {
+    public Stream<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
         if (attributeTypes.length == 0) {
             return getAttributeVertices(getType().getOwns().collect(toList())).map(AttributeImpl::of);
         }
         return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
     }
 
-    private Stream<AttributeVertex> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
+    private Stream<AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
             return attributeTypes.stream()
                     .flatMap(AttributeType::getSubtypes).distinct()
@@ -164,7 +164,7 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public Stream<RoleType> getPlays() {
-        return stream(apply(apply(vertex.outs().edge(Encoding.Edge.Thing.PLAYS).to(), ThingVertex::type), RoleTypeImpl::of));
+        return stream(apply(apply(vertex.outs().edge(Encoding.Edge.Thing.PLAYS).to(), ThingVertex::type), v -> RoleTypeImpl.of(vertex.graphs(), v)));
     }
 
     @Override
@@ -174,7 +174,7 @@ public abstract class ThingImpl implements Thing {
                 throw exception(ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
             }
             String[] label = scopedLabel.split(":");
-            return RoleTypeImpl.of(vertex.graph().schema().getType(label[1], label[0]));
+            return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
         }).toArray(RoleType[]::new));
     }
 
@@ -233,7 +233,7 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public GraknException exception(String message) {
-        return vertex.graph().exception(message);
+        return vertex.graphs().exception(message);
     }
 
     @Override

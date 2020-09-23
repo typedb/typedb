@@ -19,30 +19,17 @@
 package grakn.core.graph;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.traversal.Traversal;
-import grakn.core.graph.util.KeyGenerator;
-import grakn.core.graph.util.Storage;
+
+import java.util.Objects;
 
 public class Graphs {
 
-    private final Storage storage;
-    private final KeyGenerator keyGenerator;
     private final SchemaGraph schemaGraph;
+
     private final DataGraph dataGraph;
-
-    public Graphs(Storage storage) {
-        this.storage = storage;
-        keyGenerator = new KeyGenerator.Buffered();
-        schemaGraph = new SchemaGraph(this);
-        dataGraph = new DataGraph(this);
-    }
-
-    public Storage storage() {
-        return storage;
-    }
-
-    public KeyGenerator keyGenerator() {
-        return keyGenerator;
+    public Graphs(SchemaGraph schemaGraph, DataGraph dataGraph) {
+        this.schemaGraph = schemaGraph;
+        this.dataGraph = dataGraph;
     }
 
     public SchemaGraph schema() {
@@ -53,24 +40,26 @@ public class Graphs {
         return dataGraph;
     }
 
-    public Traversal traversal() {
-        return new Traversal(); // TODO
-    }
-
     public void clear() {
         schemaGraph.clear();
         dataGraph.clear();
     }
 
-    public boolean isInitialised() {
-        return schemaGraph.isInitialised();
-    }
-
-    public void initialise() {
-        schemaGraph.initialise();
-    }
-
     public GraknException exception(String message) {
-        return storage.exception(message);
+        return dataGraph.storage().exception(message);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Graphs graphs = (Graphs) o;
+        return schemaGraph.equals(graphs.schemaGraph) && dataGraph.equals(graphs.dataGraph);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(schemaGraph, dataGraph);
     }
 }

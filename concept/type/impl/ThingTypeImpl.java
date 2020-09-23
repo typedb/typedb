@@ -26,7 +26,7 @@ import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.Graphs;
 import grakn.core.graph.edge.SchemaEdge;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
@@ -70,24 +70,24 @@ import static java.util.stream.Stream.concat;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
-    ThingTypeImpl(TypeVertex vertex) {
-        super(vertex);
+    ThingTypeImpl(Graphs graphs, TypeVertex vertex) {
+        super(graphs, vertex);
     }
 
-    ThingTypeImpl(SchemaGraph graph, String label, Encoding.Vertex.Type encoding) {
-        super(graph, label, encoding);
+    ThingTypeImpl(Graphs graphs, String label, Encoding.Vertex.Type encoding) {
+        super(graphs, label, encoding);
     }
 
-    public static ThingTypeImpl of(TypeVertex vertex) {
+    public static ThingTypeImpl of(Graphs graphs, TypeVertex vertex) {
         switch (vertex.encoding()) {
             case ENTITY_TYPE:
-                return EntityTypeImpl.of(vertex);
+                return EntityTypeImpl.of(graphs, vertex);
             case ATTRIBUTE_TYPE:
-                return AttributeTypeImpl.of(vertex);
+                return AttributeTypeImpl.of(graphs, vertex);
             case RELATION_TYPE:
-                return RelationTypeImpl.of(vertex);
+                return RelationTypeImpl.of(graphs, vertex);
             case THING_TYPE:
-                return new ThingTypeImpl.Root(vertex);
+                return new ThingTypeImpl.Root(graphs, vertex);
             default:
                 throw new GraknException(UNRECOGNISED_VALUE);
         }
@@ -114,7 +114,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> stream(t.vertex.instances())).map(thingConstructor);
+        return getSubtypes().flatMap(t -> stream(graphs.data().get(t.vertex))).map(thingConstructor);
     }
 
     @Override
@@ -209,28 +209,23 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private Stream<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
         if (isRoot()) return Stream.of();
-
         Iterator<TypeVertex> iterator;
-        if (onlyKey) {
-            iterator = vertex.outs().edge(OWNS_KEY).to();
-        } else {
-            iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
-        }
-
-        return stream(apply(iterator, AttributeTypeImpl::of));
+        if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
+        else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
+        return stream(apply(iterator, v -> AttributeTypeImpl.of(graphs, v)));
     }
 
     Stream<AttributeTypeImpl> overriddenOwns(boolean onlyKey, boolean transitive) {
         if (isRoot()) return Stream.empty();
-
         Stream<AttributeTypeImpl> overriddenOwns;
-
         if (onlyKey) {
-            overriddenOwns = stream(filter(vertex.outs().edge(OWNS_KEY).overridden(), Objects::nonNull).apply(AttributeTypeImpl::of));
+            overriddenOwns = stream(filter(
+                    vertex.outs().edge(OWNS_KEY).overridden(), Objects::nonNull
+            ).apply(v -> AttributeTypeImpl.of(graphs, v)));
         } else {
             overriddenOwns = stream(apply(distinct(link(
                     vertex.outs().edge(OWNS_KEY).overridden(), vertex.outs().edge(OWNS).overridden()
-            ).filter(Objects::nonNull)), AttributeTypeImpl::of));
+            ).filter(Objects::nonNull)), v -> AttributeTypeImpl.of(graphs, v)));
         }
 
         if (transitive) return concat(overriddenOwns, getSupertype().overriddenOwns(onlyKey, true));
@@ -270,7 +265,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), RoleTypeImpl::of)));
+                 stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), v -> RoleTypeImpl.of(graphs, v))));
     }
 
     @Override
@@ -285,7 +280,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         Set<TypeVertex> overridden = new HashSet<>();
         filter(vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
         return concat(
-                stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), RoleTypeImpl::of)),
+                stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), v -> RoleTypeImpl.of(graphs, v))),
                 getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex)));
     }
 
@@ -327,8 +322,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     public static class Root extends ThingTypeImpl {
 
-        public Root(TypeVertex vertex) {
-            super(vertex);
+        public Root(Graphs graphs, TypeVertex vertex) {
+            super(graphs, vertex);
             assert vertex.label().equals(Encoding.Vertex.Type.Root.THING.label());
         }
 
@@ -357,11 +352,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         assert this.vertex == v;
                         return this;
                     case ENTITY_TYPE:
-                        return EntityTypeImpl.of(v);
+                        return EntityTypeImpl.of(graphs, v);
                     case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(v);
+                        return AttributeTypeImpl.of(graphs, v);
                     case RELATION_TYPE:
-                        return RelationTypeImpl.of(v);
+                        return RelationTypeImpl.of(graphs, v);
                     default:
                         throw exception(UNRECOGNISED_VALUE.message());
                 }

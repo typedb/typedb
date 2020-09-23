@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
-import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.Graphs;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -38,8 +38,8 @@ import static grakn.core.common.iterator.Iterators.stream;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
-    private RoleTypeImpl(TypeVertex vertex) {
-        super(vertex);
+    private RoleTypeImpl(Graphs graphs, TypeVertex vertex) {
+        super(graphs, vertex);
         assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
         if (vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
@@ -50,17 +50,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
     }
 
-    private RoleTypeImpl(SchemaGraph graph, String label, String relation) {
-        super(graph, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
+    private RoleTypeImpl(Graphs graphs, String label, String relation) {
+        super(graphs, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
     }
 
-    public static RoleTypeImpl of(TypeVertex vertex) {
-        if (vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(vertex);
-        else return new RoleTypeImpl(vertex);
+    public static RoleTypeImpl of(Graphs graphs, TypeVertex vertex) {
+        if (vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(graphs, vertex);
+        else return new RoleTypeImpl(graphs, vertex);
     }
 
-    public static RoleTypeImpl of(SchemaGraph graph, String label, String relation) {
-        return new RoleTypeImpl(graph, label, relation);
+    public static RoleTypeImpl of(Graphs graphs, String label, String relation) {
+        return new RoleTypeImpl(graphs, label, relation);
     }
 
     void setAbstract() {
@@ -83,22 +83,22 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
-        return super.getSupertype(RoleTypeImpl::of);
+        return super.getSupertype(v -> of(graphs, v));
     }
 
     @Override
     public Stream<RoleTypeImpl> getSupertypes() {
-        return super.getSupertypes(RoleTypeImpl::of);
+        return super.getSupertypes(v -> of(graphs, v));
     }
 
     @Override
     public Stream<RoleTypeImpl> getSubtypes() {
-        return super.getSubtypes(RoleTypeImpl::of);
+        return super.getSubtypes(v -> of(graphs, v));
     }
 
     @Override
     public RelationTypeImpl getRelation() {
-        return RelationTypeImpl.of(vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
+        return RelationTypeImpl.of(graphs, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }
 
     @Override
@@ -108,7 +108,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<ThingTypeImpl> getPlayers() {
-        return stream(apply(vertex.ins().edge(Encoding.Edge.Type.PLAYS).from(), ThingTypeImpl::of));
+        return stream(apply(vertex.ins().edge(Encoding.Edge.Type.PLAYS).from(), v -> ThingTypeImpl.of(graphs, v)));
     }
 
     @Override
@@ -130,14 +130,14 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     public RoleImpl create(boolean isInferred) {
         validateIsCommittedAndNotAbstract(Entity.class);
-        ThingVertex instance = vertex.graph().data().create(vertex.iid(), isInferred);
+        ThingVertex instance = graphs.data().create(vertex.iid(), isInferred);
         return RoleImpl.of(instance);
     }
 
     public static class Root extends RoleTypeImpl {
 
-        Root(TypeVertex vertex) {
-            super(vertex);
+        Root(Graphs graphs, TypeVertex vertex) {
+            super(graphs, vertex);
             assert vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label());
         }
 

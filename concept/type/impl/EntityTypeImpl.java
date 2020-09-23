@@ -24,7 +24,7 @@ import grakn.core.concept.thing.impl.EntityImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.Graphs;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -38,8 +38,8 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTAT
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
-    private EntityTypeImpl(TypeVertex vertex) {
-        super(vertex);
+    private EntityTypeImpl(Graphs graphs, TypeVertex vertex) {
+        super(graphs, vertex);
         if (vertex.encoding() != Encoding.Vertex.Type.ENTITY_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(),
@@ -49,18 +49,19 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
     }
 
-    private EntityTypeImpl(SchemaGraph graph, String label) {
-        super(graph, label, Encoding.Vertex.Type.ENTITY_TYPE);
+    private EntityTypeImpl(Graphs graphs, String label) {
+        super(graphs, label, Encoding.Vertex.Type.ENTITY_TYPE);
         assert !label.equals(Encoding.Vertex.Type.Root.ENTITY.label());
     }
 
-    public static EntityTypeImpl of(TypeVertex vertex) {
-        if (vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label())) return new EntityTypeImpl.Root(vertex);
-        else return new EntityTypeImpl(vertex);
+    public static EntityTypeImpl of(Graphs graphs, TypeVertex vertex) {
+        if (vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label())) {
+            return new EntityTypeImpl.Root(graphs, vertex);
+        } else return new EntityTypeImpl(graphs, vertex);
     }
 
-    public static EntityTypeImpl of(SchemaGraph graph, String label) {
-        return new EntityTypeImpl(graph, label);
+    public static EntityTypeImpl of(Graphs graphs, String label) {
+        return new EntityTypeImpl(graphs, label);
     }
 
     @Override
@@ -71,17 +72,17 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Nullable
     @Override
     public EntityTypeImpl getSupertype() {
-        return super.getSupertype(EntityTypeImpl::of);
+        return super.getSupertype(v -> of(graphs, v));
     }
 
     @Override
     public Stream<EntityTypeImpl> getSupertypes() {
-        return super.getSupertypes(EntityTypeImpl::of);
+        return super.getSupertypes(v -> of(graphs, v));
     }
 
     @Override
     public Stream<EntityTypeImpl> getSubtypes() {
-        return super.getSubtypes(EntityTypeImpl::of);
+        return super.getSubtypes(v -> of(graphs, v));
     }
 
     @Override
@@ -102,7 +103,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(boolean isInferred) {
         validateIsCommittedAndNotAbstract(Entity.class);
-        ThingVertex instance = vertex.graph().data().create(vertex.iid(), isInferred);
+        ThingVertex instance = graphs.data().create(vertex.iid(), isInferred);
         return EntityImpl.of(instance);
     }
 
@@ -111,8 +112,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private static class Root extends EntityTypeImpl {
 
-        private Root(TypeVertex vertex) {
-            super(vertex);
+        private Root(Graphs graphs, TypeVertex vertex) {
+            super(graphs, vertex);
             assert vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label());
         }
 

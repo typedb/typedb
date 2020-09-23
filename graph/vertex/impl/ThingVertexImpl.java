@@ -20,9 +20,9 @@ package grakn.core.graph.vertex.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.DataGraph;
+import grakn.core.graph.Graphs;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import grakn.core.graph.edge.Edge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -38,6 +38,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERA
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
+    protected final Graphs graphs;
     protected final DataGraph graph;
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
@@ -47,6 +48,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     ThingVertexImpl(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
         super(iid);
         this.graph = graph;
+        this.graphs = new Graphs(graph.schema(), graph);
         this.outs = newAdjacency(Encoding.Direction.OUT);
         this.ins = newAdjacency(Encoding.Direction.IN);
         this.isInferred = isInferred;
@@ -73,6 +75,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     @Override
     public DataGraph graph() {
         return graph;
+    }
+
+    @Override
+    public Graphs graphs() {
+        return graphs;
     }
 
     @Override
@@ -120,17 +127,18 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public AttributeVertexImpl asAttribute() {
+    public boolean isAttribute() {
+        return false;
+    }
+
+    @Override
+    public AttributeVertexImpl<?> asAttribute() {
         throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(AttributeVertex.class)));
     }
 
     void deleteEdges() {
         outs.deleteAll();
         ins.deleteAll();
-    }
-
-    void deleteVertexFromType() {
-        type().unbuffer(this);
     }
 
     void deleteVertexFromGraph() {
@@ -151,7 +159,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public Buffered(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
-            this.type().buffer(this);
             setModified();
         }
 
@@ -181,7 +188,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
                 deleteEdges();
-                deleteVertexFromType();
                 deleteVertexFromGraph();
             }
         }

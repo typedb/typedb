@@ -38,10 +38,9 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     private final VertexIID.Attribute<VALUE> attributeIID;
 
-    AttributeVertexImpl(DataGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred, boolean buffer) {
+    AttributeVertexImpl(DataGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
-        if (buffer) type().buffer(this);
     }
 
     public static AttributeVertexImpl<?> of(DataGraph graph, VertexIID.Attribute<?> iid) {
@@ -94,14 +93,22 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
     }
 
+    void deleteVertexFromIndex() {
+        graph.storage().delete(index().bytes());
+    }
+
+    @Override
+    void deleteVertexFromGraph() {
+        graph.delete(this);
+    }
+
     @Override
     public void delete() {
         if (isDeleted.compareAndSet(false, true)) {
             deleteEdges();
-            deleteVertexFromType();
             deleteVertexFromStorage();
-            graph.storage().delete(index().bytes());
-            graph.deleteAttribute(this);
+            deleteVertexFromIndex();
+            deleteVertexFromGraph();
         }
     }
 
@@ -125,7 +132,12 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public AttributeVertexImpl asAttribute() {
+    public boolean isAttribute() {
+        return true;
+    }
+
+    @Override
+    public AttributeVertexImpl<?> asAttribute() {
         return this;
     }
 
@@ -157,11 +169,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {
 
         public Boolean(DataGraph graph, VertexIID.Attribute<java.lang.Boolean> iid) {
-            this(graph, iid, false, false);
+            this(graph, iid, false);
         }
 
-        public Boolean(DataGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, boolean isInferred, boolean buffer) {
-            super(graph, iid, isInferred, buffer);
+        public Boolean(DataGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, boolean isInferred) {
+            super(graph, iid, isInferred);
         }
 
         @Override
@@ -178,11 +190,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public static class Long extends AttributeVertexImpl<java.lang.Long> {
 
         public Long(DataGraph graph, VertexIID.Attribute.Long iid) {
-            this(graph, iid, false, false);
+            this(graph, iid, false);
         }
 
-        public Long(DataGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred, boolean buffer) {
-            super(graph, iid, isInferred, buffer);
+        public Long(DataGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred) {
+            super(graph, iid, isInferred);
         }
 
         @Override
@@ -199,11 +211,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public static class Double extends AttributeVertexImpl<java.lang.Double> {
 
         public Double(DataGraph graph, VertexIID.Attribute.Double iid) {
-            this(graph, iid, false, false);
+            this(graph, iid, false);
         }
 
-        public Double(DataGraph graph, VertexIID.Attribute<java.lang.Double> iid, boolean isInferred, boolean buffer) {
-            super(graph, iid, isInferred, buffer);
+        public Double(DataGraph graph, VertexIID.Attribute<java.lang.Double> iid, boolean isInferred) {
+            super(graph, iid, isInferred);
         }
 
         @Override
@@ -220,11 +232,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public static class String extends AttributeVertexImpl<java.lang.String> {
 
         public String(DataGraph graph, VertexIID.Attribute.String iid) {
-            this(graph, iid, false, false);
+            this(graph, iid, false);
         }
 
-        public String(DataGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred, boolean buffer) {
-            super(graph, iid, isInferred, buffer);
+        public String(DataGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred) {
+            super(graph, iid, isInferred);
         }
 
         @Override
@@ -241,11 +253,11 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public static class DateTime extends AttributeVertexImpl<java.time.LocalDateTime> {
 
         public DateTime(DataGraph graph, VertexIID.Attribute.DateTime iid) {
-            this(graph, iid, false, false);
+            this(graph, iid, false);
         }
 
-        public DateTime(DataGraph graph, VertexIID.Attribute<LocalDateTime> iid, boolean isInferred, boolean buffer) {
-            super(graph, iid, isInferred, buffer);
+        public DateTime(DataGraph graph, VertexIID.Attribute<LocalDateTime> iid, boolean isInferred) {
+            super(graph, iid, isInferred);
         }
 
         @Override

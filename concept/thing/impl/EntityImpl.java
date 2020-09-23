@@ -36,7 +36,7 @@ public class EntityImpl extends ThingImpl implements Entity {
 
     @Override
     public EntityTypeImpl getType() {
-        return EntityTypeImpl.of(vertex.type());
+        return EntityTypeImpl.of(vertex.graphs(), vertex.type());
     }
 
     @Override

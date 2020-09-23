@@ -25,7 +25,9 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
+import grakn.core.graph.DataGraph;
 import grakn.core.graph.Graphs;
+import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.query.Query;
@@ -59,7 +61,7 @@ class RocksTransaction implements Grakn.Transaction {
     private final Transaction rocksTransaction;
     private final Arguments.Transaction.Type type;
     private final CoreStorage storage;
-    private final Graphs graph;
+    private final Graphs graphs;
     private final Concepts concepts;
     private final Query query;
     private final AtomicBoolean isOpen;
@@ -76,15 +78,17 @@ class RocksTransaction implements Grakn.Transaction {
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
 
         storage = new CoreStorage();
-        graph = new Graphs(storage);
-        concepts = new Concepts(graph);
+        SchemaGraph schemaGraph = new SchemaGraph(storage);
+        DataGraph dataGraph = new DataGraph(storage, schemaGraph);
+        graphs = new Graphs(schemaGraph, dataGraph);
+        concepts = new Concepts(graphs);
         query = new Query(concepts, context);
 
         isOpen = new AtomicBoolean(true);
     }
 
-    Graphs graph() {
-        return graph;
+    Graphs graphs() {
+        return graphs;
     }
 
     public CoreStorage storage() {
@@ -146,9 +150,9 @@ class RocksTransaction implements Grakn.Transaction {
             try {
                 if (type.isRead()) {
                     throw new GraknException(ILLEGAL_COMMIT);
-                } else if (session.type().isData() && graph.schema().isModified()) {
+                } else if (session.type().isData() && graphs.schema().isModified()) {
                     throw new GraknException(SESSION_DATA_VIOLATION);
-                } else if (session.type().isSchema() && graph.data().isModified()) {
+                } else if (session.type().isSchema() && graphs.data().isModified()) {
                     throw new GraknException(SESSION_SCHEMA_VIOLATION);
                 }
 
@@ -157,10 +161,10 @@ class RocksTransaction implements Grakn.Transaction {
                 rocksTransaction.disableIndexing();
                 if (session.type().isSchema()) {
                     concepts.validateTypes();
-                    graph.schema().commit();
+                    graphs.schema().commit();
                 } else if (session.type().isData()) {
                     concepts.validateThings();
-                    graph.data().commit();
+                    graphs.data().commit();
                 } else {
                     assert false;
                 }
@@ -170,7 +174,7 @@ class RocksTransaction implements Grakn.Transaction {
                 rollback();
                 throw new GraknException(e);
             } finally {
-                graph.clear();
+                graphs.clear();
                 closeResources();
             }
         } else {
@@ -181,7 +185,7 @@ class RocksTransaction implements Grakn.Transaction {
     @Override
     public void rollback() {
         try {
-            graph.clear();
+            graphs.clear();
             rocksTransaction.rollback();
         } catch (RocksDBException e) {
             throw new GraknException(e);
@@ -220,8 +224,13 @@ class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public KeyGenerator keyGenerator() {
-            return session.keyGenerator();
+        public KeyGenerator.Schema schemaKeyGenerator() {
+            return session.schemaKeyGenerator();
+        }
+
+        @Override
+        public KeyGenerator.Data dataKeyGenerator() {
+            return session.dataKeyGenerator();
         }
 
         @Override

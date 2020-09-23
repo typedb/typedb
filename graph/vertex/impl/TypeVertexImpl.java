@@ -18,29 +18,20 @@
 
 package grakn.core.graph.vertex.impl;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
-import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.common.iterator.Iterators.distinct;
-import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.util.Encoding.Property.ABSTRACT;
 import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.REGEX;
@@ -93,21 +84,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         @Override
         protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Buffered(this, direction);
-        }
-
-        @Override
-        public void buffer(ThingVertex thingVertex) {
-            throw new GraknException(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void unbuffer(ThingVertex thingVertex) {
-            throw new GraknException(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public Iterator<? extends ThingVertex> instances() {
-            return Collections.emptyIterator();
         }
 
         @Override
@@ -216,12 +192,10 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
     public static class Persisted extends TypeVertexImpl {
 
-        private final Set<ThingVertex> instances;
         private boolean regexLookedUp;
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
-            instances = ConcurrentHashMap.newKeySet();
             regexLookedUp = false;
         }
 
@@ -229,7 +203,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   getScope(graph, iid));
-            instances = ConcurrentHashMap.newKeySet();
         }
 
         @Nullable
@@ -242,26 +215,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         @Override
         protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Persisted(this, direction);
-        }
-
-        @Override
-        public void buffer(ThingVertex thingVertex) {
-            instances.add(thingVertex);
-        }
-
-        @Override
-        public void unbuffer(ThingVertex thingVertex) {
-            instances.remove(thingVertex); // keep the cast to avoid warning
-        }
-
-        @Override
-        public Iterator<ThingVertex> instances() {
-            Iterator<ThingVertex> storageIterator = graph.storage().iterate(
-                    join(iid.bytes(), Encoding.Edge.ISA.in().bytes()),
-                    (key, value) -> graph.data().convert(EdgeIID.InwardsISA.of(key).end())
-            );
-            if (instances.isEmpty()) return storageIterator;
-            else return distinct(link(instances.iterator(), storageIterator));
         }
 
         @Override

@@ -27,7 +27,9 @@ public interface Storage {
 
     boolean isOpen();
 
-    KeyGenerator keyGenerator();
+    KeyGenerator.Schema schemaKeyGenerator();
+
+    KeyGenerator.Data dataKeyGenerator();
 
     byte[] get(byte[] key);
 

@@ -52,7 +52,8 @@ public class RocksDatabase implements Grakn.Database {
     private final String name;
     private final RocksGrakn rocksGrakn;
     private final OptimisticTransactionDB rocksDB;
-    private final KeyGenerator.Persisted keyGenerator;
+    private final KeyGenerator.Data.Persisted dataKeyGenerator;
+    private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
@@ -61,7 +62,8 @@ public class RocksDatabase implements Grakn.Database {
     private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
         this.name = name;
         this.rocksGrakn = rocksGrakn;
-        keyGenerator = new KeyGenerator.Persisted();
+        schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
+        dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
         schemaLock = new StampedLock();
         isOpen = new AtomicBoolean(false);
@@ -89,8 +91,8 @@ public class RocksDatabase implements Grakn.Database {
     private void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(WRITE)) {
-                if (txn.graph().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
-                txn.graph().initialise();
+                if (txn.graphs().schema().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
+                txn.graphs().schema().initialise();
                 txn.commit();
             }
         }
@@ -99,7 +101,8 @@ public class RocksDatabase implements Grakn.Database {
     private void load() {
         try (RocksSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(READ)) {
-                keyGenerator.sync(txn.storage());
+                schemaKeyGenerator.sync(txn.storage());
+                dataKeyGenerator.sync(txn.storage());
             }
         }
     }
@@ -124,8 +127,12 @@ public class RocksDatabase implements Grakn.Database {
         return rocksDB;
     }
 
-    KeyGenerator keyGenerator() {
-        return keyGenerator;
+    KeyGenerator.Schema schemaKeyGenerator() {
+        return schemaKeyGenerator;
+    }
+
+    KeyGenerator.Data dataKeyGenerator() {
+        return dataKeyGenerator;
     }
 
     long acquireSchemaReadLock() {

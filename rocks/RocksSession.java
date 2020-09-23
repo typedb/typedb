@@ -56,8 +56,12 @@ public class RocksSession implements Grakn.Session {
         return database.rocks();
     }
 
-    KeyGenerator keyGenerator() {
-        return database.keyGenerator();
+    KeyGenerator.Schema schemaKeyGenerator() {
+        return database.schemaKeyGenerator();
+    }
+
+    KeyGenerator.Data dataKeyGenerator() {
+        return database.dataKeyGenerator();
     }
 
     void remove(RocksTransaction transaction) {

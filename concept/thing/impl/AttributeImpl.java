@@ -64,7 +64,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeTypeImpl getType() {
-        return AttributeTypeImpl.of(vertex.type());
+        return AttributeTypeImpl.of(vertex.graphs(), vertex.type());
     }
 
     @Override

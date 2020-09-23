@@ -55,7 +55,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public RelationTypeImpl getType() {
-        return RelationTypeImpl.of(vertex.type());
+        return RelationTypeImpl.of(vertex.graphs(), vertex.type());
     }
 
     @Override

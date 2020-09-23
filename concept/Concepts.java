@@ -51,137 +51,137 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE
 
 public final class Concepts {
 
-    private final Graphs graph;
+    private final Graphs graphs;
 
-    public Concepts(Graphs graph) {
-        this.graph = graph;
+    public Concepts(Graphs graphs) {
+        this.graphs = graphs;
     }
 
     public ThingType getRootThingType() {
-        TypeVertex vertex = graph.schema().getType(Encoding.Vertex.Type.Root.THING.label());
-        if (vertex != null) return new ThingTypeImpl.Root(vertex);
-        else throw graph.exception(ILLEGAL_STATE.message());
+        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.THING.label());
+        if (vertex != null) return new ThingTypeImpl.Root(graphs, vertex);
+        else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType getRootEntityType() {
-        TypeVertex vertex = graph.schema().getType(Encoding.Vertex.Type.Root.ENTITY.label());
-        if (vertex != null) return EntityTypeImpl.of(vertex);
-        else throw graph.exception(ILLEGAL_STATE.message());
+        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.ENTITY.label());
+        if (vertex != null) return EntityTypeImpl.of(graphs, vertex);
+        else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public RelationType getRootRelationType() {
-        TypeVertex vertex = graph.schema().getType(Encoding.Vertex.Type.Root.RELATION.label());
-        if (vertex != null) return RelationTypeImpl.of(vertex);
-        else throw graph.exception(ILLEGAL_STATE.message());
+        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.RELATION.label());
+        if (vertex != null) return RelationTypeImpl.of(graphs, vertex);
+        else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public AttributeType getRootAttributeType() {
-        TypeVertex vertex = graph.schema().getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label());
-        if (vertex != null) return AttributeTypeImpl.of(vertex);
-        else throw graph.exception(ILLEGAL_STATE.message());
+        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label());
+        if (vertex != null) return AttributeTypeImpl.of(graphs, vertex);
+        else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType putEntityType(String label) {
-        TypeVertex vertex = graph.schema().getType(label);
-        if (vertex != null) return EntityTypeImpl.of(vertex);
-        else return EntityTypeImpl.of(graph.schema(), label);
+        TypeVertex vertex = graphs.schema().getType(label);
+        if (vertex != null) return EntityTypeImpl.of(graphs, vertex);
+        else return EntityTypeImpl.of(graphs, label);
     }
 
     public EntityType getEntityType(String label) {
-        TypeVertex vertex = graph.schema().getType(label);
-        if (vertex != null) return EntityTypeImpl.of(vertex);
+        TypeVertex vertex = graphs.schema().getType(label);
+        if (vertex != null) return EntityTypeImpl.of(graphs, vertex);
         else return null;
     }
 
     public RelationType putRelationType(String label) {
-        TypeVertex vertex = graph.schema().getType(label);
-        if (vertex != null) return RelationTypeImpl.of(vertex);
-        else return RelationTypeImpl.of(graph.schema(), label);
+        TypeVertex vertex = graphs.schema().getType(label);
+        if (vertex != null) return RelationTypeImpl.of(graphs, vertex);
+        else return RelationTypeImpl.of(graphs, label);
     }
 
     public RelationType getRelationType(String label) {
-        TypeVertex vertex = graph.schema().getType(label);
-        if (vertex != null) return RelationTypeImpl.of(vertex);
+        TypeVertex vertex = graphs.schema().getType(label);
+        if (vertex != null) return RelationTypeImpl.of(graphs, vertex);
         else return null;
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
-        if (valueType == null) throw graph.exception(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
-        if (!valueType.isWritable()) throw graph.exception(UNSUPPORTED_OPERATION.message());
+        if (valueType == null) throw graphs.exception(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
+        if (!valueType.isWritable()) throw graphs.exception(UNSUPPORTED_OPERATION.message());
 
-        TypeVertex vertex = graph.schema().getType(label);
+        TypeVertex vertex = graphs.schema().getType(label);
         switch (valueType) {
             case BOOLEAN:
-                if (vertex != null) return AttributeTypeImpl.Boolean.of(vertex);
-                else return new AttributeTypeImpl.Boolean(graph.schema(), label);
+                if (vertex != null) return AttributeTypeImpl.Boolean.of(graphs, vertex);
+                else return new AttributeTypeImpl.Boolean(graphs, label);
             case LONG:
-                if (vertex != null) return AttributeTypeImpl.Long.of(vertex);
-                else return new AttributeTypeImpl.Long(graph.schema(), label);
+                if (vertex != null) return AttributeTypeImpl.Long.of(graphs, vertex);
+                else return new AttributeTypeImpl.Long(graphs, label);
             case DOUBLE:
-                if (vertex != null) return AttributeTypeImpl.Double.of(vertex);
-                else return new AttributeTypeImpl.Double(graph.schema(), label);
+                if (vertex != null) return AttributeTypeImpl.Double.of(graphs, vertex);
+                else return new AttributeTypeImpl.Double(graphs, label);
             case STRING:
-                if (vertex != null) return AttributeTypeImpl.String.of(vertex);
-                else return new AttributeTypeImpl.String(graph.schema(), label);
+                if (vertex != null) return AttributeTypeImpl.String.of(graphs, vertex);
+                else return new AttributeTypeImpl.String(graphs, label);
             case DATETIME:
-                if (vertex != null) return AttributeTypeImpl.DateTime.of(vertex);
-                else return new AttributeTypeImpl.DateTime(graph.schema(), label);
+                if (vertex != null) return AttributeTypeImpl.DateTime.of(graphs, vertex);
+                else return new AttributeTypeImpl.DateTime(graphs, label);
             default:
-                throw graph.exception(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.name()));
+                throw graphs.exception(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.name()));
         }
     }
 
     public AttributeType getAttributeType(String label) {
-        TypeVertex vertex = graph.schema().getType(label);
-        if (vertex != null) return AttributeTypeImpl.of(vertex);
+        TypeVertex vertex = graphs.schema().getType(label);
+        if (vertex != null) return AttributeTypeImpl.of(graphs, vertex);
         else return null;
     }
 
     public Type getType(String label) {
-        final TypeVertex vertex = graph.schema().getType(label);
-        if (vertex != null) return TypeImpl.of(vertex);
+        final TypeVertex vertex = graphs.schema().getType(label);
+        if (vertex != null) return TypeImpl.of(graphs, vertex);
         else return null;
     }
 
     public Rule putRule(String label, Pattern when, Pattern then) {
-        RuleVertex vertex = graph.schema().getRule(label);
+        RuleVertex vertex = graphs.schema().getRule(label);
         if (vertex != null) {
-            Rule rule = RuleImpl.of(vertex);
+            Rule rule = RuleImpl.of(graphs, vertex);
             rule.setWhen(when);
             rule.setThen(then);
             return rule;
         } else {
-            return RuleImpl.of(graph.schema(), label, when, then);
+            return RuleImpl.of(graphs, label, when, then);
         }
     }
 
     public Rule getRule(String label) {
-        RuleVertex ruleVertex = graph.schema().getRule(label);
-        if (ruleVertex != null) return RuleImpl.of(ruleVertex);
+        RuleVertex ruleVertex = graphs.schema().getRule(label);
+        if (ruleVertex != null) return RuleImpl.of(graphs, ruleVertex);
         return null;
     }
 
     public Thing getThing(final byte[] iid) {
-        final ThingVertex thingVertex = graph.data().get(VertexIID.Thing.of(iid));
+        final ThingVertex thingVertex = graphs.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
     }
 
     public void validateTypes() {
-        List<GraknException> exceptions = graph.schema().types().parallel()
+        List<GraknException> exceptions = graphs.schema().types().parallel()
                 .filter(Vertex::isModified)
-                .map(v -> TypeImpl.of(v).validate())
+                .map(v -> TypeImpl.of(graphs, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        if (!exceptions.isEmpty()) throw graph.exception(GraknException.getMessages(exceptions));
+        if (!exceptions.isEmpty()) throw graphs.exception(GraknException.getMessages(exceptions));
     }
 
     public void validateThings() {
-        graph.data().vertices().parallel()
+        graphs.data().vertices().parallel()
                 .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Vertex.Thing.ROLE))
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 
     public GraknException exception(String errorMessage) {
-        return graph.exception(errorMessage);
+        return graphs.exception(errorMessage);
     }
 }

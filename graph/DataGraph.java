@@ -18,9 +18,10 @@
 
 package grakn.core.graph;
 
-import grakn.core.common.exception.GraknException;
+import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
@@ -30,35 +31,47 @@ import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.distinct;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
 import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
 
-    private final Graphs graphManager;
+    private final Storage storage;
+    private final SchemaGraph schemaGraph;
+    private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
+    private final ConcurrentMap<VertexIID.Type, Set<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private boolean isModified;
 
-    DataGraph(Graphs graphManager) {
-        this.graphManager = graphManager;
+    public DataGraph(Storage storage, SchemaGraph schemaGraph) {
+        this.storage = storage;
+        this.schemaGraph = schemaGraph;
+        keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
+        thingsByTypeIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
     }
 
     public SchemaGraph schema() {
-        return graphManager.schema();
+        return schemaGraph;
     }
 
     @Override
     public Storage storage() {
-        return graphManager.storage();
+        return storage;
     }
 
     public Stream<ThingVertex> vertices() {
@@ -66,18 +79,14 @@ public class DataGraph implements Graph {
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
-        assert storage().isOpen();
-        if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
-            return get(iid.asAttribute());
-        }
-        if (!thingsByIID.containsKey(iid) && storage().get(iid.bytes()) == null) {
-            return null;
-        }
+        assert storage.isOpen();
+        if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) return get(iid.asAttribute());
+        else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
         return convert(iid);
     }
 
     public AttributeVertex<?> get(VertexIID.Attribute<?> iid) {
-        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage().get(iid.bytes()) == null) {
+        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
             return null;
         }
         return convert(iid);
@@ -85,32 +94,34 @@ public class DataGraph implements Graph {
 
     public ThingVertex convert(VertexIID.Thing iid) {
         // TODO: benchmark caching persisted edges
-        // assert storage().isOpen();
+        // assert storage.isOpen();
         // enable the the line above
-        if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
-            return convert(iid.asAttribute());
-        } else {
-            return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
-        }
+        if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) return convert(iid.asAttribute());
+        else return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
     }
 
     public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
         switch (attIID.valueType()) {
             case BOOLEAN:
-                return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(), iid1 ->
-                        new AttributeVertexImpl.Boolean(this, iid1));
+                return attributesByIID.booleans.computeIfAbsent(
+                        attIID.asBoolean(), iid1 -> new AttributeVertexImpl.Boolean(this, iid1)
+                );
             case LONG:
-                return attributesByIID.longs.computeIfAbsent(attIID.asLong(), iid1 ->
-                        new AttributeVertexImpl.Long(this, iid1));
+                return attributesByIID.longs.computeIfAbsent(
+                        attIID.asLong(), iid1 -> new AttributeVertexImpl.Long(this, iid1)
+                );
             case DOUBLE:
-                return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(), iid1 ->
-                        new AttributeVertexImpl.Double(this, iid1));
+                return attributesByIID.doubles.computeIfAbsent(
+                        attIID.asDouble(), iid1 -> new AttributeVertexImpl.Double(this, iid1)
+                );
             case STRING:
-                return attributesByIID.strings.computeIfAbsent(attIID.asString(), iid1 ->
-                        new AttributeVertexImpl.String(this, iid1));
+                return attributesByIID.strings.computeIfAbsent(
+                        attIID.asString(), iid1 -> new AttributeVertexImpl.String(this, iid1)
+                );
             case DATETIME:
-                return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(), iid1 ->
-                        new AttributeVertexImpl.DateTime(this, iid1));
+                return attributesByIID.dateTimes.computeIfAbsent(
+                        attIID.asDateTime(), iid1 -> new AttributeVertexImpl.DateTime(this, iid1)
+                );
             default:
                 assert false;
                 return null;
@@ -118,146 +129,199 @@ public class DataGraph implements Graph {
     }
 
     public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert !typeIID.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
-        VertexIID.Thing iid = generate(graphManager.keyGenerator(), typeIID);
+        VertexIID.Thing iid = generate(keyGenerator, typeIID);
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
+        thingsByTypeIID.computeIfAbsent(typeIID, t -> new HashSet<>()).add(vertex);
         return vertex;
     }
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
     ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
         return map.computeIfAbsent(attIID, iid -> {
-            byte[] val = storage().get(iid.bytes());
+            byte[] val = storage.get(iid.bytes());
             if (val != null) return vertexConstructor.apply(iid);
             else return null;
         });
     }
 
+    public Iterator<ThingVertex> get(TypeVertex typeVertex) {
+        Iterator<ThingVertex> storageIterator = storage.iterate(
+                join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
+                (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
+        );
+        if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
+        else return distinct(link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator));
+    }
+
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
 
         return getOrReadFromStorage(
                 attributesByIID.booleans,
                 new VertexIID.Attribute.Boolean(type.iid(), value),
-                iid -> new AttributeVertexImpl.Boolean(DataGraph.this, iid)
+                iid -> new AttributeVertexImpl.Boolean(this, iid)
         );
     }
 
     public AttributeVertex<Long> get(TypeVertex type, long value) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
 
         return getOrReadFromStorage(
                 attributesByIID.longs,
                 new VertexIID.Attribute.Long(type.iid(), value),
-                iid -> new AttributeVertexImpl.Long(DataGraph.this, iid)
+                iid -> new AttributeVertexImpl.Long(this, iid)
         );
     }
 
     public AttributeVertex<Double> get(TypeVertex type, double value) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
 
         return getOrReadFromStorage(
                 attributesByIID.doubles,
                 new VertexIID.Attribute.Double(type.iid(), value),
-                iid -> new AttributeVertexImpl.Double(DataGraph.this, iid)
+                iid -> new AttributeVertexImpl.Double(this, iid)
         );
     }
 
     public AttributeVertex<String> get(TypeVertex type, String value) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
 
         return getOrReadFromStorage(
                 attributesByIID.strings,
                 new VertexIID.Attribute.String(type.iid(), value),
-                iid -> new AttributeVertexImpl.String(DataGraph.this, iid)
+                iid -> new AttributeVertexImpl.String(this, iid)
         );
     }
 
     public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         return getOrReadFromStorage(
                 attributesByIID.dateTimes,
                 new VertexIID.Attribute.DateTime(type.iid(), value),
-                iid -> new AttributeVertexImpl.DateTime(DataGraph.this, iid)
+                iid -> new AttributeVertexImpl.DateTime(this, iid)
         );
     }
 
     public AttributeVertex<Boolean> put(TypeVertex type, boolean value, boolean isInferred) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
 
-        return attributesByIID.booleans.computeIfAbsent(
+        AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
-                iid -> new AttributeVertexImpl.Boolean(DataGraph.this, iid, isInferred, true)
+                iid -> {
+                    AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    return v;
+                }
         );
+        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        return vertex;
     }
 
     public AttributeVertex<Long> put(TypeVertex type, long value, boolean isInferred) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
 
-        return attributesByIID.longs.computeIfAbsent(
+        AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
-                iid -> new AttributeVertexImpl.Long(DataGraph.this, iid, isInferred, true)
+                iid -> {
+                    AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    return v;
+                }
         );
+        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        return vertex;
     }
 
     public AttributeVertex<Double> put(TypeVertex type, double value, boolean isInferred) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
 
-        return attributesByIID.doubles.computeIfAbsent(
+        AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
-                iid -> new AttributeVertexImpl.Double(DataGraph.this, iid, isInferred, true)
+                iid -> {
+                    AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    return v;
+                }
         );
+        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        return vertex;
     }
 
     public AttributeVertex<String> put(TypeVertex type, String value, boolean isInferred) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
         assert value.length() <= Encoding.STRING_MAX_LENGTH;
 
-        return attributesByIID.strings.computeIfAbsent(
+        AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 new VertexIID.Attribute.String(type.iid(), value),
-                iid -> new AttributeVertexImpl.String(DataGraph.this, iid, isInferred, true)
+                iid -> {
+                    AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    return v;
+                }
         );
+        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        return vertex;
     }
 
     public AttributeVertex<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
-        assert storage().isOpen();
+        assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
-        return attributesByIID.dateTimes.computeIfAbsent(
+        AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
-                iid -> new AttributeVertexImpl.DateTime(DataGraph.this, iid, isInferred, true)
+                iid -> {
+                    AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    return v;
+                }
         );
+        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        return vertex;
+    }
+
+    public void delete(AttributeVertex<?> vertex) {
+        assert storage.isOpen();
+        attributesByIID.remove(vertex.iid());
+        if (thingsByTypeIID.containsKey(vertex.type().iid())) {
+            thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
+        }
     }
 
     public void delete(ThingVertex vertex) {
-        assert storage().isOpen();
-        thingsByIID.remove(vertex.iid());
+        assert storage.isOpen();
+        if (!vertex.isAttribute()) {
+            thingsByIID.remove(vertex.iid());
+            if (thingsByTypeIID.containsKey(vertex.type().iid())) {
+                thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
+            }
+        } else delete(vertex.asAttribute());
     }
 
     public void setModified() {
-        assert storage().isOpen();
+        assert storage.isOpen();
         if (!isModified) isModified = true;
     }
 
@@ -265,20 +329,10 @@ public class DataGraph implements Graph {
         return isModified;
     }
 
-    public void deleteAttribute(AttributeVertex<?> vertex) {
-        assert storage().isOpen();
-        attributesByIID.remove(vertex.iid());
-    }
-
     @Override
     public void clear() {
         thingsByIID.clear();
         attributesByIID.clear();
-    }
-
-    @Override
-    public GraknException exception(String errorMessage) {
-        return graphManager.exception(errorMessage);
     }
 
     /**
@@ -294,7 +348,7 @@ public class DataGraph implements Graph {
     @Override
     public void commit() {
         thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
-                vertex -> vertex.iid(generate(graphManager.storage().keyGenerator(), vertex.type().iid()))
+                vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valueStream().forEach(Vertex::commit);
