@@ -55,7 +55,8 @@ public class RocksDatabase implements Grakn.Database {
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
-    private final StampedLock schemaLock;
+    private final StampedLock dataWriteSchemaLock;
+    private final StampedLock dataReadSchemaLock;
     private final AtomicBoolean isOpen;
     private RocksSession.Schema cachedSchemaSession;
     private RocksTransaction.Schema cachedSchemaTransaction;
@@ -66,7 +67,8 @@ public class RocksDatabase implements Grakn.Database {
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
-        schemaLock = new StampedLock();
+        dataWriteSchemaLock = new StampedLock();
+        dataReadSchemaLock = new StampedLock();
         isOpen = new AtomicBoolean(false);
 
         try {
@@ -108,11 +110,11 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
-        long schemaWriteLockStamp = 0;
+        long lock = 0;
         RocksSession session;
 
         if (type.isSchema()) {
-            schemaWriteLockStamp = schemaLock.writeLock();
+            lock = dataWriteSchemaLock.writeLock();
             session = new RocksSession.Schema(this, options);
         } else if (type.isData()) {
             session = new RocksSession.Data(this, options);
@@ -120,7 +122,7 @@ public class RocksDatabase implements Grakn.Database {
             throw GraknException.of(ILLEGAL_STATE);
         }
 
-        sessions.put(session.uuid(), new Pair<>(session, schemaWriteLockStamp));
+        sessions.put(session.uuid(), new Pair<>(session, lock));
         return session;
     }
 
@@ -157,18 +159,18 @@ public class RocksDatabase implements Grakn.Database {
         return dataKeyGenerator;
     }
 
-    long acquireSchemaReadLock() {
-        return schemaLock.readLock();
+    StampedLock dataWriteSchemaLock() {
+        return dataWriteSchemaLock;
     }
 
-    void releaseSchemaReadLock(long stamp) {
-        schemaLock.unlockRead(stamp);
+    StampedLock dataReadSchemaLock() {
+        return dataReadSchemaLock;
     }
 
     void remove(RocksSession session) {
         if (cachedSchemaSession != session) {
-            long schemaWriteLockStamp = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) schemaLock.unlockWrite(schemaWriteLockStamp);
+            long lock = sessions.remove(session.uuid()).second();
+            if (session.type().isSchema()) dataWriteSchemaLock.unlockWrite(lock);
         }
     }
 

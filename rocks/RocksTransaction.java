@@ -206,6 +206,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         @Override
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
+                long lock = 0;
                 try {
                     if (type.isRead()) throw new GraknException(ILLEGAL_COMMIT);
                     else if (graphs.data().isModified()) throw new GraknException(SESSION_SCHEMA_VIOLATION);
@@ -215,16 +216,16 @@ abstract class RocksTransaction implements Grakn.Transaction {
                     rocksTransaction.disableIndexing();
                     concepts.validateTypes();
                     graphs.schema().commit();
-                    // TODO: acquire schema change lock
+                    lock = session.database.dataReadSchemaLock().writeLock();
                     rocksTransaction.commit();
                 } catch (RocksDBException e) {
                     rollback();
                     throw new GraknException(e);
                 } finally {
+                    session.database.closeCachedSchemaGraph();
+                    if (lock > 0) session.database.dataReadSchemaLock().unlockWrite(lock);
                     graphs.clear();
                     closeResources();
-                    session.database.closeCachedSchemaGraph();
-                    // TODO: release schema change lock
                 }
             } else {
                 throw new GraknException(TRANSACTION_CLOSED);
@@ -273,7 +274,9 @@ abstract class RocksTransaction implements Grakn.Transaction {
         public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
             storage = new CoreStorage();
+            long lock = session.database.dataReadSchemaLock().readLock();
             SchemaGraph schemaGraph = session.database.getCachedSchemaGraph();
+            session.database.dataReadSchemaLock().unlockRead(lock);
             schemaGraph.incrementReference();
             DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphs = new Graphs(schemaGraph, dataGraph);

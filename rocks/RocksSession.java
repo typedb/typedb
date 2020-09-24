@@ -178,17 +178,17 @@ abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
-            long schemaReadLockStamp = 0;
-            if (type.isWrite()) schemaReadLockStamp = database.acquireSchemaReadLock();
+            long lock = 0;
+            if (type.isWrite()) lock = database.dataWriteSchemaLock().readLock();
             RocksTransaction.Data transaction = new RocksTransaction.Data(this, type, options);
-            transactions.put(transaction, schemaReadLockStamp);
+            transactions.put(transaction, lock);
             return transaction;
         }
 
         @Override
         void remove(RocksTransaction transaction) {
-            long schemaReadLockStamp = transactions.remove(transaction);
-            if (transaction.type().isWrite()) database.releaseSchemaReadLock(schemaReadLockStamp);
+            long lock = transactions.remove(transaction);
+            if (transaction.type().isWrite()) database.dataWriteSchemaLock().unlockRead(lock);
         }
     }
 }
