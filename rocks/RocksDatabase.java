@@ -36,11 +36,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
@@ -57,7 +57,8 @@ public class RocksDatabase implements Grakn.Database {
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock schemaLock;
     private final AtomicBoolean isOpen;
-    private final AtomicReference<SchemaGraph> schemaGraph;
+    private RocksSession.Schema cachedSchemaSession;
+    private RocksTransaction.Schema cachedSchemaTransaction;
 
     private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
         this.name = name;
@@ -67,7 +68,6 @@ public class RocksDatabase implements Grakn.Database {
         sessions = new ConcurrentHashMap<>();
         schemaLock = new StampedLock();
         isOpen = new AtomicBoolean(false);
-        schemaGraph = new AtomicReference<>();
 
         try {
             rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().toString());
@@ -91,8 +91,8 @@ public class RocksDatabase implements Grakn.Database {
     private void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(WRITE)) {
-                if (txn.graphs().schema().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
-                txn.graphs().schema().initialise();
+                if (txn.asSchema().graph().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
+                txn.asSchema().graph().initialise();
                 txn.commit();
             }
         }
@@ -109,10 +109,32 @@ public class RocksDatabase implements Grakn.Database {
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         long schemaWriteLockStamp = 0;
-        if (type.isSchema()) schemaWriteLockStamp = schemaLock.writeLock();
-        RocksSession session = new RocksSession(this, type, options);
+        RocksSession session;
+
+        if (type.isSchema()) {
+            schemaWriteLockStamp = schemaLock.writeLock();
+            session = new RocksSession.Schema(this, options);
+        } else if (type.isData()) {
+            session = new RocksSession.Data(this, options);
+        } else {
+            throw GraknException.of(ILLEGAL_STATE);
+        }
+
         sessions.put(session.uuid(), new Pair<>(session, schemaWriteLockStamp));
         return session;
+    }
+
+    synchronized SchemaGraph getCachedSchemaGraph() {
+        if (cachedSchemaSession == null) cachedSchemaSession = new RocksSession.Schema(this, new Options.Session());
+        if (cachedSchemaTransaction == null) cachedSchemaTransaction = cachedSchemaSession.transaction(READ);
+        return cachedSchemaTransaction.graph();
+    }
+
+    synchronized void closeCachedSchemaGraph() {
+        if (cachedSchemaTransaction != null) {
+            cachedSchemaTransaction.mayClose();
+            cachedSchemaTransaction = null;
+        }
     }
 
     private Path directory() {
@@ -144,12 +166,15 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     void remove(RocksSession session) {
-        long schemaWriteLockStamp = sessions.remove(session.uuid()).second();
-        if (session.type().isSchema()) schemaLock.unlockWrite(schemaWriteLockStamp);
+        if (cachedSchemaSession != session) {
+            long schemaWriteLockStamp = sessions.remove(session.uuid()).second();
+            if (session.type().isSchema()) schemaLock.unlockWrite(schemaWriteLockStamp);
+        }
     }
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
+            if (cachedSchemaSession != null) cachedSchemaSession.close();
             sessions.values().forEach(p -> p.first().close());
             rocksDB.close();
         }

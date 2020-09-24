@@ -85,11 +85,8 @@ public class RocksGrakn implements Grakn {
 
     @Override
     public RocksSession session(String database, Arguments.Session.Type type, Options.Session options) {
-        if (databaseMgr.contains(database)) {
-            return databaseMgr.get(database).createAndOpenSession(type, options);
-        } else {
-            throw new GraknException(DATABASE_NOT_FOUND.message(database));
-        }
+        if (databaseMgr.contains(database)) return databaseMgr.get(database).createAndOpenSession(type, options);
+        else throw new GraknException(DATABASE_NOT_FOUND.message(database));
     }
 
     @Override

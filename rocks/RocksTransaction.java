@@ -42,59 +42,44 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
-class RocksTransaction implements Grakn.Transaction {
+abstract class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
-    private final RocksSession session;
-    private final Context.Transaction context;
     private final OptimisticTransactionOptions rocksTxOptions;
     private final WriteOptions writeOptions;
     private final ReadOptions readOptions;
-    private final Transaction rocksTransaction;
-    private final Arguments.Transaction.Type type;
-    private final CoreStorage storage;
-    private final Graphs graphs;
-    private final Concepts concepts;
-    private final Query query;
-    private final AtomicBoolean isOpen;
+    final RocksSession session;
+    final Arguments.Transaction.Type type;
+    final Context.Transaction context;
+    Transaction rocksTransaction;
+    Graphs graphs;
+    Concepts concepts;
+    Query query;
+    AtomicBoolean isOpen;
 
-    RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
+    private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.type = type;
         this.session = session;
-        this.context = new Context.Transaction(session.context(), options).type(type);
-
+        context = new Context.Transaction(session.context(), options).type(type);
         readOptions = new ReadOptions();
         writeOptions = new WriteOptions();
         rocksTxOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
-
-        storage = new CoreStorage();
-        SchemaGraph schemaGraph = new SchemaGraph(storage);
-        DataGraph dataGraph = new DataGraph(storage, schemaGraph);
-        graphs = new Graphs(schemaGraph, dataGraph);
-        concepts = new Concepts(graphs);
-        query = new Query(concepts, context);
-
-        isOpen = new AtomicBoolean(true);
     }
 
-    Graphs graphs() {
-        return graphs;
-    }
-
-    public CoreStorage storage() {
-        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
-        return storage;
-    }
+    public abstract CoreStorage storage();
 
     public Context.Transaction context() {
         return context;
@@ -127,61 +112,6 @@ class RocksTransaction implements Grakn.Transaction {
         return concepts;
     }
 
-    /**
-     * Commits any writes captured in the transaction into storage.
-     *
-     * If the transaction was opened as a {@code READ} transaction, then this
-     * operation will throw an exception. If this transaction has been committed,
-     * it cannot be committed again. If it has not been committed, then it will
-     * flush all changes in the graph into storage by calling {@code graph.commit()},
-     * which may result in acquiring a lock on the storage to confirm that the data
-     * will be committed into storage. The operation will then continue to commit
-     * all the writes into RocksDB by calling {@code rocksTransaction.commit()}.
-     * If the operation reaches this state, then the RocksDB commit was successful.
-     * We then need let go of the transaction that this resources of hold.
-     *
-     * If a lock was acquired from calling {@code graph.commit()} then we should
-     * let inform the graph by confirming whether the RocksDB commit was successful
-     * or not.
-     */
-    @Override
-    public void commit() {
-        if (isOpen.compareAndSet(true, false)) {
-            try {
-                if (type.isRead()) {
-                    throw new GraknException(ILLEGAL_COMMIT);
-                } else if (session.type().isData() && graphs.schema().isModified()) {
-                    throw new GraknException(SESSION_DATA_VIOLATION);
-                } else if (session.type().isSchema() && graphs.data().isModified()) {
-                    throw new GraknException(SESSION_SCHEMA_VIOLATION);
-                }
-
-                // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
-                // TODO: We should benchmark this
-                rocksTransaction.disableIndexing();
-                if (session.type().isSchema()) {
-                    concepts.validateTypes();
-                    graphs.schema().commit();
-                } else if (session.type().isData()) {
-                    concepts.validateThings();
-                    graphs.data().commit();
-                } else {
-                    assert false;
-                }
-
-                rocksTransaction.commit();
-            } catch (RocksDBException e) {
-                rollback();
-                throw new GraknException(e);
-            } finally {
-                graphs.clear();
-                closeResources();
-            }
-        } else {
-            throw new GraknException(TRANSACTION_CLOSED);
-        }
-    }
-
     @Override
     public void rollback() {
         try {
@@ -192,20 +122,238 @@ class RocksTransaction implements Grakn.Transaction {
         }
     }
 
-    @Override
-    public void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            closeResources();
-        }
-    }
-
-    private void closeResources() {
-        storage.close();
+    void closeResources() {
+        closeStorage();
         rocksTxOptions.close();
         writeOptions.close();
         readOptions.close();
         rocksTransaction.close();
         session.remove(this);
+    }
+
+    abstract void closeStorage();
+
+    boolean isSchema() {
+        return false;
+    }
+
+    boolean isData() {
+        return false;
+    }
+
+    RocksTransaction.Schema asSchema() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksTransaction.Schema.class)));
+    }
+
+    RocksTransaction.Data asData() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksTransaction.Data.class)));
+    }
+
+    static class Schema extends RocksTransaction {
+
+        private boolean mayClose;
+        CoreSchemaStorage storage;
+
+        Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
+            super(session, type, options);
+            storage = new CoreSchemaStorage();
+            SchemaGraph schemaGraph = new SchemaGraph(storage);
+            DataGraph dataGraph = new DataGraph(storage, schemaGraph);
+            graphs = new Graphs(schemaGraph, dataGraph);
+            concepts = new Concepts(graphs);
+            query = new Query(concepts, context);
+            isOpen = new AtomicBoolean(true);
+            mayClose = false;
+        }
+
+        @Override
+        boolean isSchema() {
+            return true;
+        }
+
+        @Override
+        RocksTransaction.Schema asSchema() {
+            return this;
+        }
+
+        SchemaGraph graph() {
+            return graphs.schema();
+        }
+
+        @Override
+        public CoreStorage storage() {
+            if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
+            return storage;
+        }
+
+        /**
+         * Commits any writes captured in the transaction into storage.
+         *
+         * If the transaction was opened as a {@code READ} transaction, then this
+         * operation will throw an exception. If this transaction has been committed,
+         * it cannot be committed again. If it has not been committed, then it will
+         * flush all changes in the graph into storage by calling {@code graph.commit()},
+         * which may result in acquiring a lock on the storage to confirm that the data
+         * will be committed into storage. The operation will then continue to commit
+         * all the writes into RocksDB by calling {@code rocksTransaction.commit()}.
+         * If the operation reaches this state, then the RocksDB commit was successful.
+         * We then need let go of the transaction that this resources of hold.
+         *
+         * If a lock was acquired from calling {@code graph.commit()} then we should
+         * let inform the graph by confirming whether the RocksDB commit was successful
+         * or not.
+         */
+        @Override
+        public void commit() {
+            if (isOpen.compareAndSet(true, false)) {
+                try {
+                    if (type.isRead()) throw new GraknException(ILLEGAL_COMMIT);
+                    else if (graphs.data().isModified()) throw new GraknException(SESSION_SCHEMA_VIOLATION);
+
+                    // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
+                    // TODO: We should benchmark this
+                    rocksTransaction.disableIndexing();
+                    concepts.validateTypes();
+                    graphs.schema().commit();
+                    // TODO: acquire schema change lock
+                    rocksTransaction.commit();
+                } catch (RocksDBException e) {
+                    rollback();
+                    throw new GraknException(e);
+                } finally {
+                    graphs.clear();
+                    closeResources();
+                    session.database.closeCachedSchemaGraph();
+                    // TODO: release schema change lock
+                }
+            } else {
+                throw new GraknException(TRANSACTION_CLOSED);
+            }
+        }
+
+        @Override
+        public void close() {
+            if (isOpen.compareAndSet(true, false)) {
+                closeResources();
+            }
+        }
+
+        @Override
+        void closeStorage() {
+            storage.close();
+        }
+
+        public void mayClose() {
+            mayClose = true;
+        }
+
+        class CoreSchemaStorage extends CoreStorage implements Storage.Schema {
+
+            private final AtomicLong referenceCounter;
+
+            CoreSchemaStorage() {
+                super();
+                referenceCounter = new AtomicLong();
+            }
+
+            public void incrementReference() {
+                referenceCounter.incrementAndGet();
+            }
+
+            public void decrementReference() {
+                if (referenceCounter.decrementAndGet() == 0 && mayClose) RocksTransaction.Schema.this.close();
+            }
+        }
+    }
+
+    public static class Data extends RocksTransaction {
+
+        CoreStorage storage;
+
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
+            super(session, type, options);
+            storage = new CoreStorage();
+            SchemaGraph schemaGraph = session.database.getCachedSchemaGraph();
+            schemaGraph.incrementReference();
+            DataGraph dataGraph = new DataGraph(storage, schemaGraph);
+            graphs = new Graphs(schemaGraph, dataGraph);
+            concepts = new Concepts(graphs);
+            query = new Query(concepts, context);
+            isOpen = new AtomicBoolean(true);
+        }
+
+        @Override
+        boolean isData() {
+            return true;
+        }
+
+        @Override
+        RocksTransaction.Data asData() {
+            return this;
+        }
+
+        @Override
+        public CoreStorage storage() {
+            if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
+            return storage;
+        }
+
+        /**
+         * Commits any writes captured in the transaction into storage.
+         *
+         * If the transaction was opened as a {@code READ} transaction, then this
+         * operation will throw an exception. If this transaction has been committed,
+         * it cannot be committed again. If it has not been committed, then it will
+         * flush all changes in the graph into storage by calling {@code graph.commit()},
+         * which may result in acquiring a lock on the storage to confirm that the data
+         * will be committed into storage. The operation will then continue to commit
+         * all the writes into RocksDB by calling {@code rocksTransaction.commit()}.
+         * If the operation reaches this state, then the RocksDB commit was successful.
+         * We then need let go of the transaction that this resources of hold.
+         *
+         * If a lock was acquired from calling {@code graph.commit()} then we should
+         * let inform the graph by confirming whether the RocksDB commit was successful
+         * or not.
+         */
+        @Override
+        public void commit() {
+            if (isOpen.compareAndSet(true, false)) {
+                try {
+                    if (type.isRead()) throw new GraknException(ILLEGAL_COMMIT);
+                    else if (graphs.schema().isModified()) throw new GraknException(SESSION_DATA_VIOLATION);
+
+                    // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
+                    // TODO: We should benchmark this
+                    rocksTransaction.disableIndexing();
+                    concepts.validateThings();
+                    graphs.data().commit();
+                    rocksTransaction.commit();
+                } catch (RocksDBException e) {
+                    rollback();
+                    throw new GraknException(e);
+                } finally {
+                    graphs.data().clear();
+                    graphs.schema().mayRefreshStorage();
+                    closeResources();
+
+                }
+            } else {
+                throw new GraknException(TRANSACTION_CLOSED);
+            }
+        }
+
+        @Override
+        public void close() {
+            if (isOpen.compareAndSet(true, false)) {
+                graphs.schema().decrementReference();
+                closeResources();
+            }
+        }
+
+        @Override
+        void closeStorage() {
+            storage.close();
+        }
     }
 
     class CoreStorage implements Storage {
@@ -221,6 +369,12 @@ class RocksTransaction implements Grakn.Transaction {
         @Override
         public boolean isOpen() {
             return isOpen.get();
+        }
+
+        @Override
+        public void refresh() {
+            assert type.isRead();
+            rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
         }
 
         @Override

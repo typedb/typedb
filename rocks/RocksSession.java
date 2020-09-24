@@ -19,6 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
@@ -30,15 +31,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RocksSession implements Grakn.Session {
-    private final RocksDatabase database;
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+
+abstract class RocksSession implements Grakn.Session {
+
     private final Arguments.Session.Type type;
     private final Context.Session context;
-    private final ConcurrentMap<RocksTransaction, Long> transactions;
     private final AtomicBoolean isOpen;
     private final UUID uuid;
+    final RocksDatabase database;
+    final ConcurrentMap<RocksTransaction, Long> transactions;
 
-    RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
+    private RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
         this.type = type;
         this.context = new Context.Session(database.options(), options).type(type);
@@ -64,12 +69,23 @@ public class RocksSession implements Grakn.Session {
         return database.dataKeyGenerator();
     }
 
-    void remove(RocksTransaction transaction) {
-        long schemaReadLockStamp = transactions.remove(transaction);
-        if (this.type.isData() && transaction.type().isWrite()) {
-            database.releaseSchemaReadLock(schemaReadLockStamp);
-        }
+    boolean isSchema() {
+        return false;
     }
+
+    boolean isData() {
+        return false;
+    }
+
+    RocksSession.Schema asSchema() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksSession.Schema.class)));
+    }
+
+    RocksSession.Data asData() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksSession.Data.class)));
+    }
+
+    abstract void remove(RocksTransaction transaction);
 
     @Override
     public Arguments.Session.Type type() {
@@ -82,18 +98,10 @@ public class RocksSession implements Grakn.Session {
     }
 
     @Override
-    public RocksTransaction transaction(Arguments.Transaction.Type type) {
-        return transaction(type, new Options.Transaction());
-    }
+    public abstract RocksTransaction transaction(Arguments.Transaction.Type type);
 
     @Override
-    public RocksTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options) {
-        long schemaReadLockStamp = 0;
-        if (this.type.isData() && type.isWrite()) schemaReadLockStamp = database.acquireSchemaReadLock();
-        RocksTransaction transaction = new RocksTransaction(this, type, options);
-        transactions.put(transaction, schemaReadLockStamp);
-        return transaction;
-    }
+    public abstract RocksTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options);
 
     @Override
     public UUID uuid() {
@@ -110,6 +118,77 @@ public class RocksSession implements Grakn.Session {
         if (isOpen.compareAndSet(true, false)) {
             transactions.keySet().parallelStream().forEach(RocksTransaction::close);
             database.remove(this);
+        }
+    }
+
+    public static class Schema extends RocksSession {
+
+        public Schema(RocksDatabase database, Options.Session options) {
+            super(database, Arguments.Session.Type.SCHEMA, options);
+        }
+
+        @Override
+        boolean isSchema() {
+            return true;
+        }
+
+        @Override
+        RocksSession.Schema asSchema() {
+            return this;
+        }
+
+        @Override
+        public RocksTransaction.Schema transaction(Arguments.Transaction.Type type) {
+            return transaction(type, new Options.Transaction());
+        }
+
+        @Override
+        public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+            RocksTransaction.Schema transaction = new RocksTransaction.Schema(this, type, options);
+            transactions.put(transaction, 0L);
+            return transaction;
+        }
+
+        @Override
+        void remove(RocksTransaction transaction) {
+            transactions.remove(transaction);
+        }
+    }
+
+    public static class Data extends RocksSession {
+
+        public Data(RocksDatabase database, Options.Session options) {
+            super(database, Arguments.Session.Type.DATA, options);
+        }
+
+        @Override
+        boolean isData() {
+            return true;
+        }
+
+        @Override
+        RocksSession.Data asData() {
+            return this;
+        }
+
+        @Override
+        public RocksTransaction.Data transaction(Arguments.Transaction.Type type) {
+            return transaction(type, new Options.Transaction());
+        }
+
+        @Override
+        public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+            long schemaReadLockStamp = 0;
+            if (type.isWrite()) schemaReadLockStamp = database.acquireSchemaReadLock();
+            RocksTransaction.Data transaction = new RocksTransaction.Data(this, type, options);
+            transactions.put(transaction, schemaReadLockStamp);
+            return transaction;
+        }
+
+        @Override
+        void remove(RocksTransaction transaction) {
+            long schemaReadLockStamp = transactions.remove(transaction);
+            if (transaction.type().isWrite()) database.releaseSchemaReadLock(schemaReadLockStamp);
         }
     }
 }

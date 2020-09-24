@@ -27,6 +27,8 @@ public interface Storage {
 
     boolean isOpen();
 
+    void refresh();
+
     KeyGenerator.Schema schemaKeyGenerator();
 
     KeyGenerator.Data dataKeyGenerator();
@@ -48,4 +50,11 @@ public interface Storage {
     <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
     GraknException exception(String message);
+
+    interface Schema extends Storage {
+
+        void incrementReference();
+
+        void decrementReference();
+    }
 }

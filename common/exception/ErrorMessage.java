@@ -65,6 +65,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(3, "Invalid Database Initialisation.");
         public static final Internal ILLEGAL_ARGUMENT =
                 new Internal(4, "Illegal argument provided.");
+        public static final Internal ILLEGAL_CAST =
+                new Internal(5, "Illegal casting operation from '%s' to '%s'.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
