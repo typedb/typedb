@@ -35,12 +35,10 @@ import graql.lang.pattern.Pattern;
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
-import static grakn.core.graph.util.Encoding.SCHEMA_GRAPH_STORAGE_REFRESH_RATE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
 
 public class SchemaGraph implements Graph {
@@ -53,8 +51,6 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<VertexIID.Rule, RuleVertex> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
-
-    private final AtomicInteger refreshCounter;
     private boolean isModified;
 
     public SchemaGraph(Storage.Schema storage) {
@@ -66,12 +62,11 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
-        refreshCounter = new AtomicInteger();
         isModified = false;
     }
 
     @Override
-    public Storage storage() {
+    public Storage.Schema storage() {
         return storage;
     }
 
@@ -320,10 +315,7 @@ public class SchemaGraph implements Graph {
     }
 
     public void mayRefreshStorage() {
-        if (refreshCounter.incrementAndGet() == SCHEMA_GRAPH_STORAGE_REFRESH_RATE) {
-            refreshCounter.addAndGet(-1 * SCHEMA_GRAPH_STORAGE_REFRESH_RATE);
-            storage.refresh();
-        }
+        storage.mayRefresh();
     }
 
     /**

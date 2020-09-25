@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
@@ -52,13 +53,14 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMI
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static grakn.core.graph.util.Encoding.SCHEMA_GRAPH_STORAGE_REFRESH_RATE;
 
 abstract class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
-    private final OptimisticTransactionOptions rocksTxOptions;
-    private final WriteOptions writeOptions;
-    private final ReadOptions readOptions;
+    final OptimisticTransactionOptions rocksTxOptions;
+    final WriteOptions writeOptions;
+    final ReadOptions readOptions;
     final RocksSession session;
     final Arguments.Transaction.Type type;
     final Context.Transaction context;
@@ -152,11 +154,11 @@ abstract class RocksTransaction implements Grakn.Transaction {
     static class Schema extends RocksTransaction {
 
         private boolean mayClose;
-        CoreSchemaStorage storage;
+        SchemaCoreStorage storage;
 
         Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
-            storage = new CoreSchemaStorage();
+            storage = new SchemaCoreStorage();
             SchemaGraph schemaGraph = new SchemaGraph(storage);
             DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphs = new Graphs(schemaGraph, dataGraph);
@@ -248,21 +250,40 @@ abstract class RocksTransaction implements Grakn.Transaction {
             mayClose = true;
         }
 
-        class CoreSchemaStorage extends CoreStorage implements Storage.Schema {
+        class SchemaCoreStorage extends CoreStorage implements Storage.Schema {
 
             private final AtomicLong referenceCounter;
+            private final AtomicInteger refreshCounter;
 
-            CoreSchemaStorage() {
+            SchemaCoreStorage() {
                 super();
                 referenceCounter = new AtomicLong();
+                refreshCounter = new AtomicInteger();
             }
 
+            @Override
             public void incrementReference() {
                 referenceCounter.incrementAndGet();
             }
 
+            @Override
             public void decrementReference() {
                 if (referenceCounter.decrementAndGet() == 0 && mayClose) RocksTransaction.Schema.this.close();
+            }
+
+            @Override
+            public void mayRefresh() {
+                if (refreshCounter.incrementAndGet() == SCHEMA_GRAPH_STORAGE_REFRESH_RATE) {
+                    refreshCounter.addAndGet(-1 * SCHEMA_GRAPH_STORAGE_REFRESH_RATE);
+                    storage.refresh();
+                }
+            }
+
+            public void refresh() {
+                assert type.isRead();
+                Transaction oldRocksTransaction = rocksTransaction;
+                rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
+                oldRocksTransaction.close();
             }
         }
     }
@@ -372,12 +393,6 @@ abstract class RocksTransaction implements Grakn.Transaction {
         @Override
         public boolean isOpen() {
             return isOpen.get();
-        }
-
-        @Override
-        public void refresh() {
-            assert type.isRead();
-            rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
         }
 
         @Override

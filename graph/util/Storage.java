@@ -27,8 +27,6 @@ public interface Storage {
 
     boolean isOpen();
 
-    void refresh();
-
     KeyGenerator.Schema schemaKeyGenerator();
 
     KeyGenerator.Data dataKeyGenerator();
@@ -56,5 +54,7 @@ public interface Storage {
         void incrementReference();
 
         void decrementReference();
+
+        void mayRefresh();
     }
 }
