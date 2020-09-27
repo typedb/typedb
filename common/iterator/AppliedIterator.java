@@ -18,27 +18,35 @@
 
 package grakn.core.common.iterator;
 
+import grakn.common.collection.Either;
+
 import java.util.Iterator;
 import java.util.function.Function;
 
-public class AppliedIterator<T, U> implements Iterators.Composable<U> {
+public class AppliedIterator<T, U> implements Iterators.ComposableAndRecyclable<U> {
 
-    private final Iterator<T> iterator;
+    private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
+    private final Iterator<T> genericIterator;
     private final Function<T, U> function;
 
-    AppliedIterator(Iterator<T> iterator, Function<T, U> function) {
+    AppliedIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator, Function<T, U> function) {
         this.iterator = iterator;
+        this.genericIterator = iterator.apply(r -> r, i -> i);
         this.function = function;
     }
 
     @Override
     public boolean hasNext() {
-        return iterator.hasNext();
+        return genericIterator.hasNext();
     }
 
     @Override
     public U next() {
-        return function.apply(iterator.next());
+        return function.apply(genericIterator.next());
     }
 
+    @Override
+    public void recycle() {
+        iterator.ifFirst(Iterators.Recyclable::recycle);
+    }
 }

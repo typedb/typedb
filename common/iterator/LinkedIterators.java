@@ -18,36 +18,56 @@
 
 package grakn.core.common.iterator;
 
+import grakn.common.collection.Either;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class LinkedIterators<T> implements Iterators.Composable<T> {
+public class LinkedIterators<T> implements Iterators.ComposableAndRecyclable<T> {
 
-    private final List<Iterator<T>> iterators;
+    private final List<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators;
 
-    LinkedIterators(LinkedList<Iterator<T>> iterators) {
+    LinkedIterators(LinkedList<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators) {
         this.iterators = iterators;
+    }
+
+    private Iterator<T> headIterator() {
+        return iterators.get(0).apply(r -> r, i -> i);
+    }
+
+    @Override
+    public final LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
+        iterators.add(Either.first(iterator));
+        return this;
     }
 
     @Override
     public final LinkedIterators<T> link(Iterator<T> iterator) {
-        iterators.add(iterator);
+        if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
+        iterators.add(Either.second(iterator));
         return this;
     }
 
     @Override
     public boolean hasNext() {
-        while (!iterators.isEmpty() && !iterators.get(0).hasNext() && iterators.size() > 1) {
-            iterators.remove(0);
+        while (iterators.size() > 1 && !headIterator().hasNext()) {
+            iterators.remove(0).ifFirst(Iterators.Recyclable::recycle);
         }
-        return !iterators.isEmpty() && iterators.get(0).hasNext();
+        return !iterators.isEmpty() && headIterator().hasNext();
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        return iterators.get(0).next();
+        return headIterator().next();
+    }
+
+    @Override
+    public void recycle() {
+        iterators.forEach(iterator -> iterator.ifFirst(Iterators.Recyclable::recycle));
     }
 }

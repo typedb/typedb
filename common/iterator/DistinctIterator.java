@@ -18,20 +18,24 @@
 
 package grakn.core.common.iterator;
 
+import grakn.common.collection.Either;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 // TODO: verify (and potentially fix) this class to be able to hand null objects
-public class DistinctIterator<T> implements Iterators.Composable<T> {
+public class DistinctIterator<T> implements Iterators.ComposableAndRecyclable<T> {
 
+    private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
+    private final Iterator<T> genericIterator;
+    private final Set<T> consumed;
     private T next;
-    private Set<T> consumed;
-    private Iterator<T> iterator;
 
-    DistinctIterator(Iterator<T> iterator) {
+    DistinctIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
+        this.genericIterator = iterator.apply(r -> r, i -> i);
         this.consumed = new HashSet<>();
         this.next = null;
     }
@@ -42,7 +46,7 @@ public class DistinctIterator<T> implements Iterators.Composable<T> {
     }
 
     private boolean fetchAndCheck() {
-        while (iterator.hasNext() && consumed.contains(next = iterator.next())) next = null;
+        while (genericIterator.hasNext() && consumed.contains(next = genericIterator.next())) next = null;
         return next != null;
     }
 
@@ -53,5 +57,10 @@ public class DistinctIterator<T> implements Iterators.Composable<T> {
         consumed.add(next);
         next = null;
         return result;
+    }
+
+    @Override
+    public void recycle() {
+        iterator.ifFirst(Iterators.Recyclable::recycle);
     }
 }

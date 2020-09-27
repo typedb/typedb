@@ -18,18 +18,23 @@
 
 package grakn.core.common.iterator;
 
+import grakn.common.collection.Either;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class FilteredIterator<T> implements Iterators.Composable<T> {
+public class FilteredIterator<T> implements Iterators.ComposableAndRecyclable<T> {
 
-    private final Iterator<T> iterator;
+    private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
+    private final Iterator<T> genericIterator;
     private final Predicate<T> predicate;
     private T next;
 
-    FilteredIterator(Iterator<T> iterator, Predicate<T> predicate) {
+    FilteredIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator, Predicate<T> predicate) {
         this.iterator = iterator;
+        this.genericIterator = iterator.apply(r -> r, i -> i);
         this.predicate = predicate;
     }
 
@@ -39,7 +44,7 @@ public class FilteredIterator<T> implements Iterators.Composable<T> {
     }
 
     private boolean fetchAndCheck() {
-        while (iterator.hasNext() && !predicate.test((next = iterator.next()))) next = null;
+        while (genericIterator.hasNext() && !predicate.test((next = genericIterator.next()))) next = null;
         return next != null;
     }
 
@@ -49,5 +54,10 @@ public class FilteredIterator<T> implements Iterators.Composable<T> {
         T result = next;
         next = null;
         return result;
+    }
+
+    @Override
+    public void recycle() {
+        iterator.ifFirst(Iterators.Recyclable::recycle);
     }
 }

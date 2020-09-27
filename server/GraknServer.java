@@ -214,6 +214,7 @@ public class GraknServer implements AutoCloseable {
             server.shutdown();
             server.awaitTermination();
             grakn.close();
+            System.runFinalization();
             LOG.info("Grakn Core Server has been shutdown");
         } catch (InterruptedException e) {
             LOG.error(FAILED_AT_STOPPING.message(), e);
