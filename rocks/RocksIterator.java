@@ -36,6 +36,8 @@ public class RocksIterator<T> implements Iterators.Recyclable<T>, AutoCloseable 
     private State state;
     private T next;
 
+    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
+
     RocksIterator(RocksTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
@@ -46,7 +48,7 @@ public class RocksIterator<T> implements Iterators.Recyclable<T>, AutoCloseable 
     }
 
     private void initalise() {
-        this.rocksIterator = storage.newRocksIterator();
+        this.rocksIterator = storage.getRocksIterator();
         this.rocksIterator.seek(prefix);
     }
 
@@ -54,7 +56,7 @@ public class RocksIterator<T> implements Iterators.Recyclable<T>, AutoCloseable 
         byte[] key;
         if (!rocksIterator.isValid() || !bytesHavePrefix(key = rocksIterator.key(), prefix)) {
             state = State.COMPLETED;
-            rocksIterator.close();
+            recycle();
             return false;
         }
 
@@ -71,7 +73,7 @@ public class RocksIterator<T> implements Iterators.Recyclable<T>, AutoCloseable 
 
     @Override
     public void recycle() {
-        // TODO: implement
+        storage.recycle(rocksIterator);
     }
 
     @Override
@@ -105,6 +107,4 @@ public class RocksIterator<T> implements Iterators.Recyclable<T>, AutoCloseable 
         state = State.EMPTY;
         return next;
     }
-
-    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 }

@@ -31,6 +31,7 @@ import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.query.Query;
+import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -384,10 +386,12 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         private final ManagedReadWriteLock readWriteLock;
         private final Set<RocksIterator<?>> iterators;
+        private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
 
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
             iterators = ConcurrentHashMap.newKeySet();
+            recycled = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -424,7 +428,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
-            try (org.rocksdb.RocksIterator iterator = newRocksIterator()) {
+            try (org.rocksdb.RocksIterator iterator = getRocksIterator()) {
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
@@ -495,8 +499,14 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return new GraknException(exception);
         }
 
-        org.rocksdb.RocksIterator newRocksIterator() {
-            return rocksTransaction.getIterator(readOptions);
+        org.rocksdb.RocksIterator getRocksIterator() {
+            org.rocksdb.RocksIterator iterator = recycled.poll();
+            if (iterator != null) return iterator;
+            else return rocksTransaction.getIterator(readOptions);
+        }
+
+        public void recycle(org.rocksdb.RocksIterator rocksIterator) {
+            recycled.add(rocksIterator);
         }
 
         void remove(RocksIterator<?> iterator) {
@@ -505,6 +515,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         void close() {
             iterators.parallelStream().forEach(RocksIterator::close);
+            recycled.forEach(AbstractImmutableNativeReference::close);
         }
     }
 }
