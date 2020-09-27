@@ -54,9 +54,7 @@ public class LinkedIterators<T> implements Iterators.ComposableAndRecyclable<T> 
 
     @Override
     public boolean hasNext() {
-        while (iterators.size() > 1 && !headIterator().hasNext()) {
-            iterators.remove(0).ifFirst(Iterators.Recyclable::recycle);
-        }
+        while (iterators.size() > 1 && !headIterator().hasNext()) iterators.remove(0);
         return !iterators.isEmpty() && headIterator().hasNext();
     }
 
