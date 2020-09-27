@@ -20,8 +20,6 @@ package grakn.core.common.iterator;
 
 import grakn.common.collection.Either;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

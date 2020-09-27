@@ -21,7 +21,6 @@ package grakn.core.concept.type.impl;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.graph.Graphs;
-import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 

@@ -19,7 +19,6 @@
 
 package grakn.core.graph;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.Storage;
 
 public interface Graph {

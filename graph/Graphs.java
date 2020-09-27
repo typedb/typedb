@@ -27,6 +27,7 @@ public class Graphs {
     private final SchemaGraph schemaGraph;
 
     private final DataGraph dataGraph;
+
     public Graphs(SchemaGraph schemaGraph, DataGraph dataGraph) {
         this.schemaGraph = schemaGraph;
         this.dataGraph = dataGraph;

@@ -21,11 +21,8 @@ package grakn.core.query.pattern;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;
 import grakn.core.query.pattern.variable.VariableRegistry;
-import graql.lang.pattern.variable.BoundVariable;
-import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 

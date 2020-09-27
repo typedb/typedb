@@ -22,7 +22,6 @@ package grakn.core.graph.vertex;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
-import java.util.Iterator;
 import java.util.regex.Pattern;
 
 public interface TypeVertex extends SchemaVertex<VertexIID.Type, Encoding.Vertex.Type> {
