@@ -19,6 +19,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.thing.impl.EntityImpl;
 import grakn.core.concept.thing.impl.RelationImpl;
@@ -35,7 +36,6 @@ import grakn.core.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -58,11 +58,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.distinct;
-import static grakn.core.common.iterator.Iterators.filter;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.stream;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static java.util.stream.Collectors.toSet;
@@ -114,7 +110,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> stream(graphs.data().get(t.vertex))).map(thingConstructor);
+        return getSubtypes().flatMap(t -> graphs.data().get(t.vertex).stream()).map(thingConstructor);
     }
 
     @Override
@@ -209,23 +205,23 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private Stream<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
         if (isRoot()) return Stream.of();
-        Iterator<TypeVertex> iterator;
+        ResourceIterator<TypeVertex> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
         else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
-        return stream(apply(iterator, v -> AttributeTypeImpl.of(graphs, v)));
+        return iterator.apply(v -> AttributeTypeImpl.of(graphs, v)).stream();
     }
 
     Stream<AttributeTypeImpl> overriddenOwns(boolean onlyKey, boolean transitive) {
         if (isRoot()) return Stream.empty();
         Stream<AttributeTypeImpl> overriddenOwns;
         if (onlyKey) {
-            overriddenOwns = stream(filter(
-                    vertex.outs().edge(OWNS_KEY).overridden(), Objects::nonNull
-            ).apply(v -> AttributeTypeImpl.of(graphs, v)));
+            overriddenOwns = vertex.outs().edge(OWNS_KEY).overridden().filter(Objects::nonNull)
+                    .apply(v -> AttributeTypeImpl.of(graphs, v)).stream();
         } else {
-            overriddenOwns = stream(apply(distinct(link(
-                    vertex.outs().edge(OWNS_KEY).overridden(), vertex.outs().edge(OWNS).overridden()
-            ).filter(Objects::nonNull)), v -> AttributeTypeImpl.of(graphs, v)));
+            overriddenOwns = link(
+                    vertex.outs().edge(OWNS_KEY).overridden(),
+                    vertex.outs().edge(OWNS).overridden()
+            ).filter(Objects::nonNull).distinct().apply(v -> AttributeTypeImpl.of(graphs, v)).stream();
         }
 
         if (transitive) return concat(overriddenOwns, getSupertype().overriddenOwns(onlyKey, true));
@@ -265,7 +261,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), v -> RoleTypeImpl.of(graphs, v))));
+                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().apply(v -> RoleTypeImpl.of(graphs, v)).stream());
     }
 
     @Override
@@ -278,10 +274,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return Stream.of();
 
         Set<TypeVertex> overridden = new HashSet<>();
-        filter(vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden(), Objects::nonNull).forEachRemaining(overridden::add);
+        vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
         return concat(
-                stream(apply(vertex.outs().edge(Encoding.Edge.Type.PLAYS).to(), v -> RoleTypeImpl.of(graphs, v))),
-                getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex)));
+                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().apply(v -> RoleTypeImpl.of(graphs, v)).stream(),
+                getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
+        );
     }
 
     @Override

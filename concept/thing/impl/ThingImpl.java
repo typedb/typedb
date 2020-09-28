@@ -20,6 +20,7 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -43,13 +44,15 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ATTRIBUTE_UNOWNED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
-import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -102,13 +105,12 @@ public abstract class ThingImpl implements Thing {
                 throw exception(THING_KEY_TAKEN.message(attribute.getType().getLabel(), getType().getLabel()));
             }
         }
-
-        vertex.outs().put(Encoding.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex);
+        vertex.outs().put(HAS, ((AttributeImpl<?>) attribute).vertex);
     }
 
     @Override
     public void unsetHas(Attribute attribute) {
-        vertex.outs().edge(Encoding.Edge.Thing.HAS, ((AttributeImpl<?>) attribute).vertex).delete();
+        vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex).delete();
     }
 
     @Override
@@ -149,29 +151,29 @@ public abstract class ThingImpl implements Thing {
         return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
     }
 
-    private Stream<AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
+    private Stream<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
             return attributeTypes.stream()
                     .flatMap(AttributeType::getSubtypes).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
-                    .flatMap(type -> stream(vertex.outs().edge(
-                            Encoding.Edge.Thing.HAS, PrefixIID.of(type.encoding().instance()), type.iid()
-                    ).to())).map(ThingVertex::asAttribute);
+                    .flatMap(type -> vertex.outs().edge(
+                            HAS, PrefixIID.of(type.encoding().instance()), type.iid()
+                    ).to().stream()).map(ThingVertex::asAttribute);
         } else {
-            return stream(apply(vertex.outs().edge(Encoding.Edge.Thing.HAS).to(), ThingVertex::asAttribute));
+            return vertex.outs().edge(HAS).to().apply(ThingVertex::asAttribute).stream();
         }
     }
 
     @Override
-    public Stream<RoleType> getPlays() {
-        return stream(apply(apply(vertex.outs().edge(Encoding.Edge.Thing.PLAYS).to(), ThingVertex::type), v -> RoleTypeImpl.of(vertex.graphs(), v)));
+    public Stream<? extends RoleType> getPlays() {
+        return vertex.outs().edge(PLAYS).to().apply(ThingVertex::type).apply(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
     }
 
     @Override
     public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
         return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
             if (!scopedLabel.contains(":")) {
-                throw exception(ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
+                throw exception(INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
             }
             String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
@@ -181,11 +183,11 @@ public abstract class ThingImpl implements Thing {
     @Override
     public Stream<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return stream(apply(vertex.ins().edge(Encoding.Edge.Thing.ROLEPLAYER).from(), RelationImpl::of));
+            return vertex.ins().edge(ROLEPLAYER).from().apply(RelationImpl::of).stream();
         } else {
-            return stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(rt -> stream(
-                    vertex.ins().edge(Encoding.Edge.Thing.ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
-            )).map(RelationImpl::of);
+            return stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
+                    rt -> vertex.ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from().stream()
+            ).map(RelationImpl::of);
         }
     }
 

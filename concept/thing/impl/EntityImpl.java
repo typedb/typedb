@@ -23,11 +23,13 @@ import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
+
 public class EntityImpl extends ThingImpl implements Entity {
 
     private EntityImpl(ThingVertex vertex) {
         super(vertex);
-        assert vertex.encoding().equals(Encoding.Vertex.Thing.ENTITY);
+        assert vertex.encoding().equals(ENTITY);
     }
 
     public static EntityImpl of(ThingVertex vertex) {

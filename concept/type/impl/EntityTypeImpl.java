@@ -35,27 +35,27 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ENTITY;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private EntityTypeImpl(Graphs graphs, TypeVertex vertex) {
         super(graphs, vertex);
-        if (vertex.encoding() != Encoding.Vertex.Type.ENTITY_TYPE) {
+        if (vertex.encoding() != ENTITY_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
-                    vertex.label(),
-                    Encoding.Vertex.Type.ENTITY_TYPE.root().label(),
-                    vertex.encoding().root().label()
+                    vertex.label(), ENTITY_TYPE.root().label(), vertex.encoding().root().label()
             ));
         }
     }
 
     private EntityTypeImpl(Graphs graphs, String label) {
-        super(graphs, label, Encoding.Vertex.Type.ENTITY_TYPE);
-        assert !label.equals(Encoding.Vertex.Type.Root.ENTITY.label());
+        super(graphs, label, ENTITY_TYPE);
+        assert !label.equals(ENTITY.label());
     }
 
     public static EntityTypeImpl of(Graphs graphs, TypeVertex vertex) {
-        if (vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label())) {
+        if (vertex.label().equals(ENTITY.label())) {
             return new EntityTypeImpl.Root(graphs, vertex);
         } else return new EntityTypeImpl(graphs, vertex);
     }
@@ -114,7 +114,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         private Root(Graphs graphs, TypeVertex vertex) {
             super(graphs, vertex);
-            assert vertex.label().equals(Encoding.Vertex.Type.Root.ENTITY.label());
+            assert vertex.label().equals(ENTITY.label());
         }
 
         @Override

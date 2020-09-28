@@ -41,7 +41,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
 import static java.util.stream.Stream.concat;
@@ -153,7 +152,7 @@ public class DataGraph implements Graph {
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return distinct(link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator));
+        else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {

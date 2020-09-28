@@ -21,8 +21,11 @@ package grakn.core.common.iterator;
 import grakn.common.collection.Either;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import static grakn.common.collection.Collections.list;
 
 public interface ResourceIterator<T> extends Iterators.Composable<T>, Iterators.Recyclable<T> {
 
@@ -43,12 +46,12 @@ public interface ResourceIterator<T> extends Iterators.Composable<T>, Iterators.
 
     @Override
     default LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
-        return Iterators.link(this, iterator);
+        return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.first(iterator))));
     }
 
     @Override
     default LinkedIterators<T> link(Iterator<T> iterator) {
         if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
-        return Iterators.link(this, iterator);
+        return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.second(iterator))));
     }
 }

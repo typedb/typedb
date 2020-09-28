@@ -40,9 +40,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.base;
-import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
@@ -209,12 +207,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         @Override
         public ResourceIterator<ThingVertex> to() {
-            return apply(edgeIterator, Edge::to);
+            return edgeIterator.apply(Edge::to);
         }
 
         @Override
         public ResourceIterator<ThingVertex> from() {
-            return apply(edgeIterator, Edge::from);
+            return edgeIterator.apply(Edge::from);
         }
     }
 
@@ -264,7 +262,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             if (!bufferedIterator.hasNext()) return storageIterator;
             else if (!storageIterator.hasNext()) return bufferedIterator;
-            else return distinct(link(bufferedIterator, storageIterator));
+            else return link(bufferedIterator, storageIterator).distinct();
         }
 
         @Override

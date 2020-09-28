@@ -20,6 +20,7 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.common.collection.Streams;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.impl.RelationImpl;
 import grakn.core.concept.type.AttributeType;
@@ -32,7 +33,6 @@ import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,30 +47,28 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATE
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.filter;
-import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.RELATION;
 import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     private RelationTypeImpl(Graphs graphs, TypeVertex vertex) {
         super(graphs, vertex);
-        if (vertex.encoding() != Encoding.Vertex.Type.RELATION_TYPE) {
+        if (vertex.encoding() != RELATION_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
-                    vertex.label(),
-                    Encoding.Vertex.Type.RELATION_TYPE.root().label(),
-                    vertex.encoding().root().label()
+                    vertex.label(), RELATION_TYPE.root().label(), vertex.encoding().root().label()
             ));
         }
     }
 
     private RelationTypeImpl(Graphs graphs, String label) {
-        super(graphs, label, Encoding.Vertex.Type.RELATION_TYPE);
+        super(graphs, label, RELATION_TYPE);
     }
 
     public static RelationTypeImpl of(Graphs graphs, TypeVertex vertex) {
-        if (vertex.label().equals(Encoding.Vertex.Type.Root.RELATION.label()))
+        if (vertex.label().equals(RELATION.label()))
             return new RelationTypeImpl.Root(graphs, vertex);
         else return new RelationTypeImpl(graphs, vertex);
     }
@@ -82,7 +80,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setLabel(String label) {
         vertex.label(label);
-        vertex.outs().edge(Encoding.Edge.Type.RELATES).to().forEachRemaining(v -> v.scope(label));
+        vertex.outs().edge(RELATES).to().forEachRemaining(v -> v.scope(label));
     }
 
     @Override
@@ -133,8 +131,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             } else {
                 RoleTypeImpl roleType = RoleTypeImpl.of(graphs, roleLabel, vertex.label());
                 if (this.isAbstract()) roleType.setAbstract();
-                vertex.outs().put(Encoding.Edge.Type.RELATES, roleType.vertex);
-                vertex.outs().edge(Encoding.Edge.Type.RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
+                vertex.outs().put(RELATES, roleType.vertex);
+                vertex.outs().edge(RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
             }
         }
     }
@@ -151,7 +149,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         roleType.sup(inherited.get());
-        vertex.outs().edge(Encoding.Edge.Type.RELATES, roleType.vertex).overridden(inherited.get().vertex);
+        vertex.outs().edge(RELATES, roleType.vertex).overridden(inherited.get().vertex);
     }
 
     @Override
@@ -161,9 +159,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RoleTypeImpl> getRelates() {
-        Iterator<RoleTypeImpl> roles = apply(vertex.outs().edge(Encoding.Edge.Type.RELATES).to(), v -> RoleTypeImpl.of(graphs, v));
+        ResourceIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().apply(v -> RoleTypeImpl.of(graphs, v));
         if (isRoot()) {
-            return stream(roles);
+            return roles.stream();
         } else {
             Set<RoleTypeImpl> direct = new HashSet<>();
             roles.forEachRemaining(direct::add);
@@ -174,11 +172,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     Stream<RoleTypeImpl> overriddenRoles() {
-        return stream(filter(vertex.outs().edge(Encoding.Edge.Type.RELATES).overridden(), Objects::nonNull).apply(v -> RoleTypeImpl.of(graphs, v)));
+        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull).apply(v -> RoleTypeImpl.of(graphs, v)).stream();
     }
 
     private Stream<RoleTypeImpl> declaredRoles() {
-        return stream(apply(vertex.outs().edge(Encoding.Edge.Type.RELATES).to(), v -> RoleTypeImpl.of(graphs, v)));
+        return vertex.outs().edge(RELATES).to().apply(v -> RoleTypeImpl.of(graphs, v)).stream();
     }
 
     /**
@@ -243,7 +241,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
         Root(Graphs graphs, TypeVertex vertex) {
             super(graphs, vertex);
-            assert vertex.label().equals(Encoding.Vertex.Type.Root.RELATION.label());
+            assert vertex.label().equals(RELATION.label());
         }
 
         @Override

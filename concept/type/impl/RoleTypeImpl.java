@@ -33,8 +33,6 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.stream;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -108,7 +106,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<ThingTypeImpl> getPlayers() {
-        return stream(apply(vertex.ins().edge(Encoding.Edge.Type.PLAYS).from(), v -> ThingTypeImpl.of(graphs, v)));
+        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().apply(v -> ThingTypeImpl.of(graphs, v)).stream();
     }
 
     @Override

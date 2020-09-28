@@ -29,8 +29,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static grakn.core.common.iterator.Iterators.apply;
-import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
+import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
+import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_POSITIVE;
 
 public class RuleImpl implements Rule {
 
@@ -63,10 +64,10 @@ public class RuleImpl implements Rule {
         // TODO extract when Types from when pattern
         List<String> whenTypesPositive = Arrays.asList();
 
-        vertex.outs().delete(Encoding.Edge.Rule.CONDITION_POSITIVE);
+        vertex.outs().delete(CONDITION_POSITIVE);
 
         whenTypesPositive.forEach(label -> {
-            vertex.outs().put(Encoding.Edge.Rule.CONDITION_POSITIVE, graphs.schema().getRule(label));
+            vertex.outs().put(CONDITION_POSITIVE, graphs.schema().getRule(label));
         });
     }
 
@@ -75,10 +76,10 @@ public class RuleImpl implements Rule {
         // TODO extract when Types from when pattern
         List<String> whenTypesNegative = Arrays.asList();
 
-        vertex.outs().delete(Encoding.Edge.Rule.CONDITION_NEGATIVE);
+        vertex.outs().delete(CONDITION_NEGATIVE);
 
         whenTypesNegative.forEach(label -> {
-            vertex.outs().put(Encoding.Edge.Rule.CONDITION_NEGATIVE, graphs.schema().getRule(label));
+            vertex.outs().put(CONDITION_NEGATIVE, graphs.schema().getRule(label));
         });
     }
 
@@ -87,10 +88,10 @@ public class RuleImpl implements Rule {
         // TODO extract when Types from then pattern
         List<String> conclusionTypes = Arrays.asList();
 
-        vertex.outs().delete(Encoding.Edge.Rule.CONCLUSION);
+        vertex.outs().delete(CONCLUSION);
 
         conclusionTypes.forEach(label -> {
-            vertex.outs().put(Encoding.Edge.Rule.CONCLUSION, graphs.schema().getRule(label));
+            vertex.outs().put(CONCLUSION, graphs.schema().getRule(label));
         });
     }
 
@@ -126,17 +127,17 @@ public class RuleImpl implements Rule {
 
     @Override
     public Stream<TypeImpl> positiveConditionTypes() {
-        return stream(apply(vertex.outs().edge(Encoding.Edge.Rule.CONDITION_POSITIVE).to(), v -> TypeImpl.of(graphs, v)));
+        return vertex.outs().edge(CONDITION_POSITIVE).to().apply(v -> TypeImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<TypeImpl> negativeConditionTypes() {
-        return stream(apply(vertex.outs().edge(Encoding.Edge.Rule.CONDITION_NEGATIVE).to(), v -> TypeImpl.of(graphs, v)));
+        return vertex.outs().edge(CONDITION_NEGATIVE).to().apply(v -> TypeImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<TypeImpl> conclusionTypes() {
-        return stream(apply(vertex.outs().edge(Encoding.Edge.Rule.CONCLUSION).to(), v -> TypeImpl.of(graphs, v)));
+        return vertex.outs().edge(CONCLUSION).to().apply(v -> TypeImpl.of(graphs, v)).stream();
     }
 
     @Override

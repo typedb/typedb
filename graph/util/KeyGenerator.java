@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.shortToSortedBytes;
-import static grakn.core.common.iterator.Iterators.filter;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;
 
@@ -141,8 +140,7 @@ public class KeyGenerator {
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    ResourceIterator<byte[]> typeIterator = filter(storage.iterate(typeEncoding, (iid, value) -> iid),
-                                                                   iid -> iid.length == VertexIID.Schema.LENGTH);
+                    ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid).filter(iid1 -> iid1.length == VertexIID.Schema.LENGTH);
                     while (typeIterator.hasNext()) {
                         byte[] typeIID = typeIterator.next();
                         byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);

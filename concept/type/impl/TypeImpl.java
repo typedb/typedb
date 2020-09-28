@@ -19,14 +19,13 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -37,10 +36,12 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
-import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.common.iterator.Iterators.stream;
 import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
+import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
+import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_POSITIVE;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
@@ -60,7 +61,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         this.graphs = graphs;
         this.vertex = graphs.schema().create(encoding, label, scope);
         TypeVertex superTypeVertex = graphs.schema().getType(encoding.root().label(), encoding.root().scope());
-        vertex.outs().put(Encoding.Edge.Type.SUB, superTypeVertex);
+        vertex.outs().put(SUB, superTypeVertex);
     }
 
     public static TypeImpl of(Graphs graphs, TypeVertex vertex) {
@@ -104,46 +105,46 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public Stream<RuleImpl> getPositiveConditionRules() {
-        return Iterators.stream(apply(vertex.ins().edge(Encoding.Edge.Rule.CONDITION_POSITIVE).from(), v -> RuleImpl.of(graphs, v)));
+        return vertex.ins().edge(CONDITION_POSITIVE).from().apply(v -> RuleImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<RuleImpl> getNegativeConditionRules() {
-        return Iterators.stream(apply(vertex.ins().edge(Encoding.Edge.Rule.CONDITION_NEGATIVE).from(), v -> RuleImpl.of(graphs, v)));
+        return vertex.ins().edge(CONDITION_NEGATIVE).from().apply(v -> RuleImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<RuleImpl> getConcludingRules() {
-        return Iterators.stream(apply(vertex.ins().edge(Encoding.Edge.Rule.CONCLUSION).from(), v -> RuleImpl.of(graphs, v)));
+        return vertex.ins().edge(CONCLUSION).from().apply(v -> RuleImpl.of(graphs, v)).stream();
     }
 
     void superTypeVertex(TypeVertex superTypeVertex) {
         if (vertex.equals(superTypeVertex)) throw exception(SUPERTYPE_SELF.message(vertex.label()));
-        vertex.outs().edge(Encoding.Edge.Type.SUB, ((TypeImpl) getSupertype()).vertex).delete();
-        vertex.outs().put(Encoding.Edge.Type.SUB, superTypeVertex);
+        vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
+        vertex.outs().put(SUB, superTypeVertex);
     }
 
     @Nullable
     <TYPE extends grakn.core.concept.type.Type> TYPE getSupertype(final Function<TypeVertex, TYPE> typeConstructor) {
-        final Iterator<TypeVertex> iterator = Iterators.filter(vertex.outs().edge(Encoding.Edge.Type.SUB).to(),
-                                                               v -> v.encoding().equals(vertex.encoding()));
+        ResourceIterator<TypeVertex> iterator = vertex.outs().edge(SUB).to().filter(v -> v.encoding().equals(vertex.encoding()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(final Function<TypeVertex, TYPE> typeConstructor) {
-        return stream(apply(loop(
+        return loop(
                 vertex,
                 v -> v != null && v.encoding().equals(this.vertex.encoding()),
                 v -> {
-                    Iterator<TypeVertex> p = v.outs().edge(Encoding.Edge.Type.SUB).to();
+                    ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
-                }), typeConstructor));
+                }
+        ).apply(typeConstructor).stream();
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(final Function<TypeVertex, TYPE> typeConstructor) {
-        return stream(apply(tree(vertex, v -> v.ins().edge(Encoding.Edge.Type.SUB).from()), typeConstructor));
+        return tree(vertex, v -> v.ins().edge(SUB).from()).apply(typeConstructor).stream();
     }
 
     @Override

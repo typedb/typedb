@@ -31,7 +31,12 @@ import java.util.stream.Stream;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
+import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
+import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
+import static grakn.core.graph.util.Encoding.ValueType.LONG;
+import static grakn.core.graph.util.Encoding.ValueType.STRING;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
@@ -69,14 +74,14 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public Stream<ThingImpl> getOwners() {
-        return stream(vertex.ins().edge(Encoding.Edge.Thing.HAS).from()).map(ThingImpl::of);
+        return vertex.ins().edge(HAS).from().stream().map(ThingImpl::of);
     }
 
     @Override
     public Stream<ThingImpl> getOwners(ThingType ownerType) {
-        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(v -> stream(vertex.ins().edge(
-                Encoding.Edge.Thing.HAS, PrefixIID.of(v.encoding().instance()), v.iid()
-        ).from())).map(ThingImpl::of);
+        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
+                v -> vertex.ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from().stream()
+        ).map(ThingImpl::of);
     }
 
     @Override
@@ -118,7 +123,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public Boolean(AttributeVertex<java.lang.Boolean> vertex) {
             super(vertex);
-            assert vertex.type().valueType().equals(Encoding.ValueType.BOOLEAN);
+            assert vertex.type().valueType().equals(BOOLEAN);
         }
 
         @Override
@@ -136,7 +141,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public Long(AttributeVertex<java.lang.Long> vertex) {
             super(vertex);
-            assert vertex.type().valueType().equals(Encoding.ValueType.LONG);
+            assert vertex.type().valueType().equals(LONG);
         }
 
         @Override
@@ -154,7 +159,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public Double(AttributeVertex<java.lang.Double> vertex) {
             super(vertex);
-            assert vertex.type().valueType().equals(Encoding.ValueType.DOUBLE);
+            assert vertex.type().valueType().equals(DOUBLE);
         }
 
         @Override
@@ -172,7 +177,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public String(AttributeVertex<java.lang.String> vertex) {
             super(vertex);
-            assert vertex.type().valueType().equals(Encoding.ValueType.STRING);
+            assert vertex.type().valueType().equals(STRING);
         }
 
         @Override
@@ -190,7 +195,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
         public DateTime(AttributeVertex<LocalDateTime> vertex) {
             super(vertex);
-            assert vertex.type().valueType().equals(Encoding.ValueType.DATETIME);
+            assert vertex.type().valueType().equals(DATETIME);
         }
 
         @Override

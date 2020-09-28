@@ -101,10 +101,6 @@ public class Iterators {
         return new DistinctIterator<>(Either.second(iterator));
     }
 
-    public static <T> Stream<T> stream(Recyclable<T> iterator) {
-        return iterator.stream();
-    }
-
     public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }
@@ -135,12 +131,12 @@ public class Iterators {
         }
 
         default LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
-            return Iterators.link(this, iterator);
+            return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.first(iterator))));
         }
 
         default LinkedIterators<T> link(Iterator<T> iterator) {
             if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
-            return Iterators.link(this, iterator);
+            return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.second(iterator))));
         }
     }
 }

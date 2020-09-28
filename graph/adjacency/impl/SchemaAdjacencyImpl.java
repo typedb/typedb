@@ -38,9 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.apply;
 import static grakn.core.common.iterator.Iterators.base;
-import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
 
 public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
@@ -111,17 +109,17 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         @Override
         public ResourceIterator<TypeVertex> from() {
-            return apply(edgeIterator, edge -> edge.from().asType());
+            return edgeIterator.apply(edge -> edge.from().asType());
         }
 
         @Override
         public ResourceIterator<TypeVertex> to() {
-            return apply(edgeIterator, edge -> edge.to().asType());
+            return edgeIterator.apply(edge -> edge.to().asType());
         }
 
         @Override
         public ResourceIterator<TypeVertex> overridden() {
-            return apply(edgeIterator, SchemaEdge::overridden);
+            return edgeIterator.apply(SchemaEdge::overridden);
         }
     }
 
@@ -142,12 +140,12 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         @Override
         public ResourceIterator<RuleVertex> from() {
-            return apply(edgeIterator, edge -> edge.from().asRule());
+            return edgeIterator.apply(edge -> edge.from().asRule());
         }
 
         @Override
         public ResourceIterator<TypeVertex> to() {
-            return apply(edgeIterator, edge -> edge.to().asType());
+            return edgeIterator.apply(edge -> edge.to().asType());
         }
     }
 
@@ -216,7 +214,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
             if (edges.get(encoding) == null) return storageIterator;
             else if (!storageIterator.hasNext()) return base(edges.get(encoding).iterator());
-            else return distinct(link(edges.get(encoding).iterator(), storageIterator));
+            else return link(edges.get(encoding).iterator(), storageIterator).distinct();
         }
 
         @Override

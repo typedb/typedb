@@ -18,6 +18,7 @@
 
 package grakn.core.concept.thing.impl;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
@@ -29,7 +30,6 @@ import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -37,8 +37,10 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
-import static grakn.core.common.iterator.Iterators.filter;
-import static grakn.core.common.iterator.Iterators.stream;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.RELATES;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -67,22 +69,20 @@ public class RelationImpl extends ThingImpl implements Relation {
         }
 
         RoleImpl role = ((RoleTypeImpl) roleType).create();
-        vertex.outs().put(Encoding.Edge.Thing.RELATES, role.vertex);
-        ((ThingImpl) player).vertex.outs().put(Encoding.Edge.Thing.PLAYS, role.vertex);
+        vertex.outs().put(RELATES, role.vertex);
+        ((ThingImpl) player).vertex.outs().put(PLAYS, role.vertex);
         role.optimise();
     }
 
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
-        Iterator<ThingVertex> role = filter(
-                vertex.outs().edge(Encoding.Edge.Thing.RELATES,
-                                   PrefixIID.of(Encoding.Vertex.Thing.ROLE),
-                                   ((RoleTypeImpl) roleType).vertex.iid()).to(),
-                v -> v.ins().edge(Encoding.Edge.Thing.PLAYS, ((ThingImpl) player).vertex) != null
-        );
+        ResourceIterator<ThingVertex> role = vertex.outs().edge(
+                RELATES, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
+        ).to().filter(v -> v.ins().edge(PLAYS, ((ThingImpl) player).vertex) != null);
+
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
-            if (!vertex.outs().edge(Encoding.Edge.Thing.RELATES).to().hasNext()) this.delete();
+            if (!vertex.outs().edge(RELATES).to().hasNext()) this.delete();
         }
     }
 
@@ -96,15 +96,13 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public Stream<ThingImpl> getPlayers(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return stream(vertex.outs().edge(Encoding.Edge.Thing.ROLEPLAYER).to()).map(ThingImpl::of);
+            return vertex.outs().edge(ROLEPLAYER).to().stream().map(ThingImpl::of);
         }
         return getPlayers(stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
     private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {
-        return roleTypeVertices.flatMap(v -> stream(
-                vertex.outs().edge(Encoding.Edge.Thing.ROLEPLAYER, v.iid()).to())
-        ).map(ThingImpl::of);
+        return roleTypeVertices.flatMap(v -> vertex.outs().edge(ROLEPLAYER, v.iid()).to().stream()).map(ThingImpl::of);
     }
 
     @Override
@@ -120,7 +118,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void validate() {
         super.validate();
-        if (!vertex.outs().edge(Encoding.Edge.Thing.RELATES).to().hasNext()) {
+        if (!vertex.outs().edge(RELATES).to().hasNext()) {
             throw exception(RELATION_PLAYER_MISSING.message(getType().getLabel()));
         }
     }
