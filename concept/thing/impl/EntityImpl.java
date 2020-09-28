@@ -20,7 +20,6 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.impl.EntityTypeImpl;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;

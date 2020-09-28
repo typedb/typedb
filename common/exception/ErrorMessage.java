@@ -67,6 +67,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(4, "Illegal argument provided.");
         public static final Internal ILLEGAL_CAST =
                 new Internal(5, "Illegal casting operation from '%s' to '%s'.");
+        public static final Internal GRAKN_CLOSED =
+                new Internal(6, "Attempted to ");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -76,25 +78,29 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         }
     }
 
-    public static class DatabaseManager extends ErrorMessage {
-        public static final DatabaseManager DATABASE_EXISTS =
-                new DatabaseManager(1, "The database with the name '%s' already exists.");
-        public static final DatabaseManager DATABASE_NOT_FOUND =
-                new DatabaseManager(2, "The database with the name '%s' does not exist.");
-        public static final DatabaseManager DATABASE_DELETED =
-                new DatabaseManager(3, "Database with the name '%s' has been deleted.");
+    public static class Database extends ErrorMessage {
+        public static final Database DATABASE_EXISTS =
+                new Database(1, "The database with the name '%s' already exists.");
+        public static final Database DATABASE_NOT_FOUND =
+                new Database(2, "The database with the name '%s' does not exist.");
+        public static final Database DATABASE_DELETED =
+                new Database(3, "Database with the name '%s' has been deleted.");
+        public static final Database DATABASE_CLOSED =
+                new Database(4, "Attempted to open a new session from the database '%s' that has been closed.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operations";
 
-        DatabaseManager(int number, String message) {
+        Database(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
 
     public static class Session extends ErrorMessage {
-        public static final Server SESSION_NOT_FOUND =
-                new Server(1, "Session with UUID '%s' does not exist.");
+        public static final Session SESSION_NOT_FOUND =
+                new Session(1, "Session with UUID '%s' does not exist.");
+        public static final Session SESSION_CLOSED =
+                new Session(2, "Attempted to open a transaction from closed session.");
 
         private static final String codePrefix = "SSN";
         private static final String messagePrefix = "Invalid Session Operation";

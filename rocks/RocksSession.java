@@ -33,15 +33,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 
 abstract class RocksSession implements Grakn.Session {
 
     private final Arguments.Session.Type type;
     private final Context.Session context;
-    private final AtomicBoolean isOpen;
     private final UUID uuid;
     final RocksDatabase database;
     final ConcurrentMap<RocksTransaction, Long> transactions;
+    final AtomicBoolean isOpen;
 
     private RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
@@ -144,6 +145,7 @@ abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+            if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             RocksTransaction.Schema transaction = new RocksTransaction.Schema(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
@@ -178,6 +180,7 @@ abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+            if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock = 0;
             if (type.isWrite()) lock = database.dataWriteSchemaLock().readLock();
             RocksTransaction.Data transaction = new RocksTransaction.Data(this, type, options);

@@ -18,9 +18,7 @@
 
 package grakn.core.concept.thing.impl;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -31,7 +29,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 

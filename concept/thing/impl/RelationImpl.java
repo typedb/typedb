@@ -25,7 +25,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.impl.RelationTypeImpl;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 

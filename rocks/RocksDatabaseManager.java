@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static grakn.core.common.exception.ErrorMessage.DatabaseManager.DATABASE_EXISTS;
+import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 

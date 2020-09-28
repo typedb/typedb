@@ -28,7 +28,8 @@ import org.rocksdb.UInt64AddOperator;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.exception.ErrorMessage.DatabaseManager.DATABASE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
 
 /**
  * A Grakn implementation with RocksDB
@@ -85,6 +86,7 @@ public class RocksGrakn implements Grakn {
 
     @Override
     public RocksSession session(String database, Arguments.Session.Type type, Options.Session options) {
+        if (!isOpen.get()) throw GraknException.of(GRAKN_CLOSED);
         if (databaseMgr.contains(database)) return databaseMgr.get(database).createAndOpenSession(type, options);
         else throw new GraknException(DATABASE_NOT_FOUND.message(database));
     }

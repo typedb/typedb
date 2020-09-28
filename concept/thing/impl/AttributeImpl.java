@@ -23,7 +23,6 @@ import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
 import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;

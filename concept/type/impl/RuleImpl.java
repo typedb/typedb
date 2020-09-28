@@ -21,7 +21,6 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.concept.type.Rule;
 import grakn.core.graph.Graphs;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.RuleVertex;
 import graql.lang.pattern.Pattern;
 

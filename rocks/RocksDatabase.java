@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
@@ -69,7 +70,6 @@ public class RocksDatabase implements Grakn.Database {
         sessions = new ConcurrentHashMap<>();
         dataWriteSchemaLock = new StampedLock();
         dataReadSchemaLock = new StampedLock();
-        isOpen = new AtomicBoolean(false);
 
         try {
             rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().toString());
@@ -77,9 +77,9 @@ public class RocksDatabase implements Grakn.Database {
             throw new GraknException(e);
         }
 
+        isOpen = new AtomicBoolean(true);
         if (isNew) initialise();
         else load();
-        isOpen.set(true);
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
@@ -110,6 +110,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
         long lock = 0;
         RocksSession session;
 
