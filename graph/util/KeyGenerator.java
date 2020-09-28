@@ -18,10 +18,10 @@
 
 package grakn.core.graph.util;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
 
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -141,8 +141,8 @@ public class KeyGenerator {
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    Iterator<byte[]> typeIterator = filter(storage.iterate(typeEncoding, (iid, value) -> iid),
-                                                           iid -> iid.length == VertexIID.Schema.LENGTH);
+                    ResourceIterator<byte[]> typeIterator = filter(storage.iterate(typeEncoding, (iid, value) -> iid),
+                                                                   iid -> iid.length == VertexIID.Schema.LENGTH);
                     while (typeIterator.hasNext()) {
                         byte[] typeIID = typeIterator.next();
                         byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);

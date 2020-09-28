@@ -25,7 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class LinkedIterators<T> implements Iterators.ComposableAndRecyclable<T> {
+public class LinkedIterators<T> implements ResourceIterator<T> {
 
     private final List<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators;
 

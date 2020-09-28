@@ -26,7 +26,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 // TODO: verify (and potentially fix) this class to be able to hand null objects
-public class DistinctIterator<T> implements Iterators.ComposableAndRecyclable<T> {
+public class DistinctIterator<T> implements ResourceIterator<T> {
 
     private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
     private final Iterator<T> genericIterator;

@@ -18,6 +18,7 @@
 
 package grakn.core.graph.adjacency.impl;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.edge.SchemaEdge;
@@ -30,7 +31,6 @@ import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +39,7 @@ import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.apply;
+import static grakn.core.common.iterator.Iterators.base;
 import static grakn.core.common.iterator.Iterators.distinct;
 import static grakn.core.common.iterator.Iterators.link;
 
@@ -101,24 +102,25 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
      * this iterator builder performs safe vertex downcasts at both ends of the edge
      */
     static class TypeIteratorBuilderImpl implements SchemaAdjacency.TypeIteratorBuilder {
-        private final Iterator<SchemaEdge> edgeIterator;
 
-        TypeIteratorBuilderImpl(Iterator<SchemaEdge> edgeIterator) {
+        private final ResourceIterator<SchemaEdge> edgeIterator;
+
+        TypeIteratorBuilderImpl(ResourceIterator<SchemaEdge> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
         @Override
-        public Iterator<TypeVertex> from() {
+        public ResourceIterator<TypeVertex> from() {
             return apply(edgeIterator, edge -> edge.from().asType());
         }
 
         @Override
-        public Iterator<TypeVertex> to() {
+        public ResourceIterator<TypeVertex> to() {
             return apply(edgeIterator, edge -> edge.to().asType());
         }
 
         @Override
-        public Iterator<TypeVertex> overridden() {
+        public ResourceIterator<TypeVertex> overridden() {
             return apply(edgeIterator, SchemaEdge::overridden);
         }
     }
@@ -131,19 +133,20 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
      * and define the 'to'/end of a Rule edge to always end at a Type
      */
     static class RuleIteratorBuilderImpl implements SchemaAdjacency.RuleIteratorBuilder {
-        private final Iterator<SchemaEdge> edgeIterator;
 
-        RuleIteratorBuilderImpl(Iterator<SchemaEdge> edgeIterator) {
+        private final ResourceIterator<SchemaEdge> edgeIterator;
+
+        RuleIteratorBuilderImpl(ResourceIterator<SchemaEdge> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
         @Override
-        public Iterator<RuleVertex> from() {
+        public ResourceIterator<RuleVertex> from() {
             return apply(edgeIterator, edge -> edge.from().asRule());
         }
 
         @Override
-        public Iterator<TypeVertex> to() {
+        public ResourceIterator<TypeVertex> to() {
             return apply(edgeIterator, edge -> edge.to().asType());
         }
     }
@@ -157,15 +160,15 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         @Override
         public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
             Set<SchemaEdge> t = edges.get(encoding);
-            if (t != null) return new TypeIteratorBuilderImpl(t.iterator());
-            return new TypeIteratorBuilderImpl(Collections.emptyIterator());
+            if (t != null) return new TypeIteratorBuilderImpl(base(t.iterator()));
+            return new TypeIteratorBuilderImpl(base(Collections.emptyIterator()));
         }
 
         @Override
         public RuleIteratorBuilderImpl edge(Encoding.Edge.Rule encoding) {
             Set<SchemaEdge> t = edges.get(encoding);
-            if (t != null) return new RuleIteratorBuilderImpl(t.iterator());
-            return new RuleIteratorBuilderImpl(Collections.emptyIterator());
+            if (t != null) return new RuleIteratorBuilderImpl(base(t.iterator()));
+            return new RuleIteratorBuilderImpl(base(Collections.emptyIterator()));
         }
 
         @Override
@@ -187,7 +190,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
     public static class Persisted extends SchemaAdjacencyImpl implements SchemaAdjacency {
 
-        private final ConcurrentHashMap<byte[], Iterator<SchemaEdge>> storageIterators;
+        private final ConcurrentHashMap<byte[], ResourceIterator<SchemaEdge>> storageIterators;
 
         public Persisted(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
             super(owner, direction);
@@ -205,14 +208,14 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
             return new SchemaEdgeImpl.Persisted(owner.graph(), EdgeIID.Schema.of(key), overridden);
         }
 
-        private Iterator<SchemaEdge> edgeIterator(Encoding.Edge.Schema encoding) {
-            Iterator<SchemaEdge> storageIterator = storageIterators.computeIfAbsent(
+        private ResourceIterator<SchemaEdge> edgeIterator(Encoding.Edge.Schema encoding) {
+            ResourceIterator<SchemaEdge> storageIterator = storageIterators.computeIfAbsent(
                     join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
                     iid -> owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)))
             );
 
             if (edges.get(encoding) == null) return storageIterator;
-            else if (!storageIterator.hasNext()) return edges.get(encoding).iterator();
+            else if (!storageIterator.hasNext()) return base(edges.get(encoding).iterator());
             else return distinct(link(edges.get(encoding).iterator(), storageIterator));
         }
 

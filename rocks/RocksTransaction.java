@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
@@ -39,7 +40,6 @@ import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -55,6 +55,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMI
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static grakn.core.common.iterator.Iterators.base;
 import static grakn.core.graph.util.Encoding.SCHEMA_GRAPH_STORAGE_REFRESH_RATE;
 
 abstract class RocksTransaction implements Grakn.Transaction {
@@ -428,7 +429,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
-            try (org.rocksdb.RocksIterator iterator = getRocksIterator()) {
+            try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
@@ -482,10 +483,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public <G> Iterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
-            return iterator;
+            return base(iterator);
         }
 
         @Override
@@ -499,14 +500,16 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return new GraknException(exception);
         }
 
-        org.rocksdb.RocksIterator getRocksIterator() {
-            org.rocksdb.RocksIterator iterator = recycled.poll();
-            if (iterator != null) return iterator;
-            else return rocksTransaction.getIterator(readOptions);
+        org.rocksdb.RocksIterator getInternalRocksIterator() {
+            if (type.isRead()) {
+                org.rocksdb.RocksIterator iterator = recycled.poll();
+                if (iterator != null) return iterator;
+            }
+            return rocksTransaction.getIterator(readOptions);
         }
 
         public void recycle(org.rocksdb.RocksIterator rocksIterator) {
-            recycled.add(rocksIterator);
+            if (type.isRead()) recycled.add(rocksIterator);
         }
 
         void remove(RocksIterator<?> iterator) {

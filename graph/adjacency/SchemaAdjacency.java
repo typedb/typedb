@@ -18,13 +18,12 @@
 
 package grakn.core.graph.adjacency;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.edge.SchemaEdge;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
-
-import java.util.Iterator;
 
 public interface SchemaAdjacency {
 
@@ -80,17 +79,17 @@ public interface SchemaAdjacency {
 
     interface TypeIteratorBuilder {
 
-        Iterator<TypeVertex> from();
+        ResourceIterator<TypeVertex> from();
 
-        Iterator<TypeVertex> to();
+        ResourceIterator<TypeVertex> to();
 
-        Iterator<TypeVertex> overridden();
+        ResourceIterator<TypeVertex> overridden();
     }
 
     interface RuleIteratorBuilder {
 
-        Iterator<RuleVertex> from();
+        ResourceIterator<RuleVertex> from();
 
-        Iterator<TypeVertex> to();
+        ResourceIterator<TypeVertex> to();
     }
 }

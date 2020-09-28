@@ -22,31 +22,33 @@ import grakn.common.collection.Either;
 
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class AppliedIterator<T, U> implements ResourceIterator<U> {
+public interface ResourceIterator<T> extends Iterators.Composable<T>, Iterators.Recyclable<T> {
 
-    private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
-    private final Iterator<T> genericIterator;
-    private final Function<T, U> function;
-
-    AppliedIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator, Function<T, U> function) {
-        this.iterator = iterator;
-        this.genericIterator = iterator.apply(r -> r, i -> i);
-        this.function = function;
+    @Override
+    default DistinctIterator<T> distinct() {
+        return new DistinctIterator<>(Either.first(this));
     }
 
     @Override
-    public boolean hasNext() {
-        return genericIterator.hasNext();
+    default <U> AppliedIterator<T, U> apply(Function<T, U> function) {
+        return new AppliedIterator<>(Either.first(this), function);
     }
 
     @Override
-    public U next() {
-        return function.apply(genericIterator.next());
+    default FilteredIterator<T> filter(Predicate<T> predicate) {
+        return new FilteredIterator<>(Either.first(this), predicate);
     }
 
     @Override
-    public void recycle() {
-        iterator.ifFirst(Iterators.Recyclable::recycle);
+    default LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
+        return Iterators.link(this, iterator);
+    }
+
+    @Override
+    default LinkedIterators<T> link(Iterator<T> iterator) {
+        if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
+        return Iterators.link(this, iterator);
     }
 }

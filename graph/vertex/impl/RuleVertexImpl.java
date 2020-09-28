@@ -19,6 +19,7 @@
 
 package grakn.core.graph.vertex.impl;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
@@ -29,7 +30,6 @@ import grakn.core.graph.vertex.RuleVertex;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
@@ -206,7 +206,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
-            Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
     }

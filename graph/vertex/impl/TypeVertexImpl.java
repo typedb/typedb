@@ -18,6 +18,7 @@
 
 package grakn.core.graph.vertex.impl;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
@@ -27,7 +28,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
@@ -307,7 +307,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
-            Iterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
     }

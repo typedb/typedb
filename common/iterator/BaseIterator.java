@@ -21,28 +21,23 @@ package grakn.core.common.iterator;
 import grakn.common.collection.Either;
 
 import java.util.Iterator;
-import java.util.function.Function;
 
-public class AppliedIterator<T, U> implements ResourceIterator<U> {
+public class BaseIterator<T> implements ResourceIterator<T> {
 
     private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
-    private final Iterator<T> genericIterator;
-    private final Function<T, U> function;
 
-    AppliedIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator, Function<T, U> function) {
+    public BaseIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
-        this.genericIterator = iterator.apply(r -> r, i -> i);
-        this.function = function;
     }
 
     @Override
     public boolean hasNext() {
-        return genericIterator.hasNext();
+        return iterator.apply(Iterator::hasNext, Iterator::hasNext);
     }
 
     @Override
-    public U next() {
-        return function.apply(genericIterator.next());
+    public T next() {
+        return iterator.apply(Iterator::next, Iterator::next);
     }
 
     @Override

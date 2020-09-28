@@ -44,6 +44,14 @@ public class Iterators {
         return new LoopIterator<>(seed, predicate, function);
     }
 
+    public static <T> BaseIterator<T> base(Iterator<T> iterator) {
+        return new BaseIterator<>(Either.second(iterator));
+    }
+
+    public static <T> BaseIterator<T> base(Recyclable<T> iterator) {
+        return new BaseIterator<>(Either.first(iterator));
+    }
+
     public static <T> LinkedIterators<T> link(Recyclable<T> iterator1, Recyclable<T> iterator2) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(iterator1), Either.first(iterator2))));
     }
@@ -130,35 +138,6 @@ public class Iterators {
             return Iterators.link(this, iterator);
         }
 
-        default LinkedIterators<T> link(Iterator<T> iterator) {
-            if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
-            return Iterators.link(this, iterator);
-        }
-    }
-
-    public interface ComposableAndRecyclable<T> extends Composable<T>, Recyclable<T> {
-
-        @Override
-        default DistinctIterator<T> distinct() {
-            return new DistinctIterator<>(Either.first(this));
-        }
-
-        @Override
-        default <U> AppliedIterator<T, U> apply(Function<T, U> function) {
-            return new AppliedIterator<>(Either.first(this), function);
-        }
-
-        @Override
-        default FilteredIterator<T> filter(Predicate<T> predicate) {
-            return new FilteredIterator<>(Either.first(this), predicate);
-        }
-
-        @Override
-        default LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
-            return Iterators.link(this, iterator);
-        }
-
-        @Override
         default LinkedIterators<T> link(Iterator<T> iterator) {
             if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
             return Iterators.link(this, iterator);

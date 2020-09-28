@@ -18,12 +18,11 @@
 
 package grakn.core.graph.adjacency;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.IID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
-
-import java.util.Iterator;
 
 public interface ThingAdjacency {
 
@@ -131,9 +130,8 @@ public interface ThingAdjacency {
 
     interface ThingIteratorBuilder {
 
-        Iterator<ThingVertex> from();
+        ResourceIterator<ThingVertex> from();
 
-        Iterator<ThingVertex> to();
-
+        ResourceIterator<ThingVertex> to();
     }
 }

@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
-public class FilteredIterator<T> implements Iterators.ComposableAndRecyclable<T> {
+public class FilteredIterator<T> implements ResourceIterator<T> {
 
     private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
     private final Iterator<T> genericIterator;

@@ -18,6 +18,7 @@
 
 package grakn.core.graph;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -32,7 +33,6 @@ import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -147,8 +147,8 @@ public class DataGraph implements Graph {
         });
     }
 
-    public Iterator<ThingVertex> get(TypeVertex typeVertex) {
-        Iterator<ThingVertex> storageIterator = storage.iterate(
+    public ResourceIterator<ThingVertex> get(TypeVertex typeVertex) {
+        ResourceIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
