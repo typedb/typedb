@@ -28,11 +28,8 @@ java_library(
     deps = [
         # Package dependencies
         "//:grakn",
-#        "//common",
         "//concept:concept",
         "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
         "//test/behaviour/util:util",
 
         # Grakn Labs dependencies
@@ -43,6 +40,10 @@ java_library(
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
         "@maven//:com_google_guava_guava",
+    ],
+    runtime_deps = [
+        "//test/behaviour/connection/database:steps",
+        "//test/behaviour/connection/transaction:steps",
     ],
     visibility = ["//visibility:public"],
 )
