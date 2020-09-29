@@ -33,9 +33,11 @@ import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.concept.RuleRPC;
 import grakn.core.server.rpc.concept.ThingRPC;
 import grakn.core.server.rpc.concept.TypeRPC;
+import grakn.core.server.rpc.query.QueryRPC;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
+import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -74,6 +76,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     private final AtomicBoolean isOpen;
     private final Function<UUID, SessionRPC> sessionRPCSupplier;
 
+    private QueryRPC queryRPC;
     private SessionRPC sessionRPC;
     private Grakn.Transaction transaction;
     private Arguments.Transaction.Type transactionType;
@@ -130,8 +133,6 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
      * connections, if not close it completely.
      *
      * TODO: improve by sending close signal to the session
-     *
-     * @param error
      */
     @Override
     public void onError(Throwable error) {
@@ -160,14 +161,23 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
             case COMMIT_REQ:
                 commit();
                 return;
+            case ROLLBACK_REQ:
+                rollback();
+                return;
             case ITER_REQ:
                 handleIterRequest(request.getIterReq());
+                return;
+            case QUERY_REQ:
+                query(request.getQueryReq());
                 return;
             case GETTYPE_REQ:
                 getType(request.getGetTypeReq());
                 return;
             case GETTHING_REQ:
                 getThing(request.getGetThingReq());
+                return;
+            case GETRULE_REQ:
+                getRule(request.getGetRuleReq());
                 return;
             case PUTENTITYTYPE_REQ:
                 putEntityType(request.getPutEntityTypeReq());
@@ -232,6 +242,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
             transaction = sessionRPC.transaction(this);
             iterators = new Iterators(responder::onNext, transaction.options().batchSize());
+            queryRPC = new QueryRPC(transaction, iterators, responder::onNext);
             responder.onNext(ResponseBuilder.Transaction.open());
         } else {
             throw Status.ALREADY_EXISTS.withDescription(TRANSACTION_ALREADY_OPENED.message()).asRuntimeException();
@@ -258,14 +269,15 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         return nonNull(transaction);
     }
 
-    private void query(Transaction.Query.Iter.Req request) {
-        try (ThreadTrace ignored = traceOnThread("query")) {
-            Options.Query options = RequestReader.getOptions(Options.Query::new, request.getOptions());
+    private void query(final QueryProto.Query.Req request) {
+        try (final ThreadTrace ignored = traceOnThread("query")) {
+            queryRPC.execute(request);
+        }
+    }
 
-            // TODO
-            // Stream<Transaction.Res> responseStream = transaction().query().insert(request.getQuery(), options)
-            //        .map(ResponseBuilder.Transaction.Iter::query);
-            // iterators.startBatchIterating(responseStream.iterator(), queryOptions);
+    private void query(final QueryProto.Query.Iter.Req request) {
+        try (final ThreadTrace ignored = traceOnThread("query")) {
+            queryRPC.iterate(request);
         }
     }
 
@@ -274,15 +286,26 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         responder.onNext(ResponseBuilder.Transaction.commit());
     }
 
-    private void getType(Transaction.GetType.Req request) {
+    private void rollback() {
+        transaction().rollback();
+        responder.onNext(ResponseBuilder.Transaction.rollback());
+    }
+
+    private void getType(final Transaction.GetType.Req request) {
         final Type type = transaction().concepts().getType(request.getLabel());
         final Transaction.Res response = ResponseBuilder.Transaction.getType(type);
         responder.onNext(response);
     }
 
-    private void getThing(Transaction.GetThing.Req request) {
+    private void getThing(final Transaction.GetThing.Req request) {
         final Thing thing = transaction().concepts().getThing(request.getIid().toByteArray());
         final Transaction.Res response = ResponseBuilder.Transaction.getThing(thing);
+        responder.onNext(response);
+    }
+
+    private void getRule(final Transaction.GetRule.Req request) {
+        final Rule rule = transaction().concepts().getRule(request.getLabel());
+        final Transaction.Res response = ResponseBuilder.Transaction.getRule(rule);
         responder.onNext(response);
     }
 
@@ -335,23 +358,23 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         responder.onNext(response);
     }
 
-    private void thingMethod(ConceptProto.ThingMethod.Req thingReq) {
+    private void thingMethod(final ConceptProto.ThingMethod.Req thingReq) {
         new ThingRPC(transaction(), thingReq.getIid(), iterators, responder::onNext).execute(thingReq);
     }
 
-    private void thingMethod(ConceptProto.ThingMethod.Iter.Req req) {
+    private void thingMethod(final ConceptProto.ThingMethod.Iter.Req req) {
         new ThingRPC(transaction(), req.getIid(), iterators, responder::onNext).iterate(req);
     }
 
-    private void typeMethod(ConceptProto.TypeMethod.Req req) {
+    private void typeMethod(final ConceptProto.TypeMethod.Req req) {
         new TypeRPC(transaction(), req.getLabel(), req.getScope(), iterators, responder::onNext).execute(req);
     }
 
-    private void typeMethod(ConceptProto.TypeMethod.Iter.Req req) {
+    private void typeMethod(final ConceptProto.TypeMethod.Iter.Req req) {
         new TypeRPC(transaction(), req.getLabel(), req.getScope(), iterators, responder::onNext).iterate(req);
     }
 
-    private void ruleMethod(ConceptProto.RuleMethod.Req req) {
+    private void ruleMethod(final ConceptProto.RuleMethod.Req req) {
         new RuleRPC(transaction, req.getLabel(), responder::onNext).execute(req);
     }
 

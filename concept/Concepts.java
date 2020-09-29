@@ -58,25 +58,25 @@ public final class Concepts {
     }
 
     public ThingType getRootThingType() {
-        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.THING.label());
+        final TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.THING.label());
         if (vertex != null) return new ThingTypeImpl.Root(graphs, vertex);
         else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType getRootEntityType() {
-        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.ENTITY.label());
+        final TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.ENTITY.label());
         if (vertex != null) return EntityTypeImpl.of(graphs, vertex);
         else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public RelationType getRootRelationType() {
-        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.RELATION.label());
+        final TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.RELATION.label());
         if (vertex != null) return RelationTypeImpl.of(graphs, vertex);
         else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
     public AttributeType getRootAttributeType() {
-        TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label());
+        final TypeVertex vertex = graphs.schema().getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label());
         if (vertex != null) return AttributeTypeImpl.of(graphs, vertex);
         else throw graphs.exception(ILLEGAL_STATE.message());
     }

@@ -15,37 +15,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "GraqlSteps.java"
+        "RuleValidationTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.graql.language.rule_validation.RuleValidationTest",
     deps = [
-        # Package dependencies
-        "//:grakn",
-#        "//common",
-        "//concept:concept",
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/util:util",
-
-        # Grakn Labs dependencies
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query",
-
         # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
-        "@maven//:com_google_guava_guava",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
-    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "//test/behaviour/graql:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+    ],
+    data = [
+        "@graknlabs_behaviour//graql/language:rule-validation.feature",
+    ],
+    classpath_resources = ["//test/conf:logback"],
+    size = "small",
+    visibility = ["//visibility:public"]
 )
+
 
 checkstyle_test(
     name = "checkstyle",

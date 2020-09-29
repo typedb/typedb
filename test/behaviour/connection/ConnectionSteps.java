@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.util.Objects.isNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -76,6 +77,8 @@ public class ConnectionSteps {
     }
 
     public static Grakn.Transaction tx() {
+        assertFalse("There is no open session", sessions.isEmpty());
+        assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
         return sessionsToTransactions.get(sessions.get(0)).get(0);
     }
 

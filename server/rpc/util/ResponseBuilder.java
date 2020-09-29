@@ -20,6 +20,8 @@ package grakn.core.server.rpc.util;
 import com.google.protobuf.ByteString;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.answer.AnswerGroup;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -31,10 +33,13 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
+import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
+import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction.GetThing;
 import grakn.protocol.TransactionProto.Transaction.GetType;
+import grakn.protocol.TransactionProto.Transaction.GetRule;
 import grakn.protocol.TransactionProto.Transaction.PutAttributeType;
 import grakn.protocol.TransactionProto.Transaction.PutEntityType;
 import grakn.protocol.TransactionProto.Transaction.PutRelationType;
@@ -44,7 +49,9 @@ import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 import java.time.ZoneOffset;
+import java.util.stream.Collectors;
 
+import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYPE;
 import static java.lang.String.format;
 
 public class ResponseBuilder {
@@ -75,16 +82,27 @@ public class ResponseBuilder {
                     .setCommitRes(TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build();
         }
 
-        public static TransactionProto.Transaction.Res getThing(@Nullable Thing thing) {
-            GetThing.Res.Builder res = GetThing.Res.newBuilder();
+        public static TransactionProto.Transaction.Res rollback() {
+            return TransactionProto.Transaction.Res.newBuilder()
+                    .setRollbackRes(TransactionProto.Transaction.Rollback.Res.getDefaultInstance()).build();
+        }
+
+        public static TransactionProto.Transaction.Res getThing(@Nullable final Thing thing) {
+            final GetThing.Res.Builder res = GetThing.Res.newBuilder();
             if (thing != null) res.setThing(Concept.thing(thing));
             return TransactionProto.Transaction.Res.newBuilder().setGetThingRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res getType(@Nullable Type type) {
-            GetType.Res.Builder res = GetType.Res.newBuilder();
+        public static TransactionProto.Transaction.Res getType(@Nullable final Type type) {
+            final GetType.Res.Builder res = GetType.Res.newBuilder();
             if (type != null) res.setType(Concept.type(type));
             return TransactionProto.Transaction.Res.newBuilder().setGetTypeRes(res).build();
+        }
+
+        public static TransactionProto.Transaction.Res getRule(@Nullable final Rule rule) {
+            final GetRule.Res.Builder res = GetRule.Res.newBuilder();
+            if (rule != null) res.setRule(Concept.rule(rule));
+            return TransactionProto.Transaction.Res.newBuilder().setGetRuleRes(res).build();
         }
 
         public static TransactionProto.Transaction.Res putEntityType(EntityType entityType) {
@@ -135,40 +153,46 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.Res done() {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setDone(true)).build();
+                                .setDone(true)).build();
             }
 
             public static TransactionProto.Transaction.Res id(int id) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setIteratorID(id)).build();
+                                .setIteratorID(id)).build();
             }
 
-            public static TransactionProto.Transaction.Res query(Object object) {
-                throw new UnsupportedOperationException();
-//                return TransactionProto.Transaction.Res.newBuilder()
-//                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-//                                            .setQueryIterRes(TransactionProto.Transaction.Query.Iter.Res.newBuilder()
-//                                                                     .setAnswer(Answer.answer(object)))).build();
-            }
-
-            public static TransactionProto.Transaction.Res thingMethod(ConceptProto.ThingMethod.Iter.Res res) {
+            public static TransactionProto.Transaction.Res query(final QueryProto.Query.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodThingIterRes(res)).build();
+                                .setQueryIterRes(res)).build();
             }
 
-            public static TransactionProto.Transaction.Res typeMethod(ConceptProto.TypeMethod.Iter.Res res) {
+            public static TransactionProto.Transaction.Res thingMethod(final ConceptProto.ThingMethod.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodTypeIterRes(res)).build();
+                                .setConceptMethodThingIterRes(res)).build();
+            }
+
+            public static TransactionProto.Transaction.Res typeMethod(final ConceptProto.TypeMethod.Iter.Res res) {
+                return TransactionProto.Transaction.Res.newBuilder()
+                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
+                                .setConceptMethodTypeIterRes(res)).build();
             }
         }
     }
 
     public static class Concept {
 
-        public static ConceptProto.Thing thing(Thing thing) {
+        public static ConceptProto.Concept concept(final grakn.core.concept.Concept concept) {
+            if (concept instanceof Thing) {
+                return ConceptProto.Concept.newBuilder().setThing(thing(concept.asThing())).build();
+            } else {
+                return ConceptProto.Concept.newBuilder().setType(type(concept.asType())).build();
+            }
+        }
+
+        public static ConceptProto.Thing thing(final Thing thing) {
             final ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
                     .setEncoding(getEncoding(thing));
@@ -182,7 +206,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.Type type(Type type) {
+        public static ConceptProto.Type type(final Type type) {
             final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel())
                     .setEncoding(getEncoding(type));
@@ -315,50 +339,45 @@ public class ResponseBuilder {
             }
         }
     }
-//
-//    /**
-//     * An RPC Response Builder class for Answer responses
-//     */
-//    public static class Answer {
-//
-//        public static AnswerProto.Answer answer(Object object) {
-//            AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
-//
-//            if (object instanceof AnswerGroup) {
-//                answer.setAnswerGroup(answerGroup((AnswerGroup) object));
-//            } else if (object instanceof ConceptMap) {
-//                answer.setConceptMap(conceptMap((ConceptMap) object));
-//            } else if (object instanceof ConceptList) {
-//                answer.setConceptList(conceptList((ConceptList) object));
-//            } else if (object instanceof ConceptSetMeasure) {
-//                answer.setConceptSetMeasure(conceptSetMeasure((ConceptSetMeasure) object));
-//            } else if (object instanceof ConceptSet) {
-//                answer.setConceptSet(conceptSet((ConceptSet) object));
-//            } else if (object instanceof Numeric) {
-//                answer.setValue(value((Numeric) object));
-//            } else if (object instanceof Void) {
-//                answer.setVoid(voidMessage((Void) object));
-//            }
-//
-//            return answer.build();
-//        }
-//
-//
-//        static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
-//            AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()
-//                    .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
-//                    .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
-//
-//            return answerGroupProto.build();
-//        }
-//
-//        static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
-//            AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
-//            answer.map().forEach((var, concept) -> {
-//                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.conceptPrefilled(concept);
-//                conceptMapProto.putMap(var.name(), conceptProto);
-//            });
-//
+
+    /**
+     * An RPC Response Builder class for Answer responses
+     */
+    public static class Answer {
+
+        public static AnswerProto.Answer answer(final Object object) {
+            final AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
+
+            if (object instanceof AnswerGroup) {
+                answer.setAnswerGroup(answerGroup((AnswerGroup<?>) object));
+            } else if (object instanceof ConceptMap) {
+                answer.setConceptMap(conceptMap((ConceptMap) object));
+            } else if (object instanceof Number) {
+                answer.setNumber(number((Number) object));
+            } else {
+                throw new GraknException(UNKNOWN_ANSWER_TYPE);
+            }
+
+            return answer.build();
+        }
+
+        public static AnswerProto.AnswerGroup answerGroup(final AnswerGroup<?> answer) {
+            final AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()
+                    .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
+                    .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
+
+            return answerGroupProto.build();
+        }
+
+        public static AnswerProto.ConceptMap conceptMap(final ConceptMap answer) {
+            final AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
+            // TODO: needs testing
+            answer.concepts().forEach((ref, concept) -> {
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                conceptMapProto.putMap(ref.identifier(), conceptProto);
+            });
+
+            // TODO
 //            if (answer.getPattern() != null) {
 //                conceptMapProto.setPattern(answer.getPattern().toString());
 //            }
@@ -368,51 +387,11 @@ public class ResponseBuilder {
 //            } else {
 //                conceptMapProto.setHasExplanation(false);
 //            }
-//            return conceptMapProto.build();
-//        }
-//
-//        static AnswerProto.ConceptList conceptList(ConceptList answer) {
-//            AnswerProto.ConceptList.Builder conceptListProto = AnswerProto.ConceptList.newBuilder();
-//            conceptListProto.setList(conceptIds(answer.list()));
-//
-//            return conceptListProto.build();
-//        }
-//
-//        static AnswerProto.ConceptSet conceptSet(ConceptSet answer) {
-//            AnswerProto.ConceptSet.Builder conceptSetProto = AnswerProto.ConceptSet.newBuilder();
-//            conceptSetProto.setSet(conceptIds(answer.set()));
-//
-//            return conceptSetProto.build();
-//        }
-//
-//        static AnswerProto.ConceptSetMeasure conceptSetMeasure(ConceptSetMeasure answer) {
-//            AnswerProto.ConceptSetMeasure.Builder conceptSetMeasureProto = AnswerProto.ConceptSetMeasure.newBuilder();
-//            conceptSetMeasureProto.setSet(conceptIds(answer.set()));
-//            conceptSetMeasureProto.setMeasurement(number(answer.measurement()));
-//            return conceptSetMeasureProto.build();
-//        }
-//
-//        static AnswerProto.Value value(Numeric answer) {
-//            AnswerProto.Value.Builder valueProto = AnswerProto.Value.newBuilder();
-//            valueProto.setNumber(number(answer.number()));
-//            return valueProto.build();
-//        }
-//
-//        static AnswerProto.Number number(Number number) {
-//            return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
-//        }
-//
-//        static AnswerProto.Void voidMessage(Void voidAnswer) {
-//            return AnswerProto.Void.newBuilder().setMessage(voidAnswer.message()).build();
-//        }
-//
-//        private static AnswerProto.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {
-//            AnswerProto.ConceptIds.Builder conceptIdsRPC = AnswerProto.ConceptIds.newBuilder();
-//            conceptIdsRPC.addAllIds(conceptIds.stream()
-//                                            .map(id -> id.getValue())
-//                                            .collect(Collectors.toList()));
-//
-//            return conceptIdsRPC.build();
-//        }
-//    }
+            return conceptMapProto.build();
+        }
+
+        public static AnswerProto.Number number(Number number) {
+            return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
+        }
+    }
 }

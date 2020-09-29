@@ -25,9 +25,6 @@ java_library(
         # Internal Package Dependencies
         "//common:common",
 
-        # Internal Repository Dependencies
-        # "@graknlabs_common//:common",
-
         # External Maven Dependencies
         "@maven//:junit_junit",
     ]

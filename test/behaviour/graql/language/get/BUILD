@@ -29,7 +29,7 @@ java_test(
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-#        "//test/behaviour/graql:steps",
+        "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
@@ -38,7 +38,7 @@ java_test(
         "@graknlabs_behaviour//graql/language:get.feature",
     ],
     classpath_resources = ["//test/conf:logback"],
-    size = "large",
+    size = "small",
     visibility = ["//visibility:public"]
 )
 

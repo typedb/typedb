@@ -27,13 +27,13 @@ import java.util.Map;
 
 public class ConceptMap implements Answer {
 
-    private final Map<Reference, Thing> concepts;
+    private final Map<Reference, ? extends Concept> concepts;
 
     public ConceptMap() {
         this(new HashMap<>());
     }
 
-    public ConceptMap(Map<Reference, Thing> concepts) {
+    public ConceptMap(Map<Reference, ? extends Concept> concepts) {
         this.concepts = concepts;
     }
 
@@ -44,4 +44,6 @@ public class ConceptMap implements Answer {
     public Concept get(Reference variable) {
         return concepts.get(variable);
     }
+
+    public Map<Reference, ? extends Concept> concepts() { return concepts; }
 }

@@ -186,27 +186,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.Boolean.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.Boolean.class)));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.Long.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.Long.class)));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.Double.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.Double.class)));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.String.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        throw exception(INVALID_TYPE_CASTING.message(className(AttributeType.DateTime.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.DateTime.class)));
     }
 
     @Override

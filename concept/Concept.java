@@ -36,11 +36,11 @@ public interface Concept {
     void delete();
 
     default Type asType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(Type.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(Type.class)));
     }
 
     default Thing asThing() {
-        throw exception(INVALID_THING_CASTING.message(className(Thing.class)));
+        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Thing.class)));
     }
 
     GraknException exception(String errorMessage);

@@ -42,5 +42,7 @@ public interface Rule {
 
     Stream<? extends Type> conclusionTypes();
 
+    boolean isDeleted();
+
     void delete();
 }

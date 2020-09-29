@@ -39,7 +39,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TY
 public class ThingRPC {
 
     private final Thing thing;
-    private final grakn.core.Grakn.Transaction transaction;
+    private final Grakn.Transaction transaction;
     private final TransactionRPC.Iterators iterators;
     private final Consumer<TransactionProto.Transaction.Res> responder;
 

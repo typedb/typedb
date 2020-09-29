@@ -140,6 +140,11 @@ public class RuleImpl implements Rule {
     }
 
     @Override
+    public boolean isDeleted() {
+        return vertex.isDeleted();
+    }
+
+    @Override
     public void delete() {
         vertex.delete();
     }

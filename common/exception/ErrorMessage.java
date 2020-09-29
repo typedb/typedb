@@ -45,8 +45,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Server(9, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
                 new Server(10, "A value type was not correctly set.");
+        public static final Server UNKNOWN_ANSWER_TYPE =
+                new Server(11, "The answer type was not recognized.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(11, "The request message was not recognized.");
+                new Server(12, "The request message was not recognized.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Server Error";
@@ -157,7 +159,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final ThingRead INVALID_THING_VERTEX_CASTING =
                 new ThingRead(2, "Invalid ThingVertex casting to '%s'.");
         public static final ThingRead INVALID_THING_CASTING =
-                new ThingRead(3, "Invalid concept conversion to '%s'.");
+                new ThingRead(3, "Invalid concept conversion from '%s' to '%s'.");
         public static final ThingRead THING_NOT_FOUND =
                 new ThingRead(4, "The thing with IID '%s' is not found.");
         public static final ThingRead INVALID_ROLE_TYPE_LABEL =
@@ -249,7 +251,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
     public static class TypeRead extends ErrorMessage {
         public static final TypeRead INVALID_TYPE_CASTING =
-                new TypeRead(1, "Invalid concept conversion to '%s'.");
+                new TypeRead(1, "Invalid concept conversion from '%s' to '%s'.");
         public static final TypeRead TYPE_ROOT_MISMATCH =
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =

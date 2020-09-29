@@ -19,6 +19,12 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.Graphs;
 import grakn.core.graph.util.Encoding;
@@ -157,27 +163,27 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public ThingTypeImpl asThingType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(ThingTypeImpl.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(ThingType.class)));
     }
 
     @Override
     public EntityTypeImpl asEntityType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(EntityTypeImpl.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(EntityType.class)));
     }
 
     @Override
     public AttributeTypeImpl asAttributeType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(AttributeTypeImpl.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.class)));
     }
 
     @Override
     public RelationTypeImpl asRelationType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(RelationTypeImpl.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RelationType.class)));
     }
 
     @Override
     public RoleTypeImpl asRoleType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(RoleTypeImpl.class)));
+        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RoleType.class)));
     }
 
     void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {

@@ -23,7 +23,6 @@ import grakn.core.concept.type.Rule;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -59,12 +58,6 @@ public class RuleRPC {
             case RULE_SETLABEL_REQ:
                 this.setLabel(req.getRuleSetLabelReq().getLabel());
                 return;
-            case RULE_GETWHEN_REQ:
-                this.getWhen();
-                return;
-            case RULE_GETTHEN_REQ:
-                this.getThen();
-                return;
             case RULE_SETWHEN_REQ:
                 this.setWhen(req.getRuleSetWhenReq().getPattern());
                 return;
@@ -85,22 +78,6 @@ public class RuleRPC {
     private void setLabel(final String label) {
         rule.setLabel(label);
         responder.accept(null);
-    }
-
-    private void getWhen() {
-        Pattern pattern = rule.getWhen();
-        ConceptProto.RuleMethod.Res response = ConceptProto.RuleMethod.Res.newBuilder().setRuleGetWhenRes(
-                ConceptProto.Rule.GetWhen.Res.newBuilder()
-                        .setPattern(pattern.toString())).build();
-        responder.accept(response(response));
-    }
-
-    private void getThen() {
-        Pattern pattern = rule.getThen();
-        ConceptProto.RuleMethod.Res response = ConceptProto.RuleMethod.Res.newBuilder().setRuleGetThenRes(
-                ConceptProto.Rule.GetThen.Res.newBuilder()
-                        .setPattern(pattern.toString())).build();
-        responder.accept(response(response));
     }
 
     private void setWhen(String pattern) {

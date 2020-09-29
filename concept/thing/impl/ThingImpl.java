@@ -207,17 +207,17 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public EntityImpl asEntity() {
-        throw exception(INVALID_THING_CASTING.message(className(Entity.class)));
+        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Entity.class)));
     }
 
     @Override
     public AttributeImpl<?> asAttribute() {
-        throw exception(INVALID_THING_CASTING.message(className(Attribute.class)));
+        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.class)));
     }
 
     @Override
     public RelationImpl asRelation() {
-        throw exception(INVALID_THING_CASTING.message(className(Relation.class)));
+        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Relation.class)));
     }
 
     private String printTypeSet(Set<? extends Type> types) {
