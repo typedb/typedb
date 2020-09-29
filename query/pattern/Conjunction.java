@@ -18,6 +18,7 @@
 
 package grakn.core.query.pattern;
 
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;
 import grakn.core.query.pattern.variable.VariableRegistry;
@@ -26,8 +27,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+
 public class Conjunction<PATTERN extends Pattern> extends Pattern {
 
+    private static final String TRACE_PREFIX = "conjunction.";
     private final Set<PATTERN> patterns;
 
     private Conjunction(Set<PATTERN> patterns) {
@@ -35,18 +39,22 @@ public class Conjunction<PATTERN extends Pattern> extends Pattern {
     }
 
     public static Conjunction<TypeVariable> fromTypes(final List<graql.lang.pattern.variable.TypeVariable> variables) {
-        VariableRegistry registry = new VariableRegistry();
-        variables.forEach(registry::register);
-        return new Conjunction<>(registry.types());
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "fromtypes")) {
+            VariableRegistry registry = new VariableRegistry();
+            variables.forEach(registry::register);
+            return new Conjunction<>(registry.types());
+        }
     }
 
     public static Conjunction<Variable> fromThings(final List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
-        VariableRegistry registry = new VariableRegistry();
-        variables.forEach(registry::register);
-        Set<Variable> output = new HashSet<>();
-        output.addAll(registry.types());
-        output.addAll(registry.things());
-        return new Conjunction<>(output);
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "fromthings")) {
+            VariableRegistry registry = new VariableRegistry();
+            variables.forEach(registry::register);
+            Set<Variable> output = new HashSet<>();
+            output.addAll(registry.types());
+            output.addAll(registry.things());
+            return new Conjunction<>(output);
+        }
     }
 
     public Set<PATTERN> patterns() {

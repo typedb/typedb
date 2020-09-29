@@ -20,14 +20,12 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.rocks.RocksDatabase;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
@@ -39,14 +37,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static grakn.core.test.integration.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -217,66 +212,6 @@ public class QueryTest {
                     assertEquals(team_engineers.getRelations("team-member:team").findAny().get().getPlayers("member").findAny().get(), user_grabl);
                 }
             }
-        }
-    }
-
-    @Test
-    public void test_query_insert2() throws IOException {
-        for (int i = 0; i < 50; i++) {
-            // Given connection has been opened
-            RocksGrakn grakn;
-
-            Util.resetDirectory(directory);
-            System.out.println("Connecting to Grakn ... (" + (i+1) + ")");
-            grakn = RocksGrakn.open(directory);
-            assertNotNull(grakn);
-            assertTrue(grakn.isOpen());
-
-            // Given connection delete all databases
-            grakn.databases().all().forEach(RocksDatabase::delete);
-
-            // Given connection does not have any database
-            assertTrue(grakn.databases().all().isEmpty());
-
-            // Given connection create database: grakn
-            grakn.databases().create("grakn");
-
-            // Given connection open schema session for database: grakn
-            Grakn.Session session = grakn.session("grakn", Arguments.Session.Type.SCHEMA);
-
-            // Given session opens transaction of type: write
-            Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-
-            // Given graql define
-            GraqlDefine query = Graql.parse("define person sub entity;");
-            transaction.query().define(query);
-
-            // Given transaction commits
-            transaction.commit();
-
-            // Given connection close all sessions
-            session.close();
-
-            // Given connection open data session for database: grakn
-            session = grakn.session("grakn", Arguments.Session.Type.DATA);
-
-            // Given session opens transaction of type: write
-            transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-
-            // When get answers of graql insert
-            GraqlInsert query2 = Graql.parse("insert $n isa person;");
-            transaction.query().insert(query2);
-
-            // ConnectionSteps.after
-            transaction.close();
-            session.close();
-
-            // Given connection has been opened
-            assertNotNull(grakn);
-            assertTrue(grakn.isOpen());
-
-            // Given connection delete all databases
-            grakn.databases().all().forEach(RocksDatabase::delete);
         }
     }
 }

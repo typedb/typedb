@@ -56,17 +56,17 @@ public class Definer {
     private final List<ThingType> defined;
     private final Conjunction<TypeVariable> variables;
 
-    public Definer(Concepts conceptMgr, Conjunction<TypeVariable> variables, Context.Query context) {
+    public Definer(Concepts conceptMgr, List<graql.lang.pattern.variable.TypeVariable> variables, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.context = context;
-            this.variables = variables;
+            this.variables = Conjunction.fromTypes(variables);
             this.visited = new HashSet<>();
             this.defined = new LinkedList<>();
         }
     }
 
-    public List<ThingType> write() {
+    public List<ThingType> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
             variables.patterns().forEach(variable -> {
                 if (!visited.contains(variable)) define(variable);

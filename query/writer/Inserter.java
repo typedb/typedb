@@ -44,6 +44,7 @@ import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,21 +76,21 @@ public class Inserter {
     private final Map<Reference, Thing> inserted;
     private final Conjunction<Variable> conjunction;
 
-    public Inserter(Concepts conceptMgr, Conjunction<Variable> patterns, Context.Query context) {
-        this(conceptMgr, patterns, context, new ConceptMap());
+    public Inserter(Concepts conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> variables, Context.Query context) {
+        this(conceptMgr, variables, new ConceptMap(), context);
     }
 
-    public Inserter(Concepts conceptMgr, Conjunction<Variable> conjunction, Context.Query context, ConceptMap existing) {
+    public Inserter(Concepts conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> variables, ConceptMap existing, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
-            this.conjunction = conjunction;
+            this.conjunction = Conjunction.fromThings(variables);
             this.context = context;
             this.existing = existing;
             this.inserted = new HashMap<>();
         }
     }
 
-    public ConceptMap write() {
+    public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "writer")) {
             conjunction.patterns().forEach(variable -> {
                 if (variable.isThing()) insert(variable.asThing());

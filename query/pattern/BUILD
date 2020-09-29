@@ -31,6 +31,7 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_common//:common",
+        "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/pattern:pattern",
 

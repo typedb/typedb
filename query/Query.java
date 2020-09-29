@@ -24,9 +24,6 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.ThingType;
-import grakn.core.query.pattern.Conjunction;
-import grakn.core.query.pattern.variable.TypeVariable;
-import grakn.core.query.pattern.variable.Variable;
 import grakn.core.query.writer.Definer;
 import grakn.core.query.writer.Deleter;
 import grakn.core.query.writer.Inserter;
@@ -43,7 +40,6 @@ import java.util.stream.Stream;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
-import static grakn.core.query.pattern.Conjunction.fromTypes;
 import static java.util.stream.Collectors.toList;
 
 public class Query {
@@ -62,7 +58,10 @@ public class Query {
     }
 
     public Stream<ConceptMap> match(GraqlMatch query, Options.Query options) {
-        return null; // TODO
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
+            Context.Query context = new Context.Query(transactionContext, options);
+            return null;
+        }
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query) {
@@ -73,13 +72,11 @@ public class Query {
         if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             Context.Query context = new Context.Query(transactionContext, options);
-            Conjunction<Variable> things = Conjunction.fromThings(query.variables());
-
             if (query.match().isPresent()) {
                 List<ConceptMap> matched = match(query.match().get()).collect(toList());
-                return matched.stream().map(answers -> new Inserter(conceptMgr, things, context, answers).write());
+                return matched.stream().map(answers -> new Inserter(conceptMgr, query.variables(), answers, context).execute());
             } else {
-                return Stream.of(new Inserter(conceptMgr, things, context).write());
+                return Stream.of(new Inserter(conceptMgr, query.variables(), context).execute());
             }
         }
     }
@@ -93,8 +90,7 @@ public class Query {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             Context.Query context = new Context.Query(transactionContext, options);
             List<ConceptMap> matched = match(query.match()).collect(toList());
-            Conjunction<Variable> things = Conjunction.fromThings(query.variables());
-            matched.forEach(existing -> new Deleter(conceptMgr, things, context, existing).write());
+            matched.forEach(existing -> new Deleter(conceptMgr, query.variables(), context, existing).execute());
         }
     }
 
@@ -106,8 +102,7 @@ public class Query {
         if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             Context.Query context = new Context.Query(transactionContext, options);
-            Conjunction<TypeVariable> types = fromTypes(query.variables());
-            return new Definer(conceptMgr, types, context).write();
+            return new Definer(conceptMgr, query.variables(), context).execute();
         }
     }
 
@@ -119,8 +114,7 @@ public class Query {
         if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             Context.Query context = new Context.Query(transactionContext, options);
-            Conjunction<TypeVariable> types = fromTypes(query.variables());
-            new Undefiner(conceptMgr, types, context).write();
+            new Undefiner(conceptMgr, query.variables(), context).execute();
         }
     }
 }

@@ -33,6 +33,7 @@ import grakn.core.query.pattern.variable.TypeVariable;
 
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
@@ -54,36 +55,35 @@ public class Undefiner {
     private final Context.Query context;
     private final LinkedList<TypeVariable> variables;
     private final Set<TypeVariable> undefined;
-    private final Set<TypeVariable> sorted;
 
-    public Undefiner(Concepts conceptMgr, Conjunction<TypeVariable> variables, Context.Query context) {
+    public Undefiner(Concepts conceptMgr, List<graql.lang.pattern.variable.TypeVariable> variables, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.context = context;
             this.variables = new LinkedList<>();
             this.undefined = new HashSet<>();
-            this.sorted = new HashSet<>();
 
-            variables.patterns().forEach(variable -> {
-                if (!sorted.contains(variable)) sort(variable);
+            Set<TypeVariable> sorted = new HashSet<>();
+            Conjunction.fromTypes(variables).patterns().forEach(variable -> {
+                if (!sorted.contains(variable)) sort(variable, sorted);
             });
         }
     }
 
-    private void sort(TypeVariable variable) {
+    private void sort(TypeVariable variable, Set<TypeVariable> sorted) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "sort")) {
-            if (this.sorted.contains(variable)) return;
+            if (sorted.contains(variable)) return;
             if (variable.sub().size() == 1) {
-                sort(variable.sub().iterator().next().type());
+                sort(variable.sub().iterator().next().type(), sorted);
             } else if (variable.sub().size() > 1) {
                 throw GraknException.of(SUPERTYPE_TOO_MANY.message(variable.label().get().scopedLabel()));
             }
             this.variables.addFirst(variable);
-            this.sorted.add(variable);
+            sorted.add(variable);
         }
     }
 
-    public void write() {
+    public void execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
             variables.forEach(this::undefine);
         }
