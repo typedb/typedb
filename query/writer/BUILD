@@ -18,16 +18,13 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "pattern",
-    srcs = glob([
-        "*.java",
-        "constraint/*.java",
-        "variable/*.java",
-    ]),
+    name = "writer",
+    srcs = glob(["*.java"]),
     deps = [
         # Internal package dependencies
         "//common:common",
         "//concept:concept",
+        "//query/pattern:pattern",
 
         # External dependencies from @graknlabs
         "@graknlabs_common//:common",
@@ -36,14 +33,13 @@ java_library(
         "@graknlabs_graql//java/pattern:pattern",
 
         # External dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-query-pattern:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-query-writer:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob(["*"]),
     license_type = "agpl",
 )

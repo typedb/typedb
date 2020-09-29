@@ -28,21 +28,15 @@ package(
 
 java_library(
     name = "query",
-    srcs = glob([
-        "*.java",
-        "writer/*.java",
-    ]),
+    srcs = glob(["*.java"]),
     deps = [
         # Internal package dependencies
         "//common:common",
         "//concept:concept",
-        "//query/pattern:pattern",
+        "//query/writer:writer",
 
         # External dependencies from @graknlabs
-        "@graknlabs_common//:common",
         "@graknlabs_grabl_tracing//client:client",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java/query:query",
 
         # External dependencies
