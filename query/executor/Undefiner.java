@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.query.writer;
+package grakn.core.query.executor;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
@@ -27,7 +27,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.Conjunction;
+import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.constraint.TypeConstraint;
 import grakn.core.query.pattern.variable.TypeVariable;
 
@@ -64,7 +64,7 @@ public class Undefiner {
             this.undefined = new HashSet<>();
 
             Set<TypeVariable> sorted = new HashSet<>();
-            Conjunction.fromTypes(variables).patterns().forEach(variable -> {
+            Pattern.fromGraqlTypes(variables).forEach(variable -> {
                 if (!sorted.contains(variable)) sort(variable, sorted);
             });
         }

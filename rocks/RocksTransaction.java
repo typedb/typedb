@@ -166,7 +166,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphs = new Graphs(schemaGraph, dataGraph);
             concepts = new Concepts(graphs);
-            query = new Query(concepts, context);
+            query = new Query(graphs, concepts, context);
             isOpen = new AtomicBoolean(true);
             mayClose = false;
         }
@@ -305,7 +305,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphs = new Graphs(schemaGraph, dataGraph);
             concepts = new Concepts(graphs);
-            query = new Query(concepts, context);
+            query = new Query(graphs, concepts, context);
             isOpen = new AtomicBoolean(true);
         }
 

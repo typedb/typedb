@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.query.writer;
+package grakn.core.query.executor;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
@@ -28,7 +28,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.Conjunction;
+import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.constraint.TypeConstraint;
 import grakn.core.query.pattern.variable.TypeVariable;
 
@@ -54,13 +54,13 @@ public class Definer {
     private final Context.Query context;
     private final Set<TypeVariable> visited;
     private final List<ThingType> defined;
-    private final Conjunction<TypeVariable> variables;
+    private final Set<TypeVariable> variables;
 
     public Definer(Concepts conceptMgr, List<graql.lang.pattern.variable.TypeVariable> variables, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.context = context;
-            this.variables = Conjunction.fromTypes(variables);
+            this.variables = Pattern.fromGraqlTypes(variables);
             this.visited = new HashSet<>();
             this.defined = new LinkedList<>();
         }
@@ -68,7 +68,7 @@ public class Definer {
 
     public List<ThingType> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
-            variables.patterns().forEach(variable -> {
+            variables.forEach(variable -> {
                 if (!visited.contains(variable)) define(variable);
             });
             return list(defined);

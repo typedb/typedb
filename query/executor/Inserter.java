@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.query.writer;
+package grakn.core.query.executor;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.ErrorMessage;
@@ -34,7 +34,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.Conjunction;
+import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.constraint.ThingConstraint;
 import grakn.core.query.pattern.constraint.ValueOperation;
 import grakn.core.query.pattern.variable.ThingVariable;
@@ -74,7 +74,7 @@ public class Inserter {
     private final Context.Query context;
     private final ConceptMap existing;
     private final Map<Reference, Thing> inserted;
-    private final Conjunction<Variable> conjunction;
+    private final Set<Variable> variables;
 
     public Inserter(Concepts conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> variables, Context.Query context) {
         this(conceptMgr, variables, new ConceptMap(), context);
@@ -83,7 +83,7 @@ public class Inserter {
     public Inserter(Concepts conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> variables, ConceptMap existing, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
-            this.conjunction = Conjunction.fromThings(variables);
+            this.variables = Pattern.fromGraqlThings(variables);
             this.context = context;
             this.existing = existing;
             this.inserted = new HashMap<>();
@@ -92,7 +92,7 @@ public class Inserter {
 
     public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "writer")) {
-            conjunction.patterns().forEach(variable -> {
+            variables.forEach(variable -> {
                 if (variable.isThing()) insert(variable.asThing());
             });
             return new ConceptMap(inserted);

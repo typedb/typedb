@@ -18,17 +18,13 @@
 
 package grakn.core.query.pattern;
 
-import grakn.core.query.pattern.variable.Variable;
-
 import java.util.Set;
 
-public class Conjunction extends Pattern {
+public class Disjunction extends Pattern {
 
-    private final Set<Variable> variables;
-    private final Set<Negation> negatedQueries;
+    private final Set<Conjunction> conjunctions;
 
-    public Conjunction(Set<Variable> variables, Set<Negation> negatedQueries) {
-        this.variables = variables;
-        this.negatedQueries = negatedQueries;
+    public Disjunction(Set<Conjunction> conjunctions) {
+        this.conjunctions = conjunctions;
     }
 }

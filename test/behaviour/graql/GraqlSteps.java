@@ -18,7 +18,6 @@
 
 package grakn.core.test.behaviour.graql;
 
-import grakn.core.Grakn.Session;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
@@ -29,8 +28,6 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -47,9 +44,6 @@ import java.util.stream.Stream;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class GraqlSteps {
 
@@ -349,8 +343,8 @@ public class GraqlSteps {
             answersIdentifiers = new ArrayList<>();
             for (final Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
                 answersIdentifiers.add(rawAnswerIdentifiers.entrySet().stream()
-                        .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                                               .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
+                                               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
             }
         }
     }
@@ -371,7 +365,7 @@ public class GraqlSteps {
 
             // TODO
             //if (!identifierChecks.get(identifier).check(answer.get(varName))) {
-                return false;
+            return false;
             //}
         }
         return true;

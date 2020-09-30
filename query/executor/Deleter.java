@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.query.writer;
+package grakn.core.query.executor;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
-import grakn.core.query.pattern.Conjunction;
+import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
@@ -31,6 +31,7 @@ import graql.lang.pattern.variable.ThingVariable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
@@ -40,7 +41,7 @@ public class Deleter {
     private final Concepts conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
-    private final Conjunction<Variable> variables;
+    private final Set<Variable> variables;
     private final Map<Reference, Thing> deleted;
 
     public Deleter(Concepts conceptMgr, List<ThingVariable<?>> variables, Context.Query context, ConceptMap existing) {
@@ -48,7 +49,7 @@ public class Deleter {
             this.conceptMgr = conceptMgr;
             this.context = context;
             this.existing = existing;
-            this.variables = Conjunction.fromThings(variables);
+            this.variables = Pattern.fromGraqlThings(variables);
             this.deleted = new HashMap<>();
         }
     }

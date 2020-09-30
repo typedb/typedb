@@ -95,9 +95,9 @@ public class QueryRPC {
         final GraqlMatch query = Graql.parse(req.getQuery()).asMatch();
         final Stream<ConceptMap> answers = transaction.query().match(query, options);
         final Stream<TransactionProto.Transaction.Res> responses = answers.map(a ->
-                ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
-                        .setMatchIterRes(QueryProto.Graql.Match.Iter.Res.newBuilder()
-                                .setAnswer(conceptMap(a))).build()));
+                                                                                       ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
+                                                                                                                                      .setMatchIterRes(QueryProto.Graql.Match.Iter.Res.newBuilder()
+                                                                                                                                                               .setAnswer(conceptMap(a))).build()));
         iterators.startBatchIterating(responses.iterator());
     }
 
@@ -105,9 +105,9 @@ public class QueryRPC {
         final GraqlInsert query = Graql.parse(req.getQuery()).asInsert();
         final Stream<ConceptMap> answers = transaction.query().insert(query, options);
         final Stream<TransactionProto.Transaction.Res> responses = answers.map(a ->
-                ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
-                        .setInsertIterRes(QueryProto.Graql.Insert.Iter.Res.newBuilder()
-                                .setAnswer(conceptMap(a))).build()));
+                                                                                       ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
+                                                                                                                                      .setInsertIterRes(QueryProto.Graql.Insert.Iter.Res.newBuilder()
+                                                                                                                                                                .setAnswer(conceptMap(a))).build()));
         iterators.startBatchIterating(responses.iterator());
     }
 
@@ -122,9 +122,9 @@ public class QueryRPC {
         final List<ThingType> thingTypes = transaction.query().define(query, options);
         final QueryProto.Query.Res response = QueryProto.Query.Res.newBuilder()
                 .setDefineRes(QueryProto.Graql.Define.Res.newBuilder()
-                        .addAllThingType(thingTypes.stream()
-                                .map(ResponseBuilder.Concept::type)
-                                .collect(Collectors.toList()))).build();
+                                      .addAllThingType(thingTypes.stream()
+                                                               .map(ResponseBuilder.Concept::type)
+                                                               .collect(Collectors.toList()))).build();
         responder.accept(response(response));
     }
 

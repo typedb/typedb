@@ -19,7 +19,6 @@
 package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
-import grakn.core.concept.thing.Thing;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;

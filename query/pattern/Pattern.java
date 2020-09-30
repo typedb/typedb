@@ -18,4 +18,41 @@
 
 package grakn.core.query.pattern;
 
-public class Pattern {}
+import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.core.query.pattern.variable.TypeVariable;
+import grakn.core.query.pattern.variable.Variable;
+import grakn.core.query.pattern.variable.VariableRegistry;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+
+public class Pattern {
+
+    static String TRACE_PREFIX = "pattern.";
+
+    public static Set<TypeVariable> fromGraqlTypes(final List<graql.lang.pattern.variable.TypeVariable> variables) {
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "fromtypes")) {
+            VariableRegistry registry = new VariableRegistry();
+            variables.forEach(registry::register);
+            return registry.types();
+        }
+    }
+
+    public static Set<Variable> fromGraqlThings(final List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "fromthings")) {
+            VariableRegistry registry = new VariableRegistry();
+            variables.forEach(registry::register);
+            Set<Variable> output = new HashSet<>();
+            output.addAll(registry.types());
+            output.addAll(registry.things());
+            return output;
+        }
+    }
+
+    public static Disjunction fromGraqlConjunction(graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction) {
+        return null;
+    }
+}

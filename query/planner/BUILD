@@ -17,27 +17,6 @@
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
-    name = "writer",
-    srcs = glob(["*.java"]),
-    deps = [
-        # Internal package dependencies
-        "//common:common",
-        "//concept:concept",
-        "//query/pattern:pattern",
-
-        # External dependencies from @graknlabs
-        "@graknlabs_common//:common",
-        "@graknlabs_grabl_tracing//client:client",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
-
-        # External dependencies
-    ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-query-writer:{pom_version}"],
-    visibility = [ "//visibility:public" ]
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

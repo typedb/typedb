@@ -24,10 +24,12 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.ThingType;
-import grakn.core.query.writer.Definer;
-import grakn.core.query.writer.Deleter;
-import grakn.core.query.writer.Inserter;
-import grakn.core.query.writer.Undefiner;
+import grakn.core.graph.Graphs;
+import grakn.core.query.executor.Definer;
+import grakn.core.query.executor.Deleter;
+import grakn.core.query.executor.Inserter;
+import grakn.core.query.executor.Matcher;
+import grakn.core.query.executor.Undefiner;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -45,10 +47,12 @@ import static java.util.stream.Collectors.toList;
 public class Query {
 
     private static final String TRACE_PREFIX = "query.";
+    private final Graphs graphMgr;
     private final Concepts conceptMgr;
     private final Context.Transaction transactionContext;
 
-    public Query(Concepts conceptMgr, Context.Transaction transactionContext) {
+    public Query(Graphs graphMgr, Concepts conceptMgr, Context.Transaction transactionContext) {
+        this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.transactionContext = transactionContext;
     }
@@ -60,7 +64,7 @@ public class Query {
     public Stream<ConceptMap> match(GraqlMatch query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Context.Query context = new Context.Query(transactionContext, options);
-            return null;
+            return new Matcher(graphMgr, query.conjunction(), context).execute();
         }
     }
 
@@ -74,7 +78,7 @@ public class Query {
             Context.Query context = new Context.Query(transactionContext, options);
             if (query.match().isPresent()) {
                 List<ConceptMap> matched = match(query.match().get()).collect(toList());
-                return matched.stream().map(answers -> new Inserter(conceptMgr, query.variables(), answers, context).execute());
+                return matched.stream().map(answer -> new Inserter(conceptMgr, query.variables(), answer, context).execute());
             } else {
                 return Stream.of(new Inserter(conceptMgr, query.variables(), context).execute());
             }
