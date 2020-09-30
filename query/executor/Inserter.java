@@ -69,7 +69,8 @@ import static java.util.stream.Collectors.toSet;
 
 public class Inserter {
 
-    private static final String TRACE_PREFIX = "insertwriter.";
+    private static final String TRACE_PREFIX = "inserter.";
+
     private final Concepts conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
@@ -91,7 +92,7 @@ public class Inserter {
     }
 
     public ConceptMap execute() {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "writer")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(variable -> {
                 if (variable.isThing()) insert(variable.asThing());
             });

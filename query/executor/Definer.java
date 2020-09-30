@@ -48,7 +48,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_M
 
 public class Definer {
 
-    private static final String TRACE_PREFIX = "definewriter.";
+    private static final String TRACE_PREFIX = "definer.";
 
     private final Concepts conceptMgr;
     private final Context.Query context;
@@ -67,7 +67,7 @@ public class Definer {
     }
 
     public List<ThingType> execute() {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(variable -> {
                 if (!visited.contains(variable)) define(variable);
             });

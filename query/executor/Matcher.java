@@ -18,6 +18,7 @@
 
 package grakn.core.query.executor;
 
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
@@ -26,19 +27,26 @@ import grakn.core.query.pattern.Pattern;
 
 import java.util.stream.Stream;
 
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+
 public class Matcher {
 
+    private static final String TRACE_PREFIX = "matcher.";
     private final Graphs graphMgr;
     private final Disjunction query;
     private final Context.Query context;
 
     public Matcher(Graphs graphMgr, graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction, Context.Query context) {
-        this.graphMgr = graphMgr;
-        this.query = Pattern.fromGraqlConjunction(conjunction);
-        this.context = context;
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
+            this.graphMgr = graphMgr;
+            this.query = Pattern.fromGraqlConjunction(conjunction);
+            this.context = context;
+        }
     }
 
     public Stream<ConceptMap> execute() {
-        return Stream.empty(); // TODO
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            return Stream.empty(); // TODO
+        }
     }
 }

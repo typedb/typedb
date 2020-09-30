@@ -37,7 +37,8 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
 public class Deleter {
 
-    private static final String TRACE_PREFIX = "deletewriter.";
+    private static final String TRACE_PREFIX = "deleter.";
+
     private final Concepts conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
@@ -55,6 +56,8 @@ public class Deleter {
     }
 
     public void execute() {
-        // TODO
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            // TODO
+        }
     }
 }

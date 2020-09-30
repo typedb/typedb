@@ -50,7 +50,8 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_M
 
 public class Undefiner {
 
-    private static final String TRACE_PREFIX = "undefinewriter.";
+    private static final String TRACE_PREFIX = "undefiner.";
+
     private final Concepts conceptMgr;
     private final Context.Query context;
     private final LinkedList<TypeVariable> variables;
@@ -84,7 +85,7 @@ public class Undefiner {
     }
 
     public void execute() {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "write")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(this::undefine);
         }
     }
