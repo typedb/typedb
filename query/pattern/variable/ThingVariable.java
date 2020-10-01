@@ -23,7 +23,6 @@ import grakn.core.query.pattern.constraint.ThingConstraint;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -109,11 +108,11 @@ public class ThingVariable extends Variable {
         if (o == null || getClass() != o.getClass()) return false;
 
         ThingVariable that = (ThingVariable) o;
-        return (this.identifier.equals(that.identifier) && this.constraints.equals(that.constraints));
+        return this.identifier.equals(that.identifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, constraints);
+        return identifier.hashCode();
     }
 }

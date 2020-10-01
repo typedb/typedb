@@ -37,23 +37,35 @@ import static grakn.core.common.exception.ErrorMessage.Query.INVALID_CASTING;
 
 public abstract class TypeConstraint extends Constraint {
 
-    private TypeConstraint() {}
+    private final TypeVariable owner;
 
-    public static TypeConstraint of(final graql.lang.pattern.constraint.TypeConstraint constraint,
+    private TypeConstraint(TypeVariable owner) {
+        if (owner == null) throw new NullPointerException("Null owner");
+        this.owner = owner;
+    }
+
+    public static TypeConstraint of(final TypeVariable owner,
+                                    final graql.lang.pattern.constraint.TypeConstraint constraint,
                                     final VariableRegistry registry) {
-        if (constraint.isLabel()) return TypeConstraint.Label.of(constraint.asLabel());
-        else if (constraint.isSub()) return TypeConstraint.Sub.of(constraint.asSub(), registry);
-        else if (constraint.isAbstract()) return TypeConstraint.Abstract.of();
-        else if (constraint.isValueType()) return TypeConstraint.ValueType.of(constraint.asValueType());
-        else if (constraint.isRegex()) return TypeConstraint.Regex.of(constraint.asRegex());
-        else if (constraint.isThen()) return TypeConstraint.Then.of(constraint.asThen());
-        else if (constraint.isWhen()) return TypeConstraint.When.of(constraint.asWhen());
-        else if (constraint.isOwns()) return TypeConstraint.Owns.of(constraint.asOwns(), registry);
-        else if (constraint.isPlays()) return TypeConstraint.Plays.of(constraint.asPlays(), registry);
-        else if (constraint.isRelates()) return TypeConstraint.Relates.of(constraint.asRelates(), registry);
+        if (constraint.isLabel()) return TypeConstraint.Label.of(owner, constraint.asLabel());
+        else if (constraint.isSub()) return TypeConstraint.Sub.of(owner, constraint.asSub(), registry);
+        else if (constraint.isAbstract()) return TypeConstraint.Abstract.of(owner);
+        else if (constraint.isValueType()) return TypeConstraint.ValueType.of(owner, constraint.asValueType());
+        else if (constraint.isRegex()) return TypeConstraint.Regex.of(owner, constraint.asRegex());
+        else if (constraint.isThen()) return TypeConstraint.Then.of(owner, constraint.asThen());
+        else if (constraint.isWhen()) return TypeConstraint.When.of(owner, constraint.asWhen());
+        else if (constraint.isOwns()) return TypeConstraint.Owns.of(owner, constraint.asOwns(), registry);
+        else if (constraint.isPlays()) return TypeConstraint.Plays.of(owner, constraint.asPlays(), registry);
+        else if (constraint.isRelates()) return TypeConstraint.Relates.of(owner, constraint.asRelates(), registry);
         else throw new GraknException(ILLEGAL_STATE);
     }
 
+    @Override
+    public TypeVariable owner() {
+        return owner;
+    }
+
+    @Override
     public Set<TypeVariable> variables() {
         return set();
     }
@@ -154,15 +166,16 @@ public abstract class TypeConstraint extends Constraint {
         private final String scope;
         private final int hash;
 
-        private Label(@Nullable String scope, String label) {
+        private Label(TypeVariable owner, @Nullable String scope, String label) {
+            super(owner);
             if (label == null) throw new NullPointerException("Null label");
             this.scope = scope;
             this.label = label;
             this.hash = Objects.hash(Label.class, this.scope, this.label);
         }
 
-        public static Label of(graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
-            return new Label(constraint.scope().orElse(null), constraint.label());
+        public static Label of(final TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
+            return new Label(owner, constraint.scope().orElse(null), constraint.label());
         }
 
         public Optional<String> scope() {
@@ -207,16 +220,18 @@ public abstract class TypeConstraint extends Constraint {
         private final boolean isExplicit;
         private final int hash;
 
-        private Sub(TypeVariable type, boolean isExplicit) {
+        private Sub(TypeVariable owner, TypeVariable type, boolean isExplicit) {
+            super(owner);
             if (type == null) throw new NullPointerException("Null superType");
             this.type = type;
             this.isExplicit = isExplicit;
             this.hash = Objects.hash(Sub.class, this.type, this.isExplicit);
         }
 
-        public static Sub of(final graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
+        public static Sub of(final TypeVariable owner,
+                             final graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
                              final VariableRegistry registry) {
-            return new Sub(registry.register(constraint.type()), constraint.isExplicit());
+            return new Sub(owner, registry.register(constraint.type()), constraint.isExplicit());
         }
 
         public TypeVariable type() {
@@ -256,12 +271,13 @@ public abstract class TypeConstraint extends Constraint {
 
         private final int hash;
 
-        private Abstract() {
+        private Abstract(TypeVariable owner) {
+            super(owner);
             this.hash = Objects.hash(Abstract.class, Abstract.class);
         }
 
-        public static Abstract of() {
-            return new Abstract();
+        public static Abstract of(TypeVariable owner) {
+            return new Abstract(owner);
         }
 
         @Override
@@ -296,13 +312,15 @@ public abstract class TypeConstraint extends Constraint {
         private final AttributeType.ValueType valueType;
         private final int hash;
 
-        private ValueType(AttributeType.ValueType valueType) {
+        private ValueType(TypeVariable owner, AttributeType.ValueType valueType) {
+            super(owner);
             this.valueType = valueType;
             this.hash = Objects.hash(ValueType.class, this.valueType);
         }
 
-        public static ValueType of(graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
-            return new ValueType(AttributeType.ValueType.of(constraint.valueType()));
+        public static ValueType of(final TypeVariable owner,
+                                   graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
+            return new ValueType(owner, AttributeType.ValueType.of(constraint.valueType()));
         }
 
         public AttributeType.ValueType valueType() {
@@ -343,13 +361,15 @@ public abstract class TypeConstraint extends Constraint {
         private final java.util.regex.Pattern regex;
         private final int hash;
 
-        private Regex(java.util.regex.Pattern regex) {
+        private Regex(TypeVariable owner, java.util.regex.Pattern regex) {
+            super(owner);
             this.regex = regex;
             this.hash = Objects.hash(Regex.class, this.regex.pattern());
         }
 
-        public static Regex of(graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
-            return new Regex(constraint.regex());
+        public static Regex of(final TypeVariable owner,
+                               graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
+            return new Regex(owner, constraint.regex());
         }
 
         public java.util.regex.Pattern regex() {
@@ -391,14 +411,15 @@ public abstract class TypeConstraint extends Constraint {
         private final Pattern pattern;
         private final int hash;
 
-        private Then(Pattern pattern) {
+        private Then(TypeVariable owner, Pattern pattern) {
+            super(owner);
             if (pattern == null) throw new NullPointerException("Null pattern");
             this.pattern = pattern;
             this.hash = Objects.hash(Then.class, this.pattern);
         }
 
-        public static Then of(graql.lang.pattern.constraint.TypeConstraint.Then constraint) {
-            return new Then(constraint.pattern());
+        public static Then of(final TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Then constraint) {
+            return new Then(owner, constraint.pattern());
         }
 
         public Pattern pattern() {
@@ -440,14 +461,15 @@ public abstract class TypeConstraint extends Constraint {
         private final Pattern pattern;
         private final int hash;
 
-        private When(Pattern pattern) {
+        private When(TypeVariable owner, Pattern pattern) {
+            super(owner);
             if (pattern == null) throw new NullPointerException("Null Pattern");
             this.pattern = pattern;
             this.hash = Objects.hash(When.class, this.pattern);
         }
 
-        public static When of(graql.lang.pattern.constraint.TypeConstraint.When constraint) {
-            return new When(constraint.pattern());
+        public static When of(final TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.When constraint) {
+            return new When(owner, constraint.pattern());
         }
 
         public Pattern pattern() {
@@ -491,17 +513,21 @@ public abstract class TypeConstraint extends Constraint {
         private final boolean isKey;
         private final int hash;
 
-        private Owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
+        private Owns(TypeVariable owner, TypeVariable attributeType,
+                     @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
+            super(owner);
             this.attributeType = attributeType;
             this.overriddenAttributeType = overriddenAttributeType;
             this.isKey = isKey;
             this.hash = Objects.hash(Owns.class, this.attributeType, this.overriddenAttributeType, this.isKey);
         }
 
-        public static Owns of(graql.lang.pattern.constraint.TypeConstraint.Owns constraint, VariableRegistry registry) {
+        public static Owns of(final TypeVariable owner,
+                              graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
+                              VariableRegistry registry) {
             TypeVariable attributeType = registry.register(constraint.attribute());
             TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
-            return new Owns(attributeType, overriddenType, constraint.isKey());
+            return new Owns(owner, attributeType, overriddenType, constraint.isKey());
         }
 
         public TypeVariable attribute() {
@@ -556,8 +582,9 @@ public abstract class TypeConstraint extends Constraint {
         private final TypeVariable overriddenRoleType;
         private final int hash;
 
-        private Plays(@Nullable TypeVariable relationType, TypeVariable roleType,
-                      @Nullable TypeVariable overriddenRoleType) {
+        private Plays(TypeVariable owner, @Nullable TypeVariable relationType,
+                      TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+            super(owner);
             if (roleType == null) throw new NullPointerException("Null role");
             this.relationType = relationType;
             this.roleType = roleType;
@@ -565,12 +592,13 @@ public abstract class TypeConstraint extends Constraint {
             this.hash = Objects.hash(Plays.class, this.relationType, this.roleType, this.overriddenRoleType);
         }
 
-        public static Plays of(graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
+        public static Plays of(final TypeVariable owner,
+                               graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
                                VariableRegistry registry) {
             TypeVariable roleType = registry.register(constraint.role());
             TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
             TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
-            return new Plays(relationType, roleType, overriddenType);
+            return new Plays(owner, relationType, roleType, overriddenType);
         }
 
         public Optional<TypeVariable> relation() {
@@ -626,18 +654,20 @@ public abstract class TypeConstraint extends Constraint {
         private final TypeVariable overriddenRoleType;
         private final int hash;
 
-        private Relates(TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+        private Relates(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+            super(owner);
             if (roleType == null) throw new NullPointerException("Null role");
             this.roleType = roleType;
             this.overriddenRoleType = overriddenRoleType;
             this.hash = Objects.hash(Relates.class, this.roleType, this.overriddenRoleType);
         }
 
-        public static Relates of(graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
+        public static Relates of(final TypeVariable owner,
+                                 graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
                                  VariableRegistry registry) {
             TypeVariable roleType = registry.register(constraint.role());
             TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
-            return new Relates(roleType, overriddenRoleType);
+            return new Relates(owner, roleType, overriddenRoleType);
         }
 
         public TypeVariable role() {

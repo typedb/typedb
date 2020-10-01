@@ -23,7 +23,6 @@ import grakn.core.query.pattern.constraint.TypeConstraint;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -55,7 +54,7 @@ public class TypeVariable extends Variable {
 
     TypeVariable constrain(final List<graql.lang.pattern.constraint.TypeConstraint> constraints,
                            final VariableRegistry register) {
-        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(constraint, register)));
+        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
     }
 
@@ -134,11 +133,11 @@ public class TypeVariable extends Variable {
         if (o == null || getClass() != o.getClass()) return false;
 
         TypeVariable that = (TypeVariable) o;
-        return (this.identifier.equals(that.identifier) && constraints.equals(that.constraints));
+        return this.identifier.equals(that.identifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, constraints);
+        return identifier.hashCode();
     }
 }

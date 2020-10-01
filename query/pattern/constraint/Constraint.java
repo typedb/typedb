@@ -19,11 +19,18 @@
 package grakn.core.query.pattern.constraint;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.query.pattern.variable.Variable;
+
+import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Query.INVALID_CASTING;
 
 public abstract class Constraint {
+
+    public abstract Variable owner();
+
+    public abstract Set<? extends Variable> variables();
 
     public boolean isType() {
         return false;

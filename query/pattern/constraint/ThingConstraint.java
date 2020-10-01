@@ -55,6 +55,12 @@ public class ThingConstraint extends Constraint {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
+    @Override
+    public ThingVariable owner() {
+        return null;
+    }
+
+    @Override
     public Set<Variable> variables() {
         return set();
     }
