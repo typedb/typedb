@@ -31,12 +31,12 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 public class ThingVariable extends Variable {
 
     private ThingConstraint.IID iidConstraint;
-    private Set<ThingConstraint.Isa> isaConstraints;
-    private Set<ThingConstraint.NEQ> neqConstraints;
-    private Set<ThingConstraint.Value<?>> valueConstraints;
-    private Set<ThingConstraint.Relation> relationConstraints;
-    private Set<ThingConstraint.Has> hasConstraints;
-    private Set<ThingConstraint> constraints;
+    private final Set<ThingConstraint.Isa> isaConstraints;
+    private final Set<ThingConstraint.NEQ> neqConstraints;
+    private final Set<ThingConstraint.Value<?>> valueConstraints;
+    private final Set<ThingConstraint.Relation> relationConstraints;
+    private final Set<ThingConstraint.Has> hasConstraints;
+    private final Set<ThingConstraint> constraints;
 
     ThingVariable(Identifier identifier) {
         super(identifier);
@@ -50,7 +50,7 @@ public class ThingVariable extends Variable {
 
     ThingVariable constrain(final List<graql.lang.pattern.constraint.ThingConstraint> constraints,
                             final VariableRegistry register) {
-        constraints.forEach(constraint -> this.constrain(ThingConstraint.of(constraint, register)));
+        constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, register)));
         return this;
     }
 

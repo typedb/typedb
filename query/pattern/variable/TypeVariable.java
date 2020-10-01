@@ -37,11 +37,11 @@ public class TypeVariable extends Variable {
     private TypeConstraint.Then thenConstraint;
     private TypeConstraint.When whenConstraint;
 
-    private Set<TypeConstraint.Sub> subConstraints;
-    private Set<TypeConstraint.Owns> ownsConstraints;
-    private Set<TypeConstraint.Plays> playsConstraints;
-    private Set<TypeConstraint.Relates> relatesConstraints;
-    private Set<TypeConstraint> constraints;
+    private final Set<TypeConstraint.Sub> subConstraints;
+    private final Set<TypeConstraint.Owns> ownsConstraints;
+    private final Set<TypeConstraint.Plays> playsConstraints;
+    private final Set<TypeConstraint.Relates> relatesConstraints;
+    private final Set<TypeConstraint> constraints;
 
     TypeVariable(Identifier identifier) {
         super(identifier);

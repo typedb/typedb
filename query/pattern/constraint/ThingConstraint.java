@@ -42,22 +42,27 @@ import static java.util.stream.Collectors.toList;
 
 public class ThingConstraint extends Constraint {
 
-    private ThingConstraint() {}
+    private final ThingVariable owner;
 
-    public static ThingConstraint of(final graql.lang.pattern.constraint.ThingConstraint constraint,
+    private ThingConstraint(ThingVariable owner) {
+        this.owner = owner;
+    }
+
+    public static ThingConstraint of(final ThingVariable owner,
+                                     final graql.lang.pattern.constraint.ThingConstraint constraint,
                                      final VariableRegistry register) {
-        if (constraint.isIID()) return ThingConstraint.IID.of(constraint.asIID());
-        else if (constraint.isIsa()) return ThingConstraint.Isa.of(constraint.asIsa(), register);
-        else if (constraint.isNEQ()) return ThingConstraint.NEQ.of(constraint.asNEQ(), register);
-        else if (constraint.isValue()) return ThingConstraint.Value.of(constraint.asValue(), register);
-        else if (constraint.isRelation()) return ThingConstraint.Relation.of(constraint.asRelation(), register);
-        else if (constraint.isHas()) return ThingConstraint.Has.of(constraint.asHas(), register);
+        if (constraint.isIID()) return ThingConstraint.IID.of(owner, constraint.asIID());
+        else if (constraint.isIsa()) return ThingConstraint.Isa.of(owner, constraint.asIsa(), register);
+        else if (constraint.isNEQ()) return ThingConstraint.NEQ.of(owner, constraint.asNEQ(), register);
+        else if (constraint.isValue()) return ThingConstraint.Value.of(owner, constraint.asValue(), register);
+        else if (constraint.isRelation()) return ThingConstraint.Relation.of(owner, constraint.asRelation(), register);
+        else if (constraint.isHas()) return ThingConstraint.Has.of(owner, constraint.asHas(), register);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
     public ThingVariable owner() {
-        return null;
+        return owner;
     }
 
     @Override
@@ -128,13 +133,14 @@ public class ThingConstraint extends Constraint {
         private final byte[] iid;
         private final int hash;
 
-        public IID(byte[] iid) {
+        public IID(ThingVariable owner, byte[] iid) {
+            super(owner);
             this.iid = iid;
             this.hash = Objects.hash(IID.class, Arrays.hashCode(this.iid));
         }
 
-        public static IID of(graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
-            return new IID(Bytes.hexStringToBytes(constraint.iid()));
+        public static IID of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
+            return new IID(owner, Bytes.hexStringToBytes(constraint.iid()));
         }
 
         public byte[] iid() {
@@ -171,14 +177,17 @@ public class ThingConstraint extends Constraint {
         private final boolean isExplicit;
         private final int hash;
 
-        private Isa(TypeVariable type, boolean isExplicit) {
+        private Isa(ThingVariable owner, TypeVariable type, boolean isExplicit) {
+            super(owner);
             this.type = type;
             this.isExplicit = isExplicit;
             this.hash = Objects.hash(Isa.class, this.type, this.isExplicit);
         }
 
-        public static Isa of(graql.lang.pattern.constraint.ThingConstraint.Isa constraint, VariableRegistry registry) {
-            return new Isa(registry.register(constraint.type()), constraint.isExplicit());
+        public static Isa of(ThingVariable owner,
+                             graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
+                             VariableRegistry registry) {
+            return new Isa(owner, registry.register(constraint.type()), constraint.isExplicit());
         }
 
         public TypeVariable type() {
@@ -224,13 +233,16 @@ public class ThingConstraint extends Constraint {
         private final ThingVariable variable;
         private final int hash;
 
-        private NEQ(ThingVariable variable) {
+        private NEQ(ThingVariable owner, ThingVariable variable) {
+            super(owner);
             this.variable = variable;
             this.hash = Objects.hash(NEQ.class, this.variable);
         }
 
-        public static NEQ of(graql.lang.pattern.constraint.ThingConstraint.NEQ constraint, VariableRegistry registry) {
-            return new NEQ(registry.register(constraint.variable()));
+        public static NEQ of(ThingVariable owner,
+                             graql.lang.pattern.constraint.ThingConstraint.NEQ constraint,
+                             VariableRegistry registry) {
+            return new NEQ(owner, registry.register(constraint.variable()));
         }
 
         public ThingVariable variable() {
@@ -271,14 +283,16 @@ public class ThingConstraint extends Constraint {
         private final ValueOperation<T> operation;
         private final int hash;
 
-        private Value(ValueOperation<T> operation) {
+        private Value(ThingVariable owner, ValueOperation<T> operation) {
+            super(owner);
             this.operation = operation;
             this.hash = Objects.hash(this.operation);
         }
 
-        public static Value<?> of(graql.lang.pattern.constraint.ThingConstraint.Value constraint,
+        public static Value<?> of(ThingVariable owner,
+                                  graql.lang.pattern.constraint.ThingConstraint.Value<?> constraint,
                                   VariableRegistry registry) {
-            return new Value<>(ValueOperation.of(constraint.operation(), registry));
+            return new Value<>(owner, ValueOperation.of(constraint.operation(), registry));
         }
 
         public ValueOperation<T> operation() {
@@ -304,7 +318,7 @@ public class ThingConstraint extends Constraint {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Value that = (Value) o;
+            Value<?> that = (Value<?>) o;
             return this.operation.equals(that.operation);
         }
 
@@ -319,14 +333,17 @@ public class ThingConstraint extends Constraint {
         private final List<RolePlayer> players;
         private final int hash;
 
-        private Relation(List<RolePlayer> players) {
+        private Relation(ThingVariable owner, List<RolePlayer> players) {
+            super(owner);
             assert players != null && !players.isEmpty();
             this.players = new ArrayList<>(players);
             this.hash = Objects.hash(this.players);
         }
 
-        public static Relation of(graql.lang.pattern.constraint.ThingConstraint.Relation constraint, VariableRegistry register) {
-            return new Relation(constraint.players().stream().map(rp -> RolePlayer.of(rp, register)).collect(toList()));
+        public static Relation of(ThingVariable owner,
+                                  graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
+                                  VariableRegistry register) {
+            return new Relation(owner, constraint.players().stream().map(rp -> RolePlayer.of(rp, register)).collect(toList()));
         }
 
         public List<RolePlayer> players() {
@@ -416,16 +433,18 @@ public class ThingConstraint extends Constraint {
         private final ThingVariable attribute;
         private final int hash;
 
-        private Has(TypeVariable type, ThingVariable attribute) {
+        private Has(ThingVariable owner, TypeVariable type, ThingVariable attribute) {
+            super(owner);
             assert type != null && attribute != null;
             this.type = type;
             this.attribute = attribute;
             this.hash = Objects.hash(this.type, this.attribute);
         }
 
-        public static Has of(graql.lang.pattern.constraint.ThingConstraint.Has constraint,
+        public static Has of(ThingVariable owner,
+                             graql.lang.pattern.constraint.ThingConstraint.Has constraint,
                              VariableRegistry register) {
-            return new Has(register.register(constraint.type()), register.register(constraint.attribute()));
+            return new Has(owner, register.register(constraint.type()), register.register(constraint.attribute()));
         }
 
         public TypeVariable type() {
