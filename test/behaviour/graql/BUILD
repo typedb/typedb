@@ -27,7 +27,6 @@ java_library(
     ],
     deps = [
         # Package dependencies
-        "//:grakn",
         "//concept:concept",
         "//test/behaviour/connection:steps",
         "//test/behaviour/util:util",

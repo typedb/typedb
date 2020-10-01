@@ -56,8 +56,8 @@ public class Deleter {
     }
 
     public void execute() {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            // TODO
-        }
+//        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+//            TODO
+//        }
     }
 }
