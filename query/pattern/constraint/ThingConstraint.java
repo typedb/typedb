@@ -42,7 +42,7 @@ import static java.util.stream.Collectors.toList;
 
 public class ThingConstraint extends Constraint {
 
-    private final ThingVariable owner;
+    final ThingVariable owner;
 
     private ThingConstraint(ThingVariable owner) {
         this.owner = owner;
@@ -136,7 +136,7 @@ public class ThingConstraint extends Constraint {
         public IID(ThingVariable owner, byte[] iid) {
             super(owner);
             this.iid = iid;
-            this.hash = Objects.hash(IID.class, Arrays.hashCode(this.iid));
+            this.hash = Objects.hash(IID.class, this.owner, Arrays.hashCode(this.iid));
         }
 
         public static IID of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
@@ -162,7 +162,7 @@ public class ThingConstraint extends Constraint {
             if (o == this) return true;
             if (o == null || getClass() != o.getClass()) return false;
             IID that = (IID) o;
-            return Arrays.equals(this.iid, that.iid);
+            return (this.owner.equals(that.owner) && Arrays.equals(this.iid, that.iid));
         }
 
         @Override
@@ -181,7 +181,7 @@ public class ThingConstraint extends Constraint {
             super(owner);
             this.type = type;
             this.isExplicit = isExplicit;
-            this.hash = Objects.hash(Isa.class, this.type, this.isExplicit);
+            this.hash = Objects.hash(Isa.class, this.owner, this.type, this.isExplicit);
         }
 
         public static Isa of(ThingVariable owner,
@@ -218,7 +218,8 @@ public class ThingConstraint extends Constraint {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Isa that = (Isa) o;
-            return (this.type.equals(that.type) &&
+            return (this.owner.equals(that.owner) &&
+                    this.type.equals(that.type) &&
                     this.isExplicit == that.isExplicit);
         }
 
@@ -236,7 +237,7 @@ public class ThingConstraint extends Constraint {
         private NEQ(ThingVariable owner, ThingVariable variable) {
             super(owner);
             this.variable = variable;
-            this.hash = Objects.hash(NEQ.class, this.variable);
+            this.hash = Objects.hash(NEQ.class, this.owner, this.variable);
         }
 
         public static NEQ of(ThingVariable owner,
@@ -269,7 +270,7 @@ public class ThingConstraint extends Constraint {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             NEQ that = (NEQ) o;
-            return this.variable.equals(that.variable);
+            return (this.owner.equals(that.owner) && this.variable.equals(that.variable));
         }
 
         @Override
@@ -286,7 +287,7 @@ public class ThingConstraint extends Constraint {
         private Value(ThingVariable owner, ValueOperation<T> operation) {
             super(owner);
             this.operation = operation;
-            this.hash = Objects.hash(this.operation);
+            this.hash = Objects.hash(Value.class, this.owner, this.operation);
         }
 
         public static Value<?> of(ThingVariable owner,
@@ -319,7 +320,7 @@ public class ThingConstraint extends Constraint {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Value<?> that = (Value<?>) o;
-            return this.operation.equals(that.operation);
+            return (this.owner.equals(that.owner) && this.operation.equals(that.operation));
         }
 
         @Override
@@ -337,7 +338,7 @@ public class ThingConstraint extends Constraint {
             super(owner);
             assert players != null && !players.isEmpty();
             this.players = new ArrayList<>(players);
-            this.hash = Objects.hash(this.players);
+            this.hash = Objects.hash(Relation.class, this.owner, this.players);
         }
 
         public static Relation of(ThingVariable owner,
@@ -375,7 +376,7 @@ public class ThingConstraint extends Constraint {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Relation that = (Relation) o;
-            return this.players.equals(that.players);
+            return (this.owner.equals(that.owner) && this.players.equals(that.players));
         }
 
         @Override
@@ -385,7 +386,7 @@ public class ThingConstraint extends Constraint {
 
         public static class RolePlayer {
 
-            private TypeVariable roleType;
+            private final TypeVariable roleType;
             private final ThingVariable player;
             private final int hash;
 
@@ -438,7 +439,7 @@ public class ThingConstraint extends Constraint {
             assert type != null && attribute != null;
             this.type = type;
             this.attribute = attribute;
-            this.hash = Objects.hash(this.type, this.attribute);
+            this.hash = Objects.hash(Has.class, this.owner, this.type, this.attribute);
         }
 
         public static Has of(ThingVariable owner,
@@ -475,7 +476,9 @@ public class ThingConstraint extends Constraint {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Has that = (Has) o;
-            return (this.type.equals(that.type) && this.attribute.equals(that.attribute));
+            return (this.owner.equals(that.owner) &&
+                    this.type.equals(that.type) &&
+                    this.attribute.equals(that.attribute));
         }
 
         @Override
