@@ -28,7 +28,7 @@ public class Graphs {
 
     private final DataGraph dataGraph;
 
-    public Graphs(SchemaGraph schemaGraph, DataGraph dataGraph) {
+    public Graphs(final SchemaGraph schemaGraph, final DataGraph dataGraph) {
         this.schemaGraph = schemaGraph;
         this.dataGraph = dataGraph;
     }
@@ -46,16 +46,16 @@ public class Graphs {
         dataGraph.clear();
     }
 
-    public GraknException exception(String message) {
+    public GraknException exception(final String message) {
         return dataGraph.storage().exception(message);
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Graphs graphs = (Graphs) o;
+        final Graphs graphs = (Graphs) o;
         return schemaGraph.equals(graphs.schemaGraph) && dataGraph.equals(graphs.dataGraph);
     }
 

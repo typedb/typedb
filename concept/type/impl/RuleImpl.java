@@ -37,12 +37,12 @@ public class RuleImpl implements Rule {
     private final Graphs graphs;
     private final RuleVertex vertex;
 
-    private RuleImpl(Graphs graphs, RuleVertex vertex) {
+    private RuleImpl(final Graphs graphs, final RuleVertex vertex) {
         this.graphs = graphs;
         this.vertex = vertex;
     }
 
-    private RuleImpl(Graphs graphs, String label, Pattern when, Pattern then) {
+    private RuleImpl(final Graphs graphs, final String label, final Pattern when, final Pattern then) {
         this.graphs = graphs;
         this.vertex = graphs.schema().create(label, when, then);
         putPositiveConditions();
@@ -50,18 +50,18 @@ public class RuleImpl implements Rule {
         putConclusions();
     }
 
-    public static RuleImpl of(Graphs graphs, RuleVertex vertex) {
+    public static RuleImpl of(final Graphs graphs, final RuleVertex vertex) {
         return new RuleImpl(graphs, vertex);
     }
 
-    public static RuleImpl of(Graphs graphs, String label, Pattern when, Pattern then) {
+    public static RuleImpl of(final Graphs graphs, final String label, final Pattern when, final Pattern then) {
         return new RuleImpl(graphs, label, when, then);
     }
 
     private void putPositiveConditions() {
 
         // TODO extract when Types from when pattern
-        List<String> whenTypesPositive = Arrays.asList();
+        final List<String> whenTypesPositive = Arrays.asList();
 
         vertex.outs().delete(CONDITION_POSITIVE);
 
@@ -73,7 +73,7 @@ public class RuleImpl implements Rule {
     private void putNegativeConditions() {
 
         // TODO extract when Types from when pattern
-        List<String> whenTypesNegative = Arrays.asList();
+        final List<String> whenTypesNegative = Arrays.asList();
 
         vertex.outs().delete(CONDITION_NEGATIVE);
 
@@ -85,7 +85,7 @@ public class RuleImpl implements Rule {
     private void putConclusions() {
 
         // TODO extract when Types from then pattern
-        List<String> conclusionTypes = Arrays.asList();
+        final List<String> conclusionTypes = Arrays.asList();
 
         vertex.outs().delete(CONCLUSION);
 
@@ -100,7 +100,7 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public void setLabel(String label) {
+    public void setLabel(final String label) {
         vertex.label(label);
     }
 
@@ -115,12 +115,12 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public void setWhen(Pattern when) {
+    public void setWhen(final Pattern when) {
         vertex.when(when);
     }
 
     @Override
-    public void setThen(Pattern then) {
+    public void setThen(final Pattern then) {
         vertex.then(then);
     }
 
@@ -150,11 +150,11 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        RuleImpl that = (RuleImpl) object;
+        final RuleImpl that = (RuleImpl) object;
         return this.vertex.equals(that.vertex);
     }
 

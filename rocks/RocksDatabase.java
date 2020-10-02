@@ -62,7 +62,7 @@ public class RocksDatabase implements Grakn.Database {
     private RocksSession.Schema cachedSchemaSession;
     private RocksTransaction.Schema cachedSchemaTransaction;
 
-    private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
+    private RocksDatabase(final RocksGrakn rocksGrakn, final String name, final boolean isNew) {
         this.name = name;
         this.rocksGrakn = rocksGrakn;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -82,11 +82,11 @@ public class RocksDatabase implements Grakn.Database {
         else load();
     }
 
-    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
+    static RocksDatabase createNewAndOpen(final RocksGrakn rocksGrakn, final String name) {
         return new RocksDatabase(rocksGrakn, name, true);
     }
 
-    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name) {
+    static RocksDatabase loadExistingAndOpen(final RocksGrakn rocksGrakn, final String name) {
         return new RocksDatabase(rocksGrakn, name, false);
     }
 
@@ -109,10 +109,10 @@ public class RocksDatabase implements Grakn.Database {
         }
     }
 
-    RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
+    RocksSession createAndOpenSession(final Arguments.Session.Type type, final Options.Session options) {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
         long lock = 0;
-        RocksSession session;
+        final RocksSession session;
 
         if (type.isSchema()) {
             lock = dataWriteSchemaLock.writeLock();
@@ -168,9 +168,9 @@ public class RocksDatabase implements Grakn.Database {
         return dataReadSchemaLock;
     }
 
-    void remove(RocksSession session) {
+    void remove(final RocksSession session) {
         if (cachedSchemaSession != session) {
-            long lock = sessions.remove(session.uuid()).second();
+            final long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) dataWriteSchemaLock.unlockWrite(lock);
         }
     }
@@ -189,12 +189,12 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     @Override
-    public boolean contains(UUID sessionID) {
+    public boolean contains(final UUID sessionID) {
         return sessions.containsKey(sessionID);
     }
 
     @Override
-    public Grakn.Session get(UUID sessionID) {
+    public Grakn.Session get(final UUID sessionID) {
         if (sessions.containsKey(sessionID)) return sessions.get(sessionID).first();
         else return null;
     }

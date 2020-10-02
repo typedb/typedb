@@ -32,15 +32,15 @@ public class ConceptMap implements Answer {
         this(new HashMap<>());
     }
 
-    public ConceptMap(Map<Reference, ? extends Concept> concepts) {
+    public ConceptMap(final Map<Reference, ? extends Concept> concepts) {
         this.concepts = concepts;
     }
 
-    public boolean contains(Reference variable) {
+    public boolean contains(final Reference variable) {
         return concepts.containsKey(variable);
     }
 
-    public Concept get(Reference variable) {
+    public Concept get(final Reference variable) {
         return concepts.get(variable);
     }
 

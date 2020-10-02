@@ -44,7 +44,7 @@ public abstract class SchemaVertexImpl<
 
     protected String label;
 
-    SchemaVertexImpl(SchemaGraph graph, VERTEX_IID iid, String label) {
+    SchemaVertexImpl(final SchemaGraph graph, final VERTEX_IID iid, final String label) {
         super(iid);
         this.graph = graph;
         this.label = label;

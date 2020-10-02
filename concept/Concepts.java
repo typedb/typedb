@@ -53,7 +53,7 @@ public final class Concepts {
 
     private final Graphs graphs;
 
-    public Concepts(Graphs graphs) {
+    public Concepts(final Graphs graphs) {
         this.graphs = graphs;
     }
 
@@ -81,35 +81,35 @@ public final class Concepts {
         else throw graphs.exception(ILLEGAL_STATE.message());
     }
 
-    public EntityType putEntityType(String label) {
-        TypeVertex vertex = graphs.schema().getType(label);
+    public EntityType putEntityType(final String label) {
+        final TypeVertex vertex = graphs.schema().getType(label);
         if (vertex != null) return EntityTypeImpl.of(graphs, vertex);
         else return EntityTypeImpl.of(graphs, label);
     }
 
-    public EntityType getEntityType(String label) {
-        TypeVertex vertex = graphs.schema().getType(label);
+    public EntityType getEntityType(final String label) {
+        final TypeVertex vertex = graphs.schema().getType(label);
         if (vertex != null) return EntityTypeImpl.of(graphs, vertex);
         else return null;
     }
 
-    public RelationType putRelationType(String label) {
-        TypeVertex vertex = graphs.schema().getType(label);
+    public RelationType putRelationType(final String label) {
+        final TypeVertex vertex = graphs.schema().getType(label);
         if (vertex != null) return RelationTypeImpl.of(graphs, vertex);
         else return RelationTypeImpl.of(graphs, label);
     }
 
-    public RelationType getRelationType(String label) {
-        TypeVertex vertex = graphs.schema().getType(label);
+    public RelationType getRelationType(final String label) {
+        final TypeVertex vertex = graphs.schema().getType(label);
         if (vertex != null) return RelationTypeImpl.of(graphs, vertex);
         else return null;
     }
 
-    public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
+    public AttributeType putAttributeType(final String label, final AttributeType.ValueType valueType) {
         if (valueType == null) throw graphs.exception(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
         if (!valueType.isWritable()) throw graphs.exception(UNSUPPORTED_OPERATION.message());
 
-        TypeVertex vertex = graphs.schema().getType(label);
+        final TypeVertex vertex = graphs.schema().getType(label);
         switch (valueType) {
             case BOOLEAN:
                 if (vertex != null) return AttributeTypeImpl.Boolean.of(graphs, vertex);
@@ -131,22 +131,22 @@ public final class Concepts {
         }
     }
 
-    public AttributeType getAttributeType(String label) {
-        TypeVertex vertex = graphs.schema().getType(label);
+    public AttributeType getAttributeType(final String label) {
+        final TypeVertex vertex = graphs.schema().getType(label);
         if (vertex != null) return AttributeTypeImpl.of(graphs, vertex);
         else return null;
     }
 
-    public Type getType(String label) {
+    public Type getType(final String label) {
         final TypeVertex vertex = graphs.schema().getType(label);
         if (vertex != null) return TypeImpl.of(graphs, vertex);
         else return null;
     }
 
-    public Rule putRule(String label, Pattern when, Pattern then) {
-        RuleVertex vertex = graphs.schema().getRule(label);
+    public Rule putRule(final String label, final Pattern when, final Pattern then) {
+        final RuleVertex vertex = graphs.schema().getRule(label);
         if (vertex != null) {
-            Rule rule = RuleImpl.of(graphs, vertex);
+            final Rule rule = RuleImpl.of(graphs, vertex);
             rule.setWhen(when);
             rule.setThen(then);
             return rule;
@@ -155,8 +155,8 @@ public final class Concepts {
         }
     }
 
-    public Rule getRule(String label) {
-        RuleVertex ruleVertex = graphs.schema().getRule(label);
+    public Rule getRule(final String label) {
+        final RuleVertex ruleVertex = graphs.schema().getRule(label);
         if (ruleVertex != null) return RuleImpl.of(graphs, ruleVertex);
         return null;
     }
@@ -168,7 +168,7 @@ public final class Concepts {
     }
 
     public void validateTypes() {
-        List<GraknException> exceptions = graphs.schema().types().parallel()
+        final List<GraknException> exceptions = graphs.schema().types().parallel()
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(graphs, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
@@ -181,7 +181,7 @@ public final class Concepts {
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 
-    public GraknException exception(String errorMessage) {
+    public GraknException exception(final String errorMessage) {
         return graphs.exception(errorMessage);
     }
 }

@@ -74,14 +74,14 @@ public interface AttributeType extends ThingType {
         private final boolean isKeyable;
         private final GraqlArg.ValueType graqlValueType;
 
-        ValueType(Encoding.ValueType encodingValueType, GraqlArg.ValueType graqlValueType) {
+        ValueType(final Encoding.ValueType encodingValueType, final GraqlArg.ValueType graqlValueType) {
             this.valueClass = encodingValueType.valueClass();
             this.isWritable = encodingValueType.isWritable();
             this.isKeyable = encodingValueType.isKeyable();
             this.graqlValueType = graqlValueType;
         }
 
-        public static ValueType of(Class<?> valueClass) {
+        public static ValueType of(final Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.valueClass.equals(valueClass)) {
                     return vt;
@@ -90,7 +90,7 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
-        public static ValueType of(GraqlArg.ValueType valueType) {
+        public static ValueType of(final GraqlArg.ValueType valueType) {
             for (ValueType vt : ValueType.values()) {
                 if (Objects.equals(vt.graqlValueType, valueType)) {
                     return vt;

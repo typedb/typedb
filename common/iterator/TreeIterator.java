@@ -34,7 +34,7 @@ public class TreeIterator<T> implements Iterators.Composable<T> {
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    TreeIterator(T root, Function<T, Iterator<T>> childrenFn) {
+    TreeIterator(final T root, final Function<T, Iterator<T>> childrenFn) {
         this.next = root;
         this.childrenFn = childrenFn;
 

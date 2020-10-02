@@ -22,33 +22,33 @@ import java.util.List;
 
 public class GraknException extends RuntimeException {
 
-    public GraknException(String error) {
+    public GraknException(final String error) {
         super(error);
     }
 
-    public GraknException(ErrorMessage error) {
+    public GraknException(final ErrorMessage error) {
         super(error.toString());
         assert !getMessage().contains("%s");
     }
 
-    public GraknException(Exception e) {
+    public GraknException(final Exception e) {
         super(e);
     }
 
-    public GraknException(List<GraknException> exceptions) {
+    public GraknException(final List<GraknException> exceptions) {
         super(getMessages(exceptions));
     }
 
-    public static GraknException of(ErrorMessage errorMessage) {
+    public static GraknException of(final ErrorMessage errorMessage) {
         return new GraknException(errorMessage.message());
     }
 
-    public static GraknException of(String error) {
+    public static GraknException of(final String error) {
         return new GraknException(error);
     }
 
-    public static String getMessages(List<GraknException> exceptions) {
-        StringBuilder messages = new StringBuilder();
+    public static String getMessages(final List<GraknException> exceptions) {
+        final StringBuilder messages = new StringBuilder();
         for (GraknException exception : exceptions) {
             messages.append(exception.getMessage()).append("\n");
         }

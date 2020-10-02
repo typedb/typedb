@@ -29,7 +29,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     static final int LENGTH = 1;
 
-    private InfixIID(byte[] bytes) {
+    private InfixIID(final byte[] bytes) {
         super(bytes);
     }
 
@@ -57,16 +57,16 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     public static class Schema extends InfixIID<Encoding.Edge.Schema> {
 
-        private Schema(byte[] bytes) {
+        private Schema(final byte[] bytes) {
             super(bytes);
             assert bytes.length == LENGTH;
         }
 
-        static Schema of(Encoding.Infix infix) {
+        static Schema of(final Encoding.Infix infix) {
             return new Schema(infix.bytes());
         }
 
-        static Schema extract(byte[] bytes, int from) {
+        static Schema extract(final byte[] bytes, final int from) {
             return new Schema(new byte[]{bytes[from]});
         }
 
@@ -78,12 +78,12 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     public static class Thing extends InfixIID<Encoding.Edge.Thing> {
 
-        private Thing(byte[] bytes) {
+        private Thing(final byte[] bytes) {
             super(bytes);
         }
 
-        static InfixIID.Thing extract(byte[] bytes, int from) {
-            Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes[from]);
+        static InfixIID.Thing extract(final byte[] bytes, final int from) {
+            final Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes[from]);
             if ((encoding.equals(Encoding.Edge.Thing.ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
@@ -91,7 +91,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             }
         }
 
-        public static InfixIID.Thing of(Encoding.Infix infix) {
+        public static InfixIID.Thing of(final Encoding.Infix infix) {
             if (Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER)) {
                 return new InfixIID.RolePlayer(infix.bytes());
             } else {
@@ -99,8 +99,8 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             }
         }
 
-        public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
-            byte[][] iidBytes = new byte[tail.length + 1][];
+        public static InfixIID.Thing of(final Encoding.Infix infix, final IID... tail) {
+            final byte[][] iidBytes = new byte[tail.length + 1][];
             iidBytes[0] = infix.bytes();
             for (int i = 0; i < tail.length; i++) {
                 iidBytes[i + 1] = tail[i].bytes();
@@ -120,14 +120,14 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         public InfixIID.Thing outwards() {
             if (isOutwards()) return this;
-            byte[] copy = Arrays.copyOf(bytes, bytes.length);
+            final byte[] copy = Arrays.copyOf(bytes, bytes.length);
             copy[0] = encoding().out().key();
             return new InfixIID.Thing(copy);
         }
 
         public InfixIID.Thing inwards() {
             if (!isOutwards()) return this;
-            byte[] copy = Arrays.copyOf(bytes, bytes.length);
+            final byte[] copy = Arrays.copyOf(bytes, bytes.length);
             copy[0] = encoding().in().key();
             return new InfixIID.Thing(copy);
         }
@@ -141,16 +141,16 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     public static class RolePlayer extends InfixIID.Thing {
 
-        private RolePlayer(byte[] bytes) {
+        private RolePlayer(final byte[] bytes) {
             super(bytes);
         }
 
-        public static RolePlayer of(Encoding.Infix infix, VertexIID.Schema schema) {
+        public static RolePlayer of(final Encoding.Infix infix, final VertexIID.Schema schema) {
             assert schema != null && Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER);
             return new RolePlayer(join(infix.bytes(), schema.bytes()));
         }
 
-        static RolePlayer extract(byte[] bytes, int from) {
+        static RolePlayer extract(final byte[] bytes, final int from) {
             return new RolePlayer(join(new byte[]{bytes[from]}, VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
         }
 

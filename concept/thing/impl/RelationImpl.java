@@ -46,11 +46,11 @@ import static java.util.stream.Stream.concat;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
-    private RelationImpl(ThingVertex vertex) {
+    private RelationImpl(final ThingVertex vertex) {
         super(vertex);
     }
 
-    public static RelationImpl of(ThingVertex vertex) {
+    public static RelationImpl of(final ThingVertex vertex) {
         return new RelationImpl(vertex);
     }
 
@@ -60,22 +60,22 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public void addPlayer(RoleType roleType, Thing player) {
+    public void addPlayer(final RoleType roleType, final Thing player) {
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw exception(RELATION_ROLE_UNRELATED.message(this.getType().getLabel(), roleType.getLabel()));
         } else if (player.getType().getPlays().noneMatch(t -> t.equals(roleType))) {
             throw exception(THING_ROLE_UNPLAYED.message(this.getType().getLabel(), roleType.getLabel()));
         }
 
-        RoleImpl role = ((RoleTypeImpl) roleType).create();
+        final RoleImpl role = ((RoleTypeImpl) roleType).create();
         vertex.outs().put(RELATES, role.vertex);
         ((ThingImpl) player).vertex.outs().put(PLAYS, role.vertex);
         role.optimise();
     }
 
     @Override
-    public void removePlayer(RoleType roleType, Thing player) {
-        ResourceIterator<ThingVertex> role = vertex.outs().edge(
+    public void removePlayer(final RoleType roleType, final Thing player) {
+        final ResourceIterator<ThingVertex> role = vertex.outs().edge(
                 RELATES, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYS, ((ThingImpl) player).vertex) != null);
 
@@ -86,29 +86,29 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Stream<ThingImpl> getPlayers(String roleType, String... roleTypes) {
+    public Stream<ThingImpl> getPlayers(final String roleType, final String... roleTypes) {
         return getPlayers(concat(Stream.of(roleType), stream(roleTypes))
                                   .map(label -> getType().getRelates(label))
                                   .toArray(RoleType[]::new));
     }
 
     @Override
-    public Stream<ThingImpl> getPlayers(RoleType... roleTypes) {
+    public Stream<ThingImpl> getPlayers(final RoleType... roleTypes) {
         if (roleTypes.length == 0) {
             return vertex.outs().edge(ROLEPLAYER).to().stream().map(ThingImpl::of);
         }
         return getPlayers(stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
-    private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {
+    private Stream<ThingImpl> getPlayers(final Stream<TypeVertex> roleTypeVertices) {
         return roleTypeVertices.flatMap(v -> vertex.outs().edge(ROLEPLAYER, v.iid()).to().stream()).map(ThingImpl::of);
     }
 
     @Override
     public Map<RoleTypeImpl, ? extends List<ThingImpl>> getPlayersByRoleType() {
-        Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
+        final Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
         getType().getRelates().forEach(rt -> {
-            List<ThingImpl> players = getPlayers(rt).collect(toList());
+            final List<ThingImpl> players = getPlayers(rt).collect(toList());
             if (!players.isEmpty()) playersByRole.put(rt, players);
         });
         return playersByRole;

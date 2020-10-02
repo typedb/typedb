@@ -38,7 +38,7 @@ public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
-    RocksIterator(RocksTransaction.CoreStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
+    RocksIterator(final RocksTransaction.CoreStorage storage, final byte[] prefix, final BiFunction<byte[], byte[], T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
         this.constructor = constructor;
@@ -53,7 +53,7 @@ public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
     }
 
     private boolean fetchAndCheck() {
-        byte[] key;
+        final byte[] key;
         if (!rocksIterator.isValid() || !bytesHavePrefix(key = rocksIterator.key(), prefix)) {
             state = State.COMPLETED;
             recycle();

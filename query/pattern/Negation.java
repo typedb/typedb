@@ -22,7 +22,7 @@ public class Negation extends Pattern {
 
     private final Disjunction disjunction;
 
-    public Negation(Disjunction disjunction) {
+    public Negation(final Disjunction disjunction) {
         this.disjunction = disjunction;
     }
 }

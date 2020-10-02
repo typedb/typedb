@@ -27,7 +27,7 @@ public class Conjunction extends Pattern {
     private final Set<Variable> variables;
     private final Set<Negation> negatedQueries;
 
-    public Conjunction(Set<Variable> variables, Set<Negation> negatedQueries) {
+    public Conjunction(final Set<Variable> variables, final Set<Negation> negatedQueries) {
         this.variables = variables;
         this.negatedQueries = negatedQueries;
     }

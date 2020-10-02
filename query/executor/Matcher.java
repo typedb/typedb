@@ -36,7 +36,7 @@ public class Matcher {
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    public Matcher(Graphs graphMgr, graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction, Context.Query context) {
+    public Matcher(final Graphs graphMgr, final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction, final Context.Query context) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.graphMgr = graphMgr;
             this.disjunction = Pattern.fromGraqlConjunction(conjunction);

@@ -27,7 +27,7 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
     VERTEX_IID iid;
     boolean isModified;
 
-    VertexImpl(VERTEX_IID iid) {
+    VertexImpl(final VERTEX_IID iid) {
         this.iid = iid;
     }
 
@@ -35,7 +35,7 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
         return iid;
     }
 
-    public void iid(VERTEX_IID iid) {
+    public void iid(final VERTEX_IID iid) {
         this.iid = iid;
     }
 
@@ -51,10 +51,10 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        VertexImpl<?> that = (VertexImpl<?>) object;
+        final VertexImpl<?> that = (VertexImpl<?>) object;
         return this.iid.equals(that.iid);
     }
 

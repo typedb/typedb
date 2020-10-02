@@ -39,7 +39,7 @@ public abstract class TypeConstraint extends Constraint {
 
     final TypeVariable owner;
 
-    private TypeConstraint(TypeVariable owner) {
+    private TypeConstraint(final TypeVariable owner) {
         if (owner == null) throw new NullPointerException("Null owner");
         this.owner = owner;
     }
@@ -166,7 +166,7 @@ public abstract class TypeConstraint extends Constraint {
         private final String scope;
         private final int hash;
 
-        private Label(TypeVariable owner, @Nullable String scope, String label) {
+        private Label(final TypeVariable owner, @Nullable final String scope, final String label) {
             super(owner);
             if (label == null) throw new NullPointerException("Null label");
             this.scope = scope;
@@ -174,7 +174,7 @@ public abstract class TypeConstraint extends Constraint {
             this.hash = Objects.hash(Label.class, this.owner, this.scope, this.label);
         }
 
-        public static Label of(final TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
+        public static Label of(final TypeVariable owner, final graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
             return new Label(owner, constraint.scope().orElse(null), constraint.label());
         }
 
@@ -201,10 +201,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (o == this) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Label that = (Label) o;
+            final Label that = (Label) o;
             return (this.owner.equals(that.owner) &&
                     this.label.equals(that.label) &&
                     Objects.equals(this.scope, that.scope));
@@ -222,7 +222,7 @@ public abstract class TypeConstraint extends Constraint {
         private final boolean isExplicit;
         private final int hash;
 
-        private Sub(TypeVariable owner, TypeVariable type, boolean isExplicit) {
+        private Sub(final TypeVariable owner, final TypeVariable type, final boolean isExplicit) {
             super(owner);
             if (type == null) throw new NullPointerException("Null superType");
             this.type = type;
@@ -256,10 +256,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Sub that = (Sub) o;
+            final Sub that = (Sub) o;
             return (this.owner.equals(that.owner) &&
                     this.type.equals(that.type) &&
                     this.isExplicit == that.isExplicit);
@@ -275,12 +275,12 @@ public abstract class TypeConstraint extends Constraint {
 
         private final int hash;
 
-        private Abstract(TypeVariable owner) {
+        private Abstract(final TypeVariable owner) {
             super(owner);
             this.hash = Objects.hash(Abstract.class, this.owner);
         }
 
-        public static Abstract of(TypeVariable owner) {
+        public static Abstract of(final TypeVariable owner) {
             return new Abstract(owner);
         }
 
@@ -300,11 +300,11 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (o == this) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Abstract that = (Abstract) o;
+            final Abstract that = (Abstract) o;
             return this.owner.equals(that.owner);
         }
 
@@ -319,14 +319,14 @@ public abstract class TypeConstraint extends Constraint {
         private final AttributeType.ValueType valueType;
         private final int hash;
 
-        private ValueType(TypeVariable owner, AttributeType.ValueType valueType) {
+        private ValueType(final TypeVariable owner, final AttributeType.ValueType valueType) {
             super(owner);
             this.valueType = valueType;
             this.hash = Objects.hash(ValueType.class, this.owner, this.valueType);
         }
 
         public static ValueType of(final TypeVariable owner,
-                                   graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
+                                   final graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
             return new ValueType(owner, AttributeType.ValueType.of(constraint.valueType()));
         }
 
@@ -350,10 +350,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ValueType that = (ValueType) o;
+            final ValueType that = (ValueType) o;
             return (this.owner.equals(that.owner) && this.valueType.equals(that.valueType));
         }
 
@@ -368,14 +368,14 @@ public abstract class TypeConstraint extends Constraint {
         private final java.util.regex.Pattern regex;
         private final int hash;
 
-        private Regex(TypeVariable owner, java.util.regex.Pattern regex) {
+        private Regex(final TypeVariable owner, final java.util.regex.Pattern regex) {
             super(owner);
             this.regex = regex;
             this.hash = Objects.hash(Regex.class, this.owner, this.regex.pattern());
         }
 
         public static Regex of(final TypeVariable owner,
-                               graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
+                               final graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
             return new Regex(owner, constraint.regex());
         }
 
@@ -399,10 +399,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (o == this) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Regex that = (Regex) o;
+            final Regex that = (Regex) o;
             return (this.owner.equals(that.owner) && this.regex.pattern().equals(that.regex.pattern()));
         }
 
@@ -418,14 +418,14 @@ public abstract class TypeConstraint extends Constraint {
         private final Pattern pattern;
         private final int hash;
 
-        private Then(TypeVariable owner, Pattern pattern) {
+        private Then(final TypeVariable owner, final Pattern pattern) {
             super(owner);
             if (pattern == null) throw new NullPointerException("Null pattern");
             this.pattern = pattern;
             this.hash = Objects.hash(Then.class, this.owner, this.pattern);
         }
 
-        public static Then of(final TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Then constraint) {
+        public static Then of(final TypeVariable owner, final graql.lang.pattern.constraint.TypeConstraint.Then constraint) {
             return new Then(owner, constraint.pattern());
         }
 
@@ -449,10 +449,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (o == this) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Then that = (Then) o;
+            final Then that = (Then) o;
             return (this.owner.equals(that.owner) && this.pattern.equals(that.pattern));
         }
 
@@ -468,14 +468,14 @@ public abstract class TypeConstraint extends Constraint {
         private final Pattern pattern;
         private final int hash;
 
-        private When(TypeVariable owner, Pattern pattern) {
+        private When(final TypeVariable owner, final Pattern pattern) {
             super(owner);
             if (pattern == null) throw new NullPointerException("Null Pattern");
             this.pattern = pattern;
             this.hash = Objects.hash(When.class, this.owner, this.pattern);
         }
 
-        public static When of(final TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.When constraint) {
+        public static When of(final TypeVariable owner, final graql.lang.pattern.constraint.TypeConstraint.When constraint) {
             return new When(owner, constraint.pattern());
         }
 
@@ -500,10 +500,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (o == this) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            When that = (When) o;
+            final When that = (When) o;
             return (this.owner.equals(that.owner) && this.pattern.equals(that.pattern));
         }
 
@@ -520,8 +520,8 @@ public abstract class TypeConstraint extends Constraint {
         private final boolean isKey;
         private final int hash;
 
-        private Owns(TypeVariable owner, TypeVariable attributeType,
-                     @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
+        private Owns(final TypeVariable owner, final TypeVariable attributeType,
+                     @Nullable final TypeVariable overriddenAttributeType, final boolean isKey) {
             super(owner);
             this.attributeType = attributeType;
             this.overriddenAttributeType = overriddenAttributeType;
@@ -529,11 +529,11 @@ public abstract class TypeConstraint extends Constraint {
             this.hash = Objects.hash(Owns.class, this.owner, this.attributeType, this.overriddenAttributeType, this.isKey);
         }
 
-        public static Owns of(TypeVariable owner,
-                              graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
-                              VariableRegistry registry) {
-            TypeVariable attributeType = registry.register(constraint.attribute());
-            TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+        public static Owns of(final TypeVariable owner,
+                              final graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
+                              final VariableRegistry registry) {
+            final TypeVariable attributeType = registry.register(constraint.attribute());
+            final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
             return new Owns(owner, attributeType, overriddenType, constraint.isKey());
         }
 
@@ -567,10 +567,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Owns that = (Owns) o;
+            final Owns that = (Owns) o;
             return (this.owner.equals(that.owner) &&
                     this.attributeType.equals(that.attributeType) &&
                     Objects.equals(this.overriddenAttributeType, that.overriddenAttributeType) &&
@@ -590,8 +590,8 @@ public abstract class TypeConstraint extends Constraint {
         private final TypeVariable overriddenRoleType;
         private final int hash;
 
-        private Plays(TypeVariable owner, @Nullable TypeVariable relationType,
-                      TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+        private Plays(final TypeVariable owner, @Nullable final TypeVariable relationType,
+                      final TypeVariable roleType, @Nullable final TypeVariable overriddenRoleType) {
             super(owner);
             if (roleType == null) throw new NullPointerException("Null role");
             this.relationType = relationType;
@@ -601,11 +601,11 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         public static Plays of(final TypeVariable owner,
-                               graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
-                               VariableRegistry registry) {
-            TypeVariable roleType = registry.register(constraint.role());
-            TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
-            TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+                               final graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
+                               final VariableRegistry registry) {
+            final TypeVariable roleType = registry.register(constraint.role());
+            final TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
+            final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
             return new Plays(owner, relationType, roleType, overriddenType);
         }
 
@@ -623,7 +623,7 @@ public abstract class TypeConstraint extends Constraint {
 
         @Override
         public Set<TypeVariable> variables() {
-            Set<TypeVariable> variables = new HashSet<>();
+            final Set<TypeVariable> variables = new HashSet<>();
             variables.add(roleType);
             if (relationType != null) variables.add(relationType);
             if (overriddenRoleType != null) variables.add(overriddenRoleType);
@@ -641,10 +641,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Plays that = (Plays) o;
+            final Plays that = (Plays) o;
             return (this.owner.equals(that.owner) &&
                     this.roleType.equals(that.roleType) &&
                     Objects.equals(this.relationType, that.relationType) &&
@@ -663,7 +663,7 @@ public abstract class TypeConstraint extends Constraint {
         private final TypeVariable overriddenRoleType;
         private final int hash;
 
-        private Relates(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+        private Relates(final TypeVariable owner, final TypeVariable roleType, @Nullable final TypeVariable overriddenRoleType) {
             super(owner);
             if (roleType == null) throw new NullPointerException("Null role");
             this.roleType = roleType;
@@ -672,10 +672,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         public static Relates of(final TypeVariable owner,
-                                 graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
-                                 VariableRegistry registry) {
-            TypeVariable roleType = registry.register(constraint.role());
-            TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
+                                 final graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
+                                 final VariableRegistry registry) {
+            final TypeVariable roleType = registry.register(constraint.role());
+            final TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
             return new Relates(owner, roleType, overriddenRoleType);
         }
 
@@ -703,10 +703,10 @@ public abstract class TypeConstraint extends Constraint {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Relates that = (Relates) o;
+            final Relates that = (Relates) o;
             return (this.owner.equals(that.owner) &&
                     this.roleType.equals(that.roleType) &&
                     Objects.equals(this.overriddenRoleType, that.overriddenRoleType));

@@ -29,23 +29,23 @@ public class RoleImpl {
 
     final ThingVertex vertex;
 
-    private RoleImpl(ThingVertex vertex) {
+    private RoleImpl(final ThingVertex vertex) {
         this.vertex = requireNonNull(vertex);
     }
 
-    public static RoleImpl of(ThingVertex vertex) {
+    public static RoleImpl of(final ThingVertex vertex) {
         return new RoleImpl(vertex);
     }
 
     void optimise() {
-        ThingVertex relation = vertex.ins().edge(RELATES).from().next();
-        ThingVertex player = vertex.ins().edge(PLAYS).from().next();
+        final ThingVertex relation = vertex.ins().edge(RELATES).from().next();
+        final ThingVertex player = vertex.ins().edge(PLAYS).from().next();
         relation.outs().put(ROLEPLAYER, player, vertex);
     }
 
     public void delete() {
-        ThingVertex relation = vertex.ins().edge(RELATES).from().next();
-        ThingVertex player = vertex.ins().edge(PLAYS).from().next();
+        final ThingVertex relation = vertex.ins().edge(RELATES).from().next();
+        final ThingVertex player = vertex.ins().edge(PLAYS).from().next();
         relation.outs().edge(ROLEPLAYER, player, vertex).delete();
         vertex.delete();
     }

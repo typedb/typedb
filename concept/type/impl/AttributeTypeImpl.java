@@ -64,7 +64,7 @@ import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ATTRIBUTE;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
-    private AttributeTypeImpl(Graphs graphs, TypeVertex vertex) {
+    private AttributeTypeImpl(final Graphs graphs, final TypeVertex vertex) {
         super(graphs, vertex);
         if (vertex.encoding() != Encoding.Vertex.Type.ATTRIBUTE_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
@@ -75,12 +75,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
     }
 
-    private AttributeTypeImpl(Graphs graphs, java.lang.String label, Class<?> valueType) {
+    private AttributeTypeImpl(final Graphs graphs, final java.lang.String label, final Class<?> valueType) {
         super(graphs, label, Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         vertex.valueType(Encoding.ValueType.of(valueType));
     }
 
-    public static AttributeTypeImpl of(Graphs graphs, TypeVertex vertex) {
+    public static AttributeTypeImpl of(final Graphs graphs, final TypeVertex vertex) {
         switch (vertex.valueType()) {
             case OBJECT:
                 return new AttributeTypeImpl.Root(graphs, vertex);
@@ -122,12 +122,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
-    Iterators.Composable<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
+    Iterators.Composable<TypeVertex> getSubtypeVertices(final Encoding.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
     }
 
     @Override
-    public void setSupertype(AttributeType superType) {
+    public void setSupertype(final AttributeType superType) {
         if (!superType.isRoot() && !Objects.equals(this.getValueType(), superType.getValueType())) {
             throw exception(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.message(
                     getLabel(), getValueType().name(), superType.getLabel(), superType.getValueType().name()
@@ -155,7 +155,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public Stream<? extends ThingTypeImpl> getOwners(boolean onlyKey) {
+    public Stream<? extends ThingTypeImpl> getOwners(final boolean onlyKey) {
         if (isRoot()) return Stream.of();
 
         return directOwners(onlyKey)
@@ -163,7 +163,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 .filter(t -> t.overriddenOwns(onlyKey, true).noneMatch(o -> o.equals(this)));
     }
 
-    private Stream<? extends ThingTypeImpl> directOwners(boolean onlyKey) {
+    private Stream<? extends ThingTypeImpl> directOwners(final boolean onlyKey) {
         if (isRoot()) return Stream.of();
 
         if (onlyKey) {
@@ -210,20 +210,20 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public boolean equals(java.lang.Object object) {
+    public boolean equals(final java.lang.Object object) {
         if (this == object) return true;
         if (!(object instanceof AttributeTypeImpl)) return false;
         // We do the above, as opposed to checking if (object == null || getClass() != object.getClass())
         // because it is possible to compare a attribute root types wrapped in different type classes
         // such as: root type wrapped in AttributeTypeImpl.Root and as in AttributeType.Boolean.Root
 
-        AttributeTypeImpl that = (AttributeTypeImpl) object;
+        final AttributeTypeImpl that = (AttributeTypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 
     private static class Root extends AttributeTypeImpl {
 
-        private Root(Graphs graphs, TypeVertex vertex) {
+        private Root(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             assert vertex.valueType().equals(Encoding.ValueType.OBJECT);
             assert vertex.label().equals(ATTRIBUTE.label());
@@ -250,13 +250,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(java.lang.String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        public void setLabel(final java.lang.String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
         public void unsetAbstract() { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
-        public void setSupertype(AttributeType superType) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        public void setSupertype(final AttributeType superType) { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Nullable
         @Override
@@ -298,38 +298,38 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, boolean isKey) {
+        public void setOwns(final AttributeType attributeType, final boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(RoleType roleType) {
+        public void setPlays(final RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(RoleType roleType, RoleType overriddenType) {
+        public void setPlays(final RoleType roleType, final RoleType overriddenType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void unsetPlays(RoleType roleType) {
+        public void unsetPlays(final RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
     }
 
     public static class Boolean extends AttributeTypeImpl implements AttributeType.Boolean {
 
-        public Boolean(Graphs graphs, java.lang.String label) {
+        public Boolean(final Graphs graphs, final java.lang.String label) {
             super(graphs, label, java.lang.Boolean.class);
         }
 
-        private Boolean(Graphs graphs, TypeVertex vertex) {
+        private Boolean(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(BOOLEAN)) {
@@ -341,7 +341,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
         }
 
-        public static AttributeTypeImpl.Boolean of(Graphs graphs, TypeVertex vertex) {
+        public static AttributeTypeImpl.Boolean of(final Graphs graphs, final TypeVertex vertex) {
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphs, vertex) :
                     new AttributeTypeImpl.Boolean(graphs, vertex);
@@ -375,27 +375,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.Boolean asBoolean() { return this; }
 
         @Override
-        public Attribute.Boolean put(boolean value) {
+        public Attribute.Boolean put(final boolean value) {
             return put(value, false);
         }
 
         @Override
-        public Attribute.Boolean put(boolean value, boolean isInferred) {
+        public Attribute.Boolean put(final boolean value, final boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            AttributeVertex<java.lang.Boolean> attVertex = graphs.data().put(vertex, value, isInferred);
+            final AttributeVertex<java.lang.Boolean> attVertex = graphs.data().put(vertex, value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
 
         @Override
-        public Attribute.Boolean get(boolean value) {
-            AttributeVertex<java.lang.Boolean> attVertex = graphs.data().get(vertex, value);
+        public Attribute.Boolean get(final boolean value) {
+            final AttributeVertex<java.lang.Boolean> attVertex = graphs.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Boolean {
 
-            private Root(Graphs graphs, TypeVertex vertex) {
+            private Root(final Graphs graphs, final TypeVertex vertex) {
                 super(graphs, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
@@ -409,7 +409,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setLabel(java.lang.String label) {
+            public void setLabel(final java.lang.String label) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
@@ -419,32 +419,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSupertype(AttributeType superType) {
+            public void setSupertype(final AttributeType superType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType) {
+            public void setPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(final RoleType roleType, final RoleType overriddenType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void unsetPlays(RoleType roleType) {
+            public void unsetPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
         }
@@ -452,11 +452,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Long extends AttributeTypeImpl implements AttributeType.Long {
 
-        public Long(Graphs graphs, java.lang.String label) {
+        public Long(final Graphs graphs, final java.lang.String label) {
             super(graphs, label, java.lang.Long.class);
         }
 
-        private Long(Graphs graphs, TypeVertex vertex) {
+        private Long(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(LONG)) {
                 throw exception(VALUE_TYPE_MISMATCH.message(
@@ -465,7 +465,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
         }
 
-        public static AttributeTypeImpl.Long of(Graphs graphs, TypeVertex vertex) {
+        public static AttributeTypeImpl.Long of(final Graphs graphs, final TypeVertex vertex) {
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphs, vertex) :
                     new AttributeTypeImpl.Long(graphs, vertex);
@@ -501,27 +501,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.Long asLong() { return this; }
 
         @Override
-        public Attribute.Long put(long value) {
+        public Attribute.Long put(final long value) {
             return put(value, false);
         }
 
         @Override
-        public Attribute.Long put(long value, boolean isInferred) {
+        public Attribute.Long put(final long value, final boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            AttributeVertex<java.lang.Long> attVertex = graphs.data().put(vertex, value, isInferred);
+            final AttributeVertex<java.lang.Long> attVertex = graphs.data().put(vertex, value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
 
         @Override
-        public Attribute.Long get(long value) {
-            AttributeVertex<java.lang.Long> attVertex = graphs.data().get(vertex, value);
+        public Attribute.Long get(final long value) {
+            final AttributeVertex<java.lang.Long> attVertex = graphs.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Long(attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Long {
 
-            private Root(Graphs graphs, TypeVertex vertex) {
+            private Root(final Graphs graphs, final TypeVertex vertex) {
                 super(graphs, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
@@ -535,7 +535,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setLabel(java.lang.String label) {
+            public void setLabel(final java.lang.String label) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
@@ -545,32 +545,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSupertype(AttributeType superType) {
+            public void setSupertype(final AttributeType superType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType) {
+            public void setPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(final RoleType roleType, final RoleType overriddenType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void unsetPlays(RoleType roleType) {
+            public void unsetPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
         }
@@ -578,11 +578,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Double extends AttributeTypeImpl implements AttributeType.Double {
 
-        public Double(Graphs graphs, java.lang.String label) {
+        public Double(final Graphs graphs, final java.lang.String label) {
             super(graphs, label, java.lang.Double.class);
         }
 
-        private Double(Graphs graphs, TypeVertex vertex) {
+        private Double(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(DOUBLE)) {
                 throw exception(VALUE_TYPE_MISMATCH.message(
@@ -591,7 +591,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
         }
 
-        public static AttributeTypeImpl.Double of(Graphs graphs, TypeVertex vertex) {
+        public static AttributeTypeImpl.Double of(final Graphs graphs, final TypeVertex vertex) {
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphs, vertex) :
                     new AttributeTypeImpl.Double(graphs, vertex);
@@ -627,27 +627,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.Double asDouble() { return this; }
 
         @Override
-        public Attribute.Double put(double value) {
+        public Attribute.Double put(final double value) {
             return put(value, false);
         }
 
         @Override
-        public Attribute.Double put(double value, boolean isInferred) {
+        public Attribute.Double put(final double value, final boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            AttributeVertex<java.lang.Double> attVertex = graphs.data().put(vertex, value, isInferred);
+            final AttributeVertex<java.lang.Double> attVertex = graphs.data().put(vertex, value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
 
         @Override
-        public Attribute.Double get(double value) {
-            AttributeVertex<java.lang.Double> attVertex = graphs.data().get(vertex, value);
+        public Attribute.Double get(final double value) {
+            final AttributeVertex<java.lang.Double> attVertex = graphs.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Double(attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Double {
 
-            private Root(Graphs graphs, TypeVertex vertex) {
+            private Root(final Graphs graphs, final TypeVertex vertex) {
                 super(graphs, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
@@ -661,7 +661,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setLabel(java.lang.String label) {
+            public void setLabel(final java.lang.String label) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
@@ -671,32 +671,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSupertype(AttributeType superType) {
+            public void setSupertype(final AttributeType superType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType) {
+            public void setPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(final RoleType roleType, final RoleType overriddenType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void unsetPlays(RoleType roleType) {
+            public void unsetPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
         }
@@ -704,11 +704,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class String extends AttributeTypeImpl implements AttributeType.String {
 
-        public String(Graphs graphs, java.lang.String label) {
+        public String(final Graphs graphs, final java.lang.String label) {
             super(graphs, label, java.lang.String.class);
         }
 
-        private String(Graphs graphs, TypeVertex vertex) {
+        private String(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(STRING)) {
                 throw exception(VALUE_TYPE_MISMATCH.message(
@@ -717,7 +717,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
         }
 
-        public static AttributeTypeImpl.String of(Graphs graphs, TypeVertex vertex) {
+        public static AttributeTypeImpl.String of(final Graphs graphs, final TypeVertex vertex) {
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphs, vertex) :
                     new AttributeTypeImpl.String(graphs, vertex);
@@ -748,10 +748,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.String asString() { return this; }
 
         @Override
-        public void setRegex(Pattern regex) {
+        public void setRegex(final Pattern regex) {
             if (regex != null) {
                 getInstances().parallel().forEach(attribute -> {
-                    Matcher matcher = regex.matcher(attribute.getValue());
+                    final Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {
                         throw exception(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES.message(getLabel(), regex, attribute.getValue()));
                     }
@@ -771,25 +771,25 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Attribute.String put(java.lang.String value) {
+        public Attribute.String put(final java.lang.String value) {
             return put(value, false);
         }
 
         @Override
-        public Attribute.String put(java.lang.String value, boolean isInferred) {
+        public Attribute.String put(final java.lang.String value, final boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(ATTRIBUTE_VALUE_UNSATISFIES_REGEX.message(getLabel(), value, getRegex()));
             } else if (value.length() > Encoding.STRING_MAX_LENGTH) {
                 throw exception(ILLEGAL_STRING_SIZE.message());
             }
-            AttributeVertex<java.lang.String> attVertex = graphs.data().put(vertex, value, isInferred);
+            final AttributeVertex<java.lang.String> attVertex = graphs.data().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
         }
 
         @Override
-        public Attribute.String get(java.lang.String value) {
-            AttributeVertex<java.lang.String> attVertex = graphs.data().get(vertex, value);
+        public Attribute.String get(final java.lang.String value) {
+            final AttributeVertex<java.lang.String> attVertex = graphs.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.String(attVertex);
             else return null;
         }
@@ -801,7 +801,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.String {
 
-            private Root(Graphs graphs, TypeVertex vertex) {
+            private Root(final Graphs graphs, final TypeVertex vertex) {
                 super(graphs, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
@@ -815,7 +815,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setLabel(java.lang.String label) {
+            public void setLabel(final java.lang.String label) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
@@ -825,37 +825,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSupertype(AttributeType superType) {
+            public void setSupertype(final AttributeType superType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType) {
+            public void setPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(final RoleType roleType, final RoleType overriddenType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void unsetPlays(RoleType roleType) {
+            public void unsetPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setRegex(Pattern regex) {
+            public void setRegex(final Pattern regex) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
@@ -868,11 +868,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class DateTime extends AttributeTypeImpl implements AttributeType.DateTime {
 
-        public DateTime(Graphs graphs, java.lang.String label) {
+        public DateTime(final Graphs graphs, final java.lang.String label) {
             super(graphs, label, LocalDateTime.class);
         }
 
-        private DateTime(Graphs graphs, TypeVertex vertex) {
+        private DateTime(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(DATETIME)) {
                 throw exception(VALUE_TYPE_MISMATCH.message(
@@ -881,7 +881,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
         }
 
-        public static AttributeTypeImpl.DateTime of(Graphs graphs, TypeVertex vertex) {
+        public static AttributeTypeImpl.DateTime of(final Graphs graphs, final TypeVertex vertex) {
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphs, vertex) :
                     new AttributeTypeImpl.DateTime(graphs, vertex);
@@ -917,28 +917,28 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public AttributeTypeImpl.DateTime asDateTime() { return this; }
 
         @Override
-        public Attribute.DateTime put(LocalDateTime value) {
+        public Attribute.DateTime put(final LocalDateTime value) {
             return put(value, false);
         }
 
         @Override
-        public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
+        public Attribute.DateTime put(final LocalDateTime value, final boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            AttributeVertex<LocalDateTime> attVertex = graphs.data().put(vertex, value, isInferred);
+            final AttributeVertex<LocalDateTime> attVertex = graphs.data().put(vertex, value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);
         }
 
         @Override
-        public Attribute.DateTime get(LocalDateTime value) {
-            AttributeVertex<java.time.LocalDateTime> attVertex = graphs.data().get(vertex, value);
+        public Attribute.DateTime get(final LocalDateTime value) {
+            final AttributeVertex<java.time.LocalDateTime> attVertex = graphs.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.DateTime {
 
-            private Root(Graphs graphs, TypeVertex vertex) {
+            private Root(final Graphs graphs, final TypeVertex vertex) {
                 super(graphs, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
@@ -952,7 +952,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setLabel(java.lang.String label) {
+            public void setLabel(final java.lang.String label) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
@@ -962,32 +962,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setSupertype(AttributeType superType) {
+            public void setSupertype(final AttributeType superType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType) {
+            public void setPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void setPlays(RoleType roleType, RoleType overriddenType) {
+            public void setPlays(final RoleType roleType, final RoleType overriddenType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
 
             @Override
-            public void unsetPlays(RoleType roleType) {
+            public void unsetPlays(final RoleType roleType) {
                 throw exception(ROOT_TYPE_MUTATION.message());
             }
         }

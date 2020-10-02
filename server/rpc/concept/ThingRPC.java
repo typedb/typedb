@@ -43,24 +43,24 @@ public class ThingRPC {
     private final TransactionRPC.Iterators iterators;
     private final Consumer<TransactionProto.Transaction.Res> responder;
 
-    public ThingRPC(Grakn.Transaction transaction, ByteString iid, TransactionRPC.Iterators iterators,
-                    Consumer<TransactionProto.Transaction.Res> responder) {
+    public ThingRPC(final Grakn.Transaction transaction, final ByteString iid, final TransactionRPC.Iterators iterators,
+                    final Consumer<TransactionProto.Transaction.Res> responder) {
         this.thing = notNull(transaction.concepts().getThing(iid.toByteArray()));
         this.transaction = transaction;
         this.iterators = iterators;
         this.responder = responder;
     }
 
-    private static TransactionProto.Transaction.Res response(ConceptProto.ThingMethod.Res response) {
+    private static TransactionProto.Transaction.Res response(final ConceptProto.ThingMethod.Res response) {
         return TransactionProto.Transaction.Res.newBuilder().setThingMethodRes(response).build();
     }
 
-    private static <T extends Concept> T notNull(@Nullable T concept) {
+    private static <T extends Concept> T notNull(@Nullable final T concept) {
         if (concept == null) throw new GraknException(MISSING_CONCEPT);
         return concept;
     }
 
-    public void execute(ConceptProto.ThingMethod.Req req) {
+    public void execute(final ConceptProto.ThingMethod.Req req) {
         switch (req.getReqCase()) {
             case THING_DELETE_REQ:
                 this.delete();
@@ -89,7 +89,7 @@ public class ThingRPC {
         }
     }
 
-    public void iterate(ConceptProto.ThingMethod.Iter.Req req) {
+    public void iterate(final ConceptProto.ThingMethod.Iter.Req req) {
         switch (req.getReqCase()) {
             case THING_GETHAS_ITER_REQ:
                 this.getHas(req.getThingGetHasIterReq());
@@ -115,15 +115,15 @@ public class ThingRPC {
         }
     }
 
-    private Thing getThing(ConceptProto.Thing protoThing) {
+    private Thing getThing(final ConceptProto.Thing protoThing) {
         return transaction.concepts().getThing(protoThing.getIid().toByteArray());
     }
 
-    private grakn.core.concept.type.Type getType(ConceptProto.Type protoType) {
+    private grakn.core.concept.type.Type getType(final ConceptProto.Type protoType) {
         return transaction.concepts().getType(protoType.getLabel());
     }
 
-    private grakn.core.concept.type.RoleType getRoleType(ConceptProto.Type protoRole) {
+    private grakn.core.concept.type.RoleType getRoleType(final ConceptProto.Type protoRole) {
         return transaction.concepts().getRelationType(protoRole.getScope()).getRelates(protoRole.getLabel());
     }
 
@@ -141,8 +141,8 @@ public class ThingRPC {
     }
 
     private void isInferred() {
-        boolean inferred = thing.isInferred();
-        ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
+        final boolean inferred = thing.isInferred();
+        final ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
                 .setThingIsInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
                                                .setInferred(inferred)).build();
         responder.accept(response(response));
@@ -150,13 +150,13 @@ public class ThingRPC {
 
     private void getType() {
         final grakn.core.concept.type.ThingType thingType = thing.getType();
-        ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
+        final ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
                 .setThingGetTypeRes(ConceptProto.Thing.GetType.Res.newBuilder()
                                             .setThingType(ResponseBuilder.Concept.type(thingType))).build();
         responder.accept(response(response));
     }
 
-    private void getHas(ConceptProto.Thing.GetHas.Iter.Req req) {
+    private void getHas(final ConceptProto.Thing.GetHas.Iter.Req req) {
         final List<ConceptProto.Type> protoTypes = req.getAttributeTypesList();
         final Stream<? extends grakn.core.concept.thing.Attribute> attributes;
 
@@ -172,8 +172,8 @@ public class ThingRPC {
             attributes = thing.getHas(attributeTypes);
         }
 
-        Stream<TransactionProto.Transaction.Res> responses = attributes.map(con -> {
-            ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
+        final Stream<TransactionProto.Transaction.Res> responses = attributes.map(con -> {
+            final ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                     .setThingGetHasIterRes(ConceptProto.Thing.GetHas.Iter.Res.newBuilder()
                                                    .setAttribute(ResponseBuilder.Concept.thing(con))).build();
             return ResponseBuilder.Transaction.Iter.thingMethod(res);
@@ -182,15 +182,15 @@ public class ThingRPC {
         iterators.startBatchIterating(responses.iterator());
     }
 
-    private void getRelations(List<ConceptProto.Type> protoRoleTypes) {
+    private void getRelations(final List<ConceptProto.Type> protoRoleTypes) {
         final grakn.core.concept.type.RoleType[] roles = protoRoleTypes.stream()
                 .map(this::getRoleType)
                 .map(ThingRPC::notNull)
                 .toArray(grakn.core.concept.type.RoleType[]::new);
-        Stream<? extends grakn.core.concept.thing.Relation> concepts = thing.getRelations(roles);
+        final Stream<? extends grakn.core.concept.thing.Relation> concepts = thing.getRelations(roles);
 
-        Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
-            ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
+        final Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
+            final ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                     .setThingGetRelationsIterRes(ConceptProto.Thing.GetRelations.Iter.Res.newBuilder()
                                                          .setRelation(ResponseBuilder.Concept.thing(con))).build();
             return ResponseBuilder.Transaction.Iter.thingMethod(res);
@@ -200,9 +200,9 @@ public class ThingRPC {
     }
 
     private void getPlays() {
-        Stream<? extends grakn.core.concept.type.RoleType> roleTypes = thing.getPlays();
-        Stream<TransactionProto.Transaction.Res> responses = roleTypes.map(con -> {
-            ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
+        final Stream<? extends grakn.core.concept.type.RoleType> roleTypes = thing.getPlays();
+        final Stream<TransactionProto.Transaction.Res> responses = roleTypes.map(con -> {
+            final ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                     .setThingGetPlaysIterRes(ConceptProto.Thing.GetPlays.Iter.Res.newBuilder()
                                                      .setRoleType(ResponseBuilder.Concept.type(con))).build();
             return ResponseBuilder.Transaction.Iter.thingMethod(res);
@@ -210,16 +210,16 @@ public class ThingRPC {
         iterators.startBatchIterating(responses.iterator());
     }
 
-    private void setHas(ConceptProto.Thing protoAttribute) {
-        grakn.core.concept.thing.Attribute attribute = getThing(protoAttribute).asThing().asAttribute();
+    private void setHas(final ConceptProto.Thing protoAttribute) {
+        final grakn.core.concept.thing.Attribute attribute = getThing(protoAttribute).asThing().asAttribute();
         thing.setHas(attribute);
-        ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
+        final ConceptProto.ThingMethod.Res response = ConceptProto.ThingMethod.Res.newBuilder()
                 .setThingSetHasRes(ConceptProto.Thing.SetHas.Res.newBuilder().build()).build();
         responder.accept(response(response));
     }
 
-    private void unsetHas(ConceptProto.Thing protoAttribute) {
-        grakn.core.concept.thing.Attribute attribute = getThing(protoAttribute).asThing().asAttribute();
+    private void unsetHas(final ConceptProto.Thing protoAttribute) {
+        final grakn.core.concept.thing.Attribute attribute = getThing(protoAttribute).asThing().asAttribute();
         thing.asThing().unsetHas(attribute);
         responder.accept(null);
     }
@@ -229,13 +229,13 @@ public class ThingRPC {
         private final grakn.core.concept.thing.Relation relation = ThingRPC.this.thing.asThing().asRelation();
 
         private void getPlayersByRoleType() {
-            Map<? extends grakn.core.concept.type.RoleType, ? extends List<? extends Thing>>
+            final Map<? extends grakn.core.concept.type.RoleType, ? extends List<? extends Thing>>
                     playersByRole = relation.getPlayersByRoleType();
-            Stream.Builder<TransactionProto.Transaction.Res> responses = Stream.builder();
+            final Stream.Builder<TransactionProto.Transaction.Res> responses = Stream.builder();
             for (Map.Entry<? extends grakn.core.concept.type.RoleType,
                     ? extends List<? extends Thing>> players : playersByRole.entrySet()) {
                 for (Thing player : players.getValue()) {
-                    ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
+                    final ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                             .setRelationGetPlayersByRoleTypeIterRes(
                                     ConceptProto.Relation.GetPlayersByRoleType.Iter.Res.newBuilder()
                                             .setRoleType(ResponseBuilder.Concept.type(players.getKey()))
@@ -247,7 +247,7 @@ public class ThingRPC {
             iterators.startBatchIterating(responses.build().iterator());
         }
 
-        private void getPlayers(List<ConceptProto.Type> protoRoleTypes) {
+        private void getPlayers(final List<ConceptProto.Type> protoRoleTypes) {
             final grakn.core.concept.type.RoleType[] roles = protoRoleTypes.stream()
                     .map(ThingRPC.this::getRoleType)
                     .map(ThingRPC::notNull)
@@ -264,14 +264,14 @@ public class ThingRPC {
             iterators.startBatchIterating(responses.iterator());
         }
 
-        private void addPlayer(ConceptProto.Relation.AddPlayer.Req request) {
+        private void addPlayer(final ConceptProto.Relation.AddPlayer.Req request) {
             final grakn.core.concept.type.RoleType role = getRoleType(request.getRoleType());
             final Thing player = getThing(request.getPlayer()).asThing();
             relation.addPlayer(role, player);
             responder.accept(null);
         }
 
-        private void removePlayer(ConceptProto.Relation.RemovePlayer.Req request) {
+        private void removePlayer(final ConceptProto.Relation.RemovePlayer.Req request) {
             final grakn.core.concept.type.RoleType role = getRoleType(request.getRoleType());
             final Thing player = getThing(request.getPlayer()).asThing();
             relation.asRelation().removePlayer(role, player);
@@ -283,7 +283,7 @@ public class ThingRPC {
 
         private final grakn.core.concept.thing.Attribute attribute = ThingRPC.this.thing.asThing().asAttribute();
 
-        private void getOwners(ConceptProto.Attribute.GetOwners.Iter.Req request) {
+        private void getOwners(final ConceptProto.Attribute.GetOwners.Iter.Req request) {
             final Stream<? extends Thing> things;
             switch (request.getFilterCase()) {
                 case THINGTYPE:
@@ -295,7 +295,7 @@ public class ThingRPC {
             }
 
             final Stream<TransactionProto.Transaction.Res> responses = things.map(con -> {
-                ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
+                final ConceptProto.ThingMethod.Iter.Res res = ConceptProto.ThingMethod.Iter.Res.newBuilder()
                         .setAttributeGetOwnersIterRes(ConceptProto.Attribute.GetOwners.Iter.Res.newBuilder()
                                                               .setThing(ResponseBuilder.Concept.thing(con))).build();
                 return ResponseBuilder.Transaction.Iter.thingMethod(res);

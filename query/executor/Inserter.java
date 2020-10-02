@@ -77,11 +77,11 @@ public class Inserter {
     private final Map<Reference, Thing> inserted;
     private final Set<Variable> variables;
 
-    public Inserter(Concepts conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> variables, Context.Query context) {
+    public Inserter(final Concepts conceptMgr, final List<graql.lang.pattern.variable.ThingVariable<?>> variables, final Context.Query context) {
         this(conceptMgr, variables, new ConceptMap(), context);
     }
 
-    public Inserter(Concepts conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> variables, ConceptMap existing, Context.Query context) {
+    public Inserter(final Concepts conceptMgr, final List<graql.lang.pattern.variable.ThingVariable<?>> variables, final ConceptMap existing, final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.variables = Pattern.fromGraqlThings(variables);
@@ -100,7 +100,7 @@ public class Inserter {
         }
     }
 
-    private Thing insert(ThingVariable variable) {
+    private Thing insert(final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             if (!variable.reference().isAnonymous() && inserted.containsKey(variable.reference())) {
                 return inserted.get(variable.reference());
@@ -108,7 +108,7 @@ public class Inserter {
                 return existing.get(variable.reference()).asThing();
             } else validate(variable);
 
-            Thing thing;
+            final Thing thing;
 
             if (existing.contains(variable.reference())) thing = existing.get(variable.reference()).asThing();
             else if (variable.iid().isPresent()) thing = getThing(variable.iid().get());
@@ -124,7 +124,7 @@ public class Inserter {
         }
     }
 
-    private void validate(ThingVariable variable) {
+    private void validate(final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             if (existing.contains(variable.reference()) && (variable.iid().isPresent() || !variable.isa().isEmpty())) {
                 if (variable.iid().isPresent()) {
@@ -144,19 +144,19 @@ public class Inserter {
         }
     }
 
-    private Thing getThing(ThingConstraint.IID iidConstraint) {
+    private Thing getThing(final ThingConstraint.IID iidConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthing")) {
-            Thing thing = conceptMgr.getThing(iidConstraint.iid());
+            final Thing thing = conceptMgr.getThing(iidConstraint.iid());
             if (thing == null) throw new GraknException(THING_NOT_FOUND.message(bytesToHexString(iidConstraint.iid())));
             else return thing;
         }
     }
 
-    private ThingType getThingType(TypeVariable variable) {
+    private ThingType getThingType(final TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
             if (variable.reference().isLabel()) {
                 assert variable.label().isPresent();
-                Type type = conceptMgr.getType(variable.label().get().label());
+                final Type type = conceptMgr.getType(variable.label().get().label());
                 if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(variable.label().get().label()));
                 else return type.asThingType();
             } else {
@@ -165,12 +165,12 @@ public class Inserter {
         }
     }
 
-    private RoleType getRoleType(TypeVariable variable) {
+    private RoleType getRoleType(final TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             if (variable.reference().isLabel()) {
                 assert variable.label().isPresent();
-                RelationType relationType;
-                RoleType roleType;
+                final RelationType relationType;
+                final RoleType roleType;
                 if ((relationType = conceptMgr.getRelationType(variable.label().get().scope().get())) != null &&
                         (roleType = relationType.getRelates(variable.label().get().label())) != null) {
                     return roleType;
@@ -183,9 +183,9 @@ public class Inserter {
         }
     }
 
-    private Thing insertIsa(ThingConstraint.Isa isaConstraint, ThingVariable variable) {
+    private Thing insertIsa(final ThingConstraint.Isa isaConstraint, final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertisa")) {
-            ThingType thingType = getThingType(isaConstraint.type());
+            final ThingType thingType = getThingType(isaConstraint.type());
 
             if (thingType instanceof EntityType) {
                 return insertEntity(thingType.asEntityType());
@@ -200,20 +200,20 @@ public class Inserter {
         }
     }
 
-    private Entity insertEntity(EntityType entityType) {
+    private Entity insertEntity(final EntityType entityType) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertentity")) {
             return entityType.create();
         }
     }
 
-    private Attribute insertAttribute(AttributeType attributeType, ThingVariable variable) {
+    private Attribute insertAttribute(final AttributeType attributeType, final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertattribute")) {
-            ThingConstraint.Value<?> valueConstraint;
+            final ThingConstraint.Value<?> valueConstraint;
             if (variable.value().size() > 1) {
                 throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY.message(variable.reference(), attributeType.getLabel()));
             } else if (!variable.value().isEmpty() &&
                     (valueConstraint = variable.value().iterator().next()).operation().isAssignment()) {
-                ValueOperation.Assignment<?> valueAssignment = valueConstraint.operation().asAssignment();
+                final ValueOperation.Assignment<?> valueAssignment = valueConstraint.operation().asAssignment();
                 switch (attributeType.getValueType()) {
                     case LONG:
                         return attributeType.asLong().put(valueAssignment.asLong().value());
@@ -235,14 +235,14 @@ public class Inserter {
         }
     }
 
-    private Relation insertRelation(RelationType relationType, ThingVariable variable) {
+    private Relation insertRelation(final RelationType relationType, final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertrelation")) {
             if (variable.relation().size() == 1) {
-                Relation relation = relationType.create();
+                final Relation relation = relationType.create();
                 variable.relation().iterator().next().players().forEach(rolePlayer -> {
-                    RoleType roleType;
-                    Thing player = insert(rolePlayer.player());
-                    Set<RoleType> inferred;
+                    final RoleType roleType;
+                    final Thing player = insert(rolePlayer.player());
+                    final Set<RoleType> inferred;
                     if (rolePlayer.roleType().isPresent()) {
                         roleType = getRoleType(rolePlayer.roleType().get());
                     } else if ((inferred = player.getType().getPlays()
@@ -266,11 +266,11 @@ public class Inserter {
         }
     }
 
-    private void insertHas(Thing thing, Set<ThingConstraint.Has> hasConstraints) {
+    private void insertHas(final Thing thing, final Set<ThingConstraint.Has> hasConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "inserthas")) {
             hasConstraints.forEach(has -> {
-                AttributeType attributeType = getThingType(has.type()).asAttributeType();
-                Attribute attribute = insert(has.attribute()).asAttribute();
+                final AttributeType attributeType = getThingType(has.type()).asAttributeType();
+                final Attribute attribute = insert(has.attribute()).asAttribute();
                 if (!attributeType.equals(attribute.getType()) &&
                         attribute.getType().getSupertypes().noneMatch(sup -> sup.equals(attributeType))) {
                     throw new GraknException(ErrorMessage.ThingWrite.ATTRIBUTE_TYPE_MISMATCH.message(

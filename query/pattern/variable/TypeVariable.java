@@ -43,7 +43,7 @@ public class TypeVariable extends Variable {
     private final Set<TypeConstraint.Relates> relatesConstraints;
     private final Set<TypeConstraint> constraints;
 
-    TypeVariable(Identifier identifier) {
+    TypeVariable(final Identifier identifier) {
         super(identifier);
         this.subConstraints = new HashSet<>();
         this.ownsConstraints = new HashSet<>();
@@ -58,7 +58,7 @@ public class TypeVariable extends Variable {
         return this;
     }
 
-    private void constrain(TypeConstraint constraint) {
+    private void constrain(final TypeConstraint constraint) {
         constraints.add(constraint);
         if (constraint.isLabel()) labelConstraint = constraint.asLabel();
         else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
@@ -128,11 +128,11 @@ public class TypeVariable extends Variable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        TypeVariable that = (TypeVariable) o;
+        final TypeVariable that = (TypeVariable) o;
         return this.identifier.equals(that.identifier);
     }
 

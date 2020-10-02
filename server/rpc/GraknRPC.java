@@ -58,15 +58,15 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     private final Grakn grakn;
     private final ConcurrentMap<UUID, SessionRPC> sessions;
 
-    public GraknRPC(Grakn grakn) {
+    public GraknRPC(final Grakn grakn) {
         this.grakn = grakn;
         sessions = new ConcurrentHashMap<>();
     }
 
     @Override
-    public void databaseContains(Database.Contains.Req request, StreamObserver<Database.Contains.Res> response) {
+    public void databaseContains(final Database.Contains.Req request, final StreamObserver<Database.Contains.Res> response) {
         try {
-            boolean contains = grakn.databases().contains(request.getName());
+            final boolean contains = grakn.databases().contains(request.getName());
             response.onNext(Database.Contains.Res.newBuilder().setContains(contains).build());
             response.onCompleted();
         } catch (RuntimeException e) {
@@ -76,7 +76,7 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     }
 
     @Override
-    public void databaseCreate(Database.Create.Req request, StreamObserver<Database.Create.Res> response) {
+    public void databaseCreate(final Database.Create.Req request, final StreamObserver<Database.Create.Res> response) {
         try {
             if (grakn.databases().contains(request.getName())) {
                 throw Status.ALREADY_EXISTS.withDescription(DATABASE_EXISTS.message(request.getName())).asRuntimeException();
@@ -91,9 +91,9 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     }
 
     @Override
-    public void databaseAll(Database.All.Req request, StreamObserver<Database.All.Res> response) {
+    public void databaseAll(final Database.All.Req request, final StreamObserver<Database.All.Res> response) {
         try {
-            Iterable<String> list = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
+            final Iterable<String> list = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
             response.onNext(Database.All.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();
         } catch (RuntimeException e) {
@@ -103,16 +103,16 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     }
 
     @Override
-    public void databaseDelete(Database.Delete.Req request, StreamObserver<Database.Delete.Res> response) {
+    public void databaseDelete(final Database.Delete.Req request, final StreamObserver<Database.Delete.Res> response) {
         try {
             if (!grakn.databases().contains(request.getName())) {
-                String message = DATABASE_NOT_FOUND.message(request.getName());
+                final String message = DATABASE_NOT_FOUND.message(request.getName());
                 throw Status.NOT_FOUND.withDescription(message).asRuntimeException();
             }
 
-            Grakn.Database database = grakn.databases().get(request.getName());
-            String message = DATABASE_DELETED.message(request.getName());
-            StatusRuntimeException exception = Status.ABORTED.withDescription(message).asRuntimeException();
+            final Grakn.Database database = grakn.databases().get(request.getName());
+            final String message = DATABASE_DELETED.message(request.getName());
+            final StatusRuntimeException exception = Status.ABORTED.withDescription(message).asRuntimeException();
             database.sessions().parallel().forEach(session -> sessions.get(session.uuid()).close(exception));
             database.delete();
             response.onNext(Database.Delete.Res.getDefaultInstance());
@@ -124,13 +124,13 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     }
 
     @Override
-    public void sessionOpen(Session.Open.Req request, StreamObserver<Session.Open.Res> responseObserver) {
+    public void sessionOpen(final Session.Open.Req request, final StreamObserver<Session.Open.Res> responseObserver) {
         try {
-            Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
-            Options.Session options = getOptions(Options.Session::new, request.getOptions());
-            SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase(), sessionType, options);
+            final Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
+            final Options.Session options = getOptions(Options.Session::new, request.getOptions());
+            final SessionRPC sessionRPC = new SessionRPC(grakn, request.getDatabase(), sessionType, options);
             sessions.put(sessionRPC.session().uuid(), sessionRPC);
-            ByteString uuid = copyFrom(uuidToBytes(sessionRPC.session().uuid()));
+            final ByteString uuid = copyFrom(uuidToBytes(sessionRPC.session().uuid()));
             responseObserver.onNext(Session.Open.Res.newBuilder().setSessionID(uuid).build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
@@ -140,9 +140,9 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     }
 
     @Override
-    public void sessionClose(Session.Close.Req request, StreamObserver<Session.Close.Res> responseObserver) {
+    public void sessionClose(final Session.Close.Req request, final StreamObserver<Session.Close.Res> responseObserver) {
         try {
-            UUID sessionID = bytesToUUID(request.getSessionID().toByteArray());
+            final UUID sessionID = bytesToUUID(request.getSessionID().toByteArray());
             if (sessions.containsKey(sessionID)) {
                 sessions.remove(sessionID).close(null);
             } else {
@@ -158,14 +158,14 @@ public class GraknRPC extends GraknGrpc.GraknImplBase implements AutoCloseable {
     }
 
     @Override
-    public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
+    public StreamObserver<Transaction.Req> transaction(final StreamObserver<Transaction.Res> responseSender) {
         return new TransactionRPC(sessionID -> sessions.getOrDefault(sessionID, null), responseSender);
     }
 
     @Override
     public void close() {
-        String message = SERVER_SHUTDOWN.message();
-        StatusRuntimeException exception = Status.ABORTED.withDescription(message).asRuntimeException();
+        final String message = SERVER_SHUTDOWN.message();
+        final StatusRuntimeException exception = Status.ABORTED.withDescription(message).asRuntimeException();
         sessions.values().parallelStream().forEach(session -> session.close(exception));
         sessions.clear();
     }

@@ -60,24 +60,24 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
 
                 try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
-                    AttributeType.String symbol = tx.concepts().getAttributeType("symbol").asString();
-                    AttributeType.Boolean active = tx.concepts().getAttributeType("active").asBoolean();
-                    AttributeType.Long priority = tx.concepts().getAttributeType("priority").asLong();
+                    final AttributeType.String name = tx.concepts().getAttributeType("name").asString();
+                    final AttributeType.String symbol = tx.concepts().getAttributeType("symbol").asString();
+                    final AttributeType.Boolean active = tx.concepts().getAttributeType("active").asBoolean();
+                    final AttributeType.Long priority = tx.concepts().getAttributeType("priority").asLong();
                     assertNotNulls(name, symbol, active, priority);
 
-                    EntityType organisation = tx.concepts().getEntityType("organisation");
-                    EntityType team = tx.concepts().getEntityType("team");
-                    EntityType user = tx.concepts().getEntityType("user");
-                    EntityType repository = tx.concepts().getEntityType("repository");
-                    EntityType branchRule = tx.concepts().getEntityType("branch-rule");
-                    EntityType commit = tx.concepts().getEntityType("commit");
+                    final EntityType organisation = tx.concepts().getEntityType("organisation");
+                    final EntityType team = tx.concepts().getEntityType("team");
+                    final EntityType user = tx.concepts().getEntityType("user");
+                    final EntityType repository = tx.concepts().getEntityType("repository");
+                    final EntityType branchRule = tx.concepts().getEntityType("branch-rule");
+                    final EntityType commit = tx.concepts().getEntityType("commit");
                     assertNotNulls(organisation, team, user, repository, branchRule, commit);
 
                     assertTrue(organisation.getOwns().anyMatch(a -> a.equals(name)));
@@ -87,15 +87,15 @@ public class QueryTest {
                     assertTrue(branchRule.getOwns().anyMatch(a -> a.equals(priority)));
                     assertTrue(commit.getOwns().anyMatch(a -> a.equals(symbol)));
 
-                    RelationType orgTeam = tx.concepts().getRelationType("org-team");
-                    RelationType teamMember = tx.concepts().getRelationType("team-member");
-                    RelationType repoDependency = tx.concepts().getRelationType("repo-dependency");
+                    final RelationType orgTeam = tx.concepts().getRelationType("org-team");
+                    final RelationType teamMember = tx.concepts().getRelationType("team-member");
+                    final RelationType repoDependency = tx.concepts().getRelationType("repo-dependency");
                     assertNotNulls(orgTeam, teamMember, repoDependency);
 
-                    RoleType orgTeam_org = orgTeam.getRelates("org");
-                    RoleType orgTeam_team = orgTeam.getRelates("team");
-                    RoleType teamMember_team = teamMember.getRelates("team");
-                    RoleType teamMember_member = teamMember.getRelates("member");
+                    final RoleType orgTeam_org = orgTeam.getRelates("org");
+                    final RoleType orgTeam_team = orgTeam.getRelates("team");
+                    final RoleType teamMember_team = teamMember.getRelates("team");
+                    final RoleType teamMember_member = teamMember.getRelates("member");
                     assertNotNulls(orgTeam_org, orgTeam_team, teamMember_team, teamMember_member);
 
                     assertTrue(organisation.getPlays().anyMatch(r -> r.equals(orgTeam_org)));
@@ -117,7 +117,7 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -143,11 +143,11 @@ public class QueryTest {
                 }
 
                 try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                    EntityType analysis = tx.concepts().getEntityType("analysis");
-                    RelationType performanceTracker = tx.concepts().getRelationType("performance-tracker");
-                    RoleType commitAnalysisAnalysis = tx.concepts().getRelationType("commit-analysis").getRelates("analysis");
-                    AttributeType.DateTime created = tx.concepts().getAttributeType("created").asDateTime();
-                    AttributeType.String email = tx.concepts().getAttributeType("email").asString();
+                    final EntityType analysis = tx.concepts().getEntityType("analysis");
+                    final RelationType performanceTracker = tx.concepts().getRelationType("performance-tracker");
+                    final RoleType commitAnalysisAnalysis = tx.concepts().getRelationType("commit-analysis").getRelates("analysis");
+                    final AttributeType.DateTime created = tx.concepts().getAttributeType("created").asDateTime();
+                    final AttributeType.String email = tx.concepts().getAttributeType("email").asString();
                     assertNotNulls(analysis, performanceTracker, commitAnalysisAnalysis, created, email);
 
                     assertFalse(analysis.isAbstract());
@@ -156,7 +156,7 @@ public class QueryTest {
                     assertTrue(performanceTracker.getRelates().noneMatch(rol -> rol.getLabel().equals("tracker")));
                     assertNull(email.getRegex());
 
-                    AttributeType index = tx.concepts().getAttributeType("index");
+                    final AttributeType index = tx.concepts().getAttributeType("index");
                     assertNull(index);
 
                 }
@@ -173,7 +173,7 @@ public class QueryTest {
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -181,7 +181,7 @@ public class QueryTest {
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    String queryString = "insert " +
+                    final String queryString = "insert " +
                             "$n 'graknlabs' isa name; " +
                             "$o isa organisation, has name $n; " +
                             "$t isa team, has name 'engineers', has symbol 'graknlabs/engineers'; " +
@@ -190,21 +190,21 @@ public class QueryTest {
                             "($o, $u) isa org-member; " +
                             "($t, $u) isa team-member;";
 
-                    GraqlInsert query = Graql.parse(queryString);
+                    final GraqlInsert query = Graql.parse(queryString);
                     transaction.query().insert(query);
 
                     transaction.commit();
                 }
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-                    Attribute.String name_graknlabs = transaction.concepts().getAttributeType("name").asString().get("graknlabs");
-                    Attribute.String symbol_engineers = transaction.concepts().getAttributeType("symbol").asString().get("graknlabs/engineers");
-                    Attribute.String email_grabl = transaction.concepts().getAttributeType("email").asString().get("grabl@grakn.ai");
+                    final Attribute.String name_graknlabs = transaction.concepts().getAttributeType("name").asString().get("graknlabs");
+                    final Attribute.String symbol_engineers = transaction.concepts().getAttributeType("symbol").asString().get("graknlabs/engineers");
+                    final Attribute.String email_grabl = transaction.concepts().getAttributeType("email").asString().get("grabl@grakn.ai");
                     assertNotNulls(name_graknlabs, symbol_engineers, email_grabl);
 
-                    Entity organisation_graknlabs = name_graknlabs.getOwners().findAny().get().asEntity();
-                    Entity team_engineers = symbol_engineers.getOwners().findAny().get().asEntity();
-                    Entity user_grabl = email_grabl.getOwners().findAny().get().asEntity();
+                    final Entity organisation_graknlabs = name_graknlabs.getOwners().findAny().get().asEntity();
+                    final Entity team_engineers = symbol_engineers.getOwners().findAny().get().asEntity();
+                    final Entity user_grabl = email_grabl.getOwners().findAny().get().asEntity();
                     assertNotNulls(organisation_graknlabs, team_engineers, user_grabl);
 
                     assertEquals(organisation_graknlabs.getRelations("org-team:org").findAny().get().getPlayers("team").findAny().get(), team_engineers);

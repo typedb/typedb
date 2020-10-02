@@ -29,28 +29,28 @@ public abstract class Identifier {
     private final Integer id;
     private final int hash;
 
-    private Identifier(Reference reference, @Nullable Integer id) {
+    private Identifier(final Reference reference, @Nullable final Integer id) {
         this.reference = reference;
         this.id = id;
         this.hash = Objects.hash(this.reference, this.id);
     }
 
-    static Identifier.Referrable of(Reference.Referrable reference) {
+    static Identifier.Referrable of(final Reference.Referrable reference) {
         if (reference.isLabel()) return Identifier.of(reference.asLabel());
         else if (reference.isName()) return Identifier.of(reference.asName());
         else assert false;
         return null;
     }
 
-    static Identifier.Name of(Reference.Name reference) {
+    static Identifier.Name of(final Reference.Name reference) {
         return new Identifier.Name(reference);
     }
 
-    static Identifier.Label of(Reference.Label reference) {
+    static Identifier.Label of(final Reference.Label reference) {
         return new Identifier.Label(reference);
     }
 
-    static Identifier.Anonymous of(Reference.Anonymous reference, int id) {
+    static Identifier.Anonymous of(final Reference.Anonymous reference, final int id) {
         return new Identifier.Anonymous(reference, id);
     }
 
@@ -64,11 +64,11 @@ public abstract class Identifier {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         else if (o == null || getClass() != o.getClass()) return false;
 
-        Identifier that = (Identifier) o;
+        final Identifier that = (Identifier) o;
         return this.reference.equals(that.reference) && Objects.equals(this.id, that.id);
     }
 
@@ -79,7 +79,7 @@ public abstract class Identifier {
 
     static class Referrable extends Identifier {
 
-        Referrable(Reference reference) {
+        Referrable(final Reference reference) {
             super(reference, null);
         }
 
@@ -91,7 +91,7 @@ public abstract class Identifier {
 
     static class Name extends Identifier.Referrable {
 
-        private Name(Reference.Name reference) {
+        private Name(final Reference.Name reference) {
             super(reference);
         }
 
@@ -103,7 +103,7 @@ public abstract class Identifier {
 
     static class Label extends Identifier.Referrable {
 
-        private Label(Reference.Label reference) {
+        private Label(final Reference.Label reference) {
             super(reference);
         }
 
@@ -115,7 +115,7 @@ public abstract class Identifier {
 
     static class Anonymous extends Identifier {
 
-        private Anonymous(Reference.Anonymous reference, int id) {
+        private Anonymous(final Reference.Anonymous reference, final int id) {
             super(reference, id);
         }
 

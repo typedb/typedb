@@ -22,11 +22,11 @@ import java.util.Arrays;
 
 public class SuffixIID extends IID {
 
-    private SuffixIID(byte[] bytes) {
+    private SuffixIID(final byte[] bytes) {
         super(bytes);
     }
 
-    public static SuffixIID of(byte[] bytes) {
+    public static SuffixIID of(final byte[] bytes) {
         return new SuffixIID(bytes);
     }
 

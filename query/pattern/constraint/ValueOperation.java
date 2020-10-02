@@ -37,14 +37,14 @@ public abstract class ValueOperation<T> {
     private final T value;
     private final int hash;
 
-    ValueOperation(GraqlToken.Comparator comparator, T value) {
+    ValueOperation(final GraqlToken.Comparator comparator, final T value) {
         this.comparator = comparator;
         this.value = value;
         this.hash = Objects.hash(this.comparator, this.value);
     }
 
-    public static ValueOperation<?> of(graql.lang.pattern.constraint.ValueOperation<?> constraint,
-                                       VariableRegistry registry) {
+    public static ValueOperation<?> of(final graql.lang.pattern.constraint.ValueOperation<?> constraint,
+                                       final VariableRegistry registry) {
         if (constraint.isAssignment()) return ValueOperation.Assignment.of(constraint.asAssignment());
         else if (constraint.isComparison()) return ValueOperation.Comparison.of(constraint.asComparison(), registry);
         else throw GraknException.of(ILLEGAL_STATE);
@@ -83,10 +83,10 @@ public abstract class ValueOperation<T> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ValueOperation<?> that = (ValueOperation<?>) o;
+        final ValueOperation<?> that = (ValueOperation<?>) o;
         return (this.comparator.equals(that.comparator) && this.value.equals(that.value));
     }
 
@@ -97,11 +97,11 @@ public abstract class ValueOperation<T> {
 
     public abstract static class Assignment<T> extends ValueOperation<T> {
 
-        Assignment(T value) {
+        Assignment(final T value) {
             super(GraqlToken.Comparator.EQV, value);
         }
 
-        public static Assignment<?> of(graql.lang.pattern.constraint.ValueOperation.Assignment<?> assignment) {
+        public static Assignment<?> of(final graql.lang.pattern.constraint.ValueOperation.Assignment<?> assignment) {
             if (assignment.isLong()) return new Assignment.Long(assignment.asLong().value());
             else if (assignment.isDouble()) return new Assignment.Double(assignment.asDouble().value());
             else if (assignment.isBoolean()) return new Assignment.Boolean(assignment.asBoolean().value());
@@ -142,7 +142,7 @@ public abstract class ValueOperation<T> {
 
         public static class Long extends Assignment<java.lang.Long> {
 
-            public Long(long value) {
+            public Long(final long value) {
                 super(value);
             }
 
@@ -154,7 +154,7 @@ public abstract class ValueOperation<T> {
 
         public static class Double extends Assignment<java.lang.Double> {
 
-            public Double(double value) {
+            public Double(final double value) {
                 super(value);
             }
 
@@ -166,7 +166,7 @@ public abstract class ValueOperation<T> {
 
         public static class Boolean extends Assignment<java.lang.Boolean> {
 
-            public Boolean(boolean value) {
+            public Boolean(final boolean value) {
                 super(value);
             }
 
@@ -178,7 +178,7 @@ public abstract class ValueOperation<T> {
 
         public static class String extends Assignment<java.lang.String> {
 
-            public String(java.lang.String value) {
+            public String(final java.lang.String value) {
                 super(value);
             }
 
@@ -190,7 +190,7 @@ public abstract class ValueOperation<T> {
 
         public static class DateTime extends Assignment<LocalDateTime> {
 
-            public DateTime(LocalDateTime value) {
+            public DateTime(final LocalDateTime value) {
                 super(value);
             }
 
@@ -203,11 +203,11 @@ public abstract class ValueOperation<T> {
 
     public abstract static class Comparison<T> extends ValueOperation<T> {
 
-        Comparison(GraqlToken.Comparator comparator, T value) {
+        Comparison(final GraqlToken.Comparator comparator, final T value) {
             super(comparator, value);
         }
 
-        public static Comparison<?> of(graql.lang.pattern.constraint.ValueOperation.Comparison<?> comparison, VariableRegistry register) {
+        public static Comparison<?> of(final graql.lang.pattern.constraint.ValueOperation.Comparison<?> comparison, final VariableRegistry register) {
             if (comparison.isLong()) {
                 return new Comparison.Long(comparison.comparator(), comparison.asLong().value());
             } else if (comparison.isDouble()) {
@@ -260,7 +260,7 @@ public abstract class ValueOperation<T> {
 
         public static class Long extends Comparison<java.lang.Long> {
 
-            public Long(GraqlToken.Comparator comparator, long value) {
+            public Long(final GraqlToken.Comparator comparator, final long value) {
                 super(comparator, value);
             }
 
@@ -272,7 +272,7 @@ public abstract class ValueOperation<T> {
 
         public static class Double extends Comparison<java.lang.Double> {
 
-            public Double(GraqlToken.Comparator comparator, double value) {
+            public Double(final GraqlToken.Comparator comparator, final double value) {
                 super(comparator, value);
             }
 
@@ -284,7 +284,7 @@ public abstract class ValueOperation<T> {
 
         public static class Boolean extends Comparison<java.lang.Boolean> {
 
-            public Boolean(GraqlToken.Comparator comparator, boolean value) {
+            public Boolean(final GraqlToken.Comparator comparator, final boolean value) {
                 super(comparator, value);
             }
 
@@ -296,7 +296,7 @@ public abstract class ValueOperation<T> {
 
         public static class String extends Comparison<java.lang.String> {
 
-            public String(GraqlToken.Comparator comparator, java.lang.String value) {
+            public String(final GraqlToken.Comparator comparator, final java.lang.String value) {
                 super(comparator, value);
             }
 
@@ -308,7 +308,7 @@ public abstract class ValueOperation<T> {
 
         public static class DateTime extends Comparison<LocalDateTime> {
 
-            public DateTime(GraqlToken.Comparator comparator, LocalDateTime value) {
+            public DateTime(final GraqlToken.Comparator comparator, final LocalDateTime value) {
                 super(comparator, value);
             }
 
@@ -320,7 +320,7 @@ public abstract class ValueOperation<T> {
 
         public static class Variable extends Comparison<ThingVariable> {
 
-            public Variable(GraqlToken.Comparator comparator, ThingVariable variable) {
+            public Variable(final GraqlToken.Comparator comparator, final ThingVariable variable) {
                 super(comparator, variable);
             }
 

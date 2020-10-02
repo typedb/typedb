@@ -26,12 +26,12 @@ import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
 
 public class EntityImpl extends ThingImpl implements Entity {
 
-    private EntityImpl(ThingVertex vertex) {
+    private EntityImpl(final ThingVertex vertex) {
         super(vertex);
         assert vertex.encoding().equals(ENTITY);
     }
 
-    public static EntityImpl of(ThingVertex vertex) {
+    public static EntityImpl of(final ThingVertex vertex) {
         return new EntityImpl(vertex);
     }
 

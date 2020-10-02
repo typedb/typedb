@@ -83,7 +83,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     private Options.Transaction transactionOptions;
     private Iterators iterators;
 
-    TransactionRPC(Function<UUID, SessionRPC> sessionRPCSupplier, StreamObserver<Transaction.Res> responder) {
+    TransactionRPC(final Function<UUID, SessionRPC> sessionRPCSupplier, final StreamObserver<Transaction.Res> responder) {
         this.sessionRPCSupplier = sessionRPCSupplier;
         this.responder = responder;
         isOpen = new AtomicBoolean(false);
@@ -98,14 +98,14 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     }
 
     @Override
-    public void onNext(Transaction.Req request) {
+    public void onNext(final Transaction.Req request) {
         try {
             LOG.trace("Request: {}", request);
 
             if (GrablTracingThreadStatic.isTracingEnabled()) {
-                Map<String, String> metadata = request.getMetadataMap();
-                String rootId = metadata.get("traceRootId");
-                String parentId = metadata.get("traceParentId");
+                final Map<String, String> metadata = request.getMetadataMap();
+                final String rootId = metadata.get("traceRootId");
+                final String parentId = metadata.get("traceParentId");
                 if (rootId != null && parentId != null) {
                     handleRequest(request, rootId, parentId);
                     return;
@@ -135,11 +135,11 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
      * TODO: improve by sending close signal to the session
      */
     @Override
-    public void onError(Throwable error) {
+    public void onError(final Throwable error) {
         if (sessionRPC != null) sessionRPC.onError(error);
     }
 
-    private <T> T nonNull(@Nullable T item) {
+    private <T> T nonNull(@Nullable final T item) {
         if (item == null) {
             throw Status.INVALID_ARGUMENT.withDescription(UNEXPECTED_NULL.message()).asRuntimeException();
         } else {
@@ -147,13 +147,13 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         }
     }
 
-    private void handleRequest(Transaction.Req request, String rootId, String parentId) {
+    private void handleRequest(final Transaction.Req request, final String rootId, final String parentId) {
         try (ThreadTrace ignored = continueTraceOnThread(UUID.fromString(rootId), UUID.fromString(parentId), "handle")) {
             handleRequest(request);
         }
     }
 
-    private void handleRequest(Transaction.Req request) {
+    private void handleRequest(final Transaction.Req request) {
         switch (request.getReqCase()) {
             case OPEN_REQ:
                 open(request.getOpenReq());
@@ -209,7 +209,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         }
     }
 
-    private void handleIterRequest(Transaction.Iter.Req request) {
+    private void handleIterRequest(final Transaction.Iter.Req request) {
         switch (request.getReqCase()) {
             case ITERATORID:
                 iterators.resumeBatchIterating(request.getIteratorID());
@@ -229,8 +229,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         }
     }
 
-    private void open(Transaction.Open.Req request) {
-        UUID sessionID = bytesToUUID(request.getSessionID().toByteArray());
+    private void open(final Transaction.Open.Req request) {
+        final UUID sessionID = bytesToUUID(request.getSessionID().toByteArray());
         sessionRPC = sessionRPCSupplier.apply(sessionID);
 
         if (sessionRPC == null) {
@@ -249,7 +249,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         }
     }
 
-    void close(@Nullable Throwable error) {
+    void close(@Nullable final Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
             if (transaction != null) {
                 transaction.close();
@@ -309,13 +309,13 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         responder.onNext(response);
     }
 
-    private void putEntityType(Transaction.PutEntityType.Req request) {
+    private void putEntityType(final Transaction.PutEntityType.Req request) {
         final EntityType entityType = transaction().concepts().putEntityType(request.getLabel());
         final Transaction.Res response = ResponseBuilder.Transaction.putEntityType(entityType);
         responder.onNext(response);
     }
 
-    private void putAttributeType(Transaction.PutAttributeType.Req request) {
+    private void putAttributeType(final Transaction.PutAttributeType.Req request) {
         final ConceptProto.AttributeType.VALUE_TYPE valueTypeProto = request.getValueType();
         final AttributeType.ValueType valueType;
         switch (valueTypeProto) {
@@ -344,17 +344,17 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         responder.onNext(response);
     }
 
-    private void putRelationType(Transaction.PutRelationType.Req request) {
-        RelationType relationType = transaction().concepts().putRelationType(request.getLabel());
-        Transaction.Res response = ResponseBuilder.Transaction.putRelationType(relationType);
+    private void putRelationType(final Transaction.PutRelationType.Req request) {
+        final RelationType relationType = transaction().concepts().putRelationType(request.getLabel());
+        final Transaction.Res response = ResponseBuilder.Transaction.putRelationType(relationType);
         responder.onNext(response);
     }
 
-    private void putRule(Transaction.PutRule.Req req) {
-        Pattern when = Graql.parsePattern(req.getWhen());
-        Pattern then = Graql.parsePattern(req.getThen());
-        Rule rule = transaction().concepts().putRule(req.getLabel(), when, then);
-        Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);
+    private void putRule(final Transaction.PutRule.Req req) {
+        final Pattern when = Graql.parsePattern(req.getWhen());
+        final Pattern then = Graql.parsePattern(req.getThen());
+        final Rule rule = transaction().concepts().putRule(req.getLabel(), when, then);
+        final Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);
         responder.onNext(response);
     }
 
@@ -398,7 +398,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(0);
         private final Map<Integer, BatchingIterator> iterators = new ConcurrentHashMap<>();
 
-        Iterators(Consumer<Transaction.Res> responseSender, final int batchSize) {
+        Iterators(final Consumer<Transaction.Res> responseSender, final int batchSize) {
             this.responseSender = responseSender;
             this.batchSize = batchSize;
         }
@@ -406,27 +406,27 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
         /**
          * Hand off an iterator and begin batch iterating.
          */
-        public void startBatchIterating(Iterator<Transaction.Res> iterator) {
+        public void startBatchIterating(final Iterator<Transaction.Res> iterator) {
             new BatchingIterator(iterator).iterateBatch();
         }
 
         /**
          * Iterate the next batch of an existing iterator.
          */
-        void resumeBatchIterating(int iteratorId) {
-            BatchingIterator iterator = iterators.get(iteratorId);
+        void resumeBatchIterating(final int iteratorId) {
+            final BatchingIterator iterator = iterators.get(iteratorId);
             if (iterator == null) {
                 throw Status.FAILED_PRECONDITION.asRuntimeException();
             }
             iterator.iterateBatch();
         }
 
-        void stop(int iteratorId) {
+        void stop(final int iteratorId) {
             iterators.remove(iteratorId);
         }
 
-        private int saveIterator(BatchingIterator iterator) {
-            int id = iteratorIdCounter.incrementAndGet();
+        private int saveIterator(final BatchingIterator iterator) {
+            final int id = iteratorIdCounter.incrementAndGet();
             iterators.put(id, iterator);
             return id;
         }
@@ -435,7 +435,7 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
             private final Iterator<Transaction.Res> iterator;
             private int id = -1;
 
-            BatchingIterator(Iterator<Transaction.Res> iterator) {
+            BatchingIterator(final Iterator<Transaction.Res> iterator) {
                 this.iterator = iterator;
             }
 

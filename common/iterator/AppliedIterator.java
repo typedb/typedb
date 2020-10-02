@@ -29,7 +29,7 @@ public class AppliedIterator<T, U> implements ResourceIterator<U> {
     private final Iterator<T> genericIterator;
     private final Function<T, U> function;
 
-    AppliedIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator, Function<T, U> function) {
+    AppliedIterator(final Either<Iterators.Recyclable<T>, Iterator<T>> iterator, final Function<T, U> function) {
         this.iterator = iterator;
         this.genericIterator = iterator.apply(r -> r, i -> i);
         this.function = function;

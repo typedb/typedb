@@ -31,7 +31,7 @@ public class FilteredIterator<T> implements ResourceIterator<T> {
     private final Predicate<T> predicate;
     private T next;
 
-    FilteredIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator, Predicate<T> predicate) {
+    FilteredIterator(final Either<Iterators.Recyclable<T>, Iterator<T>> iterator, final Predicate<T> predicate) {
         this.iterator = iterator;
         this.genericIterator = iterator.apply(r -> r, i -> i);
         this.predicate = predicate;
@@ -50,7 +50,7 @@ public class FilteredIterator<T> implements ResourceIterator<T> {
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        T result = next;
+        final T result = next;
         next = null;
         return result;
     }

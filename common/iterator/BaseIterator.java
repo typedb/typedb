@@ -26,7 +26,7 @@ public class BaseIterator<T> implements ResourceIterator<T> {
 
     private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
 
-    public BaseIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
+    public BaseIterator(final Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
     }
 

@@ -35,22 +35,22 @@ public class RuleRPC {
     private final grakn.core.concept.type.Rule rule;
     private final Consumer<TransactionProto.Transaction.Res> responder;
 
-    public RuleRPC(Grakn.Transaction transaction, String label, Consumer<TransactionProto.Transaction.Res> responder) {
+    public RuleRPC(final Grakn.Transaction transaction, final String label, final Consumer<TransactionProto.Transaction.Res> responder) {
         this.responder = responder;
         this.rule = notNull(transaction.concepts().getRule(label));
 
     }
 
-    private static TransactionProto.Transaction.Res response(ConceptProto.RuleMethod.Res response) {
+    private static TransactionProto.Transaction.Res response(final ConceptProto.RuleMethod.Res response) {
         return TransactionProto.Transaction.Res.newBuilder().setRuleMethodRes(response).build();
     }
 
-    private static Rule notNull(@Nullable Rule rule) {
+    private static Rule notNull(@Nullable final Rule rule) {
         if (rule == null) throw new GraknException(MISSING_CONCEPT);
         return rule;
     }
 
-    public void execute(ConceptProto.RuleMethod.Req req) {
+    public void execute(final ConceptProto.RuleMethod.Req req) {
         switch (req.getReqCase()) {
             case RULE_DELETE_REQ:
                 this.delete();
@@ -80,12 +80,12 @@ public class RuleRPC {
         responder.accept(null);
     }
 
-    private void setWhen(String pattern) {
+    private void setWhen(final String pattern) {
         rule.setWhen(Graql.parsePattern(pattern));
         responder.accept(null);
     }
 
-    private void setThen(String pattern) {
+    private void setThen(final String pattern) {
         rule.setThen(Graql.parsePattern(pattern));
         responder.accept(null);
     }

@@ -46,7 +46,7 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
 
-    private RocksGrakn(Path directory, Options.Database options) {
+    private RocksGrakn(final Path directory, final Options.Database options) {
         this.directory = directory;
         this.options = options;
         this.rocksConfig = new org.rocksdb.Options()
@@ -59,11 +59,11 @@ public class RocksGrakn implements Grakn {
         isOpen = new AtomicBoolean(true);
     }
 
-    public static RocksGrakn open(Path directory) {
+    public static RocksGrakn open(final Path directory) {
         return open(directory, new Options.Database());
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options) {
+    public static RocksGrakn open(final Path directory, final Options.Database options) {
         return new RocksGrakn(directory, options);
     }
 
@@ -80,12 +80,12 @@ public class RocksGrakn implements Grakn {
     }
 
     @Override
-    public RocksSession session(String database, Arguments.Session.Type type) {
+    public RocksSession session(final String database, final Arguments.Session.Type type) {
         return session(database, type, new Options.Session());
     }
 
     @Override
-    public RocksSession session(String database, Arguments.Session.Type type, Options.Session options) {
+    public RocksSession session(final String database, final Arguments.Session.Type type, final Options.Session options) {
         if (!isOpen.get()) throw GraknException.of(GRAKN_CLOSED);
         if (databaseMgr.contains(database)) return databaseMgr.get(database).createAndOpenSession(type, options);
         else throw new GraknException(DATABASE_NOT_FOUND.message(database));

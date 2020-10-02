@@ -24,7 +24,7 @@ public class Disjunction extends Pattern {
 
     private final Set<Conjunction> conjunctions;
 
-    public Disjunction(Set<Conjunction> conjunctions) {
+    public Disjunction(final Set<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
     }
 }

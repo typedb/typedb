@@ -23,7 +23,7 @@ import static org.junit.Assert.fail;
 
 public class Util {
 
-    public static void assertThrows(Runnable function) {
+    public static void assertThrows(final Runnable function) {
         try {
             function.run();
             fail();

@@ -29,7 +29,7 @@ public abstract class Variable extends Pattern {
 
     final Identifier identifier;
 
-    Variable(Identifier identifier) {
+    Variable(final Identifier identifier) {
         this.identifier = identifier;
     }
 

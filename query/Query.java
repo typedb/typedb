@@ -51,33 +51,33 @@ public class Query {
     private final Concepts conceptMgr;
     private final Context.Transaction transactionContext;
 
-    public Query(Graphs graphMgr, Concepts conceptMgr, Context.Transaction transactionContext) {
+    public Query(final Graphs graphMgr, final Concepts conceptMgr, final Context.Transaction transactionContext) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.transactionContext = transactionContext;
     }
 
-    public Stream<ConceptMap> match(GraqlMatch query) {
+    public Stream<ConceptMap> match(final GraqlMatch query) {
         return match(query, new Options.Query());
     }
 
-    public Stream<ConceptMap> match(GraqlMatch query, Options.Query options) {
+    public Stream<ConceptMap> match(final GraqlMatch query, final Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
-            Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionContext, options);
             return new Matcher(graphMgr, query.conjunction(), context).execute();
         }
     }
 
-    public Stream<ConceptMap> insert(GraqlInsert query) {
+    public Stream<ConceptMap> insert(final GraqlInsert query) {
         return insert(query, new Options.Query());
     }
 
-    public Stream<ConceptMap> insert(GraqlInsert query, Options.Query options) {
+    public Stream<ConceptMap> insert(final GraqlInsert query, final Options.Query options) {
         if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionContext, options);
             if (query.match().isPresent()) {
-                List<ConceptMap> matched = match(query.match().get()).collect(toList());
+                final List<ConceptMap> matched = match(query.match().get()).collect(toList());
                 return matched.stream().map(answer -> new Inserter(conceptMgr, query.variables(), answer, context).execute());
             } else {
                 return Stream.of(new Inserter(conceptMgr, query.variables(), context).execute());
@@ -85,39 +85,39 @@ public class Query {
         }
     }
 
-    public void delete(GraqlDelete query) {
+    public void delete(final GraqlDelete query) {
         delete(query, new Options.Query());
     }
 
-    public void delete(GraqlDelete query, Options.Query options) {
+    public void delete(final GraqlDelete query, final Options.Query options) {
         if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-            Context.Query context = new Context.Query(transactionContext, options);
-            List<ConceptMap> matched = match(query.match()).collect(toList());
+            final Context.Query context = new Context.Query(transactionContext, options);
+            final List<ConceptMap> matched = match(query.match()).collect(toList());
             matched.forEach(existing -> new Deleter(conceptMgr, query.variables(), context, existing).execute());
         }
     }
 
-    public List<ThingType> define(GraqlDefine query) {
+    public List<ThingType> define(final GraqlDefine query) {
         return define(query, new Options.Query());
     }
 
-    public List<ThingType> define(GraqlDefine query, Options.Query options) {
+    public List<ThingType> define(final GraqlDefine query, final Options.Query options) {
         if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
-            Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionContext, options);
             return new Definer(conceptMgr, query.variables(), context).execute();
         }
     }
 
-    public void undefine(GraqlUndefine query) {
+    public void undefine(final GraqlUndefine query) {
         undefine(query, new Options.Query());
     }
 
-    public void undefine(GraqlUndefine query, Options.Query options) {
+    public void undefine(final GraqlUndefine query, final Options.Query options) {
         if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
-            Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionContext, options);
             new Undefiner(conceptMgr, query.variables(), context).execute();
         }
     }

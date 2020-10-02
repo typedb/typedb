@@ -35,38 +35,38 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     private final RocksGrakn rocksGrakn;
     private final ConcurrentMap<String, RocksDatabase> databases;
 
-    RocksDatabaseManager(RocksGrakn rocksGrakn) {
+    RocksDatabaseManager(final RocksGrakn rocksGrakn) {
         this.rocksGrakn = rocksGrakn;
         databases = new ConcurrentHashMap<>();
     }
 
     void loadAll() {
-        File[] databaseDirectories = rocksGrakn.directory().toFile().listFiles(File::isDirectory);
+        final File[] databaseDirectories = rocksGrakn.directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
-                String name = directory.getName();
-                RocksDatabase database = RocksDatabase.loadExistingAndOpen(rocksGrakn, name);
+                final String name = directory.getName();
+                final RocksDatabase database = RocksDatabase.loadExistingAndOpen(rocksGrakn, name);
                 databases.put(name, database);
             });
         }
     }
 
     @Override
-    public boolean contains(String name) {
+    public boolean contains(final String name) {
         return databases.containsKey(name);
     }
 
     @Override
-    public RocksDatabase create(String name) {
+    public RocksDatabase create(final String name) {
         if (databases.containsKey(name)) throw new GraknException(DATABASE_EXISTS.message(name));
 
-        RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name);
+        final RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name);
         databases.put(name, database);
         return database;
     }
 
     @Override
-    public RocksDatabase get(String name) {
+    public RocksDatabase get(final String name) {
         return databases.get(name);
     }
 
@@ -75,7 +75,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
         return new HashSet<>(databases.values());
     }
 
-    void remove(RocksDatabase database) {
+    void remove(final RocksDatabase database) {
         databases.remove(database.name());
     }
 }

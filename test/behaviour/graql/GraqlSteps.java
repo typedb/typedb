@@ -157,11 +157,11 @@ public class GraqlSteps {
     }
 
     @Then("concept identifiers are")
-    public void concept_identifiers_are(Map<String, Map<String, String>> identifiers) {
+    public void concept_identifiers_are(final Map<String, Map<String, String>> identifiers) {
         for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
-            String identifier = entry.getKey();
-            String check = entry.getValue().get("check");
-            String value = entry.getValue().get("value");
+            final String identifier = entry.getKey();
+            final String check = entry.getValue().get("check");
+            final String value = entry.getValue().get("value");
 
             switch (check) {
                 case "key":
@@ -180,7 +180,7 @@ public class GraqlSteps {
     }
 
     @Then("uniquely identify answer concepts")
-    public void uniquely_identify_answer_concepts(List<Map<String, String>> answersIdentifiers) {
+    public void uniquely_identify_answer_concepts(final List<Map<String, String>> answersIdentifiers) {
         // TODO: re-enable when match is implemented
 //        assertEquals(
 //                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
@@ -206,7 +206,7 @@ public class GraqlSteps {
     }
 
     @Then("order of answer concepts is")
-    public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
+    public void order_of_answer_concepts_is(final List<Map<String, String>> answersIdentifiers) {
         // TODO
 //        final List<ConceptMap> answerList = answers.collect(Collectors.toList());
 //        assertEquals(
@@ -225,7 +225,7 @@ public class GraqlSteps {
     }
 
     @Then("aggregate value is: {double}")
-    public void aggregate_value_is(double expectedAnswer) {
+    public void aggregate_value_is(final double expectedAnswer) {
         // TODO
         /*assertNotNull("The last executed query was not an aggregate query", numericAnswer);
         assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, numericAnswers.get(0).number().doubleValue()),
@@ -243,14 +243,14 @@ public class GraqlSteps {
     @Then("group identifiers are")
     public void group_identifiers_are(final Map<String, Map<String, String>> identifiers) {
         for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
-            String groupIdentifier = entry.getKey();
-            Map<String, String> variables = entry.getValue();
+            final String groupIdentifier = entry.getKey();
+            final Map<String, String> variables = entry.getValue();
             groupOwnerIdentifiers.put(groupIdentifier, variables.get("owner"));
         }
     }
 
     @Then("answer groups are")
-    public void answer_groups_are(List<Map<String, String>> answerIdentifierTable) {
+    public void answer_groups_are(final List<Map<String, String>> answerIdentifierTable) {
         // TODO
 //        Set<AnswerIdentifierGroup> answerIdentifierGroups = answerIdentifierTable.stream()
 //                .collect(Collectors.groupingBy(x -> x.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME)))
@@ -292,7 +292,7 @@ public class GraqlSteps {
     }
 
     @Then("group aggregate values are")
-    public void group_aggregate_values_are(List<Map<String, String>> answerIdentifierTable) {
+    public void group_aggregate_values_are(final List<Map<String, String>> answerIdentifierTable) {
         // TODO
         /*Map<String, Double> expectations = new HashMap<>();
         for (Map<String, String> answerIdentifierRow : answerIdentifierTable) {
@@ -326,7 +326,7 @@ public class GraqlSteps {
     }
 
     @Then("number of groups is: {int}")
-    public void number_of_groups_is(int expectedGroupCount) {
+    public void number_of_groups_is(final int expectedGroupCount) {
         // TODO
 //        assertEquals(expectedGroupCount, answerGroups.size());
     }
@@ -356,8 +356,8 @@ public class GraqlSteps {
         }
 
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            String varName = entry.getKey();
-            String identifier = entry.getValue();
+            final String varName = entry.getKey();
+            final String identifier = entry.getValue();
 
             if (!identifierChecks.containsKey(identifier)) {
                 throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
@@ -372,12 +372,12 @@ public class GraqlSteps {
     }
 
     @Then("rules are")
-    public void rules_are(Map<String, Map<String, String>> rules) {
+    public void rules_are(final Map<String, Map<String, String>> rules) {
         this.rules = rules;
     }
 
     @Then("answers contain explanation tree")
-    public void answers_contain_explanation_tree(Map<Integer, Map<String, String>> explanationTree) {
+    public void answers_contain_explanation_tree(final Map<Integer, Map<String, String>> explanationTree) {
         // TODO
         throw new UnsupportedOperationException();
         //checkExplanationEntry(answers, explanationTree, 0);
@@ -457,7 +457,7 @@ public class GraqlSteps {
         }*/
     }
 
-    private String applyQueryTemplate(String template, ConceptMap templateFiller) {
+    private String applyQueryTemplate(final String template, final ConceptMap templateFiller) {
         throw new UnsupportedOperationException(); // TODO fix
         /* // find shortest matching strings between <>
         Pattern pattern = Pattern.compile("<.+?>");
@@ -485,10 +485,10 @@ public class GraqlSteps {
         return builder.toString(); */
     }
 
-    private String variableFromTemplatePlaceholder(String placeholder) {
+    private String variableFromTemplatePlaceholder(final String placeholder) {
         if (placeholder.endsWith(".id")) {
-            String stripped = placeholder.replace(".id", "");
-            String withoutPrefix = stripped.replace("answer.", "");
+            final String stripped = placeholder.replace(".id", "");
+            final String withoutPrefix = stripped.replace("answer.", "");
             return withoutPrefix;
         } else {
             throw new ScenarioDefinitionException("Cannot replace template not based on ID");
@@ -496,7 +496,7 @@ public class GraqlSteps {
     }
 
     private static class ScenarioDefinitionException extends RuntimeException {
-        ScenarioDefinitionException(String message) {
+        ScenarioDefinitionException(final String message) {
             super(message);
         }
     }
@@ -509,12 +509,12 @@ public class GraqlSteps {
 
         private final String label;
 
-        LabelUniquenessCheck(String label) {
+        LabelUniquenessCheck(final String label) {
             this.label = label;
         }
 
         @Override
-        public boolean check(Concept concept) {
+        public boolean check(final Concept concept) {
             if (concept instanceof Type) {
                 return label.equals(concept.asType().getLabel());
             }
@@ -528,8 +528,8 @@ public class GraqlSteps {
         protected final String type;
         protected final String value;
 
-        AttributeUniquenessCheck(String typeAndValue) {
-            String[] s = typeAndValue.split(":");
+        AttributeUniquenessCheck(final String typeAndValue) {
+            final String[] s = typeAndValue.split(":");
             assertEquals(
                     String.format("A check for attribute uniqueness should be given in the format \"type:value\", but received %s", typeAndValue),
                     2, s.length
@@ -540,11 +540,11 @@ public class GraqlSteps {
     }
 
     public static class ValueUniquenessCheck extends AttributeUniquenessCheck implements UniquenessCheck {
-        ValueUniquenessCheck(String typeAndValue) {
+        ValueUniquenessCheck(final String typeAndValue) {
             super(typeAndValue);
         }
 
-        public boolean check(Concept concept) {
+        public boolean check(final Concept concept) {
             if (!(concept instanceof Attribute)) {
                 return false;
             }
@@ -574,7 +574,7 @@ public class GraqlSteps {
     }
 
     public static class KeyUniquenessCheck extends AttributeUniquenessCheck implements UniquenessCheck {
-        KeyUniquenessCheck(String typeAndValue) {
+        KeyUniquenessCheck(final String typeAndValue) {
             super(typeAndValue);
         }
 

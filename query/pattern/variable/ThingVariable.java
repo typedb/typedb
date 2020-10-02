@@ -38,7 +38,7 @@ public class ThingVariable extends Variable {
     private final Set<ThingConstraint.Has> hasConstraints;
     private final Set<ThingConstraint> constraints;
 
-    ThingVariable(Identifier identifier) {
+    ThingVariable(final Identifier identifier) {
         super(identifier);
         this.isaConstraints = new HashSet<>();
         this.neqConstraints = new HashSet<>();
@@ -54,7 +54,7 @@ public class ThingVariable extends Variable {
         return this;
     }
 
-    private void constrain(ThingConstraint constraint) {
+    private void constrain(final ThingConstraint constraint) {
         if (constraint.isIID()) iidConstraint = constraint.asIID();
         else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
         else if (constraint.isNEQ()) neqConstraints.add(constraint.asNEQ());
@@ -103,11 +103,11 @@ public class ThingVariable extends Variable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ThingVariable that = (ThingVariable) o;
+        final ThingVariable that = (ThingVariable) o;
         return this.identifier.equals(that.identifier);
     }
 

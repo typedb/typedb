@@ -35,22 +35,22 @@ public interface ResourceIterator<T> extends Iterators.Composable<T>, Iterators.
     }
 
     @Override
-    default <U> AppliedIterator<T, U> apply(Function<T, U> function) {
+    default <U> AppliedIterator<T, U> apply(final Function<T, U> function) {
         return new AppliedIterator<>(Either.first(this), function);
     }
 
     @Override
-    default FilteredIterator<T> filter(Predicate<T> predicate) {
+    default FilteredIterator<T> filter(final Predicate<T> predicate) {
         return new FilteredIterator<>(Either.first(this), predicate);
     }
 
     @Override
-    default LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
+    default LinkedIterators<T> link(final Iterators.Recyclable<T> iterator) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.first(iterator))));
     }
 
     @Override
-    default LinkedIterators<T> link(Iterator<T> iterator) {
+    default LinkedIterators<T> link(final Iterator<T> iterator) {
         if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.second(iterator))));
     }

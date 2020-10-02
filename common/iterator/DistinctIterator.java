@@ -33,7 +33,7 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     private final Set<T> consumed;
     private T next;
 
-    DistinctIterator(Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
+    DistinctIterator(final Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
         this.genericIterator = iterator.apply(r -> r, i -> i);
         this.consumed = new HashSet<>();
@@ -53,7 +53,7 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        T result = next;
+        final T result = next;
         consumed.add(next);
         next = null;
         return result;

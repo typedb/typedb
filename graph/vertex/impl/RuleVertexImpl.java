@@ -42,7 +42,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
     protected Pattern when;
     protected Pattern then;
 
-    RuleVertexImpl(SchemaGraph graph, VertexIID.Rule iid, String label, Pattern when, Pattern then) {
+    RuleVertexImpl(final SchemaGraph graph, final VertexIID.Rule iid, final String label, final Pattern when, final Pattern then) {
         super(graph, iid, label);
         assert when != null;
         assert then != null;
@@ -50,7 +50,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         this.then = then;
     }
 
-    RuleVertexImpl(SchemaGraph graph, VertexIID.Rule iid, String label) {
+    RuleVertexImpl(final SchemaGraph graph, final VertexIID.Rule iid, final String label) {
         super(graph, iid, label);
     }
 
@@ -65,12 +65,12 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
     public RuleVertex asRule() { return this; }
 
     @Override
-    public void when(Pattern when) {
+    public void when(final Pattern when) {
         this.when = when;
     }
 
     @Override
-    public void then(Pattern then) {
+    public void then(final Pattern then) {
         this.then = then;
     }
 
@@ -79,19 +79,19 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(SchemaGraph graph, VertexIID.Rule iid, String label, Pattern when, Pattern then) {
+        public Buffered(final SchemaGraph graph, final VertexIID.Rule iid, final String label, final Pattern when, final Pattern then) {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(final Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
-        public void label(String label) {
+        public void label(final String label) {
             graph.update(this, this.label, label);
             this.label = label;
         }
@@ -151,7 +151,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
     public static class Persisted extends RuleVertexImpl {
 
-        public Persisted(SchemaGraph graph, VertexIID.Rule iid) {
+        public Persisted(final SchemaGraph graph, final VertexIID.Rule iid) {
             super(graph, iid, new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))));
         }
 
@@ -177,12 +177,12 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(final Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override
-        public void label(String label) {
+        public void label(final String label) {
             graph.update(this, this.label, label);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Rule.of(this.label).bytes());
@@ -206,7 +206,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
-            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
     }

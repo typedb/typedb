@@ -44,8 +44,8 @@ public class TypeRPC {
     private final TransactionRPC.Iterators iterators;
     private final Consumer<TransactionProto.Transaction.Res> responder;
 
-    public TypeRPC(Grakn.Transaction transaction, String label, @Nullable String scope, TransactionRPC.Iterators iterators,
-                   Consumer<TransactionProto.Transaction.Res> responder) {
+    public TypeRPC(final Grakn.Transaction transaction, final String label, @Nullable final String scope, final TransactionRPC.Iterators iterators,
+                   final Consumer<TransactionProto.Transaction.Res> responder) {
         this.transaction = transaction;
         this.iterators = iterators;
         this.responder = responder;
@@ -54,16 +54,16 @@ public class TypeRPC {
                 notNull(transaction.concepts().getType(label));
     }
 
-    private static TransactionProto.Transaction.Res response(ConceptProto.TypeMethod.Res response) {
+    private static TransactionProto.Transaction.Res response(final ConceptProto.TypeMethod.Res response) {
         return TransactionProto.Transaction.Res.newBuilder().setTypeMethodRes(response).build();
     }
 
-    private static <T extends Type> T notNull(@Nullable T type) {
+    private static <T extends Type> T notNull(@Nullable final T type) {
         if (type == null) throw new GraknException(MISSING_CONCEPT);
         return type;
     }
 
-    public void execute(ConceptProto.TypeMethod.Req req) {
+    public void execute(final ConceptProto.TypeMethod.Req req) {
         switch (req.getReqCase()) {
             case TYPE_DELETE_REQ:
                 this.delete();
@@ -134,7 +134,7 @@ public class TypeRPC {
         }
     }
 
-    public void iterate(ConceptProto.TypeMethod.Iter.Req req) {
+    public void iterate(final ConceptProto.TypeMethod.Iter.Req req) {
         switch (req.getReqCase()) {
             case TYPE_GETSUPERTYPES_ITER_REQ:
                 this.getSupertypes();
@@ -169,11 +169,11 @@ public class TypeRPC {
         }
     }
 
-    private Type convertType(ConceptProto.Type protoType) {
+    private Type convertType(final ConceptProto.Type protoType) {
         return transaction.concepts().getType(protoType.getLabel());
     }
 
-    private grakn.core.concept.type.RoleType convertRoleType(ConceptProto.Type protoRole) {
+    private grakn.core.concept.type.RoleType convertRoleType(final ConceptProto.Type protoRole) {
         final Type type = transaction.concepts().getRelationType(protoRole.getScope()).getRelates(protoRole.getLabel());
         return type != null ? type.asRoleType() : null;
     }
@@ -223,7 +223,7 @@ public class TypeRPC {
         final ConceptProto.Type.GetSupertype.Res.Builder responseConcept = ConceptProto.Type.GetSupertype.Res.newBuilder();
         if (supertype != null) responseConcept.setType(ResponseBuilder.Concept.type(supertype));
 
-        ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
+        final ConceptProto.TypeMethod.Res response = ConceptProto.TypeMethod.Res.newBuilder()
                 .setTypeGetSupertypeRes(responseConcept).build();
 
         responder.accept(response(response));
@@ -276,10 +276,10 @@ public class TypeRPC {
         private final grakn.core.concept.type.ThingType thingType = TypeRPC.this.type.asType().asThingType();
 
         private void getInstances() {
-            Stream<? extends grakn.core.concept.thing.Thing> concepts = thingType.getInstances();
+            final Stream<? extends grakn.core.concept.thing.Thing> concepts = thingType.getInstances();
 
-            Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
-                ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
+            final Stream<TransactionProto.Transaction.Res> responses = concepts.map(con -> {
+                final ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                         .setThingTypeGetInstancesIterRes(ConceptProto.ThingType.GetInstances.Iter.Res.newBuilder()
                                                                  .setThing(ResponseBuilder.Concept.thing(con))).build();
                 return ResponseBuilder.Transaction.Iter.typeMethod(res);
@@ -463,7 +463,7 @@ public class TypeRPC {
             responder.accept(response(response));
         }
 
-        private void setRegex(String regex) {
+        private void setRegex(final String regex) {
             if (regex.isEmpty()) attributeType.asString().setRegex(null);
             else attributeType.asString().setRegex(Pattern.compile(regex));
             responder.accept(null);
@@ -534,9 +534,9 @@ public class TypeRPC {
         }
 
         private void getRelations() {
-            Stream<? extends grakn.core.concept.type.RelationType> relationTypes = roleType.getRelations();
-            Stream<TransactionProto.Transaction.Res> responses = relationTypes.map(con -> {
-                ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
+            final Stream<? extends grakn.core.concept.type.RelationType> relationTypes = roleType.getRelations();
+            final Stream<TransactionProto.Transaction.Res> responses = relationTypes.map(con -> {
+                final ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                         .setRoleTypeGetRelationsIterRes(ConceptProto.RoleType.GetRelations.Iter.Res.newBuilder()
                                                                 .setRelationType(ResponseBuilder.Concept.type(con))).build();
                 return ResponseBuilder.Transaction.Iter.typeMethod(res);
@@ -545,10 +545,10 @@ public class TypeRPC {
         }
 
         private void getPlayers() {
-            Stream<? extends grakn.core.concept.type.ThingType> players = roleType.getPlayers();
+            final Stream<? extends grakn.core.concept.type.ThingType> players = roleType.getPlayers();
 
-            Stream<TransactionProto.Transaction.Res> responses = players.map(con -> {
-                ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
+            final Stream<TransactionProto.Transaction.Res> responses = players.map(con -> {
+                final ConceptProto.TypeMethod.Iter.Res res = ConceptProto.TypeMethod.Iter.Res.newBuilder()
                         .setRoleTypeGetPlayersIterRes(ConceptProto.RoleType.GetPlayers.Iter.Res.newBuilder()
                                                               .setThingType(ResponseBuilder.Concept.type(con))).build();
                 return ResponseBuilder.Transaction.Iter.typeMethod(res);

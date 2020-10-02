@@ -56,7 +56,7 @@ import static java.lang.String.format;
 
 public class ResponseBuilder {
 
-    public static StatusRuntimeException exception(Throwable e) {
+    public static StatusRuntimeException exception(final Throwable e) {
         if (e instanceof GraknException) {
             return exception(Status.INTERNAL, e.getMessage());
         } else if (e instanceof StatusRuntimeException) {
@@ -66,7 +66,7 @@ public class ResponseBuilder {
         }
     }
 
-    private static StatusRuntimeException exception(Status status, String message) {
+    private static StatusRuntimeException exception(final Status status, final String message) {
         return status.withDescription(message + " Please check server logs for the stack trace.").asRuntimeException();
     }
 
@@ -105,26 +105,26 @@ public class ResponseBuilder {
             return TransactionProto.Transaction.Res.newBuilder().setGetRuleRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putEntityType(EntityType entityType) {
-            PutEntityType.Res.Builder res = PutEntityType.Res.newBuilder()
+        public static TransactionProto.Transaction.Res putEntityType(final EntityType entityType) {
+            final PutEntityType.Res.Builder res = PutEntityType.Res.newBuilder()
                     .setEntityType(ResponseBuilder.Concept.type(entityType));
             return TransactionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putAttributeType(AttributeType attributeType) {
-            PutAttributeType.Res.Builder res = PutAttributeType.Res.newBuilder()
+        public static TransactionProto.Transaction.Res putAttributeType(final AttributeType attributeType) {
+            final PutAttributeType.Res.Builder res = PutAttributeType.Res.newBuilder()
                     .setAttributeType(ResponseBuilder.Concept.type(attributeType));
             return TransactionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putRelationType(RelationType relationType) {
-            PutRelationType.Res.Builder res = PutRelationType.Res.newBuilder()
+        public static TransactionProto.Transaction.Res putRelationType(final RelationType relationType) {
+            final PutRelationType.Res.Builder res = PutRelationType.Res.newBuilder()
                     .setRelationType(ResponseBuilder.Concept.type(relationType));
             return TransactionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putRule(grakn.core.concept.type.Rule rule) {
-            PutRule.Res.Builder res = PutRule.Res.newBuilder().setRule(ResponseBuilder.Concept.rule(rule));
+        public static TransactionProto.Transaction.Res putRule(final grakn.core.concept.type.Rule rule) {
+            final PutRule.Res.Builder res = PutRule.Res.newBuilder().setRule(ResponseBuilder.Concept.rule(rule));
             return TransactionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
         }
 //
@@ -156,7 +156,7 @@ public class ResponseBuilder {
                                             .setDone(true)).build();
             }
 
-            public static TransactionProto.Transaction.Res id(int id) {
+            public static TransactionProto.Transaction.Res id(final int id) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
                                             .setIteratorID(id)).build();
@@ -216,7 +216,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.Rule rule(Rule rule) {
+        public static ConceptProto.Rule rule(final Rule rule) {
             final ConceptProto.Rule.Builder builder = ConceptProto.Rule.newBuilder()
                     .setLabel(rule.getLabel())
                     .setWhen(rule.getWhen().toString())
@@ -249,7 +249,7 @@ public class ResponseBuilder {
             return builder.build();
         } */
 
-        private static ConceptProto.Thing.ENCODING getEncoding(Thing thing) {
+        private static ConceptProto.Thing.ENCODING getEncoding(final Thing thing) {
             if (thing instanceof Entity) {
                 return ConceptProto.Thing.ENCODING.ENTITY;
             } else if (thing instanceof Relation) {
@@ -261,7 +261,7 @@ public class ResponseBuilder {
             }
         }
 
-        private static ConceptProto.Type.ENCODING getEncoding(Type type) {
+        private static ConceptProto.Type.ENCODING getEncoding(final Type type) {
             if (type instanceof EntityType) {
                 return ConceptProto.Type.ENCODING.ENTITY_TYPE;
             } else if (type instanceof RelationType) {
@@ -277,7 +277,7 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
+        public static ConceptProto.Attribute.Value attributeValue(final Attribute attribute) {
             final ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
 
             if (attribute instanceof Attribute.String) {
@@ -297,7 +297,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static AttributeType.ValueType valueType(ConceptProto.AttributeType.VALUE_TYPE valueType) {
+        public static AttributeType.ValueType valueType(final ConceptProto.AttributeType.VALUE_TYPE valueType) {
             switch (valueType) {
                 case OBJECT:
                     return AttributeType.ValueType.OBJECT;
@@ -317,11 +317,11 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE valueType(Attribute attribute) {
+        public static ConceptProto.AttributeType.VALUE_TYPE valueType(final Attribute attribute) {
             return valueType(attribute.getType());
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE valueType(AttributeType attributeType) {
+        public static ConceptProto.AttributeType.VALUE_TYPE valueType(final AttributeType attributeType) {
             if (attributeType instanceof AttributeType.String) {
                 return ConceptProto.AttributeType.VALUE_TYPE.STRING;
             } else if (attributeType instanceof AttributeType.Boolean) {
@@ -373,7 +373,7 @@ public class ResponseBuilder {
             final AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
             answer.concepts().forEach((ref, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                final ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
                 conceptMapProto.putMap(ref.identifier(), conceptProto);
             });
 
@@ -390,7 +390,7 @@ public class ResponseBuilder {
             return conceptMapProto.build();
         }
 
-        public static AnswerProto.Number number(Number number) {
+        public static AnswerProto.Number number(final Number number) {
             return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
         }
     }

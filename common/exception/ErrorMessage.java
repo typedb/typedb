@@ -20,7 +20,7 @@ package grakn.core.common.exception;
 
 public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
-    private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
+    private ErrorMessage(final String codePrefix, final int codeNumber, final String messagePrefix, final String messageBody) {
         super(codePrefix, codeNumber, messagePrefix, messageBody);
     }
 
@@ -53,7 +53,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Server Error";
 
-        Server(int number, String message) {
+        Server(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -75,7 +75,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
 
-        Internal(int number, String message) {
+        Internal(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -93,7 +93,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operations";
 
-        Database(int number, String message) {
+        Database(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -107,7 +107,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "SSN";
         private static final String messagePrefix = "Invalid Session Operation";
 
-        Session(int number, String message) {
+        Session(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -133,7 +133,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
 
-        Transaction(int number, String message) {
+        Transaction(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -148,7 +148,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Execution";
 
-        Query(int number, String message) {
+        Query(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -168,7 +168,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";
 
-        ThingRead(int number, String message) {
+        ThingRead(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -228,7 +228,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
 
-        ThingWrite(int number, String message) {
+        ThingWrite(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -246,7 +246,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "SCG";
         private static final String messagePrefix = "Invalid Schema Graph Operation";
 
-        SchemaGraph(int number, String message) { super(codePrefix, number, messagePrefix, message); }
+        SchemaGraph(final int number, final String message) { super(codePrefix, number, messagePrefix, message); }
     }
 
     public static class TypeRead extends ErrorMessage {
@@ -262,7 +262,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";
 
-        TypeRead(int number, String message) {
+        TypeRead(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -340,7 +340,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
 
-        TypeWrite(int number, String message) {
+        TypeWrite(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }

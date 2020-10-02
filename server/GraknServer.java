@@ -70,7 +70,7 @@ public class GraknServer implements AutoCloseable {
     private Server server;
     private ServerOptions options;
 
-    private GraknServer(ServerOptions options) throws IOException {
+    private GraknServer(final ServerOptions options) throws IOException {
         this.options = options;
         configureDataDir();
         configureTracing();
@@ -94,7 +94,7 @@ public class GraknServer implements AutoCloseable {
 
     private void configureTracing() {
         if (this.options.grablTrace()) {
-            GrablTracing grablTracingClient;
+            final GrablTracing grablTracingClient;
             grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
                     options.grablURI().toString(),
                     options.grablUsername(),
@@ -112,7 +112,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private static Properties parseProperties() {
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         boolean error = false;
 
         try {
@@ -123,9 +123,9 @@ public class GraknServer implements AutoCloseable {
         }
 
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String val = (String) entry.getValue();
+            final String val = (String) entry.getValue();
             if (val.startsWith("$")) {
-                String envVarName = val.substring(1);
+                final String envVarName = val.substring(1);
                 if (System.getenv(envVarName) == null) {
                     LOG.error(ENV_VAR_NOT_FOUND.message(val));
                     error = true;
@@ -139,10 +139,10 @@ public class GraknServer implements AutoCloseable {
         else return properties;
     }
 
-    private static Pair<Boolean, ServerOptions> parseCommandLine(Properties properties, String[] args) {
-        ServerOptions options = new ServerOptions();
+    private static Pair<Boolean, ServerOptions> parseCommandLine(final Properties properties, final String[] args) {
+        final ServerOptions options = new ServerOptions();
         boolean proceed;
-        CommandLine command = new CommandLine(options);
+        final CommandLine command = new CommandLine(options);
         command.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
 
         try {
@@ -167,18 +167,18 @@ public class GraknServer implements AutoCloseable {
         return new Pair<>(proceed, options);
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
-            long start = System.nanoTime();
+            final long start = System.nanoTime();
 
             printASCIILogo();
-            Pair<Boolean, ServerOptions> result = parseCommandLine(parseProperties(), args);
+            final Pair<Boolean, ServerOptions> result = parseCommandLine(parseProperties(), args);
             if (!result.first()) System.exit(0);
 
-            GraknServer server = new GraknServer(result.second());
+            final GraknServer server = new GraknServer(result.second());
             server.start();
 
-            long end = System.nanoTime();
+            final long end = System.nanoTime();
             LOG.info("Grakn Core version: {}", Version.VERSION);
             LOG.info("Grakn Core Server has been started (in {} ms)",
                      String.format("%.3f", (end - start) / 1_000_000.00));
@@ -194,7 +194,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private Server rpcServer() {
-        NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
+        final NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
         return NettyServerBuilder.forPort(options.port())
                 .executor(Executors.newFixedThreadPool(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor")))
                 .workerEventLoopGroup(workerELG)

@@ -43,21 +43,21 @@ public class VariableRegistry {
         anonymous = new HashSet<>();
     }
 
-    public Variable register(graql.lang.pattern.variable.BoundVariable graqlVar) {
+    public Variable register(final graql.lang.pattern.variable.BoundVariable graqlVar) {
         if (graqlVar.isThing()) return register(graqlVar.asThing());
         else if (graqlVar.isType()) return register(graqlVar.asType());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public TypeVariable register(graql.lang.pattern.variable.TypeVariable graqlVar) {
+    public TypeVariable register(final graql.lang.pattern.variable.TypeVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_TYPE_VARIABLE);
         return types.computeIfAbsent(
                 graqlVar.reference(), ref -> new TypeVariable(Identifier.of(ref.asReferrable()))
         ).constrain(graqlVar.constraints(), this);
     }
 
-    public ThingVariable register(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
-        ThingVariable graknVar;
+    public ThingVariable register(final graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
+        final ThingVariable graknVar;
         if (graqlVar.reference().isAnonymous()) {
             graknVar = new ThingVariable(Identifier.of(graqlVar.reference().asAnonymous(), anonymous.size()));
             anonymous.add(graknVar);
@@ -76,16 +76,16 @@ public class VariableRegistry {
         return set(things.values(), anonymous);
     }
 
-    public boolean contains(Reference reference) {
+    public boolean contains(final Reference reference) {
         return things.containsKey(reference) || types.containsKey(reference);
     }
 
-    public Variable get(Reference reference) {
+    public Variable get(final Reference reference) {
         if (things.containsKey(reference)) return things.get(reference);
         else return types.get(reference);
     }
 
-    public Variable put(Reference reference, Variable variable) {
+    public Variable put(final Reference reference, final Variable variable) {
         if (variable.isType()) {
             things.remove(reference);
             return types.put(reference, variable.asType());
@@ -95,12 +95,12 @@ public class VariableRegistry {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public TypeVariable computeTypeIfAbsent(Reference reference, Function<Reference, TypeVariable> constructor) {
+    public TypeVariable computeTypeIfAbsent(final Reference reference, final Function<Reference, TypeVariable> constructor) {
         if (things.containsKey(reference)) throw GraknException.of(ILLEGAL_STATE);
         return types.computeIfAbsent(reference, constructor);
     }
 
-    public ThingVariable computeThingIfAbsent(Reference reference, Function<Reference, ThingVariable> constructor) {
+    public ThingVariable computeThingIfAbsent(final Reference reference, final Function<Reference, ThingVariable> constructor) {
         if (types.containsKey(reference)) throw GraknException.of(ILLEGAL_STATE);
         return things.computeIfAbsent(reference, constructor);
     }

@@ -26,7 +26,7 @@ public abstract class IID {
     final byte[] bytes;
     private int hash = 0;
 
-    IID(byte[] bytes) {
+    IID(final byte[] bytes) {
         this.bytes = bytes;
     }
 
@@ -42,10 +42,10 @@ public abstract class IID {
     public abstract String toString(); // for debugging
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        IID that = (IID) object;
+        final IID that = (IID) object;
         return Arrays.equals(this.bytes, that.bytes);
     }
 

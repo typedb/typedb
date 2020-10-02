@@ -31,7 +31,7 @@ public class LoopIterator<T> implements Iterators.Composable<T> {
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    LoopIterator(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
+    LoopIterator(final T seed, final Predicate<T> predicate, final UnaryOperator<T> function) {
         state = State.FETCHED; // because first result is 'seed'
         this.next = seed;
         this.predicate = predicate;

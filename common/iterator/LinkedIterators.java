@@ -29,7 +29,7 @@ public class LinkedIterators<T> implements ResourceIterator<T> {
 
     private final List<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators;
 
-    LinkedIterators(LinkedList<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators) {
+    LinkedIterators(final LinkedList<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators) {
         this.iterators = iterators;
     }
 
@@ -38,13 +38,13 @@ public class LinkedIterators<T> implements ResourceIterator<T> {
     }
 
     @Override
-    public final LinkedIterators<T> link(Iterators.Recyclable<T> iterator) {
+    public final LinkedIterators<T> link(final Iterators.Recyclable<T> iterator) {
         iterators.add(Either.first(iterator));
         return this;
     }
 
     @Override
-    public final LinkedIterators<T> link(Iterator<T> iterator) {
+    public final LinkedIterators<T> link(final Iterator<T> iterator) {
         if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
         iterators.add(Either.second(iterator));
         return this;

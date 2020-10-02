@@ -23,9 +23,9 @@ import java.util.stream.Stream;
 
 public class Streams {
 
-    public static int compareSize(Stream<?> stream, int size) {
+    public static int compareSize(final Stream<?> stream, final int size) {
         long count = 0L;
-        Iterator<?> iterator = stream.iterator();
+        final Iterator<?> iterator = stream.iterator();
 
         while (iterator.hasNext()) {
             iterator.next();

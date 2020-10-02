@@ -53,23 +53,23 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     protected final Graphs graphs;
     public final TypeVertex vertex;
 
-    TypeImpl(Graphs graphs, TypeVertex vertex) {
+    TypeImpl(final Graphs graphs, final TypeVertex vertex) {
         this.graphs = graphs;
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(Graphs graphs, String label, Encoding.Vertex.Type encoding) {
+    TypeImpl(final Graphs graphs, final String label, final Encoding.Vertex.Type encoding) {
         this(graphs, label, encoding, null);
     }
 
-    TypeImpl(Graphs graphs, String label, Encoding.Vertex.Type encoding, String scope) {
+    TypeImpl(final Graphs graphs, final String label, final Encoding.Vertex.Type encoding, final String scope) {
         this.graphs = graphs;
         this.vertex = graphs.schema().create(encoding, label, scope);
-        TypeVertex superTypeVertex = graphs.schema().getType(encoding.root().label(), encoding.root().scope());
+        final TypeVertex superTypeVertex = graphs.schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
     }
 
-    public static TypeImpl of(Graphs graphs, TypeVertex vertex) {
+    public static TypeImpl of(final Graphs graphs, final TypeVertex vertex) {
         switch (vertex.encoding()) {
             case ROLE_TYPE:
                 return RoleTypeImpl.of(graphs, vertex);
@@ -94,7 +94,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public void setLabel(String label) {
+    public void setLabel(final String label) {
         vertex.label(label);
     }
 
@@ -123,7 +123,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         return vertex.ins().edge(CONCLUSION).from().apply(v -> RuleImpl.of(graphs, v)).stream();
     }
 
-    void superTypeVertex(TypeVertex superTypeVertex) {
+    void superTypeVertex(final TypeVertex superTypeVertex) {
         if (vertex.equals(superTypeVertex)) throw exception(SUPERTYPE_SELF.message(vertex.label()));
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(SUB, superTypeVertex);
@@ -131,7 +131,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Nullable
     <TYPE extends grakn.core.concept.type.Type> TYPE getSupertype(final Function<TypeVertex, TYPE> typeConstructor) {
-        ResourceIterator<TypeVertex> iterator = vertex.outs().edge(SUB).to().filter(v -> v.encoding().equals(vertex.encoding()));
+        final ResourceIterator<TypeVertex> iterator = vertex.outs().edge(SUB).to().filter(v -> v.encoding().equals(vertex.encoding()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
@@ -141,7 +141,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
                 vertex,
                 v -> v != null && v.encoding().equals(this.vertex.encoding()),
                 v -> {
-                    ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
+                    final ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
                     if (p.hasNext()) return p.next();
                     else return null;
                 }
@@ -185,7 +185,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RoleType.class)));
     }
 
-    void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
+    void validateIsCommittedAndNotAbstract(final Class<?> instanceClass) {
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
             throw exception(SESSION_SCHEMA_VIOLATION.message());
         } else if (isAbstract()) {
@@ -194,7 +194,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public GraknException exception(String message) {
+    public GraknException exception(final String message) {
         return graphs.exception(message);
     }
 
@@ -204,10 +204,10 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public boolean equals(Object object) {
+    public boolean equals(final Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        TypeImpl that = (TypeImpl) object;
+        final TypeImpl that = (TypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 

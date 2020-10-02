@@ -45,7 +45,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     protected Encoding.ValueType valueType;
     protected Pattern regex;
 
-    TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+    TypeVertexImpl(final SchemaGraph graph, final VertexIID.Type iid, final String label, @Nullable final String scope) {
         super(graph, iid, label);
         assert iid.isType();
         this.scope = scope;
@@ -75,25 +75,25 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        public Buffered(final SchemaGraph graph, final VertexIID.Type iid, final String label, @Nullable final String scope) {
             super(graph, iid, label, scope);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(final Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
-        public void label(String label) {
+        public void label(final String label) {
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
         }
 
         @Override
-        public void scope(String scope) {
+        public void scope(final String scope) {
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
         }
@@ -109,7 +109,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl isAbstract(boolean isAbstract) {
+        public TypeVertexImpl isAbstract(final boolean isAbstract) {
             this.isAbstract = isAbstract;
             this.setModified();
             return this;
@@ -121,7 +121,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
+        public TypeVertexImpl valueType(final Encoding.ValueType valueType) {
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -133,7 +133,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl regex(Pattern regex) {
+        public TypeVertexImpl regex(final Pattern regex) {
             this.regex = regex;
             this.setModified();
             return this;
@@ -194,26 +194,26 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private boolean regexLookedUp;
 
-        public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        public Persisted(final SchemaGraph graph, final VertexIID.Type iid, final String label, @Nullable final String scope) {
             super(graph, iid, label, scope);
             regexLookedUp = false;
         }
 
-        public Persisted(SchemaGraph graph, VertexIID.Type iid) {
+        public Persisted(final SchemaGraph graph, final VertexIID.Type iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   getScope(graph, iid));
         }
 
         @Nullable
-        private static String getScope(SchemaGraph graph, VertexIID.Type iid) {
-            byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
+        private static String getScope(final SchemaGraph graph, final VertexIID.Type iid) {
+            final byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(final Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Persisted(this, direction);
         }
 
@@ -223,7 +223,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public void label(String label) {
+        public void label(final String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Type.of(this.label, scope).bytes());
@@ -232,7 +232,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public void scope(String scope) {
+        public void scope(final String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
             graph.storage().delete(IndexIID.Type.of(label, this.scope).bytes());
@@ -243,13 +243,13 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            byte[] flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            final byte[] flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
             isAbstract = flag != null;
             return isAbstract;
         }
 
         @Override
-        public TypeVertexImpl isAbstract(boolean isAbstract) {
+        public TypeVertexImpl isAbstract(final boolean isAbstract) {
             if (isAbstract) graph.storage().put(join(iid.bytes(), ABSTRACT.infix().bytes()));
             else graph.storage().delete(join(iid.bytes(), ABSTRACT.infix().bytes()));
             this.isAbstract = isAbstract;
@@ -260,13 +260,13 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         @Override
         public Encoding.ValueType valueType() {
             if (valueType != null) return valueType;
-            byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
+            final byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
             if (val != null) valueType = Encoding.ValueType.of(val[0]);
             return valueType;
         }
 
         @Override
-        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
+        public TypeVertexImpl valueType(final Encoding.ValueType valueType) {
             graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
             this.setModified();
@@ -276,14 +276,14 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         @Override
         public Pattern regex() {
             if (regexLookedUp) return regex;
-            byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
+            final byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
             if (val != null) regex = Pattern.compile(new String(val));
             regexLookedUp = true;
             return regex;
         }
 
         @Override
-        public TypeVertexImpl regex(Pattern regex) {
+        public TypeVertexImpl regex(final Pattern regex) {
             if (regex == null) graph.storage().delete(join(iid.bytes(), REGEX.infix().bytes()));
             else graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
             this.regex = regex;
@@ -307,7 +307,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
-            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
     }

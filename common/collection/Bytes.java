@@ -34,13 +34,13 @@ public class Bytes {
     public static final int DOUBLE_SIZE = 8;
     public static final int DATETIME_SIZE = LONG_SIZE;
 
-    public static byte[] join(byte[]... byteArrays) {
+    public static byte[] join(final byte[]... byteArrays) {
         int length = 0;
         for (byte[] array : byteArrays) {
             length += array.length;
         }
 
-        byte[] joint = new byte[length];
+        final byte[] joint = new byte[length];
         int pos = 0;
         for (byte[] array : byteArrays) {
             System.arraycopy(array, 0, joint, pos, array.length);
@@ -50,7 +50,7 @@ public class Bytes {
         return joint;
     }
 
-    public static boolean bytesHavePrefix(byte[] bytes, byte[] prefix) {
+    public static boolean bytesHavePrefix(final byte[] bytes, final byte[] prefix) {
         if (bytes.length < prefix.length) return false;
         for (int i = 0; i < prefix.length; i++) {
             if (bytes[i] != prefix[i]) return false;
@@ -58,21 +58,21 @@ public class Bytes {
         return true;
     }
 
-    public static byte[] shortToSortedBytes(int num) {
-        byte[] bytes = new byte[SHORT_SIZE];
+    public static byte[] shortToSortedBytes(final int num) {
+        final byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) ((num >> 8) ^ 0x80);
         return bytes;
     }
 
-    public static Short sortedBytesToShort(byte[] bytes) {
+    public static Short sortedBytesToShort(final byte[] bytes) {
         assert bytes.length == SHORT_SIZE;
         bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getShort();
     }
 
     public static byte[] integerToSortedBytes(int num) {
-        byte[] bytes = new byte[INTEGER_SIZE];
+        final byte[] bytes = new byte[INTEGER_SIZE];
         bytes[3] = (byte) (num);
         bytes[2] = (byte) (num >>= 8);
         bytes[1] = (byte) (num >>= 8);
@@ -80,14 +80,14 @@ public class Bytes {
         return bytes;
     }
 
-    public static long sortedBytesToInteger(byte[] bytes) {
+    public static long sortedBytesToInteger(final byte[] bytes) {
         assert bytes.length == INTEGER_SIZE;
         bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getInt();
     }
 
     public static byte[] longToSortedBytes(long num) {
-        byte[] bytes = new byte[LONG_SIZE];
+        final byte[] bytes = new byte[LONG_SIZE];
         bytes[7] = (byte) (num);
         bytes[6] = (byte) (num >>= 8);
         bytes[5] = (byte) (num >>= 8);
@@ -99,7 +99,7 @@ public class Bytes {
         return bytes;
     }
 
-    public static long sortedBytesToLong(byte[] bytes) {
+    public static long sortedBytesToLong(final byte[] bytes) {
         assert bytes.length == LONG_SIZE;
         bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getLong();
@@ -121,8 +121,8 @@ public class Bytes {
      * @param value the {@code double} value to convert
      * @return the sorted byte representation of the {@code double} value
      */
-    public static byte[] doubleToSortedBytes(double value) {
-        byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
+    public static byte[] doubleToSortedBytes(final double value) {
+        final byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
         if (value >= 0) {
             bytes[0] = (byte) (bytes[0] ^ 0x80);
         } else {
@@ -133,7 +133,7 @@ public class Bytes {
         return bytes;
     }
 
-    public static double sortedBytesToDouble(byte[] bytes) {
+    public static double sortedBytesToDouble(final byte[] bytes) {
         assert bytes.length == DOUBLE_SIZE;
         if ((bytes[0] & 0x80) == 0x80) {
             bytes[0] = (byte) (bytes[0] ^ 0x80);
@@ -145,47 +145,47 @@ public class Bytes {
         return ByteBuffer.wrap(bytes).getDouble();
     }
 
-    public static byte[] stringToBytes(String value, Charset encoding) {
-        byte[] bytes = value.getBytes(encoding);
+    public static byte[] stringToBytes(final String value, final Charset encoding) {
+        final byte[] bytes = value.getBytes(encoding);
         return join(new byte[]{(byte) bytes.length}, bytes);
     }
 
-    public static String bytesToString(byte[] bytes, Charset encoding) {
-        byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
+    public static String bytesToString(final byte[] bytes, final Charset encoding) {
+        final byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
         return new String(x, encoding);
     }
 
-    public static byte booleanToByte(boolean value) {
+    public static byte booleanToByte(final boolean value) {
         return (byte) (value ? 1 : 0);
     }
 
-    public static Boolean byteToBoolean(byte aByte) {
+    public static Boolean byteToBoolean(final byte aByte) {
         return aByte == 1;
     }
 
-    public static byte[] dateTimeToBytes(java.time.LocalDateTime value, ZoneId timeZoneID) {
+    public static byte[] dateTimeToBytes(final java.time.LocalDateTime value, final ZoneId timeZoneID) {
         return longToSortedBytes(value.atZone(timeZoneID).toInstant().toEpochMilli());
     }
 
-    public static java.time.LocalDateTime bytesToDateTime(byte[] bytes, ZoneId timeZoneID) {
+    public static java.time.LocalDateTime bytesToDateTime(final byte[] bytes, final ZoneId timeZoneID) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(sortedBytesToLong(bytes)), timeZoneID);
     }
 
-    public static byte[] uuidToBytes(UUID uuid) {
-        ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
+    public static byte[] uuidToBytes(final UUID uuid) {
+        final ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
         buffer.putLong(uuid.getMostSignificantBits());
         buffer.putLong(uuid.getLeastSignificantBits());
         return buffer.array();
     }
 
-    public static UUID bytesToUUID(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        long firstLong = buffer.getLong();
-        long secondLong = buffer.getLong();
+    public static UUID bytesToUUID(final byte[] bytes) {
+        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        final long firstLong = buffer.getLong();
+        final long secondLong = buffer.getLong();
         return new UUID(firstLong, secondLong);
     }
 
-    public static boolean arrayContains(byte[] container, int from, byte[] contained) {
+    public static boolean arrayContains(final byte[] container, final int from, final byte[] contained) {
         if ((container.length - from) > contained.length) return false;
         for (int i = 0; i < contained.length; i++) {
             if (container[from + i] != contained[i]) return false;

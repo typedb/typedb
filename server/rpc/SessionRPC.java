@@ -30,7 +30,7 @@ public class SessionRPC {
     private final Grakn.Session session;
     private final Set<TransactionRPC> transactionRPCs;
 
-    SessionRPC(Grakn grakn, String database, Arguments.Session.Type type, Options.Session options) {
+    SessionRPC(final Grakn grakn, final String database, final Arguments.Session.Type type, final Options.Session options) {
         this.session = grakn.session(database, type, options);
         transactionRPCs = ConcurrentHashMap.newKeySet();
     }
@@ -39,21 +39,21 @@ public class SessionRPC {
         return session;
     }
 
-    Grakn.Transaction transaction(TransactionRPC transactionRPC) {
+    Grakn.Transaction transaction(final TransactionRPC transactionRPC) {
         transactionRPCs.add(transactionRPC);
         return session.transaction(transactionRPC.type(), transactionRPC.options());
     }
 
-    void onError(Throwable error) {
+    void onError(final Throwable error) {
         transactionRPCs.forEach(ts -> ts.close(error));
         session.close();
     }
 
-    void remove(TransactionRPC transactionRPC) {
+    void remove(final TransactionRPC transactionRPC) {
         transactionRPCs.remove(transactionRPC);
     }
 
-    void close(@Nullable Throwable error) {
+    void close(@Nullable final Throwable error) {
         transactionRPCs.forEach(ts -> ts.close(error));
         session.close();
     }

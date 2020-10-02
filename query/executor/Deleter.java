@@ -45,7 +45,7 @@ public class Deleter {
     private final Set<Variable> variables;
     private final Map<Reference, Thing> deleted;
 
-    public Deleter(Concepts conceptMgr, List<ThingVariable<?>> variables, Context.Query context, ConceptMap existing) {
+    public Deleter(final Concepts conceptMgr, final List<ThingVariable<?>> variables, final Context.Query context, final ConceptMap existing) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
             this.context = context;

@@ -36,44 +36,44 @@ import static org.junit.Assert.fail;
 public class Parameters {
 
     @ParameterType("true|false")
-    public Boolean bool(String bool) {
+    public Boolean bool(final String bool) {
         return Boolean.parseBoolean(bool);
     }
 
     @ParameterType("[0-9]+")
-    public Integer number(String number) {
+    public Integer number(final String number) {
         return Integer.parseInt(number);
     }
 
     @ParameterType("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d")
-    public LocalDateTime datetime(String dateTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public LocalDateTime datetime(final String dateTime) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return LocalDateTime.parse(dateTime, formatter);
     }
 
     @ParameterType("entity|attribute|relation")
-    public RootLabel root_label(String type) {
+    public RootLabel root_label(final String type) {
         return RootLabel.of(type);
     }
 
     @ParameterType("[a-zA-Z0-9-_]+")
-    public String type_label(String typeLabel) {
+    public String type_label(final String typeLabel) {
         return typeLabel;
     }
 
     @ParameterType("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")
-    public ScopedLabel scoped_label(String roleLabel) {
-        String[] labels = roleLabel.split(":");
+    public ScopedLabel scoped_label(final String roleLabel) {
+        final String[] labels = roleLabel.split(":");
         return new ScopedLabel(labels[0], labels[1]);
     }
 
     @DataTableType
-    public List<ScopedLabel> scoped_labels(List<String> values) {
-        Iterator<String> valuesIter = values.iterator();
+    public List<ScopedLabel> scoped_labels(final List<String> values) {
+        final Iterator<String> valuesIter = values.iterator();
         String next;
-        List<ScopedLabel> scopedLabels = new ArrayList<>();
+        final List<ScopedLabel> scopedLabels = new ArrayList<>();
         while (valuesIter.hasNext() && (next = valuesIter.next()).matches("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")) {
-            String[] labels = next.split(":");
+            final String[] labels = next.split(":");
             scopedLabels.add(new ScopedLabel(labels[0], labels[1]));
         }
 
@@ -82,7 +82,7 @@ public class Parameters {
     }
 
     @ParameterType("long|double|string|boolean|datetime")
-    public AttributeType.ValueType value_type(String type) {
+    public AttributeType.ValueType value_type(final String type) {
         switch (type) {
             case "long":
                 return AttributeType.ValueType.LONG;
@@ -100,12 +100,12 @@ public class Parameters {
     }
 
     @ParameterType("\\$([a-zA-Z0-9]+)")
-    public String var(String variable) {
+    public String var(final String variable) {
         return variable;
     }
 
     @ParameterType("read|write")
-    public Arguments.Transaction.Type transaction_type(String type) {
+    public Arguments.Transaction.Type transaction_type(final String type) {
         if (type.equals("read")) {
             return Arguments.Transaction.Type.READ;
         } else if (type.equals("write")) {
@@ -115,10 +115,10 @@ public class Parameters {
     }
 
     @DataTableType
-    public List<Arguments.Transaction.Type> transaction_types(List<String> values) {
-        List<Arguments.Transaction.Type> typeList = new ArrayList<>();
+    public List<Arguments.Transaction.Type> transaction_types(final List<String> values) {
+        final List<Arguments.Transaction.Type> typeList = new ArrayList<>();
         for (String value : values) {
-            Arguments.Transaction.Type type = transaction_type(value);
+            final Arguments.Transaction.Type type = transaction_type(value);
             assertNotNull(type);
             typeList.add(type);
         }
@@ -133,11 +133,11 @@ public class Parameters {
 
         private final String label;
 
-        RootLabel(String label) {
+        RootLabel(final String label) {
             this.label = label;
         }
 
-        public static RootLabel of(String label) {
+        public static RootLabel of(final String label) {
             for (RootLabel t : RootLabel.values()) {
                 if (t.label.equals(label)) {
                     return t;
@@ -155,7 +155,7 @@ public class Parameters {
         private final String scope;
         private final String role;
 
-        public ScopedLabel(String scope, String role) {
+        public ScopedLabel(final String scope, final String role) {
             this.scope = scope;
             this.role = role;
         }
@@ -174,10 +174,10 @@ public class Parameters {
         }
 
         @Override
-        public boolean equals(Object object) {
+        public boolean equals(final Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            ScopedLabel that = (ScopedLabel) object;
+            final ScopedLabel that = (ScopedLabel) object;
             return (this.scope.equals(that.scope) &&
                     this.role.equals(that.role));
         }

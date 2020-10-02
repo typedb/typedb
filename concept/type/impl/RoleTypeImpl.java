@@ -36,7 +36,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTAT
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
-    private RoleTypeImpl(Graphs graphs, TypeVertex vertex) {
+    private RoleTypeImpl(final Graphs graphs, final TypeVertex vertex) {
         super(graphs, vertex);
         assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
         if (vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE) {
@@ -48,16 +48,16 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
     }
 
-    private RoleTypeImpl(Graphs graphs, String label, String relation) {
+    private RoleTypeImpl(final Graphs graphs, final String label, final String relation) {
         super(graphs, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
     }
 
-    public static RoleTypeImpl of(Graphs graphs, TypeVertex vertex) {
+    public static RoleTypeImpl of(final Graphs graphs, final TypeVertex vertex) {
         if (vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(graphs, vertex);
         else return new RoleTypeImpl(graphs, vertex);
     }
 
-    public static RoleTypeImpl of(Graphs graphs, String label, String relation) {
+    public static RoleTypeImpl of(final Graphs graphs, final String label, final String relation) {
         return new RoleTypeImpl(graphs, label, relation);
     }
 
@@ -69,7 +69,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         vertex.isAbstract(false);
     }
 
-    void sup(RoleType superType) {
+    void sup(final RoleType superType) {
         super.superTypeVertex(((RoleTypeImpl) superType).vertex);
     }
 
@@ -126,15 +126,15 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return create(false);
     }
 
-    public RoleImpl create(boolean isInferred) {
+    public RoleImpl create(final boolean isInferred) {
         validateIsCommittedAndNotAbstract(Entity.class);
-        ThingVertex instance = graphs.data().create(vertex.iid(), isInferred);
+        final ThingVertex instance = graphs.data().create(vertex.iid(), isInferred);
         return RoleImpl.of(instance);
     }
 
     public static class Root extends RoleTypeImpl {
 
-        Root(Graphs graphs, TypeVertex vertex) {
+        Root(final Graphs graphs, final TypeVertex vertex) {
             super(graphs, vertex);
             assert vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label());
         }
@@ -143,12 +143,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        public void setLabel(final String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
         void unsetAbstract() { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
-        void sup(RoleType superType) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        void sup(final RoleType superType) { throw exception(ROOT_TYPE_MUTATION.message()); }
     }
 }
