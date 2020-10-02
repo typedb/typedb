@@ -33,13 +33,13 @@ public class Matcher {
 
     private static final String TRACE_PREFIX = "matcher.";
     private final Graphs graphMgr;
-    private final Disjunction query;
+    private final Disjunction disjunction;
     private final Context.Query context;
 
     public Matcher(Graphs graphMgr, graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction, Context.Query context) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.graphMgr = graphMgr;
-            this.query = Pattern.fromGraqlConjunction(conjunction);
+            this.disjunction = Pattern.fromGraqlConjunction(conjunction);
             this.context = context;
         }
     }

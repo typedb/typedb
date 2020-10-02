@@ -20,7 +20,7 @@ package grakn.core.common.parameters;
 
 import javax.annotation.Nullable;
 
-public class Context<PARENT extends Context, OPTIONS extends Options> {
+public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>> {
 
     Arguments.Session.Type sessionType;
     Arguments.Transaction.Type transactionType;
@@ -49,7 +49,7 @@ public class Context<PARENT extends Context, OPTIONS extends Options> {
         return transactionType;
     }
 
-    public static class Session extends Context<Context, Options.Session> {
+    public static class Session extends Context<Context<?, ?>, Options.Session> {
 
         public Session(Options.Database databaseOptions, Options.Session sessionOptions) {
             super(null, sessionOptions.parent(databaseOptions));

@@ -51,7 +51,7 @@ public class AnswerGroup<T extends Answer> implements Answer {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        AnswerGroup a2 = (AnswerGroup) obj;
+        AnswerGroup<?> a2 = (AnswerGroup<?>) obj;
         return this.owner.equals(a2.owner) &&
                 this.answers.equals(a2.answers);
     }

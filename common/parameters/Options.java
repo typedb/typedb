@@ -20,7 +20,7 @@ package grakn.core.common.parameters;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 
-public abstract class Options<PARENT extends Options, SELF extends Options> {
+public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
     public static final boolean DEFAULT_INFER = true;
     public static final boolean DEFAULT_EXPLAIN = false;
@@ -83,14 +83,14 @@ public abstract class Options<PARENT extends Options, SELF extends Options> {
         return getThis();
     }
 
-    public static class Database extends Options<Options, Database> {
+    public static class Database extends Options<Options<?, ?>, Database> {
 
         @Override
         Database getThis() {
             return this;
         }
 
-        public Database parent(Options parent) {
+        public Database parent(Options<?, ?> parent) {
             throw new GraknException(ErrorMessage.Internal.ILLEGAL_ARGUMENT);
         }
     }

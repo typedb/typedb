@@ -86,7 +86,7 @@ public abstract class ValueOperation<T> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ValueOperation that = (ValueOperation) o;
+        ValueOperation<?> that = (ValueOperation<?>) o;
         return (this.comparator.equals(that.comparator) && this.value.equals(that.value));
     }
 
