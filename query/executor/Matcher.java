@@ -23,7 +23,6 @@ import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
 import grakn.core.query.pattern.Disjunction;
-import grakn.core.query.pattern.Pattern;
 
 import java.util.stream.Stream;
 
@@ -39,7 +38,7 @@ public class Matcher {
     public Matcher(final Graphs graphMgr, final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction, final Context.Query context) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.graphMgr = graphMgr;
-            this.disjunction = Pattern.fromGraqlConjunction(conjunction);
+            this.disjunction = Disjunction.create(conjunction.normalise());
             this.context = context;
         }
     }

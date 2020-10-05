@@ -18,11 +18,44 @@
 
 package grakn.core.query.pattern;
 
-public class Negation extends Pattern {
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
+import grakn.core.query.pattern.constraint.Constraint;
+import grakn.core.query.pattern.variable.Identifier;
+import grakn.core.query.pattern.variable.Variable;
+import graql.lang.pattern.Conjunctable;
 
+import java.util.Set;
+
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+
+public class Negation implements Pattern {
+
+    private static final String TRACE_PREFIX = "negation.";
     private final Disjunction disjunction;
 
     public Negation(final Disjunction disjunction) {
         this.disjunction = disjunction;
+    }
+
+    public static Negation create(
+            final graql.lang.pattern.Negation<graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>>> graql,
+            final Set<Identifier> bounds) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            Disjunction disjunction = Disjunction.create(graql.normalise().pattern());
+            disjunction.conjunctions().forEach(conjunction -> {
+                if (conjunction.constraints().stream()
+                        .map(Constraint::owner).map(Variable::identifier)
+                        .noneMatch(bounds::contains)) {
+                    throw GraknException.of(ErrorMessage.Query.UNBOUNDED_NEGATION);
+                }
+            });
+            return new Negation(disjunction);
+        }
+    }
+
+    public Disjunction disjunction() {
+        return disjunction;
     }
 }

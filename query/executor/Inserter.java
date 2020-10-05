@@ -34,7 +34,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.constraint.ThingConstraint;
 import grakn.core.query.pattern.constraint.ValueOperation;
 import grakn.core.query.pattern.variable.ThingVariable;
@@ -84,7 +83,7 @@ public class Inserter {
     public Inserter(final Concepts conceptMgr, final List<graql.lang.pattern.variable.ThingVariable<?>> variables, final ConceptMap existing, final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.conceptMgr = conceptMgr;
-            this.variables = Pattern.fromGraqlThings(variables);
+            this.variables = Variable.createFromThings(variables);
             this.context = context;
             this.existing = existing;
             this.inserted = new HashMap<>();

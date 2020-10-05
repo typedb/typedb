@@ -113,6 +113,7 @@ public class TypeVariable extends Variable {
         return relatesConstraints;
     }
 
+    @Override
     public Set<TypeConstraint> constraints() {
         return constraints;
     }

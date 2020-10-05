@@ -23,7 +23,6 @@ import grakn.core.common.parameters.Context;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
-import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
@@ -50,7 +49,7 @@ public class Deleter {
             this.conceptMgr = conceptMgr;
             this.context = context;
             this.existing = existing;
-            this.variables = Pattern.fromGraqlThings(variables);
+            this.variables = Variable.createFromThings(variables);
             this.deleted = new HashMap<>();
         }
     }

@@ -18,19 +18,53 @@
 
 package grakn.core.query.pattern.variable;
 
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
 import grakn.core.query.pattern.Pattern;
+import grakn.core.query.pattern.constraint.Constraint;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Query.INVALID_CASTING;
 
-public abstract class Variable extends Pattern {
+public abstract class Variable implements Pattern {
 
+    private static final String TRACE_PREFIX = "variable.";
     final Identifier identifier;
 
     Variable(final Identifier identifier) {
         this.identifier = identifier;
+    }
+
+    public static Set<TypeVariable> createFromTypes(final List<graql.lang.pattern.variable.TypeVariable> variables) {
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "types")) {
+            final VariableRegistry registry = new VariableRegistry();
+            variables.forEach(registry::register);
+            return registry.types();
+        }
+    }
+
+    public static Set<Variable> createFromThings(final List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "things")) {
+            return createFromVariables(variables);
+        }
+    }
+
+    public static Set<Variable> createFromVariables(
+            final List<? extends graql.lang.pattern.variable.BoundVariable> variables) {
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
+            final VariableRegistry registry = new VariableRegistry();
+            variables.forEach(registry::register);
+            final Set<Variable> output = new HashSet<>();
+            output.addAll(registry.types());
+            output.addAll(registry.things());
+            return output;
+        }
     }
 
     public Identifier identifier() {
@@ -56,6 +90,8 @@ public abstract class Variable extends Pattern {
     public ThingVariable asThing() {
         throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(ThingVariable.class)));
     }
+
+    public abstract Set<? extends Constraint> constraints();
 
     @Override
     public abstract boolean equals(Object o);

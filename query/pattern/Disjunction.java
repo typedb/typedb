@@ -18,13 +18,31 @@
 
 package grakn.core.query.pattern;
 
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import graql.lang.pattern.Conjunctable;
+
 import java.util.Set;
 
-public class Disjunction extends Pattern {
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static java.util.stream.Collectors.toSet;
 
+public class Disjunction implements Pattern {
+
+    private static final String TRACE_PREFIX = "disjunction.";
     private final Set<Conjunction> conjunctions;
 
     public Disjunction(final Set<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
+    }
+
+    public static Disjunction create(
+            final graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            return new Disjunction(graql.patterns().stream().map(Conjunction::create).collect(toSet()));
+        }
+    }
+
+    public Set<Conjunction> conjunctions() {
+        return conjunctions;
     }
 }

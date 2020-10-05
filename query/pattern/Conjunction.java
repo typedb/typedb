@@ -18,17 +18,72 @@
 
 package grakn.core.query.pattern;
 
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
+import grakn.core.query.pattern.constraint.Constraint;
+import grakn.core.query.pattern.variable.Identifier;
 import grakn.core.query.pattern.variable.Variable;
+import graql.lang.pattern.Conjunctable;
+import graql.lang.pattern.variable.BoundVariable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
-public class Conjunction extends Pattern {
+import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static java.util.stream.Collectors.toSet;
 
-    private final Set<Variable> variables;
-    private final Set<Negation> negatedQueries;
+public class Conjunction implements Pattern {
 
-    public Conjunction(final Set<Variable> variables, final Set<Negation> negatedQueries) {
-        this.variables = variables;
-        this.negatedQueries = negatedQueries;
+    private static final String TRACE_PREFIX = "conjunction.";
+    private final Set<Constraint> constraints;
+    private final Set<Negation> negations;
+
+    public Conjunction(final Set<Constraint> constraints, final Set<Negation> negations) {
+        this.constraints = constraints;
+        this.negations = negations;
+    }
+
+    public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            List<BoundVariable> graqlVariables = new ArrayList<>();
+            List<graql.lang.pattern.Negation<?>> graqlNegations = new ArrayList<>();
+
+            graql.patterns().forEach(conjunctable -> {
+                if (conjunctable.isVariable()) graqlVariables.add(conjunctable.asVariable());
+                else if (conjunctable.isNegation()) graqlNegations.add(conjunctable.asNegation());
+                else throw GraknException.of(ILLEGAL_STATE);
+            });
+
+            if (graqlVariables.isEmpty() && !graqlNegations.isEmpty()) {
+                throw GraknException.of(ErrorMessage.Query.UNBOUNDED_NEGATION);
+            }
+
+            Set<Negation> graknNegations;
+            Set<Variable> graknVariables = Variable.createFromVariables(graqlVariables);
+            Set<Constraint> graknConstraints = graknVariables.stream()
+                    .flatMap(v -> v.constraints().stream()).collect(toSet());
+
+            if (!graqlNegations.isEmpty()) {
+                Set<Identifier> bounds = graknVariables.stream().map(Variable::identifier)
+                        .filter(id -> id.reference().isName()).collect(toSet());
+                graknNegations = graqlNegations.stream()
+                        .map(n -> Negation.create(n.normalise(), bounds)).collect(toSet());
+            } else {
+                graknNegations = set();
+            }
+            return new Conjunction(graknConstraints, graknNegations);
+        }
+    }
+
+    public Set<Constraint> constraints() {
+        return constraints;
+    }
+
+    public Set<Negation> negations() {
+        return negations;
     }
 }

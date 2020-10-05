@@ -27,9 +27,9 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.Pattern;
 import grakn.core.query.pattern.constraint.TypeConstraint;
 import grakn.core.query.pattern.variable.TypeVariable;
+import grakn.core.query.pattern.variable.Variable;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -65,7 +65,7 @@ public class Undefiner {
             this.undefined = new HashSet<>();
 
             final Set<TypeVariable> sorted = new HashSet<>();
-            Pattern.fromGraqlTypes(variables).forEach(variable -> {
+            Variable.createFromTypes(variables).forEach(variable -> {
                 if (!sorted.contains(variable)) sort(variable, sorted);
             });
         }

@@ -88,6 +88,7 @@ public class ThingVariable extends Variable {
         return hasConstraints;
     }
 
+    @Override
     public Set<ThingConstraint> constraints() {
         return constraints;
     }

@@ -144,6 +144,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Query(1, "The class '%s' cannot be casted to '%s'.");
         public static final Query ANONYMOUS_TYPE_VARIABLE =
                 new Query(2, "Attempted to refer to a type using an anonymous variable. Their intended use is for inserting things.");
+        public static final Query UNBOUNDED_NEGATION =
+                new Query(3, "Invalid query containing unbounded negation pattern.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Execution";
