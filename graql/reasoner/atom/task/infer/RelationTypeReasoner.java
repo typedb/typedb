@@ -205,7 +205,7 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
      */
     private RelationAtom inferType(RelationAtom atom, ConceptMap sub, ReasoningContext ctx) {
         if (atom.getTypeLabel() != null) return atom;
-        if (sub.containsVar(atom.getPredicateVariable())) return atom.addType(sub.get(atom.getPredicateVariable()).asType());
+        if (sub.containsVar(atom.getTypeVariable())) return atom.addType(sub.get(atom.getTypeVariable()).asType());
         List<Type> relationTypes = inferPossibleTypes(atom, sub, ctx);
         if (relationTypes.size() == 1) return atom.addType(Iterables.getOnlyElement(relationTypes));
         return atom;
@@ -295,10 +295,10 @@ public class RelationTypeReasoner implements TypeReasoner<RelationAtom> {
         Statement relationPattern = RelationAtom.relationPattern(atom.getVarName(), inferredRelationPlayers);
         Statement newPattern =
                 (atom.isDirect() ?
-                        relationPattern.isaX(new Statement(atom.getPredicateVariable())) :
-                        relationPattern.isa(new Statement(atom.getPredicateVariable()))
+                        relationPattern.isaX(new Statement(atom.getTypeVariable())) :
+                        relationPattern.isa(new Statement(atom.getTypeVariable()))
                 );
 
-        return RelationAtom.create(newPattern, atom.getPredicateVariable(), atom.getTypeLabel(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
+        return RelationAtom.create(newPattern, atom.getTypeVariable(), atom.getTypeLabel(), atom.getPossibleTypes(), atom.getParentQuery(), atom.context());
     }
 }

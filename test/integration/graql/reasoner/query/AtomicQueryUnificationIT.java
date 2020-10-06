@@ -1111,7 +1111,7 @@ public class AtomicQueryUnificationIT {
         assertTrue(!unifiedAnswers.isEmpty());
         assertTrue(!parentAnswers.isEmpty());
 
-        Set<Variable> parentNonTypeVariables = Sets.difference(parent.getAtom().getVarNames(), Sets.newHashSet(parent.getAtom().getPredicateVariable()));
+        Set<Variable> parentNonTypeVariables = Sets.difference(parent.getAtom().getVarNames(), Sets.newHashSet(parent.getAtom().getTypeVariable()));
         if (!checkEquality) {
             if (!ignoreTypes) {
                 assertTrue(parentAnswers.containsAll(unifiedAnswers));
@@ -1128,7 +1128,7 @@ public class AtomicQueryUnificationIT {
                 List<ConceptMap> parentToChild = parentAnswers.stream().map(inverse::apply).collect(Collectors.toList());
                 assertCollectionsNonTriviallyEqual(parentToChild, childAnswers);
             } else {
-                Set<Variable> childNonTypeVariables = Sets.difference(child.getAtom().getVarNames(), Sets.newHashSet(child.getAtom().getPredicateVariable()));
+                Set<Variable> childNonTypeVariables = Sets.difference(child.getAtom().getVarNames(), Sets.newHashSet(child.getAtom().getTypeVariable()));
                 List<ConceptMap> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
                 List<ConceptMap> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
                 List<ConceptMap> projectedChild = childAnswers.stream().map(ans -> ans.project(childNonTypeVariables)).collect(Collectors.toList());

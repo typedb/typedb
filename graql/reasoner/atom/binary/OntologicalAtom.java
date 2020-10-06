@@ -75,21 +75,21 @@ public class OntologicalAtom extends TypeAtom {
     private final OntologicalAtomType atomType;
 
     private OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
-                            Variable predicateVariable, OntologicalAtomType type, ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
+                            Variable typeVariable, OntologicalAtomType type, ReasoningContext ctx) {
+        super(varName, pattern, reasonerQuery, label, typeVariable, ctx);
         this.atomType = type;
     }
 
     public static OntologicalAtom create(Variable var, Variable pVar, @Nullable Label label, ReasonerQuery parent, OntologicalAtomType type,
                                          ReasoningContext ctx) {
         Variable varName = var.asReturnedVar();
-        Variable predicateVar = pVar.asReturnedVar();
+        Variable typeVar = pVar.asReturnedVar();
         Statement statement = type.statementFunction().apply(new Pair<>(var, pVar), label);
-        return new OntologicalAtom(varName, statement, parent, label, predicateVar, type, ctx);
+        return new OntologicalAtom(varName, statement, parent, label, typeVar, type, ctx);
     }
 
     private static OntologicalAtom create(OntologicalAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), parent, a.atomType(), a.context());
+        return create(a.getVarName(), a.getTypeVariable(), a.getTypeLabel(), parent, a.atomType(), a.context());
     }
 
     @Override
@@ -135,18 +135,18 @@ public class OntologicalAtom extends TypeAtom {
         Collection<Variable> vars = u.get(getVarName());
         return vars.isEmpty() ?
                 Collections.singleton(this) :
-                vars.stream().map(v -> create(v, getPredicateVariable(), getTypeLabel(), this.getParentQuery(), atomType(), context())).collect(Collectors.toSet());
+                vars.stream().map(v -> create(v, getTypeVariable(), getTypeLabel(), this.getParentQuery(), atomType(), context())).collect(Collectors.toSet());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery(), atomType(), context());
+        return create(getVarName(), getTypeVariable().asReturnedVar(), getTypeLabel(), getParentQuery(), atomType(), context());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
-        return parentAtom.getPredicateVariable().isReturned() ?
-                create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getParentQuery(), atomType(), context()) :
+        return parentAtom.getTypeVariable().isReturned() ?
+                create(getVarName(), getTypeVariable().asReturnedVar(), getTypeLabel(), getParentQuery(), atomType(), context()) :
                 this;
     }
 

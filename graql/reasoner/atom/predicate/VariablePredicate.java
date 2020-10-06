@@ -29,8 +29,8 @@ import java.util.Set;
 
 public abstract class VariablePredicate extends Predicate<Variable> {
 
-    VariablePredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
-        super(varName, pattern, predicateVar, parentQuery);
+    VariablePredicate(Variable varName, Variable typeVar, Statement pattern, ReasonerQuery parentQuery) {
+        super(varName, pattern, typeVar, parentQuery);
     }
 
     private boolean predicateBindingsEquivalent(VariablePredicate that, Equivalence<Atomic> equiv){

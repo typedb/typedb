@@ -39,19 +39,19 @@ import java.util.stream.Collectors;
 
 public class NeqIdPredicate extends VariablePredicate {
 
-    private NeqIdPredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
-        super(varName, predicateVar, pattern, parentQuery);
+    private NeqIdPredicate(Variable varName, Variable typeVar, Statement pattern, ReasonerQuery parentQuery) {
+        super(varName, typeVar, pattern, parentQuery);
     }
 
     public static NeqIdPredicate create(Statement pattern, ReasonerQuery parent) {
-        return new NeqIdPredicate(pattern.var(), extractPredicateVariable(pattern), pattern, parent);
+        return new NeqIdPredicate(pattern.var(), extractTypeVariable(pattern), pattern, parent);
     }
     public static NeqIdPredicate create(Variable varName, NeqProperty prop, ReasonerQuery parent) {
         Statement pattern = new Statement(varName).not(prop);
         return create(pattern, parent);
     }
 
-    private static Variable extractPredicateVariable(Statement pattern) {
+    private static Variable extractTypeVariable(Statement pattern) {
         return Iterables.getOnlyElement(pattern.getProperties(NeqProperty.class).collect(Collectors.toSet())).statement().var();
     }
 

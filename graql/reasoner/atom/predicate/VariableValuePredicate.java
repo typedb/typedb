@@ -49,8 +49,8 @@ public class VariableValuePredicate extends VariablePredicate {
 
     private final ValueProperty.Operation op;
 
-    private VariableValuePredicate(Variable varName, Variable predicateVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
-        super(varName, predicateVar, pattern, parentQuery);
+    private VariableValuePredicate(Variable varName, Variable typeVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
+        super(varName, typeVar, pattern, parentQuery);
         this.op = op;
     }
 
@@ -58,9 +58,9 @@ public class VariableValuePredicate extends VariablePredicate {
         Statement innerStatement = op.innerStatement();
         //comparisons only valid for variable predicates (ones having a reference variable)
         Preconditions.checkNotNull(innerStatement);
-        Variable predicateVar = innerStatement.var();
+        Variable typeVar = innerStatement.var();
         Statement pattern = new Statement(varName).operation(op);
-        return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
+        return new VariableValuePredicate(varName, typeVar, op, pattern, parent);
     }
 
     public static VariableValuePredicate fromValuePredicate(ValuePredicate predicate){

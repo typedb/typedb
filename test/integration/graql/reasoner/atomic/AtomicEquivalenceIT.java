@@ -217,7 +217,7 @@ public class AtomicEquivalenceIT {
     }
 
     @Test
-    public void testEquivalence_DifferentNonVariablePredicateVariants() {
+    public void testEquivalence_DifferentNonVariableTypeVariants() {
         Statement value = Graql.var("value");
         final String bound = "value";
         ArrayList<Statement> variablePredicates = Lists.newArrayList(
@@ -254,7 +254,7 @@ public class AtomicEquivalenceIT {
     }
 
     @Test
-    public void testEquivalence_DifferentVariablePredicateVariants() {
+    public void testEquivalence_DifferentVariableTypeVariants() {
         Statement value = Graql.var("value");
         Statement anotherValue = Graql.var("anotherValue");
         ArrayList<Statement> variablePredicates = Lists.newArrayList(
