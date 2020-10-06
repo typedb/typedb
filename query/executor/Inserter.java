@@ -76,17 +76,26 @@ public class Inserter {
     private final Map<Reference, Thing> inserted;
     private final Set<Variable> variables;
 
-    public Inserter(final Concepts conceptMgr, final List<graql.lang.pattern.variable.ThingVariable<?>> variables, final Context.Query context) {
-        this(conceptMgr, variables, new ConceptMap(), context);
+    private Inserter(final Concepts conceptMgr, final Set<Variable> variables,
+                    final ConceptMap existing, final Context.Query context) {
+        this.conceptMgr = conceptMgr;
+        this.variables = variables;
+        this.context = context;
+        this.existing = existing;
+        this.inserted = new HashMap<>();
     }
 
-    public Inserter(final Concepts conceptMgr, final List<graql.lang.pattern.variable.ThingVariable<?>> variables, final ConceptMap existing, final Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
-            this.conceptMgr = conceptMgr;
-            this.variables = Variable.createFromThings(variables);
-            this.context = context;
-            this.existing = existing;
-            this.inserted = new HashMap<>();
+    public static Inserter create(final Concepts conceptMgr,
+                                  final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+                                  final Context.Query context) {
+        return create(conceptMgr, variables, new ConceptMap(), context);
+    }
+
+    public static Inserter create(final Concepts conceptMgr,
+                                  final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+                                  final ConceptMap existing, final Context.Query context) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            return new Inserter(conceptMgr, Variable.createFromThings(variables), existing, context);
         }
     }
 

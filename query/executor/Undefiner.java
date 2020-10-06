@@ -57,17 +57,23 @@ public class Undefiner {
     private final LinkedList<TypeVariable> variables;
     private final Set<TypeVariable> undefined;
 
-    public Undefiner(final Concepts conceptMgr, final List<graql.lang.pattern.variable.TypeVariable> variables, final Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
-            this.conceptMgr = conceptMgr;
-            this.context = context;
-            this.variables = new LinkedList<>();
-            this.undefined = new HashSet<>();
+    private Undefiner(final Concepts conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
+        this.conceptMgr = conceptMgr;
+        this.context = context;
+        this.variables = new LinkedList<>();
+        this.undefined = new HashSet<>();
 
-            final Set<TypeVariable> sorted = new HashSet<>();
-            Variable.createFromTypes(variables).forEach(variable -> {
-                if (!sorted.contains(variable)) sort(variable, sorted);
-            });
+        final Set<TypeVariable> sorted = new HashSet<>();
+        variables.forEach(variable -> {
+            if (!sorted.contains(variable)) sort(variable, sorted);
+        });
+    }
+
+    public static Undefiner create(final Concepts conceptMgr,
+                                   final List<graql.lang.pattern.variable.TypeVariable> variables,
+                                   final Context.Query context) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            return new Undefiner(conceptMgr, Variable.createFromTypes(variables), context);
         }
     }
 

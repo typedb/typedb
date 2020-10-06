@@ -29,13 +29,14 @@ import graql.lang.pattern.Conjunctable;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.exception.ErrorMessage.Query.UNBOUNDED_NEGATION;
 
 public class Negation implements Pattern {
 
     private static final String TRACE_PREFIX = "negation.";
     private final Disjunction disjunction;
 
-    public Negation(final Disjunction disjunction) {
+    private Negation(final Disjunction disjunction) {
         this.disjunction = disjunction;
     }
 
@@ -48,7 +49,7 @@ public class Negation implements Pattern {
                 if (conjunction.constraints().stream()
                         .map(Constraint::owner).map(Variable::identifier)
                         .noneMatch(bounds::contains)) {
-                    throw GraknException.of(ErrorMessage.Query.UNBOUNDED_NEGATION);
+                    throw GraknException.of(UNBOUNDED_NEGATION);
                 }
             });
             return new Negation(disjunction);

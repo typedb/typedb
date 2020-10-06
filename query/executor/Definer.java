@@ -56,13 +56,19 @@ public class Definer {
     private final List<ThingType> defined;
     private final Set<TypeVariable> variables;
 
-    public Definer(final Concepts conceptMgr, final List<graql.lang.pattern.variable.TypeVariable> variables, final Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
-            this.conceptMgr = conceptMgr;
-            this.context = context;
-            this.variables = Variable.createFromTypes(variables);
-            this.visited = new HashSet<>();
-            this.defined = new LinkedList<>();
+    private Definer(final Concepts conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
+        this.conceptMgr = conceptMgr;
+        this.context = context;
+        this.variables = variables;
+        this.visited = new HashSet<>();
+        this.defined = new LinkedList<>();
+    }
+
+    public static Definer create(final Concepts conceptMgr,
+                                 final List<graql.lang.pattern.variable.TypeVariable> variables,
+                                 final Context.Query context) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            return new Definer(conceptMgr, Variable.createFromTypes(variables), context);
         }
     }
 

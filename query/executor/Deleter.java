@@ -44,13 +44,19 @@ public class Deleter {
     private final Set<Variable> variables;
     private final Map<Reference, Thing> deleted;
 
-    public Deleter(final Concepts conceptMgr, final List<ThingVariable<?>> variables, final Context.Query context, final ConceptMap existing) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
-            this.conceptMgr = conceptMgr;
-            this.context = context;
-            this.existing = existing;
-            this.variables = Variable.createFromThings(variables);
-            this.deleted = new HashMap<>();
+    private Deleter(final Concepts conceptMgr, final Set<Variable> variables,
+            final ConceptMap existing, final Context.Query context) {
+        this.conceptMgr = conceptMgr;
+        this.context = context;
+        this.existing = existing;
+        this.variables = variables;
+        this.deleted = new HashMap<>();
+    }
+
+    public static Deleter create(final Concepts conceptMgr, final List<ThingVariable<?>> variables,
+                                 final ConceptMap existing, final Context.Query context) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            return new Deleter(conceptMgr, Variable.createFromThings(variables), existing, context);
         }
     }
 

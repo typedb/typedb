@@ -64,7 +64,7 @@ public class Query {
     public Stream<ConceptMap> match(final GraqlMatch query, final Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             final Context.Query context = new Context.Query(transactionContext, options);
-            return new Matcher(graphMgr, query.conjunction(), context).execute();
+            return Matcher.create(graphMgr, query.conjunction(), context).execute();
         }
     }
 
@@ -78,9 +78,9 @@ public class Query {
             final Context.Query context = new Context.Query(transactionContext, options);
             if (query.match().isPresent()) {
                 final List<ConceptMap> matched = match(query.match().get()).collect(toList());
-                return matched.stream().map(answer -> new Inserter(conceptMgr, query.variables(), answer, context).execute());
+                return matched.stream().map(answer -> Inserter.create(conceptMgr, query.variables(), answer, context).execute());
             } else {
-                return Stream.of(new Inserter(conceptMgr, query.variables(), context).execute());
+                return Stream.of(Inserter.create(conceptMgr, query.variables(), context).execute());
             }
         }
     }
@@ -94,7 +94,7 @@ public class Query {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             final Context.Query context = new Context.Query(transactionContext, options);
             final List<ConceptMap> matched = match(query.match()).collect(toList());
-            matched.forEach(existing -> new Deleter(conceptMgr, query.variables(), context, existing).execute());
+            matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
         }
     }
 
@@ -106,7 +106,7 @@ public class Query {
         if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             final Context.Query context = new Context.Query(transactionContext, options);
-            return new Definer(conceptMgr, query.variables(), context).execute();
+            return Definer.create(conceptMgr, query.variables(), context).execute();
         }
     }
 
@@ -118,7 +118,7 @@ public class Query {
         if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             final Context.Query context = new Context.Query(transactionContext, options);
-            new Undefiner(conceptMgr, query.variables(), context).execute();
+            Undefiner.create(conceptMgr, query.variables(), context).execute();
         }
     }
 }

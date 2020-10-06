@@ -18,7 +18,7 @@
 
 package grakn.core.query.executor;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
+import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
@@ -35,16 +35,24 @@ public class Matcher {
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    public Matcher(final Graphs graphMgr, final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction, final Context.Query context) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
+    private Matcher(final Graphs graphMgr, final Disjunction disjunction, final Context.Query context) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
             this.graphMgr = graphMgr;
-            this.disjunction = Disjunction.create(conjunction.normalise());
+            this.disjunction = disjunction;
             this.context = context;
         }
     }
 
+    public static Matcher create(final Graphs graphMgr,
+                                 final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction,
+                                 final Context.Query context) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+            return new Matcher(graphMgr, Disjunction.create(conjunction.normalise()), context);
+        }
+    }
+
     public Stream<ConceptMap> execute() {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             return Stream.empty(); // TODO
         }
     }
