@@ -83,7 +83,7 @@ import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollecti
  * or in graql terms:
  *
  * $varName has <type> $attributeVariable;
- * $attributeVariable isa $predicateVariable; [$predicateVariable/<type id>]
+ * $attributeVariable isa $typeVariable; [$typeVariable/<type id>]
  *
  * </p>
  *
@@ -106,13 +106,13 @@ public class AttributeAtom extends Atom{
             Statement pattern,
             ReasonerQuery parentQuery,
             @Nullable Label label,
-            Variable predicateVariable,
+            Variable typeVariable,
             Variable attributeVariable,
             ImmutableSet<ValuePredicate> multiPredicate,
             ReasoningContext ctx) {
         super(parentQuery, varName, pattern, label, ctx);
         this.ownerIsa = IsaAtom.create(varName, new Variable(), label, false, parentQuery, ctx);
-        this.attributeIsa = IsaAtom.create(attributeVariable, predicateVariable, label, false, parentQuery, ctx);
+        this.attributeIsa = IsaAtom.create(attributeVariable, typeVariable, label, false, parentQuery, ctx);
         this.attributeVariable = attributeVariable;
         this.multiPredicate = multiPredicate;
     }
@@ -125,14 +125,14 @@ public class AttributeAtom extends Atom{
     }
 
     public static AttributeAtom create(Statement pattern, Variable attributeVariable,
-                                       Variable predicateVariable, @Nullable Label label,
+                                       Variable typeVariable, @Nullable Label label,
                                        Set<ValuePredicate> ps, ReasonerQuery parent, ReasoningContext ctx) {
-        return new AttributeAtom(pattern.var(), pattern, parent, label, predicateVariable,
+        return new AttributeAtom(pattern.var(), pattern, parent, label, typeVariable,
                 attributeVariable, ImmutableSet.copyOf(ps), ctx);
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
-        return create(a.getPattern(), a.getAttributeVariable(), a.getPredicateVariable(),
+        return create(a.getPattern(), a.getAttributeVariable(), a.getTypeVariable(),
                 a.getTypeLabel(), a.getMultiPredicate(), parent, a.context());
     }
 
@@ -154,7 +154,7 @@ public class AttributeAtom extends Atom{
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
-        return create(getPattern(), getAttributeVariable(), getPredicateVariable(),
+        return create(getPattern(), getAttributeVariable(), getTypeVariable(),
                 getTypeLabel(), newMultiPredicate, getParentQuery(), context());
     }
 
@@ -199,8 +199,8 @@ public class AttributeAtom extends Atom{
     }
 
     @Override
-    public Variable getPredicateVariable() {
-        return attributeIsa.getPredicateVariable();
+    public Variable getTypeVariable() {
+        return attributeIsa.getTypeVariable();
     }
 
     @Override
@@ -362,7 +362,7 @@ public class AttributeAtom extends Atom{
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getPredicateVariable().asReturnedVar(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
+        return create(getPattern(), getAttributeVariable(), getTypeVariable().asReturnedVar(), getTypeLabel(), getMultiPredicate(), getParentQuery(), context());
     }
 
     @Override

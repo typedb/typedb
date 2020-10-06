@@ -243,10 +243,10 @@ public class PropertyAtomicFactory {
         //NB: HasResourceType is a special case and it doesn't allow variables as resource types
         String label = property.attributeType().getType().orElse(null);
 
-        Variable predicateVar = new Variable();
+        Variable typeVar = new Variable();
         SchemaConcept attributeType = ctx.conceptManager().getSchemaConcept(Label.of(label));
         Label typeLabel = attributeType != null ? attributeType.label() : null;
-        return OntologicalAtom.create(var, predicateVar, typeLabel, parent, OntologicalAtom.OntologicalAtomType.HasAtom, ctx);
+        return OntologicalAtom.create(var, typeVar, typeLabel, parent, OntologicalAtom.OntologicalAtomType.HasAtom, ctx);
     }
 
     private Atomic hasAttribute(Variable var, HasAttributeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
@@ -255,17 +255,17 @@ public class PropertyAtomicFactory {
 
         //NB: we always make the attribute variable explicit
         Variable attributeVariable = property.attribute().var().asReturnedVar();
-        Variable predicateVariable = new Variable();
+        Variable typeVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements,
                 parent,this);
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         Statement typeVar = isaProp != null ? isaProp.type() : null;
-        Label typeLabel = typeVar != null ? getLabel(predicateVariable, typeVar, otherStatements, ctx.conceptManager()) : null;
+        Label typeLabel = typeVar != null ? getLabel(typeVariable, typeVar, otherStatements, ctx.conceptManager()) : null;
 
         //add resource atom
         Statement resVar = new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(resVar, attributeVariable, predicateVariable, typeLabel, predicates, parent, ctx);
+        return AttributeAtom.create(resVar, attributeVariable, typeVariable, typeLabel, predicates, parent, ctx);
     }
 
 
@@ -358,7 +358,7 @@ public class PropertyAtomicFactory {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
         ValueProperty.Operation directOperation = property.operation();
-        Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
+        Variable typeVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
 
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
@@ -377,14 +377,14 @@ public class PropertyAtomicFactory {
         if (hasParentVp && !partOfAttribute) return null;
 
         //if predicate variable is bound in another atom, we always need to create a NeqPredicate
-        boolean predicateVarBound = otherStatements.stream()
+        boolean typeVarBound = otherStatements.stream()
                 .flatMap(s -> s.properties().stream())
                 .filter(p -> !(p instanceof ValueProperty))
                 .flatMap(VarProperty::statements)
                 .map(Statement::var)
-                .anyMatch(v -> v.equals(predicateVar));
-        ValueProperty.Operation indirectOperation = !predicateVarBound?
-                ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
+                .anyMatch(v -> v.equals(typeVar));
+        ValueProperty.Operation indirectOperation = !typeVarBound?
+                ReasonerUtils.findValuePropertyOp(typeVar, otherStatements) : null;
 
         Object value = indirectOperation == null ? directOperation.value() : indirectOperation.value();
         ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), value);

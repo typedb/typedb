@@ -281,7 +281,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return value variable name
      */
-    public abstract Variable getPredicateVariable();
+    public abstract Variable getTypeVariable();
 
     public abstract Stream<Predicate> getInnerPredicates();
 
@@ -390,8 +390,8 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public Atom rewriteWithTypeVariable(Atom parentAtom) {
-        if (parentAtom.getPredicateVariable().isReturned()
-                && !this.getPredicateVariable().isReturned()
+        if (parentAtom.getTypeVariable().isReturned()
+                && !this.getTypeVariable().isReturned()
                 && this.getClass() == parentAtom.getClass()) {
             return rewriteWithTypeVariable();
         }

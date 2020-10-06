@@ -52,7 +52,7 @@ import javax.annotation.Nullable;
  *
  * Atom implementation defining type atoms of the general form:
  *
- * {isa|sub|plays|relates|has}($varName, $predicateVariable), type($predicateVariable)
+ * {isa|sub|plays|relates|has}($varName, $typeVariable), type($typeVariable)
  *
  * Type atoms correspond to the following respective graql properties:
  * IsaProperty,
@@ -66,20 +66,20 @@ import javax.annotation.Nullable;
  */
 public abstract class TypeAtom extends Atom {
 
-    private final Variable predicateVariable;
+    private final Variable typeVariable;
     private final SemanticProcessor<TypeAtom> semanticProcessor = new TypeAtomSemanticProcessor();
 
     private SchemaConcept type = null;
     private IdPredicate typePredicate = null;
 
     TypeAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label,
-           Variable predicateVariable, ReasoningContext ctx) {
+           Variable typeVariable, ReasoningContext ctx) {
         super(reasonerQuery, varName, pattern, label, ctx);
-        this.predicateVariable = predicateVariable;
+        this.typeVariable = typeVariable;
     }
 
-    public Variable getPredicateVariable() {
-        return predicateVariable;
+    public Variable getTypeVariable() {
+        return typeVariable;
     }
 
     public boolean isDirect(){
@@ -91,7 +91,7 @@ public abstract class TypeAtom extends Atom {
     public IdPredicate getTypePredicate(){
         if (typePredicate == null && getTypeLabel() != null) {
             ConceptId typeId = context().conceptManager().getSchemaConcept(getTypeLabel()).id();
-            typePredicate = IdPredicate.create(new Statement(getPredicateVariable()).id(typeId.getValue()), getParentQuery());
+            typePredicate = IdPredicate.create(new Statement(getTypeVariable()).id(typeId.getValue()), getParentQuery());
         }
         return typePredicate;
     }
@@ -166,7 +166,7 @@ public abstract class TypeAtom extends Atom {
         if (obj == this) return true;
         TypeAtom that = (TypeAtom) obj;
         return (this.isUserDefined() == that.isUserDefined())
-                && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
+                && (this.getTypeVariable().isReturned() == that.getTypeVariable().isReturned())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeLabel(), that.getTypeLabel());
     }
@@ -175,7 +175,7 @@ public abstract class TypeAtom extends Atom {
     public Set<Variable> getVarNames() {
         Set<Variable> vars = new HashSet<>();
         if (getVarName().isReturned()) vars.add(getVarName());
-        if (getPredicateVariable().isReturned()) vars.add(getPredicateVariable());
+        if (getTypeVariable().isReturned()) vars.add(getTypeVariable());
         return vars;
     }
 
