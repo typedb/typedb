@@ -111,6 +111,10 @@ public class Iterators {
         return new DistinctIterator<>(Either.second(iterator));
     }
 
+    public static <T> ParallelIterators<T> parallel(final List<ComposableIterator<T>> iterators) {
+        return new ParallelIterators<>(iterators);
+    }
+
     public static <T> Stream<T> stream(final Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }

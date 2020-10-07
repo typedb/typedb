@@ -26,6 +26,7 @@ java_library(
         "//concept:concept",
         "//graph:graph",
         "//query/pattern:pattern",
+        "//query/reader:reader",
 
         # External dependencies from @graknlabs
         "@graknlabs_common//:common",

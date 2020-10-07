@@ -17,6 +17,23 @@
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
+java_library(
+    name = "reader",
+    srcs = glob(["*.java"]),
+    deps = [
+        # Internal package dependencies
+        "//common:common",
+        "//concept:concept",
+        "//query/pattern:pattern",
+
+        # External dependencies from @graknlabs
+
+        # External dependencies
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-query-writer:{pom_version}"],
+    visibility = [ "//visibility:public" ]
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

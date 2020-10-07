@@ -25,10 +25,12 @@ import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
 import grakn.core.query.pattern.Disjunction;
+import grakn.core.query.reader.Executor;
 
-import java.util.Collections;
+import java.util.List;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Matcher {
 
@@ -38,11 +40,9 @@ public class Matcher {
     private final Context.Query context;
 
     private Matcher(final Graphs graphMgr, final Disjunction disjunction, final Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "constructor")) {
-            this.graphMgr = graphMgr;
-            this.disjunction = disjunction;
-            this.context = context;
-        }
+        this.graphMgr = graphMgr;
+        this.disjunction = disjunction;
+        this.context = context;
     }
 
     public static Matcher create(final Graphs graphMgr,
@@ -55,7 +55,9 @@ public class Matcher {
 
     public ComposableIterator<ConceptMap> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            return Iterators.iterate(Collections.emptyIterator()); // TODO
+            final List<ComposableIterator<ConceptMap>> conjunctionAnswers = iterate(disjunction.conjunctions())
+                    .map(conjunction -> Executor.of(conjunction).execute()).toList();
+            return Iterators.parallel(conjunctionAnswers);
         }
     }
 }
