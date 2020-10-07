@@ -85,12 +85,12 @@ public class Iterators {
         return new FilteredIterator<>(Either.second(iterator), predicate);
     }
 
-    public static <T, U> AppliedIterator<T, U> apply(final Recyclable<T> iterator, final Function<T, U> function) {
-        return new AppliedIterator<>(Either.first(iterator), function);
+    public static <T, U> MappedIterator<T, U> apply(final Recyclable<T> iterator, final Function<T, U> function) {
+        return new MappedIterator<>(Either.first(iterator), function);
     }
 
-    public static <T, U> AppliedIterator<T, U> apply(final Iterator<T> iterator, final Function<T, U> function) {
-        return new AppliedIterator<>(Either.second(iterator), function);
+    public static <T, U> MappedIterator<T, U> apply(final Iterator<T> iterator, final Function<T, U> function) {
+        return new MappedIterator<>(Either.second(iterator), function);
     }
 
     public static <T> DistinctIterator<T> distinct(final Recyclable<T> iterator) {
@@ -122,8 +122,8 @@ public class Iterators {
             return new DistinctIterator<>(Either.second(this));
         }
 
-        default <U> AppliedIterator<T, U> apply(final Function<T, U> function) {
-            return new AppliedIterator<>(Either.second(this), function);
+        default <U> MappedIterator<T, U> map(final Function<T, U> function) {
+            return new MappedIterator<>(Either.second(this), function);
         }
 
         default FilteredIterator<T> filter(final Predicate<T> predicate) {

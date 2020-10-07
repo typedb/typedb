@@ -110,17 +110,17 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public Stream<RuleImpl> getPositiveConditionRules() {
-        return vertex.ins().edge(CONDITION_POSITIVE).from().apply(v -> RuleImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(CONDITION_POSITIVE).from().map(v -> RuleImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<RuleImpl> getNegativeConditionRules() {
-        return vertex.ins().edge(CONDITION_NEGATIVE).from().apply(v -> RuleImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(CONDITION_NEGATIVE).from().map(v -> RuleImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<RuleImpl> getConcludingRules() {
-        return vertex.ins().edge(CONCLUSION).from().apply(v -> RuleImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(CONCLUSION).from().map(v -> RuleImpl.of(graphs, v)).stream();
     }
 
     void superTypeVertex(final TypeVertex superTypeVertex) {
@@ -145,11 +145,11 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
                     if (p.hasNext()) return p.next();
                     else return null;
                 }
-        ).apply(typeConstructor).stream();
+        ).map(typeConstructor).stream();
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(final Function<TypeVertex, TYPE> typeConstructor) {
-        return tree(vertex, v -> v.ins().edge(SUB).from()).apply(typeConstructor).stream();
+        return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor).stream();
     }
 
     @Override

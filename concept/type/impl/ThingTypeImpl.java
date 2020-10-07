@@ -209,7 +209,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         final ResourceIterator<TypeVertex> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
         else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
-        return iterator.apply(v -> AttributeTypeImpl.of(graphs, v)).stream();
+        return iterator.map(v -> AttributeTypeImpl.of(graphs, v)).stream();
     }
 
     Stream<AttributeTypeImpl> overriddenOwns(final boolean onlyKey, final boolean transitive) {
@@ -217,12 +217,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         final Stream<AttributeTypeImpl> overriddenOwns;
         if (onlyKey) {
             overriddenOwns = vertex.outs().edge(OWNS_KEY).overridden().filter(Objects::nonNull)
-                    .apply(v -> AttributeTypeImpl.of(graphs, v)).stream();
+                    .map(v -> AttributeTypeImpl.of(graphs, v)).stream();
         } else {
             overriddenOwns = link(
                     vertex.outs().edge(OWNS_KEY).overridden(),
                     vertex.outs().edge(OWNS).overridden()
-            ).filter(Objects::nonNull).distinct().apply(v -> AttributeTypeImpl.of(graphs, v)).stream();
+            ).filter(Objects::nonNull).distinct().map(v -> AttributeTypeImpl.of(graphs, v)).stream();
         }
 
         if (transitive) return concat(overriddenOwns, getSupertype().overriddenOwns(onlyKey, true));
@@ -262,7 +262,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(final RoleType roleType, final RoleType overriddenType) {
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().apply(v -> RoleTypeImpl.of(graphs, v)).stream());
+                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphs, v)).stream());
     }
 
     @Override
@@ -277,7 +277,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         final Set<TypeVertex> overridden = new HashSet<>();
         vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
         return concat(
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().apply(v -> RoleTypeImpl.of(graphs, v)).stream(),
+                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphs, v)).stream(),
                 getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
         );
     }

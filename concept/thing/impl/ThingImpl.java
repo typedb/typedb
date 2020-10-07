@@ -157,13 +157,13 @@ public abstract class ThingImpl implements Thing {
                             HAS, PrefixIID.of(type.encoding().instance()), type.iid()
                     ).to().stream()).map(ThingVertex::asAttribute);
         } else {
-            return vertex.outs().edge(HAS).to().apply(ThingVertex::asAttribute).stream();
+            return vertex.outs().edge(HAS).to().map(ThingVertex::asAttribute).stream();
         }
     }
 
     @Override
     public Stream<? extends RoleType> getPlays() {
-        return vertex.outs().edge(PLAYS).to().apply(ThingVertex::type).apply(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
+        return vertex.outs().edge(PLAYS).to().map(ThingVertex::type).map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
     }
 
     @Override
@@ -180,7 +180,7 @@ public abstract class ThingImpl implements Thing {
     @Override
     public Stream<RelationImpl> getRelations(final RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return vertex.ins().edge(ROLEPLAYER).from().apply(RelationImpl::of).stream();
+            return vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of).stream();
         } else {
             return stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
                     rt -> vertex.ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from().stream()

@@ -109,17 +109,17 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         @Override
         public ResourceIterator<TypeVertex> from() {
-            return edgeIterator.apply(edge -> edge.from().asType());
+            return edgeIterator.map(edge -> edge.from().asType());
         }
 
         @Override
         public ResourceIterator<TypeVertex> to() {
-            return edgeIterator.apply(edge -> edge.to().asType());
+            return edgeIterator.map(edge -> edge.to().asType());
         }
 
         @Override
         public ResourceIterator<TypeVertex> overridden() {
-            return edgeIterator.apply(SchemaEdge::overridden);
+            return edgeIterator.map(SchemaEdge::overridden);
         }
     }
 
@@ -140,12 +140,12 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         @Override
         public ResourceIterator<RuleVertex> from() {
-            return edgeIterator.apply(edge -> edge.from().asRule());
+            return edgeIterator.map(edge -> edge.from().asRule());
         }
 
         @Override
         public ResourceIterator<TypeVertex> to() {
-            return edgeIterator.apply(edge -> edge.to().asType());
+            return edgeIterator.map(edge -> edge.to().asType());
         }
     }
 

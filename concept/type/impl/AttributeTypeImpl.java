@@ -167,12 +167,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (isRoot()) return Stream.of();
 
         if (onlyKey) {
-            return vertex.ins().edge(OWNS_KEY).from().apply(v -> ThingTypeImpl.of(graphs, v)).stream();
+            return vertex.ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphs, v)).stream();
         } else {
             return link(
                     vertex.ins().edge(OWNS_KEY).from(),
                     vertex.ins().edge(OWNS).from()
-            ).apply(v -> ThingTypeImpl.of(graphs, v)).stream();
+            ).map(v -> ThingTypeImpl.of(graphs, v)).stream();
         }
     }
 
@@ -405,7 +405,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
-                return super.getSubtypeVertices(BOOLEAN).apply(v -> AttributeTypeImpl.Boolean.of(graphs, v)).stream();
+                return super.getSubtypeVertices(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphs, v)).stream();
             }
 
             @Override
@@ -531,7 +531,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.Long> getSubtypes() {
-                return super.getSubtypeVertices(LONG).apply(v -> AttributeTypeImpl.Long.of(graphs, v)).stream();
+                return super.getSubtypeVertices(LONG).map(v -> AttributeTypeImpl.Long.of(graphs, v)).stream();
             }
 
             @Override
@@ -657,7 +657,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.Double> getSubtypes() {
-                return super.getSubtypeVertices(DOUBLE).apply(v -> AttributeTypeImpl.Double.of(graphs, v)).stream();
+                return super.getSubtypeVertices(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphs, v)).stream();
             }
 
             @Override
@@ -811,7 +811,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.String> getSubtypes() {
-                return super.getSubtypeVertices(STRING).apply(v -> AttributeTypeImpl.String.of(graphs, v)).stream();
+                return super.getSubtypeVertices(STRING).map(v -> AttributeTypeImpl.String.of(graphs, v)).stream();
             }
 
             @Override
@@ -948,7 +948,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
-                return super.getSubtypeVertices(DATETIME).apply(v -> AttributeTypeImpl.DateTime.of(graphs, v)).stream();
+                return super.getSubtypeVertices(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphs, v)).stream();
             }
 
             @Override

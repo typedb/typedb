@@ -106,7 +106,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<ThingTypeImpl> getPlayers() {
-        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().apply(v -> ThingTypeImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphs, v)).stream();
     }
 
     @Override

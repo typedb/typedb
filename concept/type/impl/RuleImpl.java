@@ -126,17 +126,17 @@ public class RuleImpl implements Rule {
 
     @Override
     public Stream<TypeImpl> positiveConditionTypes() {
-        return vertex.outs().edge(CONDITION_POSITIVE).to().apply(v -> TypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(CONDITION_POSITIVE).to().map(v -> TypeImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<TypeImpl> negativeConditionTypes() {
-        return vertex.outs().edge(CONDITION_NEGATIVE).to().apply(v -> TypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(CONDITION_NEGATIVE).to().map(v -> TypeImpl.of(graphs, v)).stream();
     }
 
     @Override
     public Stream<TypeImpl> conclusionTypes() {
-        return vertex.outs().edge(CONCLUSION).to().apply(v -> TypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(CONCLUSION).to().map(v -> TypeImpl.of(graphs, v)).stream();
     }
 
     @Override

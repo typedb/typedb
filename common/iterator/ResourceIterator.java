@@ -35,8 +35,8 @@ public interface ResourceIterator<T> extends Iterators.Composable<T>, Iterators.
     }
 
     @Override
-    default <U> AppliedIterator<T, U> apply(final Function<T, U> function) {
-        return new AppliedIterator<>(Either.first(this), function);
+    default <U> MappedIterator<T, U> map(final Function<T, U> function) {
+        return new MappedIterator<>(Either.first(this), function);
     }
 
     @Override

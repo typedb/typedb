@@ -158,7 +158,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RoleTypeImpl> getRelates() {
-        final ResourceIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().apply(v -> RoleTypeImpl.of(graphs, v));
+        final ResourceIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphs, v));
         if (isRoot()) {
             return roles.stream();
         } else {
@@ -171,11 +171,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     Stream<RoleTypeImpl> overriddenRoles() {
-        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull).apply(v -> RoleTypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull).map(v -> RoleTypeImpl.of(graphs, v)).stream();
     }
 
     private Stream<RoleTypeImpl> declaredRoles() {
-        return vertex.outs().edge(RELATES).to().apply(v -> RoleTypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphs, v)).stream();
     }
 
     /**
