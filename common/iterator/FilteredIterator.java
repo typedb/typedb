@@ -26,12 +26,12 @@ import java.util.function.Predicate;
 
 public class FilteredIterator<T> implements ResourceIterator<T> {
 
-    private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
+    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
     private final Iterator<T> genericIterator;
     private final Predicate<T> predicate;
     private T next;
 
-    FilteredIterator(final Either<Iterators.Recyclable<T>, Iterator<T>> iterator, final Predicate<T> predicate) {
+    FilteredIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator, final Predicate<T> predicate) {
         this.iterator = iterator;
         this.genericIterator = iterator.apply(r -> r, i -> i);
         this.predicate = predicate;
@@ -57,6 +57,6 @@ public class FilteredIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterator.ifFirst(Iterators.Recyclable::recycle);
+        iterator.ifFirst(RecyclableIterator::recycle);
     }
 }

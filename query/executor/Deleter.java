@@ -45,7 +45,7 @@ public class Deleter {
     private final Map<Reference, Thing> deleted;
 
     private Deleter(final Concepts conceptMgr, final Set<Variable> variables,
-            final ConceptMap existing, final Context.Query context) {
+                    final ConceptMap existing, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.context = context;
         this.existing = existing;

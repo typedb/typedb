@@ -27,9 +27,9 @@ import java.util.NoSuchElementException;
 
 public class LinkedIterators<T> implements ResourceIterator<T> {
 
-    private final List<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators;
+    private final List<Either<RecyclableIterator<T>, Iterator<T>>> iterators;
 
-    LinkedIterators(final LinkedList<Either<Iterators.Recyclable<T>, Iterator<T>>> iterators) {
+    LinkedIterators(final LinkedList<Either<RecyclableIterator<T>, Iterator<T>>> iterators) {
         this.iterators = iterators;
     }
 
@@ -38,14 +38,14 @@ public class LinkedIterators<T> implements ResourceIterator<T> {
     }
 
     @Override
-    public final LinkedIterators<T> link(final Iterators.Recyclable<T> iterator) {
+    public final LinkedIterators<T> link(final RecyclableIterator<T> iterator) {
         iterators.add(Either.first(iterator));
         return this;
     }
 
     @Override
     public final LinkedIterators<T> link(final Iterator<T> iterator) {
-        if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
+        if (iterator instanceof RecyclableIterator<?>) return link((RecyclableIterator<T>) iterator);
         iterators.add(Either.second(iterator));
         return this;
     }
@@ -64,6 +64,6 @@ public class LinkedIterators<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterators.forEach(iterator -> iterator.ifFirst(Iterators.Recyclable::recycle));
+        iterators.forEach(iterator -> iterator.ifFirst(RecyclableIterator::recycle));
     }
 }

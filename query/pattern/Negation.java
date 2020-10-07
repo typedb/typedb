@@ -19,7 +19,6 @@
 package grakn.core.query.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.query.pattern.constraint.Constraint;
 import grakn.core.query.pattern.variable.Identifier;

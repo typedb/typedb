@@ -77,7 +77,7 @@ public class Inserter {
     private final Set<Variable> variables;
 
     private Inserter(final Concepts conceptMgr, final Set<Variable> variables,
-                    final ConceptMap existing, final Context.Query context) {
+                     final ConceptMap existing, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;

@@ -35,11 +35,11 @@ import io.cucumber.java.en.When;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 
 public class GraqlSteps {
 
-    private static Stream<ConceptMap> answers;
+    private static Iterator<ConceptMap> answers;
     private static Number numericAnswer;
     private static List<AnswerGroup<ConceptMap>> answerGroups;
     private static List<AnswerGroup<?>> numericAnswerGroups;

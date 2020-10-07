@@ -19,12 +19,14 @@
 package grakn.core.query.executor;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.common.iterator.ComposableIterator;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.Graphs;
 import grakn.core.query.pattern.Disjunction;
 
-import java.util.stream.Stream;
+import java.util.Collections;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 
@@ -51,9 +53,9 @@ public class Matcher {
         }
     }
 
-    public Stream<ConceptMap> execute() {
+    public ComposableIterator<ConceptMap> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            return Stream.empty(); // TODO
+            return Iterators.iterate(Collections.emptyIterator()); // TODO
         }
     }
 }

@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-public class TreeIterator<T> implements Iterators.Composable<T> {
+public class TreeIterator<T> implements ComposableIterator<T> {
 
     private final Function<T, Iterator<T>> childrenFn;
 

@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
@@ -55,7 +56,6 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMI
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
-import static grakn.core.common.iterator.Iterators.base;
 import static grakn.core.graph.util.Encoding.SCHEMA_GRAPH_STORAGE_REFRESH_RATE;
 
 abstract class RocksTransaction implements Grakn.Transaction {
@@ -486,7 +486,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         public <G> ResourceIterator<G> iterate(final byte[] key, final BiFunction<byte[], byte[], G> constructor) {
             final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
-            return base(iterator);
+            return Iterators.iterate(iterator);
         }
 
         @Override

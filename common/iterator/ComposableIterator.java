@@ -20,38 +20,48 @@ package grakn.core.common.iterator;
 
 import grakn.common.collection.Either;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
 
-public interface ResourceIterator<T> extends ComposableIterator<T>, RecyclableIterator<T> {
+public interface ComposableIterator<T> extends Iterator<T> {
 
-    @Override
     default DistinctIterator<T> distinct() {
-        return new DistinctIterator<>(Either.first(this));
+        return new DistinctIterator<>(Either.second(this));
     }
 
-    @Override
     default <U> MappedIterator<T, U> map(final Function<T, U> function) {
-        return new MappedIterator<>(Either.first(this), function);
+        return new MappedIterator<>(Either.second(this), function);
     }
 
-    @Override
     default FilteredIterator<T> filter(final Predicate<T> predicate) {
-        return new FilteredIterator<>(Either.first(this), predicate);
+        return new FilteredIterator<>(Either.second(this), predicate);
     }
 
-    @Override
     default LinkedIterators<T> link(final RecyclableIterator<T> iterator) {
-        return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.first(iterator))));
+        return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.first(iterator))));
     }
 
-    @Override
     default LinkedIterators<T> link(final Iterator<T> iterator) {
         if (iterator instanceof RecyclableIterator<?>) return link((RecyclableIterator<T>) iterator);
-        return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.second(iterator))));
+        return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.second(iterator))));
+    }
+
+    default List<T> toList() {
+        final LinkedList<T> list = new LinkedList<>();
+        this.forEachRemaining(list::addLast);
+        return list;
+    }
+
+    default Set<T> toSet() {
+        final Set<T> set = new HashSet<>();
+        this.forEachRemaining(set::add);
+        return set;
     }
 }

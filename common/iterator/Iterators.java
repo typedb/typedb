@@ -20,6 +20,7 @@ package grakn.core.common.iterator;
 
 import grakn.common.collection.Either;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,23 +45,31 @@ public class Iterators {
         return new LoopIterator<>(seed, predicate, function);
     }
 
-    public static <T> BaseIterator<T> base(final Iterator<T> iterator) {
+    public static <T> BaseIterator<T> iterate(final T item) {
+        return new BaseIterator<>(Either.second(list(item).iterator()));
+    }
+
+    public static <T> BaseIterator<T> iterate(final Collection<T> collection) {
+        return new BaseIterator<>(Either.second(collection.iterator()));
+    }
+
+    public static <T> BaseIterator<T> iterate(final Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T> BaseIterator<T> base(final Recyclable<T> iterator) {
+    public static <T> BaseIterator<T> iterate(final RecyclableIterator<T> iterator) {
         return new BaseIterator<>(Either.first(iterator));
     }
 
-    public static <T> LinkedIterators<T> link(final Recyclable<T> iterator1, final Recyclable<T> iterator2) {
+    public static <T> LinkedIterators<T> link(final RecyclableIterator<T> iterator1, final RecyclableIterator<T> iterator2) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(iterator1), Either.first(iterator2))));
     }
 
-    public static <T> LinkedIterators<T> link(final Recyclable<T> iterator1, final Iterator<T> iterator2) {
+    public static <T> LinkedIterators<T> link(final RecyclableIterator<T> iterator1, final Iterator<T> iterator2) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(iterator1), Either.second(iterator2))));
     }
 
-    public static <T> LinkedIterators<T> link(final Iterator<T> iterator1, final Recyclable<T> iterator2) {
+    public static <T> LinkedIterators<T> link(final Iterator<T> iterator1, final RecyclableIterator<T> iterator2) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.second(iterator1), Either.first(iterator2))));
     }
 
@@ -69,15 +78,16 @@ public class Iterators {
     }
 
     public static <T> LinkedIterators<T> link(final List<Iterator<T>> iterators) {
-        final LinkedList<Either<Recyclable<T>, Iterator<T>>> converted = new LinkedList<>();
+        final LinkedList<Either<RecyclableIterator<T>, Iterator<T>>> converted = new LinkedList<>();
         iterators.forEach(iterator -> {
-            if (iterator instanceof Recyclable<?>) converted.addLast(Either.first((Recyclable<T>) iterator));
+            if (iterator instanceof RecyclableIterator<?>)
+                converted.addLast(Either.first((RecyclableIterator<T>) iterator));
             else converted.addLast(Either.second(iterator));
         });
         return new LinkedIterators<>(converted);
     }
 
-    public static <T> FilteredIterator<T> filter(final Recyclable<T> iterator, final Predicate<T> predicate) {
+    public static <T> FilteredIterator<T> filter(final RecyclableIterator<T> iterator, final Predicate<T> predicate) {
         return new FilteredIterator<>(Either.first(iterator), predicate);
     }
 
@@ -85,7 +95,7 @@ public class Iterators {
         return new FilteredIterator<>(Either.second(iterator), predicate);
     }
 
-    public static <T, U> MappedIterator<T, U> apply(final Recyclable<T> iterator, final Function<T, U> function) {
+    public static <T, U> MappedIterator<T, U> apply(final RecyclableIterator<T> iterator, final Function<T, U> function) {
         return new MappedIterator<>(Either.first(iterator), function);
     }
 
@@ -93,7 +103,7 @@ public class Iterators {
         return new MappedIterator<>(Either.second(iterator), function);
     }
 
-    public static <T> DistinctIterator<T> distinct(final Recyclable<T> iterator) {
+    public static <T> DistinctIterator<T> distinct(final RecyclableIterator<T> iterator) {
         return new DistinctIterator<>(Either.first(iterator));
     }
 
@@ -103,40 +113,5 @@ public class Iterators {
 
     public static <T> Stream<T> stream(final Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
-    }
-
-    public interface Recyclable<T> extends Iterator<T> {
-
-        default Stream<T> stream() {
-            return StreamSupport.stream(
-                    spliteratorUnknownSize(this, ORDERED | IMMUTABLE), false
-            ).onClose(this::recycle);
-        }
-
-        void recycle();
-    }
-
-    public interface Composable<T> extends Iterator<T> {
-
-        default DistinctIterator<T> distinct() {
-            return new DistinctIterator<>(Either.second(this));
-        }
-
-        default <U> MappedIterator<T, U> map(final Function<T, U> function) {
-            return new MappedIterator<>(Either.second(this), function);
-        }
-
-        default FilteredIterator<T> filter(final Predicate<T> predicate) {
-            return new FilteredIterator<>(Either.second(this), predicate);
-        }
-
-        default LinkedIterators<T> link(final Iterators.Recyclable<T> iterator) {
-            return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.first(iterator))));
-        }
-
-        default LinkedIterators<T> link(final Iterator<T> iterator) {
-            if (iterator instanceof Iterators.Recyclable<?>) return link((Iterators.Recyclable<T>) iterator);
-            return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.second(iterator))));
-        }
     }
 }

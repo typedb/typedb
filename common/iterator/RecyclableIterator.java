@@ -18,30 +18,21 @@
 
 package grakn.core.common.iterator;
 
-import grakn.common.collection.Either;
-
 import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-public class BaseIterator<T> implements ResourceIterator<T> {
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
-    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
+public interface RecyclableIterator<T> extends Iterator<T> {
 
-    public BaseIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator) {
-        this.iterator = iterator;
+    default Stream<T> stream() {
+        return StreamSupport.stream(
+                spliteratorUnknownSize(this, ORDERED | IMMUTABLE), false
+        ).onClose(this::recycle);
     }
 
-    @Override
-    public boolean hasNext() {
-        return iterator.apply(Iterator::hasNext, Iterator::hasNext);
-    }
-
-    @Override
-    public T next() {
-        return iterator.apply(Iterator::next, Iterator::next);
-    }
-
-    @Override
-    public void recycle() {
-        iterator.ifFirst(RecyclableIterator::recycle);
-    }
+    void recycle();
 }

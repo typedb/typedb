@@ -19,6 +19,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.impl.AttributeImpl;
@@ -122,7 +123,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
-    Iterators.Composable<TypeVertex> getSubtypeVertices(final Encoding.ValueType valueType) {
+    ComposableIterator<TypeVertex> getSubtypeVertices(final Encoding.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
     }
 

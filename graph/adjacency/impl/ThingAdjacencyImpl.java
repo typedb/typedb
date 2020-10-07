@@ -18,6 +18,7 @@
 
 package grakn.core.graph.adjacency.impl;
 
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.edge.Edge;
@@ -40,7 +41,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.base;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
@@ -82,7 +82,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         final Set<ThingEdge> result;
         final InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
         if (lookAhead.length == encoding.lookAhead()) {
-            return base((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
+            return Iterators.iterate((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
         }
 
         assert lookAhead.length < encoding.lookAhead();

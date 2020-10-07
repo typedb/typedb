@@ -28,12 +28,12 @@ import java.util.Set;
 // TODO: verify (and potentially fix) this class to be able to hand null objects
 public class DistinctIterator<T> implements ResourceIterator<T> {
 
-    private final Either<Iterators.Recyclable<T>, Iterator<T>> iterator;
+    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
     private final Iterator<T> genericIterator;
     private final Set<T> consumed;
     private T next;
 
-    DistinctIterator(final Either<Iterators.Recyclable<T>, Iterator<T>> iterator) {
+    DistinctIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
         this.genericIterator = iterator.apply(r -> r, i -> i);
         this.consumed = new HashSet<>();
@@ -61,6 +61,6 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterator.ifFirst(Iterators.Recyclable::recycle);
+        iterator.ifFirst(RecyclableIterator::recycle);
     }
 }
