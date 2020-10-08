@@ -20,8 +20,8 @@ package grakn.core;
 
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concepts;
-import grakn.core.query.Query;
+import grakn.core.concept.ConceptManager;
+import grakn.core.query.QueryManager;
 
 import java.util.Set;
 import java.util.UUID;
@@ -111,9 +111,9 @@ public interface Grakn extends AutoCloseable {
 
         boolean isOpen();
 
-        Concepts concepts();
+        ConceptManager concepts();
 
-        Query query();
+        QueryManager query();
 
         void commit();
 

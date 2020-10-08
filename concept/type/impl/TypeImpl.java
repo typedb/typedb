@@ -25,7 +25,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -50,31 +50,31 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
-    protected final Graphs graphs;
+    protected final GraphManager graphMgr;
     public final TypeVertex vertex;
 
-    TypeImpl(final Graphs graphs, final TypeVertex vertex) {
-        this.graphs = graphs;
+    TypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+        this.graphMgr = graphMgr;
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(final Graphs graphs, final String label, final Encoding.Vertex.Type encoding) {
-        this(graphs, label, encoding, null);
+    TypeImpl(final GraphManager graphMgr, final String label, final Encoding.Vertex.Type encoding) {
+        this(graphMgr, label, encoding, null);
     }
 
-    TypeImpl(final Graphs graphs, final String label, final Encoding.Vertex.Type encoding, final String scope) {
-        this.graphs = graphs;
-        this.vertex = graphs.schema().create(encoding, label, scope);
-        final TypeVertex superTypeVertex = graphs.schema().getType(encoding.root().label(), encoding.root().scope());
+    TypeImpl(final GraphManager graphMgr, final String label, final Encoding.Vertex.Type encoding, final String scope) {
+        this.graphMgr = graphMgr;
+        this.vertex = graphMgr.schema().create(encoding, label, scope);
+        final TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
     }
 
-    public static TypeImpl of(final Graphs graphs, final TypeVertex vertex) {
+    public static TypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
         switch (vertex.encoding()) {
             case ROLE_TYPE:
-                return RoleTypeImpl.of(graphs, vertex);
+                return RoleTypeImpl.of(graphMgr, vertex);
             default:
-                return ThingTypeImpl.of(graphs, vertex);
+                return ThingTypeImpl.of(graphMgr, vertex);
         }
     }
 
@@ -110,17 +110,17 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public Stream<RuleImpl> getPositiveConditionRules() {
-        return vertex.ins().edge(CONDITION_POSITIVE).from().map(v -> RuleImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(CONDITION_POSITIVE).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
 
     @Override
     public Stream<RuleImpl> getNegativeConditionRules() {
-        return vertex.ins().edge(CONDITION_NEGATIVE).from().map(v -> RuleImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(CONDITION_NEGATIVE).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
 
     @Override
     public Stream<RuleImpl> getConcludingRules() {
-        return vertex.ins().edge(CONCLUSION).from().map(v -> RuleImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(CONCLUSION).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
 
     void superTypeVertex(final TypeVertex superTypeVertex) {
@@ -195,7 +195,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public GraknException exception(final String message) {
-        return graphs.exception(message);
+        return graphMgr.exception(message);
     }
 
     @Override

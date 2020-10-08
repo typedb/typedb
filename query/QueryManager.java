@@ -22,7 +22,7 @@ import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.ThingType;
 import grakn.core.query.executor.Definer;
@@ -30,7 +30,7 @@ import grakn.core.query.executor.Deleter;
 import grakn.core.query.executor.Inserter;
 import grakn.core.query.executor.Matcher;
 import grakn.core.query.executor.Undefiner;
-import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -44,17 +44,19 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public class Query {
+public class QueryManager {
 
     private static final String TRACE_PREFIX = "query.";
-    private final Traversal traversal;
-    private final Concepts conceptMgr;
-    private final Context.Transaction transactionContext;
+    private final TraversalEngine traversalEng;
+    private final ConceptManager conceptMgr;
+    private final Context.Transaction transactionCtx;
 
-    public Query(final Traversal traversal, final Concepts concepts, final Context.Transaction transactionContext) {
-        this.traversal = traversal;
-        this.conceptMgr = concepts;
-        this.transactionContext = transactionContext;
+    public QueryManager(final TraversalEngine traversalEng,
+                        final ConceptManager conceptMgr,
+                        final Context.Transaction transactionCtx) {
+        this.traversalEng = traversalEng;
+        this.conceptMgr = conceptMgr;
+        this.transactionCtx = transactionCtx;
     }
 
     public ComposableIterator<ConceptMap> match(final GraqlMatch query) {
@@ -63,8 +65,8 @@ public class Query {
 
     public ComposableIterator<ConceptMap> match(final GraqlMatch query, final Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
-            final Context.Query context = new Context.Query(transactionContext, options);
-            return Matcher.create(traversal, query.conjunction(), context).execute();
+            final Context.Query context = new Context.Query(transactionCtx, options);
+            return Matcher.create(traversalEng, query.conjunction(), context).execute();
         }
     }
 
@@ -73,9 +75,9 @@ public class Query {
     }
 
     public ComposableIterator<ConceptMap> insert(final GraqlInsert query, final Options.Query options) {
-        if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
+        if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            final Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionCtx, options);
             if (query.match().isPresent()) {
                 final List<ConceptMap> matched = match(query.match().get()).toList();
                 return iterate(matched).map(answer -> Inserter.create(conceptMgr, query.variables(), answer, context).execute());
@@ -90,9 +92,9 @@ public class Query {
     }
 
     public void delete(final GraqlDelete query, final Options.Query options) {
-        if (transactionContext.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
+        if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-            final Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionCtx, options);
             final List<ConceptMap> matched = match(query.match()).toList();
             matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
         }
@@ -103,9 +105,9 @@ public class Query {
     }
 
     public List<ThingType> define(final GraqlDefine query, final Options.Query options) {
-        if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
+        if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
-            final Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionCtx, options);
             return Definer.create(conceptMgr, query.variables(), context).execute();
         }
     }
@@ -115,9 +117,9 @@ public class Query {
     }
 
     public void undefine(final GraqlUndefine query, final Options.Query options) {
-        if (transactionContext.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
+        if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
-            final Context.Query context = new Context.Query(transactionContext, options);
+            final Context.Query context = new Context.Query(transactionCtx, options);
             Undefiner.create(conceptMgr, query.variables(), context).execute();
         }
     }

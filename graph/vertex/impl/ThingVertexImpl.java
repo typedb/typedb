@@ -20,7 +20,7 @@ package grakn.core.graph.vertex.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.DataGraph;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import grakn.core.graph.iid.EdgeIID;
@@ -38,8 +38,8 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERA
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
-    protected final Graphs graphs;
     protected final DataGraph graph;
+    protected final GraphManager graphMgr;
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
     protected final AtomicBoolean isDeleted;
@@ -48,7 +48,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     ThingVertexImpl(final DataGraph graph, final VertexIID.Thing iid, final boolean isInferred) {
         super(iid);
         this.graph = graph;
-        this.graphs = new Graphs(graph.schema(), graph);
+        this.graphMgr = new GraphManager(graph.schema(), graph);
         this.outs = newAdjacency(Encoding.Direction.OUT);
         this.ins = newAdjacency(Encoding.Direction.IN);
         this.isInferred = isInferred;
@@ -78,8 +78,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public Graphs graphs() {
-        return graphs;
+    public GraphManager graphs() {
+        return graphMgr;
     }
 
     @Override

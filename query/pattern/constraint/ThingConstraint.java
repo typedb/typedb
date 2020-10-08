@@ -139,7 +139,8 @@ public class ThingConstraint extends Constraint {
             this.hash = Objects.hash(IID.class, this.owner, Arrays.hashCode(this.iid));
         }
 
-        public static IID of(final ThingVariable owner, final graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
+        public static IID of(final ThingVariable owner,
+                             final graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
             return new IID(owner, Bytes.hexStringToBytes(constraint.iid()));
         }
 
@@ -344,7 +345,8 @@ public class ThingConstraint extends Constraint {
         public static Relation of(final ThingVariable owner,
                                   final graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
                                   final VariableRegistry register) {
-            return new Relation(owner, constraint.players().stream().map(rp -> RolePlayer.of(rp, register)).collect(toList()));
+            return new Relation(owner, constraint.players().stream()
+                    .map(rp -> RolePlayer.of(rp, register)).collect(toList()));
         }
 
         public List<RolePlayer> players() {

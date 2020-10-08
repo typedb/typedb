@@ -20,7 +20,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.concept.type.Rule;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.RuleVertex;
 import graql.lang.pattern.Pattern;
 
@@ -34,28 +34,28 @@ import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_POSITIVE;
 
 public class RuleImpl implements Rule {
 
-    private final Graphs graphs;
+    private final GraphManager graphMgr;
     private final RuleVertex vertex;
 
-    private RuleImpl(final Graphs graphs, final RuleVertex vertex) {
-        this.graphs = graphs;
+    private RuleImpl(final GraphManager graphMgr, final RuleVertex vertex) {
+        this.graphMgr = graphMgr;
         this.vertex = vertex;
     }
 
-    private RuleImpl(final Graphs graphs, final String label, final Pattern when, final Pattern then) {
-        this.graphs = graphs;
-        this.vertex = graphs.schema().create(label, when, then);
+    private RuleImpl(final GraphManager graphMgr, final String label, final Pattern when, final Pattern then) {
+        this.graphMgr = graphMgr;
+        this.vertex = graphMgr.schema().create(label, when, then);
         putPositiveConditions();
         putNegativeConditions();
         putConclusions();
     }
 
-    public static RuleImpl of(final Graphs graphs, final RuleVertex vertex) {
-        return new RuleImpl(graphs, vertex);
+    public static RuleImpl of(final GraphManager graphMgr, final RuleVertex vertex) {
+        return new RuleImpl(graphMgr, vertex);
     }
 
-    public static RuleImpl of(final Graphs graphs, final String label, final Pattern when, final Pattern then) {
-        return new RuleImpl(graphs, label, when, then);
+    public static RuleImpl of(final GraphManager graphMgr, final String label, final Pattern when, final Pattern then) {
+        return new RuleImpl(graphMgr, label, when, then);
     }
 
     private void putPositiveConditions() {
@@ -66,7 +66,7 @@ public class RuleImpl implements Rule {
         vertex.outs().delete(CONDITION_POSITIVE);
 
         whenTypesPositive.forEach(label -> {
-            vertex.outs().put(CONDITION_POSITIVE, graphs.schema().getRule(label));
+            vertex.outs().put(CONDITION_POSITIVE, graphMgr.schema().getRule(label));
         });
     }
 
@@ -78,7 +78,7 @@ public class RuleImpl implements Rule {
         vertex.outs().delete(CONDITION_NEGATIVE);
 
         whenTypesNegative.forEach(label -> {
-            vertex.outs().put(CONDITION_NEGATIVE, graphs.schema().getRule(label));
+            vertex.outs().put(CONDITION_NEGATIVE, graphMgr.schema().getRule(label));
         });
     }
 
@@ -90,7 +90,7 @@ public class RuleImpl implements Rule {
         vertex.outs().delete(CONCLUSION);
 
         conclusionTypes.forEach(label -> {
-            vertex.outs().put(CONCLUSION, graphs.schema().getRule(label));
+            vertex.outs().put(CONCLUSION, graphMgr.schema().getRule(label));
         });
     }
 
@@ -126,17 +126,17 @@ public class RuleImpl implements Rule {
 
     @Override
     public Stream<TypeImpl> positiveConditionTypes() {
-        return vertex.outs().edge(CONDITION_POSITIVE).to().map(v -> TypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(CONDITION_POSITIVE).to().map(v -> TypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override
     public Stream<TypeImpl> negativeConditionTypes() {
-        return vertex.outs().edge(CONDITION_NEGATIVE).to().map(v -> TypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(CONDITION_NEGATIVE).to().map(v -> TypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override
     public Stream<TypeImpl> conclusionTypes() {
-        return vertex.outs().edge(CONCLUSION).to().map(v -> TypeImpl.of(graphs, v)).stream();
+        return vertex.outs().edge(CONCLUSION).to().map(v -> TypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override

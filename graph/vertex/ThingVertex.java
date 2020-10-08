@@ -19,7 +19,7 @@
 package grakn.core.graph.vertex;
 
 import grakn.core.graph.DataGraph;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -34,11 +34,11 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
     DataGraph graph();
 
     /**
-     * Returns the {@code Graphs} containing both {@code SchemaGraph} and {@code DataGraph}.
+     * Returns the {@code GraphManager} containing both {@code SchemaGraph} and {@code DataGraph}.
      *
-     * @return the {@code Graphs} containing both {@code SchemaGraph} and {@code DataGraph}
+     * @return the {@code GraphManager} containing both {@code SchemaGraph} and {@code DataGraph}
      */
-    Graphs graphs();
+    GraphManager graphs();
 
     /**
      * Returns the {@code ThingAdjacency} set of outgoing edges.

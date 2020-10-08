@@ -21,7 +21,7 @@ package grakn.core.query.executor;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -50,13 +50,13 @@ public class Definer {
 
     private static final String TRACE_PREFIX = "definer.";
 
-    private final Concepts conceptMgr;
+    private final ConceptManager conceptMgr;
     private final Context.Query context;
     private final Set<TypeVariable> visited;
     private final List<ThingType> defined;
     private final Set<TypeVariable> variables;
 
-    private Definer(final Concepts conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
+    private Definer(final ConceptManager conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.context = context;
         this.variables = variables;
@@ -64,7 +64,7 @@ public class Definer {
         this.defined = new LinkedList<>();
     }
 
-    public static Definer create(final Concepts conceptMgr,
+    public static Definer create(final ConceptManager conceptMgr,
                                  final List<graql.lang.pattern.variable.TypeVariable> variables,
                                  final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {

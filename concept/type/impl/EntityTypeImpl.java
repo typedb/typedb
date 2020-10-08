@@ -24,7 +24,7 @@ import grakn.core.concept.thing.impl.EntityImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -39,8 +39,8 @@ import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ENTITY;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
-    private EntityTypeImpl(final Graphs graphs, final TypeVertex vertex) {
-        super(graphs, vertex);
+    private EntityTypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+        super(graphMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
                     vertex.label(), ENTITY_TYPE.root().label(), vertex.encoding().root().label()
@@ -48,19 +48,19 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
     }
 
-    private EntityTypeImpl(final Graphs graphs, final String label) {
-        super(graphs, label, ENTITY_TYPE);
+    private EntityTypeImpl(final GraphManager graphMgr, final String label) {
+        super(graphMgr, label, ENTITY_TYPE);
         assert !label.equals(ENTITY.label());
     }
 
-    public static EntityTypeImpl of(final Graphs graphs, final TypeVertex vertex) {
+    public static EntityTypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
         if (vertex.label().equals(ENTITY.label())) {
-            return new EntityTypeImpl.Root(graphs, vertex);
-        } else return new EntityTypeImpl(graphs, vertex);
+            return new EntityTypeImpl.Root(graphMgr, vertex);
+        } else return new EntityTypeImpl(graphMgr, vertex);
     }
 
-    public static EntityTypeImpl of(final Graphs graphs, final String label) {
-        return new EntityTypeImpl(graphs, label);
+    public static EntityTypeImpl of(final GraphManager graphMgr, final String label) {
+        return new EntityTypeImpl(graphMgr, label);
     }
 
     @Override
@@ -71,17 +71,17 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Nullable
     @Override
     public EntityTypeImpl getSupertype() {
-        return super.getSupertype(v -> of(graphs, v));
+        return super.getSupertype(v -> of(graphMgr, v));
     }
 
     @Override
     public Stream<EntityTypeImpl> getSupertypes() {
-        return super.getSupertypes(v -> of(graphs, v));
+        return super.getSupertypes(v -> of(graphMgr, v));
     }
 
     @Override
     public Stream<EntityTypeImpl> getSubtypes() {
-        return super.getSubtypes(v -> of(graphs, v));
+        return super.getSubtypes(v -> of(graphMgr, v));
     }
 
     @Override
@@ -102,7 +102,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(final boolean isInferred) {
         validateIsCommittedAndNotAbstract(Entity.class);
-        final ThingVertex instance = graphs.data().create(vertex.iid(), isInferred);
+        final ThingVertex instance = graphMgr.data().create(vertex.iid(), isInferred);
         return EntityImpl.of(instance);
     }
 
@@ -111,8 +111,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private static class Root extends EntityTypeImpl {
 
-        private Root(final Graphs graphs, final TypeVertex vertex) {
-            super(graphs, vertex);
+        private Root(final GraphManager graphMgr, final TypeVertex vertex) {
+            super(graphMgr, vertex);
             assert vertex.label().equals(ENTITY.label());
         }
 

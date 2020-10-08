@@ -20,7 +20,7 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -324,27 +324,27 @@ public class BasicTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final Concepts concepts = txn.concepts();
+                    final ConceptManager conceptMgr = txn.concepts();
 
-                    final EntityType person = concepts.putEntityType("person");
-                    final AttributeType.String name = concepts.putAttributeType("name", STRING).asString();
-                    final RelationType friendship = concepts.putRelationType("friendship");
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final AttributeType.String name = conceptMgr.putAttributeType("name", STRING).asString();
+                    final RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
                     final RoleType friend = friendship.getRelates("friend");
-                    concepts.putRule(
+                    conceptMgr.putRule(
                             "friendless-have-names",
                             Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"),
                             Graql.parsePattern("{$x has name \"i have no friends\";}"));
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final Concepts concepts = txn.concepts();
-                    final EntityType person = concepts.getEntityType("person");
-                    final AttributeType.String name = concepts.getAttributeType("name").asString();
-                    final RelationType friendship = concepts.getRelationType("friendship");
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final EntityType person = conceptMgr.getEntityType("person");
+                    final AttributeType.String name = conceptMgr.getAttributeType("name").asString();
+                    final RelationType friendship = conceptMgr.getRelationType("friendship");
                     final RoleType friend = friendship.getRelates("friend");
 
-                    final Rule rule = concepts.getRule("friendless-have-names");
+                    final Rule rule = conceptMgr.getRule("friendless-have-names");
                     final Pattern when = rule.getWhen();
                     final Pattern then = rule.getThen();
                     assertEquals(Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"), when);

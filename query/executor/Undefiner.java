@@ -21,7 +21,7 @@ package grakn.core.query.executor;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
@@ -52,12 +52,12 @@ public class Undefiner {
 
     private static final String TRACE_PREFIX = "undefiner.";
 
-    private final Concepts conceptMgr;
+    private final ConceptManager conceptMgr;
     private final Context.Query context;
     private final LinkedList<TypeVariable> variables;
     private final Set<TypeVariable> undefined;
 
-    private Undefiner(final Concepts conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
+    private Undefiner(final ConceptManager conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.context = context;
         this.variables = new LinkedList<>();
@@ -69,7 +69,7 @@ public class Undefiner {
         });
     }
 
-    public static Undefiner create(final Concepts conceptMgr,
+    public static Undefiner create(final ConceptManager conceptMgr,
                                    final List<graql.lang.pattern.variable.TypeVariable> variables,
                                    final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {

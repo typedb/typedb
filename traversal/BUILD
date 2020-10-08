@@ -28,7 +28,7 @@ java_library(
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # Internal dependencies
-        # "//common:common",
+        "//common:common",
         "//concept:concept",
         "//graph:graph",
 

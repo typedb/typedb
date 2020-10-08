@@ -20,7 +20,7 @@ package grakn.core.query.executor;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.parameters.Context;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.query.pattern.variable.Variable;
@@ -38,13 +38,13 @@ public class Deleter {
 
     private static final String TRACE_PREFIX = "deleter.";
 
-    private final Concepts conceptMgr;
+    private final ConceptManager conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
     private final Set<Variable> variables;
     private final Map<Reference, Thing> deleted;
 
-    private Deleter(final Concepts conceptMgr, final Set<Variable> variables,
+    private Deleter(final ConceptManager conceptMgr, final Set<Variable> variables,
                     final ConceptMap existing, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.context = context;
@@ -53,7 +53,7 @@ public class Deleter {
         this.deleted = new HashMap<>();
     }
 
-    public static Deleter create(final Concepts conceptMgr, final List<ThingVariable<?>> variables,
+    public static Deleter create(final ConceptManager conceptMgr, final List<ThingVariable<?>> variables,
                                  final ConceptMap existing, final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Deleter(conceptMgr, Variable.createFromThings(variables), existing, context);

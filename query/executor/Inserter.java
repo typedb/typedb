@@ -22,7 +22,7 @@ import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -70,13 +70,13 @@ public class Inserter {
 
     private static final String TRACE_PREFIX = "inserter.";
 
-    private final Concepts conceptMgr;
+    private final ConceptManager conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
     private final Map<Reference, Thing> inserted;
     private final Set<Variable> variables;
 
-    private Inserter(final Concepts conceptMgr, final Set<Variable> variables,
+    private Inserter(final ConceptManager conceptMgr, final Set<Variable> variables,
                      final ConceptMap existing, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
@@ -85,13 +85,13 @@ public class Inserter {
         this.inserted = new HashMap<>();
     }
 
-    public static Inserter create(final Concepts conceptMgr,
+    public static Inserter create(final ConceptManager conceptMgr,
                                   final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
                                   final Context.Query context) {
         return create(conceptMgr, variables, new ConceptMap(), context);
     }
 
-    public static Inserter create(final Concepts conceptMgr,
+    public static Inserter create(final ConceptManager conceptMgr,
                                   final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
                                   final ConceptMap existing, final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {

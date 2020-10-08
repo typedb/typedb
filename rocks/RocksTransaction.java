@@ -26,14 +26,14 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concepts;
+import grakn.core.concept.ConceptManager;
 import grakn.core.graph.DataGraph;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
-import grakn.core.query.Query;
-import grakn.core.traversal.Traversal;
+import grakn.core.query.QueryManager;
+import grakn.core.traversal.TraversalEngine;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
@@ -69,10 +69,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
     final Arguments.Transaction.Type type;
     final Context.Transaction context;
     Transaction rocksTransaction;
-    Graphs graphs;
-    Concepts concepts;
-    Traversal traversal;
-    Query query;
+    GraphManager graphMgr;
+    ConceptManager conceptMgr;
+    TraversalEngine traversalEng;
+    QueryManager queryMgr;
     AtomicBoolean isOpen;
 
     private RocksTransaction(final RocksSession session,
@@ -88,10 +88,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
     }
 
-    void initialise(Graphs graphs) {
-        concepts = new Concepts(graphs);
-        traversal = new Traversal(graphs, concepts);
-        query = new Query(traversal, concepts, context);
+    void initialise(GraphManager graphMgr) {
+        conceptMgr = new ConceptManager(graphMgr);
+        traversalEng = new TraversalEngine(graphMgr, conceptMgr);
+        queryMgr = new QueryManager(traversalEng, conceptMgr, context);
         isOpen = new AtomicBoolean(true);
     }
 
@@ -117,21 +117,21 @@ abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public Query query() {
+    public QueryManager query() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
-        return query;
+        return queryMgr;
     }
 
     @Override
-    public Concepts concepts() {
+    public ConceptManager concepts() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
-        return concepts;
+        return conceptMgr;
     }
 
     @Override
     public void rollback() {
         try {
-            graphs.clear();
+            graphMgr.clear();
             rocksTransaction.rollback();
         } catch (RocksDBException e) {
             throw new GraknException(e);
@@ -175,8 +175,8 @@ abstract class RocksTransaction implements Grakn.Transaction {
             storage = new SchemaCoreStorage();
             final SchemaGraph schemaGraph = new SchemaGraph(storage);
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
-            graphs = new Graphs(schemaGraph, dataGraph);
-            initialise(graphs);
+            graphMgr = new GraphManager(schemaGraph, dataGraph);
+            initialise(graphMgr);
             mayClose = false;
         }
 
@@ -191,7 +191,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         SchemaGraph graph() {
-            return graphs.schema();
+            return graphMgr.schema();
         }
 
         @Override
@@ -223,13 +223,13 @@ abstract class RocksTransaction implements Grakn.Transaction {
                 long lock = 0;
                 try {
                     if (type.isRead()) throw new GraknException(ILLEGAL_COMMIT);
-                    else if (graphs.data().isModified()) throw new GraknException(SESSION_SCHEMA_VIOLATION);
+                    else if (graphMgr.data().isModified()) throw new GraknException(SESSION_SCHEMA_VIOLATION);
 
                     // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
                     // TODO: We should benchmark this
                     rocksTransaction.disableIndexing();
-                    concepts.validateTypes();
-                    graphs.schema().commit();
+                    conceptMgr.validateTypes();
+                    graphMgr.schema().commit();
                     lock = session.database.dataReadSchemaLock().writeLock();
                     rocksTransaction.commit();
                 } catch (RocksDBException e) {
@@ -238,7 +238,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
                 } finally {
                     session.database.closeCachedSchemaGraph();
                     if (lock > 0) session.database.dataReadSchemaLock().unlockWrite(lock);
-                    graphs.clear();
+                    graphMgr.clear();
                     closeResources();
                 }
             } else {
@@ -312,10 +312,9 @@ abstract class RocksTransaction implements Grakn.Transaction {
             session.database.dataReadSchemaLock().unlockRead(lock);
             schemaGraph.incrementReference();
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
-            graphs = new Graphs(schemaGraph, dataGraph);
-            initialise(graphs);
+            graphMgr = new GraphManager(schemaGraph, dataGraph);
+            initialise(graphMgr);
         }
-
 
 
         @Override
@@ -356,20 +355,20 @@ abstract class RocksTransaction implements Grakn.Transaction {
             if (isOpen.compareAndSet(true, false)) {
                 try {
                     if (type.isRead()) throw new GraknException(ILLEGAL_COMMIT);
-                    else if (graphs.schema().isModified()) throw new GraknException(SESSION_DATA_VIOLATION);
+                    else if (graphMgr.schema().isModified()) throw new GraknException(SESSION_DATA_VIOLATION);
 
                     // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
                     // TODO: We should benchmark this
                     rocksTransaction.disableIndexing();
-                    concepts.validateThings();
-                    graphs.data().commit();
+                    conceptMgr.validateThings();
+                    graphMgr.data().commit();
                     rocksTransaction.commit();
                 } catch (RocksDBException e) {
                     rollback();
                     throw new GraknException(e);
                 } finally {
-                    graphs.data().clear();
-                    graphs.schema().mayRefreshStorage();
+                    graphMgr.data().clear();
+                    graphMgr.schema().mayRefreshStorage();
                     closeResources();
 
                 }
@@ -381,7 +380,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         @Override
         public void close() {
             if (isOpen.compareAndSet(true, false)) {
-                graphs.schema().decrementReference();
+                graphMgr.schema().decrementReference();
                 closeResources();
             }
         }

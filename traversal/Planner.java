@@ -16,25 +16,7 @@
  *
  */
 
-package grakn.core.query.reader;
+package grakn.core.traversal;
 
-import grakn.core.common.iterator.ComposableIterator;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.query.pattern.Conjunction;
-
-public class Executor {
-
-    private final Conjunction conjunction;
-
-    Executor(Conjunction conjunction) {
-        this.conjunction = conjunction;
-    }
-
-    public static Executor of(final Conjunction conjunction) {
-        return new Executor(conjunction);
-    }
-
-    public ComposableIterator<ConceptMap> execute() {
-        return null;
-    }
+public class Planner {
 }

@@ -26,7 +26,6 @@ java_library(
         "//common:common",
         "//concept:concept",
         "//query/pattern:pattern",
-        "//query/reader:reader",
         "//traversal:traversal",
 
         # External dependencies from Grakn Labs

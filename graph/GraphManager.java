@@ -22,13 +22,13 @@ import grakn.core.common.exception.GraknException;
 
 import java.util.Objects;
 
-public class Graphs {
+public class GraphManager {
 
     private final SchemaGraph schemaGraph;
 
     private final DataGraph dataGraph;
 
-    public Graphs(final SchemaGraph schemaGraph, final DataGraph dataGraph) {
+    public GraphManager(final SchemaGraph schemaGraph, final DataGraph dataGraph) {
         this.schemaGraph = schemaGraph;
         this.dataGraph = dataGraph;
     }
@@ -55,8 +55,8 @@ public class Graphs {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        final Graphs graphs = (Graphs) o;
-        return schemaGraph.equals(graphs.schemaGraph) && dataGraph.equals(graphs.dataGraph);
+        final GraphManager graphMgr = (GraphManager) o;
+        return schemaGraph.equals(graphMgr.schemaGraph) && dataGraph.equals(graphMgr.dataGraph);
     }
 
     @Override

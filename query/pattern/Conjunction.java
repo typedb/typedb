@@ -24,6 +24,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.query.pattern.constraint.Constraint;
 import grakn.core.query.pattern.variable.Identifier;
 import grakn.core.query.pattern.variable.Variable;
+import grakn.core.traversal.Traversal;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.BoundVariable;
 
@@ -85,5 +86,9 @@ public class Conjunction implements Pattern {
 
     public Set<Negation> negations() {
         return negations;
+    }
+
+    public List<Traversal> traversals() {
+        return null;
     }
 }

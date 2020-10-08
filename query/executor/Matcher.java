@@ -24,8 +24,7 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.query.pattern.Disjunction;
-import grakn.core.query.reader.Executor;
-import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 
@@ -37,28 +36,28 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class Matcher {
 
     private static final String TRACE_PREFIX = "matcher.";
-    private final Traversal traversal;
+    private final TraversalEngine traversalEng;
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    private Matcher(final Traversal traversal, final Disjunction disjunction, final Context.Query context) {
-        this.traversal = traversal;
+    private Matcher(final TraversalEngine traversalEng, final Disjunction disjunction, final Context.Query context) {
+        this.traversalEng = traversalEng;
         this.disjunction = disjunction;
         this.context = context;
     }
 
-    public static Matcher create(final Traversal graphMgr,
+    public static Matcher create(final TraversalEngine traversalEng,
                                  final Conjunction<? extends Pattern> conjunction,
                                  final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Matcher(graphMgr, Disjunction.create(conjunction.normalise()), context);
+            return new Matcher(traversalEng, Disjunction.create(conjunction.normalise()), context);
         }
     }
 
     public ComposableIterator<ConceptMap> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             final List<ComposableIterator<ConceptMap>> conjunctionAnswers = iterate(disjunction.conjunctions())
-                    .map(conjunction -> Executor.of(conjunction).execute()).toList();
+                    .map(conjunction -> traversalEng.executes(conjunction.traversals())).toList();
             return Iterators.parallel(conjunctionAnswers);
         }
     }

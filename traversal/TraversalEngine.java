@@ -16,7 +16,26 @@
  *
  */
 
-package grakn.core.query.reader;
+package grakn.core.traversal;
 
-public class Planner {
+import grakn.core.common.iterator.ComposableIterator;
+import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graph.GraphManager;
+
+import java.util.List;
+
+public class TraversalEngine {
+
+    private final GraphManager graphMgr;
+    private final ConceptManager conceptMgr;
+
+    public TraversalEngine(final GraphManager graphMgr, final ConceptManager conceptMgr) {
+        this.graphMgr = graphMgr;
+        this.conceptMgr = conceptMgr;
+    }
+
+    public ComposableIterator<ConceptMap> executes(final List<Traversal> traversals) {
+        return null;
+    }
 }

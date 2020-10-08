@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
-import grakn.core.graph.Graphs;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -33,11 +33,12 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
-    private RoleTypeImpl(final Graphs graphs, final TypeVertex vertex) {
-        super(graphs, vertex);
+    private RoleTypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+        super(graphMgr, vertex);
         assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
         if (vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
@@ -48,17 +49,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
     }
 
-    private RoleTypeImpl(final Graphs graphs, final String label, final String relation) {
-        super(graphs, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
+    private RoleTypeImpl(final GraphManager graphMgr, final String label, final String relation) {
+        super(graphMgr, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
     }
 
-    public static RoleTypeImpl of(final Graphs graphs, final TypeVertex vertex) {
-        if (vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label())) return new RoleTypeImpl.Root(graphs, vertex);
-        else return new RoleTypeImpl(graphs, vertex);
+    public static RoleTypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
+        if (vertex.label().equals(ROLE.label())) return new RoleTypeImpl.Root(graphMgr, vertex);
+        else return new RoleTypeImpl(graphMgr, vertex);
     }
 
-    public static RoleTypeImpl of(final Graphs graphs, final String label, final String relation) {
-        return new RoleTypeImpl(graphs, label, relation);
+    public static RoleTypeImpl of(final GraphManager graphMgr, final String label, final String relation) {
+        return new RoleTypeImpl(graphMgr, label, relation);
     }
 
     void setAbstract() {
@@ -81,22 +82,22 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
-        return super.getSupertype(v -> of(graphs, v));
+        return super.getSupertype(v -> of(graphMgr, v));
     }
 
     @Override
     public Stream<RoleTypeImpl> getSupertypes() {
-        return super.getSupertypes(v -> of(graphs, v));
+        return super.getSupertypes(v -> of(graphMgr, v));
     }
 
     @Override
     public Stream<RoleTypeImpl> getSubtypes() {
-        return super.getSubtypes(v -> of(graphs, v));
+        return super.getSubtypes(v -> of(graphMgr, v));
     }
 
     @Override
     public RelationTypeImpl getRelation() {
-        return RelationTypeImpl.of(graphs, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
+        return RelationTypeImpl.of(graphMgr, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }
 
     @Override
@@ -106,7 +107,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<ThingTypeImpl> getPlayers() {
-        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphs, v)).stream();
+        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override
@@ -128,15 +129,15 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     public RoleImpl create(final boolean isInferred) {
         validateIsCommittedAndNotAbstract(Entity.class);
-        final ThingVertex instance = graphs.data().create(vertex.iid(), isInferred);
+        final ThingVertex instance = graphMgr.data().create(vertex.iid(), isInferred);
         return RoleImpl.of(instance);
     }
 
     public static class Root extends RoleTypeImpl {
 
-        Root(final Graphs graphs, final TypeVertex vertex) {
-            super(graphs, vertex);
-            assert vertex.label().equals(Encoding.Vertex.Type.Root.ROLE.label());
+        Root(final GraphManager graphMgr, final TypeVertex vertex) {
+            super(graphMgr, vertex);
+            assert vertex.label().equals(ROLE.label());
         }
 
         @Override
