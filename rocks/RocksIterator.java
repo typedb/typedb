@@ -43,7 +43,7 @@ public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
         this.prefix = prefix;
         this.constructor = constructor;
 
-        isOpen = new AtomicBoolean(false);
+        isOpen = new AtomicBoolean(true);
         state = State.INIT;
     }
 
