@@ -30,21 +30,20 @@ java_library(
     name = "query",
     srcs = glob(["*.java"]),
     deps = [
-        # Internal package dependencies
+        # Internal dependencies
         "//common:common",
         "//concept:concept",
-        "//graph:graph",
+        "//traversal:traversal",
         "//query/executor:executor",
 
-        # External dependencies from @graknlabs
+        # External dependencies from Grakn Labs
         "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java/query:query",
 
-        # External dependencies
+        # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-query:{pom_version}"],
-    visibility = [ "//visibility:public" ]
 )
 
 checkstyle_test(

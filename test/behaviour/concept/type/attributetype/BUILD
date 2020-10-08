@@ -24,7 +24,7 @@ java_library(
         "AttributeTypeSteps.java"
     ],
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
         "//concept:concept",
         "//common:common",
         "//test/behaviour/connection:steps",

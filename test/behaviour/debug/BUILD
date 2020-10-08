@@ -25,7 +25,7 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.debug.DebugTest",
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
 
         # Add your additional debugging dependencies here
         # e.g. "//test/behaviour/connection/session:steps",

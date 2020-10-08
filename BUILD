@@ -17,23 +17,26 @@
 
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = ["//visibility:public"])
 
 exports_files(
     ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
-    visibility = ["//visibility:public"]
 )
 
 java_library(
     name = "grakn",
     srcs = glob(["*.java"]),
     deps = [
-        # Internal package dependencies
+        # Internal dependencies
         "//common:common",
         "//query:query",
         "//concept:concept",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
+    visibility = [
+        "//rocks:__pkg__",
+        "//server:__pkg__",
+        "//test:__subpackages__",
+    ],
 )
 
 release_validate_deps(

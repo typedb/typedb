@@ -15,25 +15,35 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+package(
+    default_visibility = [
+        "//query:__subpackages__",
+        "//rocks:__pkg__",
+    ]
+)
 
 java_library(
-    name = "parameters",
-    srcs = ["Parameters.java"],
+    name = "traversal",
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # Internal dependencies
-        "//common:common",
+        # "//common:common",
         "//concept:concept",
+        "//graph:graph",
 
-        # External Maven Dependencies
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java"
-    ]
+        # Grakn Labs Dependencies
+        # "@graknlabs_common//:common",
+
+        # External dependencies from Grakn Labs
+
+        # External dependencies from Maven
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-traversal:{pom_version}"],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl",
 )

@@ -24,7 +24,7 @@ java_library(
         "EntityTypeSteps.java"
     ],
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
         # "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies

@@ -27,17 +27,18 @@ java_library(
     name = "rocks",
     srcs = glob(["*.java"]),
     deps = [
-        # Internal package dependencies
+        # Internal dependencies
         "//:grakn",
         "//common:common",
         "//concept:concept",
         "//graph:graph",
         "//query:query",
+        "//traversal:traversal",
 
-        # External dependencies from @graknlabs
+        # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
 
-        # External dependencies
+        # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_rocksdb_rocksdbjni",
     ],

@@ -24,7 +24,7 @@ java_library(
         "ConnectionSteps.java",
     ],
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
         "//:grakn",
         "//rocks:rocks",
 

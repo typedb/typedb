@@ -24,7 +24,7 @@ java_library(
         "TransactionSteps.java"
     ],
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
         "//:grakn",
         "//common:common",
         "//test/behaviour/connection:steps",

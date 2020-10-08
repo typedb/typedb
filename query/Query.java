@@ -25,12 +25,12 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concepts;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.ThingType;
-import grakn.core.graph.Graphs;
 import grakn.core.query.executor.Definer;
 import grakn.core.query.executor.Deleter;
 import grakn.core.query.executor.Inserter;
 import grakn.core.query.executor.Matcher;
 import grakn.core.query.executor.Undefiner;
+import grakn.core.traversal.Traversal;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -47,13 +47,13 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class Query {
 
     private static final String TRACE_PREFIX = "query.";
-    private final Graphs graphMgr;
+    private final Traversal traversal;
     private final Concepts conceptMgr;
     private final Context.Transaction transactionContext;
 
-    public Query(final Graphs graphMgr, final Concepts conceptMgr, final Context.Transaction transactionContext) {
-        this.graphMgr = graphMgr;
-        this.conceptMgr = conceptMgr;
+    public Query(final Traversal traversal, final Concepts concepts, final Context.Transaction transactionContext) {
+        this.traversal = traversal;
+        this.conceptMgr = concepts;
         this.transactionContext = transactionContext;
     }
 
@@ -64,7 +64,7 @@ public class Query {
     public ComposableIterator<ConceptMap> match(final GraqlMatch query, final Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             final Context.Query context = new Context.Query(transactionContext, options);
-            return Matcher.create(graphMgr, query.conjunction(), context).execute();
+            return Matcher.create(traversal, query.conjunction(), context).execute();
         }
     }
 

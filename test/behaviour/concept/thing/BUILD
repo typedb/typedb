@@ -24,7 +24,7 @@ java_library(
         "ThingSteps.java"
     ],
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
         "//concept:concept",
         "//test/behaviour/config:parameters",
         "//test/behaviour/concept/type/thingtype:steps",

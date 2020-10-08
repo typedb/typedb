@@ -23,9 +23,11 @@ import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graph.Graphs;
 import grakn.core.query.pattern.Disjunction;
 import grakn.core.query.reader.Executor;
+import grakn.core.traversal.Traversal;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
 
 import java.util.List;
 
@@ -35,18 +37,18 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class Matcher {
 
     private static final String TRACE_PREFIX = "matcher.";
-    private final Graphs graphMgr;
+    private final Traversal traversal;
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    private Matcher(final Graphs graphMgr, final Disjunction disjunction, final Context.Query context) {
-        this.graphMgr = graphMgr;
+    private Matcher(final Traversal traversal, final Disjunction disjunction, final Context.Query context) {
+        this.traversal = traversal;
         this.disjunction = disjunction;
         this.context = context;
     }
 
-    public static Matcher create(final Graphs graphMgr,
-                                 final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> conjunction,
+    public static Matcher create(final Traversal graphMgr,
+                                 final Conjunction<? extends Pattern> conjunction,
                                  final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Matcher(graphMgr, Disjunction.create(conjunction.normalise()), context);

@@ -16,6 +16,7 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+package(default_visibility = ["//query:__subpackages__"])
 
 checkstyle_test(
     name = "checkstyle",

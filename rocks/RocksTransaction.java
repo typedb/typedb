@@ -33,6 +33,7 @@ import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.query.Query;
+import grakn.core.traversal.Traversal;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
@@ -70,10 +71,13 @@ abstract class RocksTransaction implements Grakn.Transaction {
     Transaction rocksTransaction;
     Graphs graphs;
     Concepts concepts;
+    Traversal traversal;
     Query query;
     AtomicBoolean isOpen;
 
-    private RocksTransaction(final RocksSession session, final Arguments.Transaction.Type type, final Options.Transaction options) {
+    private RocksTransaction(final RocksSession session,
+                             final Arguments.Transaction.Type type,
+                             final Options.Transaction options) {
         this.type = type;
         this.session = session;
         context = new Context.Transaction(session.context(), options).type(type);
@@ -82,6 +86,13 @@ abstract class RocksTransaction implements Grakn.Transaction {
         rocksTxOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
+    }
+
+    void initialise(Graphs graphs) {
+        concepts = new Concepts(graphs);
+        traversal = new Traversal(graphs, concepts);
+        query = new Query(traversal, concepts, context);
+        isOpen = new AtomicBoolean(true);
     }
 
     public abstract CoreStorage storage();
@@ -165,9 +176,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             final SchemaGraph schemaGraph = new SchemaGraph(storage);
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphs = new Graphs(schemaGraph, dataGraph);
-            concepts = new Concepts(graphs);
-            query = new Query(graphs, concepts, context);
-            isOpen = new AtomicBoolean(true);
+            initialise(graphs);
             mayClose = false;
         }
 
@@ -304,10 +313,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
             schemaGraph.incrementReference();
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphs = new Graphs(schemaGraph, dataGraph);
-            concepts = new Concepts(graphs);
-            query = new Query(graphs, concepts, context);
-            isOpen = new AtomicBoolean(true);
+            initialise(graphs);
         }
+
+
 
         @Override
         boolean isData() {

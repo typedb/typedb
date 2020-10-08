@@ -31,7 +31,7 @@ java_library(
         "//test/behaviour/connection:steps",
         "//test/behaviour/util:util",
 
-        # Grakn Labs dependencies
+        # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/query",
 

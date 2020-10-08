@@ -16,11 +16,18 @@
  *
  */
 
-package grakn.core.graph.traversal;
+package grakn.core.traversal;
+
+import grakn.core.concept.Concepts;
+import grakn.core.graph.Graphs;
 
 public class Traversal {
 
-    public Traversal() {
-        // TODO
+    private final Graphs graphs;
+    private final Concepts concepts;
+
+    public Traversal(final Graphs graphs, final Concepts concepts) {
+        this.graphs = graphs;
+        this.concepts = concepts;
     }
 }

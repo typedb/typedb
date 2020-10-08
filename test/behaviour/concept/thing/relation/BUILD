@@ -24,7 +24,7 @@ java_library(
         "RelationSteps.java"
     ],
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
         "//concept:concept",
         "//test/behaviour/concept/thing:steps",
         "//test/behaviour/connection:steps",

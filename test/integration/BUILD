@@ -25,13 +25,13 @@ java_test(
     ],
     test_class = "grakn.core.test.integration.BasicTest",
     deps = [
-        # Internal package dependencies
+        # Internal dependencies
         "//:grakn",
         "//common:common",
         "//concept:concept",
         "//rocks:rocks",
 
-        # External dependencies from @graknlabs
+        # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
@@ -47,13 +47,13 @@ java_test(
     ],
     test_class = "grakn.core.test.integration.QueryTest",
     deps = [
-        # Internal package dependencies
+        # Internal dependencies
         "//:grakn",
         "//common:common",
         "//concept:concept",
         "//rocks:rocks",
 
-        # External dependencies from @graknlabs
+        # External dependencies from Grakn Labs
         "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
     ],

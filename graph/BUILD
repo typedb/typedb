@@ -19,8 +19,8 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
         "//concept:__pkg__",
-        "//query:__pkg__",
         "//rocks:__pkg__",
+        "//traversal:__pkg__"
     ]
 )
 
@@ -28,13 +28,13 @@ java_library(
     name = "graph",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
-        # Grakn Labs Dependencies
+        # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
 
-        # Internal Package Dependencies
+        # Internal dependencies
         "//common:common",
 
-        # External dependencies from @graknlabs
+        # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/pattern:pattern",
 
@@ -42,7 +42,6 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph:{pom_version}"],
-    visibility = [ "//visibility:public" ]
 )
 
 checkstyle_test(

@@ -24,8 +24,14 @@ import grakn.core.query.pattern.Conjunction;
 
 public class Executor {
 
+    private final Conjunction conjunction;
+
+    Executor(Conjunction conjunction) {
+        this.conjunction = conjunction;
+    }
+
     public static Executor of(final Conjunction conjunction) {
-        return null;
+        return new Executor(conjunction);
     }
 
     public ComposableIterator<ConceptMap> execute() {

@@ -43,14 +43,14 @@ java_library(
     name = "server",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
     deps = [
-        # Internal package dependencies
+        # Internal dependencies
         ":version",
         "//:grakn",
         "//common:common",
         "//concept:concept",
         "//rocks:rocks",
 
-        # External dependencies from @graknlabs
+        # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
         "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java/pattern:pattern",
@@ -58,7 +58,7 @@ java_library(
         "@graknlabs_graql//java/query",
         "@graknlabs_protocol//grpc/java:protocol",
 
-        # External dependencies
+        # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:info_picocli_picocli",
@@ -72,7 +72,6 @@ java_library(
         "@maven//:ch_qos_logback_logback_classic",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
-    visibility = [ "//visibility:public" ]
 )
 
 java_binary(
@@ -115,7 +114,6 @@ assemble_zip(
     targets = assemble_deps,
     additional_files = assemble_files,
     output_filename = "grakn-core-server-mac",
-    visibility = ["//visibility:public"]
 )
 
 deploy_artifact(
@@ -125,7 +123,6 @@ deploy_artifact(
     artifact_name = "grakn-core-server-linux-{version}.tar.gz",
     release = deployment_private['artifact.release'],
     snapshot = deployment_private['artifact.snapshot'],
-    visibility = ["//visibility:public"],
 )
 
 deploy_artifact(
@@ -135,7 +132,6 @@ deploy_artifact(
     artifact_name = "grakn-core-server-mac-{version}.tar.gz",
     release = deployment_private['artifact.release'],
     snapshot = deployment_private['artifact.snapshot'],
-    visibility = ["//visibility:public"],
 )
 
 checkstyle_test(

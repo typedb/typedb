@@ -22,7 +22,7 @@ java_library(
     name = "util",
     srcs = glob(["*.java"]),
     deps = [
-        # Internal Package Dependencies
+        # Internal dependencies
 
         # External Maven Dependencies
         "@maven//:junit_junit",
