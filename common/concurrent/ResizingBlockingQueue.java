@@ -18,14 +18,80 @@
 
 package grakn.core.common.concurrent;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import grakn.common.collection.Either;
+import grakn.core.common.exception.GraknException;
 
-// TODO
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.OUT_OF_BOUNDS;
+
 public class ResizingBlockingQueue<E> {
 
-    private final LinkedBlockingQueue<E> queue;
+    private final int CAPACITY_INITIAL = 16;
+    private final int CAPACITY_MULTIPLIER = 4;
+    private final AtomicInteger publishers;
+    private final AtomicBoolean needsResizing;
+    private LinkedBlockingQueue<Either<E, Done>> queue;
+    private int capicity;
+    private boolean done;
+
+    class Done {}
 
     public ResizingBlockingQueue() {
-        this.queue = new LinkedBlockingQueue<>();
+        queue = new LinkedBlockingQueue<>(CAPACITY_INITIAL);
+        publishers = new AtomicInteger(0);
+        needsResizing = new AtomicBoolean(false);
+        capicity = CAPACITY_INITIAL;
+        done = false;
+    }
+
+    public void incrementPublisher() {
+        publishers.incrementAndGet();
+    }
+
+    public void decrementPublisher() {
+        if (publishers.decrementAndGet() < 0) throw GraknException.of(OUT_OF_BOUNDS);
+        if (publishers.compareAndSet(0, -1)) {
+            try {
+                queue.put(Either.second(new Done()));
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            }
+        }
+    }
+
+    public E take() {
+        try {
+            Either<E, Done> result = queue.poll();
+            if (result != null) {
+                if (result.isFirst()) return result.first();
+                else return null;
+            } else if (needsResizing.compareAndSet(true, false)) {
+                resize();
+            }
+            result = queue.take();
+            if (result.isFirst()) return result.first();
+            else return null;
+        } catch (InterruptedException e) {
+            throw GraknException.of(e);
+        }
+    }
+
+    private void resize() {
+        LinkedBlockingQueue<Either<E, Done>> oldQueue = queue;
+        capicity = capicity * CAPACITY_MULTIPLIER;
+        queue = new LinkedBlockingQueue<>(capicity);
+        oldQueue.drainTo(queue);
+    }
+
+    public void put(final E item) {
+        try {
+            queue.put(Either.first(item));
+            if (queue.remainingCapacity() == 0) needsResizing.set(true);
+        } catch (InterruptedException e) {
+            throw GraknException.of(e);
+        }
     }
 }

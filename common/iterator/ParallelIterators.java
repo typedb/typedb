@@ -18,26 +18,50 @@
 
 package grakn.core.common.iterator;
 
+import grakn.core.common.concurrent.CommonExecutorService;
 import grakn.core.common.concurrent.ResizingBlockingQueue;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class ParallelIterators<T> implements ComposableIterator<T> {
 
-    private final List<ResizingBlockingQueue<T>> queues;
+    private final ResizingBlockingQueue<T> queue;
+    private State state;
+    private T next;
+
+    private enum State {EMPTY, FETCHED, COMPLETED}
 
     public ParallelIterators(final List<ComposableIterator<T>> iterators) {
-        queues = new ArrayList<>(iterators.size());
+        queue = new ResizingBlockingQueue<>();
+        state = State.EMPTY;
+        next = null;
+
+        for (ComposableIterator<T> iterator : iterators) {
+            queue.incrementPublisher();
+            CommonExecutorService.get().submit(() -> {
+                while (iterator.hasNext()) queue.put(iterator.next());
+                queue.decrementPublisher();
+            });
+        }
     }
 
     @Override
     public boolean hasNext() {
-        return false; // TODO
+        if (state == State.FETCHED) return true;
+        else if (state == State.COMPLETED) return false;
+        else next = queue.take();
+
+        if (next == null) state = State.COMPLETED;
+        else state = State.FETCHED;
+
+        return next != null;
     }
 
     @Override
     public T next() {
-        return null; // TODO
+        if (!hasNext()) throw new NoSuchElementException();
+        state = State.EMPTY;
+        return next;
     }
 }

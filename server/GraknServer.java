@@ -23,6 +23,7 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
+import grakn.core.common.concurrent.CommonExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.rpc.GraknRPC;
@@ -45,7 +46,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
@@ -75,9 +75,10 @@ public class GraknServer implements AutoCloseable {
         configureDataDir();
         configureTracing();
 
+        CommonExecutorService.init(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor"));
         grakn = RocksGrakn.open(options.dataDir());
         graknRPC = new GraknRPC(grakn);
-        server = rpcServer();
+        server = rpcServer(graknRPC, options);
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
@@ -193,10 +194,12 @@ public class GraknServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private Server rpcServer() {
-        final NioEventLoopGroup workerELG = new NioEventLoopGroup(MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker"));
+    private static Server rpcServer(final GraknRPC graknRPC, final ServerOptions options) {
+        final NioEventLoopGroup workerELG = new NioEventLoopGroup(
+                MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker")
+        );
         return NettyServerBuilder.forPort(options.port())
-                .executor(Executors.newFixedThreadPool(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor")))
+                .executor(CommonExecutorService.get())
                 .workerEventLoopGroup(workerELG)
                 .bossEventLoopGroup(workerELG)
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?

@@ -70,7 +70,11 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Internal ILLEGAL_CAST =
                 new Internal(5, "Illegal casting operation from '%s' to '%s'.");
         public static final Internal GRAKN_CLOSED =
-                new Internal(6, "Attempted to ");
+                new Internal(6, "Attempted to open a session on a closed Grakn backend.");
+        public static final Internal OUT_OF_BOUNDS =
+                new Internal(7, "Resource out of bounds.");
+        public static final Internal UNEXPECTED_INTERRUPTION =
+                new Internal(8, "Unexpected thread interruption!");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
