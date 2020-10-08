@@ -15,8 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.query.pattern.constraint;
-
+package grakn.core.query.pattern.constraint.thing;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.query.pattern.variable.ThingVariable;

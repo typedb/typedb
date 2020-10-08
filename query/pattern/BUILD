@@ -23,6 +23,8 @@ java_library(
     srcs = glob([
         "*.java",
         "constraint/*.java",
+        "constraint/thing/*.java",
+        "constraint/type/*.java",
         "variable/*.java",
     ]),
     deps = [

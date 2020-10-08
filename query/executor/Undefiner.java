@@ -27,7 +27,12 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.constraint.TypeConstraint;
+import grakn.core.query.pattern.constraint.type.LabelConstraint;
+import grakn.core.query.pattern.constraint.type.OwnsConstraint;
+import grakn.core.query.pattern.constraint.type.PlaysConstraint;
+import grakn.core.query.pattern.constraint.type.RegexConstraint;
+import grakn.core.query.pattern.constraint.type.RelatesConstraint;
+import grakn.core.query.pattern.constraint.type.SubConstraint;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;
 
@@ -99,7 +104,7 @@ public class Undefiner {
     private void undefine(final TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             assert variable.label().isPresent();
-            final TypeConstraint.Label labelConstraint = variable.label().get();
+            final LabelConstraint labelConstraint = variable.label().get();
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelConstraint.scopedLabel()));
@@ -132,7 +137,7 @@ public class Undefiner {
         }
     }
 
-    private ThingType getType(final TypeConstraint.Label label) {
+    private ThingType getType(final LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "gettype")) {
             final Type type;
             if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
@@ -140,7 +145,7 @@ public class Undefiner {
         }
     }
 
-    private RoleType getRoleType(final TypeConstraint.Label label) {
+    private RoleType getRoleType(final LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             // We always assume that Role Types already exist,
             // defined by their Relation Types ahead of time
@@ -155,7 +160,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineSub(final ThingType thingType, final TypeConstraint.Sub subConstraint) {
+    private void undefineSub(final ThingType thingType, final SubConstraint subConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefinesub")) {
             if (thingType instanceof RoleType) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(thingType.getLabel()));
@@ -176,7 +181,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineRegex(final AttributeType.String attributeType, final TypeConstraint.Regex regexConstraint) {
+    private void undefineRegex(final AttributeType.String attributeType, final RegexConstraint regexConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineregex")) {
             if (!attributeType.getRegex().pattern().equals(regexConstraint.regex().pattern())) {
                 throw new GraknException(INVALID_UNDEFINE_REGEX.message(attributeType.getLabel(), regexConstraint.regex()));
@@ -185,7 +190,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineRelates(final RelationType relationType, final Set<TypeConstraint.Relates> relatesConstraints) {
+    private void undefineRelates(final RelationType relationType, final Set<RelatesConstraint> relatesConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefinerelates")) {
             relatesConstraints.forEach(relates -> {
                 final String roleTypeLabel = relates.role().label().get().label();
@@ -204,7 +209,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineOwns(final ThingType thingType, final Set<TypeConstraint.Owns> ownsConstraints) {
+    private void undefineOwns(final ThingType thingType, final Set<OwnsConstraint> ownsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineowns")) {
             ownsConstraints.forEach(owns -> {
                 final AttributeType attributeType = getType(owns.attribute().label().get()).asAttributeType();
@@ -224,7 +229,7 @@ public class Undefiner {
         }
     }
 
-    private void undefinePlays(final ThingType thingType, final Set<TypeConstraint.Plays> playsConstraints) {
+    private void undefinePlays(final ThingType thingType, final Set<PlaysConstraint> playsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineplays")) {
             playsConstraints.forEach(plays -> {
                 final RoleType roleType = getRoleType(plays.role().label().get()).asRoleType();

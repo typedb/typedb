@@ -28,7 +28,12 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.constraint.TypeConstraint;
+import grakn.core.query.pattern.constraint.type.LabelConstraint;
+import grakn.core.query.pattern.constraint.type.OwnsConstraint;
+import grakn.core.query.pattern.constraint.type.PlaysConstraint;
+import grakn.core.query.pattern.constraint.type.RegexConstraint;
+import grakn.core.query.pattern.constraint.type.RelatesConstraint;
+import grakn.core.query.pattern.constraint.type.SubConstraint;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;
 
@@ -84,7 +89,7 @@ public class Definer {
     private Type define(final TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             assert variable.label().isPresent();
-            final TypeConstraint.Label labelConstraint = variable.label().get();
+            final LabelConstraint labelConstraint = variable.label().get();
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelConstraint.scopedLabel()));
@@ -121,7 +126,7 @@ public class Definer {
         }
     }
 
-    private ThingType getThingType(final TypeConstraint.Label label) {
+    private ThingType getThingType(final LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
             final Type type;
             if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
@@ -129,7 +134,7 @@ public class Definer {
         }
     }
 
-    private RoleType getRoleType(final TypeConstraint.Label label) {
+    private RoleType getRoleType(final LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             // We always assume that Role Types already exist,
             // defined by their Relation Types ahead of time
@@ -144,9 +149,9 @@ public class Definer {
         }
     }
 
-    private ThingType defineSub(ThingType thingType, final TypeConstraint.Sub subConstraint, final TypeVariable variable) {
+    private ThingType defineSub(ThingType thingType, final SubConstraint subConstraint, final TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "definesub")) {
-            final TypeConstraint.Label labelConstraint = variable.label().get();
+            final LabelConstraint labelConstraint = variable.label().get();
             final ThingType supertype = define(subConstraint.type()).asThingType();
             if (supertype instanceof EntityType) {
                 if (thingType == null) thingType = conceptMgr.putEntityType(labelConstraint.label());
@@ -174,13 +179,13 @@ public class Definer {
         }
     }
 
-    private void defineRegex(final AttributeType.String attributeType, final TypeConstraint.Regex regexConstraint) {
+    private void defineRegex(final AttributeType.String attributeType, final RegexConstraint regexConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineregex")) {
             attributeType.setRegex(regexConstraint.regex());
         }
     }
 
-    private void defineRelates(final RelationType relationType, final Set<TypeConstraint.Relates> relatesConstraints) {
+    private void defineRelates(final RelationType relationType, final Set<RelatesConstraint> relatesConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "definerelates")) {
             relatesConstraints.forEach(relates -> {
                 final String roleTypeLabel = relates.role().label().get().label();
@@ -196,7 +201,7 @@ public class Definer {
         }
     }
 
-    private void defineOwns(final ThingType thingType, final Set<TypeConstraint.Owns> ownsConstraints) {
+    private void defineOwns(final ThingType thingType, final Set<OwnsConstraint> ownsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineowns")) {
             ownsConstraints.forEach(owns -> {
                 final AttributeType attributeType = define(owns.attribute()).asAttributeType();
@@ -210,7 +215,7 @@ public class Definer {
         }
     }
 
-    private void definePlays(final ThingType thingType, final Set<TypeConstraint.Plays> playsConstraints) {
+    private void definePlays(final ThingType thingType, final Set<PlaysConstraint> playsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineplays")) {
             playsConstraints.forEach(plays -> {
                 define(plays.relation().get());

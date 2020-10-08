@@ -19,7 +19,17 @@
 package grakn.core.query.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.query.pattern.constraint.TypeConstraint;
+import grakn.core.query.pattern.constraint.type.AbstractConstraint;
+import grakn.core.query.pattern.constraint.type.LabelConstraint;
+import grakn.core.query.pattern.constraint.type.OwnsConstraint;
+import grakn.core.query.pattern.constraint.type.PlaysConstraint;
+import grakn.core.query.pattern.constraint.type.RegexConstraint;
+import grakn.core.query.pattern.constraint.type.RelatesConstraint;
+import grakn.core.query.pattern.constraint.type.SubConstraint;
+import grakn.core.query.pattern.constraint.type.ThenConstraint;
+import grakn.core.query.pattern.constraint.type.TypeConstraint;
+import grakn.core.query.pattern.constraint.type.ValueTypeConstraint;
+import grakn.core.query.pattern.constraint.type.WhenConstraint;
 
 import java.util.HashSet;
 import java.util.List;
@@ -30,17 +40,17 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class TypeVariable extends Variable {
 
-    private TypeConstraint.Label labelConstraint;
-    private TypeConstraint.Abstract abstractConstraint;
-    private TypeConstraint.ValueType valueTypeConstraint;
-    private TypeConstraint.Regex regexConstraint;
-    private TypeConstraint.Then thenConstraint;
-    private TypeConstraint.When whenConstraint;
+    private LabelConstraint labelConstraint;
+    private AbstractConstraint abstractConstraint;
+    private ValueTypeConstraint valueTypeConstraint;
+    private RegexConstraint regexConstraint;
+    private ThenConstraint thenConstraint;
+    private WhenConstraint whenConstraint;
 
-    private final Set<TypeConstraint.Sub> subConstraints;
-    private final Set<TypeConstraint.Owns> ownsConstraints;
-    private final Set<TypeConstraint.Plays> playsConstraints;
-    private final Set<TypeConstraint.Relates> relatesConstraints;
+    private final Set<SubConstraint> subConstraints;
+    private final Set<OwnsConstraint> ownsConstraints;
+    private final Set<PlaysConstraint> playsConstraints;
+    private final Set<RelatesConstraint> relatesConstraints;
     private final Set<TypeConstraint> constraints;
 
     TypeVariable(final Identifier identifier) {
@@ -73,43 +83,43 @@ public class TypeVariable extends Variable {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public Optional<TypeConstraint.Label> label() {
+    public Optional<LabelConstraint> label() {
         return Optional.ofNullable(labelConstraint);
     }
 
-    public Optional<TypeConstraint.Abstract> abstractConstraint() {
+    public Optional<AbstractConstraint> abstractConstraint() {
         return Optional.ofNullable(abstractConstraint);
     }
 
-    public Optional<TypeConstraint.ValueType> valueType() {
+    public Optional<ValueTypeConstraint> valueType() {
         return Optional.ofNullable(valueTypeConstraint);
     }
 
-    public Optional<TypeConstraint.Regex> regex() {
+    public Optional<RegexConstraint> regex() {
         return Optional.ofNullable(regexConstraint);
     }
 
-    public Optional<TypeConstraint.Then> then() {
+    public Optional<ThenConstraint> then() {
         return Optional.ofNullable(thenConstraint);
     }
 
-    public Optional<TypeConstraint.When> when() {
+    public Optional<WhenConstraint> when() {
         return Optional.ofNullable(whenConstraint);
     }
 
-    public Set<TypeConstraint.Sub> sub() {
+    public Set<SubConstraint> sub() {
         return subConstraints;
     }
 
-    public Set<TypeConstraint.Owns> owns() {
+    public Set<OwnsConstraint> owns() {
         return ownsConstraints;
     }
 
-    public Set<TypeConstraint.Plays> plays() {
+    public Set<PlaysConstraint> plays() {
         return playsConstraints;
     }
 
-    public Set<TypeConstraint.Relates> relates() {
+    public Set<RelatesConstraint> relates() {
         return relatesConstraints;
     }
 

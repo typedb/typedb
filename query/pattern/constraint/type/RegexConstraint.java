@@ -1,0 +1,75 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package grakn.core.query.pattern.constraint.type;
+
+import grakn.core.query.pattern.variable.TypeVariable;
+
+import java.util.Objects;
+import java.util.Set;
+
+import static grakn.common.collection.Collections.set;
+
+public class RegexConstraint extends TypeConstraint {
+
+    private final java.util.regex.Pattern regex;
+    private final int hash;
+
+    private RegexConstraint(final TypeVariable owner, final java.util.regex.Pattern regex) {
+        super(owner);
+        this.regex = regex;
+        this.hash = Objects.hash(RegexConstraint.class, this.owner, this.regex.pattern());
+    }
+
+    public static RegexConstraint of(final TypeVariable owner,
+                                     final graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
+        return new RegexConstraint(owner, constraint.regex());
+    }
+
+    public java.util.regex.Pattern regex() {
+        return regex;
+    }
+
+    @Override
+    public Set<TypeVariable> variables() {
+        return set();
+    }
+
+    @Override
+    public boolean isRegex() {
+        return true;
+    }
+
+    @Override
+    public RegexConstraint asRegex() {
+        return this;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o == this) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final RegexConstraint that = (RegexConstraint) o;
+        return (this.owner.equals(that.owner) && this.regex.pattern().equals(that.regex.pattern()));
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
+    }
+}

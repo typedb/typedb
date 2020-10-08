@@ -19,6 +19,8 @@
 package grakn.core.query.pattern.constraint;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.query.pattern.constraint.thing.ThingConstraint;
+import grakn.core.query.pattern.constraint.type.TypeConstraint;
 import grakn.core.query.pattern.variable.Variable;
 
 import java.util.Set;

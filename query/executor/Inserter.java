@@ -34,8 +34,11 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.constraint.ThingConstraint;
-import grakn.core.query.pattern.constraint.ValueOperation;
+import grakn.core.query.pattern.constraint.thing.HasConstraint;
+import grakn.core.query.pattern.constraint.thing.IIDConstraint;
+import grakn.core.query.pattern.constraint.thing.IsaConstraint;
+import grakn.core.query.pattern.constraint.thing.ValueConstraint;
+import grakn.core.query.pattern.constraint.thing.ValueOperation;
 import grakn.core.query.pattern.variable.ThingVariable;
 import grakn.core.query.pattern.variable.TypeVariable;
 import grakn.core.query.pattern.variable.Variable;
@@ -152,7 +155,7 @@ public class Inserter {
         }
     }
 
-    private Thing getThing(final ThingConstraint.IID iidConstraint) {
+    private Thing getThing(final IIDConstraint iidConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthing")) {
             final Thing thing = conceptMgr.getThing(iidConstraint.iid());
             if (thing == null) throw new GraknException(THING_NOT_FOUND.message(bytesToHexString(iidConstraint.iid())));
@@ -191,7 +194,7 @@ public class Inserter {
         }
     }
 
-    private Thing insertIsa(final ThingConstraint.Isa isaConstraint, final ThingVariable variable) {
+    private Thing insertIsa(final IsaConstraint isaConstraint, final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertisa")) {
             final ThingType thingType = getThingType(isaConstraint.type());
 
@@ -216,7 +219,7 @@ public class Inserter {
 
     private Attribute insertAttribute(final AttributeType attributeType, final ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertattribute")) {
-            final ThingConstraint.Value<?> valueConstraint;
+            final ValueConstraint<?> valueConstraint;
             if (variable.value().size() > 1) {
                 throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY.message(variable.reference(), attributeType.getLabel()));
             } else if (!variable.value().isEmpty() &&
@@ -274,7 +277,7 @@ public class Inserter {
         }
     }
 
-    private void insertHas(final Thing thing, final Set<ThingConstraint.Has> hasConstraints) {
+    private void insertHas(final Thing thing, final Set<HasConstraint> hasConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "inserthas")) {
             hasConstraints.forEach(has -> {
                 final AttributeType attributeType = getThingType(has.type()).asAttributeType();

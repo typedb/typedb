@@ -19,7 +19,13 @@
 package grakn.core.query.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.query.pattern.constraint.ThingConstraint;
+import grakn.core.query.pattern.constraint.thing.HasConstraint;
+import grakn.core.query.pattern.constraint.thing.IIDConstraint;
+import grakn.core.query.pattern.constraint.thing.IsaConstraint;
+import grakn.core.query.pattern.constraint.thing.NEQConstraint;
+import grakn.core.query.pattern.constraint.thing.RelationConstraint;
+import grakn.core.query.pattern.constraint.thing.ThingConstraint;
+import grakn.core.query.pattern.constraint.thing.ValueConstraint;
 
 import java.util.HashSet;
 import java.util.List;
@@ -30,12 +36,12 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ThingVariable extends Variable {
 
-    private ThingConstraint.IID iidConstraint;
-    private final Set<ThingConstraint.Isa> isaConstraints;
-    private final Set<ThingConstraint.NEQ> neqConstraints;
-    private final Set<ThingConstraint.Value<?>> valueConstraints;
-    private final Set<ThingConstraint.Relation> relationConstraints;
-    private final Set<ThingConstraint.Has> hasConstraints;
+    private IIDConstraint iidConstraint;
+    private final Set<IsaConstraint> isaConstraints;
+    private final Set<NEQConstraint> neqConstraints;
+    private final Set<ValueConstraint<?>> valueConstraints;
+    private final Set<RelationConstraint> relationConstraints;
+    private final Set<HasConstraint> hasConstraints;
     private final Set<ThingConstraint> constraints;
 
     ThingVariable(final Identifier identifier) {
@@ -64,27 +70,27 @@ public class ThingVariable extends Variable {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public Optional<ThingConstraint.IID> iid() {
+    public Optional<IIDConstraint> iid() {
         return Optional.ofNullable(iidConstraint);
     }
 
-    public Set<ThingConstraint.Isa> isa() {
+    public Set<IsaConstraint> isa() {
         return isaConstraints;
     }
 
-    public Set<ThingConstraint.NEQ> neq() {
+    public Set<NEQConstraint> neq() {
         return neqConstraints;
     }
 
-    public Set<ThingConstraint.Value<?>> value() {
+    public Set<ValueConstraint<?>> value() {
         return valueConstraints;
     }
 
-    public Set<ThingConstraint.Relation> relation() {
+    public Set<RelationConstraint> relation() {
         return relationConstraints;
     }
 
-    public Set<ThingConstraint.Has> has() {
+    public Set<HasConstraint> has() {
         return hasConstraints;
     }
 
