@@ -16,6 +16,7 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
 package(
     default_visibility = [
         "//server:__pkg__",
@@ -40,6 +41,7 @@ java_library(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
+#        "@maven//:org_rocksdb_rocksdbjni_dev", # Use this JAR for debugging RocksDB on Mac
         "@maven//:org_rocksdb_rocksdbjni",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-rocks:{pom_version}"],

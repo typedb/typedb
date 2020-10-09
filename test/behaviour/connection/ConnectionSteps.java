@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -104,8 +105,7 @@ public class ConnectionSteps {
 
     @After
     public void connection_close() {
-        grakn.close();
-        grakn = null;
+        System.out.println("ConnectionSteps.after");
         sessions.clear();
         sessionsParallel.clear();
         sessionsToTransactions.clear();

@@ -28,6 +28,7 @@ artifacts = [
     "io.netty:netty-all",
     "junit:junit",
     "org.rocksdb:rocksdbjni",
+    "org.rocksdb:rocksdbjni-dev",
     "org.slf4j:slf4j-api",
 ]
 

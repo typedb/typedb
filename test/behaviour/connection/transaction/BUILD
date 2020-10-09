@@ -58,7 +58,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//connection:transaction.feature",
     ],
-    size = "large",
+    size = "small",
 )
 
 checkstyle_test(

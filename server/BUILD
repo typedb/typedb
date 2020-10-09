@@ -84,13 +84,39 @@ java_binary(
 java_deps(
     name = "server-deps",
     target = ":server-bin",
-    java_deps_root = "server/lib/",
+    java_deps_root = "server/lib/common/",
+#    java_deps_root_overrides = {
+#        "rocksdbjni-dev-*": "server/lib/dev/",
+#    },
+    java_deps_root_overrides = {
+        "rocksdbjni-*": "server/lib/prod/",
+    },
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
+java_deps(
+    name = "server-deps-dev",
+    target = "@maven//:org_rocksdb_rocksdbjni_dev",
+    java_deps_root = "server/lib/dev/",
+    visibility = ["//:__pkg__"],
+    maven_name = True,
+)
+
+# TODO: Once we have a cross-platform rocksdbjni-dev build, make rocksdbjni-dev the default version that we use
+#       (by uncommenting server-deps-prod and deleting server-deps-dev)
+#java_deps(
+#    name = "server-deps-prod",
+#    target = "@maven//:org_rocksdb_rocksdbjni",
+#    java_deps_root = "server/lib/prod/",
+#    visibility = ["//:__pkg__"],
+#    maven_name = True,
+#)
+
 assemble_deps = [
     ":server-deps",
+    ":server-deps-dev",
+#    ":server-deps-prod",
     "@graknlabs_common//binary:assemble-bash-targz",
 ]
 

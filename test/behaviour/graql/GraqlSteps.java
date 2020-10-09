@@ -343,8 +343,8 @@ public class GraqlSteps {
             answersIdentifiers = new ArrayList<>();
             for (final Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
                 answersIdentifiers.add(rawAnswerIdentifiers.entrySet().stream()
-                                               .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
-                                               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                        .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
             }
         }
     }
