@@ -143,7 +143,10 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
                 v -> {
                     final ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
                     if (p.hasNext()) return p.next();
-                    else return null;
+                    else {
+                        p.recycle();
+                        return null;
+                    }
                 }
         ).map(typeConstructor).stream();
     }

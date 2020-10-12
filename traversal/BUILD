@@ -30,7 +30,6 @@ java_library(
     deps = [
         # Internal dependencies
         "//common:common",
-        "//concept:concept",
         "//graph:graph",
 
         # Grakn Labs Dependencies

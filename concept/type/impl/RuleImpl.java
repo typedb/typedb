@@ -22,6 +22,7 @@ package grakn.core.concept.type.impl;
 import grakn.core.concept.type.Rule;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.RuleVertex;
+import grakn.core.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 
 import java.util.Arrays;
@@ -62,6 +63,7 @@ public class RuleImpl implements Rule {
 
         // TODO extract when Types from when pattern
         final List<String> whenTypesPositive = Arrays.asList();
+        Conjunction when = null;
 
         vertex.outs().delete(CONDITION_POSITIVE);
 

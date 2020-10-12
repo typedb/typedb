@@ -24,34 +24,46 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static grakn.common.collection.Collections.list;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 public interface ResourceIterator<T> extends ComposableIterator<T>, RecyclableIterator<T> {
 
     @Override
-    default DistinctIterator<T> distinct() {
+    default ResourceIterator<T> distinct() {
         return new DistinctIterator<>(Either.first(this));
     }
 
     @Override
-    default <U> MappedIterator<T, U> map(final Function<T, U> function) {
+    default <U> ResourceIterator<U> map(final Function<T, U> function) {
         return new MappedIterator<>(Either.first(this), function);
     }
 
     @Override
-    default FilteredIterator<T> filter(final Predicate<T> predicate) {
+    default ResourceIterator<T> filter(final Predicate<T> predicate) {
         return new FilteredIterator<>(Either.first(this), predicate);
     }
 
     @Override
-    default LinkedIterators<T> link(final RecyclableIterator<T> iterator) {
+    default ResourceIterator<T> link(final RecyclableIterator<T> iterator) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.first(iterator))));
     }
 
     @Override
-    default LinkedIterators<T> link(final Iterator<T> iterator) {
+    default ResourceIterator<T> link(final Iterator<T> iterator) {
         if (iterator instanceof RecyclableIterator<?>) return link((RecyclableIterator<T>) iterator);
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.second(iterator))));
+    }
+
+    @Override
+    default Stream<T> stream() {
+        return StreamSupport.stream(
+                spliteratorUnknownSize(this, ORDERED | IMMUTABLE), false
+        ).onClose(this::recycle);
     }
 }

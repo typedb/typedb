@@ -33,11 +33,14 @@ java_library(
         # Internal dependencies
         "//common:common",
         "//concept:concept",
+        "//pattern:pattern",
         "//traversal:traversal",
-        "//query/executor:executor",
 
         # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
         "@graknlabs_grabl_tracing//client:client",
+        "@graknlabs_graql//java/common:common",
+        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java/query:query",
 
         # External dependencies from Maven

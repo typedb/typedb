@@ -153,31 +153,31 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.Res done() {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setDone(true)).build();
+                                            .setDone(true)).build();
             }
 
             public static TransactionProto.Transaction.Res id(final int id) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setIteratorID(id)).build();
+                                            .setIteratorID(id)).build();
             }
 
             public static TransactionProto.Transaction.Res query(final QueryProto.Query.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setQueryIterRes(res)).build();
+                                            .setQueryIterRes(res)).build();
             }
 
             public static TransactionProto.Transaction.Res thingMethod(final ConceptProto.ThingMethod.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodThingIterRes(res)).build();
+                                            .setConceptMethodThingIterRes(res)).build();
             }
 
             public static TransactionProto.Transaction.Res typeMethod(final ConceptProto.TypeMethod.Iter.Res res) {
                 return TransactionProto.Transaction.Res.newBuilder()
                         .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                .setConceptMethodTypeIterRes(res)).build();
+                                            .setConceptMethodTypeIterRes(res)).build();
             }
         }
     }

@@ -36,6 +36,7 @@ java_library(
         # Internal dependencies
         "//common:common",
         "//graph:graph",
+        "//pattern:pattern",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",

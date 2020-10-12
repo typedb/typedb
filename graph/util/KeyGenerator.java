@@ -140,7 +140,8 @@ public class KeyGenerator {
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     final byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    final ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid).filter(iid1 -> iid1.length == VertexIID.Schema.LENGTH);
+                    final ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid)
+                            .filter(iid1 -> iid1.length == VertexIID.Schema.LENGTH);
                     while (typeIterator.hasNext()) {
                         final byte[] typeIID = typeIterator.next();
                         final byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);

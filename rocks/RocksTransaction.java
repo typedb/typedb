@@ -90,7 +90,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
     void initialise(GraphManager graphMgr) {
         conceptMgr = new ConceptManager(graphMgr);
-        traversalEng = new TraversalEngine(graphMgr, conceptMgr);
+        traversalEng = new TraversalEngine(graphMgr);
         queryMgr = new QueryManager(traversalEng, conceptMgr, context);
         isOpen = new AtomicBoolean(true);
     }

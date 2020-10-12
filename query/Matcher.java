@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.query.executor;
+package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.iterator.ComposableIterator;
@@ -27,8 +27,6 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-
-import java.util.List;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -56,9 +54,9 @@ public class Matcher {
 
     public ComposableIterator<ConceptMap> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            final List<ComposableIterator<ConceptMap>> conjunctionAnswers = iterate(disjunction.conjunctions())
-                    .map(conjunction -> traversalEng.executes(conjunction.traversals())).toList();
-            return Iterators.parallel(conjunctionAnswers);
+            return Iterators.parallel(iterate(disjunction.conjunctions()).map(
+                    conj -> traversalEng.executes(conj.traversals()).map(ConceptMap::of)
+            ).toList());
         }
     }
 }

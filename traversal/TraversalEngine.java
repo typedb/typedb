@@ -19,23 +19,21 @@
 package grakn.core.traversal;
 
 import grakn.core.common.iterator.ComposableIterator;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.vertex.Vertex;
 
 import java.util.List;
+import java.util.Map;
 
 public class TraversalEngine {
 
     private final GraphManager graphMgr;
-    private final ConceptManager conceptMgr;
 
-    public TraversalEngine(final GraphManager graphMgr, final ConceptManager conceptMgr) {
+    public TraversalEngine(final GraphManager graphMgr) {
         this.graphMgr = graphMgr;
-        this.conceptMgr = conceptMgr;
     }
 
-    public ComposableIterator<ConceptMap> executes(final List<Traversal> traversals) {
+    public ComposableIterator<Map<String, Vertex<?, ?>>> executes(final List<Traversal> traversals) {
         return null;
     }
 }

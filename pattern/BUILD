@@ -16,7 +16,12 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = ["//query:__subpackages__"])
+package(
+    default_visibility = [
+        "//concept:__pkg__",
+        "//query:__subpackages__",
+    ]
+)
 
 java_library(
     name = "pattern",

@@ -27,28 +27,33 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static grakn.common.collection.Collections.list;
+import static java.util.Spliterator.IMMUTABLE;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 public interface ComposableIterator<T> extends Iterator<T> {
 
-    default DistinctIterator<T> distinct() {
+    default ComposableIterator<T> distinct() {
         return new DistinctIterator<>(Either.second(this));
     }
 
-    default <U> MappedIterator<T, U> map(final Function<T, U> function) {
+    default <U> ComposableIterator<U> map(final Function<T, U> function) {
         return new MappedIterator<>(Either.second(this), function);
     }
 
-    default FilteredIterator<T> filter(final Predicate<T> predicate) {
+    default ComposableIterator<T> filter(final Predicate<T> predicate) {
         return new FilteredIterator<>(Either.second(this), predicate);
     }
 
-    default LinkedIterators<T> link(final RecyclableIterator<T> iterator) {
+    default ComposableIterator<T> link(final RecyclableIterator<T> iterator) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.first(iterator))));
     }
 
-    default LinkedIterators<T> link(final Iterator<T> iterator) {
+    default ComposableIterator<T> link(final Iterator<T> iterator) {
         if (iterator instanceof RecyclableIterator<?>) return link((RecyclableIterator<T>) iterator);
         return new LinkedIterators<>(new LinkedList<>(list(Either.second(this), Either.second(iterator))));
     }
@@ -63,5 +68,11 @@ public interface ComposableIterator<T> extends Iterator<T> {
         final Set<T> set = new HashSet<>();
         this.forEachRemaining(set::add);
         return set;
+    }
+
+    default Stream<T> stream() {
+        return StreamSupport.stream(
+                spliteratorUnknownSize(this, ORDERED | IMMUTABLE), false
+        );
     }
 }

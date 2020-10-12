@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.query.executor;
+package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
