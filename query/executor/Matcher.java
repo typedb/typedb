@@ -23,7 +23,7 @@ import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.query.pattern.Disjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;

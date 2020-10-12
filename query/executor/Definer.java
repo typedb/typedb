@@ -23,19 +23,20 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.AttributeType.ValueType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.query.pattern.constraint.type.LabelConstraint;
-import grakn.core.query.pattern.constraint.type.OwnsConstraint;
-import grakn.core.query.pattern.constraint.type.PlaysConstraint;
-import grakn.core.query.pattern.constraint.type.RegexConstraint;
-import grakn.core.query.pattern.constraint.type.RelatesConstraint;
-import grakn.core.query.pattern.constraint.type.SubConstraint;
-import grakn.core.query.pattern.variable.TypeVariable;
-import grakn.core.query.pattern.variable.Variable;
+import grakn.core.pattern.constraint.type.LabelConstraint;
+import grakn.core.pattern.constraint.type.OwnsConstraint;
+import grakn.core.pattern.constraint.type.PlaysConstraint;
+import grakn.core.pattern.constraint.type.RegexConstraint;
+import grakn.core.pattern.constraint.type.RelatesConstraint;
+import grakn.core.pattern.constraint.type.SubConstraint;
+import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -149,9 +150,9 @@ public class Definer {
         }
     }
 
-    private ThingType defineSub(ThingType thingType, final SubConstraint subConstraint, final TypeVariable variable) {
+    private ThingType defineSub(ThingType thingType, final SubConstraint subConstraint, final TypeVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "definesub")) {
-            final LabelConstraint labelConstraint = variable.label().get();
+            final LabelConstraint labelConstraint = var.label().get();
             final ThingType supertype = define(subConstraint.type()).asThingType();
             if (supertype instanceof EntityType) {
                 if (thingType == null) thingType = conceptMgr.putEntityType(labelConstraint.label());
@@ -160,8 +161,8 @@ public class Definer {
                 if (thingType == null) thingType = conceptMgr.putRelationType(labelConstraint.label());
                 thingType.asRelationType().setSupertype(supertype.asRelationType());
             } else if (supertype instanceof AttributeType) {
-                final AttributeType.ValueType valueType;
-                if (variable.valueType().isPresent()) valueType = variable.valueType().get().valueType();
+                final ValueType valueType;
+                if (var.valueType().isPresent()) valueType = ValueType.of(var.valueType().get().valueType());
                 else if (!supertype.isRoot()) valueType = supertype.asAttributeType().getValueType();
                 else throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(labelConstraint.label()));
                 if (thingType == null) thingType = conceptMgr.putAttributeType(labelConstraint.label(), valueType);
