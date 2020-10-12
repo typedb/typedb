@@ -20,6 +20,7 @@ package(
     default_visibility = [
         "//pattern:__subpackages__",
         "//query:__subpackages__",
+        "//reasoner:__subpackages__",
         "//rocks:__pkg__",
     ]
 )

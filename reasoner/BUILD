@@ -18,6 +18,24 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//query:__subpackages__"])
 
+java_library(
+    name = "reasoner",
+    srcs = glob(["*.java"]),
+    deps = [
+        # Internal dependencies
+        "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//traversal:traversal",
+
+        # External dependencies from Grakn Labs
+         "@graknlabs_common//:common",
+
+        # External dependencies from Maven
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

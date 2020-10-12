@@ -33,7 +33,7 @@ public class TraversalEngine {
         this.graphMgr = graphMgr;
     }
 
-    public ComposableIterator<Map<String, Vertex<?, ?>>> executes(final List<Traversal> traversals) {
+    public ComposableIterator<Map<String, Vertex<?, ?>>> execute(final List<Traversal> traversals) {
         return null;
     }
 }

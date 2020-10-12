@@ -23,6 +23,7 @@ package(
         "//server:__pkg__",
         "//test:__subpackages__",
         "//query:__subpackages__",
+        "//reasoner:__subpackages__",
         "//traversal:__pkg__",
     ]
 )

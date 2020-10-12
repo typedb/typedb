@@ -36,14 +36,13 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
         queue = new ResizingBlockingQueue<>();
         state = State.EMPTY;
         next = null;
-
-        for (ComposableIterator<T> iterator : iterators) {
+        iterators.forEach(iterator -> {
             queue.incrementPublisher();
             CommonExecutorService.get().submit(() -> {
                 while (iterator.hasNext()) queue.put(iterator.next());
                 queue.decrementPublisher();
             });
-        }
+        });
     }
 
     @Override

@@ -20,26 +20,25 @@ package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.iterator.ComposableIterator;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Disjunction;
+import grakn.core.reasoner.Reasoner;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Matcher {
 
     private static final String TRACE_PREFIX = "matcher.";
-    private final TraversalEngine traversalEng;
+    private final Reasoner reasoner;
     private final Disjunction disjunction;
     private final Context.Query context;
 
     private Matcher(final TraversalEngine traversalEng, final Disjunction disjunction, final Context.Query context) {
-        this.traversalEng = traversalEng;
+        this.reasoner = new Reasoner(traversalEng);
         this.disjunction = disjunction;
         this.context = context;
     }
@@ -54,9 +53,7 @@ public class Matcher {
 
     public ComposableIterator<ConceptMap> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            return Iterators.parallel(iterate(disjunction.conjunctions()).map(
-                    conj -> traversalEng.executes(conj.traversals()).map(ConceptMap::of)
-            ).toList());
+            return reasoner.execute(disjunction);
         }
     }
 }

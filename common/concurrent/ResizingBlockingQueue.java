@@ -35,16 +35,14 @@ public class ResizingBlockingQueue<E> {
     private final AtomicBoolean needsResizing;
     private LinkedBlockingQueue<Either<E, Done>> queue;
     private int capicity;
-    private boolean done;
 
-    class Done {}
+    static class Done {}
 
     public ResizingBlockingQueue() {
         queue = new LinkedBlockingQueue<>(CAPACITY_INITIAL);
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
         capicity = CAPACITY_INITIAL;
-        done = false;
     }
 
     public void incrementPublisher() {
