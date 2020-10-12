@@ -18,37 +18,28 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
-        "//concept:__pkg__",
-        "//planner:__subpackages__",
-        "//query:__subpackages__",
         "//reasoner:__subpackages__",
     ]
 )
 
 java_library(
-    name = "pattern",
-    srcs = glob([
-        "*.java",
-        "constraint/*.java",
-        "constraint/thing/*.java",
-        "constraint/type/*.java",
-        "variable/*.java",
-    ]),
+    name = "planner",
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # Internal dependencies
-        "//common:common",
+        # "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
         "//traversal:traversal",
 
+        # Grakn Labs Dependencies
+        # "@graknlabs_common//:common",
+
         # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_grabl_tracing//client:client",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
 
         # External dependencies from Maven
-        "@maven//:com_google_code_findbugs_jsr305",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-query-pattern:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-traversal:{pom_version}"],
 )
 
 checkstyle_test(

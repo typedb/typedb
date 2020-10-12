@@ -61,7 +61,7 @@ public class QueryManager {
     public ComposableIterator<ConceptMap> match(final GraqlMatch query, final Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
-            return Matcher.create(traversalEng, query.conjunction(), context).execute();
+            return Matcher.create(traversalEng, conceptMgr, query.conjunction(), context).execute();
         }
     }
 

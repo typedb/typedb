@@ -21,6 +21,7 @@ package grakn.core.query;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.parameters.Context;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.Reasoner;
@@ -37,17 +38,17 @@ public class Matcher {
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    private Matcher(final TraversalEngine traversalEng, final Disjunction disjunction, final Context.Query context) {
-        this.reasoner = new Reasoner(traversalEng);
+    private Matcher(final TraversalEngine traversalEng, final ConceptManager conceptMgr,
+                    final Disjunction disjunction, final Context.Query context) {
+        this.reasoner = new Reasoner(traversalEng, conceptMgr);
         this.disjunction = disjunction;
         this.context = context;
     }
 
-    public static Matcher create(final TraversalEngine traversalEng,
-                                 final Conjunction<? extends Pattern> conjunction,
-                                 final Context.Query context) {
+    public static Matcher create(final TraversalEngine traversalEng, final ConceptManager conceptMgr,
+                                 final Conjunction<? extends Pattern> conjunction, final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Matcher(traversalEng, Disjunction.create(conjunction.normalise()), context);
+            return new Matcher(traversalEng, conceptMgr, Disjunction.create(conjunction.normalise()), context);
         }
     }
 

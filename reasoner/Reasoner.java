@@ -20,9 +20,11 @@ package grakn.core.reasoner;
 
 import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.iterator.ParallelIterators;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.planner.Planner;
 import grakn.core.traversal.TraversalEngine;
 
 import static grakn.common.collection.Collections.list;
@@ -32,9 +34,13 @@ import static grakn.core.common.iterator.Iterators.parallel;
 public class Reasoner {
 
     private final TraversalEngine traversalEng;
+    private final ConceptManager conceptMgr;
+    private final Planner planner;
 
-    public Reasoner(final TraversalEngine traversalEng) {
+    public Reasoner(final TraversalEngine traversalEng, final ConceptManager conceptMgr) {
         this.traversalEng = traversalEng;
+        this.conceptMgr = conceptMgr;
+        this.planner = new Planner(conceptMgr);
     }
 
     public ComposableIterator<ConceptMap> execute(final Disjunction disjunction) {
@@ -47,7 +53,7 @@ public class Reasoner {
 
     public ComposableIterator<ConceptMap> execute(final Conjunction conjunction) {
         ComposableIterator<ConceptMap> answers = parallel(list(
-                traversalEng.execute(conjunction.traversals()).map(ConceptMap::of),
+                traversalEng.execute(planner.plan(conjunction)).map(ConceptMap::of),
                 infer(conjunction)
         ));
 

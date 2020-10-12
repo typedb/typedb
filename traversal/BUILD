@@ -19,6 +19,7 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
         "//pattern:__subpackages__",
+        "//planner:__subpackages__",
         "//query:__subpackages__",
         "//reasoner:__subpackages__",
         "//rocks:__pkg__",
