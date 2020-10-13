@@ -62,6 +62,11 @@ public class ServerOptions {
             description = "Grabl account access token")
     private String grablToken;
 
+    @Option(descriptionKey = "debug",
+            names = {"--debug"},
+            description = "Debug mode")
+    private boolean debug;
+
     public ServerOptions() {}
 
     public Path dataDir() {
@@ -73,6 +78,10 @@ public class ServerOptions {
 
     public int port() {
         return port;
+    }
+
+    public boolean debug() {
+        return debug;
     }
 
     public boolean grablTrace() {

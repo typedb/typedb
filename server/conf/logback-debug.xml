@@ -15,7 +15,7 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<configuration debug="false" scan="true" scanPeriod="30 seconds">
+<configuration debug="true" scan="true" scanPeriod="10 seconds" packagingData="true">
 
     <property resource="grakn.properties"/>
     <property name="directory" value="${grakn.dir}/${server.logs}"/>
@@ -23,7 +23,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%msg%n</pattern>
+            <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -35,12 +35,12 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
-            <maxHistory>60</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
+            <maxHistory>120</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
-    <root level="WARN"/>
+    <root level="DEBUG"/>
 
     <!--    <logger name="grakn.core.server.rpc" level="DEBUG" />-->
 
@@ -51,7 +51,7 @@
     WARN:  (Unexpected events that are not recommended to have happened)
     ERROR: (Incorrect events that disrupts the server operation, against user expectation)
     -->
-    <logger name="grakn.core" level="INFO">
+    <logger name="grakn.core" level="DEBUG">
         <appender-ref ref="LOGFILE"/>
         <appender-ref ref="STDOUT"/>
     </logger>

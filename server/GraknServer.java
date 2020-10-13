@@ -75,6 +75,10 @@ public class GraknServer implements AutoCloseable {
         configureDataDir();
         configureTracing();
 
+        if (options.debug()) {
+            LOG.info("Running Grakn Core Server in debug mode.");
+        }
+
         CommonExecutorService.init(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor"));
         grakn = RocksGrakn.open(options.dataDir());
         graknRPC = new GraknRPC(grakn);
@@ -102,13 +106,13 @@ public class GraknServer implements AutoCloseable {
                     options.grablToken()
             ));
             GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
-            GraknServer.LOG.info("Grabl tracing is enabled");
+            LOG.info("Grabl tracing is enabled");
         }
     }
 
     private static void printASCIILogo() throws IOException {
         if (ASCII_LOGO_FILE.exists()) {
-            LOG.info(new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
+            LOG.info("\n" + new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
         }
     }
 
@@ -119,8 +123,8 @@ public class GraknServer implements AutoCloseable {
         try {
             properties.load(new FileInputStream(PROPERTIES_FILE));
         } catch (IOException e) {
-            LOG.error(PROPERTIES_FILE_NOT_FOUND.message(PROPERTIES_FILE.toString()));
-            error = true;
+            LOG.warn(PROPERTIES_FILE_NOT_FOUND.message(PROPERTIES_FILE.toString()));
+            return new Properties();
         }
 
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
@@ -175,8 +179,9 @@ public class GraknServer implements AutoCloseable {
             printASCIILogo();
             final Pair<Boolean, ServerOptions> result = parseCommandLine(parseProperties(), args);
             if (!result.first()) System.exit(0);
+            final ServerOptions options = result.second();
 
-            final GraknServer server = new GraknServer(result.second());
+            final GraknServer server = new GraknServer(options);
             server.start();
 
             final long end = System.nanoTime();
@@ -238,10 +243,9 @@ public class GraknServer implements AutoCloseable {
         try {
             server.awaitTermination();
         } catch (InterruptedException e) {
-            // grakn server stop is called
+            // server is terminated
             close();
             Thread.currentThread().interrupt();
         }
     }
-
 }

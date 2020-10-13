@@ -121,8 +121,9 @@ assemble_deps = [
 ]
 
 assemble_files = {
-    "//server/conf:logback.xml": "server/conf/logback.xml",
-    "//server/conf:grakn.properties": "server/conf/grakn.properties",
+    "//server/conf:logback": "server/conf/logback.xml",
+    "//server/conf:logback-debug": "server/conf/logback-debug.xml",
+    "//server/conf:grakn-properties": "server/conf/grakn.properties",
     "//server/resources:logo": "server/resources/grakn-core-ascii.txt",
     "//:LICENSE": "LICENSE",
 }

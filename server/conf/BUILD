@@ -20,13 +20,18 @@ package(default_visibility = ["//server:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 filegroup(
+    name = "grakn-properties",
+    srcs = ["grakn.properties"],
+)
+
+filegroup(
     name = "logback",
     srcs = ["logback.xml"],
 )
 
 filegroup(
-    name = "properties",
-    srcs = ["grakn.properties"],
+    name = "logback-debug",
+    srcs = ["logback-debug.xml"],
 )
 
 checkstyle_test(
