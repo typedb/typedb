@@ -34,7 +34,7 @@ public class ResizingBlockingQueue<E> {
     private final AtomicInteger publishers;
     private final AtomicBoolean needsResizing;
     private LinkedBlockingQueue<Either<E, Done>> queue;
-    private int capicity;
+    private final AtomicInteger capacity;
 
     static class Done {}
 
@@ -43,7 +43,7 @@ public class ResizingBlockingQueue<E> {
         queue = new LinkedBlockingQueue<>(CAPACITY_INITIAL);
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
-        capicity = CAPACITY_INITIAL;
+        capacity = new AtomicInteger(CAPACITY_INITIAL);
     }
 
     public void incrementPublisher() {
@@ -80,8 +80,8 @@ public class ResizingBlockingQueue<E> {
 
     private void resize() {
         LinkedBlockingQueue<Either<E, Done>> oldQueue = queue;
-        capicity = capicity * CAPACITY_MULTIPLIER;
-        queue = new LinkedBlockingQueue<>(capicity);
+        capacity.updateAndGet(oldValue -> oldValue * CAPACITY_MULTIPLIER);
+        queue = new LinkedBlockingQueue<>(capacity.get());
         oldQueue.drainTo(queue);
     }
 

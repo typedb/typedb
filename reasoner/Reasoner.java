@@ -47,8 +47,8 @@ public class Reasoner {
         return parallel(iterate(disjunction.conjunctions()).map(this::execute).toList());
     }
 
-    public ComposableIterator<ConceptMap> execute(final Disjunction disjunction, final ConceptMap restrictions) {
-        return parallel(iterate(disjunction.conjunctions()).map(conj -> execute(conj, restrictions)).toList());
+    public ComposableIterator<ConceptMap> execute(final Disjunction disjunction, final ConceptMap bounds) {
+        return parallel(iterate(disjunction.conjunctions()).map(conj -> execute(conj, bounds)).toList());
     }
 
     public ComposableIterator<ConceptMap> execute(final Conjunction conjunction) {
@@ -63,7 +63,7 @@ public class Reasoner {
         ).toList()).hasNext());
     }
 
-    public ComposableIterator<ConceptMap> execute(final Conjunction conjunction, final ConceptMap restrictions) {
+    public ComposableIterator<ConceptMap> execute(final Conjunction conjunction, final ConceptMap bounds) {
         return null; // TODO
     }
 

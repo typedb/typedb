@@ -18,8 +18,6 @@
 
 package grakn.core.common.concurrent;
 
-import grakn.common.concurrent.NamedThreadFactory;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,8 +25,8 @@ public class CommonExecutorService {
 
     private static ExecutorService service;
 
-    public static ExecutorService init(final int threadCount, final NamedThreadFactory threadFactory) {
-        service = Executors.newFixedThreadPool(threadCount, threadFactory);
+    public static ExecutorService init(final int threadCount) {
+        service = Executors.newWorkStealingPool(threadCount);
         return service;
     }
 

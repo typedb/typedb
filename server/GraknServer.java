@@ -79,7 +79,7 @@ public class GraknServer implements AutoCloseable {
             LOG.info("Running Grakn Core Server in debug mode.");
         }
 
-        CommonExecutorService.init(MAX_THREADS_X_2, NamedThreadFactory.create(GraknServer.class, "executor"));
+        CommonExecutorService.init(MAX_THREADS_X_2);
         grakn = RocksGrakn.open(options.dataDir());
         graknRPC = new GraknRPC(grakn);
         server = rpcServer(graknRPC, options);

@@ -55,13 +55,16 @@ public class ManagedReadWriteLock {
     }
 
     class ManagedReadBlocker implements ForkJoinPool.ManagedBlocker {
+
         boolean hasLock = false;
 
+        @Override
         public boolean block() {
             if (!hasLock) reentrantLock.readLock().lock();
             return true;
         }
 
+        @Override
         public boolean isReleasable() {
             return hasLock || (hasLock = reentrantLock.readLock().tryLock());
         }
@@ -73,13 +76,16 @@ public class ManagedReadWriteLock {
     }
 
     class ManagedWriteBlocker implements ForkJoinPool.ManagedBlocker {
+
         boolean hasLock = false;
 
+        @Override
         public boolean block() {
             if (!hasLock) reentrantLock.writeLock().lock();
             return true;
         }
 
+        @Override
         public boolean isReleasable() {
             return hasLock || (hasLock = reentrantLock.writeLock().tryLock());
         }
