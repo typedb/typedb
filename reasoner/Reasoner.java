@@ -27,8 +27,8 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.planner.Planner;
 import grakn.core.traversal.TraversalEngine;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.parallel;
 
 public class Reasoner {
@@ -52,10 +52,10 @@ public class Reasoner {
     }
 
     public ComposableIterator<ConceptMap> execute(final Conjunction conjunction) {
-        ComposableIterator<ConceptMap> answers = parallel(list(
+        ComposableIterator<ConceptMap> answers = link(
                 traversalEng.execute(planner.plan(conjunction)).map(ConceptMap::of),
                 infer(conjunction)
-        ));
+        );
 
         if (conjunction.negations().isEmpty()) return answers;
         else return answers.filter(answer -> !parallel(iterate(conjunction.negations()).map(

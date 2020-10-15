@@ -38,7 +38,6 @@ public class ResizingBlockingQueue<E> {
     static class Done {}
 
     public ResizingBlockingQueue() {
-        // TODO We can experiment and benchmark different BlockingQueue data structures and find the fastest one
         queue = new ManagedBlockingQueue<>(CAPACITY_INITIAL);
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
