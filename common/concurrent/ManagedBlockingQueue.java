@@ -20,17 +20,21 @@ package grakn.core.common.concurrent;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ManagedBlockingQueue<E> {
 
+    private static final int BLOCKING_TIMEOUT_SECONDS = 8;
     private final LinkedBlockingQueue<E> queue;
     private final ThreadLocal<QueueTaker> queueTaker;
     private final ThreadLocal<QueuePutter> queuePutter;
+    private volatile boolean cancelled;
 
     public ManagedBlockingQueue(final int capacity) {
         queue = new LinkedBlockingQueue<>(capacity);
         queueTaker = ThreadLocal.withInitial(QueueTaker::new);
         queuePutter = ThreadLocal.withInitial(QueuePutter::new);
+        cancelled = false;
     }
 
     public E poll() {
@@ -55,14 +59,22 @@ public class ManagedBlockingQueue<E> {
         return queue.remainingCapacity();
     }
 
+    public void cancel() {
+        cancelled = true;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
     class QueueTaker implements ForkJoinPool.ManagedBlocker {
 
         private E item = null;
 
         @Override
         public boolean block() throws InterruptedException {
-            if (item == null) item = queue.take();
-            return true;
+            if (item == null) item = queue.poll(BLOCKING_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return item != null || cancelled;
         }
 
         @Override
@@ -81,11 +93,11 @@ public class ManagedBlockingQueue<E> {
 
         @Override
         public boolean block() throws InterruptedException {
-            if (item != null) {
-                queue.put(item);
+            boolean noLock = true;
+            if (item != null && (noLock = queue.offer(item, BLOCKING_TIMEOUT_SECONDS, TimeUnit.SECONDS))) {
                 item = null;
             }
-            return true;
+            return noLock || cancelled;
         }
 
         @Override

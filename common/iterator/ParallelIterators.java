@@ -43,7 +43,7 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
         iterators.forEach(iterator -> {
             queue.incrementPublisher();
             producers.add(CommonExecutorService.get().submit(() -> {
-                while (iterator.hasNext()) queue.put(iterator.next());
+                while (!queue.isCancelled() && iterator.hasNext()) queue.put(iterator.next());
                 queue.decrementPublisher();
             }));
         });
@@ -71,6 +71,6 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
     @Override
     protected void finalize() {
         queue.cancel();
-        producers.forEach(t -> t.cancel(true));
+        producers.forEach(p -> p.cancel(true));
     }
 }
