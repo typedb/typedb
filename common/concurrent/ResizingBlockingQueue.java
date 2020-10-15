@@ -34,6 +34,7 @@ public class ResizingBlockingQueue<E> {
     private final AtomicBoolean needsResizing;
     private ManagedBlockingQueue<Either<E, Done>> queue;
     private final AtomicInteger capacity;
+    private volatile boolean cancelled;
 
     static class Done {}
 
@@ -42,6 +43,7 @@ public class ResizingBlockingQueue<E> {
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
         capacity = new AtomicInteger(CAPACITY_INITIAL);
+        cancelled = false;
     }
 
     public void incrementPublisher() {
@@ -72,7 +74,8 @@ public class ResizingBlockingQueue<E> {
             if (result.isFirst()) return result.first();
             else return null;
         } catch (InterruptedException e) {
-            throw GraknException.of(e);
+            if (!cancelled) throw GraknException.of(e);
+            else return null;
         }
     }
 
@@ -88,7 +91,11 @@ public class ResizingBlockingQueue<E> {
             queue.put(Either.first(item));
             if (queue.remainingCapacity() == 0) needsResizing.set(true);
         } catch (InterruptedException e) {
-            throw GraknException.of(e);
+            if (!cancelled) throw GraknException.of(e);
         }
+    }
+
+    public void cancel() {
+        cancelled = true;
     }
 }

@@ -21,12 +21,15 @@ package grakn.core.common.iterator;
 import grakn.core.common.concurrent.CommonExecutorService;
 import grakn.core.common.concurrent.ResizingBlockingQueue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ForkJoinTask;
 
 public class ParallelIterators<T> implements ComposableIterator<T> {
 
     private final ResizingBlockingQueue<T> queue;
+    private final List<ForkJoinTask<?>> producers;
     private State state;
     private T next;
 
@@ -34,14 +37,15 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
 
     public ParallelIterators(final List<ComposableIterator<T>> iterators) {
         queue = new ResizingBlockingQueue<>();
+        producers = new ArrayList<>();
         state = State.EMPTY;
         next = null;
         iterators.forEach(iterator -> {
             queue.incrementPublisher();
-            CommonExecutorService.get().submit(() -> {
+            producers.add(CommonExecutorService.get().submit(() -> {
                 while (iterator.hasNext()) queue.put(iterator.next());
                 queue.decrementPublisher();
-            });
+            }));
         });
     }
 
@@ -62,5 +66,11 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
         return next;
+    }
+
+    @Override
+    protected void finalize() {
+        queue.cancel();
+        producers.forEach(t -> t.cancel(true));
     }
 }
