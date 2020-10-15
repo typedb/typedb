@@ -18,20 +18,19 @@
 
 package grakn.core.common.concurrent;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 
 public class CommonExecutorService {
 
-    private static ExecutorService service;
+    private static ForkJoinPool executorService;
 
-    public static ExecutorService init(final int threadCount) {
-        service = Executors.newWorkStealingPool(threadCount);
-        return service;
+    public static void init(final int threadCount) {
+        executorService = (ForkJoinPool) Executors.newWorkStealingPool(threadCount);
     }
 
-    public static ExecutorService get() {
-        assert service != null;
-        return service;
+    public static ForkJoinPool get() {
+        assert executorService != null;
+        return executorService;
     }
 }

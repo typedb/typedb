@@ -21,7 +21,6 @@ package grakn.core.common.concurrent;
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,14 +32,14 @@ public class ResizingBlockingQueue<E> {
     private final int CAPACITY_MULTIPLIER = 4;
     private final AtomicInteger publishers;
     private final AtomicBoolean needsResizing;
-    private LinkedBlockingQueue<Either<E, Done>> queue;
+    private ManagedBlockingQueue<Either<E, Done>> queue;
     private final AtomicInteger capacity;
 
     static class Done {}
 
     public ResizingBlockingQueue() {
         // TODO We can experiment and benchmark different BlockingQueue data structures and find the fastest one
-        queue = new LinkedBlockingQueue<>(CAPACITY_INITIAL);
+        queue = new ManagedBlockingQueue<>(CAPACITY_INITIAL);
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
         capacity = new AtomicInteger(CAPACITY_INITIAL);
@@ -79,9 +78,9 @@ public class ResizingBlockingQueue<E> {
     }
 
     private void resize() {
-        LinkedBlockingQueue<Either<E, Done>> oldQueue = queue;
+        ManagedBlockingQueue<Either<E, Done>> oldQueue = queue;
         capacity.updateAndGet(oldValue -> oldValue * CAPACITY_MULTIPLIER);
-        queue = new LinkedBlockingQueue<>(capacity.get());
+        queue = new ManagedBlockingQueue<>(capacity.get());
         oldQueue.drainTo(queue);
     }
 

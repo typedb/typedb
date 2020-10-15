@@ -34,27 +34,34 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * in a {@code ThreadLocal} object.
  */
 public class ManagedReadWriteLock {
-    private final ReentrantReadWriteLock reentrantLock = new ReentrantReadWriteLock();
-    private ThreadLocal<ManagedReadBlocker> readBlocker = ThreadLocal.withInitial(ManagedReadBlocker::new);
-    private ThreadLocal<ManagedWriteBlocker> writeBlocker = ThreadLocal.withInitial(ManagedWriteBlocker::new);
+
+    private final ReentrantReadWriteLock reentrantLock;
+    private final ThreadLocal<ReadLocker> localReadLocker;
+    private final ThreadLocal<WriteLocker> localWriteLocker;
+
+    public ManagedReadWriteLock() {
+        reentrantLock = new ReentrantReadWriteLock();
+        localReadLocker = ThreadLocal.withInitial(ReadLocker::new);
+        localWriteLocker = ThreadLocal.withInitial(WriteLocker::new);
+    }
 
     public void lockRead() throws InterruptedException {
-        ForkJoinPool.managedBlock(readBlocker.get());
+        ForkJoinPool.managedBlock(localReadLocker.get());
     }
 
     public void lockWrite() throws InterruptedException {
-        ForkJoinPool.managedBlock(writeBlocker.get());
+        ForkJoinPool.managedBlock(localWriteLocker.get());
     }
 
     public void unlockRead() {
-        readBlocker.get().unlock();
+        localReadLocker.get().unlock();
     }
 
     public void unlockWrite() {
-        writeBlocker.get().unlock();
+        localWriteLocker.get().unlock();
     }
 
-    class ManagedReadBlocker implements ForkJoinPool.ManagedBlocker {
+    class ReadLocker implements ForkJoinPool.ManagedBlocker {
 
         boolean hasLock = false;
 
@@ -75,7 +82,7 @@ public class ManagedReadWriteLock {
         }
     }
 
-    class ManagedWriteBlocker implements ForkJoinPool.ManagedBlocker {
+    class WriteLocker implements ForkJoinPool.ManagedBlocker {
 
         boolean hasLock = false;
 
