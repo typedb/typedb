@@ -29,7 +29,6 @@ import java.util.concurrent.ForkJoinTask;
 public class ParallelIterators<T> implements ComposableIterator<T> {
 
     private final ResizingBlockingQueue<T> queue;
-    private final List<ForkJoinTask<?>> producers;
     private State state;
     private T next;
 
@@ -37,15 +36,14 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
 
     public ParallelIterators(final List<ComposableIterator<T>> iterators) {
         queue = new ResizingBlockingQueue<>();
-        producers = new ArrayList<>();
         state = State.EMPTY;
         next = null;
         iterators.forEach(iterator -> {
             queue.incrementPublisher();
-            producers.add(CommonExecutorService.get().submit(() -> {
+            CommonExecutorService.get().submit(() -> {
                 while (!queue.isCancelled() && iterator.hasNext()) queue.put(iterator.next());
                 queue.decrementPublisher();
-            }));
+            });
         });
     }
 
@@ -71,6 +69,5 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
     @Override
     protected void finalize() {
         queue.cancel();
-        producers.forEach(p -> p.cancel(true));
     }
 }

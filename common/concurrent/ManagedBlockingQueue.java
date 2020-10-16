@@ -22,6 +22,12 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * TODO: implement our LinkedBlockingQueue that has the features of:
+ *       1) ResizingBlockingQueue
+ *       2) ManagedBlocker
+ *       3) Cancellable via {@code Condition} signalling
+ */
 public class ManagedBlockingQueue<E> {
 
     private static final int BLOCKING_TIMEOUT_SECONDS = 8;
