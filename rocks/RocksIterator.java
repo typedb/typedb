@@ -19,6 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.rocks.RocksTransaction.CoreStorage;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,16 +30,16 @@ import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
 
     private final byte[] prefix;
-    private final RocksTransaction.CoreStorage storage;
+    private final CoreStorage storage;
     private final AtomicBoolean isOpen;
     private final BiFunction<byte[], byte[], T> constructor;
-    private org.rocksdb.RocksIterator rocksIterator;
+    private org.rocksdb.RocksIterator internalRocksIterator;
     private State state;
     private T next;
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
-    RocksIterator(final RocksTransaction.CoreStorage storage, final byte[] prefix, final BiFunction<byte[], byte[], T> constructor) {
+    RocksIterator(final CoreStorage storage, final byte[] prefix, final BiFunction<byte[], byte[], T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
         this.constructor = constructor;
@@ -48,39 +49,35 @@ public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
     }
 
     private void initalise() {
-        this.rocksIterator = storage.getInternalRocksIterator();
-        this.rocksIterator.seek(prefix);
+        this.internalRocksIterator = storage.getInternalRocksIterator();
+        this.internalRocksIterator.seek(prefix);
     }
 
     private boolean fetchAndCheck() {
         final byte[] key;
-        if (!rocksIterator.isValid() || !bytesHavePrefix(key = rocksIterator.key(), prefix)) {
+        if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
             state = State.COMPLETED;
             recycle();
             return false;
         }
 
-        next = constructor.apply(key, rocksIterator.value());
-        rocksIterator.next();
+        next = constructor.apply(key, internalRocksIterator.value());
+        internalRocksIterator.next();
         state = State.FETCHED;
         return true;
     }
 
-    public final T peek() {
-        if (!hasNext()) throw new NoSuchElementException();
-        return next;
-    }
-
     @Override
     public void recycle() {
-        storage.recycle(rocksIterator);
+        storage.recycle(internalRocksIterator);
     }
 
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (state != State.INIT) rocksIterator.close();
+            if (state != State.INIT) internalRocksIterator.close();
             storage.remove(this);
+            state = State.COMPLETED;
         }
     }
 
