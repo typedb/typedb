@@ -30,7 +30,7 @@ java_library(
         "//traversal:traversal",
 
         # External dependencies from Grakn Labs
-         "@graknlabs_common//:common",
+        # "@graknlabs_common//:common",
 
         # External dependencies from Maven
     ],
