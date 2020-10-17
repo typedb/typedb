@@ -374,7 +374,7 @@ public class ResponseBuilder {
             // TODO: needs testing
             answer.concepts().forEach((ref, concept) -> {
                 final ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
-                conceptMapProto.putMap(ref.identifier(), conceptProto);
+                conceptMapProto.putMap(ref.toString(), conceptProto);
             });
 
             // TODO

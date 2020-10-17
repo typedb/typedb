@@ -60,7 +60,7 @@ public abstract class Identifier {
 
     @Override
     public String toString() {
-        return reference.identifier() + (id == null ? "" : id.toString());
+        return reference.syntax() + (id == null ? "" : id.toString());
     }
 
     @Override
