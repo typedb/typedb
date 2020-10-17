@@ -20,8 +20,8 @@ package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.schema.Rule;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.exception.ErrorMessage.RuleRead.RULE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_UNDEFINE_RULE_BODY;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_UNDEFINED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_KEY;
@@ -58,15 +60,16 @@ public class Undefiner {
     private static final String TRACE_PREFIX = "undefiner.";
 
     private final ConceptManager conceptMgr;
-    private final Context.Query context;
     private final LinkedList<TypeVariable> variables;
     private final Set<TypeVariable> undefined;
+    private final List<graql.lang.pattern.schema.Rule> rules;
 
-    private Undefiner(final ConceptManager conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
+    private Undefiner(final ConceptManager conceptMgr, final Set<TypeVariable> variables,
+                      final List<graql.lang.pattern.schema.Rule> rules) {
         this.conceptMgr = conceptMgr;
-        this.context = context;
         this.variables = new LinkedList<>();
         this.undefined = new HashSet<>();
+        this.rules = rules;
 
         final Set<TypeVariable> sorted = new HashSet<>();
         variables.forEach(variable -> {
@@ -76,9 +79,9 @@ public class Undefiner {
 
     public static Undefiner create(final ConceptManager conceptMgr,
                                    final List<graql.lang.pattern.variable.TypeVariable> variables,
-                                   final Context.Query context) {
+                                   final List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Undefiner(conceptMgr, Variable.createFromTypes(variables), context);
+            return new Undefiner(conceptMgr, Variable.createFromTypes(variables), rules);
         }
     }
 
@@ -97,6 +100,7 @@ public class Undefiner {
 
     public void execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            rules.forEach(this::undefine);
             variables.forEach(this::undefine);
         }
     }
@@ -147,16 +151,10 @@ public class Undefiner {
 
     private RoleType getRoleType(final LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
-            // We always assume that Role Types already exist,
-            // defined by their Relation Types ahead of time
             assert label.scope().isPresent();
-            final Type type;
-            final RoleType roleType;
-            if ((type = conceptMgr.getType(label.scope().get())) == null ||
-                    (roleType = type.asRelationType().getRelates(label.label())) == null) {
-                throw new GraknException(TYPE_NOT_FOUND.message(label.scopedLabel()));
-            }
-            return roleType;
+            final Type type = conceptMgr.getType(label.scope().get());
+            if (type != null) return type.asRelationType().getRelates(label.label());
+            return null;
         }
     }
 
@@ -170,6 +168,12 @@ public class Undefiner {
                 throw new GraknException(TYPE_NOT_FOUND.message(subConstraint.type().label().get()));
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
                 throw new GraknException(INVALID_UNDEFINE_SUB.message(thingType.getLabel(), supertype.getLabel()));
+            }
+            if (thingType instanceof RelationType) {
+                variables.stream().filter(
+                        v -> v.label().isPresent() && v.label().get().scope().isPresent() &&
+                                v.label().get().scope().get().equals(thingType.getLabel())
+                ).forEach(undefined::add);
             }
             thingType.delete();
         }
@@ -212,7 +216,7 @@ public class Undefiner {
     private void undefineOwns(final ThingType thingType, final Set<OwnsConstraint> ownsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineowns")) {
             ownsConstraints.forEach(owns -> {
-                final AttributeType attributeType = getType(owns.attribute().label().get()).asAttributeType();
+                final Type attributeType = getType(owns.attribute().label().get());
                 if (attributeType == null && !undefined.contains(owns.attribute())) {
                     throw new GraknException(TYPE_NOT_FOUND.message(owns.attribute().label().get().label()));
                 } else if (owns.overridden().isPresent()) {
@@ -221,9 +225,10 @@ public class Undefiner {
                             owns.attribute().label().get()
                     ));
                 } else if (owns.isKey()) {
-                    throw new GraknException(INVALID_UNDEFINE_OWNS_KEY.message(owns.attribute().label().get()));
+                    throw new GraknException(INVALID_UNDEFINE_OWNS_KEY.message(owns.attribute().label().get(),
+                            owns.attribute().label().get()));
                 } else if (attributeType != null) {
-                    thingType.unsetOwns(attributeType);
+                    thingType.unsetOwns(attributeType.asAttributeType());
                 }
             });
         }
@@ -232,7 +237,7 @@ public class Undefiner {
     private void undefinePlays(final ThingType thingType, final Set<PlaysConstraint> playsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineplays")) {
             playsConstraints.forEach(plays -> {
-                final RoleType roleType = getRoleType(plays.role().label().get()).asRoleType();
+                final Type roleType = getRoleType(plays.role().label().get());
                 if (roleType == null && !undefined.contains(plays.role())) {
                     throw new GraknException(TYPE_NOT_FOUND.message(plays.role().label().get().label()));
                 } else if (plays.overridden().isPresent()) {
@@ -241,9 +246,20 @@ public class Undefiner {
                             plays.role().label().get()
                     ));
                 } else if (roleType != null) {
-                    thingType.unsetPlays(roleType);
+                    thingType.unsetPlays(roleType.asRoleType());
                 }
             });
+        }
+    }
+
+    private void undefine(graql.lang.pattern.schema.Rule rule) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineplays")) {
+            if (rule.when() != null || rule.then() != null) {
+                throw new GraknException(INVALID_UNDEFINE_RULE_BODY.message(rule.label()));
+            }
+            Rule r = conceptMgr.getRule(rule.label());
+            if (r == null) throw new GraknException(RULE_NOT_FOUND.message(rule.label()));
+            r.delete();
         }
     }
 }

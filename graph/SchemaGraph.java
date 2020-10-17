@@ -30,7 +30,9 @@ import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.impl.RuleVertexImpl;
 import grakn.core.graph.vertex.impl.TypeVertexImpl;
+import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -211,7 +213,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex create(final String label, final Pattern when, final Pattern then) {
+    public RuleVertex create(final String label, final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();

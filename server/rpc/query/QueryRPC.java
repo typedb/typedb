@@ -22,7 +22,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.ThingType;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.QueryProto;
@@ -34,9 +33,7 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
 
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.rpc.util.RequestReader.getOptions;
@@ -92,46 +89,42 @@ public class QueryRPC {
     }
 
     private void match(final Options.Query options, final QueryProto.Graql.Match.Iter.Req req) {
-        final GraqlMatch query = Graql.parse(req.getQuery()).asMatch();
+        final GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
         final ComposableIterator<ConceptMap> answers = transaction.query().match(query, options);
         final ComposableIterator<TransactionProto.Transaction.Res> responses = answers.map(
-                a -> ResponseBuilder.Transaction.Iter.query(
-                        QueryProto.Query.Iter.Res.newBuilder().setMatchIterRes(
-                                QueryProto.Graql.Match.Iter.Res.newBuilder()
-                                        .setAnswer(conceptMap(a))).build()));
+                a ->ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
+                    .setMatchIterRes(QueryProto.Graql.Match.Iter.Res.newBuilder()
+                    .setAnswer(conceptMap(a))).build())
+        );
         iterators.startBatchIterating(responses);
     }
 
     private void insert(final Options.Query options, final QueryProto.Graql.Insert.Iter.Req req) {
-        final GraqlInsert query = Graql.parse(req.getQuery()).asInsert();
+        final GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
         final ComposableIterator<ConceptMap> answers = transaction.query().insert(query, options);
         final ComposableIterator<TransactionProto.Transaction.Res> responses = answers.map(
-                a -> ResponseBuilder.Transaction.Iter.query(
-                        QueryProto.Query.Iter.Res.newBuilder().setInsertIterRes(
-                                QueryProto.Graql.Insert.Iter.Res.newBuilder()
-                                        .setAnswer(conceptMap(a))).build()));
+                a ->ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
+                    .setInsertIterRes(QueryProto.Graql.Insert.Iter.Res.newBuilder()
+                    .setAnswer(conceptMap(a))).build())
+        );
         iterators.startBatchIterating(responses);
     }
 
     private void delete(final Options.Query options, final QueryProto.Graql.Delete.Req req) {
-        final GraqlDelete query = Graql.parse(req.getQuery()).asDelete();
+        final GraqlDelete query = Graql.parseQuery(req.getQuery()).asDelete();
         transaction.query().delete(query, options);
         responder.accept(null);
     }
 
     private void define(final Options.Query options, final QueryProto.Graql.Define.Req req) {
-        final GraqlDefine query = Graql.parse(req.getQuery()).asDefine();
-        final List<ThingType> thingTypes = transaction.query().define(query, options);
-        final QueryProto.Query.Res response = QueryProto.Query.Res.newBuilder()
-                .setDefineRes(QueryProto.Graql.Define.Res.newBuilder().addAllThingType(
-                        thingTypes.stream().map(ResponseBuilder.Concept::type)
-                                .collect(Collectors.toList()))).build();
-        responder.accept(response(response));
+        final GraqlDefine query = Graql.parseQuery(req.getQuery()).asDefine();
+        transaction.query().define(query);
+        responder.accept(null);
     }
 
     private void undefine(final Options.Query options, final QueryProto.Graql.Undefine.Req req) {
-        final GraqlUndefine query = Graql.parse(req.getQuery()).asUndefine();
-        transaction.query().undefine(query, options);
+        final GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
+        transaction.query().undefine(query);
         responder.accept(null);
     }
 }

@@ -61,6 +61,7 @@ public class ThingVariable extends Variable {
     }
 
     private void constrain(final ThingConstraint constraint) {
+        constraints.add(constraint);
         if (constraint.isIID()) iidConstraint = constraint.asIID();
         else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
         else if (constraint.isNEQ()) neqConstraints.add(constraint.asNEQ());

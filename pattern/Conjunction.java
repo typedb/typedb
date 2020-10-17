@@ -84,6 +84,10 @@ public class Conjunction implements Pattern {
         return constraints;
     }
 
+    public Set<Variable> variables() {
+        return constraints.stream().flatMap(constraint -> constraint.variables().stream()).collect(toSet());
+    }
+
     public Set<Negation> negations() {
         return negations;
     }

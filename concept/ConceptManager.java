@@ -19,18 +19,18 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.schema.Rule;
+import grakn.core.concept.schema.impl.RuleImpl;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
 import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.concept.type.impl.RelationTypeImpl;
-import grakn.core.concept.type.impl.RuleImpl;
 import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.GraphManager;
@@ -40,7 +40,9 @@ import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
+import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -143,13 +145,10 @@ public final class ConceptManager {
         else return null;
     }
 
-    public Rule putRule(final String label, final Pattern when, final Pattern then) {
+    public Rule putRule(final String label, final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
         final RuleVertex vertex = graphMgr.schema().getRule(label);
         if (vertex != null) {
-            final Rule rule = RuleImpl.of(graphMgr, vertex);
-            rule.setWhen(when);
-            rule.setThen(then);
-            return rule;
+            return RuleImpl.of(graphMgr, vertex);
         } else {
             return RuleImpl.of(graphMgr, label, when, then);
         }

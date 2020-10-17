@@ -47,8 +47,6 @@ public abstract class TypeConstraint extends Constraint {
         else if (constraint.isAbstract()) return AbstractConstraint.of(owner);
         else if (constraint.isValueType()) return ValueTypeConstraint.of(owner, constraint.asValueType());
         else if (constraint.isRegex()) return RegexConstraint.of(owner, constraint.asRegex());
-        else if (constraint.isThen()) return ThenConstraint.of(owner, constraint.asThen());
-        else if (constraint.isWhen()) return WhenConstraint.of(owner, constraint.asWhen());
         else if (constraint.isOwns()) return OwnsConstraint.of(owner, constraint.asOwns(), registry);
         else if (constraint.isPlays()) return PlaysConstraint.of(owner, constraint.asPlays(), registry);
         else if (constraint.isRelates()) return RelatesConstraint.of(owner, constraint.asRelates(), registry);
@@ -135,13 +133,6 @@ public abstract class TypeConstraint extends Constraint {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(RegexConstraint.class)));
     }
 
-    public ThenConstraint asThen() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(ThenConstraint.class)));
-    }
-
-    public WhenConstraint asWhen() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(WhenConstraint.class)));
-    }
 
     public OwnsConstraint asOwns() {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(OwnsConstraint.class)));

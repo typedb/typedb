@@ -64,7 +64,7 @@ public class GraqlSteps {
 
     @Given("graql define")
     public void graql_define(final String defineQueryStatements) {
-        final GraqlDefine graqlQuery = Graql.parse(String.join("\n", defineQueryStatements)).asDefine();
+        final GraqlDefine graqlQuery = Graql.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
         tx().query().define(graqlQuery);
     }
 
@@ -75,7 +75,7 @@ public class GraqlSteps {
 
     @Given("graql undefine")
     public void graql_undefine(final String undefineQueryStatements) {
-        final GraqlUndefine graqlQuery = Graql.parse(String.join("\n", undefineQueryStatements)).asUndefine();
+        final GraqlUndefine graqlQuery = Graql.parseQuery(String.join("\n", undefineQueryStatements)).asUndefine();
         tx().query().undefine(graqlQuery);
     }
 
@@ -86,7 +86,7 @@ public class GraqlSteps {
 
     @Given("graql insert")
     public void graql_insert(final String insertQueryStatements) {
-        final GraqlInsert graqlQuery = Graql.parse(String.join("\n", insertQueryStatements)).asInsert();
+        final GraqlInsert graqlQuery = Graql.parseQuery(String.join("\n", insertQueryStatements)).asInsert();
         tx().query().insert(graqlQuery);
     }
 
@@ -97,7 +97,7 @@ public class GraqlSteps {
 
     @Given("graql delete")
     public void graql_delete(final String deleteQueryStatements) {
-        final GraqlDelete graqlQuery = Graql.parse(String.join("\n", deleteQueryStatements)).asDelete();
+        final GraqlDelete graqlQuery = Graql.parseQuery(String.join("\n", deleteQueryStatements)).asDelete();
         tx().query().delete(graqlQuery);
     }
 
@@ -108,7 +108,7 @@ public class GraqlSteps {
 
     @When("get answers of graql insert")
     public void get_answers_of_graql_insert(final String graqlQueryStatements) {
-        final GraqlInsert graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements)).asInsert();
+        final GraqlInsert graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asInsert();
         // Erase answers from previous steps to avoid polluting the result space
         answers = null;
         numericAnswer = null;
@@ -121,7 +121,7 @@ public class GraqlSteps {
     @When("get answers of graql query")
     public void graql_query(final String graqlQueryStatements) {
         // TODO: re-enable when match is implemented
-        /*final GraqlQuery graqlQuery = Graql.parse(String.join("\n", graqlQueryStatements));
+        /*final GraqlQuery graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements));
         // Erase answers from previous steps to avoid polluting the result space
         answers = null;
         numericAnswer = null;
@@ -451,7 +451,7 @@ public class GraqlSteps {
         /*final String templatedQuery = String.join("\n", templatedGraqlQuery);
         for (ConceptMap answer : answers.collect(Collectors.toList())) {
             final String query = applyQueryTemplate(templatedQuery, answer);
-            final GraqlMatch graqlQuery = Graql.parse(query).asMatch();
+            final GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
             final long answerSize = tx().query().match(graqlQuery).count();
             assertEquals(1, answerSize);
         }*/

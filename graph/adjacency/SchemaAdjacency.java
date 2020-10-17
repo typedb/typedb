@@ -52,12 +52,6 @@ public interface SchemaAdjacency {
 
     SchemaEdge put(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> adjacent);
 
-//    TODO not implemented yet -- we may not entirely need to have separate TypeEdge and RuleEdge?
-//    TypeEdge put(Encoding.Edge.Type encoding, TypeVertex adjacent);
-//    // note: inherent directionality means edge encoding will need to be checked against vertex type passed
-//    RuleEdge put(Encoding.Edge.Rule encoding, RuleVertex adjacent);
-//    RuleEdge put(Encoding.Edge.Rule encoding, TypeVertex adjacent);
-
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.
      *

@@ -26,10 +26,8 @@ import grakn.core.pattern.constraint.type.PlaysConstraint;
 import grakn.core.pattern.constraint.type.RegexConstraint;
 import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
-import grakn.core.pattern.constraint.type.ThenConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
-import grakn.core.pattern.constraint.type.WhenConstraint;
 
 import java.util.HashSet;
 import java.util.List;
@@ -44,8 +42,6 @@ public class TypeVariable extends Variable {
     private AbstractConstraint abstractConstraint;
     private ValueTypeConstraint valueTypeConstraint;
     private RegexConstraint regexConstraint;
-    private ThenConstraint thenConstraint;
-    private WhenConstraint whenConstraint;
 
     private final Set<SubConstraint> subConstraints;
     private final Set<OwnsConstraint> ownsConstraints;
@@ -74,8 +70,6 @@ public class TypeVariable extends Variable {
         else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
         else if (constraint.isValueType()) valueTypeConstraint = constraint.asValueType();
         else if (constraint.isRegex()) regexConstraint = constraint.asRegex();
-        else if (constraint.isThen()) thenConstraint = constraint.asThen();
-        else if (constraint.isWhen()) whenConstraint = constraint.asWhen();
         else if (constraint.isSub()) subConstraints.add(constraint.asSub());
         else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
         else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
@@ -97,14 +91,6 @@ public class TypeVariable extends Variable {
 
     public Optional<RegexConstraint> regex() {
         return Optional.ofNullable(regexConstraint);
-    }
-
-    public Optional<ThenConstraint> then() {
-        return Optional.ofNullable(thenConstraint);
-    }
-
-    public Optional<WhenConstraint> when() {
-        return Optional.ofNullable(whenConstraint);
     }
 
     public Set<SubConstraint> sub() {

@@ -60,7 +60,7 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -117,26 +117,26 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String queryString = "undefine analysis abstract, owns created, plays commit-analysis:analysis;";
-                    GraqlUndefine query = Graql.parse(queryString);
+                    GraqlUndefine query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine performance-tracker relates tracker;";
-                    query = Graql.parse(queryString);
+                    query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine email regex '.+\\@.+\\..+';";
-                    query = Graql.parse(queryString);
+                    query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine index sub attribute, value long;";
-                    query = Graql.parse(queryString);
+                    query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     transaction.commit();
@@ -173,7 +173,7 @@ public class QueryTest {
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final GraqlDefine query = Graql.parse(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -190,7 +190,7 @@ public class QueryTest {
                             "($o, $u) isa org-member; " +
                             "($t, $u) isa team-member;";
 
-                    final GraqlInsert query = Graql.parse(queryString);
+                    final GraqlInsert query = Graql.parseQuery(queryString);
                     transaction.query().insert(query);
 
                     transaction.commit();

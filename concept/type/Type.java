@@ -20,6 +20,7 @@ package grakn.core.concept.type;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
+import grakn.core.concept.schema.Rule;
 
 import java.util.List;
 import java.util.stream.Stream;

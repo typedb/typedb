@@ -24,7 +24,6 @@ import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.ThingType;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
@@ -95,27 +94,17 @@ public class QueryManager {
         }
     }
 
-    public List<ThingType> define(final GraqlDefine query) {
-        return define(query, new Options.Query());
-    }
-
-    public List<ThingType> define(final GraqlDefine query, final Options.Query options) {
+    public void define(final GraqlDefine query) {
         if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
-            final Context.Query context = new Context.Query(transactionCtx, options);
-            return Definer.create(conceptMgr, query.variables(), context).execute();
+            Definer.create(conceptMgr, query.variables(), query.rules()).execute();
         }
     }
 
     public void undefine(final GraqlUndefine query) {
-        undefine(query, new Options.Query());
-    }
-
-    public void undefine(final GraqlUndefine query, final Options.Query options) {
         if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
-            final Context.Query context = new Context.Query(transactionCtx, options);
-            Undefiner.create(conceptMgr, query.variables(), context).execute();
+            Undefiner.create(conceptMgr, query.variables(), query.rules()).execute();
         }
     }
 }

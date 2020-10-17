@@ -262,8 +262,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =
                 new TypeRead(3, "The type '%s' is not found.");
+        public static final TypeRead TYPE_SCOPED_NOT_FOUND =
+                new TypeRead(4, "The type '%s:%s' is not found.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
-                new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+                new TypeRead(5, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
 
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";
@@ -347,6 +349,30 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String messagePrefix = "Invalid Type Write";
 
         TypeWrite(final int number, final String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+    public static class RuleRead extends ErrorMessage {
+        public static final RuleRead RULE_NOT_FOUND =
+                new RuleRead(1, "The rule with label '%s' is not found.");
+
+        private static final String codePrefix = "TRR";
+        private static final String messagePrefix = "Invalid Rule Read";
+
+        RuleRead(final int number, final String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+    public static class RuleWrite extends ErrorMessage {
+        public static final RuleWrite INVALID_UNDEFINE_RULE_BODY =
+                new RuleWrite(1, "The rule body of '%s' ('when' or 'then') cannot be undefined. The rule must be undefined entirely by referring to its label.");
+
+        private static final String codePrefix = "TRW";
+        private static final String messagePrefix = "Invalid Rule Write";
+
+        RuleWrite(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }

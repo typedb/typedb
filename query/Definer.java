@@ -20,7 +20,6 @@ package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.AttributeType.ValueType;
@@ -39,12 +38,10 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
@@ -57,33 +54,31 @@ public class Definer {
     private static final String TRACE_PREFIX = "definer.";
 
     private final ConceptManager conceptMgr;
-    private final Context.Query context;
     private final Set<TypeVariable> visited;
-    private final List<ThingType> defined;
     private final Set<TypeVariable> variables;
+    private final List<graql.lang.pattern.schema.Rule> rules;
 
-    private Definer(final ConceptManager conceptMgr, final Set<TypeVariable> variables, final Context.Query context) {
+    private Definer(final ConceptManager conceptMgr, final Set<TypeVariable> variables, final List<graql.lang.pattern.schema.Rule> rules) {
         this.conceptMgr = conceptMgr;
-        this.context = context;
         this.variables = variables;
+        this.rules = rules;
         this.visited = new HashSet<>();
-        this.defined = new LinkedList<>();
     }
 
     public static Definer create(final ConceptManager conceptMgr,
                                  final List<graql.lang.pattern.variable.TypeVariable> variables,
-                                 final Context.Query context) {
+                                 final List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Definer(conceptMgr, Variable.createFromTypes(variables), context);
+            return new Definer(conceptMgr, Variable.createFromTypes(variables), rules);
         }
     }
 
-    public List<ThingType> execute() {
+    public void execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(variable -> {
                 if (!visited.contains(variable)) define(variable);
             });
-            return list(defined);
+            rules.forEach(this::define);
         }
     }
 
@@ -120,8 +115,6 @@ public class Definer {
             if (!variable.owns().isEmpty()) defineOwns(type, variable.owns());
             if (!variable.plays().isEmpty()) definePlays(type, variable.plays());
 
-            // if this variable had more constraints beyond being referred to using a label, add to list of defined types
-            if (variable.constraints().size() > 1) defined.add(type);
             visited.add(variable);
             return type;
         }
@@ -229,5 +222,9 @@ public class Definer {
                 }
             });
         }
+    }
+
+    private void define(graql.lang.pattern.schema.Rule rule) {
+        conceptMgr.putRule(rule.label(), rule.when(), rule.then());
     }
 }

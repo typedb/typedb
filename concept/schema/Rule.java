@@ -16,10 +16,13 @@
  *
  */
 
-package grakn.core.concept.type;
+package grakn.core.concept.schema;
 
-import graql.lang.pattern.Pattern;
+import grakn.core.concept.type.Type;
+import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.variable.Variable;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface Rule {
@@ -28,13 +31,13 @@ public interface Rule {
 
     void setLabel(String label);
 
-    Pattern getWhen();
+    graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> getWhenPreNormalised();
 
-    Pattern getThen();
+    graql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised();
 
-    void setWhen(Pattern when);
+    Conjunction when();
 
-    void setThen(Pattern then);
+    Set<Variable> then();
 
     Stream<? extends Type> positiveConditionTypes();
 

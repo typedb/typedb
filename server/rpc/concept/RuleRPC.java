@@ -19,10 +19,9 @@ package grakn.core.server.rpc.concept;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.type.Rule;
+import grakn.core.concept.schema.Rule;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
-import graql.lang.Graql;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -32,7 +31,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TY
 
 public class RuleRPC {
 
-    private final grakn.core.concept.type.Rule rule;
+    private final Rule rule;
     private final Consumer<TransactionProto.Transaction.Res> responder;
 
     public RuleRPC(final Grakn.Transaction transaction, final String label, final Consumer<TransactionProto.Transaction.Res> responder) {
@@ -58,12 +57,6 @@ public class RuleRPC {
             case RULE_SETLABEL_REQ:
                 this.setLabel(req.getRuleSetLabelReq().getLabel());
                 return;
-            case RULE_SETWHEN_REQ:
-                this.setWhen(req.getRuleSetWhenReq().getPattern());
-                return;
-            case RULE_SETTHEN_REQ:
-                this.setThen(req.getRuleSetThenReq().getPattern());
-                return;
             case REQ_NOT_SET:
             default:
                 throw new GraknException(UNKNOWN_REQUEST_TYPE);
@@ -77,16 +70,6 @@ public class RuleRPC {
 
     private void setLabel(final String label) {
         rule.setLabel(label);
-        responder.accept(null);
-    }
-
-    private void setWhen(final String pattern) {
-        rule.setWhen(Graql.parsePattern(pattern));
-        responder.accept(null);
-    }
-
-    private void setThen(final String pattern) {
-        rule.setThen(Graql.parsePattern(pattern));
         responder.accept(null);
     }
 }

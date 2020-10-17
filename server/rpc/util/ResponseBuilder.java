@@ -22,6 +22,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.schema.Rule;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -30,7 +31,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.protocol.AnswerProto;
@@ -123,7 +123,7 @@ public class ResponseBuilder {
             return TransactionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
         }
 
-        public static TransactionProto.Transaction.Res putRule(final grakn.core.concept.type.Rule rule) {
+        public static TransactionProto.Transaction.Res putRule(final Rule rule) {
             final PutRule.Res.Builder res = PutRule.Res.newBuilder().setRule(ResponseBuilder.Concept.rule(rule));
             return TransactionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
         }
@@ -219,8 +219,8 @@ public class ResponseBuilder {
         public static ConceptProto.Rule rule(final Rule rule) {
             final ConceptProto.Rule.Builder builder = ConceptProto.Rule.newBuilder()
                     .setLabel(rule.getLabel())
-                    .setWhen(rule.getWhen().toString())
-                    .setThen(rule.getThen().toString());
+                    .setWhen(rule.getWhenPreNormalised().toString())
+                    .setThen(rule.getThenPreNormalised().toString());
             return builder.build();
         }
 

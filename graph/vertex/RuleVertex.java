@@ -20,16 +20,18 @@ package grakn.core.graph.vertex;
 
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
+import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 
 public interface RuleVertex extends SchemaVertex<VertexIID.Rule, Encoding.Vertex.Rule> {
 
-    Pattern when();
+    Conjunction<? extends Pattern> when();
 
-    Pattern then();
+    ThingVariable<?> then();
 
-    void when(Pattern when);
+    void when(Conjunction<? extends Pattern> when);
 
-    void then(Pattern then);
+    void then(ThingVariable<?> then);
 }
 

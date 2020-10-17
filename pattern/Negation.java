@@ -20,7 +20,6 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Identifier;
 import grakn.core.pattern.variable.Variable;
 import graql.lang.pattern.Conjunctable;
@@ -45,8 +44,8 @@ public class Negation implements Pattern {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             Disjunction disjunction = Disjunction.create(graql.normalise().pattern());
             disjunction.conjunctions().forEach(conjunction -> {
-                if (conjunction.constraints().stream()
-                        .map(Constraint::owner).map(Variable::identifier)
+                if (conjunction.variables().stream()
+                        .map(Variable::identifier)
                         .noneMatch(bounds::contains)) {
                     throw GraknException.of(UNBOUNDED_NEGATION);
                 }

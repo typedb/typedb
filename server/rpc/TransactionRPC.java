@@ -24,11 +24,11 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.concept.schema.Rule;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.concept.RuleRPC;
 import grakn.core.server.rpc.concept.ThingRPC;
@@ -40,7 +40,9 @@ import grakn.protocol.ConceptProto;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto.Transaction;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -351,8 +353,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
     }
 
     private void putRule(final Transaction.PutRule.Req req) {
-        final Pattern when = Graql.parsePattern(req.getWhen());
-        final Pattern then = Graql.parsePattern(req.getThen());
+        final Conjunction<? extends Pattern> when = Graql.and(Graql.parsePatterns(req.getWhen()));
+        final ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
         final Rule rule = transaction().concepts().putRule(req.getLabel(), when, then);
         final Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);
         responder.onNext(response);

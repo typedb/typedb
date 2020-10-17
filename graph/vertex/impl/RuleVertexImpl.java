@@ -28,7 +28,9 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.RuleVertex;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,10 +41,11 @@ import static grakn.core.graph.util.Encoding.Property.WHEN;
 
 public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, Encoding.Vertex.Rule> implements RuleVertex {
 
-    protected Pattern when;
-    protected Pattern then;
+    protected Conjunction<? extends Pattern> when;
+    protected ThingVariable<?> then;
 
-    RuleVertexImpl(final SchemaGraph graph, final VertexIID.Rule iid, final String label, final Pattern when, final Pattern then) {
+    RuleVertexImpl(final SchemaGraph graph, final VertexIID.Rule iid, final String label,
+                   final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
         super(graph, iid, label);
         assert when != null;
         assert then != null;
@@ -65,12 +68,12 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
     public RuleVertex asRule() { return this; }
 
     @Override
-    public void when(final Pattern when) {
+    public void when(final Conjunction<? extends Pattern> when) {
         this.when = when;
     }
 
     @Override
-    public void then(final Pattern then) {
+    public void then(final ThingVariable<?> then) {
         this.then = then;
     }
 
@@ -79,7 +82,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(final SchemaGraph graph, final VertexIID.Rule iid, final String label, final Pattern when, final Pattern then) {
+        public Buffered(final SchemaGraph graph, final VertexIID.Rule iid, final String label, final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
@@ -102,10 +105,10 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         }
 
         @Override
-        public Pattern when() { return when; }
+        public Conjunction<? extends Pattern> when() { return when; }
 
         @Override
-        public Pattern then() { return then; }
+        public ThingVariable<?> then() { return then; }
 
         @Override
         public void delete() {
@@ -161,17 +164,17 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         }
 
         @Override
-        public Pattern when() {
+        public Conjunction<? extends Pattern> when() {
             if (when == null) {
-                when = Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes()))));
+                when = Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction();
             }
             return when;
         }
 
         @Override
-        public Pattern then() {
+        public ThingVariable<?> then() {
             if (then == null) {
-                then = Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes()))));
+                then = Graql.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing();
             }
             return then;
         }
