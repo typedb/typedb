@@ -190,8 +190,7 @@ public class RuleImpl implements Rule {
     }
 
     /**
-     * TODO:
-     * Check logical validity of this rule
+     * TODO: Check logical validity of this rule
      * 1. that there are no nested negations
      * 2. that there are no disjunctions
      * 3. (in general, that the rules follow the allowed form)
