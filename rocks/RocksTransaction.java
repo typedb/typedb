@@ -21,7 +21,6 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
@@ -494,7 +493,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         public <G> ResourceIterator<G> iterate(final byte[] key, final BiFunction<byte[], byte[], G> constructor) {
             final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
-            return Iterators.iterate(iterator);
+            return iterator;
         }
 
         @Override
@@ -517,7 +516,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         public void recycle(final org.rocksdb.RocksIterator rocksIterator) {
-            if (type.isRead()) recycled.add(rocksIterator);
+            recycled.add(rocksIterator);
         }
 
         void remove(final RocksIterator<?> iterator) {

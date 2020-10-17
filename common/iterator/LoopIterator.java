@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-public class LoopIterator<T> implements ComposableIterator<T> {
+public class LoopIterator<T> implements ResourceIterator<T> {
 
     private final Predicate<T> predicate;
     private final UnaryOperator<T> function;
@@ -68,4 +68,7 @@ public class LoopIterator<T> implements ComposableIterator<T> {
         state = State.EMPTY;
         return next;
     }
+
+    @Override
+    public void recycle() {}
 }

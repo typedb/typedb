@@ -19,7 +19,7 @@ package grakn.core.server.rpc.query;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ComposableIterator;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.server.rpc.TransactionRPC;
@@ -90,22 +90,22 @@ public class QueryRPC {
 
     private void match(final Options.Query options, final QueryProto.Graql.Match.Iter.Req req) {
         final GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
-        final ComposableIterator<ConceptMap> answers = transaction.query().match(query, options);
-        final ComposableIterator<TransactionProto.Transaction.Res> responses = answers.map(
-                a ->ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
-                    .setMatchIterRes(QueryProto.Graql.Match.Iter.Res.newBuilder()
-                    .setAnswer(conceptMap(a))).build())
+        final ResourceIterator<ConceptMap> answers = transaction.query().match(query, options);
+        final ResourceIterator<TransactionProto.Transaction.Res> responses = answers.map(
+                a -> ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
+                                                                    .setMatchIterRes(QueryProto.Graql.Match.Iter.Res.newBuilder()
+                                                                                             .setAnswer(conceptMap(a))).build())
         );
         iterators.startBatchIterating(responses);
     }
 
     private void insert(final Options.Query options, final QueryProto.Graql.Insert.Iter.Req req) {
         final GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
-        final ComposableIterator<ConceptMap> answers = transaction.query().insert(query, options);
-        final ComposableIterator<TransactionProto.Transaction.Res> responses = answers.map(
-                a ->ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
-                    .setInsertIterRes(QueryProto.Graql.Insert.Iter.Res.newBuilder()
-                    .setAnswer(conceptMap(a))).build())
+        final ResourceIterator<ConceptMap> answers = transaction.query().insert(query, options);
+        final ResourceIterator<TransactionProto.Transaction.Res> responses = answers.map(
+                a -> ResponseBuilder.Transaction.Iter.query(QueryProto.Query.Iter.Res.newBuilder()
+                                                                    .setInsertIterRes(QueryProto.Graql.Insert.Iter.Res.newBuilder()
+                                                                                              .setAnswer(conceptMap(a))).build())
         );
         iterators.startBatchIterating(responses);
     }

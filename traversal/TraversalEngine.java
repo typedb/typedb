@@ -18,7 +18,7 @@
 
 package grakn.core.traversal;
 
-import grakn.core.common.iterator.ComposableIterator;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 
@@ -33,7 +33,7 @@ public class TraversalEngine {
         this.graphMgr = graphMgr;
     }
 
-    public ComposableIterator<Map<String, Vertex<?, ?>>> execute(final List<Traversal> traversals) {
+    public ResourceIterator<Map<String, Vertex<?, ?>>> execute(final List<Traversal> traversals) {
         return null;
     }
 }

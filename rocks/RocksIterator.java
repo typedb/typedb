@@ -67,17 +67,22 @@ public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
         return true;
     }
 
+    public final T peek() {
+        if (!hasNext()) throw new NoSuchElementException();
+        return next;
+    }
+
     @Override
     public void recycle() {
-        storage.recycle(internalRocksIterator);
+        close();
     }
 
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (state != State.INIT) internalRocksIterator.close();
-            storage.remove(this);
+            if (state != State.INIT) storage.recycle(internalRocksIterator);
             state = State.COMPLETED;
+            storage.remove(this);
         }
     }
 

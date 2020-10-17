@@ -18,24 +18,19 @@
 
 package grakn.core.common.iterator;
 
-import grakn.common.collection.Either;
-
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 // TODO: verify (and potentially fix) this class to be able to hand null objects
 public class DistinctIterator<T> implements ResourceIterator<T> {
 
-    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
-    private final Iterator<T> genericIterator;
+    private final ResourceIterator<T> iterator;
     private final Set<T> consumed;
     private T next;
 
-    DistinctIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator) {
+    DistinctIterator(final ResourceIterator<T> iterator) {
         this.iterator = iterator;
-        this.genericIterator = iterator.apply(r -> r, i -> i);
         this.consumed = new HashSet<>();
         this.next = null;
     }
@@ -46,7 +41,7 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     }
 
     private boolean fetchAndCheck() {
-        while (genericIterator.hasNext() && consumed.contains(next = genericIterator.next())) next = null;
+        while (iterator.hasNext() && consumed.contains(next = iterator.next())) next = null;
         return next != null;
     }
 
@@ -61,6 +56,6 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterator.ifFirst(RecyclableIterator::recycle);
+        iterator.recycle();
     }
 }

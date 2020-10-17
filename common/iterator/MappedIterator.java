@@ -18,35 +18,30 @@
 
 package grakn.core.common.iterator;
 
-import grakn.common.collection.Either;
-
-import java.util.Iterator;
 import java.util.function.Function;
 
 public class MappedIterator<T, U> implements ResourceIterator<U> {
 
-    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
-    private final Iterator<T> genericIterator;
+    private final ResourceIterator<T> iterator;
     private final Function<T, U> function;
 
-    MappedIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator, final Function<T, U> function) {
+    MappedIterator(final ResourceIterator<T> iterator, final Function<T, U> function) {
         this.iterator = iterator;
-        this.genericIterator = iterator.apply(r -> r, i -> i);
         this.function = function;
     }
 
     @Override
     public boolean hasNext() {
-        return genericIterator.hasNext();
+        return iterator.hasNext();
     }
 
     @Override
     public U next() {
-        return function.apply(genericIterator.next());
+        return function.apply(iterator.next());
     }
 
     @Override
     public void recycle() {
-        iterator.ifFirst(RecyclableIterator::recycle);
+        iterator.recycle();
     }
 }

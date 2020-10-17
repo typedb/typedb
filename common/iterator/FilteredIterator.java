@@ -18,22 +18,17 @@
 
 package grakn.core.common.iterator;
 
-import grakn.common.collection.Either;
-
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
 public class FilteredIterator<T> implements ResourceIterator<T> {
 
-    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
-    private final Iterator<T> genericIterator;
+    private final ResourceIterator<T> iterator;
     private final Predicate<T> predicate;
     private T next;
 
-    FilteredIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator, final Predicate<T> predicate) {
+    FilteredIterator(final ResourceIterator<T> iterator, final Predicate<T> predicate) {
         this.iterator = iterator;
-        this.genericIterator = iterator.apply(r -> r, i -> i);
         this.predicate = predicate;
     }
 
@@ -43,7 +38,7 @@ public class FilteredIterator<T> implements ResourceIterator<T> {
     }
 
     private boolean fetchAndCheck() {
-        while (genericIterator.hasNext() && !predicate.test((next = genericIterator.next()))) next = null;
+        while (iterator.hasNext() && !predicate.test(next = iterator.next())) next = null;
         return next != null;
     }
 
@@ -57,6 +52,6 @@ public class FilteredIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterator.ifFirst(RecyclableIterator::recycle);
+        iterator.recycle();
     }
 }

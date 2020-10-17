@@ -19,8 +19,8 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.type.AttributeType;
@@ -38,6 +38,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
@@ -123,7 +124,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
-    ComposableIterator<TypeVertex> getSubtypeVertices(final Encoding.ValueType valueType) {
+    ResourceIterator<TypeVertex> getSubtypeVertices(final Encoding.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
     }
 
@@ -170,10 +171,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (onlyKey) {
             return vertex.ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
         } else {
-            return link(
-                    vertex.ins().edge(OWNS_KEY).from(),
-                    vertex.ins().edge(OWNS).from()
-            ).map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
+            return link(list(vertex.ins().edge(OWNS_KEY).from(), vertex.ins().edge(OWNS).from())).map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
         }
     }
 

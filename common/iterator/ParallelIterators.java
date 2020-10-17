@@ -21,24 +21,24 @@ package grakn.core.common.iterator;
 import grakn.core.common.concurrent.CommonExecutorService;
 import grakn.core.common.concurrent.ResizingBlockingQueue;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ForkJoinTask;
 
-public class ParallelIterators<T> implements ComposableIterator<T> {
+public class ParallelIterators<T> implements ResourceIterator<T> {
 
     private final ResizingBlockingQueue<T> queue;
+    private final List<ResourceIterator<T>> iterators;
     private State state;
     private T next;
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    public ParallelIterators(final List<ComposableIterator<T>> iterators) {
+    public ParallelIterators(final List<ResourceIterator<T>> iterators) {
         queue = new ResizingBlockingQueue<>();
         state = State.EMPTY;
         next = null;
-        iterators.forEach(iterator -> {
+        this.iterators = iterators;
+        this.iterators.forEach(iterator -> {
             queue.incrementPublisher();
             CommonExecutorService.get().submit(() -> {
                 while (!queue.isCancelled() && iterator.hasNext()) queue.put(iterator.next());
@@ -64,6 +64,12 @@ public class ParallelIterators<T> implements ComposableIterator<T> {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
         return next;
+    }
+
+    @Override
+    public void recycle() {
+        queue.cancel();
+        this.iterators.forEach(ResourceIterator::recycle);
     }
 
     @Override

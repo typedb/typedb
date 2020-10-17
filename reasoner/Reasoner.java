@@ -18,8 +18,8 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.iterator.ComposableIterator;
 import grakn.core.common.iterator.ParallelIterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
@@ -27,6 +27,7 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.planner.Planner;
 import grakn.core.traversal.TraversalEngine;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.parallel;
@@ -43,19 +44,19 @@ public class Reasoner {
         this.planner = new Planner(conceptMgr);
     }
 
-    public ComposableIterator<ConceptMap> execute(final Disjunction disjunction) {
+    public ResourceIterator<ConceptMap> execute(final Disjunction disjunction) {
         return parallel(iterate(disjunction.conjunctions()).map(this::execute).toList());
     }
 
-    public ComposableIterator<ConceptMap> execute(final Disjunction disjunction, final ConceptMap bounds) {
+    public ResourceIterator<ConceptMap> execute(final Disjunction disjunction, final ConceptMap bounds) {
         return parallel(iterate(disjunction.conjunctions()).map(conj -> execute(conj, bounds)).toList());
     }
 
-    public ComposableIterator<ConceptMap> execute(final Conjunction conjunction) {
-        ComposableIterator<ConceptMap> answers = link(
+    public ResourceIterator<ConceptMap> execute(final Conjunction conjunction) {
+        ResourceIterator<ConceptMap> answers = link(list(
                 traversalEng.execute(planner.plan(conjunction)).map(ConceptMap::of),
                 infer(conjunction)
-        );
+        ));
 
         if (conjunction.negations().isEmpty()) return answers;
         else return answers.filter(answer -> !parallel(iterate(conjunction.negations()).map(
@@ -63,7 +64,7 @@ public class Reasoner {
         ).toList()).hasNext());
     }
 
-    public ComposableIterator<ConceptMap> execute(final Conjunction conjunction, final ConceptMap bounds) {
+    public ResourceIterator<ConceptMap> execute(final Conjunction conjunction, final ConceptMap bounds) {
         return null; // TODO
     }
 

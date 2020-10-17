@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
@@ -262,7 +263,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             final ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             if (!bufferedIterator.hasNext()) return storageIterator;
             else if (!storageIterator.hasNext()) return bufferedIterator;
-            else return link(bufferedIterator, storageIterator).distinct();
+            else return link(list(bufferedIterator, storageIterator)).distinct();
         }
 
         @Override

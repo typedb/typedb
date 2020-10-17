@@ -19,7 +19,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.iterator.ComposableIterator;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -52,7 +52,7 @@ public class Matcher {
         }
     }
 
-    public ComposableIterator<ConceptMap> execute() {
+    public ResourceIterator<ConceptMap> execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             return reasoner.execute(disjunction);
         }

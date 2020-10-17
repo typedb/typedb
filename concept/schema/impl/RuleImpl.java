@@ -204,7 +204,7 @@ public class RuleImpl implements Rule {
      * NOTE: this would imply that `//concept` depends on the future `RuleGraph` object. This means it should like
      * in `//concept` as well. Alternatively, we can leave it higher level, and again have this validation be
      * performed at the `Definer.java` level
-     * <p>
+     *
      * Overall, if we can centralise all rule validation here, it would be easier to read and understand
      * However, it may introduce some architectural issues
      */

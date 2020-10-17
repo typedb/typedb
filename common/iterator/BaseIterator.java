@@ -24,9 +24,9 @@ import java.util.Iterator;
 
 public class BaseIterator<T> implements ResourceIterator<T> {
 
-    private final Either<RecyclableIterator<T>, Iterator<T>> iterator;
+    private final Either<ResourceIterator<T>, Iterator<T>> iterator;
 
-    public BaseIterator(final Either<RecyclableIterator<T>, Iterator<T>> iterator) {
+    public BaseIterator(final Either<ResourceIterator<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
     }
 
@@ -42,6 +42,6 @@ public class BaseIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterator.ifFirst(RecyclableIterator::recycle);
+        iterator.ifFirst(ResourceIterator::recycle);
     }
 }

@@ -18,23 +18,22 @@
 
 package grakn.core.common.iterator;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-public class TreeIterator<T> implements ComposableIterator<T> {
+public class TreeIterator<T> implements ResourceIterator<T> {
 
-    private final Function<T, Iterator<T>> childrenFn;
+    private final Function<T, ResourceIterator<T>> childrenFn;
 
     private T next;
     private State state;
-    private LinkedList<Iterator<T>> families;
-    // a 'family' is [an iterator for a] collection of children from the same parent
+    private LinkedList<ResourceIterator<T>> families;
+    // a 'family' is [an iterator for] a collection of children from the same parent
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    TreeIterator(final T root, final Function<T, Iterator<T>> childrenFn) {
+    TreeIterator(final T root, final Function<T, ResourceIterator<T>> childrenFn) {
         this.next = root;
         this.childrenFn = childrenFn;
 
@@ -74,5 +73,10 @@ public class TreeIterator<T> implements ComposableIterator<T> {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
         return next;
+    }
+
+    @Override
+    public void recycle() {
+        families.forEach(ResourceIterator::recycle);
     }
 }
