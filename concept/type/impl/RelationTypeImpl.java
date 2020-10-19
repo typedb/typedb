@@ -97,7 +97,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setSupertype(final RelationType superType) {
-        super.superTypeVertex(((RelationTypeImpl) superType).vertex);
+        super.setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
     @Nullable
@@ -118,7 +118,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RelationImpl> getInstances() {
-        return super.instances(RelationImpl::of);
+        return instances(RelationImpl::of);
     }
 
     @Override
@@ -211,7 +211,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public List<GraknException> validate() {
         final List<GraknException> exceptions = super.validate();
-        if (!isRoot() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().equals(ROLE.label())), 1) < 0) {
+        if (!isRoot() && !isAbstract() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().equals(ROLE.label())), 1) < 0) {
             exceptions.add(new GraknException(RELATION_NO_ROLE.message(this.getLabel())));
         } else if (!isAbstract()) {
             getRelates().filter(TypeImpl::isAbstract).forEach(roleType -> {

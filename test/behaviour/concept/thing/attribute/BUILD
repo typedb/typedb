@@ -61,7 +61,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//concept/thing:attribute.feature",
     ],
-    size = "medium",
+    size = "small",
 )
 
 checkstyle_test(

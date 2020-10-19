@@ -27,6 +27,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
+import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
@@ -49,7 +50,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_KEY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_OVERRIDE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_OVERRIDE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_REGEX;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
@@ -166,7 +166,8 @@ public class Undefiner {
             final ThingType supertype = getType(subConstraint.type().label().get());
             if (supertype == null) {
                 throw new GraknException(TYPE_NOT_FOUND.message(subConstraint.type().label().get()));
-            } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
+            } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))
+                    && !(supertype instanceof ThingTypeImpl.Root)) {
                 throw new GraknException(INVALID_UNDEFINE_SUB.message(thingType.getLabel(), supertype.getLabel()));
             }
             if (thingType instanceof RelationType) {
@@ -187,10 +188,9 @@ public class Undefiner {
 
     private void undefineRegex(final AttributeType.String attributeType, final RegexConstraint regexConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineregex")) {
-            if (!attributeType.getRegex().pattern().equals(regexConstraint.regex().pattern())) {
-                throw new GraknException(INVALID_UNDEFINE_REGEX.message(attributeType.getLabel(), regexConstraint.regex()));
+            if (attributeType.getRegex().pattern().equals(regexConstraint.regex().pattern())) {
+                attributeType.unsetRegex();
             }
-            attributeType.unsetRegex();
         }
     }
 

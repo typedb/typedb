@@ -26,12 +26,15 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -41,7 +44,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
@@ -110,6 +113,13 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
+    public abstract Stream<? extends TypeImpl> getSubtypes();
+
+    <THING> Stream<THING> instances(final Function<ThingVertex, THING> thingConstructor) {
+        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
+    }
+
+    @Override
     public Stream<RuleImpl> getPositiveConditionRules() {
         return vertex.ins().edge(CONDITION_POSITIVE).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
@@ -124,10 +134,23 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         return vertex.ins().edge(CONCLUSION).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
 
-    void superTypeVertex(final TypeVertex superTypeVertex) {
-        if (vertex.equals(superTypeVertex)) throw exception(SUPERTYPE_SELF.message(vertex.label()));
+    void setSuperTypeVertex(final TypeVertex superTypeVertex) {
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(SUB, superTypeVertex);
+        validateTypeHierarchyIsNotCyclic();
+    }
+
+    private void validateTypeHierarchyIsNotCyclic() {
+        TypeImpl type = this;
+        final LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
+        hierarchy.add(vertex.scopedLabel());
+        while (!type.isRoot()) {
+            assert type.getSupertype() != null;
+            type = (TypeImpl) type.getSupertype();
+            if (!hierarchy.add(type.vertex.scopedLabel())) {
+                throw new GraknException(CYCLIC_TYPE_HIERARCHY.message(hierarchy));
+            }
+        }
     }
 
     @Nullable

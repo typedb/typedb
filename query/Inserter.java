@@ -34,6 +34,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
+import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -55,6 +56,7 @@ import static grakn.common.collection.Bytes.bytesToHexString;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.THING_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
@@ -204,6 +206,8 @@ public class Inserter {
                 return insertAttribute(thingType.asAttributeType(), variable);
             } else if (thingType instanceof RelationType) {
                 return insertRelation(thingType.asRelationType(), variable);
+            } else if (thingType instanceof ThingTypeImpl.Root) {
+                throw new GraknException(ILLEGAL_ABSTRACT_WRITE.message(Thing.class.getSimpleName(), thingType.getLabel()));
             } else {
                 assert false;
                 return null;

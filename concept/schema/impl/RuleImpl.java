@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_SCOPED_NOT_FOUND;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_POSITIVE;
@@ -86,7 +85,7 @@ public class RuleImpl implements Rule {
                     if (label.scope().isPresent()) {
                         TypeVertex relation = graphMgr.schema().getType(label.scope().get());
                         TypeVertex role = graphMgr.schema().getType(label.label(), label.scope().get());
-                        if (role == null) throw GraknException.of(TYPE_SCOPED_NOT_FOUND.message(label.scope().get(), label.label()));
+                        if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(label.scopedLabel()));
                         vertex.outs().put(CONDITION_POSITIVE, relation);
                         vertex.outs().put(CONDITION_POSITIVE, role);
                     } else {
@@ -108,7 +107,7 @@ public class RuleImpl implements Rule {
                     if (label.scope().isPresent()) {
                         TypeVertex relation = graphMgr.schema().getType(label.scope().get());
                         TypeVertex role = graphMgr.schema().getType(label.label(), label.scope().get());
-                        if (role == null) throw GraknException.of(TYPE_SCOPED_NOT_FOUND.message(label.scope().get(), label.label()));
+                        if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(label.scopedLabel()));
                         vertex.outs().put(CONDITION_NEGATIVE, relation);
                         vertex.outs().put(CONDITION_NEGATIVE, role);
                     } else {
@@ -145,9 +144,9 @@ public class RuleImpl implements Rule {
         RelationTypeImpl relationConcept = RelationTypeImpl.of(graphMgr, relationVertex);
         relation.asRelation().players().forEach(player -> {
             if (player.roleType().isPresent() && player.roleType().get().label().isPresent()) {
-                String roleLabel = player.roleType().get().label().get().label();
+                final String roleLabel = player.roleType().get().label().get().label();
                 RoleTypeImpl role = relationConcept.getRelates(roleLabel);
-                if (role == null) throw GraknException.of(TYPE_SCOPED_NOT_FOUND.message(relationLabel, roleLabel));
+                if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(player.roleType().get().label().get().scopedLabel()));
                 vertex.outs().put(CONCLUSION, role.vertex);
             }
         });

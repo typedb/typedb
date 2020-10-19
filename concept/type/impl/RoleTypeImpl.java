@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
@@ -71,12 +72,17 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     void sup(final RoleType superType) {
-        super.superTypeVertex(((RoleTypeImpl) superType).vertex);
+        super.setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
     }
 
     @Override
     public String getScope() {
         return vertex.scope();
+    }
+
+    @Override
+    public String getScopedLabel() {
+        return vertex.scopedLabel();
     }
 
     @Nullable
@@ -112,7 +118,14 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public void delete() {
+        if (getInstances().findAny().isPresent()) {
+            throw new GraknException(INVALID_UNDEFINE_RELATES_HAS_INSTANCES.message(getScopedLabel()));
+        }
         vertex.delete();
+    }
+
+    private Stream<RoleImpl> getInstances() {
+        return instances(RoleImpl::of);
     }
 
     @Override

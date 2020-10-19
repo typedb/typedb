@@ -51,7 +51,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUBTY
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_SELF;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
@@ -134,13 +133,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             throw exception(ATTRIBUTE_SUPERTYPE_VALUE_TYPE.message(
                     getLabel(), getValueType().name(), superType.getLabel(), superType.getValueType().name()
             ));
-        } else if (this.equals(superType)) {
-            throw exception(SUPERTYPE_SELF.message(getLabel()));
         } else if (!superType.isAbstract()) {
             throw exception(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT.message(superType.getLabel()));
         }
-        vertex.outs().edge(SUB, getSupertype().vertex).delete();
-        vertex.outs().put(SUB, ((AttributeTypeImpl) superType).vertex);
+        setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
 
     @Override
@@ -293,7 +289,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl<?>> getInstances() {
-            return super.instances(v -> AttributeImpl.of(v.asAttribute()));
+            return instances(v -> AttributeImpl.of(v.asAttribute()));
         }
 
         @Override
@@ -364,7 +360,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.Boolean> getInstances() {
-            return super.instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
+            return instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
         @Override
@@ -488,7 +484,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.Long> getInstances() {
-            return super.instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
+            return instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
 
         @Override
@@ -614,7 +610,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.Double> getInstances() {
-            return super.instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
+            return instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
 
         @Override
@@ -740,7 +736,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.String> getInstances() {
-            return super.instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
+            return instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
         @Override
@@ -904,7 +900,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeImpl.DateTime> getInstances() {
-            return super.instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
+            return instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
         @Override

@@ -148,10 +148,11 @@ public final class ConceptManager {
     public Rule putRule(final String label, final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
         final RuleVertex vertex = graphMgr.schema().getRule(label);
         if (vertex != null) {
+            vertex.when(when);
+            vertex.then(then);
             return RuleImpl.of(graphMgr, vertex);
-        } else {
-            return RuleImpl.of(graphMgr, label, when, then);
         }
+        return RuleImpl.of(graphMgr, label, when, then);
     }
 
     public Rule getRule(final String label) {

@@ -38,6 +38,7 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,9 +46,11 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_MANY;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
 
 public class Definer {
 
@@ -75,6 +78,7 @@ public class Definer {
 
     public void execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            validateTypeHierarchyIsNotCyclic(variables);
             variables.forEach(variable -> {
                 if (!visited.contains(variable)) define(variable);
             });
@@ -92,6 +96,8 @@ public class Definer {
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
             else if (visited.contains(variable)) return conceptMgr.getType(labelConstraint.scopedLabel());
 
+            visited.add(variable);
+
             ThingType type = getThingType(labelConstraint);
             if (variable.sub().size() == 1) {
                 type = defineSub(type, variable.sub().iterator().next(), variable);
@@ -105,6 +111,10 @@ public class Definer {
                 throw new GraknException(TYPE_NOT_FOUND.message(labelConstraint.label()));
             }
 
+            if (variable.valueType().isPresent() && !(type instanceof AttributeType)) {
+                throw new GraknException(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE.message(labelConstraint.label()));
+            }
+
             if (variable.abstractConstraint().isPresent()) defineAbstract(type);
             if (variable.regex().isPresent())
                 defineRegex(type.asAttributeType().asString(), variable.regex().get());
@@ -115,8 +125,25 @@ public class Definer {
             if (!variable.owns().isEmpty()) defineOwns(type, variable.owns());
             if (!variable.plays().isEmpty()) definePlays(type, variable.plays());
 
-            visited.add(variable);
             return type;
+        }
+    }
+
+    private void validateTypeHierarchyIsNotCyclic(final Set<TypeVariable> variables) {
+        final Set<TypeVariable> visited = new HashSet<>();
+        for (TypeVariable variable : variables) {
+            if (visited.contains(variable)) continue;
+            assert variable.label().isPresent();
+            final LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
+            hierarchy.add(variable.label().get().scopedLabel());
+            visited.add(variable);
+            while (variable.sub().size() == 1) {
+                variable = variable.sub().iterator().next().type();
+                assert variable.label().isPresent();
+                if (!hierarchy.add(variable.label().get().scopedLabel())) {
+                    throw new GraknException(CYCLIC_TYPE_HIERARCHY.message(hierarchy));
+                }
+            }
         }
     }
 

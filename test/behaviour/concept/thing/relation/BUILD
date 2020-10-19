@@ -64,7 +64,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//concept/thing:relation.feature",
     ],
-    size = "medium",
+    size = "small",
 )
 
 checkstyle_test(

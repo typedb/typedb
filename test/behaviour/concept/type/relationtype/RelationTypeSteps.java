@@ -47,7 +47,7 @@ public class RelationTypeSteps {
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label}; throws exception")
     public void thing_set_relates_role_throws_exception(final String relationLabel, final String roleLabel) {
-        assertThrows(() -> tx().concepts().getRelationType(relationLabel).setRelates(roleLabel));
+        assertThrows(() -> relation_type_set_relates_role(relationLabel, roleLabel));
     }
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}")
@@ -57,12 +57,17 @@ public class RelationTypeSteps {
 
     @When("relation\\( ?{type_label} ?) set relates role: {type_label} as {type_label}; throws exception")
     public void thing_set_relates_role_type_as_throws_exception(final String relationLabel, final String roleLabel, final String superRole) {
-        assertThrows(() -> tx().concepts().getRelationType(relationLabel).setRelates(roleLabel, superRole));
+        assertThrows(() -> relation_type_set_relates_role_type_as(relationLabel, roleLabel, superRole));
     }
 
     @When("relation\\( ?{type_label} ?) unset related role: {type_label}")
     public void relation_type_unset_related_role(final String relationLabel, final String roleLabel) {
         tx().concepts().getRelationType(relationLabel).unsetRelates(roleLabel);
+    }
+
+    @When("relation\\( ?{type_label} ?) unset related role: {type_label}; throws exception")
+    public void relation_type_unset_related_role_throws_exception(final String relationLabel, final String roleLabel) {
+        assertThrows(() -> relation_type_unset_related_role(relationLabel, roleLabel));
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) is null: {bool}")

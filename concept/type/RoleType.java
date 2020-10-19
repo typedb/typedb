@@ -33,6 +33,8 @@ public interface RoleType extends Type {
 
     String getScope();
 
+    String getScopedLabel();
+
     RelationType getRelation();
 
     Stream<? extends RelationType> getRelations();

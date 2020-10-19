@@ -149,6 +149,11 @@ public abstract class ValueOperation<T> {
             public Assignment.Long asLong() {
                 return this;
             }
+
+            @Override
+            public Double asDouble() {
+                return new Assignment.Double(value());
+            }
         }
 
         public static class Double extends Assignment<java.lang.Double> {

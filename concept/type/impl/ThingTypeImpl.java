@@ -30,7 +30,6 @@ import grakn.core.concept.type.ThingType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.edge.SchemaEdge;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -39,18 +38,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Streams.compareSize;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATT_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
@@ -110,10 +111,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
 
-    <THING> Stream<THING> instances(final Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
-    }
-
     @Override
     public void setOwns(final AttributeType attributeType) {
         setOwns(attributeType, false);
@@ -140,6 +137,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void unsetOwns(final AttributeType attributeType) {
         SchemaEdge edge;
         final TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
+        if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
+            throw new GraknException(INVALID_UNDEFINE_OWNS_HAS_INSTANCES.message(vertex.label(), attVertex.label()));
+        }
         if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
     }
@@ -174,6 +174,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 throw exception(OWNS_KEY_PRECONDITION_UNIQUENESS.message(attVertex.label(), vertex.label()));
             }
             ownsEdge.delete();
+        } else if (getInstances().findAny().isPresent()) {
+            throw exception(OWNS_KEY_PRECONDITION_NO_INSTANCES.message(vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
         if (getSupertype().declaredOwns(false).anyMatch(a -> a.equals(attributeType)))
@@ -244,6 +246,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public Stream<AttributeTypeImpl> getOwns(final boolean onlyKey) {
         if (isRoot()) return Stream.of();
         final Set<AttributeTypeImpl> overridden = overriddenOwns(onlyKey, false).collect(toSet());
+        assert getSupertype() != null;
         return concat(declaredOwns(onlyKey), getSupertype().getOwns(onlyKey).filter(key -> !overridden.contains(key)));
     }
 
@@ -268,7 +271,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unsetPlays(final RoleType roleType) {
-        vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex).delete();
+        final SchemaEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        if (edge == null) return;
+        if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
+            throw new GraknException(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES.message(vertex.label(), roleType.getScopedLabel()));
+        }
+        edge.delete();
     }
 
     @Override
@@ -277,6 +285,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         final Set<TypeVertex> overridden = new HashSet<>();
         vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
+        assert getSupertype() != null;
         return concat(
                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream(),
                 getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
@@ -364,7 +373,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<ThingImpl> getInstances() {
-            return super.instances(v -> {
+            return instances(v -> {
                 switch (v.encoding()) {
                     case ENTITY:
                         return EntityImpl.of(v);

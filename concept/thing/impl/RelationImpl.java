@@ -64,7 +64,7 @@ public class RelationImpl extends ThingImpl implements Relation {
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw exception(RELATION_ROLE_UNRELATED.message(this.getType().getLabel(), roleType.getLabel()));
         } else if (player.getType().getPlays().noneMatch(t -> t.equals(roleType))) {
-            throw exception(THING_ROLE_UNPLAYED.message(this.getType().getLabel(), roleType.getLabel()));
+            throw exception(THING_ROLE_UNPLAYED.message(this.getType().getLabel(), roleType.getScopedLabel()));
         }
 
         final RoleImpl role = ((RoleTypeImpl) roleType).create();

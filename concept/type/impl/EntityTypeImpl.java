@@ -65,7 +65,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public void setSupertype(final EntityType superType) {
-        super.superTypeVertex(((EntityTypeImpl) superType).vertex);
+        super.setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
     @Nullable
@@ -86,7 +86,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Stream<EntityImpl> getInstances() {
-        return super.instances(EntityImpl::of);
+        return instances(EntityImpl::of);
     }
 
     @Override

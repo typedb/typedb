@@ -286,6 +286,11 @@ public class ThingTypeSteps {
         get_thing_type(rootLabel, typeLabel).unsetOwns(attributeType);
     }
 
+    @When("{root_label}\\( ?{type_label} ?) unset owns attribute type: {type_label}; throws exception")
+    public void thing_type_unset_owns_attribute_type_throws_exception(final RootLabel rootLabel, final String typeLabel, final String attributeLabel) {
+        assertThrows(() -> thing_type_unset_owns_attribute_type(rootLabel, typeLabel, attributeLabel));
+    }
+
     @Then("{root_label}\\( ?{type_label} ?) get owns attribute types contain:")
     public void thing_type_get_owns_attribute_types_contain(final RootLabel rootLabel, final String typeLabel, final List<String> attributeLabels) {
         final Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns().map(Type::getLabel).collect(toSet());
@@ -331,6 +336,11 @@ public class ThingTypeSteps {
     public void thing_type_unset_plays_role(final RootLabel rootLabel, final String typeLabel, final Parameters.ScopedLabel roleLabel) {
         final RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).getRelates(roleLabel.role());
         get_thing_type(rootLabel, typeLabel).unsetPlays(roleType);
+    }
+
+    @When("{root_label}\\( ?{type_label} ?) unset plays role: {scoped_label}; throws exception")
+    public void thing_type_unset_plays_role_throws_exception(final RootLabel rootLabel, final String typeLabel, final Parameters.ScopedLabel roleLabel) {
+        assertThrows(() -> thing_type_unset_plays_role(rootLabel, typeLabel, roleLabel));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles contain:")

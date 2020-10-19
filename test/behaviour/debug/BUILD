@@ -45,6 +45,7 @@ java_test(
         "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
+        "//test/behaviour/graql:steps",
     ],
     data = [
         ":debug.feature",

@@ -45,9 +45,7 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     @Override
     public String toString() {
-        return className(this.getClass())
-                .substring(this.getClass().getPackage().getName().length() + 1) + ": " +
-                iid.toString();
+        return className(this.getClass()) + ": " + iid.toString();
     }
 
     @Override
