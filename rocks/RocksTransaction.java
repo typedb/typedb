@@ -20,6 +20,7 @@ package grakn.core.rocks;
 
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
@@ -395,11 +396,13 @@ abstract class RocksTransaction implements Grakn.Transaction {
         private final ManagedReadWriteLock readWriteLock;
         private final Set<RocksIterator<?>> iterators;
         private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
+        private final AtomicBoolean isOpen;
 
         CoreStorage() {
             readWriteLock = new ManagedReadWriteLock();
             iterators = ConcurrentHashMap.newKeySet();
             recycled = new ConcurrentLinkedQueue<>();
+            isOpen = new AtomicBoolean(true);
         }
 
         @Override
@@ -419,6 +422,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         public byte[] get(final byte[] key) {
+            validateTransactionIsOpen();
             try {
                 // We don't need to check isOpen.get() as tx.commit() does not involve this method
                 if (type.isWrite()) readWriteLock.lockRead();
@@ -432,6 +436,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         public byte[] getLastKey(final byte[] prefix) {
+            validateTransactionIsOpen();
             final byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
@@ -445,6 +450,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         public void delete(final byte[] key) {
+            validateTransactionIsOpen();
             try {
                 if (isOpen.get()) readWriteLock.lockWrite();
                 rocksTransaction.delete(key);
@@ -462,6 +468,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         public void put(final byte[] key, final byte[] value) {
+            validateTransactionIsOpen();
             try {
                 if (isOpen.get()) readWriteLock.lockWrite();
                 rocksTransaction.put(key, value);
@@ -479,18 +486,20 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         public void putUntracked(final byte[] key, final byte[] value) {
+            validateTransactionIsOpen();
             try {
-                if (isOpen.get()) readWriteLock.lockWrite();
+                readWriteLock.lockWrite();
                 rocksTransaction.putUntracked(key, value);
             } catch (RocksDBException | InterruptedException e) {
                 throw exception(e);
             } finally {
-                if (isOpen.get()) readWriteLock.unlockWrite();
+                if (isOpen()) readWriteLock.unlockWrite();
             }
         }
 
         @Override
         public <G> ResourceIterator<G> iterate(final byte[] key, final BiFunction<byte[], byte[], G> constructor) {
+            validateTransactionIsOpen();
             final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
             return iterator;
@@ -502,9 +511,13 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return new GraknException(message);
         }
 
-        GraknException exception(final Exception exception) {
+        GraknException exception(final Exception exception ) {
             RocksTransaction.this.close();
             return new GraknException(exception);
+        }
+
+        void validateTransactionIsOpen() {
+            if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED);
         }
 
         org.rocksdb.RocksIterator getInternalRocksIterator() {
@@ -524,8 +537,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         void close() {
-            iterators.parallelStream().forEach(RocksIterator::close);
-            recycled.forEach(AbstractImmutableNativeReference::close);
+            if (isOpen.compareAndSet(true, false)) {
+                iterators.parallelStream().forEach(RocksIterator::close);
+                recycled.forEach(AbstractImmutableNativeReference::close);
+            }
         }
     }
 }
