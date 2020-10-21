@@ -19,15 +19,15 @@
 package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.variable.Identifier;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.BoundVariable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -35,6 +35,7 @@ import java.util.Set;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static java.util.stream.Collectors.toSet;
 
 public class Conjunction implements Pattern {
@@ -49,6 +50,10 @@ public class Conjunction implements Pattern {
     }
 
     public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql) {
+        return create(graql, null);
+    }
+
+    public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql, @Nullable VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             List<BoundVariable> graqlVariables = new ArrayList<>();
             List<graql.lang.pattern.Negation<?>> graqlNegations = new ArrayList<>();
@@ -60,22 +65,14 @@ public class Conjunction implements Pattern {
             });
 
             if (graqlVariables.isEmpty() && !graqlNegations.isEmpty()) {
-                throw GraknException.of(ErrorMessage.Query.UNBOUNDED_NEGATION);
+                throw GraknException.of(UNBOUNDED_NEGATION);
             }
 
-            Set<Negation> graknNegations;
-            Set<Variable> graknVariables = Variable.createFromVariables(graqlVariables);
-            Set<Constraint> graknConstraints = graknVariables.stream()
+            VariableRegistry registry = VariableRegistry.createFromVariables(graqlVariables, bounds);
+            Set<Constraint> graknConstraints = registry.variables().stream()
                     .flatMap(v -> v.constraints().stream()).collect(toSet());
-
-            if (!graqlNegations.isEmpty()) {
-                Set<Identifier> bounds = graknVariables.stream().map(Variable::identifier)
-                        .filter(id -> id.reference().isName()).collect(toSet());
-                graknNegations = graqlNegations.stream()
-                        .map(n -> Negation.create(n.normalise(), bounds)).collect(toSet());
-            } else {
-                graknNegations = set();
-            }
+            Set<Negation> graknNegations = graqlNegations.isEmpty() ? set() :
+                    graqlNegations.stream().map(n -> Negation.create(n, registry)).collect(toSet());
             return new Conjunction(graknConstraints, graknNegations);
         }
     }

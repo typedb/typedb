@@ -16,50 +16,50 @@
  *
  */
 
-package grakn.core.pattern.constraint.thing;
+package grakn.core.pattern.constraint.type;
 
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 
-public class NEQConstraint extends ThingConstraint {
+public class IsConstraint extends TypeConstraint {
 
-    private final ThingVariable variable;
+    private final TypeVariable variable;
     private final int hash;
 
-    private NEQConstraint(final ThingVariable owner, final ThingVariable variable) {
+    private IsConstraint(final TypeVariable owner, final TypeVariable variable) {
         super(owner);
         this.variable = variable;
-        this.hash = Objects.hash(NEQConstraint.class, this.owner, this.variable);
+        this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
 
-    public static NEQConstraint of(final ThingVariable owner,
-                                   final graql.lang.pattern.constraint.ThingConstraint.NEQ constraint,
-                                   final VariableRegistry registry) {
-        return new NEQConstraint(owner, registry.register(constraint.variable()));
+    public static IsConstraint of(final TypeVariable owner,
+                                  final ConceptConstraint.Is constraint,
+                                  final VariableRegistry registry) {
+        return new IsConstraint(owner, registry.register(constraint.variable()).asType());
     }
 
-    public ThingVariable variable() {
+    public TypeVariable variable() {
         return variable;
     }
 
     @Override
-    public Set<Variable> variables() {
+    public Set<TypeVariable> variables() {
         return set(variable());
     }
 
     @Override
-    public boolean isNEQ() {
+    public boolean isIs() {
         return true;
     }
 
     @Override
-    public NEQConstraint asNEQ() {
+    public IsConstraint asIs() {
         return this;
     }
 
@@ -67,7 +67,7 @@ public class NEQConstraint extends ThingConstraint {
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final NEQConstraint that = (NEQConstraint) o;
+        final IsConstraint that = (IsConstraint) o;
         return (this.owner.equals(that.owner) && this.variable.equals(that.variable));
     }
 

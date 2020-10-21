@@ -30,13 +30,13 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableRegistry;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
@@ -120,15 +120,14 @@ public class RuleImpl implements Rule {
 
     private void putConclusions() {
         vertex.outs().delete(CONCLUSION);
-        then().stream()
-                .flatMap(var -> var.constraints().stream())
-                .filter(Constraint::isThing)
-                .map(Constraint::asThing)
-                .forEach(constraint -> {
-                    if (constraint.isHas()) constraint.asHas().type().label().ifPresent(l -> putConclusion(l.label()));
-                    else if (constraint.isIsa()) constraint.asIsa().type().label().ifPresent(l -> putConclusion(l.label()));
-                    else if (constraint.isRelation()) putRelationConclusion(constraint.asRelation());
-                });
+        // TODO: @flyingsilverfin to revise this logic. It's a big wonky.
+        //       First you filter out TypeConstraints, then you retrieved it again via constraint.asIsa().type()
+        then().stream().flatMap(var -> var.constraints().stream())
+                .filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
+            if (constraint.isHas()) constraint.asHas().type().label().ifPresent(l -> putConclusion(l.label()));
+            else if (constraint.isIsa()) constraint.asIsa().type().label().ifPresent(l -> putConclusion(l.label()));
+            else if (constraint.isRelation()) putRelationConclusion(constraint.asRelation());
+        });
     }
 
     private void putConclusion(String typeLabel) {
@@ -183,7 +182,7 @@ public class RuleImpl implements Rule {
     @Override
     public Set<Variable> then() {
         if (then == null) {
-            then = ThingVariable.createFromThings(Collections.singletonList(getThenPreNormalised()));
+            then = VariableRegistry.createFromThings(list(getThenPreNormalised())).variables();
         }
         return then;
     }

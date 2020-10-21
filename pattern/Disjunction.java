@@ -19,8 +19,10 @@
 package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.Conjunctable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
@@ -37,8 +39,16 @@ public class Disjunction implements Pattern {
 
     public static Disjunction create(
             final graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql) {
+        return create(graql, null);
+    }
+
+    public static Disjunction create(
+            final graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql,
+            @Nullable final VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Disjunction(graql.patterns().stream().map(Conjunction::create).collect(toSet()));
+            return new Disjunction(graql.patterns().stream().map(
+                    conjunction -> Conjunction.create(conjunction, bounds)
+            ).collect(toSet()));
         }
     }
 

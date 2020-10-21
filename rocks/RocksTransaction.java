@@ -20,7 +20,6 @@ package grakn.core.rocks;
 
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
@@ -511,7 +510,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return new GraknException(message);
         }
 
-        GraknException exception(final Exception exception ) {
+        GraknException exception(final Exception exception) {
             RocksTransaction.this.close();
             return new GraknException(exception);
         }

@@ -20,6 +20,7 @@ package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.type.AbstractConstraint;
+import grakn.core.pattern.constraint.type.IsConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
@@ -28,6 +29,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
+import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.HashSet;
 import java.util.List;
@@ -47,21 +49,28 @@ public class TypeVariable extends Variable {
     private final Set<OwnsConstraint> ownsConstraints;
     private final Set<PlaysConstraint> playsConstraints;
     private final Set<RelatesConstraint> relatesConstraints;
+    private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
 
     TypeVariable(final Identifier identifier) {
         super(identifier);
-        this.subConstraints = new HashSet<>();
-        this.ownsConstraints = new HashSet<>();
-        this.playsConstraints = new HashSet<>();
-        this.relatesConstraints = new HashSet<>();
-        this.constraints = new HashSet<>();
+        subConstraints = new HashSet<>();
+        ownsConstraints = new HashSet<>();
+        playsConstraints = new HashSet<>();
+        relatesConstraints = new HashSet<>();
+        isConstraints = new HashSet<>();
+        constraints = new HashSet<>();
     }
 
-    TypeVariable constrain(final List<graql.lang.pattern.constraint.TypeConstraint> constraints,
-                           final VariableRegistry register) {
+    TypeVariable constrainType(final List<graql.lang.pattern.constraint.TypeConstraint> constraints,
+                               final VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
+    }
+
+    Variable constrainConcept(final List<ConceptConstraint> constraints, final VariableRegistry registry) {
+        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
+        return null;
     }
 
     private void constrain(final TypeConstraint constraint) {
@@ -74,6 +83,7 @@ public class TypeVariable extends Variable {
         else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
         else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
         else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
+        else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -107,6 +117,10 @@ public class TypeVariable extends Variable {
 
     public Set<RelatesConstraint> relates() {
         return relatesConstraints;
+    }
+
+    public Set<IsConstraint> is() {
+        return isConstraints;
     }
 
     @Override

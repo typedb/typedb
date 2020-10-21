@@ -21,8 +21,8 @@ package grakn.core.pattern.variable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
+import grakn.core.pattern.constraint.thing.IsConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.NEQConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
@@ -38,7 +38,7 @@ public class ThingVariable extends Variable {
 
     private IIDConstraint iidConstraint;
     private final Set<IsaConstraint> isaConstraints;
-    private final Set<NEQConstraint> neqConstraints;
+    private final Set<IsConstraint> isConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<RelationConstraint> relationConstraints;
     private final Set<HasConstraint> hasConstraints;
@@ -47,16 +47,22 @@ public class ThingVariable extends Variable {
     ThingVariable(final Identifier identifier) {
         super(identifier);
         this.isaConstraints = new HashSet<>();
-        this.neqConstraints = new HashSet<>();
+        this.isConstraints = new HashSet<>();
         this.valueConstraints = new HashSet<>();
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
     }
 
-    ThingVariable constrain(final List<graql.lang.pattern.constraint.ThingConstraint> constraints,
-                            final VariableRegistry register) {
-        constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, register)));
+    ThingVariable constrainThing(final List<graql.lang.pattern.constraint.ThingConstraint> constraints,
+                                 final VariableRegistry registry) {
+        constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
+        return this;
+    }
+
+    ThingVariable constraintConcept(final List<graql.lang.pattern.constraint.ConceptConstraint> constraints,
+                                    final VariableRegistry registry) {
+        constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
 
@@ -64,7 +70,7 @@ public class ThingVariable extends Variable {
         constraints.add(constraint);
         if (constraint.isIID()) iidConstraint = constraint.asIID();
         else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
-        else if (constraint.isNEQ()) neqConstraints.add(constraint.asNEQ());
+        else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
         else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
@@ -79,8 +85,8 @@ public class ThingVariable extends Variable {
         return isaConstraints;
     }
 
-    public Set<NEQConstraint> neq() {
-        return neqConstraints;
+    public Set<IsConstraint> is() {
+        return isConstraints;
     }
 
     public Set<ValueConstraint<?>> value() {

@@ -35,7 +35,7 @@ import grakn.core.pattern.constraint.type.RegexConstraint;
 import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableRegistry;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -44,13 +44,15 @@ import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_MANY;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class Definer {
 
@@ -72,7 +74,7 @@ public class Definer {
                                  final List<graql.lang.pattern.variable.TypeVariable> variables,
                                  final List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Definer(conceptMgr, Variable.createFromTypes(variables), rules);
+            return new Definer(conceptMgr, VariableRegistry.createFromTypes(variables).types(), rules);
         }
     }
 
@@ -93,6 +95,8 @@ public class Definer {
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelConstraint.scopedLabel()));
+            } else if (!variable.is().isEmpty()) {
+                throw new GraknException(TYPE_CONSTRAINT_UNACCEPTED.message(IS));
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
             else if (visited.contains(variable)) return conceptMgr.getType(labelConstraint.scopedLabel());
 
@@ -116,10 +120,7 @@ public class Definer {
             }
 
             if (variable.abstractConstraint().isPresent()) defineAbstract(type);
-            if (variable.regex().isPresent())
-                defineRegex(type.asAttributeType().asString(), variable.regex().get());
-            // TODO: if (variable.when().isPresent()) defineWhen(variable);
-            // TODO: if (variable.then().isPresent()) defineThen(variable);
+            if (variable.regex().isPresent()) defineRegex(type.asAttributeType().asString(), variable.regex().get());
 
             if (!variable.relates().isEmpty()) defineRelates(type.asRelationType(), variable.relates());
             if (!variable.owns().isEmpty()) defineOwns(type, variable.owns());

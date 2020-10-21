@@ -29,7 +29,7 @@ import java.util.Set;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Query.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public class ThingConstraint extends Constraint {
 
@@ -41,13 +41,19 @@ public class ThingConstraint extends Constraint {
 
     public static ThingConstraint of(final ThingVariable owner,
                                      final graql.lang.pattern.constraint.ThingConstraint constraint,
-                                     final VariableRegistry register) {
+                                     final VariableRegistry registry) {
         if (constraint.isIID()) return IIDConstraint.of(owner, constraint.asIID());
-        else if (constraint.isIsa()) return IsaConstraint.of(owner, constraint.asIsa(), register);
-        else if (constraint.isNEQ()) return NEQConstraint.of(owner, constraint.asNEQ(), register);
-        else if (constraint.isValue()) return ValueConstraint.of(owner, constraint.asValue(), register);
-        else if (constraint.isRelation()) return RelationConstraint.of(owner, constraint.asRelation(), register);
-        else if (constraint.isHas()) return HasConstraint.of(owner, constraint.asHas(), register);
+        else if (constraint.isIsa()) return IsaConstraint.of(owner, constraint.asIsa(), registry);
+        else if (constraint.isValue()) return ValueConstraint.of(owner, constraint.asValue(), registry);
+        else if (constraint.isRelation()) return RelationConstraint.of(owner, constraint.asRelation(), registry);
+        else if (constraint.isHas()) return HasConstraint.of(owner, constraint.asHas(), registry);
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public static ThingConstraint of(final ThingVariable owner,
+                                     final graql.lang.pattern.constraint.ConceptConstraint constraint,
+                                     final VariableRegistry registry) {
+        if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -79,7 +85,7 @@ public class ThingConstraint extends Constraint {
         return false;
     }
 
-    public boolean isNEQ() {
+    public boolean isIs() {
         return false;
     }
 
@@ -103,8 +109,8 @@ public class ThingConstraint extends Constraint {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IsaConstraint.class)));
     }
 
-    public NEQConstraint asNEQ() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(NEQConstraint.class)));
+    public IsConstraint asIs() {
+        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IsConstraint.class)));
     }
 
     public ValueConstraint<?> asValue() {

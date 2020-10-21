@@ -26,7 +26,7 @@ import grakn.core.pattern.variable.Variable;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Query.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Constraint {
 

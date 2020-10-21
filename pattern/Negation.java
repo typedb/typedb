@@ -20,14 +20,11 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.variable.Identifier;
 import grakn.core.pattern.variable.Variable;
-import graql.lang.pattern.Conjunctable;
-
-import java.util.Set;
+import grakn.core.pattern.variable.VariableRegistry;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.exception.ErrorMessage.Query.UNBOUNDED_NEGATION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 
 public class Negation implements Pattern {
 
@@ -38,15 +35,11 @@ public class Negation implements Pattern {
         this.disjunction = disjunction;
     }
 
-    public static Negation create(
-            final graql.lang.pattern.Negation<graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>>> graql,
-            final Set<Identifier> bounds) {
+    public static Negation create(final graql.lang.pattern.Negation<?> graql, final VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            Disjunction disjunction = Disjunction.create(graql.normalise().pattern());
+            Disjunction disjunction = Disjunction.create(graql.normalise().pattern(), bounds);
             disjunction.conjunctions().forEach(conjunction -> {
-                if (conjunction.variables().stream()
-                        .map(Variable::identifier)
-                        .noneMatch(bounds::contains)) {
+                if (conjunction.variables().stream().map(Variable::reference).noneMatch(bounds::contains)) {
                     throw GraknException.of(UNBOUNDED_NEGATION);
                 }
             });

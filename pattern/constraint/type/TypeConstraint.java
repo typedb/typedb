@@ -28,7 +28,7 @@ import java.util.Set;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Query.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class TypeConstraint extends Constraint {
 
@@ -51,6 +51,13 @@ public abstract class TypeConstraint extends Constraint {
         else if (constraint.isPlays()) return PlaysConstraint.of(owner, constraint.asPlays(), registry);
         else if (constraint.isRelates()) return RelatesConstraint.of(owner, constraint.asRelates(), registry);
         else throw new GraknException(ILLEGAL_STATE);
+    }
+
+    public static TypeConstraint of(final TypeVariable owner,
+                                    final graql.lang.pattern.constraint.ConceptConstraint constraint,
+                                    final VariableRegistry registry) {
+        if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
+        else throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
@@ -93,14 +100,6 @@ public abstract class TypeConstraint extends Constraint {
         return false;
     }
 
-    public boolean isThen() {
-        return false;
-    }
-
-    public boolean isWhen() {
-        return false;
-    }
-
     public boolean isOwns() {
         return false;
     }
@@ -110,6 +109,10 @@ public abstract class TypeConstraint extends Constraint {
     }
 
     public boolean isRelates() {
+        return false;
+    }
+
+    public boolean isIs() {
         return false;
     }
 
@@ -133,7 +136,6 @@ public abstract class TypeConstraint extends Constraint {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(RegexConstraint.class)));
     }
 
-
     public OwnsConstraint asOwns() {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(OwnsConstraint.class)));
     }
@@ -146,4 +148,7 @@ public abstract class TypeConstraint extends Constraint {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(RelatesConstraint.class)));
     }
 
+    public IsConstraint asIs() {
+        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IsConstraint.class)));
+    }
 }

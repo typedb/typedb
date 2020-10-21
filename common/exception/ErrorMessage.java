@@ -18,6 +18,8 @@
 
 package grakn.core.common.exception;
 
+import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
+
 public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
     private ErrorMessage(final String codePrefix, final int codeNumber, final String messagePrefix, final String messageBody) {
@@ -142,19 +144,23 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         }
     }
 
-    public static class Query extends ErrorMessage {
+    public static class Pattern extends ErrorMessage {
 
-        public static final Query INVALID_CASTING =
-                new Query(1, "The class '%s' cannot be casted to '%s'.");
-        public static final Query ANONYMOUS_TYPE_VARIABLE =
-                new Query(2, "Attempted to refer to a type using an anonymous variable. Their intended use is for inserting things.");
-        public static final Query UNBOUNDED_NEGATION =
-                new Query(3, "Invalid query containing unbounded negation pattern.");
+        public static final Pattern INVALID_CASTING =
+                new Pattern(1, "The class '%s' cannot be casted to '%s'.");
+        public static final Pattern ANONYMOUS_CONCEPT_VARIABLE =
+                new Pattern(2, "Attempted to refer to a concept using an anonymous variable. Their intended use if for inserting things.");
+        public static final Pattern ANONYMOUS_TYPE_VARIABLE =
+                new Pattern(3, "Attempted to refer to a type using an anonymous variable. Their intended use is for inserting things.");
+        public static final Pattern UNBOUNDED_CONCEPT_VARIABLE =
+                new Pattern(4, "Invalid query containing unbounded concept variable '%s'.");
+        public static final Pattern UNBOUNDED_NEGATION =
+                new Pattern(5, "Invalid query containing unbounded negation pattern.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Execution";
 
-        Query(final int number, final String message) {
+        Pattern(final int number, final String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -350,6 +356,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(37, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it is currently owned by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_HAS_INSTANCES =
                 new TypeWrite(38, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
+        public static final TypeWrite TYPE_CONSTRAINT_UNACCEPTED =
+                new TypeWrite(39, "The type constraint '%s' is not accepted in a define/undefine query.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";

@@ -39,11 +39,9 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.constraint.thing.ValueOperation;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
-import graql.lang.common.GraqlToken;
+import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
@@ -69,6 +67,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISS
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REASSERTION;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static graql.lang.common.GraqlToken.Constraint.IS;
 import static java.util.stream.Collectors.toSet;
 
 public class Inserter {
@@ -79,9 +78,9 @@ public class Inserter {
     private final Context.Query context;
     private final ConceptMap existing;
     private final Map<Reference, Thing> inserted;
-    private final Set<Variable> variables;
+    private final Set<ThingVariable> variables;
 
-    private Inserter(final ConceptManager conceptMgr, final Set<Variable> variables,
+    private Inserter(final ConceptManager conceptMgr, final Set<ThingVariable> variables,
                      final ConceptMap existing, final Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
@@ -100,15 +99,13 @@ public class Inserter {
                                   final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
                                   final ConceptMap existing, final Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Inserter(conceptMgr, Variable.createFromThings(variables), existing, context);
+            return new Inserter(conceptMgr, VariableRegistry.createFromThings(variables).things(), existing, context);
         }
     }
 
     public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            variables.forEach(variable -> {
-                if (variable.isThing()) insert(variable.asThing());
-            });
+            variables.forEach(this::insert);
             return new ConceptMap(inserted);
         }
     }
@@ -151,8 +148,8 @@ public class Inserter {
                 throw new GraknException(THING_ISA_IID_CONFLICT.message(
                         variable.iid().get(), variable.isa().iterator().next().type().label().get().label())
                 );
-            } else if (!variable.neq().isEmpty()) {
-                throw new GraknException(THING_CONSTRAINT_UNACCEPTED.message(GraqlToken.Comparator.NEQ));
+            } else if (!variable.is().isEmpty()) {
+                throw new GraknException(THING_CONSTRAINT_UNACCEPTED.message(IS));
             }
         }
     }
@@ -227,19 +224,18 @@ public class Inserter {
             if (variable.value().size() > 1) {
                 throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY.message(variable.reference(), attributeType.getLabel()));
             } else if (!variable.value().isEmpty() &&
-                    (valueConstraint = variable.value().iterator().next()).operation().isAssignment()) {
-                final ValueOperation.Assignment<?> valueAssignment = valueConstraint.operation().asAssignment();
+                    (valueConstraint = variable.value().iterator().next()).isValueEquality()) {
                 switch (attributeType.getValueType()) {
                     case LONG:
-                        return attributeType.asLong().put(valueAssignment.asLong().value());
+                        return attributeType.asLong().put(valueConstraint.asLong().value());
                     case DOUBLE:
-                        return attributeType.asDouble().put(valueAssignment.asDouble().value());
+                        return attributeType.asDouble().put(valueConstraint.asDouble().value());
                     case BOOLEAN:
-                        return attributeType.asBoolean().put(valueAssignment.asBoolean().value());
+                        return attributeType.asBoolean().put(valueConstraint.asBoolean().value());
                     case STRING:
-                        return attributeType.asString().put(valueAssignment.asString().value());
+                        return attributeType.asString().put(valueConstraint.asString().value());
                     case DATETIME:
-                        return attributeType.asDateTime().put(valueAssignment.asDateTime().value());
+                        return attributeType.asDateTime().put(valueConstraint.asDateTime().value());
                     default:
                         assert false;
                         return null;

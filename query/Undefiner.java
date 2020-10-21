@@ -35,7 +35,7 @@ import grakn.core.pattern.constraint.type.RegexConstraint;
 import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableRegistry;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -54,6 +54,8 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFIN
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_MANY;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class Undefiner {
 
@@ -81,7 +83,7 @@ public class Undefiner {
                                    final List<graql.lang.pattern.variable.TypeVariable> variables,
                                    final List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Undefiner(conceptMgr, Variable.createFromTypes(variables), rules);
+            return new Undefiner(conceptMgr, VariableRegistry.createFromTypes(variables).types(), rules);
         }
     }
 
@@ -112,6 +114,8 @@ public class Undefiner {
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelConstraint.scopedLabel()));
+            } else if (!variable.is().isEmpty()) {
+                throw new GraknException(TYPE_CONSTRAINT_UNACCEPTED.message(IS));
             } else if (labelConstraint.scope().isPresent()) return; // do nothing
             else if (undefined.contains(variable)) return; // do nothing
 
