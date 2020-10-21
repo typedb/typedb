@@ -124,5 +124,4 @@ public class ThingConstraint extends Constraint {
     public HasConstraint asHas() {
         throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(HasConstraint.class)));
     }
-
 }

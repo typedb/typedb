@@ -34,8 +34,8 @@ import static graql.lang.common.GraqlToken.Comparator.EQ;
 
 public abstract class ValueConstraint<T> extends ThingConstraint {
 
-    private final GraqlToken.Comparator comparator;
-    private final T value;
+    final GraqlToken.Comparator comparator;
+    final T value;
     private final int hash;
 
     ValueConstraint(final ThingVariable owner, final GraqlToken.Comparator comparator, final T value) {
@@ -167,6 +167,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         @Override
         public Long asLong() {
             return this;
+        }
+
+        @Override
+        public Double asDouble() {
+            return new Double(owner, comparator, value);
         }
     }
 
