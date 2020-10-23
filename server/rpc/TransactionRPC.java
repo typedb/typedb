@@ -395,14 +395,14 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
      * The iterators operate by batching results to reduce total round-trips.
      */
     public static class Iterators {
-        private final int batchSize;
+        private final int defaultBatchSize;
         private final Consumer<Transaction.Res> responseSender;
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(0);
         private final Map<Integer, BatchingIterator> iterators = new ConcurrentHashMap<>();
 
         Iterators(final Consumer<Transaction.Res> responseSender, final int batchSize) {
             this.responseSender = responseSender;
-            this.batchSize = batchSize;
+            this.defaultBatchSize = batchSize;
         }
 
         /**
@@ -410,6 +410,10 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
          */
         public void startBatchIterating(final Iterator<Transaction.Res> iterator) {
             new BatchingIterator(iterator).iterateBatch();
+        }
+
+        public void startBatchIterating(final Iterator<Transaction.Res> iterator, final Options.Query options) {
+            new BatchingIterator(iterator, options.batchSize()).iterateBatch();
         }
 
         /**
@@ -435,10 +439,16 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
         class BatchingIterator {
             private final Iterator<Transaction.Res> iterator;
+            private final int batchSize;
             private int id = -1;
 
             BatchingIterator(final Iterator<Transaction.Res> iterator) {
+                this(iterator, defaultBatchSize);
+            }
+
+            BatchingIterator(final Iterator<Transaction.Res> iterator, final int batchSize) {
                 this.iterator = iterator;
+                this.batchSize = batchSize;
             }
 
             private boolean isSaved() {
@@ -447,7 +457,8 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
 
             void iterateBatch() {
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
-                    responseSender.accept(iterator.next());
+                    final Transaction.Res currentBatch = iterator.next();
+                    responseSender.accept(currentBatch);
                 }
 
                 if (iterator.hasNext()) {

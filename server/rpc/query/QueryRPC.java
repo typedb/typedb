@@ -97,7 +97,7 @@ public class QueryRPC {
                                 .setMatchIterRes(QueryProto.Graql.Match.Iter.Res.newBuilder()
                                                          .setAnswer(conceptMap(a))).build())
         );
-        iterators.startBatchIterating(responses);
+        iterators.startBatchIterating(responses, options);
     }
 
     private void insert(final Options.Query options, final QueryProto.Graql.Insert.Iter.Req req) {
@@ -109,7 +109,7 @@ public class QueryRPC {
                                 .setInsertIterRes(QueryProto.Graql.Insert.Iter.Res.newBuilder()
                                                           .setAnswer(conceptMap(a))).build())
         );
-        iterators.startBatchIterating(responses);
+        iterators.startBatchIterating(responses, options);
     }
 
     private void delete(final Options.Query options, final QueryProto.Graql.Delete.Req req) {

@@ -28,7 +28,7 @@ public class ServerDefaults {
     public static final Path DATA_DIR = GRAKN_DIR.resolve("server/data");
     public static final File PROPERTIES_FILE = GRAKN_DIR.resolve("server/conf/grakn.properties").toFile();
     public static final File ASCII_LOGO_FILE = GRAKN_DIR.resolve("server/resources/grakn-core-ascii.txt").toFile();
-    public static final int DEFAULT_DATABASE_PORT = 48555;
+    public static final int DEFAULT_DATABASE_PORT = 1729;
 
     private static Path getGraknDir() {
         String homeDir;
