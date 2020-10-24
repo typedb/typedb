@@ -19,7 +19,6 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -33,27 +32,21 @@ import static grakn.common.collection.Collections.set;
 
 public class HasConstraint extends ThingConstraint {
 
-    private final TypeVariable type;
     private final ThingVariable attribute;
     private final int hash;
     private List<Traversal> traversals;
 
-    private HasConstraint(final ThingVariable owner, final TypeVariable type, final ThingVariable attribute) {
+    private HasConstraint(final ThingVariable owner, final ThingVariable attribute) {
         super(owner);
-        assert type != null && attribute != null;
-        this.type = type;
+        assert attribute != null;
         this.attribute = attribute;
-        this.hash = Objects.hash(HasConstraint.class, this.owner, this.type, this.attribute);
+        this.hash = Objects.hash(HasConstraint.class, this.owner, this.attribute);
     }
 
     public static HasConstraint of(final ThingVariable owner,
                                    final graql.lang.pattern.constraint.ThingConstraint.Has constraint,
                                    final VariableRegistry register) {
-        return new HasConstraint(owner, register.register(constraint.type()), register.register(constraint.attribute()));
-    }
-
-    public TypeVariable type() {
-        return type;
+        return new HasConstraint(owner, register.register(constraint.attribute()));
     }
 
     public ThingVariable attribute() {
@@ -91,9 +84,7 @@ public class HasConstraint extends ThingConstraint {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final HasConstraint that = (HasConstraint) o;
-        return (this.owner.equals(that.owner) &&
-                this.type.equals(that.type) &&
-                this.attribute.equals(that.attribute));
+        return (this.owner.equals(that.owner) && this.attribute.equals(that.attribute));
     }
 
     @Override

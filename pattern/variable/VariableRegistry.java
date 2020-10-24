@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
@@ -163,15 +162,5 @@ public class VariableRegistry {
             types.remove(reference);
             return things.put(reference, variable.asThing());
         } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    public TypeVariable computeTypeIfAbsent(final Reference reference, final Function<Reference, TypeVariable> constructor) {
-        if (things.containsKey(reference)) throw GraknException.of(ILLEGAL_STATE);
-        return types.computeIfAbsent(reference, constructor);
-    }
-
-    public ThingVariable computeThingIfAbsent(final Reference reference, final Function<Reference, ThingVariable> constructor) {
-        if (types.containsKey(reference)) throw GraknException.of(ILLEGAL_STATE);
-        return things.computeIfAbsent(reference, constructor);
     }
 }

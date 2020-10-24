@@ -43,7 +43,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ATTRIBUTE_UNOWNED;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_OWN_ATTRIBUTE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
@@ -94,7 +94,7 @@ public abstract class ThingImpl implements Thing {
     @Override
     public void setHas(final Attribute attribute) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
-            throw exception(THING_ATTRIBUTE_UNOWNED.message(vertex.type().label()));
+            throw exception(THING_CANNOT_OWN_ATTRIBUTE.message(attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).findAny().isPresent()) {
                 throw exception(THING_KEY_OVER.message(attribute.getType().getLabel(), getType().getLabel()));

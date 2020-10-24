@@ -190,8 +190,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(2, "Attempted to insert a string larger than the maximum size.");
         public static final ThingWrite CONCURRENT_ATTRIBUTE_WRITE_DELETE =
                 new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes).");
-        public static final ThingWrite THING_ATTRIBUTE_UNOWNED =
-                new ThingWrite(4, "Attempted to assign an attribute to a(n) '%s' that is not defined to have that attribute type.");
+        public static final ThingWrite THING_CANNOT_OWN_ATTRIBUTE =
+                new ThingWrite(4, "Attribute of type '%s' is not defined to be owned by type '%s'.");
         public static final ThingWrite THING_KEY_OVER =
                 new ThingWrite(5, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
@@ -217,7 +217,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final ThingWrite THING_ISA_MISSING =
                 new ThingWrite(16, "The thing variable '%s' cannot be asserted as a new instance without providing its type (isa).");
         public static final ThingWrite THING_CONSTRAINT_TYPE_VARIABLE =
-                new ThingWrite(17, "Types can only be referred to by their labels in insert queries, unlike the the type variable '%s'.");
+                new ThingWrite(17, "Types can only be referred to by their labels in 'insert' queries or 'then' clauses, unlike the the type variable '%s'.");
         public static final ThingWrite THING_CONSTRAINT_UNACCEPTED =
                 new ThingWrite(18, "The thing constraint '%s' is not accepted in an insert query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
@@ -232,8 +232,6 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(23, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
                 new ThingWrite(24, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
-        public static final ThingWrite ATTRIBUTE_TYPE_MISMATCH =
-                new ThingWrite(25, "Attribute of type '%s' cannot be owned as type '%s'.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";

@@ -28,6 +28,7 @@ import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
+import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.Variable;
@@ -37,6 +38,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_TYPE_VARIABLE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
@@ -124,14 +127,21 @@ public class RuleImpl implements Rule {
         //       First you filter out TypeConstraints, then you retrieved it again via constraint.asIsa().type()
         then().stream().flatMap(var -> var.constraints().stream())
                 .filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
-            if (constraint.isHas()) constraint.asHas().type().label().ifPresent(l -> putConclusion(l.label()));
-            else if (constraint.isIsa()) constraint.asIsa().type().label().ifPresent(l -> putConclusion(l.label()));
+            Set<IsaConstraint> isaConstraints;
+            if (constraint.isHas() && !(isaConstraints = constraint.asHas().attribute().isa()).isEmpty()) {
+                if (isaConstraints.size() > 1) throw GraknException.of(THING_ISA_TOO_MANY);
+                else putConclusion(isaConstraints.iterator().next().type().label().orElseThrow(
+                        () -> GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE)
+                ));
+            } else if (constraint.isIsa()) putConclusion(constraint.asIsa().type().label().orElseThrow(
+                    () -> GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE)
+            ));
             else if (constraint.isRelation()) putRelationConclusion(constraint.asRelation());
         });
     }
 
-    private void putConclusion(String typeLabel) {
-        TypeVertex type = graphMgr.schema().getType(typeLabel);
+    private void putConclusion(LabelConstraint labelConstraint) {
+        TypeVertex type = graphMgr.schema().getType(labelConstraint.label());
         if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(type));
         vertex.outs().put(CONCLUSION, type);
     }

@@ -19,7 +19,6 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
@@ -279,17 +278,7 @@ public class Inserter {
 
     private void insertHas(final Thing thing, final Set<HasConstraint> hasConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "inserthas")) {
-            hasConstraints.forEach(has -> {
-                final AttributeType attributeType = getThingType(has.type()).asAttributeType();
-                final Attribute attribute = insert(has.attribute()).asAttribute();
-                if (!attributeType.equals(attribute.getType()) &&
-                        attribute.getType().getSupertypes().noneMatch(sup -> sup.equals(attributeType))) {
-                    throw new GraknException(ErrorMessage.ThingWrite.ATTRIBUTE_TYPE_MISMATCH.message(
-                            attribute.getType().getLabel(), attributeType.getLabel()
-                    ));
-                }
-                thing.setHas(attribute);
-            });
+            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
         }
     }
 }
