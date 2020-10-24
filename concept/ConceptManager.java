@@ -184,4 +184,12 @@ public final class ConceptManager {
     public GraknException exception(final String errorMessage) {
         return graphMgr.exception(errorMessage);
     }
+
+    public GraknException exception(final Exception exception) {
+        return graphMgr.exception(exception);
+    }
+
+    public GraknException exception(final GraknException exception) {
+        return graphMgr.exception(exception);
+    }
 }

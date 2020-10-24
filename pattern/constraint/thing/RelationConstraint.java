@@ -22,6 +22,8 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
+import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -31,18 +33,20 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
 public class RelationConstraint extends ThingConstraint {
 
-    private final List<RolePlayer> players;
+    private final List<RolePlayer> rolePlayers;
     private final int hash;
+    private List<Traversal> traversals;
 
-    private RelationConstraint(final ThingVariable owner, final List<RolePlayer> players) {
+    private RelationConstraint(final ThingVariable owner, final List<RolePlayer> rolePlayers) {
         super(owner);
-        assert players != null && !players.isEmpty();
-        this.players = new ArrayList<>(players);
-        this.hash = Objects.hash(RelationConstraint.class, this.owner, this.players);
+        assert rolePlayers != null && !rolePlayers.isEmpty();
+        this.rolePlayers = new ArrayList<>(rolePlayers);
+        this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
     }
 
     public static RelationConstraint of(final ThingVariable owner,
@@ -53,7 +57,7 @@ public class RelationConstraint extends ThingConstraint {
     }
 
     public List<RolePlayer> players() {
-        return players;
+        return rolePlayers;
     }
 
     @Override
@@ -64,6 +68,29 @@ public class RelationConstraint extends ThingConstraint {
             if (player.roleType().isPresent()) variables.add(player.roleType().get());
         });
         return variables;
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) {
+            traversals = new ArrayList<>();
+            rolePlayers.forEach(rp -> {
+                if (rp.roleType().isPresent() && rp.roleType().get().reference().isName()) {
+                    Reference role = Reference.anonymous(false);
+                    traversals.add(Traversal.Path.Relating.of(owner.reference(), role));
+                    traversals.add(Traversal.Path.Playing.of(rp.player().reference(), role));
+                    traversals.add(Traversal.Path.Isa.of(role, rp.roleType().get().reference(), false));
+                } else if (rp.roleType().isPresent()) {
+                    traversals.add(Traversal.Path.RolePlayer.of(
+                            owner.reference(), rp.roleType().get().reference(), rp.player().reference()
+                    ));
+                } else {
+                    traversals.add(Traversal.Path.RolePlayer.of(owner.reference(), rp.player().reference()));
+                }
+            });
+            traversals = unmodifiableList(traversals);
+        }
+        return traversals;
     }
 
     @Override
@@ -81,7 +108,7 @@ public class RelationConstraint extends ThingConstraint {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final RelationConstraint that = (RelationConstraint) o;
-        return (this.owner.equals(that.owner) && this.players.equals(that.players));
+        return (this.owner.equals(that.owner) && this.rolePlayers.equals(that.rolePlayers));
     }
 
     @Override

@@ -24,7 +24,6 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.planner.Planner;
 import grakn.core.traversal.TraversalEngine;
 
 import static grakn.common.collection.Collections.list;
@@ -35,13 +34,9 @@ import static grakn.core.common.iterator.Iterators.parallel;
 public class Reasoner {
 
     private final TraversalEngine traversalEng;
-    private final ConceptManager conceptMgr;
-    private final Planner planner;
 
     public Reasoner(final TraversalEngine traversalEng, final ConceptManager conceptMgr) {
         this.traversalEng = traversalEng;
-        this.conceptMgr = conceptMgr;
-        this.planner = new Planner(conceptMgr);
     }
 
     public ResourceIterator<ConceptMap> execute(final Disjunction disjunction) {
@@ -53,19 +48,24 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(final Conjunction conjunction) {
+        Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
         ResourceIterator<ConceptMap> answers = link(list(
-                traversalEng.execute(planner.plan(conjunction)).map(ConceptMap::of),
-                infer(conjunction)
+                traversalEng.execute(conjunctionResolvedTypes.traversals()).map(ConceptMap::of),
+                infer(conjunctionResolvedTypes)
         ));
 
-        if (conjunction.negations().isEmpty()) return answers;
-        else return answers.filter(answer -> !parallel(iterate(conjunction.negations()).map(
+        if (conjunctionResolvedTypes.negations().isEmpty()) return answers;
+        else return answers.filter(answer -> !parallel(iterate(conjunctionResolvedTypes.negations()).map(
                 negation -> execute(negation.disjunction(), answer)
         ).toList()).hasNext());
     }
 
     public ResourceIterator<ConceptMap> execute(final Conjunction conjunction, final ConceptMap bounds) {
         return null; // TODO
+    }
+
+    private Conjunction resolveTypes(final Conjunction conjunction) {
+        return conjunction; // TODO
     }
 
     private ParallelIterators<ConceptMap> infer(final Conjunction conjunction) {

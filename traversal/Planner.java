@@ -16,23 +16,21 @@
  *
  */
 
-package grakn.core.planner;
+package grakn.core.traversal;
 
-import grakn.core.concept.ConceptManager;
-import grakn.core.pattern.Conjunction;
-import grakn.core.traversal.Traversal;
+import grakn.core.graph.GraphManager;
 
 import java.util.List;
 
 public class Planner {
 
-    private final ConceptManager conceptMgr;
+    private final GraphManager graphMgr;
 
-    public Planner(final ConceptManager conceptMgr) {
-        this.conceptMgr = conceptMgr;
+    public Planner(final GraphManager graphMgr) {
+        this.graphMgr = graphMgr;
     }
 
-    public List<Traversal> plan(final Conjunction conjunction) {
+    public List<Traversal.Directed> plan(final List<Traversal> conjunction) {
         return null; // TODO
     }
 }

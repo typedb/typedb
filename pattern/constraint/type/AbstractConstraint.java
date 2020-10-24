@@ -19,15 +19,19 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.traversal.Traversal;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class AbstractConstraint extends TypeConstraint {
 
     private final int hash;
+    private List<Traversal> traversals;
 
     private AbstractConstraint(final TypeVariable owner) {
         super(owner);
@@ -41,6 +45,12 @@ public class AbstractConstraint extends TypeConstraint {
     @Override
     public Set<TypeVariable> variables() {
         return set();
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) traversals = list(Traversal.Property.Abstract.of(owner.reference()));
+        return traversals;
     }
 
     @Override

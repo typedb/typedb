@@ -31,7 +31,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public class ThingConstraint extends Constraint {
+public abstract class ThingConstraint extends Constraint {
 
     final ThingVariable owner;
 

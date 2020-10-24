@@ -49,6 +49,10 @@ public interface Storage {
 
     GraknException exception(String message);
 
+    GraknException exception(Exception message);
+
+    GraknException exception(GraknException message);
+
     interface Schema extends Storage {
 
         void incrementReference();

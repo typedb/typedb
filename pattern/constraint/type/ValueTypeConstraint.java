@@ -19,17 +19,21 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlArg;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class ValueTypeConstraint extends TypeConstraint {
 
     private final GraqlArg.ValueType valueType;
     private final int hash;
+    private List<Traversal> traversals;
 
     private ValueTypeConstraint(final TypeVariable owner, final GraqlArg.ValueType valueType) {
         super(owner);
@@ -49,6 +53,12 @@ public class ValueTypeConstraint extends TypeConstraint {
     @Override
     public Set<TypeVariable> variables() {
         return set();
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) traversals = list(Traversal.Property.ValueType.of(owner.reference(), valueType));
+        return traversals;
     }
 
     @Override

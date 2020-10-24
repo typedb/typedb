@@ -36,6 +36,7 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class Conjunction implements Pattern {
@@ -53,7 +54,8 @@ public class Conjunction implements Pattern {
         return create(graql, null);
     }
 
-    public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql, @Nullable VariableRegistry bounds) {
+    public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql,
+                                     @Nullable final VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             List<BoundVariable> graqlVariables = new ArrayList<>();
             List<graql.lang.pattern.Negation<?>> graqlNegations = new ArrayList<>();
@@ -90,6 +92,6 @@ public class Conjunction implements Pattern {
     }
 
     public List<Traversal> traversals() {
-        return null;
+        return constraints.stream().flatMap(constraint -> constraint.traversals().stream()).collect(toList());
     }
 }

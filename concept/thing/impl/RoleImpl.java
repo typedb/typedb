@@ -20,8 +20,8 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.graph.vertex.ThingVertex;
 
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Thing.RELATES;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Objects.requireNonNull;
 
@@ -38,14 +38,14 @@ public class RoleImpl {
     }
 
     void optimise() {
-        final ThingVertex relation = vertex.ins().edge(RELATES).from().next();
-        final ThingVertex player = vertex.ins().edge(PLAYS).from().next();
+        final ThingVertex relation = vertex.ins().edge(RELATING).from().next();
+        final ThingVertex player = vertex.ins().edge(PLAYING).from().next();
         relation.outs().put(ROLEPLAYER, player, vertex);
     }
 
     public void delete() {
-        final ThingVertex relation = vertex.ins().edge(RELATES).from().next();
-        final ThingVertex player = vertex.ins().edge(PLAYS).from().next();
+        final ThingVertex relation = vertex.ins().edge(RELATING).from().next();
+        final ThingVertex player = vertex.ins().edge(PLAYING).from().next();
         relation.outs().edge(ROLEPLAYER, player, vertex).delete();
         vertex.delete();
     }

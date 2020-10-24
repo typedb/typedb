@@ -20,17 +20,21 @@ package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class IsConstraint extends TypeConstraint {
 
     private final TypeVariable variable;
     private final int hash;
+    private List<Traversal> traversals;
 
     private IsConstraint(final TypeVariable owner, final TypeVariable variable) {
         super(owner);
@@ -51,6 +55,12 @@ public class IsConstraint extends TypeConstraint {
     @Override
     public Set<TypeVariable> variables() {
         return set(variable());
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) traversals = list(Traversal.Path.Is.of(owner.reference(), variable.reference()));
+        return traversals;
     }
 
     @Override

@@ -21,6 +21,7 @@ package grakn.core.traversal;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.List;
 import java.util.Map;
@@ -28,12 +29,15 @@ import java.util.Map;
 public class TraversalEngine {
 
     private final GraphManager graphMgr;
+    private final Planner planner;
 
     public TraversalEngine(final GraphManager graphMgr) {
         this.graphMgr = graphMgr;
+        this.planner = new Planner(graphMgr);
     }
 
-    public ResourceIterator<Map<String, Vertex<?, ?>>> execute(final List<Traversal> traversals) {
+    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(final List<Traversal> traversals) {
+        List<Traversal.Directed> plannedTraversals = planner.plan(traversals);
         return null;
     }
 }

@@ -18,21 +18,27 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
 
 public class RelatesConstraint extends TypeConstraint {
 
     private final TypeVariable roleType;
     private final TypeVariable overriddenRoleType;
     private final int hash;
+    private List<Traversal> traversals;
 
     private RelatesConstraint(final TypeVariable owner, final TypeVariable roleType, @Nullable final TypeVariable overriddenRoleType) {
         super(owner);
@@ -61,6 +67,13 @@ public class RelatesConstraint extends TypeConstraint {
     @Override
     public Set<TypeVariable> variables() {
         return overriddenRoleType == null ? set(roleType) : set(roleType, overriddenRoleType);
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
+        if (traversals == null) traversals = list(Traversal.Path.Relates.of(owner.reference(), roleType.reference()));
+        return traversals;
     }
 
     @Override

@@ -18,8 +18,6 @@
 
 package grakn.core.common.exception;
 
-import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
-
 public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
     private ErrorMessage(final String codePrefix, final int codeNumber, final String messagePrefix, final String messageBody) {
@@ -270,6 +268,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(3, "The type '%s' is not found.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+        public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
+                new TypeRead(5, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
 
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";
@@ -303,7 +303,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MODIFIED =
                 new TypeWrite(11, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
-                new TypeWrite(12, "An attribute value type (in this case '%s') cannot be undefine. You can only undefine the attribute type (in this case '%s') itself.");
+                new TypeWrite(12, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
         public static final TypeWrite ATTRIBUTE_SUBTYPE_NOT_ABSTRACT =
                 new TypeWrite(13, "The attribute type '%s' cannot be set to abstract as its subtypes are not abstract.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =

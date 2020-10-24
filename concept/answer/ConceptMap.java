@@ -37,7 +37,7 @@ public class ConceptMap implements Answer {
         this.concepts = concepts;
     }
 
-    public static ConceptMap of(final Map<String, Vertex<?, ?>> vertexMap) {
+    public static ConceptMap of(final Map<Reference, Vertex<?, ?>> vertexMap) {
         return null; // TODO
     }
 

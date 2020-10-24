@@ -22,10 +22,13 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class HasConstraint extends ThingConstraint {
@@ -33,6 +36,7 @@ public class HasConstraint extends ThingConstraint {
     private final TypeVariable type;
     private final ThingVariable attribute;
     private final int hash;
+    private List<Traversal> traversals;
 
     private HasConstraint(final ThingVariable owner, final TypeVariable type, final ThingVariable attribute) {
         super(owner);
@@ -59,6 +63,17 @@ public class HasConstraint extends ThingConstraint {
     @Override
     public Set<Variable> variables() {
         return set(attribute);
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) {
+            traversals = list(
+                    Traversal.Path.Has.of(owner.reference(), attribute.reference()),
+                    Traversal.Path.Isa.of(attribute.reference(), owner.reference(), false)
+            );
+        }
+        return traversals;
     }
 
     @Override

@@ -48,7 +48,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISS
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
@@ -163,7 +163,7 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public Stream<? extends RoleType> getPlays() {
-        return vertex.outs().edge(PLAYS).to().map(ThingVertex::type).map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
+        return vertex.outs().edge(PLAYING).to().map(ThingVertex::type).map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
     }
 
     @Override

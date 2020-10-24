@@ -36,8 +36,8 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Thing.RELATES;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static java.util.Arrays.stream;
@@ -68,20 +68,20 @@ public class RelationImpl extends ThingImpl implements Relation {
         }
 
         final RoleImpl role = ((RoleTypeImpl) roleType).create();
-        vertex.outs().put(RELATES, role.vertex);
-        ((ThingImpl) player).vertex.outs().put(PLAYS, role.vertex);
+        vertex.outs().put(RELATING, role.vertex);
+        ((ThingImpl) player).vertex.outs().put(PLAYING, role.vertex);
         role.optimise();
     }
 
     @Override
     public void removePlayer(final RoleType roleType, final Thing player) {
         final ResourceIterator<ThingVertex> role = vertex.outs().edge(
-                RELATES, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
-        ).to().filter(v -> v.ins().edge(PLAYS, ((ThingImpl) player).vertex) != null);
+                RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
+        ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);
 
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
-            if (!vertex.outs().edge(RELATES).to().hasNext()) this.delete();
+            if (!vertex.outs().edge(RELATING).to().hasNext()) this.delete();
         }
     }
 
@@ -117,7 +117,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void validate() {
         super.validate();
-        if (!vertex.outs().edge(RELATES).to().hasNext()) {
+        if (!vertex.outs().edge(RELATING).to().hasNext()) {
             throw exception(RELATION_PLAYER_MISSING.message(getType().getLabel()));
         }
     }

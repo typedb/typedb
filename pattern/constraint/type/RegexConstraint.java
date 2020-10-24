@@ -19,16 +19,20 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.traversal.Traversal;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class RegexConstraint extends TypeConstraint {
 
     private final java.util.regex.Pattern regex;
     private final int hash;
+    private List<Traversal> traversals;
 
     private RegexConstraint(final TypeVariable owner, final java.util.regex.Pattern regex) {
         super(owner);
@@ -48,6 +52,12 @@ public class RegexConstraint extends TypeConstraint {
     @Override
     public Set<TypeVariable> variables() {
         return set();
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) traversals = list(Traversal.Property.Regex.of(owner.reference(), regex.pattern()));
+        return traversals;
     }
 
     @Override

@@ -50,6 +50,14 @@ public class GraphManager {
         return dataGraph.storage().exception(message);
     }
 
+    public GraknException exception(final Exception exception) {
+        return dataGraph.storage().exception(exception);
+    }
+
+    public GraknException exception(final GraknException exception) {
+        return dataGraph.storage().exception(exception);
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;

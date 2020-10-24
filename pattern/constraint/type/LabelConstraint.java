@@ -19,16 +19,21 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.traversal.Traversal;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import static grakn.common.collection.Collections.list;
 
 public class LabelConstraint extends TypeConstraint {
 
     private final String label;
     private final String scope;
     private final int hash;
+    private List<Traversal> traversals;
 
     private LabelConstraint(final TypeVariable owner, @Nullable final String scope, final String label) {
         super(owner);
@@ -52,6 +57,12 @@ public class LabelConstraint extends TypeConstraint {
 
     public String scopedLabel() {
         return (scope != null ? scope + ":" : "") + label;
+    }
+
+    @Override
+    public List<Traversal> traversals() {
+        if (traversals == null) traversals = list(Traversal.Property.Label.of(owner.reference(), label, scope));
+        return traversals;
     }
 
     @Override

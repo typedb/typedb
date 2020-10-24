@@ -510,9 +510,16 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return new GraknException(message);
         }
 
-        GraknException exception(final Exception exception) {
+        @Override
+        public GraknException exception(final Exception exception) {
             RocksTransaction.this.close();
             return new GraknException(exception);
+        }
+
+        @Override
+        public GraknException exception(final GraknException exception) {
+            RocksTransaction.this.close();
+            return exception;
         }
 
         void validateTransactionIsOpen() {

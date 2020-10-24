@@ -20,9 +20,11 @@ package grakn.core.pattern.constraint.thing;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlToken;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -173,6 +175,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         public Double asDouble() {
             return new Double(owner, comparator, value);
         }
+
+        @Override
+        public List<Traversal> traversals() {
+            return null;
+        }
     }
 
     public static class Double extends ValueConstraint<java.lang.Double> {
@@ -189,6 +196,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         @Override
         public Double asDouble() {
             return this;
+        }
+
+        @Override
+        public List<Traversal> traversals() {
+            return null;
         }
     }
 
@@ -207,6 +219,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         public Boolean asBoolean() {
             return this;
         }
+
+        @Override
+        public List<Traversal> traversals() {
+            return null;
+        }
     }
 
     public static class String extends ValueConstraint<java.lang.String> {
@@ -223,6 +240,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         @Override
         public String asString() {
             return this;
+        }
+
+        @Override
+        public List<Traversal> traversals() {
+            return null;
         }
     }
 
@@ -241,6 +263,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         public DateTime asDateTime() {
             return this;
         }
+
+        @Override
+        public List<Traversal> traversals() {
+            return null;
+        }
     }
 
     public static class Variable extends ValueConstraint<ThingVariable> {
@@ -257,6 +284,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         @Override
         public Variable asVariable() {
             return this;
+        }
+
+        @Override
+        public List<Traversal> traversals() {
+            return null;
         }
     }
 }

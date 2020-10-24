@@ -62,28 +62,22 @@ public interface AttributeType extends ThingType {
     AttributeType.DateTime asDateTime();
 
     enum ValueType {
-        OBJECT(Encoding.ValueType.OBJECT, null),
-        BOOLEAN(Encoding.ValueType.BOOLEAN, GraqlArg.ValueType.BOOLEAN),
-        LONG(Encoding.ValueType.LONG, GraqlArg.ValueType.LONG),
-        DOUBLE(Encoding.ValueType.DOUBLE, GraqlArg.ValueType.DOUBLE),
-        STRING(Encoding.ValueType.STRING, GraqlArg.ValueType.STRING),
-        DATETIME(Encoding.ValueType.DATETIME, GraqlArg.ValueType.DATETIME);
+        OBJECT(Encoding.ValueType.OBJECT),
+        BOOLEAN(Encoding.ValueType.BOOLEAN),
+        LONG(Encoding.ValueType.LONG),
+        DOUBLE(Encoding.ValueType.DOUBLE),
+        STRING(Encoding.ValueType.STRING),
+        DATETIME(Encoding.ValueType.DATETIME);
 
-        private final Class<?> valueClass;
-        private final boolean isWritable;
-        private final boolean isKeyable;
-        private final GraqlArg.ValueType graqlValueType;
+        private final Encoding.ValueType encoding;
 
-        ValueType(final Encoding.ValueType encodingValueType, final GraqlArg.ValueType graqlValueType) {
-            this.valueClass = encodingValueType.valueClass();
-            this.isWritable = encodingValueType.isWritable();
-            this.isKeyable = encodingValueType.isKeyable();
-            this.graqlValueType = graqlValueType;
+        ValueType(final Encoding.ValueType encoding) {
+            this.encoding = encoding;
         }
 
         public static ValueType of(final Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
-                if (vt.valueClass.equals(valueClass)) {
+                if (vt.encoding.valueClass().equals(valueClass)) {
                     return vt;
                 }
             }
@@ -92,7 +86,7 @@ public interface AttributeType extends ThingType {
 
         public static ValueType of(final GraqlArg.ValueType valueType) {
             for (ValueType vt : ValueType.values()) {
-                if (Objects.equals(vt.graqlValueType, valueType)) {
+                if (Objects.equals(vt.encoding.graqlValueType(), valueType)) {
                     return vt;
                 }
             }
@@ -100,15 +94,15 @@ public interface AttributeType extends ThingType {
         }
 
         public Class<?> getValueClass() {
-            return valueClass;
+            return encoding.valueClass();
         }
 
         public boolean isWritable() {
-            return isWritable;
+            return encoding.isWritable();
         }
 
         public boolean isKeyable() {
-            return isKeyable;
+            return encoding.isKeyable();
         }
     }
 

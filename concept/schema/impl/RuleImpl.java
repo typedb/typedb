@@ -145,7 +145,8 @@ public class RuleImpl implements Rule {
             if (player.roleType().isPresent() && player.roleType().get().label().isPresent()) {
                 final String roleLabel = player.roleType().get().label().get().label();
                 RoleTypeImpl role = relationConcept.getRelates(roleLabel);
-                if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(player.roleType().get().label().get().scopedLabel()));
+                if (role == null)
+                    throw GraknException.of(TYPE_NOT_FOUND.message(player.roleType().get().label().get().scopedLabel()));
                 vertex.outs().put(CONCLUSION, role.vertex);
             }
         });

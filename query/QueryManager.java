@@ -19,6 +19,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
@@ -62,6 +63,10 @@ public class QueryManager {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             return Matcher.create(traversalEng, conceptMgr, query.conjunction(), context).execute();
+        } catch (GraknException exception) {
+            throw conceptMgr.exception(exception);
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
         }
     }
 
@@ -79,6 +84,10 @@ public class QueryManager {
             } else {
                 return iterate(list(Inserter.create(conceptMgr, query.variables(), context).execute()));
             }
+        } catch (GraknException exception) {
+            throw conceptMgr.exception(exception);
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
         }
     }
 
@@ -92,6 +101,10 @@ public class QueryManager {
             final Context.Query context = new Context.Query(transactionCtx, options);
             final List<ConceptMap> matched = match(query.match()).toList();
             matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
+        } catch (GraknException exception) {
+            throw conceptMgr.exception(exception);
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
         }
     }
 
@@ -99,6 +112,10 @@ public class QueryManager {
         if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             Definer.create(conceptMgr, query.variables(), query.rules()).execute();
+        } catch (GraknException exception) {
+            throw conceptMgr.exception(exception);
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
         }
     }
 
@@ -106,6 +123,10 @@ public class QueryManager {
         if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             Undefiner.create(conceptMgr, query.variables(), query.rules()).execute();
+        } catch (GraknException exception) {
+            throw conceptMgr.exception(exception);
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
         }
     }
 }

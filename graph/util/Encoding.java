@@ -19,6 +19,7 @@
 package grakn.core.graph.util;
 
 import grakn.core.common.exception.GraknException;
+import graql.lang.common.GraqlArg;
 
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
@@ -196,10 +197,14 @@ public class Encoding {
         EDGE_HAS_IN(-60, InfixType.EDGE),
         EDGE_PLAYS_OUT(70, InfixType.EDGE),
         EDGE_PLAYS_IN(-70, InfixType.EDGE),
-        EDGE_RELATES_OUT(80, InfixType.EDGE),
-        EDGE_RELATES_IN(-80, InfixType.EDGE),
-        EDGE_ROLEPLAYER_OUT(100, InfixType.EDGE, true),
-        EDGE_ROLEPLAYER_IN(-100, InfixType.EDGE, true),
+        EDGE_PLAYING_OUT(80, InfixType.EDGE),
+        EDGE_PLAYING_IN(-80, InfixType.EDGE),
+        EDGE_RELATES_OUT(90, InfixType.EDGE),
+        EDGE_RELATES_IN(-90, InfixType.EDGE),
+        EDGE_RELATING_OUT(100, InfixType.EDGE),
+        EDGE_RELATING_IN(-100, InfixType.EDGE),
+        EDGE_ROLEPLAYER_OUT(110, InfixType.EDGE, true),
+        EDGE_ROLEPLAYER_IN(-110, InfixType.EDGE, true),
         EDGE_CONDITION_POSITIVE_OUT(120, InfixType.EDGE),
         EDGE_CONDITION_POSITIVE_IN(-120, InfixType.EDGE),
         EDGE_CONDITION_NEGATIVE_OUT(121, InfixType.EDGE),
@@ -309,39 +314,45 @@ public class Encoding {
     }
 
     public enum ValueType {
-        OBJECT(0, Object.class, false, false),
-        BOOLEAN(10, Boolean.class, true, false),
-        LONG(20, Long.class, true, true),
-        DOUBLE(30, Double.class, true, false),
-        STRING(40, String.class, true, true),
-        DATETIME(50, LocalDateTime.class, true, true);
+        OBJECT(0, Object.class, false, false, null),
+        BOOLEAN(10, Boolean.class, true, false, GraqlArg.ValueType.BOOLEAN),
+        LONG(20, Long.class, true, true, GraqlArg.ValueType.LONG),
+        DOUBLE(30, Double.class, true, false, GraqlArg.ValueType.DOUBLE),
+        STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
+        DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
 
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;
         private final boolean isWritable;
+        private final GraqlArg.ValueType graqlValueType;
 
-        ValueType(final int key, final Class<?> valueClass, final boolean isWritable, final boolean isKeyable) {
+        ValueType(final int key, final Class<?> valueClass, final boolean isWritable, final boolean isKeyable,
+                  @Nullable final GraqlArg.ValueType graqlValueType) {
             this.key = (byte) key;
             this.valueClass = valueClass;
             this.isKeyable = isKeyable;
             this.isWritable = isWritable;
+            this.graqlValueType = graqlValueType;
         }
 
         public static ValueType of(final byte value) {
-            for (ValueType t : ValueType.values()) {
-                if (t.key == value) {
-                    return t;
-                }
+            for (ValueType vt : ValueType.values()) {
+                if (vt.key == value) return vt;
             }
             throw new GraknException(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(final Class<?> valueClass) {
-            for (ValueType t : ValueType.values()) {
-                if (t.valueClass == valueClass) {
-                    return t;
-                }
+            for (ValueType vt : ValueType.values()) {
+                if (vt.valueClass == valueClass) return vt;
+            }
+            throw new GraknException(UNRECOGNISED_VALUE);
+        }
+
+        public static ValueType of(final GraqlArg.ValueType graqlValueType) {
+            for (ValueType vt : ValueType.values()) {
+                if (vt.graqlValueType == graqlValueType) return vt;
             }
             throw new GraknException(UNRECOGNISED_VALUE);
         }
@@ -360,6 +371,10 @@ public class Encoding {
 
         public boolean isKeyable() {
             return isKeyable;
+        }
+
+        public GraqlArg.ValueType graqlValueType() {
+            return graqlValueType;
         }
     }
 
@@ -498,6 +513,16 @@ public class Encoding {
 
     public interface Edge {
 
+        static boolean isOut(final byte infix) {
+            return infix > 0;
+        }
+
+        Infix out();
+
+        Infix in();
+
+        boolean isOptimisation();
+
         Edge ISA = new Edge() {
 
             @Override
@@ -509,16 +534,6 @@ public class Encoding {
             @Override
             public boolean isOptimisation() { return false; }
         };
-
-        static boolean isOut(final byte infix) {
-            return infix > 0;
-        }
-
-        Infix out();
-
-        Infix in();
-
-        boolean isOptimisation();
 
         interface Schema extends Edge {
 
@@ -619,8 +634,8 @@ public class Encoding {
 
         enum Thing implements Edge {
             HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
-            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
-            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN),
+            PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),
+            RELATING(Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN),
             ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true, 1);
 
             private final Infix out;
