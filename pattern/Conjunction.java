@@ -20,7 +20,6 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -42,11 +41,11 @@ import static java.util.stream.Collectors.toSet;
 public class Conjunction implements Pattern {
 
     private static final String TRACE_PREFIX = "conjunction.";
-    private final Set<Constraint> constraints;
+    private final Set<Variable> variables;
     private final Set<Negation> negations;
 
-    public Conjunction(final Set<Constraint> constraints, final Set<Negation> negations) {
-        this.constraints = constraints;
+    public Conjunction(final Set<Variable> variables, final Set<Negation> negations) {
+        this.variables = variables;
         this.negations = negations;
     }
 
@@ -71,20 +70,14 @@ public class Conjunction implements Pattern {
             }
 
             VariableRegistry registry = VariableRegistry.createFromVariables(graqlVariables, bounds);
-            Set<Constraint> graknConstraints = registry.variables().stream()
-                    .flatMap(v -> v.constraints().stream()).collect(toSet());
             Set<Negation> graknNegations = graqlNegations.isEmpty() ? set() :
                     graqlNegations.stream().map(n -> Negation.create(n, registry)).collect(toSet());
-            return new Conjunction(graknConstraints, graknNegations);
+            return new Conjunction(registry.variables(), graknNegations);
         }
     }
 
-    public Set<Constraint> constraints() {
-        return constraints;
-    }
-
     public Set<Variable> variables() {
-        return constraints.stream().flatMap(constraint -> constraint.variables().stream()).collect(toSet());
+        return variables;
     }
 
     public Set<Negation> negations() {
@@ -92,6 +85,6 @@ public class Conjunction implements Pattern {
     }
 
     public List<Traversal> traversals() {
-        return constraints.stream().flatMap(constraint -> constraint.traversals().stream()).collect(toList());
+        return variables.stream().flatMap(variable -> variable.traversals().stream()).collect(toList());
     }
 }

@@ -24,6 +24,7 @@ import grakn.core.concept.type.impl.RelationTypeImpl;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.pattern.Conjunction;
@@ -81,44 +82,33 @@ public class RuleImpl implements Rule {
 
     private void putPositiveConditions() {
         vertex.outs().delete(CONDITION_POSITIVE);
-        when().constraints().stream()
+        when().variables().stream().flatMap(v -> v.constraints().stream())
                 .filter(constraint -> constraint.isType() && constraint.asType().isLabel())
-                .forEach(constraint -> {
-                    LabelConstraint label = constraint.asType().asLabel();
-                    if (label.scope().isPresent()) {
-                        TypeVertex relation = graphMgr.schema().getType(label.scope().get());
-                        TypeVertex role = graphMgr.schema().getType(label.label(), label.scope().get());
-                        if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(label.scopedLabel()));
-                        vertex.outs().put(CONDITION_POSITIVE, relation);
-                        vertex.outs().put(CONDITION_POSITIVE, role);
-                    } else {
-                        TypeVertex type = graphMgr.schema().getType(label.label());
-                        if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(label.label()));
-                        vertex.outs().put(CONDITION_POSITIVE, type);
-                    }
-                });
+                .forEach(constraint -> putCondition(constraint.asType().asLabel(), CONDITION_POSITIVE));
     }
 
     private void putNegativeConditions() {
         vertex.outs().delete(CONDITION_NEGATIVE);
         when().negations().stream()
                 .flatMap(negation -> negation.disjunction().conjunctions().stream())
-                .flatMap(negatedConjunction -> negatedConjunction.constraints().stream())
+                .flatMap(negatedConjunction -> negatedConjunction.variables().stream())
+                .flatMap(variable -> variable.constraints().stream())
                 .filter(constraint -> constraint.isType() && constraint.asType().isLabel())
-                .forEach(constraint -> {
-                    LabelConstraint label = constraint.asType().asLabel();
-                    if (label.scope().isPresent()) {
-                        TypeVertex relation = graphMgr.schema().getType(label.scope().get());
-                        TypeVertex role = graphMgr.schema().getType(label.label(), label.scope().get());
-                        if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(label.scopedLabel()));
-                        vertex.outs().put(CONDITION_NEGATIVE, relation);
-                        vertex.outs().put(CONDITION_NEGATIVE, role);
-                    } else {
-                        TypeVertex type = graphMgr.schema().getType(label.label());
-                        if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(label.label()));
-                        vertex.outs().put(CONDITION_NEGATIVE, type);
-                    }
-                });
+                .forEach(constraint -> putCondition(constraint.asType().asLabel(), CONDITION_NEGATIVE));
+    }
+
+    private void putCondition(final LabelConstraint constraint, final Encoding.Edge.Rule encoding) {
+        if (constraint.scope().isPresent()) {
+            TypeVertex relation = graphMgr.schema().getType(constraint.scope().get());
+            TypeVertex role = graphMgr.schema().getType(constraint.label(), constraint.scope().get());
+            if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(constraint.scopedLabel()));
+            vertex.outs().put(encoding, relation);
+            vertex.outs().put(encoding, role);
+        } else {
+            TypeVertex type = graphMgr.schema().getType(constraint.label());
+            if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(constraint.label()));
+            vertex.outs().put(encoding, type);
+        }
     }
 
     private void putConclusions() {

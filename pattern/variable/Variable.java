@@ -21,12 +21,15 @@ package grakn.core.pattern.variable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.constraint.Constraint;
+import grakn.core.traversal.Traversal;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.List;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static java.util.stream.Collectors.toList;
 
 public abstract class Variable implements Pattern {
 
@@ -36,12 +39,18 @@ public abstract class Variable implements Pattern {
         this.identifier = identifier;
     }
 
+    public abstract Set<? extends Constraint> constraints();
+
     public Identifier identifier() {
         return identifier;
     }
 
     public Reference reference() {
         return identifier.reference();
+    }
+
+    public List<Traversal> traversals() {
+        return constraints().stream().flatMap(c -> c.traversals().stream()).collect(toList());
     }
 
     public boolean isType() {
@@ -59,8 +68,6 @@ public abstract class Variable implements Pattern {
     public ThingVariable asThing() {
         throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(ThingVariable.class)));
     }
-
-    public abstract Set<? extends Constraint> constraints();
 
     @Override
     public abstract boolean equals(Object o);
