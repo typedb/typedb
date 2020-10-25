@@ -56,7 +56,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-behaviour]
+      dependencies: [build, build-dependency, test-integration, test-behaviour]
       script: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
