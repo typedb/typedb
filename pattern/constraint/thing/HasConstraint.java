@@ -61,10 +61,7 @@ public class HasConstraint extends ThingConstraint {
     @Override
     public List<Traversal> traversals() {
         if (traversals == null) {
-            traversals = list(
-                    Traversal.Path.Has.of(owner.reference(), attribute.reference()),
-                    Traversal.Path.Isa.of(attribute.reference(), owner.reference(), false)
-            );
+            traversals = list(Traversal.Path.Has.of(owner.reference(), attribute.reference()));
         }
         return traversals;
     }
