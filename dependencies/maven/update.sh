@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-
 #
 # Copyright (C) 2020 Grakn Labs
 #
