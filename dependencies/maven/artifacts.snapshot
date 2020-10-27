@@ -20,10 +20,6 @@
 @maven//:com_google_j2objc_j2objc_annotations_1_1
 @maven//:com_google_protobuf_protobuf_java
 @maven//:com_google_protobuf_protobuf_java_3_5_1
-@maven//:com_nativelibs4java_bridj
-@maven//:com_nativelibs4java_bridj_0_7_0
-@maven//:com_quantego_clp_java
-@maven//:com_quantego_clp_java_1_16_10
 @maven//:info_picocli_picocli
 @maven//:info_picocli_picocli_4_3_2
 @maven//:io_cucumber_cucumber_core

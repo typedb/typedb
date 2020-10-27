@@ -19,7 +19,6 @@ artifacts = [
     "ch.qos.logback:logback-classic",
     "com.google.code.findbugs:jsr305",
     "com.google.protobuf:protobuf-java",
-    "com.quantego:clp-java",
     "info.picocli:picocli",
     "io.cucumber:cucumber-java",
     "io.cucumber:cucumber-junit",
