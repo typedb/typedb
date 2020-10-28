@@ -18,6 +18,8 @@
 artifacts = [
     "ch.qos.logback:logback-classic",
     "com.google.code.findbugs:jsr305",
+    "com.google.ortools:ortools-darwin",
+    "com.google.ortools:ortools-java-darwin",
     "com.google.protobuf:protobuf-java",
     "info.picocli:picocli",
     "io.cucumber:cucumber-java",
