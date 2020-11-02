@@ -95,17 +95,18 @@ public class MigrationTest {
 
     @Test
     public void testSchemaExport() throws InterruptedException, IOException, TimeoutException {
-        System.out.println("Test is starting... :)");
+        System.out.println("Loading schema... ");
         loadSimulationSchema("schematest");
-        System.out.println("Schema loaded... :)");
+        System.out.println("Schema loaded, running export... ");
 
         ProcessResult result = assertExecutes(GRAKN, "server", "schema", "schematest");
-        System.out.println("Test is running... :)");
+        System.out.println("Checking results are equal..");
 
         String export = result.getOutput().getString();
         String truth = Files.lines(SCHEMA_EXPORT_TRUTH, StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
 
         assertThat(export, equalTo(truth));
+        System.out.println("Schema export test completed!");
     }
 
     private void loadSimulationSchema(String keyspace) throws InterruptedException, TimeoutException, IOException {
