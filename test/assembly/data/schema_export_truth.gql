@@ -348,8 +348,7 @@ person-membership-of-organisation-means-relocation sub rule,
 
 person-membership-of-organisation-means-relocation-date sub rule,
     when { (membership_member: $person, membership_group: $group) isa membership, has start-date $membership-start-date; (locates_located: $group, locates_location: $location) isa locates; $rel (relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation; },
-    then
-    { $rel has relocation-date $membership-start-date; };
+    then{ $rel has relocation-date $membership-start-date; };
 
 person-relocating-adds-new-residency sub rule,
     when { $rel (relocation_relocated-person: $person, relocation_new-location: $location) isa relocation; },
