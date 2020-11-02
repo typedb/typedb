@@ -44,7 +44,7 @@ public class IsaTypeReasoner implements TypeReasoner<IsaAtom> {
     @Override
     public IsaAtom inferTypes(IsaAtom atom, ConceptMap sub, ReasoningContext ctx) {
         if (atom.getTypePredicate() != null) return atom;
-        if (sub.containsVar(atom.getPredicateVariable())) return atom.addType(sub.get(atom.getPredicateVariable()).asType());
+        if (sub.containsVar(atom.getTypeVariable())) return atom.addType(sub.get(atom.getTypeVariable()).asType());
         return atom;
     }
 
@@ -53,7 +53,7 @@ public class IsaTypeReasoner implements TypeReasoner<IsaAtom> {
         ConceptManager conceptManager = ctx.conceptManager();
         SchemaConcept type = atom.getSchemaConcept();
         if (type != null) return ImmutableList.of(type.asType());
-        if (sub.containsVar(atom.getPredicateVariable())) return ImmutableList.of(sub.get(atom.getPredicateVariable()).asType());
+        if (sub.containsVar(atom.getTypeVariable())) return ImmutableList.of(sub.get(atom.getTypeVariable()).asType());
 
         Variable varName = atom.getVarName();
         //determine compatible types from played roles

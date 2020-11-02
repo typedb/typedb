@@ -61,21 +61,21 @@ public class IsaAtom extends TypeAtom {
     private int hashCode;
     private boolean hashCodeMemoised;
 
-    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable predicateVariable,
+    private IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, @Nullable Label label, Variable typeVariable,
                     ReasoningContext ctx) {
-        super(varName, pattern, reasonerQuery, label, predicateVariable, ctx);
+        super(varName, pattern, reasonerQuery, label, typeVariable, ctx);
     }
 
-    public static IsaAtom create(Variable var, Variable predicateVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
+    public static IsaAtom create(Variable var, Variable typeVar, @Nullable Label label, boolean isDirect, ReasonerQuery parent,
                                  ReasoningContext ctx) {
         Statement pattern = isDirect?
-                new Statement(var).isaX(new Statement(predicateVar)) :
-                new Statement(var).isa(new Statement(predicateVar));
-        return new IsaAtom(var, pattern, parent, label, predicateVar, ctx);
+                new Statement(var).isaX(new Statement(typeVar)) :
+                new Statement(var).isa(new Statement(typeVar));
+        return new IsaAtom(var, pattern, parent, label, typeVar, ctx);
     }
 
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
-        return create(a.getVarName(), a.getPredicateVariable(), a.getTypeLabel(), a.isDirect(), parent, a.context());
+        return create(a.getVarName(), a.getTypeVariable(), a.getTypeLabel(), a.isDirect(), parent, a.context());
     }
 
     @Override
@@ -116,16 +116,16 @@ public class IsaAtom extends TypeAtom {
         Label typeLabel = getTypeLabel();
         String typeString = (typeLabel != null? typeLabel : "") + "(" + getVarName() + ")";
         return typeString +
-                (getPredicateVariable().isReturned()? "(" + getPredicateVariable() + ")" : "") +
+                (getTypeVariable().isReturned()? "(" + getTypeVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
                 getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
     protected Pattern createCombinedPattern(){
-        if (getPredicateVariable().isReturned()) return super.createCombinedPattern();
+        if (getTypeVariable().isReturned()) return super.createCombinedPattern();
         return getTypeLabel() == null?
-                new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
+                new Statement(getVarName()).isa(new Statement(getTypeVariable())) :
                 isDirect()?
                         new Statement(getVarName()).isaX(getTypeLabel().getValue()) :
                         new Statement(getVarName()).isa(getTypeLabel().getValue()) ;
@@ -134,7 +134,7 @@ public class IsaAtom extends TypeAtom {
     @Override
     public IsaAtom addType(SchemaConcept type) {
         if (getTypeLabel() != null) return this;
-        return create(getVarName(), getPredicateVariable(), type.label(), this.isDirect(), this.getParentQuery(), this.context());
+        return create(getVarName(), getTypeVariable(), type.label(), this.isDirect(), this.getParentQuery(), this.context());
     }
 
     @Override
@@ -165,7 +165,7 @@ public class IsaAtom extends TypeAtom {
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeLabel(), this.isDirect(), getParentQuery(), this.context());
+        return create(getVarName(), getTypeVariable().asReturnedVar(), getTypeLabel(), this.isDirect(), getParentQuery(), this.context());
     }
 
     @Override
@@ -192,7 +192,7 @@ public class IsaAtom extends TypeAtom {
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream()
-                        .map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeLabel(), this.isDirect(), this.getParentQuery(), this.context()))
+                        .map(v -> IsaAtom.create(v, getTypeVariable(), getTypeLabel(), this.isDirect(), this.getParentQuery(), this.context()))
                         .collect(Collectors.toSet());
     }
 }

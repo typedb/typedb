@@ -53,8 +53,8 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
         boolean inferTypes = unifierType.inferTypes();
         Variable childVarName = childAtom.getVarName();
         Variable parentVarName = parentAtom.getVarName();
-        Variable childPredicateVarName = childAtom.getPredicateVariable();
-        Variable parentPredicateVarName = parentAtom.getPredicateVariable();
+        Variable childTypeVarName = childAtom.getTypeVariable();
+        Variable parentTypeVarName = parentAtom.getTypeVariable();
         Set<Type> parentTypes = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentVarName);
         Set<Type> childTypes = childAtom.getParentQuery().getVarTypeMap(inferTypes).get(childAtom.getVarName());
 
@@ -77,8 +77,8 @@ public class TypeAtomSemanticProcessor implements SemanticProcessor<TypeAtom> {
         if (parentVarName.isReturned()) {
             varMappings.put(childVarName, parentVarName);
         }
-        if (parentPredicateVarName.isReturned()) {
-            varMappings.put(childPredicateVarName, parentPredicateVarName);
+        if (parentTypeVarName.isReturned()) {
+            varMappings.put(childTypeVarName, parentTypeVarName);
         }
 
         UnifierImpl unifier = new UnifierImpl(varMappings);
