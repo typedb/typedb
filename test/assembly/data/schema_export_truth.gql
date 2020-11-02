@@ -306,5 +306,75 @@ transaction sub relation,
     relates transaction_merchandise,
     relates transaction_vendor;
 
+born-in-location-implies-residency sub rule,
+    when { $bi (born-in_place-of-birth: $location, born-in_child: $person) isa born-in; },
+    then 
+    { (residency_resident: $person, residency_location: $location) isa residency; };
+
+born-in-location-implies-residency-date sub rule,
+    when { $bi (born-in_place-of-birth: $location, born-in_child: $person) isa born-in; $person isa person, has date-of-birth $dob; $r (residency_resident: $person, residency_location: $location) isa residency; },
+    then 
+    { $r has start-date $dob; };
+
+contract-has-language-of-location-is-there-is-only-one-language sub rule,
+    when { $emp (employment_contract: $contract) isa employment; $contract isa employment-contract, has contract-content $content; ($emp, $location1) isa locates; $location1 has language $lang1; not { ($emp, $location2) isa locates; $location2 has language $lang2; $lang1 !== $lang2; }; },
+    then 
+    { $content has content-language $lang1; };
+
+contracted-hours-apply-to-employment sub rule,
+    when { $emp (employment_contract: $c) isa employment; $c isa employment-contract, has contracted-hours $hours; },
+    then 
+    { $emp has contracted-hours $hours; };
+
+label-non-current-residency sub rule,
+    when { $res isa residency, has end-date $end-date; },
+    then 
+    { $res has is-current false; };
+
+locates-transitive-with-location-hierarchy sub rule,
+    when { $loc (locates_located: $thing, locates_location: $a) isa locates; $lh2 (location-hierarchy_superior: $b, location-hierarchy_subordinate: $a) isa location-hierarchy; },
+    then 
+    { (locates_located: $thing, locates_location: $b) isa locates; };
+
+location-hierarchy-transitivity sub rule,
+    when { $lh1 (location-hierarchy_superior: $a, location-hierarchy_subordinate: $b) isa location-hierarchy; $lh2 (location-hierarchy_superior: $b, location-hierarchy_subordinate: $c) isa location-hierarchy; },
+    then 
+    { (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy; };
+
+person-membership-of-organisation-means-relocation sub rule,
+    when { (membership_member: $person, membership_group: $group) isa membership; (locates_located: $group, locates_location: $location) isa locates; },
+    then 
+    { (relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation; };
+
+person-membership-of-organisation-means-relocation-date sub rule,
+    when { (membership_member: $person, membership_group: $group) isa membership, has start-date $membership-start-date; (locates_located: $group, locates_location: $location) isa locates; $rel (relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation; },
+    then
+    { $rel has relocation-date $membership-start-date; };
+
+person-relocating-adds-new-residency sub rule,
+    when { $rel (relocation_relocated-person: $person, relocation_new-location: $location) isa relocation; },
+    then 
+    { (residency_resident: $person, residency_location: $location) isa residency; };
+
+person-relocating-ends-old-residency sub rule,
+    when { $rel (relocation_relocated-person: $person, relocation_previous-location: $location) isa relocation, has relocation-date $rel-date; $old-residency (residency_resident: $person, residency_location: $location) isa residency; },
+    then 
+    { $old-residency has end-date $rel-date; };
+
+person-with-no-active-employment-is-unemployed sub rule,
+    when { $p isa person; not { $e (employment_employee: $p) isa employment; }; },
+    then 
+    { $p isa unemployed-person; };
+
+residency-without-end-date-is-current sub rule,
+    when { $res (residency_resident: $person, residency_location: $location) isa residency; not { $res has end-date $rel-date; }; },
+    then 
+    { $res has is-current true; };
+
+transaction-currency-is-that-of-the-country sub rule,
+    when { $transaction isa transaction; $l (locates_located: $t, locates_location: $transaction-location) isa locates; $transaction-country isa country, has currency $currency; },
+    then 
+    { $transaction has currency $currency; };
+
 
 

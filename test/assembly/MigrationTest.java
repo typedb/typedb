@@ -95,9 +95,12 @@ public class MigrationTest {
 
     @Test
     public void testSchemaExport() throws InterruptedException, IOException, TimeoutException {
+        System.out.println("Test is starting... :)");
         loadSimulationSchema("schematest");
+        System.out.println("Schema loaded... :)");
 
         ProcessResult result = assertExecutes(GRAKN, "server", "schema", "schematest");
+        System.out.println("Test is running... :)");
 
         String export = result.getOutput().getString();
         String truth = Files.lines(SCHEMA_EXPORT_TRUTH, StandardCharsets.UTF_8).collect(Collectors.joining("\n"));

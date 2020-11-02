@@ -88,6 +88,7 @@ public class Schema {
         printTypesHierarchically(writer, "attribute");
         printTypesHierarchically(writer, "entity");
         printTypesHierarchically(writer, "relation");
+        printTypesHierarchically(writer, "rule"); //This is the fix, I think
 
         tx.close();
     }
