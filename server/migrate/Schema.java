@@ -333,13 +333,18 @@ public class Schema {
                 relates.print(writer);
             }
             if (when != null) {
+                writer.println(",");
                 when.print(writer);
             }
             if (then != null) {
                 writer.println(", then {");
                 writer.indent();
-                writer.println(then.toString());
+                String then_string = then.toString();
+                writer.println(then_string.substring(2, then_string.length() - 3));
                 writer.unindent();
+//                writer.indent();
+//                writer.println(then.toString().);
+//                writer.unindent();
                 writer.print("}");
             }
             writer.unindent();
