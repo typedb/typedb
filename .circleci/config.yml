@@ -139,6 +139,7 @@ jobs:
       - checkout
       - run-bazel:
           command: |
+            bash
             i=10;
             set +e;
             while [ $i -ge  0 ]; do
@@ -149,6 +150,7 @@ jobs:
                 fi
                 ((i--));
             done;
+            exit 0;
 
   # assembly tests
   test-assembly:
