@@ -139,7 +139,7 @@ jobs:
       - checkout
       - run: |
           bash
-          i=10;
+          i=2;
           set +e;
           while [ $i -ge  0 ]; do
               bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- bazel test //test/integration/... --test_output=errors;
