@@ -149,7 +149,7 @@ jobs:
                     exit 0;
                   fi
                   echo $i;
-                  i=$((i--));
+                  i=$((i-1));
               done;
               exit 0;
           no_output_timeout: 1h
