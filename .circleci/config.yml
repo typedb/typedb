@@ -137,20 +137,19 @@ jobs:
     steps:
       - install-bazel-linux
       - checkout
-      - run-bazel:
-          command: |
-            bash
-            i=10;
-            set +e;
-            while [ $i -ge  0 ]; do
-                bazel test //test/integration/... --test_output=errors;
-                if [ $? eq 0 ];
-                then
-                  exit 0;
-                fi
-                ((i--));
-            done;
-            exit 0;
+      - run: |
+          bash
+          i=10;
+          set +e;
+          while [ $i -ge  0 ]; do
+              bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- bazel test //test/integration/... --test_output=errors;
+              if [ $? eq 0 ];
+              then
+                exit 0;
+              fi
+              ((i--));
+          done;
+          exit 0;
 
   # assembly tests
   test-assembly:
