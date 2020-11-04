@@ -380,6 +380,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class RuleWrite extends ErrorMessage {
         public static final RuleWrite INVALID_UNDEFINE_RULE_BODY =
                 new RuleWrite(1, "The rule body of '%s' ('when' or 'then') cannot be undefined. The rule must be undefined entirely by referring to its label.");
+        public static final RuleWrite TYPES_NOT_FOUND =
+                new RuleWrite(2, "The rule '%s' uses type(s) %s which are not defined in the schema.");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

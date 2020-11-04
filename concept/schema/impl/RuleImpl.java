@@ -28,14 +28,19 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.common.exception.GraqlException;
 
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
@@ -67,7 +72,7 @@ public class RuleImpl implements Rule {
         putPositiveConditions();
         putNegativeConditions();
         putConclusions();
-        validate();
+        validateLabelsExist();
     }
 
     public static RuleImpl of(final GraphManager graphMgr, final RuleVertex vertex) {
@@ -90,9 +95,7 @@ public class RuleImpl implements Rule {
     private void putNegativeConditions() {
         vertex.outs().delete(CONDITION_NEGATIVE);
         when().negations().stream()
-                .flatMap(negation -> negation.disjunction().conjunctions().stream())
-                .flatMap(negatedConjunction -> negatedConjunction.variables().stream())
-                .flatMap(variable -> variable.constraints().stream())
+                .flatMap(this::negationVariables).flatMap(variable -> variable.constraints().stream())
                 .filter(constraint -> constraint.isType() && constraint.asType().isLabel())
                 .forEach(constraint -> putCondition(constraint.asType().asLabel(), CONDITION_NEGATIVE));
     }
@@ -188,26 +191,25 @@ public class RuleImpl implements Rule {
         return then;
     }
 
-    /**
-     * TODO: Check logical validity of this rule
-     * 1. that there are no nested negations
-     * 2. that there are no disjunctions
-     * 3. (in general, that the rules follow the allowed form)
-     * 4. that all types referenced in the rule exist
-     * 5. that the rule is satisfiable (eg. use type inference, check that there is one answer ie. a type for each var)
-     * NOTE: this would imply that `//concept` depends on `//query` or `//traversal` to perform a query
-     * which would induce a cyclical dependency. To resolve this, one idea is to remove rule definition
-     * from concept API, and only allow its definition through `define`
-     * Then perform type inference in the `Definer.java`, which has access to higher level operations like type inf
-     * 6. check that the rule does not cause cycles in the type graph with a negation in it
-     * NOTE: this would imply that `//concept` depends on the future `RuleGraph` object. This means it should like
-     * in `//concept` as well. Alternatively, we can leave it higher level, and again have this validation be
-     * performed at the `Definer.java` level
-     *
-     * Overall, if we can centralise all rule validation here, it would be easier to read and understand
-     * However, it may introduce some architectural issues
-     */
-    private void validate() {
+    private void validateLabelsExist() {
+        Stream<String> whenPositiveLabels = getTypeLabels(when.variables().stream());
+        Stream<String> whenNegativeLabels = getTypeLabels(when.negations().stream().flatMap(this::negationVariables));
+        Stream<String> thenLabels = getTypeLabels(then.stream());
+        Set<String> missingLabels =  Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity())
+                .filter(label -> graphMgr.schema().getType(label) == null).collect(Collectors.toSet());
+        if (!missingLabels.isEmpty()) {
+            throw GraqlException.of(TYPE_NOT_FOUND.message(getLabel(), String.join(", ", missingLabels)));
+        }
+    }
+
+    private Stream<String> getTypeLabels(Stream<Variable> variables) {
+        return variables.filter(Variable::isType).map(variable -> variable.asType().label())
+                .filter(Optional::isPresent).map(labelConstraint -> labelConstraint.get().scopedLabel());
+    }
+
+    private Stream<Variable> negationVariables(Negation ruleNegation) {
+        assert ruleNegation.disjunction().conjunctions().size() == 1;
+        return ruleNegation.disjunction().conjunctions().iterator().next().variables().stream();
     }
 
     @Override
