@@ -138,7 +138,17 @@ jobs:
       - install-bazel-linux
       - checkout
       - run-bazel:
-          command: bazel test //test/integration/... --test_output=errors
+          command: |
+            set +e
+            i=10
+            while [$ -ge 0]; do
+                bazel test //test/integration/... --test_output=errors
+                if [$?==0]
+                then
+                  exit 0
+                ((i++))
+                fi
+            done;
 
   # assembly tests
   test-assembly:

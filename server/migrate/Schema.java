@@ -342,9 +342,6 @@ public class Schema {
                 String then_string = then.toString();
                 writer.println(then_string.substring(2, then_string.length() - 3));
                 writer.unindent();
-//                writer.indent();
-//                writer.println(then.toString().);
-//                writer.unindent();
                 writer.print("}");
             }
             writer.unindent();
