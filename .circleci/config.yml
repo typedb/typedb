@@ -139,15 +139,15 @@ jobs:
       - checkout
       - run-bazel:
           command: |
-            i=10
-            set +e
-            while [$ -ge 0]; do
-                bazel test //test/integration/... --test_output=errors
-                if [$?==0]
+            i=10;
+            set +e;
+            while [ $i -ge  0 ]; do
+                bazel test //test/integration/... --test_output=errors;
+                if [ $? eq 0 ];
                 then
-                  exit 0
+                  exit 0;
                 fi
-                ((i--))
+                ((i--));
             done;
 
   # assembly tests
