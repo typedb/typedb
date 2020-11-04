@@ -148,7 +148,8 @@ jobs:
                   then
                     exit 0;
                   fi
-                  ((i--));
+                  echo $i;
+                  i=$((i--));
               done;
               exit 0;
           no_output_timeout: 1h
