@@ -151,7 +151,7 @@ jobs:
                   ((i--));
               done;
               exit 0;
-            no_output_timeout: 1h
+          no_output_timeout: 1h
 
   # assembly tests
   test-assembly:
