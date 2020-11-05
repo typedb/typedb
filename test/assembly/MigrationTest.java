@@ -47,6 +47,7 @@ public class MigrationTest {
     private static final Path DATA_ROOT = Paths.get("test", "assembly", "data");
     private static final Path SCHEMA = DATA_ROOT.resolve("schema.gql");
     private static final Path SCHEMA_PT2 = DATA_ROOT.resolve("schema-pt2.gql");
+    private static final Path TRUTH_SCHEMA = DATA_ROOT.resolve("schema_export_truth.gql");
     private static final Path IMPORT_PATH = DATA_ROOT.resolve("simulation.grakn");
     private static final Path SCHEMA_EXPORT_TRUTH = DATA_ROOT.resolve("schema_export_truth.gql");
 
@@ -95,14 +96,23 @@ public class MigrationTest {
 
     @Test
     public void testSchemaExport() throws InterruptedException, IOException, TimeoutException {
+        System.out.println("Checking truth schema is valid...");
+        assertExecutes(GRAKN, "console", "-k", "schematest", "-f", TRUTH_SCHEMA.toString());
+
+        System.out.println("Loading test schema... ");
         loadSimulationSchema("schematest");
+        System.out.println("Schema loaded, running export... ");
 
         ProcessResult result = assertExecutes(GRAKN, "server", "schema", "schematest");
+        System.out.println("Checking results are equal..");
 
         String export = result.getOutput().getString();
         String truth = Files.lines(SCHEMA_EXPORT_TRUTH, StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
 
         assertThat(export, equalTo(truth));
+
+
+        System.out.println("Schema export test completed!");
     }
 
     private void loadSimulationSchema(String keyspace) throws InterruptedException, TimeoutException, IOException {

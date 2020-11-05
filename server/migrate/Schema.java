@@ -26,7 +26,9 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Statement;
 
 import java.io.Writer;
 import java.time.LocalDateTime;
@@ -88,6 +90,7 @@ public class Schema {
         printTypesHierarchically(writer, "attribute");
         printTypesHierarchically(writer, "entity");
         printTypesHierarchically(writer, "relation");
+        printTypesHierarchically(writer, "rule");
 
         tx.close();
     }
@@ -154,6 +157,44 @@ public class Schema {
         }
     }
 
+    private class WhenDeclaration {
+        private final Set<Pattern> patterns;
+
+        WhenDeclaration(Pattern when) {
+            patterns = when.getNegationDNF().getPatterns().iterator().next().getPatterns();
+        }
+
+        public void print(IndentPrintWriter writer) {
+            writer.println("when {");
+            writer.indent();
+            for (Pattern pattern : patterns) {
+                printPattern(pattern, writer);
+            }
+            writer.unindent();
+            writer.print("}");
+        }
+
+
+
+        private void printPattern(Pattern pattern, IndentPrintWriter writer) {
+            if (pattern.isNegation() && pattern.asNegation().statements().size() > 1) {
+                printNegation(pattern.asNegation(), writer);
+            } else {
+                writer.println(pattern.toString());
+            }
+        }
+
+        private void printNegation(Negation negation, IndentPrintWriter writer) {
+            writer.println("not {");
+            writer.indent();
+            for (Statement statement : negation.statements()) {
+                writer.println(statement);
+            }
+            writer.unindent();
+            writer.println("};");
+        }
+    }
+
     List<String> order(Set<String> toOrder, List<String> master) {
         List<String> results = new ArrayList<>(toOrder.size());
         for (String s : master) {
@@ -173,7 +214,7 @@ public class Schema {
         private final Set<String> has;
         private final Set<String> plays;
         private final Set<RelatesDeclaration> relates;
-        private final Pattern when;
+        private final WhenDeclaration when;
         private final Pattern then;
 
         TypeDeclaration(SchemaConcept sc) {
@@ -247,7 +288,7 @@ public class Schema {
 
             if (sc.isRule()) {
                 Rule rule = sc.asRule();
-                when = rule.when();
+                when = new WhenDeclaration(rule.when());
                 then = rule.then();
             } else {
                 when = null;
@@ -293,15 +334,15 @@ public class Schema {
             }
             if (when != null) {
                 writer.println(",");
-                writer.print("when ");
-                String ruleString = when.toString();
-                writer.print(ruleString.substring(0, ruleString.length() - 1));
+                when.print(writer);
             }
             if (then != null) {
-                writer.println(",");
-                writer.println("then ");
-                String ruleString = then.toString();
-                writer.print(ruleString.substring(0, ruleString.length() - 1));
+                writer.println(", then {");
+                writer.indent();
+                String then_string = then.toString();
+                writer.println(then_string.substring(2, then_string.length() - 3));
+                writer.unindent();
+                writer.print("}");
             }
             writer.unindent();
             writer.println(";");
