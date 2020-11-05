@@ -72,6 +72,7 @@ java_library(
         "@maven//:ch_qos_logback_logback_classic",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
+    visibility = ["//visibility:public"],
 )
 
 java_binary(

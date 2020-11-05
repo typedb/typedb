@@ -32,11 +32,7 @@ java_library(
         "//concept:concept",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
-    visibility = [
-        "//rocks:__pkg__",
-        "//server:__pkg__",
-        "//test:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
 )
 
 release_validate_deps(

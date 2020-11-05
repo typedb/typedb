@@ -49,6 +49,7 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
+    visibility = ["//visibility:public"],
 )
 
 checkstyle_test(
