@@ -18,19 +18,26 @@
 
 package grakn.core.traversal;
 
-import grakn.core.graph.GraphManager;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
-import java.util.List;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class Planner {
+public class TraversalCache {
 
-    private final GraphManager graphMgr;
+    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through grakn.properties
+    private static final int CACHE_TIMEOUT_MINUTES = 1_440;
+    private final Cache<TraversalPlan, TraversalPlan> cache;
 
-    public Planner(final GraphManager graphMgr) {
-        this.graphMgr = graphMgr;
+    public TraversalCache() {
+        this(CACHE_SIZE, CACHE_TIMEOUT_MINUTES);
     }
 
-    public List<Traversal.Directed> plan(final List<Traversal> conjunction) {
-        return null; // TODO
+    public TraversalCache(int size, int timeoutMinutes) {
+        cache = Caffeine.newBuilder().maximumSize(size).expireAfterAccess(timeoutMinutes, MINUTES).build();
+    }
+
+    public TraversalPlan get(TraversalPlan plan) {
+        return cache.get(plan, p -> p);
     }
 }

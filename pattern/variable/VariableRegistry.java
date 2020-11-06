@@ -20,6 +20,7 @@ package grakn.core.pattern.variable;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
+import grakn.core.traversal.Identifier;
 import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ConceptVariable;
 import graql.lang.pattern.variable.Reference;
@@ -94,16 +95,16 @@ public class VariableRegistry {
     public Variable register(final ConceptVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_CONCEPT_VARIABLE);
         if (things.containsKey(graqlVar.reference())) {
-            return things.get(graqlVar.reference()).constraintConcept(graqlVar.constraints(), this);
+            return things.get(graqlVar.reference()).constrainConcept(graqlVar.constraints(), this);
         } else if (types.containsKey(graqlVar.reference())) {
             return types.get(graqlVar.reference()).constrainConcept(graqlVar.constraints(), this);
         } else if (bounds != null && bounds.contains(graqlVar.reference())) {
             Reference.Referrable ref = graqlVar.reference().asReferrable();
             if (bounds.get(graqlVar.reference()).isThing()) {
-                things.put(ref, new ThingVariable(Identifier.of(ref)));
-                return things.get(ref).constraintConcept(graqlVar.constraints(), this);
+                things.put(ref, new ThingVariable(Identifier.Variable.of(ref)));
+                return things.get(ref).constrainConcept(graqlVar.constraints(), this);
             } else {
-                types.put(ref, new TypeVariable(Identifier.of(ref)));
+                types.put(ref, new TypeVariable(Identifier.Variable.of(ref)));
                 return types.get(ref).constrainConcept(graqlVar.constraints(), this);
             }
         } else {
@@ -114,17 +115,17 @@ public class VariableRegistry {
     public TypeVariable register(final graql.lang.pattern.variable.TypeVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_TYPE_VARIABLE);
         return types.computeIfAbsent(
-                graqlVar.reference(), ref -> new TypeVariable(Identifier.of(ref.asReferrable()))
+                graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferrable()))
         ).constrainType(graqlVar.constraints(), this);
     }
 
     public ThingVariable register(final graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
         final ThingVariable graknVar;
         if (graqlVar.reference().isAnonymous()) {
-            graknVar = new ThingVariable(Identifier.of(graqlVar.reference().asAnonymous(), anonymous.size()));
+            graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymous.size()));
             anonymous.add(graknVar);
         } else {
-            graknVar = things.computeIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.of(r.asReferrable())));
+            graknVar = things.computeIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferrable())));
         }
         return graknVar.constrainThing(graqlVar.constraints(), this);
     }

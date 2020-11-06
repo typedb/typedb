@@ -21,13 +21,13 @@ package grakn.core.pattern.constraint.type;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalVertex;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class IsConstraint extends TypeConstraint {
@@ -58,9 +58,8 @@ public class IsConstraint extends TypeConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) traversals = list(Traversal.Path.Is.of(owner.reference(), variable.reference()));
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.is(owner.identifier(), variable.identifier());
     }
 
     @Override

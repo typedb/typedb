@@ -4,6 +4,8 @@
 @maven//:ch_qos_logback_logback_core_1_2_3
 @maven//:com_eclipsesource_minimal_json_minimal_json
 @maven//:com_eclipsesource_minimal_json_minimal_json_0_9_5
+@maven//:com_github_ben_manes_caffeine_caffeine
+@maven//:com_github_ben_manes_caffeine_caffeine_2_8_6
 @maven//:com_google_android_annotations
 @maven//:com_google_android_annotations_4_1_1_4
 @maven//:com_google_api_grpc_proto_google_common_protos
@@ -13,7 +15,7 @@
 @maven//:com_google_code_gson_gson
 @maven//:com_google_code_gson_gson_2_7
 @maven//:com_google_errorprone_error_prone_annotations
-@maven//:com_google_errorprone_error_prone_annotations_2_3_2
+@maven//:com_google_errorprone_error_prone_annotations_2_4_0
 @maven//:com_google_guava_guava
 @maven//:com_google_guava_guava_23_0
 @maven//:com_google_j2objc_j2objc_annotations
@@ -106,6 +108,8 @@
 @maven//:org_antlr_antlr4_runtime_4_7_1
 @maven//:org_apiguardian_apiguardian_api
 @maven//:org_apiguardian_apiguardian_api_1_1_0
+@maven//:org_checkerframework_checker_qual
+@maven//:org_checkerframework_checker_qual_3_7_0
 @maven//:org_codehaus_mojo_animal_sniffer_annotations
 @maven//:org_codehaus_mojo_animal_sniffer_annotations_1_17
 @maven//:org_hamcrest_hamcrest

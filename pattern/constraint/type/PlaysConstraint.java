@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -30,7 +31,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
 
 public class PlaysConstraint extends TypeConstraint {
@@ -82,10 +82,9 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
+    public void addTo(final Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
-        if (traversals == null) traversals = list(Traversal.Path.Plays.of(owner.reference(), roleType.reference()));
-        return traversals;
+        traversal.plays(owner.identifier(), roleType.identifier());
     }
 
     @Override

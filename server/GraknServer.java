@@ -20,7 +20,6 @@ package grakn.core.server;
 
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.CommonExecutorService;
@@ -144,7 +143,7 @@ public class GraknServer implements AutoCloseable {
         else return properties;
     }
 
-    private static Pair<Boolean, ServerOptions> parseCommandLine(final Properties properties, final String[] args) {
+    private static ServerOptions parseCommandLine(final Properties properties, final String[] args) {
         final ServerOptions options = new ServerOptions();
         boolean proceed;
         final CommandLine command = new CommandLine(options);
@@ -169,7 +168,8 @@ public class GraknServer implements AutoCloseable {
             proceed = false;
         }
 
-        return new Pair<>(proceed, options);
+        if (proceed) return options;
+        else return null;
     }
 
     public static void main(final String[] args) {
@@ -177,9 +177,8 @@ public class GraknServer implements AutoCloseable {
             final long start = System.nanoTime();
 
             printASCIILogo();
-            final Pair<Boolean, ServerOptions> result = parseCommandLine(parseProperties(), args);
-            if (!result.first()) System.exit(0);
-            final ServerOptions options = result.second();
+            final ServerOptions options = parseCommandLine(parseProperties(), args);
+            if (options == null) System.exit(0);
 
             final GraknServer server = new GraknServer(options);
             server.start();

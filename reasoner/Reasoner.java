@@ -50,7 +50,7 @@ public class Reasoner {
     public ResourceIterator<ConceptMap> execute(final Conjunction conjunction) {
         Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
         ResourceIterator<ConceptMap> answers = link(list(
-                traversalEng.execute(conjunctionResolvedTypes.traversals()).map(ConceptMap::of),
+                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(ConceptMap::of),
                 infer(conjunctionResolvedTypes)
         ));
 

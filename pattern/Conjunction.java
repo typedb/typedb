@@ -35,7 +35,6 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class Conjunction implements Pattern {
@@ -44,7 +43,7 @@ public class Conjunction implements Pattern {
     private final Set<Variable> variables;
     private final Set<Negation> negations;
 
-    public Conjunction(final Set<Variable> variables, final Set<Negation> negations) {
+    private Conjunction(final Set<Variable> variables, final Set<Negation> negations) {
         this.variables = variables;
         this.negations = negations;
     }
@@ -65,10 +64,7 @@ public class Conjunction implements Pattern {
                 else throw GraknException.of(ILLEGAL_STATE);
             });
 
-            if (graqlVariables.isEmpty() && !graqlNegations.isEmpty()) {
-                throw GraknException.of(UNBOUNDED_NEGATION);
-            }
-
+            if (graqlVariables.isEmpty() && !graqlNegations.isEmpty()) throw GraknException.of(UNBOUNDED_NEGATION);
             VariableRegistry registry = VariableRegistry.createFromVariables(graqlVariables, bounds);
             Set<Negation> graknNegations = graqlNegations.isEmpty() ? set() :
                     graqlNegations.stream().map(n -> Negation.create(n, registry)).collect(toSet());
@@ -84,7 +80,9 @@ public class Conjunction implements Pattern {
         return negations;
     }
 
-    public List<Traversal> traversals() {
-        return variables.stream().flatMap(variable -> variable.traversals().stream()).collect(toList());
+    public Traversal traversal() {
+        Traversal traversal = new Traversal();
+        variables.forEach(variable -> variable.addTo(traversal));
+        return traversal;
     }
 }

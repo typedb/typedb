@@ -23,12 +23,11 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalVertex;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class IsaConstraint extends ThingConstraint {
@@ -36,7 +35,7 @@ public class IsaConstraint extends ThingConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private List<Traversal> traversals;
+    private String[] labels;
 
     private IsaConstraint(final ThingVariable owner, final TypeVariable type, final boolean isExplicit) {
         super(owner);
@@ -45,9 +44,8 @@ public class IsaConstraint extends ThingConstraint {
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
     }
 
-    public static IsaConstraint of(final ThingVariable owner,
-                                   final graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
-                                   final VariableRegistry registry) {
+    public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
+                                   VariableRegistry registry) {
         return new IsaConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
     }
 
@@ -59,17 +57,22 @@ public class IsaConstraint extends ThingConstraint {
         return isExplicit;
     }
 
+    public void setLabels(String[] labels) {
+        this.labels = labels;
+    }
+
     @Override
     public Set<Variable> variables() {
         return set(type);
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) {
-            traversals = list(Traversal.Path.Isa.of(owner.reference(), type.reference(), isExplicit));
+    public void addTo(final Traversal traversal) {
+        if (!type.reference().isName() && labels != null && labels.length > 0) {
+            traversal.type(owner.identifier(), labels);
+        } else {
+            traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
         }
-        return traversals;
     }
 
     @Override

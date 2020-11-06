@@ -20,10 +20,9 @@ package grakn.core.pattern.constraint.thing;
 
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
-import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -33,14 +32,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
 public class RelationConstraint extends ThingConstraint {
 
     private final List<RolePlayer> rolePlayers;
     private final int hash;
-    private List<Traversal> traversals;
 
     private RelationConstraint(final ThingVariable owner, final List<RolePlayer> rolePlayers) {
         super(owner);
@@ -61,8 +58,8 @@ public class RelationConstraint extends ThingConstraint {
     }
 
     @Override
-    public Set<Variable> variables() {
-        final Set<Variable> variables = new HashSet<>();
+    public Set<grakn.core.pattern.variable.Variable> variables() {
+        final Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
         players().forEach(player -> {
             variables.add(player.player());
             if (player.roleType().isPresent()) variables.add(player.roleType().get());
@@ -71,26 +68,21 @@ public class RelationConstraint extends ThingConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) {
-            traversals = new ArrayList<>();
-            rolePlayers.forEach(rp -> {
-                if (rp.roleType().isPresent() && rp.roleType().get().reference().isName()) {
-                    Reference role = Reference.anonymous(false);
-                    traversals.add(Traversal.Path.Relating.of(owner.reference(), role));
-                    traversals.add(Traversal.Path.Playing.of(rp.player().reference(), role));
-                    traversals.add(Traversal.Path.Isa.of(role, rp.roleType().get().reference(), false));
-                } else if (rp.roleType().isPresent()) {
-                    traversals.add(Traversal.Path.RolePlayer.of(
-                            owner.reference(), rp.roleType().get().reference(), rp.player().reference()
-                    ));
-                } else {
-                    traversals.add(Traversal.Path.RolePlayer.of(owner.reference(), rp.player().reference()));
-                }
-            });
-            traversals = unmodifiableList(traversals);
-        }
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        rolePlayers.forEach(rp -> {
+            if (rp.roleType().isPresent() && rp.roleType().get().reference().isName()) {
+                Identifier role = traversal.newIdentifier();
+                traversal.relating(owner.identifier(), role);
+                traversal.playing(rp.player().identifier(), role);
+                traversal.isa(rp.player().identifier(), rp.roleType().get().identifier());
+            } else if (rp.roleType().isPresent()) {
+                assert rp.roleType().get().label().isPresent();
+                traversal.rolePlayer(owner.identifier(), rp.player().identifier(),
+                                     rp.roleType().get().label().get().scopedLabel());
+            } else {
+                traversal.rolePlayer(owner.identifier(), rp.player().identifier());
+            }
+        });
     }
 
     @Override
@@ -129,8 +121,8 @@ public class RelationConstraint extends ThingConstraint {
             this.hash = Objects.hash(this.roleType, this.player);
         }
 
-        public static RolePlayer of(final graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
-                                    final VariableRegistry registry) {
+        public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
+                                    VariableRegistry registry) {
             return new RolePlayer(
                     constraint.roleType().map(registry::register).orElse(null),
                     registry.register(constraint.player())

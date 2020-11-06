@@ -24,7 +24,6 @@ import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.Traversal;
 
-import java.util.List;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
@@ -36,7 +35,7 @@ public abstract class Constraint {
 
     public abstract Set<? extends Variable> variables();
 
-    public abstract List<Traversal> traversals();
+    public abstract void addTo(Traversal traversal);
 
     public boolean isType() {
         return false;
@@ -53,4 +52,10 @@ public abstract class Constraint {
     public ThingConstraint asThing() {
         throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(ThingConstraint.class)));
     }
+
+    @Override
+    public abstract boolean equals(Object o);
+
+    @Override
+    public abstract int hashCode();
 }

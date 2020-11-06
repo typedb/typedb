@@ -22,12 +22,12 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalVertex;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class HasConstraint extends ThingConstraint {
@@ -59,11 +59,8 @@ public class HasConstraint extends ThingConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) {
-            traversals = list(Traversal.Path.Has.of(owner.reference(), attribute.reference()));
-        }
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.has(owner.identifier(), attribute.identifier());
     }
 
     @Override

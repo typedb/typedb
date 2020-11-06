@@ -75,6 +75,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(7, "Resource out of bounds.");
         public static final Internal UNEXPECTED_INTERRUPTION =
                 new Internal(8, "Unexpected thread interruption!");
+        public static final Internal UNEXPECTED_PLANNING_ERROR =
+                new Internal(9, "Unexpected error during traversal plan optimisation.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -154,6 +156,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(4, "Invalid query containing unbounded concept variable '%s'.");
         public static final Pattern UNBOUNDED_NEGATION =
                 new Pattern(5, "Invalid query containing unbounded negation pattern.");
+        public static final Pattern MISSING_CONSTRAINT_VALUE =
+                new Pattern(6, "The value constraint for variable has not been provided with a variable or literal value.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Execution";
@@ -212,7 +216,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(13, "Attempted to re-assert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_IID_CONFLICT =
                 new ThingWrite(14, "Attempted to refer to a thing with IID '%s' and assert it as a new instance (isa) of type '%s' at the same time.");
-        public static final ThingWrite THING_ISA_TOO_MANY =
+        public static final ThingWrite THING_ISA_MANY =
                 new ThingWrite(15, "The thing variable '%s' cannot be asserted as new instance for more than one type (isa).");
         public static final ThingWrite THING_ISA_MISSING =
                 new ThingWrite(16, "The thing variable '%s' cannot be asserted as a new instance without providing its type (isa).");

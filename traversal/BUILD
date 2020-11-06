@@ -41,7 +41,9 @@ java_library(
         # External dependencies from Grakn Labs
 
         # External dependencies from Maven
+        "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_ortools_ortools_java_darwin",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-traversal:{pom_version}"],
     visibility = ["//visibility:public"],

@@ -25,6 +25,7 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
+import grakn.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -115,7 +117,7 @@ public class RocksDatabase implements Grakn.Database {
         final RocksSession session;
 
         if (type.isSchema()) {
-            lock = dataWriteSchemaLock.writeLock();
+            lock = dataWriteSchemaLock().writeLock();
             session = new RocksSession.Schema(this, options);
         } else if (type.isData()) {
             session = new RocksSession.Data(this, options);
@@ -127,10 +129,10 @@ public class RocksDatabase implements Grakn.Database {
         return session;
     }
 
-    synchronized SchemaGraph getCachedSchemaGraph() {
+    synchronized Pair<SchemaGraph, TraversalCache> getCache() {
         if (cachedSchemaSession == null) cachedSchemaSession = new RocksSession.Schema(this, new Options.Session());
         if (cachedSchemaTransaction == null) cachedSchemaTransaction = cachedSchemaSession.transaction(READ);
-        return cachedSchemaTransaction.graph();
+        return pair(cachedSchemaTransaction.graph(), cachedSchemaTransaction.traversalCache());
     }
 
     synchronized void closeCachedSchemaGraph() {
@@ -160,10 +162,28 @@ public class RocksDatabase implements Grakn.Database {
         return dataKeyGenerator;
     }
 
+    /**
+     * Get the lock that guarantees that the schema is not modified at the same
+     * time as data being written to the database. When a schema session is
+     * opened (to modify the schema), all write transaction need to wait until
+     * the schema session is completed. If there is a write transaction opened,
+     * a schema session needs to wait until those transactions are completed.
+     *
+     * @return a {@code StampedLock} to protect data writes from concurrent schema modification
+     */
     StampedLock dataWriteSchemaLock() {
         return dataWriteSchemaLock;
     }
 
+    /**
+     * Get the lock that guarantees that the schema is not modified at the same
+     * time as a data read transaction tries to acquire the cache of the schema.
+     * A new data (read) transaction cannot retrieve a schema cache while a
+     * schema modification is being committed and the cache is refreshed, which
+     * this lock ensures.
+     *
+     * @return a {@code Stampedlock} to protect data reads from concurrent schema modification
+     */
     StampedLock dataReadSchemaLock() {
         return dataReadSchemaLock;
     }
@@ -171,7 +191,7 @@ public class RocksDatabase implements Grakn.Database {
     void remove(final RocksSession session) {
         if (cachedSchemaSession != session) {
             final long lock = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) dataWriteSchemaLock.unlockWrite(lock);
+            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
         }
     }
 

@@ -17,7 +17,9 @@
 
 artifacts = [
     "ch.qos.logback:logback-classic",
+    "com.github.ben-manes.caffeine:caffeine",
     "com.google.code.findbugs:jsr305",
+    "com.google.errorprone:error_prone_annotations",
     "com.google.ortools:ortools-darwin",
     "com.google.ortools:ortools-java-darwin",
     "com.google.protobuf:protobuf-java",

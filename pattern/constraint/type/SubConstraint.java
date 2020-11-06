@@ -21,12 +21,12 @@ package grakn.core.pattern.constraint.type;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalVertex;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class SubConstraint extends TypeConstraint {
@@ -60,9 +60,8 @@ public class SubConstraint extends TypeConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) traversals = list(Traversal.Path.Sub.of(owner.reference(), type.reference()));
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
     }
 
     @Override

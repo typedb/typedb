@@ -29,6 +29,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
+import grakn.core.traversal.Identifier;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.HashSet;
@@ -52,7 +53,7 @@ public class TypeVariable extends Variable {
     private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
 
-    TypeVariable(final Identifier identifier) {
+    TypeVariable(Identifier.Variable identifier) {
         super(identifier);
         subConstraints = new HashSet<>();
         ownsConstraints = new HashSet<>();
@@ -62,18 +63,17 @@ public class TypeVariable extends Variable {
         constraints = new HashSet<>();
     }
 
-    TypeVariable constrainType(final List<graql.lang.pattern.constraint.TypeConstraint> constraints,
-                               final VariableRegistry register) {
+    TypeVariable constrainType(List<graql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
     }
 
-    Variable constrainConcept(final List<ConceptConstraint> constraints, final VariableRegistry registry) {
+    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
         return null;
     }
 
-    private void constrain(final TypeConstraint constraint) {
+    private void constrain(TypeConstraint constraint) {
         constraints.add(constraint);
         if (constraint.isLabel()) labelConstraint = constraint.asLabel();
         else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
@@ -136,19 +136,5 @@ public class TypeVariable extends Variable {
     @Override
     public TypeVariable asType() {
         return this;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        final TypeVariable that = (TypeVariable) o;
-        return this.identifier.equals(that.identifier);
-    }
-
-    @Override
-    public int hashCode() {
-        return identifier.hashCode();
     }
 }

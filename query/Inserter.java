@@ -62,9 +62,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAI
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_UNACCEPTED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_REASSERTION;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_IID_CONFLICT;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REASSERTION;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 import static java.util.stream.Collectors.toSet;
@@ -122,8 +122,7 @@ public class Inserter {
             if (existing.contains(variable.reference())) thing = existing.get(variable.reference()).asThing();
             else if (variable.iid().isPresent()) thing = getThing(variable.iid().get());
             else if (variable.isa().size() == 1) thing = insertIsa(variable.isa().iterator().next(), variable);
-            else if (variable.isa().size() > 1)
-                throw GraknException.of(THING_ISA_TOO_MANY.message(variable.reference()));
+            else if (variable.isa().size() > 1) throw GraknException.of(THING_ISA_MANY.message(variable.reference()));
             else throw new GraknException(THING_ISA_MISSING.message(variable.reference()));
 
             if (!variable.has().isEmpty()) insertHas(thing, variable.has());

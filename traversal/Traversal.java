@@ -18,383 +18,134 @@
 
 package grakn.core.traversal;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.util.Encoding;
 import graql.lang.common.GraqlArg;
-import graql.lang.pattern.variable.Reference;
+import graql.lang.common.GraqlToken;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+public class Traversal {
 
-public abstract class Traversal {
+    private TraversalPlan plan;
+    private final TraversalParameters parameters;
+    private int generatedIdentifierCount;
 
-    final List<Directed> directedTraversals;
-
-    protected Traversal() {
-        directedTraversals = new ArrayList<>();
+    public Traversal() {
+        plan = new TraversalPlan();
+        parameters = new TraversalParameters();
+        generatedIdentifierCount = 0;
     }
 
-    public List<Traversal.Directed> directedTraversals() {
-        return directedTraversals;
+    TraversalPlan plan() {
+        return plan;
     }
 
-    public boolean isEdge() {
-        return false;
+    public void replacePlan(TraversalPlan optimisedPlan) {
+        assert optimisedPlan.isPlanned();
+        this.plan = optimisedPlan;
     }
 
-    public boolean isProperty() {
-        return false;
+    public Identifier newIdentifier() {
+        return Identifier.Generated.of(generatedIdentifierCount++);
     }
 
-    public Traversal.Path asEdge() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Path.class)));
+    public void has(Identifier thing, Identifier attribute) {
+        TraversalVertex thingVertex = plan.vertex(thing);
+        TraversalVertex attributeVertex = plan.vertex(attribute);
+
+
     }
 
-    public Traversal.Property asProperty() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Property.class)));
+    public void isa(Identifier thing, Identifier type) {
+        isa(thing, type, true);
     }
 
-    public abstract static class Directed {}
+    public void isa(Identifier thing, Identifier type, boolean isTransitive) {
 
-    public abstract static class Path extends Traversal {
-
-        public boolean isEdge() {
-            return true;
-        }
-
-        public Path asEdge() {
-            return this;
-        }
-
-        public static class Is extends Path {
-
-            private final Reference concept1, concept2;
-
-            public Is(final Reference concept1, final Reference concept2) {
-                this.concept1 = concept1;
-                this.concept2 = concept2;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Is of(final Reference concept1, final Reference concept2) {
-                return new Is(concept1, concept2);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Sub extends Path {
-
-            private final Reference thingType, superType;
-
-            public Sub(final Reference thingType, final Reference superType) {
-                this.thingType = thingType;
-                this.superType = superType;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Sub of(final Reference thingType, final Reference superType) {
-                return new Sub(thingType, superType);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Owns extends Path {
-
-            private final Reference thingType, attributeType;
-
-            public Owns(final Reference thingType, final Reference attributeType) {
-                this.thingType = thingType;
-                this.attributeType = attributeType;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Owns of(final Reference thingType, final Reference attributeType) {
-                return new Owns(thingType, attributeType);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Plays extends Path {
-
-            private final Reference thing, role;
-
-            public Plays(final Reference thing, final Reference role) {
-                this.thing = thing;
-                this.role = role;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Plays of(final Reference thingType, final Reference roleType) {
-                return new Plays(thingType, roleType);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Relates extends Path {
-
-            private final Reference relationType, roleType;
-
-            public Relates(final Reference relationType, final Reference roleType) {
-                this.relationType = relationType;
-                this.roleType = roleType;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Relates of(final Reference relationType, final Reference roleType) {
-                return new Relates(relationType, roleType);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Isa extends Path {
-
-            private final Reference thing, type;
-            private final boolean isExplicit;
-
-            public Isa(final Reference thing, final Reference type, final boolean isExplicit) {
-                this.thing = thing;
-                this.type = type;
-                this.isExplicit = isExplicit;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Isa of(final Reference thing, final Reference type, final boolean isExplicit) {
-                return new Isa(thing, type, isExplicit);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Has extends Path {
-
-            private final Reference owner, attribute;
-
-            Has(final Reference owner, final Reference attribute) {
-                this.owner = owner;
-                this.attribute = attribute;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Has of(final Reference owner, final Reference attribute) {
-                return new Has(owner, attribute);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Playing extends Path {
-
-            private final Reference thing, role;
-
-            public Playing(final Reference thing, final Reference role) {
-                this.thing = thing;
-                this.role = role;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Playing of(final Reference thing, final Reference role) {
-                return new Playing(thing, role);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class Relating extends Path {
-
-            private final Reference relation, role;
-
-            public Relating(final Reference relation, final Reference role) {
-                this.relation = relation;
-                this.role = role;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static Relating of(final Reference relation, final Reference role) {
-                return new Relating(relation, role);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
-
-        public static class RolePlayer extends Path {
-
-            private final Reference relation, roleType, player;
-
-            public RolePlayer(final Reference relation, @Nullable final Reference roleType, final Reference player) {
-                this.roleType = roleType;
-                this.relation = relation;
-                this.player = player;
-                directedTraversals.add(new Out());
-                directedTraversals.add(new In());
-            }
-
-            public static RolePlayer of(final Reference relation, final Reference player) {
-                return of(relation, null, player);
-            }
-
-            public static RolePlayer of(final Reference relation, @Nullable final Reference roleType,
-                                        final Reference player) {
-                return new RolePlayer(relation, roleType, player);
-            }
-
-            private class Out extends Directed {}
-
-            private class In extends Directed {}
-        }
     }
 
-    public static abstract class Property extends Traversal {
+    public void is(Identifier first, Identifier second) {
 
-        public boolean isProperty() {
-            return true;
-        }
+    }
 
-        public Traversal.Property asProperty() {
-            return this;
-        }
+    public void relating(Identifier relation, Identifier role) {
 
-        public static class Label extends Property {
+    }
 
-            private final Reference vertex;
-            private final String label, scope;
+    public void playing(Identifier thing, Identifier role) {
 
-            public Label(final Reference vertex, final String label, final String scope) {
-                this.vertex = vertex;
-                this.label = label;
-                this.scope = scope;
-                directedTraversals.add(new Lookup());
-                directedTraversals.add(new Filter());
-            }
+    }
 
-            public static Label of(final Reference vertex, final String label, final String scope) {
-                return new Label(vertex, label, scope);
-            }
+    public void rolePlayer(Identifier relation, Identifier player) {
+        rolePlayer(relation, player, null);
+    }
 
-            private class Lookup extends Directed {}
+    public void rolePlayer(Identifier relation, Identifier player, @Nullable String roleType) {
 
-            private class Filter extends Directed {}
-        }
+    }
 
-        public static class Abstract extends Property {
+    public void owns(Identifier thingType, Identifier attributeType) {
 
-            private final Reference vertex;
+    }
 
-            public Abstract(final Reference vertex) {
-                this.vertex = vertex;
-                directedTraversals.add(new Lookup());
-                directedTraversals.add(new Filter());
-            }
+    public void plays(Identifier thingType, Identifier roleType) {
 
-            public static Abstract of(final Reference vertex) {
-                return new Abstract(vertex);
-            }
+    }
 
-            private class Lookup extends Directed {}
+    public void relates(Identifier relationType, Identifier roleType) {
 
-            private class Filter extends Directed {}
-        }
+    }
 
-        public static class ValueType extends Property {
+    public void sub(Identifier subType, Identifier superType, boolean isTransitive) {
 
-            private final Reference attributeType;
-            private final Encoding.ValueType valueType;
+    }
 
-            public ValueType(final Reference attributeType, final Encoding.ValueType valueType) {
-                this.attributeType = attributeType;
-                this.valueType = valueType;
-                directedTraversals.add(new Lookup());
-                directedTraversals.add(new Filter());
-            }
+    public void iid(Identifier thing, byte[] iid) {
 
-            public static ValueType of(final Reference attributeType, final GraqlArg.ValueType valueType) {
-                return new ValueType(attributeType, Encoding.ValueType.of(valueType));
-            }
+    }
 
-            private class Lookup extends Directed {}
+    public void type(Identifier thing, String[] labels) {
+        plan.vertex(thing).type(labels);
+    }
 
-            private class Filter extends Directed {}
-        }
+    public void isAbstract(Identifier type) {
+        plan.vertex(type).isAbstract();
+    }
 
-        public static class Regex extends Property {
+    public void label(Identifier type, String label, @Nullable String scope) {
 
-            private final Reference attributeType;
-            private final String regex;
+    }
 
-            public Regex(final Reference attributeType, final String regex) {
-                this.attributeType = attributeType;
-                this.regex = regex;
-                directedTraversals.add(new Lookup());
-                directedTraversals.add(new Filter());
-            }
+    public void regex(Identifier type, Pattern regex) {
 
-            public static Regex of(final Reference attributeType, final String regex) {
-                return new Regex(attributeType, regex);
-            }
+    }
 
-            private class Lookup extends Directed {}
+    public void valueType(Identifier attributeType, GraqlArg.ValueType valueType) {
 
-            private class Filter extends Directed {}
-        }
+    }
 
-        public static class IID extends Property {
+    public void value(Identifier attribute, GraqlToken.Comparator comparator, Boolean value) {
 
-            private final Reference vertex;
-            private final byte[] iid;
+    }
 
-            public IID(final Reference vertex, final byte[] iid) {
-                this.vertex = vertex;
-                this.iid = iid;
-                directedTraversals.add(new Lookup());
-                directedTraversals.add(new Filter());
-            }
+    public void value(Identifier attribute, GraqlToken.Comparator comparator, Long value) {
 
-            public static IID of(final Reference vertex, final byte[] iid) {
-                return new IID(vertex, iid);
-            }
+    }
 
-            private class Lookup extends Directed {}
+    public void value(Identifier attribute, GraqlToken.Comparator comparator, Double value) {
 
-            private class Filter extends Directed {}
-        }
+    }
 
-        public static class Value extends Property {
+    public void value(Identifier attribute, GraqlToken.Comparator comparator, String value) {
 
-        }
+    }
+
+    public void value(Identifier attribute, GraqlToken.Comparator comparator, LocalDateTime value) {
+
+    }
+
+    public void value(Identifier attribute1, GraqlToken.Comparator comparator, Identifier attribute2) {
+
     }
 }

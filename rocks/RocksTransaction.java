@@ -18,6 +18,7 @@
 
 package grakn.core.rocks;
 
+import grakn.common.collection.Pair;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
@@ -33,6 +34,7 @@ import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.query.QueryManager;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.TraversalCache;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
@@ -87,9 +89,9 @@ abstract class RocksTransaction implements Grakn.Transaction {
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
     }
 
-    void initialise(GraphManager graphMgr) {
+    void initialise(GraphManager graphMgr, TraversalCache traversalCache) {
         conceptMgr = new ConceptManager(graphMgr);
-        traversalEng = new TraversalEngine(graphMgr);
+        traversalEng = new TraversalEngine(graphMgr, traversalCache);
         queryMgr = new QueryManager(traversalEng, conceptMgr, context);
         isOpen = new AtomicBoolean(true);
     }
@@ -166,7 +168,9 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
     static class Schema extends RocksTransaction {
 
+        private final TraversalCache traversalCache;
         private boolean mayClose;
+
         SchemaCoreStorage storage;
 
         Schema(final RocksSession.Schema session, final Arguments.Transaction.Type type, final Options.Transaction options) {
@@ -175,7 +179,8 @@ abstract class RocksTransaction implements Grakn.Transaction {
             final SchemaGraph schemaGraph = new SchemaGraph(storage);
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphMgr = new GraphManager(schemaGraph, dataGraph);
-            initialise(graphMgr);
+            traversalCache = new TraversalCache();
+            initialise(graphMgr, traversalCache);
             mayClose = false;
         }
 
@@ -191,6 +196,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         SchemaGraph graph() {
             return graphMgr.schema();
+        }
+
+        TraversalCache traversalCache() {
+            return traversalCache;
         }
 
         @Override
@@ -307,12 +316,12 @@ abstract class RocksTransaction implements Grakn.Transaction {
             super(session, type, options);
             storage = new CoreStorage();
             final long lock = session.database.dataReadSchemaLock().readLock();
-            final SchemaGraph schemaGraph = session.database.getCachedSchemaGraph();
+            final Pair<SchemaGraph, TraversalCache> cache = session.database.getCache();
             session.database.dataReadSchemaLock().unlockRead(lock);
-            schemaGraph.incrementReference();
-            final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
-            graphMgr = new GraphManager(schemaGraph, dataGraph);
-            initialise(graphMgr);
+            cache.first().incrementReference();
+            final DataGraph dataGraph = new DataGraph(storage, cache.first());
+            graphMgr = new GraphManager(cache.first(), dataGraph);
+            initialise(graphMgr, cache.second());
         }
 
 

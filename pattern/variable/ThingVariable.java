@@ -26,29 +26,36 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.traversal.Identifier;
+import graql.lang.common.GraqlToken;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static java.util.stream.Collectors.toSet;
 
 public class ThingVariable extends Variable {
 
     private IIDConstraint iidConstraint;
+    private final Map<GraqlToken.Comparator, List<ValueConstraint<?>>> valueConstraints;
     private final Set<IsaConstraint> isaConstraints;
     private final Set<IsConstraint> isConstraints;
-    private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<RelationConstraint> relationConstraints;
     private final Set<HasConstraint> hasConstraints;
     private final Set<ThingConstraint> constraints;
 
-    ThingVariable(final Identifier identifier) {
+    ThingVariable(final Identifier.Variable identifier) {
         super(identifier);
         this.isaConstraints = new HashSet<>();
         this.isConstraints = new HashSet<>();
-        this.valueConstraints = new HashSet<>();
+        this.valueConstraints = new HashMap<>();
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
@@ -60,8 +67,8 @@ public class ThingVariable extends Variable {
         return this;
     }
 
-    ThingVariable constraintConcept(final List<graql.lang.pattern.constraint.ConceptConstraint> constraints,
-                                    final VariableRegistry registry) {
+    ThingVariable constrainConcept(final List<graql.lang.pattern.constraint.ConceptConstraint> constraints,
+                                   final VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
@@ -71,9 +78,11 @@ public class ThingVariable extends Variable {
         if (constraint.isIID()) iidConstraint = constraint.asIID();
         else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
         else if (constraint.isIs()) isConstraints.add(constraint.asIs());
-        else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
         else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
+        else if (constraint.isValue()) valueConstraints.computeIfAbsent(
+                constraint.asValue().comparator(), c -> new ArrayList<>()
+        ).add(constraint.asValue());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -90,7 +99,7 @@ public class ThingVariable extends Variable {
     }
 
     public Set<ValueConstraint<?>> value() {
-        return valueConstraints;
+        return valueConstraints.values().stream().flatMap(Collection::stream).collect(toSet());
     }
 
     public Set<RelationConstraint> relation() {
@@ -114,19 +123,5 @@ public class ThingVariable extends Variable {
     @Override
     public ThingVariable asThing() {
         return this;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        final ThingVariable that = (ThingVariable) o;
-        return this.identifier.equals(that.identifier);
-    }
-
-    @Override
-    public int hashCode() {
-        return identifier.hashCode();
     }
 }

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class ValueTypeConstraint extends TypeConstraint {
@@ -56,9 +55,8 @@ public class ValueTypeConstraint extends TypeConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) traversals = list(Traversal.Property.ValueType.of(owner.reference(), valueType));
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.valueType(owner.identifier(), valueType);
     }
 
     @Override

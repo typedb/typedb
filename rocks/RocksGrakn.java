@@ -18,6 +18,7 @@
 
 package grakn.core.rocks;
 
+import com.google.ortools.Loader;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
@@ -38,6 +39,7 @@ public class RocksGrakn implements Grakn {
 
     static {
         RocksDB.loadLibrary();
+        Loader.loadNativeLibraries();
     }
 
     private final Path directory;

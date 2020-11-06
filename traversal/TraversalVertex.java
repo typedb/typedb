@@ -18,27 +18,41 @@
 
 package grakn.core.traversal;
 
-import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.Vertex;
-import graql.lang.pattern.variable.Reference;
+import graql.lang.common.GraqlArg;
 
-import java.util.Map;
+import java.util.regex.Pattern;
 
-public class TraversalEngine {
+public class TraversalVertex {
 
-    private final GraphManager graphMgr;
-    private final TraversalCache cache;
+    private final Identifier identifier;
+    private final TraversalPlan plan;
 
-    public TraversalEngine(final GraphManager graphMgr, TraversalCache cache) {
-        this.graphMgr = graphMgr;
-        this.cache = cache;
+    TraversalVertex(Identifier identifier, TraversalPlan plan) {
+        this.identifier = identifier;
+        this.plan = plan;
     }
 
-    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(final Traversal traversal) {
-        traversal.replacePlan(cache.get(traversal.plan()));
-        if (!traversal.plan().updateCostAndCheckIsOptimal(graphMgr.schema())) traversal.plan().optimise();
+    public Identifier identifier() {
+        return identifier;
+    }
 
-        return null;
+    void type(String[] labels) {
+
+    }
+
+    void isAbstract() {
+
+    }
+
+    public void label(String label, String scope) {
+
+    }
+
+    public void regex(Pattern regex) {
+
+    }
+
+    public void valueType(GraqlArg.ValueType valueType) {
+
     }
 }

@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static grakn.common.collection.Collections.list;
-
 public class LabelConstraint extends TypeConstraint {
 
     private final String label;
@@ -35,7 +33,7 @@ public class LabelConstraint extends TypeConstraint {
     private final int hash;
     private List<Traversal> traversals;
 
-    private LabelConstraint(final TypeVariable owner, @Nullable final String scope, final String label) {
+    private LabelConstraint(final TypeVariable owner, final String label, @Nullable final String scope) {
         super(owner);
         if (label == null) throw new NullPointerException("Null label");
         this.scope = scope;
@@ -44,7 +42,7 @@ public class LabelConstraint extends TypeConstraint {
     }
 
     public static LabelConstraint of(final TypeVariable owner, final graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
-        return new LabelConstraint(owner, constraint.scope().orElse(null), constraint.label());
+        return new LabelConstraint(owner, constraint.label(), constraint.scope().orElse(null));
     }
 
     public Optional<String> scope() {
@@ -60,9 +58,8 @@ public class LabelConstraint extends TypeConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) traversals = list(Traversal.Property.Label.of(owner.reference(), label, scope));
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.label(owner.identifier(), label, scope);
     }
 
     @Override

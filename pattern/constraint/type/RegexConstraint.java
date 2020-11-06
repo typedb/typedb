@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 
 public class RegexConstraint extends TypeConstraint {
@@ -55,9 +54,8 @@ public class RegexConstraint extends TypeConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) traversals = list(Traversal.Property.Regex.of(owner.reference(), regex.pattern()));
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.regex(owner.identifier(), regex);
     }
 
     @Override

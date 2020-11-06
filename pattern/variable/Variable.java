@@ -21,27 +21,26 @@ package grakn.core.pattern.variable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.constraint.Constraint;
+import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.variable.Reference;
 
-import java.util.List;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static java.util.stream.Collectors.toList;
 
 public abstract class Variable implements Pattern {
 
-    final Identifier identifier;
+    private final Identifier.Variable identifier;
 
-    Variable(final Identifier identifier) {
+    Variable(final Identifier.Variable identifier) {
         this.identifier = identifier;
     }
 
     public abstract Set<? extends Constraint> constraints();
 
-    public Identifier identifier() {
+    public Identifier.Variable identifier() {
         return identifier;
     }
 
@@ -49,8 +48,8 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public List<Traversal> traversals() {
-        return constraints().stream().flatMap(c -> c.traversals().stream()).collect(toList());
+    public void addTo(final Traversal traversal) {
+        constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
     public boolean isType() {
@@ -70,8 +69,16 @@ public abstract class Variable implements Pattern {
     }
 
     @Override
-    public abstract boolean equals(Object o);
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final Variable that = (Variable) o;
+        return this.identifier.equals(that.identifier);
+    }
 
     @Override
-    public abstract int hashCode();
+    public int hashCode() {
+        return identifier.hashCode();
+    }
 }

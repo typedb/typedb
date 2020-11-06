@@ -21,18 +21,15 @@ package grakn.core.pattern.constraint.thing;
 import grakn.common.collection.Bytes;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalVertex;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-
-import static grakn.common.collection.Collections.list;
 
 public class IIDConstraint extends ThingConstraint {
 
     private final byte[] iid;
     private final int hash;
-    private List<Traversal> traversals;
 
     public IIDConstraint(final ThingVariable owner, final byte[] iid) {
         super(owner);
@@ -50,11 +47,8 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     @Override
-    public List<Traversal> traversals() {
-        if (traversals == null) {
-            traversals = list(Traversal.Property.IID.of(owner.reference(), iid));
-        }
-        return traversals;
+    public void addTo(final Traversal traversal) {
+        traversal.iid(owner.identifier(), iid);
     }
 
     @Override

@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_TYPE_VARIABLE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_TOO_MANY;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
@@ -122,7 +122,7 @@ public class RuleImpl implements Rule {
                 .filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
             Set<IsaConstraint> isaConstraints;
             if (constraint.isHas() && !(isaConstraints = constraint.asHas().attribute().isa()).isEmpty()) {
-                if (isaConstraints.size() > 1) throw GraknException.of(THING_ISA_TOO_MANY);
+                if (isaConstraints.size() > 1) throw GraknException.of(THING_ISA_MANY);
                 else putConclusion(isaConstraints.iterator().next().type().label().orElseThrow(
                         () -> GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE)
                 ));

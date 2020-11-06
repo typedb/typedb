@@ -24,7 +24,6 @@ import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlToken;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,7 +31,8 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static graql.lang.common.GraqlToken.Comparator.EQ;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MISSING_CONSTRAINT_VALUE;
+import static graql.lang.common.GraqlToken.Comparator.Equality.EQ;
 
 public abstract class ValueConstraint<T> extends ThingConstraint {
 
@@ -42,6 +42,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
     ValueConstraint(final ThingVariable owner, final GraqlToken.Comparator comparator, final T value) {
         super(owner);
+        assert !comparator.isEquality() || value instanceof Comparable || value instanceof ThingVariable;
+        assert !comparator.isSubString() || value instanceof java.lang.String || value instanceof ThingVariable;
+        assert !comparator.isPattern() || value instanceof java.lang.String;
+        if (value == null) throw GraknException.of(MISSING_CONSTRAINT_VALUE);
         this.comparator = comparator;
         this.value = value;
         this.hash = Objects.hash(this.comparator, this.value);
@@ -51,17 +55,17 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
                                         final graql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
                                         final VariableRegistry register) {
         if (valueConstraint.isLong()) {
-            return new Long(owner, valueConstraint.comparator(), valueConstraint.asLong().value());
+            return new Long(owner, valueConstraint.comparator().asEquality(), valueConstraint.asLong().value());
         } else if (valueConstraint.isDouble()) {
-            return new Double(owner, valueConstraint.comparator(), valueConstraint.asDouble().value());
+            return new Double(owner, valueConstraint.comparator().asEquality(), valueConstraint.asDouble().value());
         } else if (valueConstraint.isBoolean()) {
-            return new Boolean(owner, valueConstraint.comparator(), valueConstraint.asBoolean().value());
+            return new Boolean(owner, valueConstraint.comparator().asEquality(), valueConstraint.asBoolean().value());
         } else if (valueConstraint.isString()) {
-            return new String(owner, valueConstraint.comparator(), valueConstraint.asString().value());
+            return new String(owner, valueConstraint.comparator().asString(), valueConstraint.asString().value());
         } else if (valueConstraint.isDateTime()) {
-            return new DateTime(owner, valueConstraint.comparator(), valueConstraint.asDateTime().value());
+            return new DateTime(owner, valueConstraint.comparator().asEquality(), valueConstraint.asDateTime().value());
         } else if (valueConstraint.isVariable()) {
-            return new Variable(owner, valueConstraint.comparator(), register.register(valueConstraint.asVariable().value()));
+            return new Variable(owner, valueConstraint.comparator().asVariable(), register.register(valueConstraint.asVariable().value()));
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -157,7 +161,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
     public static class Long extends ValueConstraint<java.lang.Long> {
 
-        public Long(final ThingVariable owner, final GraqlToken.Comparator comparator, final long value) {
+        public Long(final ThingVariable owner, final GraqlToken.Comparator.Equality comparator, final long value) {
             super(owner, comparator, value);
         }
 
@@ -173,18 +177,18 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
         @Override
         public Double asDouble() {
-            return new Double(owner, comparator, value);
+            return new Double(owner, comparator.asEquality(), value);
         }
 
         @Override
-        public List<Traversal> traversals() {
-            return null;
+        public void addTo(final Traversal traversal) {
+            traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class Double extends ValueConstraint<java.lang.Double> {
 
-        public Double(final ThingVariable owner, final GraqlToken.Comparator comparator, final double value) {
+        public Double(final ThingVariable owner, final GraqlToken.Comparator.Equality comparator, final double value) {
             super(owner, comparator, value);
         }
 
@@ -199,14 +203,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public List<Traversal> traversals() {
-            return null;
+        public void addTo(final Traversal traversal) {
+            traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class Boolean extends ValueConstraint<java.lang.Boolean> {
 
-        public Boolean(final ThingVariable owner, final GraqlToken.Comparator comparator, final boolean value) {
+        public Boolean(final ThingVariable owner, final GraqlToken.Comparator.Equality comparator, final boolean value) {
             super(owner, comparator, value);
         }
 
@@ -221,14 +225,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public List<Traversal> traversals() {
-            return null;
+        public void addTo(final Traversal traversal) {
+            traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class String extends ValueConstraint<java.lang.String> {
 
-        public String(final ThingVariable owner, final GraqlToken.Comparator comparator, final java.lang.String value) {
+        public String(final ThingVariable owner, final GraqlToken.Comparator.String comparator, final java.lang.String value) {
             super(owner, comparator, value);
         }
 
@@ -243,14 +247,16 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public List<Traversal> traversals() {
-            return null;
+        public void addTo(final Traversal traversal) {
+            traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class DateTime extends ValueConstraint<LocalDateTime> {
 
-        public DateTime(final ThingVariable owner, final GraqlToken.Comparator comparator, final LocalDateTime value) {
+        public DateTime(final ThingVariable owner,
+                        final GraqlToken.Comparator.Equality comparator,
+                        final LocalDateTime value) {
             super(owner, comparator, value);
         }
 
@@ -265,14 +271,16 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public List<Traversal> traversals() {
-            return null;
+        public void addTo(final Traversal traversal) {
+            traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class Variable extends ValueConstraint<ThingVariable> {
 
-        public Variable(final ThingVariable owner, final GraqlToken.Comparator comparator, final ThingVariable variable) {
+        public Variable(final ThingVariable owner,
+                        final GraqlToken.Comparator.Variable comparator,
+                        final ThingVariable variable) {
             super(owner, comparator, variable);
         }
 
@@ -287,8 +295,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public List<Traversal> traversals() {
-            return null;
+        public void addTo(final Traversal traversal) {
+            traversal.value(owner.identifier(), comparator, value.identifier());
         }
     }
 }
