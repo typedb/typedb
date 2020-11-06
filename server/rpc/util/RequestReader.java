@@ -32,7 +32,7 @@ public class RequestReader {
         if (requestOptions.getExplainOptCase().equals(OptionsProto.Options.ExplainOptCase.EXPLAIN)) {
             options.explain(requestOptions.getExplain());
         }
-        if (requestOptions.getBatchSizeOptCase().equals(OptionsProto.Options.BatchSizeOptCase.BATCHSIZE)) {
+        if (requestOptions.getBatchSizeOptCase().equals(OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE)) {
             options.batchSize(requestOptions.getBatchSize());
         }
 

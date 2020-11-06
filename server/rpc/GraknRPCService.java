@@ -1,0 +1,161 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package grakn.core.server.rpc;
+
+import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
+import grakn.protocol.DatabaseProto;
+import grakn.protocol.GraknGrpc;
+import grakn.protocol.SessionProto;
+import grakn.protocol.TransactionProto;
+import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import static grakn.core.common.collection.Bytes.bytesToUUID;
+import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
+import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
+import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
+import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
+import static grakn.core.server.rpc.util.ResponseBuilder.exception;
+import static java.util.stream.Collectors.toList;
+
+public class GraknRPCService extends GraknGrpc.GraknImplBase {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GraknRPCService.class);
+
+    private final Grakn grakn;
+    private final ConcurrentMap<UUID, SessionRPC> rpcSessions;
+
+    public GraknRPCService(Grakn grakn) {
+        this.grakn = grakn;
+        rpcSessions = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void databaseContains(final DatabaseProto.Database.Contains.Req request, final StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
+        try {
+            final boolean contains = grakn.databases().contains(request.getName());
+            responder.onNext(DatabaseProto.Database.Contains.Res.newBuilder().setContains(contains).build());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseCreate(final DatabaseProto.Database.Create.Req request, final StreamObserver<DatabaseProto.Database.Create.Res> responder) {
+        try {
+            if (grakn.databases().contains(request.getName())) {
+                throw new GraknException(DATABASE_EXISTS.message(request.getName()));
+            }
+            grakn.databases().create(request.getName());
+            responder.onNext(DatabaseProto.Database.Create.Res.getDefaultInstance());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseAll(final DatabaseProto.Database.All.Req request, final StreamObserver<DatabaseProto.Database.All.Res> responder) {
+        try {
+            final List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
+            responder.onNext(DatabaseProto.Database.All.Res.newBuilder().addAllNames(databaseNames).build());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseDelete(final DatabaseProto.Database.Delete.Req request, final StreamObserver<DatabaseProto.Database.Delete.Res> responder) {
+        try {
+            final String databaseName = request.getName();
+            if (!grakn.databases().contains(databaseName)) {
+                throw new GraknException(DATABASE_NOT_FOUND.message(databaseName));
+            }
+            final Grakn.Database database = grakn.databases().get(databaseName);
+            database.sessions().parallel().forEach(session -> {
+                final UUID sessionId = session.uuid();
+                final SessionRPC sessionRPC = rpcSessions.get(sessionId);
+                if (sessionRPC != null) {
+                    sessionRPC.closeWithError(new GraknException(DATABASE_DELETED.message(databaseName)));
+                    rpcSessions.remove(sessionId);
+                }
+            });
+            database.delete();
+            responder.onNext(DatabaseProto.Database.Delete.Res.getDefaultInstance());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void sessionOpen(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responder) {
+        try {
+            final SessionRPC sessionRPC = new SessionRPC(grakn, request);
+            rpcSessions.put(sessionRPC.session().uuid(), sessionRPC);
+            responder.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionRPC.uuidAsByteString()).build());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void sessionClose(final SessionProto.Session.Close.Req request, final StreamObserver<SessionProto.Session.Close.Res> responder) {
+        try {
+            final UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
+            final SessionRPC sessionRPC = rpcSessions.get(sessionID);
+            if (sessionRPC == null) throw new GraknException(SESSION_NOT_FOUND.message(sessionID));
+            sessionRPC.close();
+            responder.onNext(SessionProto.Session.Close.Res.newBuilder().build());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public StreamObserver<TransactionProto.Transaction.Req> transaction(final StreamObserver<TransactionProto.Transaction.Res> responder) {
+        return new TransactionStream(this, responder);
+    }
+
+    public void close() {
+        rpcSessions.values().parallelStream().forEach(sessionRPC -> sessionRPC.closeWithError(new GraknException(SERVER_SHUTDOWN)));
+        rpcSessions.clear();
+    }
+
+    ConcurrentMap<UUID, SessionRPC> rpcSessions() {
+        return rpcSessions;
+    }
+}

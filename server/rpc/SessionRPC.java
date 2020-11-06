@@ -17,44 +17,58 @@
 
 package grakn.core.server.rpc;
 
+import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.protocol.SessionProto;
+import grakn.protocol.TransactionProto;
 
-import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class SessionRPC {
+import static com.google.protobuf.ByteString.copyFrom;
+import static grakn.core.common.collection.Bytes.uuidToBytes;
+import static grakn.core.server.rpc.util.RequestReader.getOptions;
+
+class SessionRPC {
 
     private final Grakn.Session session;
+    // TODO: does this need to be concurrent?
     private final Set<TransactionRPC> transactionRPCs;
 
-    SessionRPC(final Grakn grakn, final String database, final Arguments.Session.Type type, final Options.Session options) {
-        this.session = grakn.session(database, type, options);
-        transactionRPCs = ConcurrentHashMap.newKeySet();
+    SessionRPC(Grakn grakn, SessionProto.Session.Open.Req request) {
+        final Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
+        final Options.Session options = getOptions(Options.Session::new, request.getOptions());
+        session = grakn.session(request.getDatabase(), sessionType, options);
+        transactionRPCs = new HashSet<>();
+    }
+
+    TransactionRPC transaction(TransactionStream transactionStream, TransactionProto.Transaction.Open.Req request) {
+        final TransactionRPC transactionRPC = new TransactionRPC(this, transactionStream, request);
+        transactionRPCs.add(transactionRPC);
+        return transactionRPC;
     }
 
     Grakn.Session session() {
         return session;
     }
 
-    Grakn.Transaction transaction(final TransactionRPC transactionRPC) {
-        transactionRPCs.add(transactionRPC);
-        return session.transaction(transactionRPC.type(), transactionRPC.options());
+    ByteString uuidAsByteString() {
+        return copyFrom(uuidToBytes(session.uuid()));
     }
 
-    void onError(final Throwable error) {
-        transactionRPCs.forEach(ts -> ts.close(error));
-        session.close();
-    }
-
-    void remove(final TransactionRPC transactionRPC) {
+    void remove(TransactionRPC transactionRPC) {
         transactionRPCs.remove(transactionRPC);
     }
 
-    void close(@Nullable final Throwable error) {
-        transactionRPCs.forEach(ts -> ts.close(error));
+    void close() {
+        transactionRPCs.parallelStream().forEach(TransactionRPC::close);
+        session.close();
+    }
+
+    void closeWithError(Throwable error) {
+        transactionRPCs.parallelStream().forEach(ts -> ts.closeWithError(error));
         session.close();
     }
 }

@@ -25,7 +25,7 @@ import grakn.core.Grakn;
 import grakn.core.common.concurrent.CommonExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
-import grakn.core.server.rpc.GraknRPC;
+import grakn.core.server.rpc.GraknRPCService;
 import grakn.core.server.util.ServerDefaults;
 import grakn.core.server.util.ServerOptions;
 import io.grpc.Server;
@@ -64,10 +64,10 @@ public class GraknServer implements AutoCloseable {
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
     private static final int MAX_THREADS_X_2 = MAX_THREADS * 2;
 
-    private Grakn grakn;
-    private GraknRPC graknRPC;
-    private Server server;
-    private ServerOptions options;
+    private final Grakn grakn;
+    private final Server server;
+    private final ServerOptions options;
+    private final GraknRPCService graknRPCService;
 
     private GraknServer(final ServerOptions options) throws IOException {
         this.options = options;
@@ -80,8 +80,9 @@ public class GraknServer implements AutoCloseable {
 
         CommonExecutorService.init(MAX_THREADS_X_2);
         grakn = RocksGrakn.open(options.dataDir());
-        graknRPC = new GraknRPC(grakn);
-        server = rpcServer(graknRPC, options);
+        graknRPCService = new GraknRPCService(grakn);
+
+        server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
@@ -198,7 +199,7 @@ public class GraknServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static Server rpcServer(final GraknRPC graknRPC, final ServerOptions options) {
+    private Server rpcServer() {
         final NioEventLoopGroup workerELG = new NioEventLoopGroup(
                 MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker")
         );
@@ -208,7 +209,7 @@ public class GraknServer implements AutoCloseable {
                 .bossEventLoopGroup(workerELG)
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
-                .addService(graknRPC)
+                .addService(graknRPCService)
                 .build();
     }
 
@@ -217,7 +218,7 @@ public class GraknServer implements AutoCloseable {
         LOG.info("");
         LOG.info("Shutting down Grakn Core Server...");
         try {
-            graknRPC.close();
+            graknRPCService.close();
             server.shutdown();
             server.awaitTermination();
             grakn.close();

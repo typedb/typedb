@@ -18,366 +18,134 @@
 package grakn.core.server.rpc;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
-import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.Grakn;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.schema.Rule;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Type;
-import grakn.core.server.rpc.concept.RuleRPC;
-import grakn.core.server.rpc.concept.ThingRPC;
-import grakn.core.server.rpc.concept.TypeRPC;
-import grakn.core.server.rpc.query.QueryRPC;
+import grakn.core.server.rpc.concept.ConceptManagerHandler;
+import grakn.core.server.rpc.concept.RuleHandler;
+import grakn.core.server.rpc.concept.ThingHandler;
+import grakn.core.server.rpc.concept.TypeHandler;
+import grakn.core.server.rpc.query.QueryHandler;
 import grakn.core.server.rpc.util.RequestReader;
-import grakn.core.server.rpc.util.ResponseBuilder;
-import grakn.protocol.ConceptProto;
-import grakn.protocol.QueryProto;
-import grakn.protocol.TransactionProto.Transaction;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.ThingVariable;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import grakn.protocol.TransactionProto;
 
-import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentMap;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.collection.Bytes.bytesToUUID;
-import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
+import static grakn.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
+import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.common.exception.ErrorMessage.Transaction.UNEXPECTED_NULL;
-import static java.lang.String.format;
+import static grakn.core.server.rpc.util.ResponseBuilder.Transaction.continueRes;
+import static grakn.core.server.rpc.util.ResponseBuilder.Transaction.done;
 
-/**
- * A StreamObserver that implements the transaction connection between a client
- * and the server. This class receives a stream of {@code Transaction.Req} and
- * returns a stream of {@code Transaction.Res}.
- */
-public class TransactionRPC implements StreamObserver<Transaction.Req> {
+public class TransactionRPC {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TransactionRPC.class);
-    private final StreamObserver<Transaction.Res> responder;
-    private final AtomicBoolean isOpen;
-    private final Function<UUID, SessionRPC> sessionRPCSupplier;
+    private final Grakn.Transaction transaction;
+    private final SessionRPC sessionRPC;
+    private final TransactionStream stream;
+    private final Iterators iterators;
+    private final RequestHandlers handlers;
 
-    private QueryRPC queryRPC;
-    private SessionRPC sessionRPC;
-    private Grakn.Transaction transaction;
-    private Arguments.Transaction.Type transactionType;
-    private Options.Transaction transactionOptions;
-    private Iterators iterators;
+    TransactionRPC(SessionRPC sessionRPC, TransactionStream stream, TransactionProto.Transaction.Open.Req request) {
+        this.sessionRPC = sessionRPC;
+        this.stream = stream;
 
-    TransactionRPC(final Function<UUID, SessionRPC> sessionRPCSupplier, final StreamObserver<Transaction.Res> responder) {
-        this.sessionRPCSupplier = sessionRPCSupplier;
-        this.responder = responder;
-        isOpen = new AtomicBoolean(false);
+        final Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
+        if (transactionType == null) throw new GraknException(BAD_TRANSACTION_TYPE.message(request.getType()));
+        final Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
+
+        transaction = sessionRPC.session().transaction(transactionType, transactionOptions);
+        iterators = new Iterators();
+        handlers = new RequestHandlers();
     }
 
-    public Arguments.Transaction.Type type() {
-        return transactionType;
+    SessionRPC sessionRPC() {
+        return sessionRPC;
     }
 
-    public Options.Transaction options() {
-        return transactionOptions;
-    }
-
-    @Override
-    public void onNext(final Transaction.Req request) {
-        try {
-            LOG.trace("Request: {}", request);
-
-            if (GrablTracingThreadStatic.isTracingEnabled()) {
-                final Map<String, String> metadata = request.getMetadataMap();
-                final String rootId = metadata.get("traceRootId");
-                final String parentId = metadata.get("traceParentId");
-                if (rootId != null && parentId != null) {
-                    handleRequest(request, rootId, parentId);
-                    return;
-                }
-            }
-            handleRequest(request);
-        } catch (Exception e) {
-            close(e);
-        }
-    }
-
-    @Override
-    public void onCompleted() {
-        close(null);
-    }
-
-    /**
-     * This method is invoked when a client abruptly terminates a connection to
-     * the server. So, we want to make sure to also close and delete the current
-     * session and all the transactions associated to the same client.
-     *
-     * This might create issues if a session is used by other concurrent clients,
-     * the better approach would be to signal a closure intent to the session
-     * and the session should be able to detect whether it's been used by other
-     * connections, if not close it completely.
-     *
-     * TODO: improve by sending close signal to the session
-     */
-    @Override
-    public void onError(final Throwable error) {
-        if (sessionRPC != null) sessionRPC.onError(error);
-    }
-
-    private <T> T nonNull(@Nullable final T item) {
-        if (item == null) {
-            throw Status.INVALID_ARGUMENT.withDescription(UNEXPECTED_NULL.message()).asRuntimeException();
-        } else {
-            return item;
-        }
-    }
-
-    private void handleRequest(final Transaction.Req request, final String rootId, final String parentId) {
-        try (ThreadTrace ignored = continueTraceOnThread(UUID.fromString(rootId), UUID.fromString(parentId), "handle")) {
-            handleRequest(request);
-        }
-    }
-
-    private void handleRequest(final Transaction.Req request) {
+    void handleRequest(TransactionProto.Transaction.Req request) {
         switch (request.getReqCase()) {
-            case OPEN_REQ:
-                open(request.getOpenReq());
+            case CONTINUE:
+                iterators.continueIteration(request.getId());
                 return;
+            case OPEN_REQ:
+                throw new GraknException(TRANSACTION_ALREADY_OPENED);
             case COMMIT_REQ:
-                commit();
+                commit(request.getId());
                 return;
             case ROLLBACK_REQ:
-                rollback();
-                return;
-            case ITER_REQ:
-                handleIterRequest(request.getIterReq());
+                rollback(request.getId());
                 return;
             case QUERY_REQ:
-                query(request.getQueryReq());
+                try (final GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
+                    handlers.query.handleRequest(request);
+                }
                 return;
-            case GETTYPE_REQ:
-                getType(request.getGetTypeReq());
+            case CONCEPT_MANAGER_REQ:
+                handlers.conceptManager.handleRequest(request);
                 return;
-            case GETTHING_REQ:
-                getThing(request.getGetThingReq());
+            case THING_REQ:
+                handlers.thing.handleRequest(request);
                 return;
-            case GETRULE_REQ:
-                getRule(request.getGetRuleReq());
+            case TYPE_REQ:
+                handlers.type.handleRequest(request);
                 return;
-            case PUTENTITYTYPE_REQ:
-                putEntityType(request.getPutEntityTypeReq());
-                return;
-            case PUTATTRIBUTETYPE_REQ:
-                putAttributeType(request.getPutAttributeTypeReq());
-                return;
-            case PUTRELATIONTYPE_REQ:
-                putRelationType(request.getPutRelationTypeReq());
-                return;
-            case PUTRULE_REQ:
-                putRule(request.getPutRuleReq());
-                return;
-            case THINGMETHOD_REQ:
-                thingMethod(request.getThingMethodReq());
-                return;
-            case TYPEMETHOD_REQ:
-                typeMethod(request.getTypeMethodReq());
-                return;
-            case RULEMETHOD_REQ:
-                ruleMethod(request.getRuleMethodReq());
+            case RULE_REQ:
+                handlers.rule.handleRequest(request);
                 return;
 //            case EXPLANATION_REQ:
 //                explanation(request.getExplanationReq());
 //                return;
             default:
             case REQ_NOT_SET:
-                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
+                throw new GraknException(UNKNOWN_REQUEST_TYPE);
         }
     }
 
-    private void handleIterRequest(final Transaction.Iter.Req request) {
-        switch (request.getReqCase()) {
-            case ITERATORID:
-                iterators.resumeBatchIterating(request.getIteratorID());
-                return;
-            case QUERY_ITER_REQ:
-                query(request.getQueryIterReq());
-                return;
-            case THINGMETHOD_ITER_REQ:
-                thingMethod(request.getThingMethodIterReq());
-                return;
-            case TYPEMETHOD_ITER_REQ:
-                typeMethod(request.getTypeMethodIterReq());
-                return;
-            default:
-            case REQ_NOT_SET:
-                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
-        }
+    public void respond(TransactionProto.Transaction.Res response) {
+        stream.responder().onNext(response);
     }
 
-    private void open(final Transaction.Open.Req request) {
-        final UUID sessionID = bytesToUUID(request.getSessionID().toByteArray());
-        sessionRPC = sessionRPCSupplier.apply(sessionID);
-
-        if (sessionRPC == null) {
-            throw Status.NOT_FOUND.withDescription(SESSION_NOT_FOUND.message(sessionID)).asRuntimeException();
-        } else if (isOpen.compareAndSet(false, true)) {
-            transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
-            transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
-            if (transactionType == null) throw Status.INVALID_ARGUMENT.asRuntimeException();
-
-            transaction = sessionRPC.transaction(this);
-            iterators = new Iterators(responder::onNext, transaction.options().batchSize());
-            queryRPC = new QueryRPC(transaction, iterators, responder::onNext);
-            responder.onNext(ResponseBuilder.Transaction.open());
-        } else {
-            throw Status.ALREADY_EXISTS.withDescription(TRANSACTION_ALREADY_OPENED.message()).asRuntimeException();
-        }
+    public void respond(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator) {
+        iterators.beginIteration(request, iterator);
     }
 
-    void close(@Nullable final Throwable error) {
-        if (isOpen.compareAndSet(true, false)) {
-            if (transaction != null) {
-                transaction.close();
-                sessionRPC.remove(this);
-            }
-
-            if (error != null) {
-                LOG.error(error.getMessage(), error);
-                responder.onError(ResponseBuilder.exception(error));
-            } else {
-                responder.onCompleted();
-            }
-        }
+    public void respond(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator, Options.Query queryOptions) {
+        iterators.beginIteration(request, iterator, queryOptions.batchSize());
     }
 
-    private Grakn.Transaction transaction() {
-        return nonNull(transaction);
+    private void commit(String requestId) {
+        transaction.commit();
+        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId)
+                .setCommitRes(TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build());
+        close();
     }
 
-    private void query(final QueryProto.Query.Req request) {
-        try (final ThreadTrace ignored = traceOnThread("query")) {
-            queryRPC.execute(request);
-        }
+    private void rollback(String requestId) {
+        transaction.rollback();
+        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId)
+                .setRollbackRes(TransactionProto.Transaction.Rollback.Res.getDefaultInstance()).build());
     }
 
-    private void query(final QueryProto.Query.Iter.Req request) {
-        try (final ThreadTrace ignored = traceOnThread("query")) {
-            queryRPC.iterate(request);
-        }
+    void close() {
+        stream.close();
+        closeResources();
     }
 
-    private void commit() {
-        transaction().commit();
-        responder.onNext(ResponseBuilder.Transaction.commit());
+    void closeWithError(Throwable error) {
+        stream.closeWithError(error);
+        closeResources();
     }
 
-    private void rollback() {
-        transaction().rollback();
-        responder.onNext(ResponseBuilder.Transaction.rollback());
-    }
-
-    private void getType(final Transaction.GetType.Req request) {
-        final Type type = transaction().concepts().getType(request.getLabel());
-        final Transaction.Res response = ResponseBuilder.Transaction.getType(type);
-        responder.onNext(response);
-    }
-
-    private void getThing(final Transaction.GetThing.Req request) {
-        final Thing thing = transaction().concepts().getThing(request.getIid().toByteArray());
-        final Transaction.Res response = ResponseBuilder.Transaction.getThing(thing);
-        responder.onNext(response);
-    }
-
-    private void getRule(final Transaction.GetRule.Req request) {
-        final Rule rule = transaction().concepts().getRule(request.getLabel());
-        final Transaction.Res response = ResponseBuilder.Transaction.getRule(rule);
-        responder.onNext(response);
-    }
-
-    private void putEntityType(final Transaction.PutEntityType.Req request) {
-        final EntityType entityType = transaction().concepts().putEntityType(request.getLabel());
-        final Transaction.Res response = ResponseBuilder.Transaction.putEntityType(entityType);
-        responder.onNext(response);
-    }
-
-    private void putAttributeType(final Transaction.PutAttributeType.Req request) {
-        final ConceptProto.AttributeType.VALUE_TYPE valueTypeProto = request.getValueType();
-        final AttributeType.ValueType valueType;
-        switch (valueTypeProto) {
-            case STRING:
-                valueType = AttributeType.ValueType.STRING;
-                break;
-            case BOOLEAN:
-                valueType = AttributeType.ValueType.BOOLEAN;
-                break;
-            case LONG:
-                valueType = AttributeType.ValueType.LONG;
-                break;
-            case DOUBLE:
-                valueType = AttributeType.ValueType.DOUBLE;
-                break;
-            case DATETIME:
-                valueType = AttributeType.ValueType.DATETIME;
-                break;
-            default:
-            case OBJECT:
-            case UNRECOGNIZED:
-                throw Status.UNIMPLEMENTED.withDescription(format("Unsupported value type '%s'", valueTypeProto)).asRuntimeException();
-        }
-        final AttributeType attributeType = transaction.concepts().putAttributeType(request.getLabel(), valueType);
-        final Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
-        responder.onNext(response);
-    }
-
-    private void putRelationType(final Transaction.PutRelationType.Req request) {
-        final RelationType relationType = transaction().concepts().putRelationType(request.getLabel());
-        final Transaction.Res response = ResponseBuilder.Transaction.putRelationType(relationType);
-        responder.onNext(response);
-    }
-
-    private void putRule(final Transaction.PutRule.Req req) {
-        final Conjunction<? extends Pattern> when = Graql.and(Graql.parsePatterns(req.getWhen()));
-        final ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
-        final Rule rule = transaction().concepts().putRule(req.getLabel(), when, then);
-        final Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);
-        responder.onNext(response);
-    }
-
-    private void thingMethod(final ConceptProto.ThingMethod.Req thingReq) {
-        new ThingRPC(transaction(), thingReq.getIid(), iterators, responder::onNext).execute(thingReq);
-    }
-
-    private void thingMethod(final ConceptProto.ThingMethod.Iter.Req req) {
-        new ThingRPC(transaction(), req.getIid(), iterators, responder::onNext).iterate(req);
-    }
-
-    private void typeMethod(final ConceptProto.TypeMethod.Req req) {
-        new TypeRPC(transaction(), req.getLabel(), req.getScope(), iterators, responder::onNext).execute(req);
-    }
-
-    private void typeMethod(final ConceptProto.TypeMethod.Iter.Req req) {
-        new TypeRPC(transaction(), req.getLabel(), req.getScope(), iterators, responder::onNext).iterate(req);
-    }
-
-    private void ruleMethod(final ConceptProto.RuleMethod.Req req) {
-        new RuleRPC(transaction, req.getLabel(), responder::onNext).execute(req);
+    private void closeResources() {
+        transaction.close();
+        sessionRPC.remove(this);
     }
 
 //    /**
@@ -394,81 +162,93 @@ public class TransactionRPC implements StreamObserver<Transaction.Req> {
      *
      * The iterators operate by batching results to reduce total round-trips.
      */
-    public static class Iterators {
-        private final int defaultBatchSize;
-        private final Consumer<Transaction.Res> responseSender;
-        private final AtomicInteger iteratorIdCounter = new AtomicInteger(0);
-        private final Map<Integer, BatchingIterator> iterators = new ConcurrentHashMap<>();
+    private class Iterators {
 
-        Iterators(final Consumer<Transaction.Res> responseSender, final int batchSize) {
-            this.responseSender = responseSender;
-            this.defaultBatchSize = batchSize;
+        private final ConcurrentMap<String, BatchingIterator> iterators = new ConcurrentHashMap<>();
+
+        /**
+         * Spin up an iterator and begin batch iterating.
+         */
+        void beginIteration(final TransactionProto.Transaction.Req request, final Iterator<TransactionProto.Transaction.Res> iterator) {
+            beginIteration(request, iterator, transaction.options().batchSize());
+        }
+
+        void beginIteration(final TransactionProto.Transaction.Req request, final Iterator<TransactionProto.Transaction.Res> iterator, final int batchSize) {
+            final String requestId = request.getId();
+            final int latencyMillis = request.getLatencyMillis();
+            final BatchingIterator batchingIterator = new BatchingIterator(requestId, iterator, batchSize, latencyMillis);
+            iterators.compute(requestId, (key, oldValue) -> {
+               if (oldValue == null) return batchingIterator;
+               else throw new GraknException(DUPLICATE_REQUEST.message(requestId));
+            });
+            batchingIterator.iterateBatch();
         }
 
         /**
-         * Hand off an iterator and begin batch iterating.
+         * Instruct an existing iterator to iterate another batch.
          */
-        public void startBatchIterating(final Iterator<Transaction.Res> iterator) {
-            new BatchingIterator(iterator).iterateBatch();
-        }
-
-        public void startBatchIterating(final Iterator<Transaction.Res> iterator, final Options.Query options) {
-            new BatchingIterator(iterator, options.batchSize()).iterateBatch();
-        }
-
-        /**
-         * Iterate the next batch of an existing iterator.
-         */
-        void resumeBatchIterating(final int iteratorId) {
-            final BatchingIterator iterator = iterators.get(iteratorId);
-            if (iterator == null) {
-                throw Status.FAILED_PRECONDITION.asRuntimeException();
-            }
+        void continueIteration(final String requestId) {
+            final BatchingIterator iterator = iterators.get(requestId);
+            if (iterator == null) throw new GraknException(ITERATION_WITH_UNKNOWN_ID.message(requestId));
             iterator.iterateBatch();
         }
 
-        void stop(final int iteratorId) {
-            iterators.remove(iteratorId);
-        }
+        private class BatchingIterator {
+            private static final int MAX_LATENCY_MILLIS = 3000;
 
-        private int saveIterator(final BatchingIterator iterator) {
-            final int id = iteratorIdCounter.incrementAndGet();
-            iterators.put(id, iterator);
-            return id;
-        }
-
-        class BatchingIterator {
-            private final Iterator<Transaction.Res> iterator;
+            private final String id;
+            private final Iterator<TransactionProto.Transaction.Res> iterator;
             private final int batchSize;
-            private int id = -1;
+            private final int latencyMillis;
 
-            BatchingIterator(final Iterator<Transaction.Res> iterator) {
-                this(iterator, defaultBatchSize);
-            }
-
-            BatchingIterator(final Iterator<Transaction.Res> iterator, final int batchSize) {
+            BatchingIterator(final String id, final Iterator<TransactionProto.Transaction.Res> iterator, final int batchSize, final int latencyMillis) {
+                this.id = id;
                 this.iterator = iterator;
                 this.batchSize = batchSize;
+                this.latencyMillis = Math.min(latencyMillis, MAX_LATENCY_MILLIS);
             }
 
-            private boolean isSaved() {
-                return id != -1;
-            }
-
-            void iterateBatch() {
+            synchronized void iterateBatch() {
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
-                    final Transaction.Res currentBatch = iterator.next();
-                    responseSender.accept(currentBatch);
+                    respond(iterator.next());
                 }
 
-                if (iterator.hasNext()) {
-                    if (!isSaved()) id = saveIterator(this);
-                    responseSender.accept(ResponseBuilder.Transaction.Iter.id(id));
-                } else {
-                    if (isSaved()) stop(id);
-                    responseSender.accept(ResponseBuilder.Transaction.Iter.done());
+                if (!iterator.hasNext()) {
+                    iterators.remove(id);
+                    respond(done(id));
+                    return;
+                }
+
+                respond(continueRes(id));
+
+                // Compensate for network latency
+                final Instant endTime = Instant.now().plusMillis(latencyMillis);
+                while (iterator.hasNext() && Instant.now().isBefore(endTime)) {
+                    respond(iterator.next());
+                }
+
+                if (!iterator.hasNext()) {
+                    iterators.remove(id);
+                    respond(done(id));
                 }
             }
+
+        }
+    }
+
+    private class RequestHandlers {
+        private final ConceptManagerHandler conceptManager;
+        private final QueryHandler query;
+        private final ThingHandler thing;
+        private final TypeHandler type;
+        private final RuleHandler rule;
+
+        private RequestHandlers() {
+            conceptManager = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
+            query = new QueryHandler(TransactionRPC.this, transaction.query());
+            thing = new ThingHandler(TransactionRPC.this, transaction.concepts());
+            type = new TypeHandler(TransactionRPC.this, transaction.concepts());
+            rule = new RuleHandler(TransactionRPC.this, transaction.concepts());
         }
     }
 }

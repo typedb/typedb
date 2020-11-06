@@ -28,8 +28,8 @@ import static grakn.core.common.exception.ErrorMessage.Internal.OUT_OF_BOUNDS;
 
 public class ResizingBlockingQueue<E> {
 
-    private final int CAPACITY_INITIAL = 16;
-    private final int CAPACITY_MULTIPLIER = 4;
+    private static final int DEFAULT_INITIAL_CAPACITY = 64;
+    private static final int CAPACITY_MULTIPLIER = 4;
     private final AtomicInteger publishers;
     private final AtomicBoolean needsResizing;
     private ManagedBlockingQueue<Either<E, Done>> queue;
@@ -38,10 +38,14 @@ public class ResizingBlockingQueue<E> {
     static class Done {}
 
     public ResizingBlockingQueue() {
-        queue = new ManagedBlockingQueue<>(CAPACITY_INITIAL);
+        this(DEFAULT_INITIAL_CAPACITY);
+    }
+
+    public ResizingBlockingQueue(final int initialCapacity) {
+        queue = new ManagedBlockingQueue<>(initialCapacity);
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
-        capacity = new AtomicInteger(CAPACITY_INITIAL);
+        capacity = new AtomicInteger(initialCapacity);
     }
 
     public void incrementPublisher() {

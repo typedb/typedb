@@ -102,13 +102,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public RelationTypeImpl getRelation() {
+    public RelationTypeImpl getRelationType() {
         return RelationTypeImpl.of(graphMgr, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }
 
     @Override
-    public Stream<RelationTypeImpl> getRelations() {
-        return getRelation().getSubtypes().filter(r -> r.overriddenRoles().noneMatch(o -> o.equals(this)));
+    public Stream<RelationTypeImpl> getRelationTypes() {
+        return getRelationType().getSubtypes().filter(r -> r.overriddenRoles().noneMatch(o -> o.equals(this)));
     }
 
     @Override

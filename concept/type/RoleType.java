@@ -35,9 +35,9 @@ public interface RoleType extends Type {
 
     String getScopedLabel();
 
-    RelationType getRelation();
+    RelationType getRelationType();
 
-    Stream<? extends RelationType> getRelations();
+    Stream<? extends RelationType> getRelationTypes();
 
     Stream<? extends ThingType> getPlayers();
 }

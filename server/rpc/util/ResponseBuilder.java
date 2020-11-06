@@ -35,34 +35,24 @@ import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
-import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
-import grakn.protocol.TransactionProto.Transaction.GetRule;
-import grakn.protocol.TransactionProto.Transaction.GetThing;
-import grakn.protocol.TransactionProto.Transaction.GetType;
-import grakn.protocol.TransactionProto.Transaction.PutAttributeType;
-import grakn.protocol.TransactionProto.Transaction.PutEntityType;
-import grakn.protocol.TransactionProto.Transaction.PutRelationType;
-import grakn.protocol.TransactionProto.Transaction.PutRule;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
-import javax.annotation.Nullable;
 import java.time.ZoneOffset;
 import java.util.stream.Collectors;
 
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYPE;
-import static java.lang.String.format;
 
 public class ResponseBuilder {
 
     public static StatusRuntimeException exception(final Throwable e) {
-        if (e instanceof GraknException) {
-            return exception(Status.INTERNAL, e.getMessage());
-        } else if (e instanceof StatusRuntimeException) {
+        if (e instanceof StatusRuntimeException) {
             return (StatusRuntimeException) e;
         } else {
-            return exception(Status.UNKNOWN, e.getMessage());
+            return exception(Status.INTERNAL, e.getMessage());
         }
     }
 
@@ -72,61 +62,15 @@ public class ResponseBuilder {
 
     public static class Transaction {
 
-        public static TransactionProto.Transaction.Res open() {
-            return TransactionProto.Transaction.Res.newBuilder()
-                    .setOpenRes(TransactionProto.Transaction.Open.Res.getDefaultInstance()).build();
+        public static TransactionProto.Transaction.Res done(final String id) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(id).setDone(true).build();
         }
 
-        public static TransactionProto.Transaction.Res commit() {
-            return TransactionProto.Transaction.Res.newBuilder()
-                    .setCommitRes(TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build();
+        public static TransactionProto.Transaction.Res continueRes(final String id) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(id).setContinue(true).build();
         }
+    }
 
-        public static TransactionProto.Transaction.Res rollback() {
-            return TransactionProto.Transaction.Res.newBuilder()
-                    .setRollbackRes(TransactionProto.Transaction.Rollback.Res.getDefaultInstance()).build();
-        }
-
-        public static TransactionProto.Transaction.Res getThing(@Nullable final Thing thing) {
-            final GetThing.Res.Builder res = GetThing.Res.newBuilder();
-            if (thing != null) res.setThing(Concept.thing(thing));
-            return TransactionProto.Transaction.Res.newBuilder().setGetThingRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res getType(@Nullable final Type type) {
-            final GetType.Res.Builder res = GetType.Res.newBuilder();
-            if (type != null) res.setType(Concept.type(type));
-            return TransactionProto.Transaction.Res.newBuilder().setGetTypeRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res getRule(@Nullable final Rule rule) {
-            final GetRule.Res.Builder res = GetRule.Res.newBuilder();
-            if (rule != null) res.setRule(Concept.rule(rule));
-            return TransactionProto.Transaction.Res.newBuilder().setGetRuleRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res putEntityType(final EntityType entityType) {
-            final PutEntityType.Res.Builder res = PutEntityType.Res.newBuilder()
-                    .setEntityType(ResponseBuilder.Concept.type(entityType));
-            return TransactionProto.Transaction.Res.newBuilder().setPutEntityTypeRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res putAttributeType(final AttributeType attributeType) {
-            final PutAttributeType.Res.Builder res = PutAttributeType.Res.newBuilder()
-                    .setAttributeType(ResponseBuilder.Concept.type(attributeType));
-            return TransactionProto.Transaction.Res.newBuilder().setPutAttributeTypeRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res putRelationType(final RelationType relationType) {
-            final PutRelationType.Res.Builder res = PutRelationType.Res.newBuilder()
-                    .setRelationType(ResponseBuilder.Concept.type(relationType));
-            return TransactionProto.Transaction.Res.newBuilder().setPutRelationTypeRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res putRule(final Rule rule) {
-            final PutRule.Res.Builder res = PutRule.Res.newBuilder().setRule(ResponseBuilder.Concept.rule(rule));
-            return TransactionProto.Transaction.Res.newBuilder().setPutRuleRes(res).build();
-        }
 //
 //        /**
 //         * @param explanation
@@ -148,43 +92,10 @@ public class ResponseBuilder {
 //            return res.build();
 //        }
 
-        public static class Iter {
-
-            public static TransactionProto.Transaction.Res done() {
-                return TransactionProto.Transaction.Res.newBuilder()
-                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setDone(true)).build();
-            }
-
-            public static TransactionProto.Transaction.Res id(final int id) {
-                return TransactionProto.Transaction.Res.newBuilder()
-                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setIteratorID(id)).build();
-            }
-
-            public static TransactionProto.Transaction.Res query(final QueryProto.Query.Iter.Res res) {
-                return TransactionProto.Transaction.Res.newBuilder()
-                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setQueryIterRes(res)).build();
-            }
-
-            public static TransactionProto.Transaction.Res thingMethod(final ConceptProto.ThingMethod.Iter.Res res) {
-                return TransactionProto.Transaction.Res.newBuilder()
-                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodThingIterRes(res)).build();
-            }
-
-            public static TransactionProto.Transaction.Res typeMethod(final ConceptProto.TypeMethod.Iter.Res res) {
-                return TransactionProto.Transaction.Res.newBuilder()
-                        .setIterRes(TransactionProto.Transaction.Iter.Res.newBuilder()
-                                            .setConceptMethodTypeIterRes(res)).build();
-            }
-        }
-    }
-
     public static class Concept {
 
         public static ConceptProto.Concept concept(final grakn.core.concept.Concept concept) {
+            if (concept == null) return null;
             if (concept instanceof Thing) {
                 return ConceptProto.Concept.newBuilder().setThing(thing(concept.asThing())).build();
             } else {
@@ -287,7 +198,7 @@ public class ResponseBuilder {
             } else if (attribute instanceof Attribute.Boolean) {
                 builder.setBoolean(attribute.asBoolean().getValue());
             } else if (attribute instanceof Attribute.DateTime) {
-                builder.setDatetime(attribute.asDateTime().getValue().toInstant(ZoneOffset.UTC).toEpochMilli());
+                builder.setDateTime(attribute.asDateTime().getValue().toInstant(ZoneOffset.UTC).toEpochMilli());
             } else if (attribute instanceof Attribute.Double) {
                 builder.setDouble(attribute.asDouble().getValue());
             } else {
@@ -311,9 +222,9 @@ public class ResponseBuilder {
                     return AttributeType.ValueType.DOUBLE;
                 case DATETIME:
                     return AttributeType.ValueType.DATETIME;
-                default:
                 case UNRECOGNIZED:
-                    throw Status.UNIMPLEMENTED.withDescription(format("Unsupported value type '%s'", valueType)).asRuntimeException();
+                default:
+                    throw new GraknException(BAD_VALUE_TYPE.message(valueType));
             }
         }
 
@@ -355,7 +266,7 @@ public class ResponseBuilder {
             } else if (object instanceof Number) {
                 answer.setNumber(number((Number) object));
             } else {
-                throw new GraknException(UNKNOWN_ANSWER_TYPE);
+                throw new GraknException(UNKNOWN_ANSWER_TYPE.message(className(object.getClass())));
             }
 
             return answer.build();

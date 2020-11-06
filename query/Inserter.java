@@ -255,7 +255,7 @@ public class Inserter {
                     if (rolePlayer.roleType().isPresent()) {
                         roleType = getRoleType(rolePlayer.roleType().get());
                     } else if ((inferred = player.getType().getPlays()
-                            .filter(rt -> rt.getRelation().equals(relationType))
+                            .filter(rt -> rt.getRelationType().equals(relationType))
                             .collect(toSet())).size() == 1) {
                         roleType = inferred.iterator().next();
                     } else if (inferred.size() > 1) {

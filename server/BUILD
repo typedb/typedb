@@ -48,6 +48,7 @@ java_library(
         "//:grakn",
         "//common:common",
         "//concept:concept",
+        "//query:query",
         "//rocks:rocks",
 
         # External dependencies from Grakn Labs

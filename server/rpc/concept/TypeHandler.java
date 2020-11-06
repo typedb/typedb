@@ -1,0 +1,434 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package grakn.core.server.rpc.concept;
+
+import grakn.core.common.exception.GraknException;
+import grakn.core.concept.ConceptManager;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
+import grakn.core.server.rpc.TransactionRPC;
+import grakn.protocol.ConceptProto;
+import grakn.protocol.TransactionProto.Transaction;
+
+import javax.annotation.Nullable;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
+import static grakn.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
+import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
+import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
+import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
+
+public class TypeHandler {
+
+    private final TransactionRPC transactionRPC;
+    private final ConceptManager conceptManager;
+
+    public TypeHandler(final TransactionRPC transactionRPC, final ConceptManager conceptManager) {
+        this.transactionRPC = transactionRPC;
+        this.conceptManager = conceptManager;
+    }
+
+    public void handleRequest(final Transaction.Req request) {
+        final ConceptProto.Type.Req typeReq = request.getTypeReq();
+        final String label = typeReq.getLabel();
+        final String scope = typeReq.getScope();
+        final Type type = scope != null && !scope.isEmpty() ?
+                notNull(conceptManager.getRelationType(scope)).getRelates(label) :
+                notNull(conceptManager.getType(label));
+        switch (typeReq.getReqCase()) {
+            case TYPE_DELETE_REQ:
+                delete(request, type);
+                return;
+            case TYPE_SET_LABEL_REQ:
+                setLabel(request, type, typeReq.getTypeSetLabelReq().getLabel());
+                return;
+            case TYPE_IS_ABSTRACT_REQ:
+                isAbstract(request, type);
+                return;
+            case TYPE_GET_SUPERTYPE_REQ:
+                getSupertype(request, type);
+                return;
+            case TYPE_SET_SUPERTYPE_REQ:
+                setSupertype(request, type, typeReq.getTypeSetSupertypeReq().getType());
+                return;
+            case TYPE_GET_SUPERTYPES_REQ:
+                getSupertypes(request, type);
+                return;
+            case TYPE_GET_SUBTYPES_REQ:
+                getSubtypes(request, type);
+                return;
+            case ROLE_TYPE_GET_RELATION_TYPE_REQ:
+                getRelationType(request, type.asRoleType());
+                return;
+            case ROLE_TYPE_GET_RELATION_TYPES_REQ:
+                getRelationTypes(request, type.asRoleType());
+                return;
+            case ROLE_TYPE_GET_PLAYERS_REQ:
+                getPlayers(request, type.asRoleType());
+                return;
+            case THING_TYPE_SET_ABSTRACT_REQ:
+                setAbstract(request, type.asThingType());
+                return;
+            case THING_TYPE_UNSET_ABSTRACT_REQ:
+                unsetAbstract(request, type.asThingType());
+                return;
+            case THING_TYPE_SET_OWNS_REQ:
+                setOwns(request, type.asThingType(), typeReq.getThingTypeSetOwnsReq());
+                return;
+            case THING_TYPE_SET_PLAYS_REQ:
+                setPlays(request, type.asThingType(), typeReq.getThingTypeSetPlaysReq());
+                return;
+            case THING_TYPE_UNSET_OWNS_REQ:
+                unsetOwns(request, type.asThingType(), typeReq.getThingTypeUnsetOwnsReq().getAttributeType());
+                return;
+            case THING_TYPE_UNSET_PLAYS_REQ:
+                unsetPlays(request, type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRole());
+                return;
+            case THING_TYPE_GET_INSTANCES_REQ:
+                getInstances(request, type.asThingType());
+                return;
+            case THING_TYPE_GET_OWNS_REQ:
+                getOwns(request, type.asThingType(), typeReq.getThingTypeGetOwnsReq().getKeysOnly());
+                return;
+            case THING_TYPE_GET_PLAYS_REQ:
+                getPlays(request, type.asThingType());
+                return;
+            case ENTITY_TYPE_CREATE_REQ:
+                create(request, type.asEntityType());
+                return;
+            case RELATION_TYPE_CREATE_REQ:
+                create(request, type.asRelationType());
+                return;
+            case RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ:
+                getRelates(request, type.asRelationType(), typeReq.getRelationTypeGetRelatesForRoleLabelReq().getLabel());
+                return;
+            case RELATION_TYPE_SET_RELATES_REQ:
+                setRelates(request, type.asRelationType(), typeReq.getRelationTypeSetRelatesReq());
+                return;
+            case RELATION_TYPE_UNSET_RELATES_REQ:
+                unsetRelates(request, type.asRelationType(), typeReq.getRelationTypeUnsetRelatesReq());
+                return;
+            case RELATION_TYPE_GET_RELATES_REQ:
+                getRelates(request, type.asRelationType());
+                return;
+            case ATTRIBUTE_TYPE_PUT_REQ:
+                put(request, type.asAttributeType(), typeReq.getAttributeTypePutReq().getValue());
+                return;
+            case ATTRIBUTE_TYPE_GET_REQ:
+                get(request, type.asAttributeType(), typeReq.getAttributeTypeGetReq().getValue());
+                return;
+            case ATTRIBUTE_TYPE_GET_REGEX_REQ:
+                getRegex(request, type.asAttributeType());
+                return;
+            case ATTRIBUTE_TYPE_SET_REGEX_REQ:
+                setRegex(request, type.asAttributeType(), typeReq.getAttributeTypeSetRegexReq().getRegex());
+                return;
+            case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
+                getOwners(request, type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey());
+                return;
+            case REQ_NOT_SET:
+            default:
+                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+        }
+    }
+
+    private static Transaction.Res response(final Transaction.Req request, final ConceptProto.Type.Res.Builder response) {
+        return Transaction.Res.newBuilder().setId(request.getId()).setTypeRes(response).build();
+    }
+
+    private static <T extends Type> T notNull(@Nullable final T type) {
+        if (type == null) throw new GraknException(MISSING_CONCEPT);
+        return type;
+    }
+
+    private Type getType(final ConceptProto.Type protoType) {
+        return conceptManager.getType(protoType.getLabel());
+    }
+
+    private RoleType getRoleType(final ConceptProto.Type protoRoleType) {
+        final Type type = conceptManager.getRelationType(protoRoleType.getScope()).getRelates(protoRoleType.getLabel());
+        return type != null ? type.asRoleType() : null;
+    }
+
+    private void delete(final Transaction.Req request, final Type type) {
+        type.delete();
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setTypeDeleteRes(ConceptProto.Type.Delete.Res.getDefaultInstance())));
+    }
+
+    private void setLabel(final Transaction.Req request, final Type type, final String label) {
+        type.setLabel(label);
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setTypeSetLabelRes(ConceptProto.Type.SetLabel.Res.getDefaultInstance())));
+    }
+
+    private void isAbstract(final Transaction.Req request, final Type type) {
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setTypeIsAbstractRes(ConceptProto.Type.IsAbstract.Res.newBuilder().setAbstract(type.isAbstract()));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void getSupertype(final Transaction.Req request, final Type type) {
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setTypeGetSupertypeRes(ConceptProto.Type.GetSupertype.Res.newBuilder()
+                        .setType(type(type.getSupertype())));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void setSupertype(final Transaction.Req request, final Type type, final ConceptProto.Type supertype) {
+        final Type sup = getType(supertype);
+
+        if (type instanceof EntityType) {
+            type.asEntityType().setSupertype(sup.asEntityType());
+        } else if (type instanceof RelationType) {
+            type.asRelationType().setSupertype(sup.asRelationType());
+        } else if (type instanceof AttributeType) {
+            type.asAttributeType().setSupertype(sup.asAttributeType());
+        } else {
+            throw new GraknException(ILLEGAL_SUPERTYPE_ENCODING.message(className(type.getClass())));
+        }
+
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setTypeSetSupertypeRes(ConceptProto.Type.SetSupertype.Res.getDefaultInstance())));
+    }
+
+    private void getSupertypes(final Transaction.Req request, final Type type) {
+        final Stream<Transaction.Res> responses = type.getSupertypes().map(con -> response(request, ConceptProto.Type.Res.newBuilder()
+                .setTypeGetSupertypesRes(ConceptProto.Type.GetSupertypes.Res.newBuilder().setType(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void getSubtypes(final Transaction.Req request, final Type type) {
+        final Stream<Transaction.Res> responses = type.getSubtypes().map(con -> response(request, ConceptProto.Type.Res.newBuilder()
+                .setTypeGetSubtypesRes(ConceptProto.Type.GetSubtypes.Res.newBuilder().setType(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void getInstances(final Transaction.Req request, final ThingType thingType) {
+        final Stream<Transaction.Res> responses = thingType.getInstances().map(con -> response(request, ConceptProto.Type.Res.newBuilder()
+                .setThingTypeGetInstancesRes(ConceptProto.ThingType.GetInstances.Res.newBuilder().setThing(thing(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void setAbstract(final Transaction.Req request, final ThingType thingType) {
+        thingType.setAbstract();
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeSetAbstractRes(ConceptProto.ThingType.SetAbstract.Res.getDefaultInstance())));
+    }
+
+    private void unsetAbstract(final Transaction.Req request, final ThingType thingType) {
+        thingType.unsetAbstract();
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetAbstractRes(ConceptProto.ThingType.UnsetAbstract.Res.getDefaultInstance())));
+    }
+
+    private void getOwns(final Transaction.Req request, final ThingType thingType, final boolean keysOnly) {
+        final Stream<Transaction.Res> responses = thingType.getOwns(keysOnly).map(con -> response(request, ConceptProto.Type.Res.newBuilder()
+                .setThingTypeGetOwnsRes(ConceptProto.ThingType.GetOwns.Res.newBuilder().setAttributeType(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void getPlays(final Transaction.Req request, final ThingType thingType) {
+        final Stream<Transaction.Res> responses = thingType.getPlays().map(con -> response(request, ConceptProto.Type.Res.newBuilder()
+                .setThingTypeGetPlaysRes(ConceptProto.ThingType.GetPlays.Res.newBuilder().setRole(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void setOwns(final Transaction.Req request, final ThingType thingType, final ConceptProto.ThingType.SetOwns.Req req) {
+        final AttributeType attributeType = getType(req.getAttributeType()).asAttributeType();
+        final boolean isKey = req.getIsKey();
+
+        if (req.hasOverriddenType()) {
+            final AttributeType overriddenType = getType(req.getOverriddenType()).asAttributeType();
+            thingType.setOwns(attributeType, overriddenType, isKey);
+        } else {
+            thingType.setOwns(attributeType, isKey);
+        }
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeSetOwnsRes(ConceptProto.ThingType.SetOwns.Res.getDefaultInstance())));
+    }
+
+    private void setPlays(final Transaction.Req request, final ThingType thingType, final ConceptProto.ThingType.SetPlays.Req setPlaysReq) {
+        final RoleType role = getRoleType(setPlaysReq.getRole());
+        if (setPlaysReq.hasOverriddenRole()) {
+            final RoleType overriddenRole = getRoleType(setPlaysReq.getOverriddenRole());
+            thingType.setPlays(role, overriddenRole);
+        } else {
+            thingType.setPlays(role);
+        }
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeSetPlaysRes(ConceptProto.ThingType.SetPlays.Res.getDefaultInstance())));
+    }
+
+    private void unsetOwns(final Transaction.Req request, final ThingType thingType, final ConceptProto.Type protoAttributeType) {
+        final AttributeType attributeType = getType(protoAttributeType).asAttributeType();
+        thingType.unsetOwns(attributeType);
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance())));
+    }
+
+    private void unsetPlays(final Transaction.Req request, final ThingType thingType, final ConceptProto.Type protoRoleType) {
+        final RoleType role = notNull(getRoleType(protoRoleType));
+        thingType.unsetPlays(role);
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance())));
+    }
+
+    private void create(final Transaction.Req request, final EntityType entityType) {
+        final Entity entity = entityType.create();
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setEntityTypeCreateRes(ConceptProto.EntityType.Create.Res.newBuilder().setEntity(thing(entity)));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void getOwners(final Transaction.Req request, final AttributeType attributeType, final boolean onlyKey) {
+        final Stream<Transaction.Res> responses = attributeType.getOwners(onlyKey).map(thingType -> response(request,
+                ConceptProto.Type.Res.newBuilder().setAttributeTypeGetOwnersRes(ConceptProto.AttributeType.GetOwners.Res.newBuilder().setOwner(type(thingType)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void put(final Transaction.Req request, final AttributeType attributeType, final ConceptProto.Attribute.Value protoValue) {
+        final Attribute attribute;
+        switch (protoValue.getValueCase()) {
+            case STRING:
+                attribute = attributeType.asString().put(protoValue.getString());
+                break;
+            case DOUBLE:
+                attribute = attributeType.asDouble().put(protoValue.getDouble());
+                break;
+            case LONG:
+                attribute = attributeType.asLong().put(protoValue.getLong());
+                break;
+            case DATE_TIME:
+                attribute = attributeType.asDateTime().put(Instant.ofEpochMilli(protoValue.getDateTime()).atOffset(ZoneOffset.UTC).toLocalDateTime());
+                break;
+            case BOOLEAN:
+                attribute = attributeType.asBoolean().put(protoValue.getBoolean());
+                break;
+            case VALUE_NOT_SET:
+                throw new GraknException(MISSING_FIELD.message("value"));
+            default:
+                throw new GraknException(BAD_VALUE_TYPE.message(protoValue.getValueCase()));
+        }
+
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setAttributeTypePutRes(ConceptProto.AttributeType.Put.Res.newBuilder().setAttribute(thing(attribute)));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void get(final Transaction.Req request, final AttributeType attributeType, final ConceptProto.Attribute.Value protoValue) {
+        final Attribute attribute;
+        switch (protoValue.getValueCase()) {
+            case STRING:
+                attribute = attributeType.asString().get(protoValue.getString());
+                break;
+            case DOUBLE:
+                attribute = attributeType.asDouble().get(protoValue.getDouble());
+                break;
+            case LONG:
+                attribute = attributeType.asLong().get(protoValue.getLong());
+                break;
+            case DATE_TIME:
+                attribute = attributeType.asDateTime().get(Instant.ofEpochMilli(protoValue.getDateTime()).atOffset(ZoneOffset.UTC).toLocalDateTime());
+                break;
+            case BOOLEAN:
+                attribute = attributeType.asBoolean().get(protoValue.getBoolean());
+                break;
+            case VALUE_NOT_SET:
+            default:
+                // TODO: Unify our exceptions - they should either all be GraknException or all be StatusRuntimeException
+                throw new GraknException(BAD_VALUE_TYPE);
+        }
+
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setAttributeTypeGetRes(ConceptProto.AttributeType.Get.Res.newBuilder().setAttribute(thing(attribute)));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void getRegex(final Transaction.Req request, final AttributeType attributeType) {
+        final Pattern regex = attributeType.asString().getRegex();
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setAttributeTypeGetRegexRes(ConceptProto.AttributeType.GetRegex.Res.newBuilder()
+                        .setRegex((regex != null) ? regex.pattern() : ""));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void setRegex(final Transaction.Req request, final AttributeType attributeType, final String regex) {
+        if (regex.isEmpty()) attributeType.asString().setRegex(null);
+        else attributeType.asString().setRegex(Pattern.compile(regex));
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setAttributeTypeSetRegexRes(ConceptProto.AttributeType.SetRegex.Res.getDefaultInstance())));
+    }
+
+    private void create(final Transaction.Req request, final RelationType relationType) {
+        final Relation relation = relationType.create();
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setRelationTypeCreateRes(ConceptProto.RelationType.Create.Res.newBuilder().setRelation(thing(relation)));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void getRelates(final Transaction.Req request, final RelationType relationType) {
+        final Stream<Transaction.Res> responses = relationType.getRelates().map(con -> response(request,
+                ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesRes(ConceptProto.RelationType.GetRelates.Res.newBuilder().setRole(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void getRelates(final Transaction.Req request, final RelationType relationType, final String label) {
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(
+                ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder().setRoleType(type(relationType.getRelates(label))));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void setRelates(final Transaction.Req request, final RelationType relationType, final ConceptProto.RelationType.SetRelates.Req setRelatesReq) {
+        if (setRelatesReq.getOverriddenCase() == ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL) {
+            relationType.setRelates(setRelatesReq.getLabel(), setRelatesReq.getOverriddenLabel());
+        } else {
+            relationType.setRelates(setRelatesReq.getLabel());
+        }
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+                .setRelationTypeSetRelatesRes(ConceptProto.RelationType.SetRelates.Res.getDefaultInstance());
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void unsetRelates(final Transaction.Req request, final RelationType relationType, final ConceptProto.RelationType.UnsetRelates.Req unsetRelatesReq) {
+        relationType.unsetRelates(unsetRelatesReq.getLabel());
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setRelationTypeUnsetRelatesRes(ConceptProto.RelationType.UnsetRelates.Res.getDefaultInstance())));
+    }
+
+    private void getRelationType(final Transaction.Req request, final RoleType roleType) {
+        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder().setRoleTypeGetRelationTypeRes(
+                ConceptProto.RoleType.GetRelationType.Res.newBuilder().setRelationType(type(roleType.getRelationType())));
+        transactionRPC.respond(response(request, response));
+    }
+
+    private void getRelationTypes(final Transaction.Req request, final RoleType roleType) {
+        final Stream<Transaction.Res> responses = roleType.getRelationTypes().map(con -> response(request,
+                ConceptProto.Type.Res.newBuilder().setRoleTypeGetRelationTypesRes(ConceptProto.RoleType.GetRelationTypes.Res.newBuilder().setRelationType(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+
+    private void getPlayers(final Transaction.Req request, final RoleType roleType) {
+        final Stream<Transaction.Res> responses = roleType.getPlayers().map(con -> response(request,
+                ConceptProto.Type.Res.newBuilder().setRoleTypeGetPlayersRes(ConceptProto.RoleType.GetPlayers.Res.newBuilder().setThingType(type(con)))));
+        transactionRPC.respond(request, responses.iterator());
+    }
+}

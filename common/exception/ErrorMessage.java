@@ -41,14 +41,20 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Server(7, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
                 new Server(8, "Grakn Core server has been shutdown.");
+        public static final Server MISSING_FIELD =
+                new Server(9, "The request message does not contain the required field '%s'.");
         public static final Server MISSING_CONCEPT =
                 new Server(9, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
-                new Server(10, "A value type was not correctly set.");
+                new Server(10, "The value type '%s' was not recognised.");
         public static final Server UNKNOWN_ANSWER_TYPE =
-                new Server(11, "The answer type was not recognized.");
+                new Server(11, "The answer type '%s' was not recognised.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(12, "The request message was not recognized.");
+                new Server(12, "The request message was not recognised.");
+        public static final Server ITERATION_WITH_UNKNOWN_ID =
+                new Server(13, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
+        public static final Server DUPLICATE_REQUEST =
+                new Server(14, "The request with ID '%s' is a duplicate.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Server Error";
@@ -123,18 +129,22 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Transaction(1, "Unsupported operation: calling '%s' for '%s' is not supported.");
         public static final Transaction ILLEGAL_OPERATION =
                 new Transaction(2, "Attempted an illegal operation!");
+        public static final Transaction TRANSACTION_NOT_OPENED =
+                new Transaction(3, "The transaction has not been opened yet, so the only allowed operation is to open it.");
         public static final Transaction TRANSACTION_ALREADY_OPENED =
-                new Transaction(3, "Transaction has already been already opened.");
+                new Transaction(4, "Transaction has already been opened.");
         public static final Transaction TRANSACTION_CLOSED =
-                new Transaction(4, "The transaction has been closed and no further operation is allowed.");
+                new Transaction(5, "The transaction has been closed and no further operation is allowed.");
         public static final Transaction ILLEGAL_COMMIT =
-                new Transaction(5, "Only write transactions can be committed.");
+                new Transaction(6, "Only write transactions can be committed.");
         public static final Transaction SESSION_DATA_VIOLATION =
-                new Transaction(6, "Attempted schema writes when session type does not allow.");
+                new Transaction(7, "Attempted schema writes when session type does not allow.");
         public static final Transaction SESSION_SCHEMA_VIOLATION =
-                new Transaction(7, "Attempted data writes when session type does not allow.");
-        public static final Transaction UNEXPECTED_NULL =
-                new Transaction(8, "Unexpected NULL object.");
+                new Transaction(8, "Attempted data writes when session type does not allow.");
+        public static final Transaction MISSING_TRANSACTION =
+                new Transaction(9, "Transaction can not be null.");
+        public static final Transaction BAD_TRANSACTION_TYPE =
+                new Transaction(10, "The transaction type '%s' was not recognised.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
@@ -149,7 +159,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Pattern INVALID_CASTING =
                 new Pattern(1, "The class '%s' cannot be casted to '%s'.");
         public static final Pattern ANONYMOUS_CONCEPT_VARIABLE =
-                new Pattern(2, "Attempted to refer to a concept using an anonymous variable. Their intended use if for inserting things.");
+                new Pattern(2, "Attempted to refer to a concept using an anonymous variable. Their intended use is for inserting things.");
         public static final Pattern ANONYMOUS_TYPE_VARIABLE =
                 new Pattern(3, "Attempted to refer to a type using an anonymous variable. Their intended use is for inserting things.");
         public static final Pattern UNBOUNDED_CONCEPT_VARIABLE =
@@ -360,6 +370,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(38, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite TYPE_CONSTRAINT_UNACCEPTED =
                 new TypeWrite(39, "The type constraint '%s' is not accepted in a define/undefine query.");
+        public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
+                new TypeWrite(40, "Unable to set type with class '%s' as a supertype.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";

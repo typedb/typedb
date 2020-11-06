@@ -22,6 +22,7 @@ package(
         "//:__pkg__",
         "//cluster:__pkg__",
         "//rocks:__pkg__",
+        "//server:__pkg__",
         "//test:__subpackages__",
     ],
 )
