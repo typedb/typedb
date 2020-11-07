@@ -47,19 +47,19 @@ public class QueryManager {
     private final ConceptManager conceptMgr;
     private final Context.Transaction transactionCtx;
 
-    public QueryManager(final TraversalEngine traversalEng,
-                        final ConceptManager conceptMgr,
-                        final Context.Transaction transactionCtx) {
+    public QueryManager(TraversalEngine traversalEng,
+                        ConceptManager conceptMgr,
+                        Context.Transaction transactionCtx) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.transactionCtx = transactionCtx;
     }
 
-    public ResourceIterator<ConceptMap> match(final GraqlMatch query) {
+    public ResourceIterator<ConceptMap> match(GraqlMatch query) {
         return match(query, new Options.Query());
     }
 
-    public ResourceIterator<ConceptMap> match(final GraqlMatch query, final Options.Query options) {
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             return Matcher.create(traversalEng, conceptMgr, query.conjunction(), context).execute();
@@ -70,11 +70,11 @@ public class QueryManager {
         }
     }
 
-    public ResourceIterator<ConceptMap> insert(final GraqlInsert query) {
+    public ResourceIterator<ConceptMap> insert(GraqlInsert query) {
         return insert(query, new Options.Query());
     }
 
-    public ResourceIterator<ConceptMap> insert(final GraqlInsert query, final Options.Query options) {
+    public ResourceIterator<ConceptMap> insert(GraqlInsert query, Options.Query options) {
         if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
@@ -91,11 +91,11 @@ public class QueryManager {
         }
     }
 
-    public void delete(final GraqlDelete query) {
+    public void delete(GraqlDelete query) {
         delete(query, new Options.Query());
     }
 
-    public void delete(final GraqlDelete query, final Options.Query options) {
+    public void delete(GraqlDelete query, Options.Query options) {
         if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
@@ -108,7 +108,7 @@ public class QueryManager {
         }
     }
 
-    public void define(final GraqlDefine query) {
+    public void define(GraqlDefine query) {
         if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             Definer.create(conceptMgr, query.variables(), query.rules()).execute();
@@ -119,7 +119,7 @@ public class QueryManager {
         }
     }
 
-    public void undefine(final GraqlUndefine query) {
+    public void undefine(GraqlUndefine query) {
         if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             Undefiner.create(conceptMgr, query.variables(), query.rules()).execute();

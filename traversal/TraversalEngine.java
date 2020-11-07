@@ -30,12 +30,12 @@ public class TraversalEngine {
     private final GraphManager graphMgr;
     private final TraversalCache cache;
 
-    public TraversalEngine(final GraphManager graphMgr, TraversalCache cache) {
+    public TraversalEngine(GraphManager graphMgr, TraversalCache cache) {
         this.graphMgr = graphMgr;
         this.cache = cache;
     }
 
-    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(final Traversal traversal) {
+    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(Traversal traversal) {
         traversal.initialisePlanner(cache);
         return traversal.execute(graphMgr);
     }

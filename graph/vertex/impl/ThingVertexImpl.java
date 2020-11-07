@@ -45,7 +45,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     protected final AtomicBoolean isDeleted;
     protected boolean isInferred;
 
-    ThingVertexImpl(final DataGraph graph, final VertexIID.Thing iid, final boolean isInferred) {
+    ThingVertexImpl(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
         super(iid);
         this.graph = graph;
         this.graphMgr = new GraphManager(graph.schema(), graph);
@@ -56,7 +56,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.isDeleted = new AtomicBoolean(false);
     }
 
-    public static ThingVertexImpl of(final DataGraph graph, final VertexIID.Thing iid) {
+    public static ThingVertexImpl of(DataGraph graph, VertexIID.Thing iid) {
         if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
             return AttributeVertexImpl.of(graph, iid.asAttribute());
         } else {
@@ -116,7 +116,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public void isInferred(final boolean isInferred) {
+    public void isInferred(boolean isInferred) {
         this.isInferred = isInferred;
     }
 
@@ -157,13 +157,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     public static class Buffered extends ThingVertexImpl {
 
-        public Buffered(final DataGraph graph, final VertexIID.Thing iid, final boolean isInferred) {
+        public Buffered(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
             setModified();
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(final Encoding.Direction direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
             return new ThingAdjacencyImpl.Buffered(this, direction);
         }
 
@@ -195,17 +195,17 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     public static class Persisted extends ThingVertexImpl {
 
-        public Persisted(final DataGraph graph, final VertexIID.Thing iid) {
+        public Persisted(DataGraph graph, VertexIID.Thing iid) {
             super(graph, iid, false);
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(final Encoding.Direction direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
             return new ThingAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override
-        public void isInferred(final boolean isInferred) {
+        public void isInferred(boolean isInferred) {
             throw new GraknException(ILLEGAL_OPERATION);
         }
 

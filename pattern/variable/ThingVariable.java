@@ -45,7 +45,7 @@ public class ThingVariable extends Variable {
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
 
-    ThingVariable(final Identifier.Variable identifier) {
+    ThingVariable(Identifier.Variable identifier) {
         super(identifier);
         this.isaConstraints = new HashSet<>();
         this.isConstraints = new HashSet<>();
@@ -55,19 +55,19 @@ public class ThingVariable extends Variable {
         this.constraints = new HashSet<>();
     }
 
-    ThingVariable constrainThing(final List<graql.lang.pattern.constraint.ThingConstraint> constraints,
-                                 final VariableRegistry registry) {
+    ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints,
+                                 VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
 
-    ThingVariable constrainConcept(final List<graql.lang.pattern.constraint.ConceptConstraint> constraints,
-                                   final VariableRegistry registry) {
+    ThingVariable constrainConcept(List<graql.lang.pattern.constraint.ConceptConstraint> constraints,
+                                   VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
 
-    private void constrain(final ThingConstraint constraint) {
+    private void constrain(ThingConstraint constraint) {
         constraints.add(constraint);
         if (constraint.isIID()) iidConstraint = constraint.asIID();
         else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());

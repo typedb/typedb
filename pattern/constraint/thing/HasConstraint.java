@@ -33,16 +33,16 @@ public class HasConstraint extends ThingConstraint {
     private final ThingVariable attribute;
     private final int hash;
 
-    private HasConstraint(final ThingVariable owner, final ThingVariable attribute) {
+    private HasConstraint(ThingVariable owner, ThingVariable attribute) {
         super(owner);
         assert attribute != null;
         this.attribute = attribute;
         this.hash = Objects.hash(HasConstraint.class, this.owner, this.attribute);
     }
 
-    public static HasConstraint of(final ThingVariable owner,
-                                   final graql.lang.pattern.constraint.ThingConstraint.Has constraint,
-                                   final VariableRegistry register) {
+    public static HasConstraint of(ThingVariable owner,
+                                   graql.lang.pattern.constraint.ThingConstraint.Has constraint,
+                                   VariableRegistry register) {
         return new HasConstraint(owner, register.register(constraint.attribute()));
     }
 
@@ -56,7 +56,7 @@ public class HasConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.has(owner.identifier(), attribute.identifier());
     }
 
@@ -71,7 +71,7 @@ public class HasConstraint extends ThingConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final HasConstraint that = (HasConstraint) o;

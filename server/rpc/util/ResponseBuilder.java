@@ -48,7 +48,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYP
 
 public class ResponseBuilder {
 
-    public static StatusRuntimeException exception(final Throwable e) {
+    public static StatusRuntimeException exception(Throwable e) {
         if (e instanceof StatusRuntimeException) {
             return (StatusRuntimeException) e;
         } else {
@@ -56,17 +56,17 @@ public class ResponseBuilder {
         }
     }
 
-    private static StatusRuntimeException exception(final Status status, final String message) {
+    private static StatusRuntimeException exception(Status status, String message) {
         return status.withDescription(message + " Please check server logs for the stack trace.").asRuntimeException();
     }
 
     public static class Transaction {
 
-        public static TransactionProto.Transaction.Res done(final String id) {
+        public static TransactionProto.Transaction.Res done(String id) {
             return TransactionProto.Transaction.Res.newBuilder().setId(id).setDone(true).build();
         }
 
-        public static TransactionProto.Transaction.Res continueRes(final String id) {
+        public static TransactionProto.Transaction.Res continueRes(String id) {
             return TransactionProto.Transaction.Res.newBuilder().setId(id).setContinue(true).build();
         }
     }
@@ -94,7 +94,7 @@ public class ResponseBuilder {
 
     public static class Concept {
 
-        public static ConceptProto.Concept concept(final grakn.core.concept.Concept concept) {
+        public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
             if (concept == null) return null;
             if (concept instanceof Thing) {
                 return ConceptProto.Concept.newBuilder().setThing(thing(concept.asThing())).build();
@@ -103,7 +103,7 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.Thing thing(final Thing thing) {
+        public static ConceptProto.Thing thing(Thing thing) {
             final ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
                     .setEncoding(getEncoding(thing));
@@ -117,7 +117,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.Type type(final Type type) {
+        public static ConceptProto.Type type(Type type) {
             final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel())
                     .setEncoding(getEncoding(type));
@@ -127,7 +127,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.Rule rule(final Rule rule) {
+        public static ConceptProto.Rule rule(Rule rule) {
             final ConceptProto.Rule.Builder builder = ConceptProto.Rule.newBuilder()
                     .setLabel(rule.getLabel())
                     .setWhen(rule.getWhenPreNormalised().toString())
@@ -160,7 +160,7 @@ public class ResponseBuilder {
             return builder.build();
         } */
 
-        private static ConceptProto.Thing.ENCODING getEncoding(final Thing thing) {
+        private static ConceptProto.Thing.ENCODING getEncoding(Thing thing) {
             if (thing instanceof Entity) {
                 return ConceptProto.Thing.ENCODING.ENTITY;
             } else if (thing instanceof Relation) {
@@ -172,7 +172,7 @@ public class ResponseBuilder {
             }
         }
 
-        private static ConceptProto.Type.ENCODING getEncoding(final Type type) {
+        private static ConceptProto.Type.ENCODING getEncoding(Type type) {
             if (type instanceof EntityType) {
                 return ConceptProto.Type.ENCODING.ENTITY_TYPE;
             } else if (type instanceof RelationType) {
@@ -188,7 +188,7 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.Attribute.Value attributeValue(final Attribute attribute) {
+        public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
             final ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
 
             if (attribute instanceof Attribute.String) {
@@ -208,7 +208,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static AttributeType.ValueType valueType(final ConceptProto.AttributeType.VALUE_TYPE valueType) {
+        public static AttributeType.ValueType valueType(ConceptProto.AttributeType.VALUE_TYPE valueType) {
             switch (valueType) {
                 case OBJECT:
                     return AttributeType.ValueType.OBJECT;
@@ -228,11 +228,11 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE valueType(final Attribute attribute) {
+        public static ConceptProto.AttributeType.VALUE_TYPE valueType(Attribute attribute) {
             return valueType(attribute.getType());
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE valueType(final AttributeType attributeType) {
+        public static ConceptProto.AttributeType.VALUE_TYPE valueType(AttributeType attributeType) {
             if (attributeType instanceof AttributeType.String) {
                 return ConceptProto.AttributeType.VALUE_TYPE.STRING;
             } else if (attributeType instanceof AttributeType.Boolean) {
@@ -256,7 +256,7 @@ public class ResponseBuilder {
      */
     public static class Answer {
 
-        public static AnswerProto.Answer answer(final Object object) {
+        public static AnswerProto.Answer answer(Object object) {
             final AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
 
             if (object instanceof AnswerGroup) {
@@ -272,7 +272,7 @@ public class ResponseBuilder {
             return answer.build();
         }
 
-        public static AnswerProto.AnswerGroup answerGroup(final AnswerGroup<?> answer) {
+        public static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
             final AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()
                     .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
                     .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
@@ -280,7 +280,7 @@ public class ResponseBuilder {
             return answerGroupProto.build();
         }
 
-        public static AnswerProto.ConceptMap conceptMap(final ConceptMap answer) {
+        public static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             final AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
             answer.concepts().forEach((ref, concept) -> {
@@ -301,7 +301,7 @@ public class ResponseBuilder {
             return conceptMapProto.build();
         }
 
-        public static AnswerProto.Number number(final Number number) {
+        public static AnswerProto.Number number(Number number) {
             return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
         }
     }

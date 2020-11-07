@@ -33,18 +33,18 @@ public class Disjunction implements Pattern {
     private static final String TRACE_PREFIX = "disjunction.";
     private final Set<Conjunction> conjunctions;
 
-    public Disjunction(final Set<Conjunction> conjunctions) {
+    public Disjunction(Set<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
     }
 
     public static Disjunction create(
-            final graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql) {
+            graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql) {
         return create(graql, null);
     }
 
     public static Disjunction create(
-            final graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql,
-            @Nullable final VariableRegistry bounds) {
+            graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql,
+            @Nullable VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Disjunction(graql.patterns().stream().map(
                     conjunction -> Conjunction.create(conjunction, bounds)

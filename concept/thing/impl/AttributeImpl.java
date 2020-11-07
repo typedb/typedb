@@ -41,12 +41,12 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     final AttributeVertex<VALUE> attributeVertex;
 
-    private AttributeImpl(final AttributeVertex<VALUE> vertex) {
+    private AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
         this.attributeVertex = vertex;
     }
 
-    public static AttributeImpl<?> of(final AttributeVertex<?> vertex) {
+    public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
         switch (vertex.valueType()) {
             case BOOLEAN:
                 return new AttributeImpl.Boolean(vertex.asBoolean());
@@ -77,7 +77,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
-    public Stream<ThingImpl> getOwners(final ThingType ownerType) {
+    public Stream<ThingImpl> getOwners(ThingType ownerType) {
         return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
                 v -> vertex.ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from().stream()
         ).map(ThingImpl::of);
@@ -120,7 +120,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {
 
-        public Boolean(final AttributeVertex<java.lang.Boolean> vertex) {
+        public Boolean(AttributeVertex<java.lang.Boolean> vertex) {
             super(vertex);
             assert vertex.type().valueType().equals(BOOLEAN);
         }
@@ -138,7 +138,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Long extends AttributeImpl<java.lang.Long> implements Attribute.Long {
 
-        public Long(final AttributeVertex<java.lang.Long> vertex) {
+        public Long(AttributeVertex<java.lang.Long> vertex) {
             super(vertex);
             assert vertex.type().valueType().equals(LONG);
         }
@@ -156,7 +156,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Double extends AttributeImpl<java.lang.Double> implements Attribute.Double {
 
-        public Double(final AttributeVertex<java.lang.Double> vertex) {
+        public Double(AttributeVertex<java.lang.Double> vertex) {
             super(vertex);
             assert vertex.type().valueType().equals(DOUBLE);
         }
@@ -174,7 +174,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class String extends AttributeImpl<java.lang.String> implements Attribute.String {
 
-        public String(final AttributeVertex<java.lang.String> vertex) {
+        public String(AttributeVertex<java.lang.String> vertex) {
             super(vertex);
             assert vertex.type().valueType().equals(STRING);
         }
@@ -192,7 +192,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class DateTime extends AttributeImpl<java.time.LocalDateTime> implements Attribute.DateTime {
 
-        public DateTime(final AttributeVertex<LocalDateTime> vertex) {
+        public DateTime(AttributeVertex<LocalDateTime> vertex) {
             super(vertex);
             assert vertex.type().valueType().equals(DATETIME);
         }

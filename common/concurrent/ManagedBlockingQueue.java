@@ -36,7 +36,7 @@ public class ManagedBlockingQueue<E> {
     private final ThreadLocal<QueuePutter> queuePutter;
     private volatile boolean cancelled;
 
-    public ManagedBlockingQueue(final int capacity) {
+    public ManagedBlockingQueue(int capacity) {
         queue = new LinkedBlockingQueue<>(capacity);
         queueTaker = ThreadLocal.withInitial(QueueTaker::new);
         queuePutter = ThreadLocal.withInitial(QueuePutter::new);
@@ -52,12 +52,12 @@ public class ManagedBlockingQueue<E> {
         return queueTaker.get().getItem();
     }
 
-    public void put(final E element) throws InterruptedException {
+    public void put(E element) throws InterruptedException {
         queuePutter.get().setItem(element);
         ForkJoinPool.managedBlock(queuePutter.get());
     }
 
-    public void drainTo(final ManagedBlockingQueue<E> otherQueue) {
+    public void drainTo(ManagedBlockingQueue<E> otherQueue) {
         queue.drainTo(otherQueue.queue);
     }
 

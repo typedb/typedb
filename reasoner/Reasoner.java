@@ -35,19 +35,19 @@ public class Reasoner {
 
     private final TraversalEngine traversalEng;
 
-    public Reasoner(final TraversalEngine traversalEng, final ConceptManager conceptMgr) {
+    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr) {
         this.traversalEng = traversalEng;
     }
 
-    public ResourceIterator<ConceptMap> execute(final Disjunction disjunction) {
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
         return parallel(iterate(disjunction.conjunctions()).map(this::execute).toList());
     }
 
-    public ResourceIterator<ConceptMap> execute(final Disjunction disjunction, final ConceptMap bounds) {
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, ConceptMap bounds) {
         return parallel(iterate(disjunction.conjunctions()).map(conj -> execute(conj, bounds)).toList());
     }
 
-    public ResourceIterator<ConceptMap> execute(final Conjunction conjunction) {
+    public ResourceIterator<ConceptMap> execute(Conjunction conjunction) {
         Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
         ResourceIterator<ConceptMap> answers = link(list(
                 traversalEng.execute(conjunctionResolvedTypes.traversal()).map(ConceptMap::of),
@@ -60,15 +60,15 @@ public class Reasoner {
         ).toList()).hasNext());
     }
 
-    public ResourceIterator<ConceptMap> execute(final Conjunction conjunction, final ConceptMap bounds) {
+    public ResourceIterator<ConceptMap> execute(Conjunction conjunction, ConceptMap bounds) {
         return null; // TODO
     }
 
-    private Conjunction resolveTypes(final Conjunction conjunction) {
+    private Conjunction resolveTypes(Conjunction conjunction) {
         return conjunction; // TODO
     }
 
-    private ParallelIterators<ConceptMap> infer(final Conjunction conjunction) {
+    private ParallelIterators<ConceptMap> infer(Conjunction conjunction) {
         return null; // TODO
     }
 }

@@ -45,7 +45,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     protected Encoding.ValueType valueType;
     protected Pattern regex;
 
-    TypeVertexImpl(final SchemaGraph graph, final VertexIID.Type iid, final String label, @Nullable final String scope) {
+    TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(graph, iid, label);
         assert iid.isType();
         this.scope = scope;
@@ -75,25 +75,25 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(final SchemaGraph graph, final VertexIID.Type iid, final String label, @Nullable final String scope) {
+        public Buffered(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(final Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
-        public void label(final String label) {
+        public void label(String label) {
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
         }
 
         @Override
-        public void scope(final String scope) {
+        public void scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
         }
@@ -109,7 +109,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl isAbstract(final boolean isAbstract) {
+        public TypeVertexImpl isAbstract(boolean isAbstract) {
             this.isAbstract = isAbstract;
             this.setModified();
             return this;
@@ -121,7 +121,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl valueType(final Encoding.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -133,7 +133,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl regex(final Pattern regex) {
+        public TypeVertexImpl regex(Pattern regex) {
             this.regex = regex;
             this.setModified();
             return this;
@@ -194,26 +194,26 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private boolean regexLookedUp;
 
-        public Persisted(final SchemaGraph graph, final VertexIID.Type iid, final String label, @Nullable final String scope) {
+        public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             regexLookedUp = false;
         }
 
-        public Persisted(final SchemaGraph graph, final VertexIID.Type iid) {
+        public Persisted(SchemaGraph graph, VertexIID.Type iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   getScope(graph, iid));
         }
 
         @Nullable
-        private static String getScope(final SchemaGraph graph, final VertexIID.Type iid) {
+        private static String getScope(SchemaGraph graph, VertexIID.Type iid) {
             final byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(final Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
             return new SchemaAdjacencyImpl.Persisted(this, direction);
         }
 
@@ -223,7 +223,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public void label(final String label) {
+        public void label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Type.of(this.label, scope).bytes());
@@ -232,7 +232,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public void scope(final String scope) {
+        public void scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
             graph.storage().delete(IndexIID.Type.of(label, this.scope).bytes());
@@ -249,7 +249,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl isAbstract(final boolean isAbstract) {
+        public TypeVertexImpl isAbstract(boolean isAbstract) {
             if (isAbstract) graph.storage().put(join(iid.bytes(), ABSTRACT.infix().bytes()));
             else graph.storage().delete(join(iid.bytes(), ABSTRACT.infix().bytes()));
             this.isAbstract = isAbstract;
@@ -266,7 +266,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl valueType(final Encoding.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
             this.setModified();
@@ -283,7 +283,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public TypeVertexImpl regex(final Pattern regex) {
+        public TypeVertexImpl regex(Pattern regex) {
             if (regex == null) graph.storage().delete(join(iid.bytes(), REGEX.infix().bytes()));
             else graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
             this.regex = regex;

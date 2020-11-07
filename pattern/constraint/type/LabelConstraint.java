@@ -31,7 +31,7 @@ public class LabelConstraint extends TypeConstraint {
     private final String scope;
     private final int hash;
 
-    private LabelConstraint(final TypeVariable owner, final String label, @Nullable final String scope) {
+    private LabelConstraint(TypeVariable owner, String label, @Nullable String scope) {
         super(owner);
         if (label == null) throw new NullPointerException("Null label");
         this.scope = scope;
@@ -39,7 +39,7 @@ public class LabelConstraint extends TypeConstraint {
         this.hash = Objects.hash(LabelConstraint.class, this.owner, this.scope, this.label);
     }
 
-    public static LabelConstraint of(final TypeVariable owner, final graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
+    public static LabelConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
         return new LabelConstraint(owner, constraint.label(), constraint.scope().orElse(null));
     }
 
@@ -56,7 +56,7 @@ public class LabelConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.label(owner.identifier(), label, scope);
     }
 
@@ -71,7 +71,7 @@ public class LabelConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final LabelConstraint that = (LabelConstraint) o;

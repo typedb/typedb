@@ -38,19 +38,19 @@ import static org.junit.Assert.fail;
 public class DatabaseSteps {
 
     @When("connection create database: {word}")
-    public void connection_create_database(final String name) {
+    public void connection_create_database(String name) {
         connection_create_databases(list(name));
     }
 
     @When("connection create database(s):")
-    public void connection_create_databases(final List<String> names) {
+    public void connection_create_databases(List<String> names) {
         for (String name : names) {
             grakn.databases().create(name);
         }
     }
 
     @When("connection create databases in parallel:")
-    public void connection_create_databases_in_parallel(final List<String> names) {
+    public void connection_create_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
         final CompletableFuture[] creations = new CompletableFuture[names.size()];
@@ -63,14 +63,14 @@ public class DatabaseSteps {
     }
 
     @When("connection delete database(s):")
-    public void connection_delete_databases(final List<String> names) {
+    public void connection_delete_databases(List<String> names) {
         for (String databaseName : names) {
             grakn.databases().get(databaseName).delete();
         }
     }
 
     @Then("connection delete database(s); throws exception")
-    public void connection_delete_databases_throws_exception(final List<String> names) {
+    public void connection_delete_databases_throws_exception(List<String> names) {
         for (String databaseName : names) {
             try {
                 grakn.databases().get(databaseName).delete();
@@ -82,7 +82,7 @@ public class DatabaseSteps {
     }
 
     @When("connection delete databases in parallel:")
-    public void connection_delete_databases_in_parallel(final List<String> names) {
+    public void connection_delete_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
         final CompletableFuture[] deletions = new CompletableFuture[names.size()];
@@ -101,7 +101,7 @@ public class DatabaseSteps {
     }
 
     @Then("connection has database(s):")
-    public void connection_has_databases(final List<String> names) {
+    public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
                      grakn.databases().all().stream()
                              .map(database -> database.name())
@@ -109,7 +109,7 @@ public class DatabaseSteps {
     }
 
     @Then("connection does not have database(s):")
-    public void connection_does_not_have_databases(final List<String> names) {
+    public void connection_does_not_have_databases(List<String> names) {
         for (String name : names) {
             assertNull(grakn.databases().get(name));
         }

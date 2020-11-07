@@ -79,8 +79,8 @@ public class Inserter {
     private final Map<Reference, Thing> inserted;
     private final Set<ThingVariable> variables;
 
-    private Inserter(final ConceptManager conceptMgr, final Set<ThingVariable> variables,
-                     final ConceptMap existing, final Context.Query context) {
+    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> variables,
+                     ConceptMap existing, Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;
@@ -88,15 +88,15 @@ public class Inserter {
         this.inserted = new HashMap<>();
     }
 
-    public static Inserter create(final ConceptManager conceptMgr,
-                                  final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
-                                  final Context.Query context) {
+    public static Inserter create(ConceptManager conceptMgr,
+                                  List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+                                  Context.Query context) {
         return create(conceptMgr, variables, new ConceptMap(), context);
     }
 
-    public static Inserter create(final ConceptManager conceptMgr,
-                                  final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
-                                  final ConceptMap existing, final Context.Query context) {
+    public static Inserter create(ConceptManager conceptMgr,
+                                  List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+                                  ConceptMap existing, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Inserter(conceptMgr, VariableRegistry.createFromThings(variables).things(), existing, context);
         }
@@ -109,7 +109,7 @@ public class Inserter {
         }
     }
 
-    private Thing insert(final ThingVariable variable) {
+    private Thing insert(ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             if (!variable.reference().isAnonymous() && inserted.containsKey(variable.reference())) {
                 return inserted.get(variable.reference());
@@ -132,7 +132,7 @@ public class Inserter {
         }
     }
 
-    private void validate(final ThingVariable variable) {
+    private void validate(ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             if (existing.contains(variable.reference()) && (variable.iid().isPresent() || !variable.isa().isEmpty())) {
                 if (variable.iid().isPresent()) {
@@ -152,7 +152,7 @@ public class Inserter {
         }
     }
 
-    private Thing getThing(final IIDConstraint iidConstraint) {
+    private Thing getThing(IIDConstraint iidConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthing")) {
             final Thing thing = conceptMgr.getThing(iidConstraint.iid());
             if (thing == null) throw new GraknException(THING_NOT_FOUND.message(bytesToHexString(iidConstraint.iid())));
@@ -160,7 +160,7 @@ public class Inserter {
         }
     }
 
-    private ThingType getThingType(final TypeVariable variable) {
+    private ThingType getThingType(TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
             if (variable.reference().isLabel()) {
                 assert variable.label().isPresent();
@@ -173,7 +173,7 @@ public class Inserter {
         }
     }
 
-    private RoleType getRoleType(final TypeVariable variable) {
+    private RoleType getRoleType(TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             if (variable.reference().isLabel()) {
                 assert variable.label().isPresent();
@@ -191,7 +191,7 @@ public class Inserter {
         }
     }
 
-    private Thing insertIsa(final IsaConstraint isaConstraint, final ThingVariable variable) {
+    private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertisa")) {
             final ThingType thingType = getThingType(isaConstraint.type());
 
@@ -210,13 +210,13 @@ public class Inserter {
         }
     }
 
-    private Entity insertEntity(final EntityType entityType) {
+    private Entity insertEntity(EntityType entityType) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertentity")) {
             return entityType.create();
         }
     }
 
-    private Attribute insertAttribute(final AttributeType attributeType, final ThingVariable variable) {
+    private Attribute insertAttribute(AttributeType attributeType, ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertattribute")) {
             final ValueConstraint<?> valueConstraint;
             if (variable.value().size() > 1) {
@@ -244,7 +244,7 @@ public class Inserter {
         }
     }
 
-    private Relation insertRelation(final RelationType relationType, final ThingVariable variable) {
+    private Relation insertRelation(RelationType relationType, ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertrelation")) {
             if (variable.relation().size() == 1) {
                 final Relation relation = relationType.create();
@@ -275,7 +275,7 @@ public class Inserter {
         }
     }
 
-    private void insertHas(final Thing thing, final Set<HasConstraint> hasConstraints) {
+    private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "inserthas")) {
             hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
         }

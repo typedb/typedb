@@ -40,7 +40,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     final T value;
     private final int hash;
 
-    ValueConstraint(final ThingVariable owner, final GraqlToken.Comparator comparator, final T value) {
+    ValueConstraint(ThingVariable owner, GraqlToken.Comparator comparator, T value) {
         super(owner);
         assert !comparator.isEquality() || value instanceof Comparable || value instanceof ThingVariable;
         assert !comparator.isSubString() || value instanceof java.lang.String || value instanceof ThingVariable;
@@ -51,9 +51,9 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         this.hash = Objects.hash(this.comparator, this.value);
     }
 
-    public static ValueConstraint<?> of(final ThingVariable owner,
-                                        final graql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
-                                        final VariableRegistry register) {
+    public static ValueConstraint<?> of(ThingVariable owner,
+                                        graql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
+                                        VariableRegistry register) {
         if (valueConstraint.isLong()) {
             return new Long(owner, valueConstraint.comparator().asEquality(), valueConstraint.asLong().value());
         } else if (valueConstraint.isDouble()) {
@@ -145,7 +145,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final ValueConstraint<?> that = (ValueConstraint<?>) o;
@@ -161,7 +161,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
     public static class Long extends ValueConstraint<java.lang.Long> {
 
-        public Long(final ThingVariable owner, final GraqlToken.Comparator.Equality comparator, final long value) {
+        public Long(ThingVariable owner, GraqlToken.Comparator.Equality comparator, long value) {
             super(owner, comparator, value);
         }
 
@@ -181,14 +181,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public void addTo(final Traversal traversal) {
+        public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class Double extends ValueConstraint<java.lang.Double> {
 
-        public Double(final ThingVariable owner, final GraqlToken.Comparator.Equality comparator, final double value) {
+        public Double(ThingVariable owner, GraqlToken.Comparator.Equality comparator, double value) {
             super(owner, comparator, value);
         }
 
@@ -203,14 +203,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public void addTo(final Traversal traversal) {
+        public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class Boolean extends ValueConstraint<java.lang.Boolean> {
 
-        public Boolean(final ThingVariable owner, final GraqlToken.Comparator.Equality comparator, final boolean value) {
+        public Boolean(ThingVariable owner, GraqlToken.Comparator.Equality comparator, boolean value) {
             super(owner, comparator, value);
         }
 
@@ -225,14 +225,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public void addTo(final Traversal traversal) {
+        public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class String extends ValueConstraint<java.lang.String> {
 
-        public String(final ThingVariable owner, final GraqlToken.Comparator.String comparator, final java.lang.String value) {
+        public String(ThingVariable owner, GraqlToken.Comparator.String comparator, java.lang.String value) {
             super(owner, comparator, value);
         }
 
@@ -247,16 +247,16 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public void addTo(final Traversal traversal) {
+        public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class DateTime extends ValueConstraint<LocalDateTime> {
 
-        public DateTime(final ThingVariable owner,
-                        final GraqlToken.Comparator.Equality comparator,
-                        final LocalDateTime value) {
+        public DateTime(ThingVariable owner,
+                        GraqlToken.Comparator.Equality comparator,
+                        LocalDateTime value) {
             super(owner, comparator, value);
         }
 
@@ -271,16 +271,16 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public void addTo(final Traversal traversal) {
+        public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value);
         }
     }
 
     public static class Variable extends ValueConstraint<ThingVariable> {
 
-        public Variable(final ThingVariable owner,
-                        final GraqlToken.Comparator.Variable comparator,
-                        final ThingVariable variable) {
+        public Variable(ThingVariable owner,
+                        GraqlToken.Comparator.Variable comparator,
+                        ThingVariable variable) {
             super(owner, comparator, variable);
         }
 
@@ -295,7 +295,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         }
 
         @Override
-        public void addTo(final Traversal traversal) {
+        public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value.identifier());
         }
     }

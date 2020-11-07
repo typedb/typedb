@@ -40,7 +40,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     final Encoding.Edge.Thing encoding;
     final AtomicBoolean deleted;
 
-    ThingEdgeImpl(final DataGraph graph, final Encoding.Edge.Thing encoding) {
+    ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding) {
         this.graph = graph;
         this.encoding = encoding;
         deleted = new AtomicBoolean(false);
@@ -61,7 +61,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param from     the tail vertex
          * @param to       the head vertex
          */
-        public Buffered(final Encoding.Edge.Thing encoding, final ThingVertex from, final ThingVertex to) {
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
             this(encoding, from, to, null);
         }
 
@@ -73,7 +73,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(final Encoding.Edge.Thing encoding, final ThingVertex from, final ThingVertex to, @Nullable final ThingVertex optimised) {
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised) {
             super(from.graph(), encoding);
             assert this.graph == to.graph();
             assert encoding.isOptimisation() || optimised == null;
@@ -157,7 +157,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @return true if equal, else false
          */
         @Override
-        public final boolean equals(final Object object) {
+        public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             final ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
@@ -208,7 +208,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(final DataGraph graph, final EdgeIID.Thing iid) {
+        public Persisted(DataGraph graph, EdgeIID.Thing iid) {
             super(graph, iid.encoding());
 
             if (iid.isOutwards()) {
@@ -298,7 +298,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @return true if equal, else false
          */
         @Override
-        public final boolean equals(final Object object) {
+        public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             final ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;

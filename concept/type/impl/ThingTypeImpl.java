@@ -68,15 +68,15 @@ import static java.util.stream.Stream.concat;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
-    ThingTypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+    ThingTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
     }
 
-    ThingTypeImpl(final GraphManager graphMgr, final String label, final Encoding.Vertex.Type encoding) {
+    ThingTypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
         super(graphMgr, label, encoding);
     }
 
-    public static ThingTypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
+    public static ThingTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
         switch (vertex.encoding()) {
             case ENTITY_TYPE:
                 return EntityTypeImpl.of(graphMgr, vertex);
@@ -112,29 +112,29 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
 
     @Override
-    public void setOwns(final AttributeType attributeType) {
+    public void setOwns(AttributeType attributeType) {
         setOwns(attributeType, false);
     }
 
     @Override
-    public void setOwns(final AttributeType attributeType, final boolean isKey) {
+    public void setOwns(AttributeType attributeType, boolean isKey) {
         if (isKey) ownsKey((AttributeTypeImpl) attributeType);
         else ownsAttribute((AttributeTypeImpl) attributeType);
     }
 
     @Override
-    public void setOwns(final AttributeType attributeType, final AttributeType overriddenType) {
+    public void setOwns(AttributeType attributeType, AttributeType overriddenType) {
         setOwns(attributeType, overriddenType, false);
     }
 
     @Override
-    public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
+    public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
         if (isKey) ownsKey((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
         else ownsAttribute((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
     }
 
     @Override
-    public void unsetOwns(final AttributeType attributeType) {
+    public void unsetOwns(AttributeType attributeType) {
         SchemaEdge edge;
         final TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
@@ -144,8 +144,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
     }
 
-    private <T extends grakn.core.concept.type.Type> void override(final Encoding.Edge.Type encoding, final T type, final T overriddenType,
-                                                                   final Stream<? extends TypeImpl> overridable, final Stream<? extends TypeImpl> notOverridable) {
+    private <T extends grakn.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
+                                                                   Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw exception(OVERRIDDEN_NOT_SUPERTYPE.message(type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
@@ -155,7 +155,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         vertex.outs().edge(encoding, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
     }
 
-    private void ownsKey(final AttributeTypeImpl attributeType) {
+    private void ownsKey(AttributeTypeImpl attributeType) {
         if (!attributeType.isKeyable()) {
             throw exception(OWNS_KEY_VALUE_TYPE.message(attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
@@ -182,14 +182,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             ownsKeyEdge.overridden(attVertex);
     }
 
-    private void ownsKey(final AttributeTypeImpl attributeType, final AttributeTypeImpl overriddenType) {
+    private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.ownsKey(attributeType);
         override(OWNS_KEY, attributeType, overriddenType,
                  getSupertype().getOwns(attributeType.getValueType()),
                  declaredOwns(false));
     }
 
-    private void ownsAttribute(final AttributeTypeImpl attributeType) {
+    private void ownsAttribute(AttributeTypeImpl attributeType) {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
             throw exception(OWNS_ATT_NOT_AVAILABLE.message(attributeType.getLabel()));
         }
@@ -200,14 +200,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         vertex.outs().put(OWNS, attVertex);
     }
 
-    private void ownsAttribute(final AttributeTypeImpl attributeType, final AttributeTypeImpl overriddenType) {
+    private void ownsAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.ownsAttribute(attributeType);
         override(OWNS, attributeType, overriddenType,
                  getSupertype().getOwns(attributeType.getValueType()),
                  concat(getSupertype().getOwns(true), declaredOwns(false)));
     }
 
-    private Stream<AttributeTypeImpl> declaredOwns(final boolean onlyKey) {
+    private Stream<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
         if (isRoot()) return Stream.of();
         final ResourceIterator<TypeVertex> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
@@ -215,7 +215,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return iterator.map(v -> AttributeTypeImpl.of(graphMgr, v)).stream();
     }
 
-    Stream<AttributeTypeImpl> overriddenOwns(final boolean onlyKey, final boolean transitive) {
+    Stream<AttributeTypeImpl> overriddenOwns(boolean onlyKey, boolean transitive) {
         if (isRoot()) return Stream.empty();
         final Stream<AttributeTypeImpl> overriddenOwns;
         if (onlyKey) {
@@ -238,24 +238,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<AttributeTypeImpl> getOwns(final AttributeType.ValueType valueType) {
+    public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType) {
         return getOwns(valueType, false);
     }
 
     @Override
-    public Stream<AttributeTypeImpl> getOwns(final boolean onlyKey) {
+    public Stream<AttributeTypeImpl> getOwns(boolean onlyKey) {
         if (isRoot()) return Stream.of();
         final Set<AttributeTypeImpl> overridden = overriddenOwns(onlyKey, false).collect(toSet());
         assert getSupertype() != null;
         return concat(declaredOwns(onlyKey), getSupertype().getOwns(onlyKey).filter(key -> !overridden.contains(key)));
     }
 
-    public Stream<AttributeTypeImpl> getOwns(final AttributeType.ValueType valueType, final boolean onlyKey) {
+    public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
     @Override
-    public void setPlays(final RoleType roleType) {
+    public void setPlays(RoleType roleType) {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
             throw exception(PLAYS_ROLE_NOT_AVAILABLE.message(roleType.getLabel()));
         }
@@ -263,14 +263,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public void setPlays(final RoleType roleType, final RoleType overriddenType) {
+    public void setPlays(RoleType roleType, RoleType overriddenType) {
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
                  vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream());
     }
 
     @Override
-    public void unsetPlays(final RoleType roleType) {
+    public void unsetPlays(RoleType roleType) {
         final SchemaEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) return;
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
@@ -330,7 +330,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     public static class Root extends ThingTypeImpl {
 
-        public Root(final GraphManager graphMgr, final TypeVertex vertex) {
+        public Root(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             assert vertex.label().equals(Encoding.Vertex.Type.Root.THING.label());
         }
@@ -339,7 +339,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(final String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        public void setLabel(String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
 
         @Override
         public void unsetAbstract() { throw exception(ROOT_TYPE_MUTATION.message()); }
@@ -389,27 +389,27 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public void setOwns(final AttributeType attributeType, final boolean isKey) {
+        public void setOwns(AttributeType attributeType, boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(final RoleType roleType) {
+        public void setPlays(RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(final RoleType roleType, final RoleType overriddenType) {
+        public void setPlays(RoleType roleType, RoleType overriddenType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void unsetPlays(final RoleType roleType) {
+        public void unsetPlays(RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 

@@ -62,7 +62,7 @@ public class BasicTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("basic-test");
     private static String database = "basic-test";
 
-    private static void assert_transaction_read(final Grakn.Transaction transaction) {
+    private static void assert_transaction_read(Grakn.Transaction transaction) {
         assertTrue(transaction.isOpen());
         assertTrue(transaction.type().isRead());
 
@@ -435,23 +435,23 @@ public class BasicTest {
         }
     }
 
-    private AttributeType.Boolean isAlive(final Grakn.Transaction txn) {
+    private AttributeType.Boolean isAlive(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("is-alive").asBoolean();
     }
 
-    private AttributeType.Long age(final Grakn.Transaction txn) {
+    private AttributeType.Long age(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("age").asLong();
     }
 
-    private AttributeType.Double score(final Grakn.Transaction txn) {
+    private AttributeType.Double score(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("score").asDouble();
     }
 
-    private AttributeType.String name(final Grakn.Transaction txn) {
+    private AttributeType.String name(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("name").asString();
     }
 
-    private AttributeType.DateTime dob(final Grakn.Transaction txn) {
+    private AttributeType.DateTime dob(Grakn.Transaction txn) {
         return txn.concepts().getAttributeType("birth-date").asDateTime();
     }
 

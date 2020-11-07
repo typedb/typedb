@@ -44,8 +44,8 @@ public class Deleter {
     private final Set<ThingVariable> variables;
     private final Map<Reference, Thing> deleted;
 
-    private Deleter(final ConceptManager conceptMgr, final Set<ThingVariable> variables,
-                    final ConceptMap existing, final Context.Query context) {
+    private Deleter(ConceptManager conceptMgr, Set<ThingVariable> variables,
+                    ConceptMap existing, Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.context = context;
         this.existing = existing;
@@ -53,9 +53,9 @@ public class Deleter {
         this.deleted = new HashMap<>();
     }
 
-    public static Deleter create(final ConceptManager conceptMgr,
-                                 final List<graql.lang.pattern.variable.ThingVariable<?>> variables,
-                                 final ConceptMap existing, final Context.Query context) {
+    public static Deleter create(ConceptManager conceptMgr,
+                                 List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+                                 ConceptMap existing, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Deleter(conceptMgr, VariableRegistry.createFromThings(variables).things(), existing, context);
         }

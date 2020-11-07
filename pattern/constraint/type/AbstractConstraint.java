@@ -30,12 +30,12 @@ public class AbstractConstraint extends TypeConstraint {
 
     private final int hash;
 
-    private AbstractConstraint(final TypeVariable owner) {
+    private AbstractConstraint(TypeVariable owner) {
         super(owner);
         this.hash = Objects.hash(AbstractConstraint.class, this.owner);
     }
 
-    public static AbstractConstraint of(final TypeVariable owner) {
+    public static AbstractConstraint of(TypeVariable owner) {
         return new AbstractConstraint(owner);
     }
 
@@ -45,7 +45,7 @@ public class AbstractConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.isAbstract(owner.identifier());
     }
 
@@ -60,7 +60,7 @@ public class AbstractConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
 

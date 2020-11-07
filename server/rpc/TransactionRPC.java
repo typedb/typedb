@@ -83,7 +83,7 @@ public class TransactionRPC {
                 rollback(request.getId());
                 return;
             case QUERY_REQ:
-                try (final GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
+                try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
                     handlers.query.handleRequest(request);
                 }
                 return;
@@ -169,11 +169,11 @@ public class TransactionRPC {
         /**
          * Spin up an iterator and begin batch iterating.
          */
-        void beginIteration(final TransactionProto.Transaction.Req request, final Iterator<TransactionProto.Transaction.Res> iterator) {
+        void beginIteration(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator) {
             beginIteration(request, iterator, transaction.options().batchSize());
         }
 
-        void beginIteration(final TransactionProto.Transaction.Req request, final Iterator<TransactionProto.Transaction.Res> iterator, final int batchSize) {
+        void beginIteration(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator, int batchSize) {
             final String requestId = request.getId();
             final int latencyMillis = request.getLatencyMillis();
             final BatchingIterator batchingIterator = new BatchingIterator(requestId, iterator, batchSize, latencyMillis);
@@ -187,7 +187,7 @@ public class TransactionRPC {
         /**
          * Instruct an existing iterator to iterate another batch.
          */
-        void continueIteration(final String requestId) {
+        void continueIteration(String requestId) {
             final BatchingIterator iterator = iterators.get(requestId);
             if (iterator == null) throw new GraknException(ITERATION_WITH_UNKNOWN_ID.message(requestId));
             iterator.iterateBatch();
@@ -201,7 +201,7 @@ public class TransactionRPC {
             private final int batchSize;
             private final int latencyMillis;
 
-            BatchingIterator(final String id, final Iterator<TransactionProto.Transaction.Res> iterator, final int batchSize, final int latencyMillis) {
+            BatchingIterator(String id, Iterator<TransactionProto.Transaction.Res> iterator, int batchSize, int latencyMillis) {
                 this.id = id;
                 this.iterator = iterator;
                 this.batchSize = batchSize;

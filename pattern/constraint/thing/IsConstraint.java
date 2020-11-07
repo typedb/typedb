@@ -34,15 +34,15 @@ public class IsConstraint extends ThingConstraint {
     private final ThingVariable variable;
     private final int hash;
 
-    private IsConstraint(final ThingVariable owner, final ThingVariable variable) {
+    private IsConstraint(ThingVariable owner, ThingVariable variable) {
         super(owner);
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
 
-    public static IsConstraint of(final ThingVariable owner,
-                                  final ConceptConstraint.Is constraint,
-                                  final VariableRegistry registry) {
+    public static IsConstraint of(ThingVariable owner,
+                                  ConceptConstraint.Is constraint,
+                                  VariableRegistry registry) {
         return new IsConstraint(owner, registry.register(constraint.variable()).asThing());
     }
 
@@ -56,7 +56,7 @@ public class IsConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.is(owner.identifier(), variable.identifier());
     }
 
@@ -71,7 +71,7 @@ public class IsConstraint extends ThingConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final IsConstraint that = (IsConstraint) o;

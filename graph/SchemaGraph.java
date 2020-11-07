@@ -56,7 +56,7 @@ public class SchemaGraph implements Graph {
     private boolean isModified;
     private long snapshot;
 
-    public SchemaGraph(final Storage.Schema storage) {
+    public SchemaGraph(Storage.Schema storage) {
         this.storage = storage;
         keyGenerator = new KeyGenerator.Schema.Buffered();
         typesByLabel = new ConcurrentHashMap<>();
@@ -113,13 +113,13 @@ public class SchemaGraph implements Graph {
         return rulesByIID.values().stream();
     }
 
-    public SchemaVertex<?, ?> convert(final VertexIID.Schema iid) {
+    public SchemaVertex<?, ?> convert(VertexIID.Schema iid) {
         if (iid.isType()) return convert(iid.asType());
         if (iid.isRule()) return convert(iid.asRule());
         throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public TypeVertex convert(final VertexIID.Type iid) {
+    public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
@@ -127,7 +127,7 @@ public class SchemaGraph implements Graph {
         });
     }
 
-    public RuleVertex convert(final VertexIID.Rule iid) {
+    public RuleVertex convert(VertexIID.Rule iid) {
         return rulesByIID.computeIfAbsent(iid, i -> {
             final RuleVertex vertex = new RuleVertexImpl.Persisted(this, i);
             rulesByLabel.putIfAbsent(vertex.label(), vertex);
@@ -135,11 +135,11 @@ public class SchemaGraph implements Graph {
         });
     }
 
-    public TypeVertex getType(final String label) {
+    public TypeVertex getType(String label) {
         return getType(label, null);
     }
 
-    public TypeVertex getType(final String label, @Nullable final String scope) {
+    public TypeVertex getType(String label, @Nullable String scope) {
         assert storage.isOpen();
         final String scopedLabel = scopedLabel(label, scope);
         try {
@@ -167,7 +167,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex getRule(final String label) {
+    public RuleVertex getRule(String label) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
@@ -194,11 +194,11 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public TypeVertex create(final Encoding.Vertex.Type type, final String label) {
+    public TypeVertex create(Encoding.Vertex.Type type, String label) {
         return create(type, label, null);
     }
 
-    public TypeVertex create(final Encoding.Vertex.Type type, final String label, @Nullable final String scope) {
+    public TypeVertex create(Encoding.Vertex.Type type, String label, @Nullable String scope) {
         assert storage.isOpen();
         final String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
@@ -218,7 +218,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex create(final String label, final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
+    public RuleVertex create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
@@ -238,7 +238,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public TypeVertex update(final TypeVertex vertex, final String oldLabel, @Nullable final String oldScope, final String newLabel, @Nullable final String newScope) {
+    public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
         assert storage.isOpen();
         final String oldScopedLabel = scopedLabel(oldLabel, oldScope);
         final String newScopedLabel = scopedLabel(newLabel, newScope);
@@ -256,7 +256,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex update(final RuleVertex vertex, final String oldLabel, final String newLabel) {
+    public RuleVertex update(RuleVertex vertex, String oldLabel, String newLabel) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockWrite();
@@ -272,7 +272,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public void delete(final TypeVertex vertex) {
+    public void delete(TypeVertex vertex) {
         assert storage.isOpen();
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             multiLabelLock.lockRead();
@@ -288,7 +288,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public void delete(final RuleVertex vertex) {
+    public void delete(RuleVertex vertex) {
         assert storage.isOpen();
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             // TODO do we need all these locks here? Are they applicable for this method?

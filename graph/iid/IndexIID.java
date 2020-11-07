@@ -42,17 +42,17 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
 
-    IndexIID(final byte[] bytes) {
+    IndexIID(byte[] bytes) {
         super(bytes);
     }
 
     public abstract static class Schema extends IndexIID {
-        Schema(final byte[] bytes) { super(bytes); }
+        Schema(byte[] bytes) { super(bytes); }
     }
 
     public static class Type extends IndexIID.Schema {
 
-        Type(final byte[] bytes) {
+        Type(byte[] bytes) {
             super(bytes);
         }
 
@@ -63,7 +63,7 @@ public abstract class IndexIID extends IID {
          * @param scope of the {@code TypeVertex}, which could be null
          * @return a byte array representing the index address of a {@code TypeVertex}
          */
-        public static Type of(final String label, @Nullable final String scope) {
+        public static Type of(String label, @Nullable String scope) {
             return new Type(join(Encoding.Index.TYPE.prefix().bytes(), Encoding.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
         }
 
@@ -79,7 +79,7 @@ public abstract class IndexIID extends IID {
 
     public static class Rule extends IndexIID.Schema {
 
-        Rule(final byte[] bytes) { super(bytes); }
+        Rule(byte[] bytes) { super(bytes); }
 
         /**
          * Returns the index address of given {@code RuleVertex}
@@ -87,7 +87,7 @@ public abstract class IndexIID extends IID {
          * @param label of the {@code RuleVertex}
          * @return a byte array representing the index address of a {@code RuleVertex}
          */
-        public static Rule of(final String label) {
+        public static Rule of(String label) {
             return new Rule(join(Encoding.Index.RULE.prefix().bytes(), label.getBytes(STRING_ENCODING)));
         }
 
@@ -105,31 +105,31 @@ public abstract class IndexIID extends IID {
 
         static final int VALUE_INDEX = PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH;
 
-        Attribute(final byte[] bytes) {
+        Attribute(byte[] bytes) {
             super(bytes);
         }
 
-        private static Attribute newAttributeIndex(final byte[] valueType, final byte[] value, final byte[] typeIID) {
+        private static Attribute newAttributeIndex(byte[] valueType, byte[] value, byte[] typeIID) {
             return new Attribute(join(Encoding.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
         }
 
-        public static Attribute of(final boolean value, final VertexIID.Schema schemaIID) {
+        public static Attribute of(boolean value, VertexIID.Schema schemaIID) {
             return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, schemaIID.bytes);
         }
 
-        public static Attribute of(final long value, final VertexIID.Schema schemaIID) {
+        public static Attribute of(long value, VertexIID.Schema schemaIID) {
             return newAttributeIndex(Encoding.ValueType.LONG.bytes(), longToSortedBytes(value), schemaIID.bytes);
         }
 
-        public static Attribute of(final double value, final VertexIID.Schema schemaIID) {
+        public static Attribute of(double value, VertexIID.Schema schemaIID) {
             return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), schemaIID.bytes);
         }
 
-        public static Attribute of(final String value, final VertexIID.Schema schemaIID) {
+        public static Attribute of(String value, VertexIID.Schema schemaIID) {
             return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), schemaIID.bytes);
         }
 
-        public static Attribute of(final LocalDateTime value, final VertexIID.Schema schemaIID) {
+        public static Attribute of(LocalDateTime value, VertexIID.Schema schemaIID) {
             return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), schemaIID.bytes);
         }
 

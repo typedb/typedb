@@ -45,12 +45,12 @@ public class ConceptManagerHandler {
     private final TransactionRPC transactionRPC;
     private final ConceptManager conceptManager;
 
-    public ConceptManagerHandler(final TransactionRPC transactionRPC, final ConceptManager conceptManager) {
+    public ConceptManagerHandler(TransactionRPC transactionRPC, ConceptManager conceptManager) {
         this.transactionRPC = transactionRPC;
         this.conceptManager = conceptManager;
     }
 
-    public void handleRequest(final Transaction.Req request) {
+    public void handleRequest(Transaction.Req request) {
         final ConceptProto.ConceptManager.Req conceptManagerReq = request.getConceptManagerReq();
         switch (conceptManagerReq.getReqCase()) {
             case GET_TYPE_REQ:
@@ -80,39 +80,39 @@ public class ConceptManagerHandler {
         }
     }
 
-    private static TransactionProto.Transaction.Res response(final Transaction.Req request, final ConceptProto.ConceptManager.Res.Builder res) {
+    private static TransactionProto.Transaction.Res response(Transaction.Req request, ConceptProto.ConceptManager.Res.Builder res) {
         return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setConceptManagerRes(res).build();
     }
 
-    private void getType(final Transaction.Req request, final String label) {
+    private void getType(Transaction.Req request, String label) {
         final Type type = conceptManager.getType(label);
         final ConceptProto.ConceptManager.GetType.Res.Builder getTypeRes = ConceptProto.ConceptManager.GetType.Res.newBuilder();
         if (type != null) getTypeRes.setType(type(type));
         transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetTypeRes(getTypeRes)));
     }
 
-    private void getThing(final Transaction.Req request, final byte[] iid) {
+    private void getThing(Transaction.Req request, byte[] iid) {
         final Thing thing = conceptManager.getThing(iid);
         final ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes = ConceptProto.ConceptManager.GetThing.Res.newBuilder();
         if (thing != null) getThingRes.setThing(thing(thing));
         transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes)));
     }
 
-    private void getRule(final Transaction.Req request, final String label) {
+    private void getRule(Transaction.Req request, String label) {
         final Rule rule = conceptManager.getRule(label);
         final ConceptProto.ConceptManager.GetRule.Res.Builder getRuleRes = ConceptProto.ConceptManager.GetRule.Res.newBuilder();
         if (rule != null) getRuleRes.setRule(rule(rule));
         transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetRuleRes(getRuleRes)));
     }
 
-    private void putEntityType(final Transaction.Req request, final String label) {
+    private void putEntityType(Transaction.Req request, String label) {
         final EntityType entityType = conceptManager.putEntityType(label);
         final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
                 .setPutEntityTypeRes(ConceptProto.ConceptManager.PutEntityType.Res.newBuilder().setEntityType(type(entityType)));
         transactionRPC.respond(response(request, res));
     }
 
-    private void putAttributeType(final Transaction.Req request, final ConceptProto.ConceptManager.PutAttributeType.Req attributeTypeReq) {
+    private void putAttributeType(Transaction.Req request, ConceptProto.ConceptManager.PutAttributeType.Req attributeTypeReq) {
         final ConceptProto.AttributeType.VALUE_TYPE valueTypeProto = attributeTypeReq.getValueType();
         final AttributeType.ValueType valueType;
         switch (valueTypeProto) {
@@ -142,14 +142,14 @@ public class ConceptManagerHandler {
         transactionRPC.respond(response(request, res));
     }
 
-    private void putRelationType(final Transaction.Req request, final String label) {
+    private void putRelationType(Transaction.Req request, String label) {
         final RelationType relationType = conceptManager.putRelationType(label);
         final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
                 .setPutRelationTypeRes(ConceptProto.ConceptManager.PutRelationType.Res.newBuilder().setRelationType(type(relationType)));
         transactionRPC.respond(response(request, res));
     }
 
-    private void putRule(final Transaction.Req request, final ConceptProto.ConceptManager.PutRule.Req req) {
+    private void putRule(Transaction.Req request, ConceptProto.ConceptManager.PutRule.Req req) {
         final Conjunction<? extends Pattern> when = Graql.and(Graql.parsePatterns(req.getWhen()));
         final ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
         final Rule rule = conceptManager.putRule(req.getLabel(), when, then);

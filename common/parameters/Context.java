@@ -26,7 +26,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
     Arguments.Transaction.Type transactionType;
     private final OPTIONS options;
 
-    private Context(@Nullable final PARENT parent, final OPTIONS options) {
+    private Context(@Nullable PARENT parent, OPTIONS options) {
         this.options = options;
         if (parent != null) {
             this.sessionType = parent.sessionType();
@@ -51,11 +51,11 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Session extends Context<Context<?, ?>, Options.Session> {
 
-        public Session(final Options.Database databaseOptions, final Options.Session sessionOptions) {
+        public Session(Options.Database databaseOptions, Options.Session sessionOptions) {
             super(null, sessionOptions.parent(databaseOptions));
         }
 
-        public Session type(final Arguments.Session.Type sessionType) {
+        public Session type(Arguments.Session.Type sessionType) {
             this.sessionType = sessionType;
             return this;
         }
@@ -63,11 +63,11 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Transaction extends Context<Context.Session, Options.Transaction> {
 
-        public Transaction(final Context.Session context, final Options.Transaction options) {
+        public Transaction(Context.Session context, Options.Transaction options) {
             super(context, options.parent(context.options()));
         }
 
-        public Transaction type(final Arguments.Transaction.Type transactionType) {
+        public Transaction type(Arguments.Transaction.Type transactionType) {
             this.transactionType = transactionType;
             return this;
         }
@@ -75,7 +75,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
 
-        public Query(final Context.Transaction context, final Options.Query options) {
+        public Query(Context.Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
         }
     }

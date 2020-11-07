@@ -29,7 +29,7 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     private final Set<T> consumed;
     private T next;
 
-    DistinctIterator(final ResourceIterator<T> iterator) {
+    DistinctIterator(ResourceIterator<T> iterator) {
         this.iterator = iterator;
         this.consumed = new HashSet<>();
         this.next = null;

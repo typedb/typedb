@@ -35,7 +35,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     private final RocksGrakn rocksGrakn;
     private final ConcurrentMap<String, RocksDatabase> databases;
 
-    RocksDatabaseManager(final RocksGrakn rocksGrakn) {
+    RocksDatabaseManager(RocksGrakn rocksGrakn) {
         this.rocksGrakn = rocksGrakn;
         databases = new ConcurrentHashMap<>();
     }
@@ -52,12 +52,12 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     }
 
     @Override
-    public boolean contains(final String name) {
+    public boolean contains(String name) {
         return databases.containsKey(name);
     }
 
     @Override
-    public RocksDatabase create(final String name) {
+    public RocksDatabase create(String name) {
         if (databases.containsKey(name)) throw new GraknException(DATABASE_EXISTS.message(name));
 
         final RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name);
@@ -66,7 +66,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     }
 
     @Override
-    public RocksDatabase get(final String name) {
+    public RocksDatabase get(String name) {
         return databases.get(name);
     }
 
@@ -75,7 +75,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
         return new HashSet<>(databases.values());
     }
 
-    void remove(final RocksDatabase database) {
+    void remove(RocksDatabase database) {
         databases.remove(database.name());
     }
 }

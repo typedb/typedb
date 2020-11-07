@@ -71,11 +71,11 @@ public interface AttributeType extends ThingType {
 
         private final Encoding.ValueType encoding;
 
-        ValueType(final Encoding.ValueType encoding) {
+        ValueType(Encoding.ValueType encoding) {
             this.encoding = encoding;
         }
 
-        public static ValueType of(final Class<?> valueClass) {
+        public static ValueType of(Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.encoding.valueClass().equals(valueClass)) {
                     return vt;
@@ -84,7 +84,7 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
-        public static ValueType of(final GraqlArg.ValueType valueType) {
+        public static ValueType of(GraqlArg.ValueType valueType) {
             for (ValueType vt : ValueType.values()) {
                 if (Objects.equals(vt.encoding.graqlValueType(), valueType)) {
                     return vt;

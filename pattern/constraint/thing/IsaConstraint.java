@@ -36,7 +36,7 @@ public class IsaConstraint extends ThingConstraint {
     private final int hash;
     private String[] labels;
 
-    private IsaConstraint(final ThingVariable owner, final TypeVariable type, final boolean isExplicit) {
+    private IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         this.type = type;
         this.isExplicit = isExplicit;
@@ -66,7 +66,7 @@ public class IsaConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         if (!type.reference().isName() && labels != null && labels.length > 0) {
             traversal.type(owner.identifier(), labels);
         } else {
@@ -85,7 +85,7 @@ public class IsaConstraint extends ThingConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final IsaConstraint that = (IsaConstraint) o;

@@ -33,7 +33,7 @@ public class SubConstraint extends TypeConstraint {
     private final boolean isExplicit;
     private final int hash;
 
-    private SubConstraint(final TypeVariable owner, final TypeVariable type, final boolean isExplicit) {
+    private SubConstraint(TypeVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         if (type == null) throw new NullPointerException("Null superType");
         this.type = type;
@@ -41,9 +41,9 @@ public class SubConstraint extends TypeConstraint {
         this.hash = Objects.hash(SubConstraint.class, this.owner, this.type, this.isExplicit);
     }
 
-    public static SubConstraint of(final TypeVariable owner,
-                                   final graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
-                                   final VariableRegistry registry) {
+    public static SubConstraint of(TypeVariable owner,
+                                   graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
+                                   VariableRegistry registry) {
         return new SubConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
     }
 
@@ -57,7 +57,7 @@ public class SubConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
     }
 
@@ -72,7 +72,7 @@ public class SubConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final SubConstraint that = (SubConstraint) o;

@@ -69,7 +69,7 @@ public class GraknServer implements AutoCloseable {
     private final ServerOptions options;
     private final GraknRPCService graknRPCService;
 
-    private GraknServer(final ServerOptions options) throws IOException {
+    private GraknServer(ServerOptions options) throws IOException {
         this.options = options;
         configureDataDir();
         configureTracing();
@@ -144,7 +144,7 @@ public class GraknServer implements AutoCloseable {
         else return properties;
     }
 
-    private static ServerOptions parseCommandLine(final Properties properties, final String[] args) {
+    private static ServerOptions parseCommandLine(Properties properties, String[] args) {
         final ServerOptions options = new ServerOptions();
         boolean proceed;
         final CommandLine command = new CommandLine(options);
@@ -173,7 +173,7 @@ public class GraknServer implements AutoCloseable {
         else return null;
     }
 
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         try {
             final long start = System.nanoTime();
 

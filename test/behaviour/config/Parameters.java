@@ -36,39 +36,39 @@ import static org.junit.Assert.fail;
 public class Parameters {
 
     @ParameterType("true|false")
-    public Boolean bool(final String bool) {
+    public Boolean bool(String bool) {
         return Boolean.parseBoolean(bool);
     }
 
     @ParameterType("[0-9]+")
-    public Integer number(final String number) {
+    public Integer number(String number) {
         return Integer.parseInt(number);
     }
 
     @ParameterType("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d")
-    public LocalDateTime datetime(final String dateTime) {
+    public LocalDateTime datetime(String dateTime) {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return LocalDateTime.parse(dateTime, formatter);
     }
 
     @ParameterType("entity|attribute|relation")
-    public RootLabel root_label(final String type) {
+    public RootLabel root_label(String type) {
         return RootLabel.of(type);
     }
 
     @ParameterType("[a-zA-Z0-9-_]+")
-    public String type_label(final String typeLabel) {
+    public String type_label(String typeLabel) {
         return typeLabel;
     }
 
     @ParameterType("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")
-    public ScopedLabel scoped_label(final String roleLabel) {
+    public ScopedLabel scoped_label(String roleLabel) {
         final String[] labels = roleLabel.split(":");
         return new ScopedLabel(labels[0], labels[1]);
     }
 
     @DataTableType
-    public List<ScopedLabel> scoped_labels(final List<String> values) {
+    public List<ScopedLabel> scoped_labels(List<String> values) {
         final Iterator<String> valuesIter = values.iterator();
         String next;
         final List<ScopedLabel> scopedLabels = new ArrayList<>();
@@ -82,7 +82,7 @@ public class Parameters {
     }
 
     @ParameterType("long|double|string|boolean|datetime")
-    public AttributeType.ValueType value_type(final String type) {
+    public AttributeType.ValueType value_type(String type) {
         switch (type) {
             case "long":
                 return AttributeType.ValueType.LONG;
@@ -100,12 +100,12 @@ public class Parameters {
     }
 
     @ParameterType("\\$([a-zA-Z0-9]+)")
-    public String var(final String variable) {
+    public String var(String variable) {
         return variable;
     }
 
     @ParameterType("read|write")
-    public Arguments.Transaction.Type transaction_type(final String type) {
+    public Arguments.Transaction.Type transaction_type(String type) {
         if (type.equals("read")) {
             return Arguments.Transaction.Type.READ;
         } else if (type.equals("write")) {
@@ -115,7 +115,7 @@ public class Parameters {
     }
 
     @DataTableType
-    public List<Arguments.Transaction.Type> transaction_types(final List<String> values) {
+    public List<Arguments.Transaction.Type> transaction_types(List<String> values) {
         final List<Arguments.Transaction.Type> typeList = new ArrayList<>();
         for (String value : values) {
             final Arguments.Transaction.Type type = transaction_type(value);
@@ -133,11 +133,11 @@ public class Parameters {
 
         private final String label;
 
-        RootLabel(final String label) {
+        RootLabel(String label) {
             this.label = label;
         }
 
-        public static RootLabel of(final String label) {
+        public static RootLabel of(String label) {
             for (RootLabel t : RootLabel.values()) {
                 if (t.label.equals(label)) {
                     return t;
@@ -155,7 +155,7 @@ public class Parameters {
         private final String scope;
         private final String role;
 
-        public ScopedLabel(final String scope, final String role) {
+        public ScopedLabel(String scope, String role) {
             this.scope = scope;
             this.role = role;
         }
@@ -174,7 +174,7 @@ public class Parameters {
         }
 
         @Override
-        public boolean equals(final Object object) {
+        public boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             final ScopedLabel that = (ScopedLabel) object;

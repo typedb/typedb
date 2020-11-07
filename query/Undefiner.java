@@ -66,8 +66,8 @@ public class Undefiner {
     private final Set<TypeVariable> undefined;
     private final List<graql.lang.pattern.schema.Rule> rules;
 
-    private Undefiner(final ConceptManager conceptMgr, final Set<TypeVariable> variables,
-                      final List<graql.lang.pattern.schema.Rule> rules) {
+    private Undefiner(ConceptManager conceptMgr, Set<TypeVariable> variables,
+                      List<graql.lang.pattern.schema.Rule> rules) {
         this.conceptMgr = conceptMgr;
         this.variables = new LinkedList<>();
         this.undefined = new HashSet<>();
@@ -79,15 +79,15 @@ public class Undefiner {
         });
     }
 
-    public static Undefiner create(final ConceptManager conceptMgr,
-                                   final List<graql.lang.pattern.variable.TypeVariable> variables,
-                                   final List<graql.lang.pattern.schema.Rule> rules) {
+    public static Undefiner create(ConceptManager conceptMgr,
+                                   List<graql.lang.pattern.variable.TypeVariable> variables,
+                                   List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Undefiner(conceptMgr, VariableRegistry.createFromTypes(variables).types(), rules);
         }
     }
 
-    private void sort(final TypeVariable variable, final Set<TypeVariable> sorted) {
+    private void sort(TypeVariable variable, Set<TypeVariable> sorted) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "sort")) {
             if (sorted.contains(variable)) return;
             if (variable.sub().size() == 1) {
@@ -107,7 +107,7 @@ public class Undefiner {
         }
     }
 
-    private void undefine(final TypeVariable variable) {
+    private void undefine(TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             assert variable.label().isPresent();
             final LabelConstraint labelConstraint = variable.label().get();
@@ -145,7 +145,7 @@ public class Undefiner {
         }
     }
 
-    private ThingType getType(final LabelConstraint label) {
+    private ThingType getType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "gettype")) {
             final Type type;
             if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
@@ -153,7 +153,7 @@ public class Undefiner {
         }
     }
 
-    private RoleType getRoleType(final LabelConstraint label) {
+    private RoleType getRoleType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             assert label.scope().isPresent();
             final Type type = conceptMgr.getType(label.scope().get());
@@ -162,7 +162,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineSub(final ThingType thingType, final SubConstraint subConstraint) {
+    private void undefineSub(ThingType thingType, SubConstraint subConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefinesub")) {
             if (thingType instanceof RoleType) {
                 throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(thingType.getLabel()));
@@ -184,13 +184,13 @@ public class Undefiner {
         }
     }
 
-    private void undefineAbstract(final ThingType thingType) {
+    private void undefineAbstract(ThingType thingType) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineabstract")) {
             thingType.unsetAbstract();
         }
     }
 
-    private void undefineRegex(final AttributeType.String attributeType, final RegexConstraint regexConstraint) {
+    private void undefineRegex(AttributeType.String attributeType, RegexConstraint regexConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineregex")) {
             if (attributeType.getRegex().pattern().equals(regexConstraint.regex().pattern())) {
                 attributeType.unsetRegex();
@@ -198,7 +198,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineRelates(final RelationType relationType, final Set<RelatesConstraint> relatesConstraints) {
+    private void undefineRelates(RelationType relationType, Set<RelatesConstraint> relatesConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefinerelates")) {
             relatesConstraints.forEach(relates -> {
                 final String roleTypeLabel = relates.role().label().get().label();
@@ -217,7 +217,7 @@ public class Undefiner {
         }
     }
 
-    private void undefineOwns(final ThingType thingType, final Set<OwnsConstraint> ownsConstraints) {
+    private void undefineOwns(ThingType thingType, Set<OwnsConstraint> ownsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineowns")) {
             ownsConstraints.forEach(owns -> {
                 final Type attributeType = getType(owns.attribute().label().get());
@@ -238,7 +238,7 @@ public class Undefiner {
         }
     }
 
-    private void undefinePlays(final ThingType thingType, final Set<PlaysConstraint> playsConstraints) {
+    private void undefinePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineplays")) {
             playsConstraints.forEach(plays -> {
                 final Type roleType = getRoleType(plays.role().label().get());

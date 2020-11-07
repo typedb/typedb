@@ -33,19 +33,19 @@ public class ConceptMap implements Answer {
         this(new HashMap<>());
     }
 
-    public ConceptMap(final Map<Reference, ? extends Concept> concepts) {
+    public ConceptMap(Map<Reference, ? extends Concept> concepts) {
         this.concepts = concepts;
     }
 
-    public static ConceptMap of(final Map<Reference, Vertex<?, ?>> vertexMap) {
+    public static ConceptMap of(Map<Reference, Vertex<?, ?>> vertexMap) {
         return null; // TODO
     }
 
-    public boolean contains(final Reference variable) {
+    public boolean contains(Reference variable) {
         return concepts.containsKey(variable);
     }
 
-    public Concept get(final Reference variable) {
+    public Concept get(Reference variable) {
         return concepts.get(variable);
     }
 

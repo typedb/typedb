@@ -37,7 +37,7 @@ public class RelatesConstraint extends TypeConstraint {
     private final TypeVariable overriddenRoleType;
     private final int hash;
 
-    private RelatesConstraint(final TypeVariable owner, final TypeVariable roleType, @Nullable final TypeVariable overriddenRoleType) {
+    private RelatesConstraint(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         super(owner);
         if (roleType == null) throw new NullPointerException("Null role");
         this.roleType = roleType;
@@ -45,9 +45,9 @@ public class RelatesConstraint extends TypeConstraint {
         this.hash = Objects.hash(RelatesConstraint.class, this.owner, this.roleType, this.overriddenRoleType);
     }
 
-    public static RelatesConstraint of(final TypeVariable owner,
-                                       final graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
-                                       final VariableRegistry registry) {
+    public static RelatesConstraint of(TypeVariable owner,
+                                       graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
+                                       VariableRegistry registry) {
         final TypeVariable roleType = registry.register(constraint.role());
         final TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
         return new RelatesConstraint(owner, roleType, overriddenRoleType);
@@ -67,7 +67,7 @@ public class RelatesConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.relates(owner.identifier(), roleType.identifier());
     }
@@ -83,7 +83,7 @@ public class RelatesConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final RelatesConstraint that = (RelatesConstraint) o;

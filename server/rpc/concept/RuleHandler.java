@@ -35,12 +35,12 @@ public class RuleHandler {
     private final TransactionRPC transactionRPC;
     private final ConceptManager conceptManager;
 
-    public RuleHandler(final TransactionRPC transactionRPC, final ConceptManager conceptManager) {
+    public RuleHandler(TransactionRPC transactionRPC, ConceptManager conceptManager) {
         this.transactionRPC = transactionRPC;
         this.conceptManager = conceptManager;
     }
 
-    public void handleRequest(final Transaction.Req request) {
+    public void handleRequest(Transaction.Req request) {
         final ConceptProto.Rule.Req ruleReq = request.getRuleReq();
         final Rule rule = notNull(conceptManager.getRule(ruleReq.getLabel()));
         switch (ruleReq.getReqCase()) {
@@ -56,21 +56,21 @@ public class RuleHandler {
         }
     }
 
-    private static TransactionProto.Transaction.Res response(final Transaction.Req request, final ConceptProto.Rule.Res.Builder response) {
+    private static TransactionProto.Transaction.Res response(Transaction.Req request, ConceptProto.Rule.Res.Builder response) {
         return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setRuleRes(response).build();
     }
 
-    private static Rule notNull(@Nullable final Rule rule) {
+    private static Rule notNull(@Nullable Rule rule) {
         if (rule == null) throw new GraknException(MISSING_CONCEPT);
         return rule;
     }
 
-    private void delete(final Transaction.Req request, final Rule rule) {
+    private void delete(Transaction.Req request, Rule rule) {
         rule.delete();
         transactionRPC.respond(response(request, ConceptProto.Rule.Res.newBuilder().setRuleDeleteRes(ConceptProto.Rule.Delete.Res.getDefaultInstance())));
     }
 
-    private void setLabel(final Transaction.Req request, final Rule rule, final String label) {
+    private void setLabel(Transaction.Req request, Rule rule, String label) {
         rule.setLabel(label);
         transactionRPC.respond(response(request, ConceptProto.Rule.Res.newBuilder().setRuleSetLabelRes(ConceptProto.Rule.SetLabel.Res.getDefaultInstance())));
     }

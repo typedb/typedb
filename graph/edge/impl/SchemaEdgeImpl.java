@@ -39,7 +39,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
     final SchemaGraph graph;
     final Encoding.Edge.Schema encoding;
 
-    SchemaEdgeImpl(final SchemaGraph graph, final Encoding.Edge.Schema encoding) {
+    SchemaEdgeImpl(SchemaGraph graph, Encoding.Edge.Schema encoding) {
         this.graph = graph;
         this.encoding = encoding;
     }
@@ -63,7 +63,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @param encoding the edge {@code Encoding}
          * @param to       the head vertex
          */
-        public Buffered(final Encoding.Edge.Schema encoding, final SchemaVertex<?, ?> from, final SchemaVertex<?, ?> to) {
+        public Buffered(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> from, SchemaVertex<?, ?> to) {
             super(from.graph(), encoding);
             assert this.graph == to.graph();
             this.from = from;
@@ -103,7 +103,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         }
 
         @Override
-        public void overridden(final TypeVertex overridden) {
+        public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
         }
 
@@ -159,7 +159,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @return true if equal, else false
          */
         @Override
-        public final boolean equals(final Object object) {
+        public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             final SchemaEdgeImpl.Buffered that = (SchemaEdgeImpl.Buffered) object;
@@ -216,7 +216,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(final SchemaGraph graph, final EdgeIID.Schema iid, @Nullable final VertexIID.Type overriddenIID) {
+        public Persisted(SchemaGraph graph, EdgeIID.Schema iid, @Nullable VertexIID.Type overriddenIID) {
             super(graph, iid.encoding());
 
             if (iid.isOutwards()) {
@@ -290,7 +290,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @param overridden the type vertex to override by the head
          */
         @Override
-        public void overridden(final TypeVertex overridden) {
+        public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
             graph.storage().put(outIID.bytes(), overriddenIID.bytes());
@@ -337,7 +337,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @return true if equal, else false
          */
         @Override
-        public final boolean equals(final Object object) {
+        public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             final SchemaEdgeImpl.Persisted that = (SchemaEdgeImpl.Persisted) object;

@@ -54,7 +54,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseContains(final DatabaseProto.Database.Contains.Req request, final StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
+    public void databaseContains(DatabaseProto.Database.Contains.Req request, StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
         try {
             final boolean contains = grakn.databases().contains(request.getName());
             responder.onNext(DatabaseProto.Database.Contains.Res.newBuilder().setContains(contains).build());
@@ -66,7 +66,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseCreate(final DatabaseProto.Database.Create.Req request, final StreamObserver<DatabaseProto.Database.Create.Res> responder) {
+    public void databaseCreate(DatabaseProto.Database.Create.Req request, StreamObserver<DatabaseProto.Database.Create.Res> responder) {
         try {
             if (grakn.databases().contains(request.getName())) {
                 throw new GraknException(DATABASE_EXISTS.message(request.getName()));
@@ -81,7 +81,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseAll(final DatabaseProto.Database.All.Req request, final StreamObserver<DatabaseProto.Database.All.Res> responder) {
+    public void databaseAll(DatabaseProto.Database.All.Req request, StreamObserver<DatabaseProto.Database.All.Res> responder) {
         try {
             final List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
             responder.onNext(DatabaseProto.Database.All.Res.newBuilder().addAllNames(databaseNames).build());
@@ -93,7 +93,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseDelete(final DatabaseProto.Database.Delete.Req request, final StreamObserver<DatabaseProto.Database.Delete.Res> responder) {
+    public void databaseDelete(DatabaseProto.Database.Delete.Req request, StreamObserver<DatabaseProto.Database.Delete.Res> responder) {
         try {
             final String databaseName = request.getName();
             if (!grakn.databases().contains(databaseName)) {
@@ -131,7 +131,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void sessionClose(final SessionProto.Session.Close.Req request, final StreamObserver<SessionProto.Session.Close.Res> responder) {
+    public void sessionClose(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
             final UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
             final SessionRPC sessionRPC = rpcSessions.get(sessionID);
@@ -146,7 +146,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public StreamObserver<TransactionProto.Transaction.Req> transaction(final StreamObserver<TransactionProto.Transaction.Res> responder) {
+    public StreamObserver<TransactionProto.Transaction.Req> transaction(StreamObserver<TransactionProto.Transaction.Res> responder) {
         return new TransactionStream(this, responder);
     }
 

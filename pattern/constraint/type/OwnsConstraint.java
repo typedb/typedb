@@ -38,8 +38,8 @@ public class OwnsConstraint extends TypeConstraint {
     private final boolean isKey;
     private final int hash;
 
-    private OwnsConstraint(final TypeVariable owner, final TypeVariable attributeType,
-                           @Nullable final TypeVariable overriddenAttributeType, final boolean isKey) {
+    private OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
+                           @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
         super(owner);
         this.attributeType = attributeType;
         this.overriddenAttributeType = overriddenAttributeType;
@@ -47,9 +47,9 @@ public class OwnsConstraint extends TypeConstraint {
         this.hash = Objects.hash(OwnsConstraint.class, this.owner, this.attributeType, this.overriddenAttributeType, this.isKey);
     }
 
-    public static OwnsConstraint of(final TypeVariable owner,
-                                    final graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
-                                    final VariableRegistry registry) {
+    public static OwnsConstraint of(TypeVariable owner,
+                                    graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
+                                    VariableRegistry registry) {
         final TypeVariable attributeType = registry.register(constraint.attribute());
         final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
         return new OwnsConstraint(owner, attributeType, overriddenType, constraint.isKey());
@@ -75,7 +75,7 @@ public class OwnsConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.owns(owner.identifier(), attributeType.identifier());
     }
@@ -91,7 +91,7 @@ public class OwnsConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final OwnsConstraint that = (OwnsConstraint) o;

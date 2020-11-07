@@ -24,16 +24,16 @@ public class PrefixIID extends IID {
 
     public static final int LENGTH = 1;
 
-    private PrefixIID(final byte[] bytes) {
+    private PrefixIID(byte[] bytes) {
         super(bytes);
         assert bytes.length == LENGTH;
     }
 
-    public static PrefixIID of(final Encoding.Prefix prefix) {
+    public static PrefixIID of(Encoding.Prefix prefix) {
         return new PrefixIID(prefix.bytes());
     }
 
-    public static PrefixIID of(final Encoding.Vertex encoding) {
+    public static PrefixIID of(Encoding.Vertex encoding) {
         return new PrefixIID(encoding.prefix().bytes());
     }
 

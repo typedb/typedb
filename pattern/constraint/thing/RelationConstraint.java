@@ -39,16 +39,16 @@ public class RelationConstraint extends ThingConstraint {
     private final List<RolePlayer> rolePlayers;
     private final int hash;
 
-    private RelationConstraint(final ThingVariable owner, final List<RolePlayer> rolePlayers) {
+    private RelationConstraint(ThingVariable owner, List<RolePlayer> rolePlayers) {
         super(owner);
         assert rolePlayers != null && !rolePlayers.isEmpty();
         this.rolePlayers = new ArrayList<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
     }
 
-    public static RelationConstraint of(final ThingVariable owner,
-                                        final graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
-                                        final VariableRegistry register) {
+    public static RelationConstraint of(ThingVariable owner,
+                                        graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
+                                        VariableRegistry register) {
         return new RelationConstraint(owner, constraint.players().stream()
                 .map(rp -> RolePlayer.of(rp, register)).collect(toList()));
     }
@@ -68,7 +68,7 @@ public class RelationConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         rolePlayers.forEach(rp -> {
             if (rp.roleType().isPresent() && rp.roleType().get().reference().isName()) {
                 Identifier role = traversal.newIdentifier();
@@ -96,7 +96,7 @@ public class RelationConstraint extends ThingConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final RelationConstraint that = (RelationConstraint) o;
@@ -114,7 +114,7 @@ public class RelationConstraint extends ThingConstraint {
         private final ThingVariable player;
         private final int hash;
 
-        private RolePlayer(@Nullable final TypeVariable roleType, final ThingVariable player) {
+        private RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
@@ -138,7 +138,7 @@ public class RelationConstraint extends ThingConstraint {
         }
 
         @Override
-        public boolean equals(final Object o) {
+        public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final RolePlayer that = (RolePlayer) o;

@@ -45,7 +45,7 @@ public class Encoding {
         private final boolean isIncrement;
 
 
-        Key(final int initialValue, final boolean isIncrement) {
+        Key(int initialValue, boolean isIncrement) {
             this.initialValue = initialValue;
             this.isIncrement = isIncrement;
         }
@@ -65,7 +65,7 @@ public class Encoding {
 
         private final boolean isOut;
 
-        Direction(final boolean isOut) {
+        Direction(boolean isOut) {
             this.isOut = isOut;
         }
 
@@ -86,7 +86,7 @@ public class Encoding {
 
         private final int key;
 
-        PrefixType(final int key) {
+        PrefixType(int key) {
             this.key = key;
         }
     }
@@ -116,12 +116,12 @@ public class Encoding {
         private final byte key;
         private final PrefixType type;
 
-        Prefix(final int key, final PrefixType type) {
+        Prefix(int key, PrefixType type) {
             this.key = (byte) key;
             this.type = type;
         }
 
-        public static Prefix of(final byte key) {
+        public static Prefix of(byte key) {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
@@ -163,7 +163,7 @@ public class Encoding {
 
         private final int key;
 
-        InfixType(final int key) {
+        InfixType(int key) {
             this.key = key;
         }
     }
@@ -216,17 +216,17 @@ public class Encoding {
         private final boolean isOptimisation;
         private final InfixType type;
 
-        Infix(final int key, final InfixType type) {
+        Infix(int key, InfixType type) {
             this(key, type, false);
         }
 
-        Infix(final int key, final InfixType type, final boolean isOptimisation) {
+        Infix(int key, InfixType type, boolean isOptimisation) {
             this.key = (byte) key;
             this.type = type;
             this.isOptimisation = isOptimisation;
         }
 
-        public static Infix of(final byte key) {
+        public static Infix of(byte key) {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
@@ -265,7 +265,7 @@ public class Encoding {
 
         private final Prefix prefix;
 
-        Index(final Prefix prefix) {
+        Index(Prefix prefix) {
             this.prefix = prefix;
         }
 
@@ -282,7 +282,7 @@ public class Encoding {
 
         private int status;
 
-        Status(final int status) {
+        Status(int status) {
             this.status = status;
         }
 
@@ -304,7 +304,7 @@ public class Encoding {
 
         private final Infix infix;
 
-        Property(final Infix infix) {
+        Property(Infix infix) {
             this.infix = infix;
         }
 
@@ -327,8 +327,8 @@ public class Encoding {
         private final boolean isWritable;
         private final GraqlArg.ValueType graqlValueType;
 
-        ValueType(final int key, final Class<?> valueClass, final boolean isWritable, final boolean isKeyable,
-                  @Nullable final GraqlArg.ValueType graqlValueType) {
+        ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
+                  @Nullable GraqlArg.ValueType graqlValueType) {
             this.key = (byte) key;
             this.valueClass = valueClass;
             this.isKeyable = isKeyable;
@@ -336,21 +336,21 @@ public class Encoding {
             this.graqlValueType = graqlValueType;
         }
 
-        public static ValueType of(final byte value) {
+        public static ValueType of(byte value) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.key == value) return vt;
             }
             throw new GraknException(UNRECOGNISED_VALUE);
         }
 
-        public static ValueType of(final Class<?> valueClass) {
+        public static ValueType of(Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.valueClass == valueClass) return vt;
             }
             throw new GraknException(UNRECOGNISED_VALUE);
         }
 
-        public static ValueType of(final GraqlArg.ValueType graqlValueType) {
+        public static ValueType of(GraqlArg.ValueType graqlValueType) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.graqlValueType == graqlValueType) return vt;
             }
@@ -389,7 +389,7 @@ public class Encoding {
 
             private final Prefix prefix;
 
-            Rule(final Prefix prefix) {
+            Rule(Prefix prefix) {
                 this.prefix = prefix;
             }
 
@@ -410,20 +410,20 @@ public class Encoding {
             private final Root root;
             private final Thing instance;
 
-            Type(final Prefix prefix, final Root root, final Thing instance) {
+            Type(Prefix prefix, Root root, Thing instance) {
                 this.prefix = prefix;
                 this.root = root;
                 this.instance = instance;
             }
 
-            public static Type of(final byte prefix) {
+            public static Type of(byte prefix) {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
                 throw new GraknException(UNRECOGNISED_VALUE);
             }
 
-            public static Type of(final Thing thing) {
+            public static Type of(Thing thing) {
                 for (Type t : Type.values()) {
                     if (Objects.equals(t.instance, thing)) return t;
                 }
@@ -437,7 +437,7 @@ public class Encoding {
              * @param scope the scope label of the {@code TypeVertex}
              * @return the fully scoped label for a given {@code TypeVertex} as a string
              */
-            public static String scopedLabel(final String label, @Nullable final String scope) {
+            public static String scopedLabel(String label, @Nullable String scope) {
                 if (scope == null) return label;
                 else return scope + ":" + label;
             }
@@ -465,11 +465,11 @@ public class Encoding {
                 private final String label;
                 private final String scope;
 
-                Root(final String label) {
+                Root(String label) {
                     this(label, null);
                 }
 
-                Root(final String label, @Nullable final String scope) {
+                Root(String label, @Nullable String scope) {
                     this.label = label;
                     this.scope = scope;
                 }
@@ -492,11 +492,11 @@ public class Encoding {
 
             private final Prefix prefix;
 
-            Thing(final Prefix prefix) {
+            Thing(Prefix prefix) {
                 this.prefix = prefix;
             }
 
-            public static Thing of(final byte prefix) {
+            public static Thing of(byte prefix) {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
@@ -513,7 +513,7 @@ public class Encoding {
 
     public interface Edge {
 
-        static boolean isOut(final byte infix) {
+        static boolean isOut(byte infix) {
             return infix > 0;
         }
 
@@ -539,7 +539,7 @@ public class Encoding {
 
             // TODO: This is inelegant and suboptimal.
             //       Once we fix the byte ranges of Infixes, we can determine which range if belongs in first.
-            static Schema of(final byte infix) {
+            static Schema of(byte infix) {
                 for (Type t : Type.values()) {
                     if (t.out.key == infix || t.in.key == infix) {
                         return t;
@@ -564,12 +564,12 @@ public class Encoding {
             private final Infix out;
             private final Infix in;
 
-            Type(final Infix out, final Infix in) {
+            Type(Infix out, Infix in) {
                 this.out = out;
                 this.in = in;
             }
 
-            public static Type of(final byte infix) {
+            public static Type of(byte infix) {
                 for (Type t : Type.values()) {
                     if (t.out.key == infix || t.in.key == infix) {
                         return t;
@@ -602,12 +602,12 @@ public class Encoding {
             private final Infix out;
             private final Infix in;
 
-            Rule(final Infix out, final Infix in) {
+            Rule(Infix out, Infix in) {
                 this.out = out;
                 this.in = in;
             }
 
-            public static Rule of(final byte infix) {
+            public static Rule of(byte infix) {
                 for (Rule t : Rule.values()) {
                     if (t.out.key == infix || t.in.key == infix) {
                         return t;
@@ -643,11 +643,11 @@ public class Encoding {
             private final boolean isOptimisation;
             private final int tailSize;
 
-            Thing(final Infix out, final Infix in) {
+            Thing(Infix out, Infix in) {
                 this(out, in, false, 0);
             }
 
-            Thing(final Infix out, final Infix in, final boolean isOptimisation, final int tailSize) {
+            Thing(Infix out, Infix in, boolean isOptimisation, int tailSize) {
                 this.out = out;
                 this.in = in;
                 this.isOptimisation = isOptimisation;
@@ -656,11 +656,11 @@ public class Encoding {
                 assert in == null || in.isOptimisation() == isOptimisation;
             }
 
-            public static Thing of(final Infix infix) {
+            public static Thing of(Infix infix) {
                 return of(infix.key);
             }
 
-            public static Thing of(final byte infix) {
+            public static Thing of(byte infix) {
                 for (Thing t : Thing.values()) {
                     if ((t.out != null && t.out.key == infix) || (t.in != null && t.in.key == infix)) {
                         return t;

@@ -26,7 +26,7 @@ public class BaseIterator<T> implements ResourceIterator<T> {
 
     private final Either<ResourceIterator<T>, Iterator<T>> iterator;
 
-    public BaseIterator(final Either<ResourceIterator<T>, Iterator<T>> iterator) {
+    public BaseIterator(Either<ResourceIterator<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
     }
 

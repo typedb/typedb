@@ -165,7 +165,7 @@ public class TypeHandler {
         return Transaction.Res.newBuilder().setId(request.getId()).setTypeRes(response).build();
     }
 
-    private static <T extends Type> T notNull(@Nullable final T type) {
+    private static <T extends Type> T notNull(@Nullable T type) {
         if (type == null) throw new GraknException(MISSING_CONCEPT);
         return type;
     }

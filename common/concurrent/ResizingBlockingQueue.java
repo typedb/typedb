@@ -41,7 +41,7 @@ public class ResizingBlockingQueue<E> {
         this(DEFAULT_INITIAL_CAPACITY);
     }
 
-    public ResizingBlockingQueue(final int initialCapacity) {
+    public ResizingBlockingQueue(int initialCapacity) {
         queue = new ManagedBlockingQueue<>(initialCapacity);
         publishers = new AtomicInteger(0);
         needsResizing = new AtomicBoolean(false);
@@ -87,7 +87,7 @@ public class ResizingBlockingQueue<E> {
         oldQueue.drainTo(queue);
     }
 
-    public void put(final E item) {
+    public void put(E item) {
         try {
             queue.put(Either.first(item));
             if (queue.remainingCapacity() == 0) needsResizing.set(true);

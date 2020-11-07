@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 public class Streams {
 
-    public static int compareSize(final Stream<?> stream, final int size) {
+    public static int compareSize(Stream<?> stream, int size) {
         long count = 0L;
         final Iterator<?> iterator = stream.iterator();
 
@@ -35,5 +35,4 @@ public class Streams {
 
         return count == size ? 0 : -1;
     }
-
 }

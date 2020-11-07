@@ -35,7 +35,7 @@ public abstract class EdgeIID<
     SuffixIID suffix;
     private int endIndex, infixIndex, suffixIndex;
 
-    EdgeIID(final byte[] bytes) {
+    EdgeIID(byte[] bytes) {
         super(bytes);
     }
 
@@ -80,15 +80,15 @@ public abstract class EdgeIID<
 
     public static class Schema extends EdgeIID<Encoding.Edge.Schema, InfixIID.Schema, VertexIID.Schema, VertexIID.Schema> {
 
-        Schema(final byte[] bytes) {
+        Schema(byte[] bytes) {
             super(bytes);
         }
 
-        public static Schema of(final byte[] bytes) {
+        public static Schema of(byte[] bytes) {
             return new Schema(bytes);
         }
 
-        public static Schema of(final VertexIID.Schema start, final Encoding.Infix infix, final VertexIID.Schema end) {
+        public static Schema of(VertexIID.Schema start, Encoding.Infix infix, VertexIID.Schema end) {
             return new Schema(join(start.bytes, infix.bytes(), end.bytes));
         }
 
@@ -114,19 +114,19 @@ public abstract class EdgeIID<
 
     public static class Thing extends EdgeIID<Encoding.Edge.Thing, InfixIID.Thing, VertexIID.Thing, VertexIID.Thing> {
 
-        Thing(final byte[] bytes) {
+        Thing(byte[] bytes) {
             super(bytes);
         }
 
-        public static Thing of(final byte[] bytes) {
+        public static Thing of(byte[] bytes) {
             return new Thing(bytes);
         }
 
-        public static Thing of(final VertexIID.Thing start, final InfixIID.Thing infix, final VertexIID.Thing end) {
+        public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end) {
             return new Thing(join(start.bytes(), infix.bytes(), end.bytes()));
         }
 
-        public static Thing of(final VertexIID.Thing start, final InfixIID.Thing infix, final VertexIID.Thing end, final SuffixIID suffix) {
+        public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end, SuffixIID suffix) {
             return new Thing(join(start.bytes(), infix.bytes(), end.bytes(), suffix.bytes()));
         }
 
@@ -171,15 +171,15 @@ public abstract class EdgeIID<
         private VertexIID.Type start;
         private VertexIID.Thing end;
 
-        InwardsISA(final byte[] bytes) {
+        InwardsISA(byte[] bytes) {
             super(bytes);
         }
 
-        public static InwardsISA of(final byte[] bytes) {
+        public static InwardsISA of(byte[] bytes) {
             return new InwardsISA(bytes);
         }
 
-        public static InwardsISA of(final VertexIID.Type start, final VertexIID.Thing end) {
+        public static InwardsISA of(VertexIID.Type start, VertexIID.Thing end) {
             return new InwardsISA(join(start.bytes, Encoding.Edge.ISA.in().bytes(), end.bytes));
         }
 

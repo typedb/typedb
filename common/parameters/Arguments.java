@@ -29,12 +29,12 @@ public class Arguments {
             private final int id;
             private final boolean isSchema;
 
-            Type(final int id) {
+            Type(int id) {
                 this.id = id;
                 this.isSchema = id == 1;
             }
 
-            public static Arguments.Session.Type of(final int value) {
+            public static Arguments.Session.Type of(int value) {
                 for (Arguments.Session.Type t : values()) {
                     if (t.id == value) return t;
                 }
@@ -56,12 +56,12 @@ public class Arguments {
             private final int id;
             private final boolean isWrite;
 
-            Type(final int id) {
+            Type(int id) {
                 this.id = id;
                 this.isWrite = id == 1;
             }
 
-            public static Arguments.Transaction.Type of(final int value) {
+            public static Arguments.Transaction.Type of(int value) {
                 for (Arguments.Transaction.Type t : values()) {
                     if (t.id == value) return t;
                 }

@@ -25,7 +25,7 @@ public class MappedIterator<T, U> implements ResourceIterator<U> {
     private final ResourceIterator<T> iterator;
     private final Function<T, U> function;
 
-    MappedIterator(final ResourceIterator<T> iterator, final Function<T, U> function) {
+    MappedIterator(ResourceIterator<T> iterator, Function<T, U> function) {
         this.iterator = iterator;
         this.function = function;
     }

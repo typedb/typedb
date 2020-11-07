@@ -55,7 +55,7 @@ public final class ConceptManager {
 
     private final GraphManager graphMgr;
 
-    public ConceptManager(final GraphManager graphMgr) {
+    public ConceptManager(GraphManager graphMgr) {
         this.graphMgr = graphMgr;
     }
 
@@ -83,31 +83,31 @@ public final class ConceptManager {
         else throw graphMgr.exception(ILLEGAL_STATE.message());
     }
 
-    public EntityType putEntityType(final String label) {
+    public EntityType putEntityType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
         else return EntityTypeImpl.of(graphMgr, label);
     }
 
-    public EntityType getEntityType(final String label) {
+    public EntityType getEntityType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
         else return null;
     }
 
-    public RelationType putRelationType(final String label) {
+    public RelationType putRelationType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
         else return RelationTypeImpl.of(graphMgr, label);
     }
 
-    public RelationType getRelationType(final String label) {
+    public RelationType getRelationType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
         else return null;
     }
 
-    public AttributeType putAttributeType(final String label, final AttributeType.ValueType valueType) {
+    public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
         if (valueType == null) throw graphMgr.exception(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
         if (!valueType.isWritable()) throw graphMgr.exception(UNSUPPORTED_OPERATION.message());
 
@@ -133,19 +133,19 @@ public final class ConceptManager {
         }
     }
 
-    public AttributeType getAttributeType(final String label) {
+    public AttributeType getAttributeType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
         else return null;
     }
 
-    public Type getType(final String label) {
+    public Type getType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return TypeImpl.of(graphMgr, vertex);
         else return null;
     }
 
-    public Rule putRule(final String label, final Conjunction<? extends Pattern> when, final ThingVariable<?> then) {
+    public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         final RuleVertex vertex = graphMgr.schema().getRule(label);
         if (vertex != null) {
             vertex.when(when);
@@ -155,13 +155,13 @@ public final class ConceptManager {
         return RuleImpl.of(graphMgr, label, when, then);
     }
 
-    public Rule getRule(final String label) {
+    public Rule getRule(String label) {
         final RuleVertex ruleVertex = graphMgr.schema().getRule(label);
         if (ruleVertex != null) return RuleImpl.of(graphMgr, ruleVertex);
         return null;
     }
 
-    public Thing getThing(final byte[] iid) {
+    public Thing getThing(byte[] iid) {
         final ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
@@ -181,15 +181,15 @@ public final class ConceptManager {
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 
-    public GraknException exception(final String errorMessage) {
+    public GraknException exception(String errorMessage) {
         return graphMgr.exception(errorMessage);
     }
 
-    public GraknException exception(final Exception exception) {
+    public GraknException exception(Exception exception) {
         return graphMgr.exception(exception);
     }
 
-    public GraknException exception(final GraknException exception) {
+    public GraknException exception(GraknException exception) {
         return graphMgr.exception(exception);
     }
 }

@@ -34,14 +34,14 @@ public abstract class TypeConstraint extends Constraint {
 
     final TypeVariable owner;
 
-    TypeConstraint(final TypeVariable owner) {
+    TypeConstraint(TypeVariable owner) {
         if (owner == null) throw new NullPointerException("Null owner");
         this.owner = owner;
     }
 
-    public static TypeConstraint of(final TypeVariable owner,
-                                    final graql.lang.pattern.constraint.TypeConstraint constraint,
-                                    final VariableRegistry registry) {
+    public static TypeConstraint of(TypeVariable owner,
+                                    graql.lang.pattern.constraint.TypeConstraint constraint,
+                                    VariableRegistry registry) {
         if (constraint.isLabel()) return LabelConstraint.of(owner, constraint.asLabel());
         else if (constraint.isSub()) return SubConstraint.of(owner, constraint.asSub(), registry);
         else if (constraint.isAbstract()) return AbstractConstraint.of(owner);
@@ -53,9 +53,9 @@ public abstract class TypeConstraint extends Constraint {
         else throw new GraknException(ILLEGAL_STATE);
     }
 
-    public static TypeConstraint of(final TypeVariable owner,
-                                    final graql.lang.pattern.constraint.ConceptConstraint constraint,
-                                    final VariableRegistry registry) {
+    public static TypeConstraint of(TypeVariable owner,
+                                    graql.lang.pattern.constraint.ConceptConstraint constraint,
+                                    VariableRegistry registry) {
         if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
         else throw GraknException.of(ILLEGAL_STATE);
     }

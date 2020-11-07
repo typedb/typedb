@@ -29,11 +29,11 @@ public class RoleImpl {
 
     final ThingVertex vertex;
 
-    private RoleImpl(final ThingVertex vertex) {
+    private RoleImpl(ThingVertex vertex) {
         this.vertex = requireNonNull(vertex);
     }
 
-    public static RoleImpl of(final ThingVertex vertex) {
+    public static RoleImpl of(ThingVertex vertex) {
         return new RoleImpl(vertex);
     }
 

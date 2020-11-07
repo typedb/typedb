@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 public class RequestReader {
 
-    public static <T extends Options<?, ?>> T getOptions(final Supplier<T> optionsConstructor, final OptionsProto.Options requestOptions) {
+    public static <T extends Options<?, ?>> T getOptions(Supplier<T> optionsConstructor, OptionsProto.Options requestOptions) {
         final T options = optionsConstructor.get();
         if (requestOptions.getInferOptCase().equals(OptionsProto.Options.InferOptCase.INFER)) {
             options.infer(requestOptions.getInfer());

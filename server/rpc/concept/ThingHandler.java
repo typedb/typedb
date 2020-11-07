@@ -104,7 +104,7 @@ public class ThingHandler {
         return Transaction.Res.newBuilder().setId(request.getId()).setThingRes(response).build();
     }
 
-    private static <T extends Concept> T notNull(@Nullable final T concept) {
+    private static <T extends Concept> T notNull(@Nullable T concept) {
         if (concept == null) throw new GraknException(MISSING_CONCEPT);
         return concept;
     }

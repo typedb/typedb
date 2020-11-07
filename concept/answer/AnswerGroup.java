@@ -34,7 +34,7 @@ public class AnswerGroup<T extends Answer> implements Answer {
     private final List<T> answers;
 
 
-    public AnswerGroup(final Concept owner, final List<T> answers) {
+    public AnswerGroup(Concept owner, List<T> answers) {
         this.owner = owner;
         this.answers = answers;
     }
@@ -48,7 +48,7 @@ public class AnswerGroup<T extends Answer> implements Answer {
     }
 
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         final AnswerGroup<?> a2 = (AnswerGroup<?>) obj;

@@ -76,9 +76,9 @@ abstract class RocksTransaction implements Grakn.Transaction {
     QueryManager queryMgr;
     AtomicBoolean isOpen;
 
-    private RocksTransaction(final RocksSession session,
-                             final Arguments.Transaction.Type type,
-                             final Options.Transaction options) {
+    private RocksTransaction(RocksSession session,
+                             Arguments.Transaction.Type type,
+                             Options.Transaction options) {
         this.type = type;
         this.session = session;
         context = new Context.Transaction(session.context(), options).type(type);
@@ -173,7 +173,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         SchemaCoreStorage storage;
 
-        Schema(final RocksSession.Schema session, final Arguments.Transaction.Type type, final Options.Transaction options) {
+        Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
             storage = new SchemaCoreStorage();
             final SchemaGraph schemaGraph = new SchemaGraph(storage);
@@ -312,7 +312,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
         CoreStorage storage;
 
-        public Data(final RocksSession.Data session, final Arguments.Transaction.Type type, final Options.Transaction options) {
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
             storage = new CoreStorage();
             final long lock = session.database.dataReadSchemaLock().readLock();
@@ -429,7 +429,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public byte[] get(final byte[] key) {
+        public byte[] get(byte[] key) {
             validateTransactionIsOpen();
             try {
                 // We don't need to check isOpen.get() as tx.commit() does not involve this method
@@ -443,7 +443,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public byte[] getLastKey(final byte[] prefix) {
+        public byte[] getLastKey(byte[] prefix) {
             validateTransactionIsOpen();
             final byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
@@ -457,7 +457,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public void delete(final byte[] key) {
+        public void delete(byte[] key) {
             validateTransactionIsOpen();
             try {
                 if (isOpen.get()) readWriteLock.lockWrite();
@@ -470,12 +470,12 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public void put(final byte[] key) {
+        public void put(byte[] key) {
             put(key, EMPTY_ARRAY);
         }
 
         @Override
-        public void put(final byte[] key, final byte[] value) {
+        public void put(byte[] key, byte[] value) {
             validateTransactionIsOpen();
             try {
                 if (isOpen.get()) readWriteLock.lockWrite();
@@ -488,12 +488,12 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public void putUntracked(final byte[] key) {
+        public void putUntracked(byte[] key) {
             putUntracked(key, EMPTY_ARRAY);
         }
 
         @Override
-        public void putUntracked(final byte[] key, final byte[] value) {
+        public void putUntracked(byte[] key, byte[] value) {
             validateTransactionIsOpen();
             try {
                 readWriteLock.lockWrite();
@@ -506,7 +506,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public <G> ResourceIterator<G> iterate(final byte[] key, final BiFunction<byte[], byte[], G> constructor) {
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
             validateTransactionIsOpen();
             final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
@@ -514,19 +514,19 @@ abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         @Override
-        public GraknException exception(final String message) {
+        public GraknException exception(String message) {
             RocksTransaction.this.close();
             return new GraknException(message);
         }
 
         @Override
-        public GraknException exception(final Exception exception) {
+        public GraknException exception(Exception exception) {
             RocksTransaction.this.close();
             return new GraknException(exception);
         }
 
         @Override
-        public GraknException exception(final GraknException exception) {
+        public GraknException exception(GraknException exception) {
             RocksTransaction.this.close();
             return exception;
         }
@@ -543,11 +543,11 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return rocksTransaction.getIterator(readOptions);
         }
 
-        public void recycle(final org.rocksdb.RocksIterator rocksIterator) {
+        public void recycle(org.rocksdb.RocksIterator rocksIterator) {
             recycled.add(rocksIterator);
         }
 
-        void remove(final RocksIterator<?> iterator) {
+        void remove(RocksIterator<?> iterator) {
             iterators.remove(iterator);
         }
 

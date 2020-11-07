@@ -27,7 +27,7 @@ public class FilteredIterator<T> implements ResourceIterator<T> {
     private final Predicate<T> predicate;
     private T next;
 
-    FilteredIterator(final ResourceIterator<T> iterator, final Predicate<T> predicate) {
+    FilteredIterator(ResourceIterator<T> iterator, Predicate<T> predicate) {
         this.iterator = iterator;
         this.predicate = predicate;
     }

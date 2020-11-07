@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNull;
 
 public class Util {
 
-    public static void resetDirectory(final Path directory) throws IOException {
+    public static void resetDirectory(Path directory) throws IOException {
         if (Files.exists(directory)) {
             System.out.println("Database directory exists!");
             Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
@@ -41,13 +41,13 @@ public class Util {
         System.out.println("Database Directory created: " + directory.toString());
     }
 
-    static void assertNotNulls(final Object... objects) {
+    static void assertNotNulls(Object... objects) {
         for (Object object : objects) {
             assertNotNull(object);
         }
     }
 
-    private static void assertNulls(final Object... objects) {
+    private static void assertNulls(Object... objects) {
         for (Object object : objects) {
             assertNull(object);
         }

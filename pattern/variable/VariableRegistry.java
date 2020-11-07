@@ -50,14 +50,14 @@ public class VariableRegistry {
     private final Map<Reference, ThingVariable> things;
     private final Set<ThingVariable> anonymous;
 
-    public VariableRegistry(@Nullable final VariableRegistry bounds) {
+    public VariableRegistry(@Nullable VariableRegistry bounds) {
         this.bounds = bounds;
         types = new HashMap<>();
         things = new HashMap<>();
         anonymous = new HashSet<>();
     }
 
-    public static VariableRegistry createFromTypes(final List<graql.lang.pattern.variable.TypeVariable> variables) {
+    public static VariableRegistry createFromTypes(List<graql.lang.pattern.variable.TypeVariable> variables) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "types")) {
             final VariableRegistry registry = new VariableRegistry(null);
             variables.forEach(registry::register);
@@ -65,14 +65,14 @@ public class VariableRegistry {
         }
     }
 
-    public static VariableRegistry createFromThings(final List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
+    public static VariableRegistry createFromThings(List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "things")) {
             return createFromVariables(variables, null);
         }
     }
 
-    public static VariableRegistry createFromVariables(final List<? extends BoundVariable> variables,
-                                                       @Nullable final VariableRegistry bounds) {
+    public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
+                                                       @Nullable VariableRegistry bounds) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
             final List<ConceptVariable> unboundedVariables = new ArrayList<>();
             final VariableRegistry registry = new VariableRegistry(bounds);
@@ -85,14 +85,14 @@ public class VariableRegistry {
         }
     }
 
-    private Variable register(final graql.lang.pattern.variable.BoundVariable graqlVar) {
+    private Variable register(graql.lang.pattern.variable.BoundVariable graqlVar) {
         if (graqlVar.isThing()) return register(graqlVar.asThing());
         else if (graqlVar.isType()) return register(graqlVar.asType());
         else if (graqlVar.isConcept()) return register(graqlVar.asConcept());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public Variable register(final ConceptVariable graqlVar) {
+    public Variable register(ConceptVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_CONCEPT_VARIABLE);
         if (things.containsKey(graqlVar.reference())) {
             return things.get(graqlVar.reference()).constrainConcept(graqlVar.constraints(), this);
@@ -112,14 +112,14 @@ public class VariableRegistry {
         }
     }
 
-    public TypeVariable register(final graql.lang.pattern.variable.TypeVariable graqlVar) {
+    public TypeVariable register(graql.lang.pattern.variable.TypeVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_TYPE_VARIABLE);
         return types.computeIfAbsent(
                 graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferrable()))
         ).constrainType(graqlVar.constraints(), this);
     }
 
-    public ThingVariable register(final graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
+    public ThingVariable register(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
         final ThingVariable graknVar;
         if (graqlVar.reference().isAnonymous()) {
             graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymous.size()));
@@ -146,16 +146,16 @@ public class VariableRegistry {
         return unmodifiableSet(output);
     }
 
-    public boolean contains(final Reference reference) {
+    public boolean contains(Reference reference) {
         return things.containsKey(reference) || types.containsKey(reference);
     }
 
-    public Variable get(final Reference reference) {
+    public Variable get(Reference reference) {
         if (things.containsKey(reference)) return things.get(reference);
         else return types.get(reference);
     }
 
-    public Variable put(final Reference reference, final Variable variable) {
+    public Variable put(Reference reference, Variable variable) {
         if (variable.isType()) {
             things.remove(reference);
             return types.put(reference, variable.asType());

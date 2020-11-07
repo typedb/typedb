@@ -53,7 +53,7 @@ import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
-    private RelationTypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+    private RelationTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
         if (vertex.encoding() != RELATION_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
@@ -62,22 +62,22 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
     }
 
-    private RelationTypeImpl(final GraphManager graphMgr, final String label) {
+    private RelationTypeImpl(GraphManager graphMgr, String label) {
         super(graphMgr, label, RELATION_TYPE);
     }
 
-    public static RelationTypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
+    public static RelationTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
         if (vertex.label().equals(RELATION.label()))
             return new RelationTypeImpl.Root(graphMgr, vertex);
         else return new RelationTypeImpl(graphMgr, vertex);
     }
 
-    public static RelationType of(final GraphManager graphMgr, final String label) {
+    public static RelationType of(GraphManager graphMgr, String label) {
         return new RelationTypeImpl(graphMgr, label);
     }
 
     @Override
-    public void setLabel(final String label) {
+    public void setLabel(String label) {
         vertex.label(label);
         vertex.outs().edge(RELATES).to().forEachRemaining(v -> v.scope(label));
     }
@@ -96,7 +96,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void setSupertype(final RelationType superType) {
+    public void setSupertype(RelationType superType) {
         super.setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
@@ -122,7 +122,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void setRelates(final String roleLabel) {
+    public void setRelates(String roleLabel) {
         final TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (getSupertypes().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().equals(roleLabel))) {
@@ -137,7 +137,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void setRelates(final String roleLabel, final String overriddenLabel) {
+    public void setRelates(String roleLabel, String overriddenLabel) {
         this.setRelates(roleLabel);
         final RoleTypeImpl roleType = this.getRelates(roleLabel);
 
@@ -152,7 +152,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public void unsetRelates(final String roleLabel) {
+    public void unsetRelates(String roleLabel) {
         this.getRelates(roleLabel).delete();
     }
 
@@ -189,7 +189,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
      * @return the role type related in this relation
      */
     @Override
-    public RoleTypeImpl getRelates(final String roleLabel) {
+    public RoleTypeImpl getRelates(String roleLabel) {
         final Optional<RoleTypeImpl> roleType;
         final TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
@@ -227,7 +227,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public RelationImpl create(final boolean isInferred) {
+    public RelationImpl create(boolean isInferred) {
         validateIsCommittedAndNotAbstract(Relation.class);
         final ThingVertex instance = graphMgr.data().create(vertex.iid(), isInferred);
         return RelationImpl.of(instance);
@@ -238,7 +238,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     public static class Root extends RelationTypeImpl {
 
-        Root(final GraphManager graphMgr, final TypeVertex vertex) {
+        Root(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             assert vertex.label().equals(RELATION.label());
         }
@@ -247,7 +247,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(final String label) {
+        public void setLabel(String label) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
@@ -257,47 +257,47 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
-        public void setSupertype(final RelationType superType) {
+        public void setSupertype(RelationType superType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setRelates(final String roleLabel) {
+        public void setRelates(String roleLabel) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setRelates(final String roleLabel, final String overriddenLabel) {
+        public void setRelates(String roleLabel, String overriddenLabel) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void unsetRelates(final String roleLabel) {
+        public void unsetRelates(String roleLabel) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setOwns(final AttributeType attributeType, final boolean isKey) {
+        public void setOwns(AttributeType attributeType, boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(final RoleType roleType) {
+        public void setPlays(RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(final RoleType roleType, final RoleType overriddenType) {
+        public void setPlays(RoleType roleType, RoleType overriddenType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void unsetPlays(final RoleType roleType) {
+        public void unsetPlays(RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
     }

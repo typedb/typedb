@@ -33,15 +33,15 @@ public class IsConstraint extends TypeConstraint {
     private final TypeVariable variable;
     private final int hash;
 
-    private IsConstraint(final TypeVariable owner, final TypeVariable variable) {
+    private IsConstraint(TypeVariable owner, TypeVariable variable) {
         super(owner);
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
 
-    public static IsConstraint of(final TypeVariable owner,
-                                  final ConceptConstraint.Is constraint,
-                                  final VariableRegistry registry) {
+    public static IsConstraint of(TypeVariable owner,
+                                  ConceptConstraint.Is constraint,
+                                  VariableRegistry registry) {
         return new IsConstraint(owner, registry.register(constraint.variable()).asType());
     }
 
@@ -55,7 +55,7 @@ public class IsConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.is(owner.identifier(), variable.identifier());
     }
 
@@ -70,7 +70,7 @@ public class IsConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final IsConstraint that = (IsConstraint) o;

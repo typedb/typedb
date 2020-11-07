@@ -31,14 +31,14 @@ public class RegexConstraint extends TypeConstraint {
     private final java.util.regex.Pattern regex;
     private final int hash;
 
-    private RegexConstraint(final TypeVariable owner, final java.util.regex.Pattern regex) {
+    private RegexConstraint(TypeVariable owner, java.util.regex.Pattern regex) {
         super(owner);
         this.regex = regex;
         this.hash = Objects.hash(RegexConstraint.class, this.owner, this.regex.pattern());
     }
 
-    public static RegexConstraint of(final TypeVariable owner,
-                                     final graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
+    public static RegexConstraint of(TypeVariable owner,
+                                     graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
         return new RegexConstraint(owner, constraint.regex());
     }
 
@@ -52,7 +52,7 @@ public class RegexConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.regex(owner.identifier(), regex);
     }
 
@@ -67,7 +67,7 @@ public class RegexConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final RegexConstraint that = (RegexConstraint) o;

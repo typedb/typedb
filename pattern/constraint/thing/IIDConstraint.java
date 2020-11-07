@@ -30,14 +30,14 @@ public class IIDConstraint extends ThingConstraint {
     private final byte[] iid;
     private final int hash;
 
-    public IIDConstraint(final ThingVariable owner, final byte[] iid) {
+    public IIDConstraint(ThingVariable owner, byte[] iid) {
         super(owner);
         this.iid = iid;
         this.hash = Objects.hash(IIDConstraint.class, this.owner, Arrays.hashCode(this.iid));
     }
 
-    public static IIDConstraint of(final ThingVariable owner,
-                                   final graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
+    public static IIDConstraint of(ThingVariable owner,
+                                   graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
         return new IIDConstraint(owner, Bytes.hexStringToBytes(constraint.iid()));
     }
 
@@ -46,7 +46,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.iid(owner.identifier(), iid);
     }
 
@@ -61,7 +61,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final IIDConstraint that = (IIDConstraint) o;

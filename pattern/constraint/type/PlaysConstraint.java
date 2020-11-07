@@ -38,8 +38,8 @@ public class PlaysConstraint extends TypeConstraint {
     private final TypeVariable overriddenRoleType;
     private final int hash;
 
-    private PlaysConstraint(final TypeVariable owner, @Nullable final TypeVariable relationType,
-                            final TypeVariable roleType, @Nullable final TypeVariable overriddenRoleType) {
+    private PlaysConstraint(TypeVariable owner, @Nullable TypeVariable relationType,
+                            TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         super(owner);
         if (roleType == null) throw new NullPointerException("Null role");
         this.relationType = relationType;
@@ -48,9 +48,9 @@ public class PlaysConstraint extends TypeConstraint {
         this.hash = Objects.hash(PlaysConstraint.class, this.owner, this.relationType, this.roleType, this.overriddenRoleType);
     }
 
-    public static PlaysConstraint of(final TypeVariable owner,
-                                     final graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
-                                     final VariableRegistry registry) {
+    public static PlaysConstraint of(TypeVariable owner,
+                                     graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
+                                     VariableRegistry registry) {
         final TypeVariable roleType = registry.register(constraint.role());
         final TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
         final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
@@ -79,7 +79,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.plays(owner.identifier(), roleType.identifier());
     }
@@ -95,7 +95,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final PlaysConstraint that = (PlaysConstraint) o;

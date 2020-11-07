@@ -25,7 +25,7 @@ public class CommonExecutorService {
 
     private static ForkJoinPool executorService;
 
-    public static void init(final int threadCount) {
+    public static void init(int threadCount) {
         executorService = (ForkJoinPool) Executors.newWorkStealingPool(threadCount);
     }
 

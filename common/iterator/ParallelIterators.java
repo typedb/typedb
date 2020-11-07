@@ -33,7 +33,7 @@ public class ParallelIterators<T> implements ResourceIterator<T> {
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    public ParallelIterators(final List<ResourceIterator<T>> iterators) {
+    public ParallelIterators(List<ResourceIterator<T>> iterators) {
         queue = new ResizingBlockingQueue<>();
         state = State.EMPTY;
         next = null;

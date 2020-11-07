@@ -56,7 +56,7 @@ public class DataGraph implements Graph {
     private final AttributesByIID attributesByIID;
     private boolean isModified;
 
-    public DataGraph(final Storage storage, final SchemaGraph schemaGraph) {
+    public DataGraph(Storage storage, SchemaGraph schemaGraph) {
         this.storage = storage;
         this.schemaGraph = schemaGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
@@ -78,21 +78,21 @@ public class DataGraph implements Graph {
         return concat(thingsByIID.values().stream(), attributesByIID.valueStream());
     }
 
-    public ThingVertex get(final VertexIID.Thing iid) {
+    public ThingVertex get(VertexIID.Thing iid) {
         assert storage.isOpen();
         if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) return get(iid.asAttribute());
         else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
         return convert(iid);
     }
 
-    public AttributeVertex<?> get(final VertexIID.Attribute<?> iid) {
+    public AttributeVertex<?> get(VertexIID.Attribute<?> iid) {
         if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
             return null;
         }
         return convert(iid);
     }
 
-    public ThingVertex convert(final VertexIID.Thing iid) {
+    public ThingVertex convert(VertexIID.Thing iid) {
         // TODO: benchmark caching persisted edges
         // assert storage.isOpen();
         // enable the the line above
@@ -100,7 +100,7 @@ public class DataGraph implements Graph {
         else return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
     }
 
-    public AttributeVertex<?> convert(final VertexIID.Attribute<?> attIID) {
+    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
         switch (attIID.valueType()) {
             case BOOLEAN:
                 return attributesByIID.booleans.computeIfAbsent(
@@ -128,7 +128,7 @@ public class DataGraph implements Graph {
         }
     }
 
-    public ThingVertex create(final VertexIID.Type typeIID, final boolean isInferred) {
+    public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
         assert storage.isOpen();
         assert !typeIID.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         final VertexIID.Thing iid = generate(keyGenerator, typeIID);
@@ -139,7 +139,7 @@ public class DataGraph implements Graph {
     }
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
-    ATT_VERTEX getOrReadFromStorage(final Map<ATT_IID, ATT_VERTEX> map, final ATT_IID attIID, final Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
+    ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
         return map.computeIfAbsent(attIID, iid -> {
             final byte[] val = storage.get(iid.bytes());
             if (val != null) return vertexConstructor.apply(iid);
@@ -147,7 +147,7 @@ public class DataGraph implements Graph {
         });
     }
 
-    public ResourceIterator<ThingVertex> get(final TypeVertex typeVertex) {
+    public ResourceIterator<ThingVertex> get(TypeVertex typeVertex) {
         final ResourceIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
@@ -156,7 +156,7 @@ public class DataGraph implements Graph {
         else return link(list(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator)).distinct();
     }
 
-    public AttributeVertex<Boolean> get(final TypeVertex type, final boolean value) {
+    public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
@@ -168,7 +168,7 @@ public class DataGraph implements Graph {
         );
     }
 
-    public AttributeVertex<Long> get(final TypeVertex type, final long value) {
+    public AttributeVertex<Long> get(TypeVertex type, long value) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
@@ -180,7 +180,7 @@ public class DataGraph implements Graph {
         );
     }
 
-    public AttributeVertex<Double> get(final TypeVertex type, final double value) {
+    public AttributeVertex<Double> get(TypeVertex type, double value) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
@@ -192,7 +192,7 @@ public class DataGraph implements Graph {
         );
     }
 
-    public AttributeVertex<String> get(final TypeVertex type, final String value) {
+    public AttributeVertex<String> get(TypeVertex type, String value) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
@@ -204,7 +204,7 @@ public class DataGraph implements Graph {
         );
     }
 
-    public AttributeVertex<LocalDateTime> get(final TypeVertex type, final LocalDateTime value) {
+    public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
@@ -216,7 +216,7 @@ public class DataGraph implements Graph {
         );
     }
 
-    public AttributeVertex<Boolean> put(final TypeVertex type, final boolean value, final boolean isInferred) {
+    public AttributeVertex<Boolean> put(TypeVertex type, boolean value, boolean isInferred) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
@@ -233,7 +233,7 @@ public class DataGraph implements Graph {
         return vertex;
     }
 
-    public AttributeVertex<Long> put(final TypeVertex type, final long value, final boolean isInferred) {
+    public AttributeVertex<Long> put(TypeVertex type, long value, boolean isInferred) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
@@ -250,7 +250,7 @@ public class DataGraph implements Graph {
         return vertex;
     }
 
-    public AttributeVertex<Double> put(final TypeVertex type, final double value, final boolean isInferred) {
+    public AttributeVertex<Double> put(TypeVertex type, double value, boolean isInferred) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
@@ -267,7 +267,7 @@ public class DataGraph implements Graph {
         return vertex;
     }
 
-    public AttributeVertex<String> put(final TypeVertex type, final String value, final boolean isInferred) {
+    public AttributeVertex<String> put(TypeVertex type, String value, boolean isInferred) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
@@ -285,7 +285,7 @@ public class DataGraph implements Graph {
         return vertex;
     }
 
-    public AttributeVertex<LocalDateTime> put(final TypeVertex type, final LocalDateTime value, final boolean isInferred) {
+    public AttributeVertex<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
         assert storage.isOpen();
         assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
@@ -302,7 +302,7 @@ public class DataGraph implements Graph {
         return vertex;
     }
 
-    public void delete(final AttributeVertex<?> vertex) {
+    public void delete(AttributeVertex<?> vertex) {
         assert storage.isOpen();
         attributesByIID.remove(vertex.iid());
         if (thingsByTypeIID.containsKey(vertex.type().iid())) {
@@ -310,7 +310,7 @@ public class DataGraph implements Graph {
         }
     }
 
-    public void delete(final ThingVertex vertex) {
+    public void delete(ThingVertex vertex) {
         assert storage.isOpen();
         if (!vertex.isAttribute()) {
             thingsByIID.remove(vertex.iid());
@@ -388,7 +388,7 @@ public class DataGraph implements Graph {
             dateTimes.clear();
         }
 
-        void remove(final VertexIID.Attribute<?> iid) {
+        void remove(VertexIID.Attribute<?> iid) {
             switch (iid.valueType()) {
                 // We need to manually cast all 'iid', to avoid warning from .remove()
                 case BOOLEAN:
@@ -409,7 +409,7 @@ public class DataGraph implements Graph {
             }
         }
 
-        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(final Encoding.ValueType valueType) {
+        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Encoding.ValueType valueType) {
             switch (valueType) {
                 case BOOLEAN:
                     return booleans;

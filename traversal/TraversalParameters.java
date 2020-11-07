@@ -38,39 +38,39 @@ public class TraversalParameters {
         values = new HashMap<>();
     }
 
-    public void pushIID(final Identifier identifier, final byte[] iid) {
+    public void pushIID(Identifier identifier, byte[] iid) {
         iids.computeIfAbsent(identifier, r -> new LinkedList<>()).addLast(iid);
     }
 
-    public void pushValue(final Identifier identifier, final GraqlToken.Comparator comparator, final boolean value) {
+    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, boolean value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(final Identifier identifier, final GraqlToken.Comparator comparator, final int value) {
+    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, int value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(final Identifier identifier, final GraqlToken.Comparator comparator, final double value) {
+    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, double value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(final Identifier identifier, final GraqlToken.Comparator comparator, final String value) {
+    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, String value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(final Identifier identifier, final GraqlToken.Comparator comparator, final LocalDateTime value) {
+    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, LocalDateTime value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(final Identifier identifier, final GraqlToken.Comparator comparator, final Identifier value) {
+    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, Identifier value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public byte[] popIID(final Identifier identifier) {
+    public byte[] popIID(Identifier identifier) {
         return iids.get(identifier).removeFirst();
     }
 
-    public Value popValue(final Identifier identifier, final GraqlToken.Comparator comparator) {
+    public Value popValue(Identifier identifier, GraqlToken.Comparator comparator) {
         return values.get(pair(identifier, comparator)).removeFirst();
     }
 

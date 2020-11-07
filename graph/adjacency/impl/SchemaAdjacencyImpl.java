@@ -48,19 +48,19 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
     final Encoding.Direction direction;
     final ConcurrentMap<Encoding.Edge.Schema, Set<SchemaEdge>> edges;
 
-    SchemaAdjacencyImpl(final SchemaVertex<?, ?> owner, final Encoding.Direction direction) {
+    SchemaAdjacencyImpl(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
         this.owner = owner;
         this.direction = direction;
         this.edges = new ConcurrentHashMap<>();
     }
 
-    private void putNonRecursive(final SchemaEdge edge) {
+    private void putNonRecursive(SchemaEdge edge) {
         cache(edge);
         owner.setModified();
     }
 
     @Override
-    public SchemaEdge put(final Encoding.Edge.Schema encoding, final SchemaVertex<?, ?> adjacent) {
+    public SchemaEdge put(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> adjacent) {
         final SchemaVertex<?, ?> from = direction.isOut() ? owner : adjacent;
         final SchemaVertex<?, ?> to = direction.isOut() ? adjacent : owner;
         final SchemaEdgeImpl edge = new SchemaEdgeImpl.Buffered(encoding, from, to);
@@ -72,13 +72,13 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
     }
 
     @Override
-    public SchemaEdge cache(final SchemaEdge edge) {
+    public SchemaEdge cache(SchemaEdge edge) {
         edges.computeIfAbsent(edge.encoding(), e -> ConcurrentHashMap.newKeySet()).add(edge);
         return edge;
     }
 
     @Override
-    public void remove(final SchemaEdge edge) {
+    public void remove(SchemaEdge edge) {
         if (edges.containsKey(edge.encoding())) {
             edges.get(edge.encoding()).remove(edge);
             owner.setModified();
@@ -104,7 +104,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         private final ResourceIterator<SchemaEdge> edgeIterator;
 
-        TypeIteratorBuilderImpl(final ResourceIterator<SchemaEdge> edgeIterator) {
+        TypeIteratorBuilderImpl(ResourceIterator<SchemaEdge> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
@@ -135,7 +135,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         private final ResourceIterator<SchemaEdge> edgeIterator;
 
-        RuleIteratorBuilderImpl(final ResourceIterator<SchemaEdge> edgeIterator) {
+        RuleIteratorBuilderImpl(ResourceIterator<SchemaEdge> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
@@ -152,26 +152,26 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
     public static class Buffered extends SchemaAdjacencyImpl implements SchemaAdjacency {
 
-        public Buffered(final SchemaVertex<?, ?> owner, final Encoding.Direction direction) {
+        public Buffered(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
             super(owner, direction);
         }
 
         @Override
-        public TypeIteratorBuilder edge(final Encoding.Edge.Type encoding) {
+        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
             final Set<SchemaEdge> t = edges.get(encoding);
             if (t != null) return new TypeIteratorBuilderImpl(Iterators.iterate(t.iterator()));
             return new TypeIteratorBuilderImpl(Iterators.iterate(Collections.emptyIterator()));
         }
 
         @Override
-        public RuleIteratorBuilderImpl edge(final Encoding.Edge.Rule encoding) {
+        public RuleIteratorBuilderImpl edge(Encoding.Edge.Rule encoding) {
             final Set<SchemaEdge> t = edges.get(encoding);
             if (t != null) return new RuleIteratorBuilderImpl(Iterators.iterate(t.iterator()));
             return new RuleIteratorBuilderImpl(Iterators.iterate(Collections.emptyIterator()));
         }
 
         @Override
-        public SchemaEdge edge(final Encoding.Edge.Type encoding, final TypeVertex adjacent) {
+        public SchemaEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
             if (edges.containsKey(encoding)) {
                 final Predicate<SchemaEdge> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
@@ -182,7 +182,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         }
 
         @Override
-        public void delete(final Encoding.Edge.Schema encoding) {
+        public void delete(Encoding.Edge.Schema encoding) {
             if (edges.containsKey(encoding)) edges.get(encoding).forEach(Edge::delete);
         }
     }
@@ -191,23 +191,23 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         private final ConcurrentHashMap<byte[], ResourceIterator<SchemaEdge>> storageIterators;
 
-        public Persisted(final SchemaVertex<?, ?> owner, final Encoding.Direction direction) {
+        public Persisted(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
             super(owner, direction);
             storageIterators = new ConcurrentHashMap<>();
         }
 
-        private byte[] edgeIID(final Encoding.Edge.Schema encoding, final SchemaVertex<?, ?> adjacent) {
+        private byte[] edgeIID(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> adjacent) {
             return join(owner.iid().bytes(),
                         direction.isOut() ? encoding.out().bytes() : encoding.in().bytes(),
                         adjacent.iid().bytes());
         }
 
-        private SchemaEdge newPersistedEdge(final byte[] key, final byte[] value) {
+        private SchemaEdge newPersistedEdge(byte[] key, byte[] value) {
             final VertexIID.Type overridden = ((value.length == 0) ? null : VertexIID.Type.of(value));
             return new SchemaEdgeImpl.Persisted(owner.graph(), EdgeIID.Schema.of(key), overridden);
         }
 
-        private ResourceIterator<SchemaEdge> edgeIterator(final Encoding.Edge.Schema encoding) {
+        private ResourceIterator<SchemaEdge> edgeIterator(Encoding.Edge.Schema encoding) {
             final ResourceIterator<SchemaEdge> storageIterator = storageIterators.computeIfAbsent(
                     join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
                     iid -> owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)))
@@ -219,17 +219,17 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         }
 
         @Override
-        public TypeIteratorBuilder edge(final Encoding.Edge.Type encoding) {
+        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
             return new TypeIteratorBuilderImpl(edgeIterator(encoding));
         }
 
         @Override
-        public RuleIteratorBuilder edge(final Encoding.Edge.Rule encoding) {
+        public RuleIteratorBuilder edge(Encoding.Edge.Rule encoding) {
             return new RuleIteratorBuilderImpl(edgeIterator(encoding));
         }
 
         @Override
-        public SchemaEdge edge(final Encoding.Edge.Type encoding, final TypeVertex adjacent) {
+        public SchemaEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
             final Optional<SchemaEdge> container;
             final Predicate<SchemaEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
@@ -249,7 +249,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
         }
 
         @Override
-        public void delete(final Encoding.Edge.Schema encoding) {
+        public void delete(Encoding.Edge.Schema encoding) {
             edgeIterator(encoding).forEachRemaining(Edge::delete);
         }
 

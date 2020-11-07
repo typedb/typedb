@@ -43,17 +43,17 @@ public class Conjunction implements Pattern {
     private final Set<Variable> variables;
     private final Set<Negation> negations;
 
-    private Conjunction(final Set<Variable> variables, final Set<Negation> negations) {
+    private Conjunction(Set<Variable> variables, Set<Negation> negations) {
         this.variables = variables;
         this.negations = negations;
     }
 
-    public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql) {
+    public static Conjunction create(graql.lang.pattern.Conjunction<Conjunctable> graql) {
         return create(graql, null);
     }
 
-    public static Conjunction create(final graql.lang.pattern.Conjunction<Conjunctable> graql,
-                                     @Nullable final VariableRegistry bounds) {
+    public static Conjunction create(graql.lang.pattern.Conjunction<Conjunctable> graql,
+                                     @Nullable VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             List<BoundVariable> graqlVariables = new ArrayList<>();
             List<graql.lang.pattern.Negation<?>> graqlNegations = new ArrayList<>();

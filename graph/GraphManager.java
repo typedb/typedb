@@ -28,7 +28,7 @@ public class GraphManager {
 
     private final DataGraph dataGraph;
 
-    public GraphManager(final SchemaGraph schemaGraph, final DataGraph dataGraph) {
+    public GraphManager(SchemaGraph schemaGraph, DataGraph dataGraph) {
         this.schemaGraph = schemaGraph;
         this.dataGraph = dataGraph;
     }
@@ -46,20 +46,20 @@ public class GraphManager {
         dataGraph.clear();
     }
 
-    public GraknException exception(final String message) {
+    public GraknException exception(String message) {
         return dataGraph.storage().exception(message);
     }
 
-    public GraknException exception(final Exception exception) {
+    public GraknException exception(Exception exception) {
         return dataGraph.storage().exception(exception);
     }
 
-    public GraknException exception(final GraknException exception) {
+    public GraknException exception(GraknException exception) {
         return dataGraph.storage().exception(exception);
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 

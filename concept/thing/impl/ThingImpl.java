@@ -59,11 +59,11 @@ public abstract class ThingImpl implements Thing {
 
     final ThingVertex vertex;
 
-    ThingImpl(final ThingVertex vertex) {
+    ThingImpl(ThingVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    public static ThingImpl of(final ThingVertex vertex) {
+    public static ThingImpl of(ThingVertex vertex) {
         switch (vertex.encoding()) {
             case ENTITY:
                 return EntityImpl.of(vertex);
@@ -92,7 +92,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public void setHas(final Attribute attribute) {
+    public void setHas(Attribute attribute) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(THING_CANNOT_OWN_ATTRIBUTE.message(attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
@@ -106,49 +106,49 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public void unsetHas(final Attribute attribute) {
+    public void unsetHas(Attribute attribute) {
         vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex).delete();
     }
 
     @Override
-    public Stream<AttributeImpl<?>> getHas(final boolean onlyKey) {
+    public Stream<AttributeImpl<?>> getHas(boolean onlyKey) {
         return getHas(getType().getOwns(onlyKey).toArray(AttributeType[]::new));
     }
 
     @Override
-    public Stream<AttributeImpl.Boolean> getHas(final AttributeType.Boolean attributeType) {
+    public Stream<AttributeImpl.Boolean> getHas(AttributeType.Boolean attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asBoolean());
     }
 
     @Override
-    public Stream<AttributeImpl.Long> getHas(final AttributeType.Long attributeType) {
+    public Stream<AttributeImpl.Long> getHas(AttributeType.Long attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asLong());
     }
 
     @Override
-    public Stream<AttributeImpl.Double> getHas(final AttributeType.Double attributeType) {
+    public Stream<AttributeImpl.Double> getHas(AttributeType.Double attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDouble());
     }
 
     @Override
-    public Stream<AttributeImpl.String> getHas(final AttributeType.String attributeType) {
+    public Stream<AttributeImpl.String> getHas(AttributeType.String attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asString());
     }
 
     @Override
-    public Stream<AttributeImpl.DateTime> getHas(final AttributeType.DateTime attributeType) {
+    public Stream<AttributeImpl.DateTime> getHas(AttributeType.DateTime attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDateTime());
     }
 
     @Override
-    public Stream<AttributeImpl<?>> getHas(final AttributeType... attributeTypes) {
+    public Stream<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
         if (attributeTypes.length == 0) {
             return getAttributeVertices(getType().getOwns().collect(toList())).map(AttributeImpl::of);
         }
         return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
     }
 
-    private Stream<? extends AttributeVertex<?>> getAttributeVertices(final List<? extends AttributeType> attributeTypes) {
+    private Stream<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
             return attributeTypes.stream()
                     .flatMap(AttributeType::getSubtypes).distinct()
@@ -167,7 +167,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<RelationImpl> getRelations(final String roleType, final String... roleTypes) {
+    public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
         return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
             if (!scopedLabel.contains(":")) {
                 throw exception(INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
@@ -178,7 +178,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public Stream<RelationImpl> getRelations(final RoleType... roleTypes) {
+    public Stream<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
             return vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of).stream();
         } else {
@@ -220,7 +220,7 @@ public abstract class ThingImpl implements Thing {
         throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Relation.class)));
     }
 
-    private String printTypeSet(final Set<? extends Type> types) {
+    private String printTypeSet(Set<? extends Type> types) {
         final Type[] array = types.toArray(new Type[0]);
         final StringBuilder string = new StringBuilder();
         for (int i = 0; i < array.length; i++) {
@@ -231,7 +231,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public GraknException exception(final String message) {
+    public GraknException exception(String message) {
         return vertex.graphs().exception(message);
     }
 
@@ -241,7 +241,7 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public boolean equals(final Object object) {
+    public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         final ThingImpl that = (ThingImpl) object;

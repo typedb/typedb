@@ -34,7 +34,7 @@ public abstract class Variable implements Pattern {
 
     private final Identifier.Variable identifier;
 
-    Variable(final Identifier.Variable identifier) {
+    Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
     }
 
@@ -48,7 +48,7 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
@@ -69,7 +69,7 @@ public abstract class Variable implements Pattern {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 

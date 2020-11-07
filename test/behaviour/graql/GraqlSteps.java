@@ -63,51 +63,51 @@ public class GraqlSteps {
     }
 
     @Given("graql define")
-    public void graql_define(final String defineQueryStatements) {
+    public void graql_define(String defineQueryStatements) {
         final GraqlDefine graqlQuery = Graql.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
         tx().query().define(graqlQuery);
     }
 
     @Given("graql define; throws exception")
-    public void graql_define_throws_exception(final String defineQueryStatements) {
+    public void graql_define_throws_exception(String defineQueryStatements) {
         assertThrows(() -> graql_define(defineQueryStatements));
     }
 
     @Given("graql undefine")
-    public void graql_undefine(final String undefineQueryStatements) {
+    public void graql_undefine(String undefineQueryStatements) {
         final GraqlUndefine graqlQuery = Graql.parseQuery(String.join("\n", undefineQueryStatements)).asUndefine();
         tx().query().undefine(graqlQuery);
     }
 
     @Given("graql undefine; throws exception")
-    public void graql_undefine_throws_exception(final String undefineQueryStatements) {
+    public void graql_undefine_throws_exception(String undefineQueryStatements) {
         assertThrows(() -> graql_undefine(undefineQueryStatements));
     }
 
     @Given("graql insert")
-    public void graql_insert(final String insertQueryStatements) {
+    public void graql_insert(String insertQueryStatements) {
         final GraqlInsert graqlQuery = Graql.parseQuery(String.join("\n", insertQueryStatements)).asInsert();
         tx().query().insert(graqlQuery);
     }
 
     @Given("graql insert; throws exception")
-    public void graql_insert_throws_exception(final String insertQueryStatements) {
+    public void graql_insert_throws_exception(String insertQueryStatements) {
         assertThrows(() -> graql_insert(insertQueryStatements));
     }
 
     @Given("graql delete")
-    public void graql_delete(final String deleteQueryStatements) {
+    public void graql_delete(String deleteQueryStatements) {
         final GraqlDelete graqlQuery = Graql.parseQuery(String.join("\n", deleteQueryStatements)).asDelete();
         tx().query().delete(graqlQuery);
     }
 
     @Given("graql delete; throws exception")
-    public void graql_delete_throws_exception(final String deleteQueryStatements) {
+    public void graql_delete_throws_exception(String deleteQueryStatements) {
         assertThrows(() -> graql_delete(deleteQueryStatements));
     }
 
     @When("get answers of graql insert")
-    public void get_answers_of_graql_insert(final String graqlQueryStatements) {
+    public void get_answers_of_graql_insert(String graqlQueryStatements) {
         final GraqlInsert graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asInsert();
         // Erase answers from previous steps to avoid polluting the result space
         answers = null;
@@ -119,7 +119,7 @@ public class GraqlSteps {
     }
 
     @When("get answers of graql query")
-    public void graql_query(final String graqlQueryStatements) {
+    public void graql_query(String graqlQueryStatements) {
         // TODO: re-enable when match is implemented
         /*final GraqlQuery graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements));
         // Erase answers from previous steps to avoid polluting the result space
@@ -143,13 +143,13 @@ public class GraqlSteps {
     }
 
     @When("graql match; throws exception")
-    public void graql_match_throws_exception(final String graqlQueryStatements) {
+    public void graql_match_throws_exception(String graqlQueryStatements) {
         // TODO: re-enable when match is implemented
         //assertThrows(() -> graql_query(graqlQueryStatements));
     }
 
     @Then("answer size is: {number}")
-    public void answer_quantity_assertion(final int expectedAnswers) {
+    public void answer_quantity_assertion(int expectedAnswers) {
         // TODO: re-enable when match is implemented
 //        assertEquals(
 //                String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.count()),
@@ -157,7 +157,7 @@ public class GraqlSteps {
     }
 
     @Then("concept identifiers are")
-    public void concept_identifiers_are(final Map<String, Map<String, String>> identifiers) {
+    public void concept_identifiers_are(Map<String, Map<String, String>> identifiers) {
         for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
             final String identifier = entry.getKey();
             final String check = entry.getValue().get("check");
@@ -180,7 +180,7 @@ public class GraqlSteps {
     }
 
     @Then("uniquely identify answer concepts")
-    public void uniquely_identify_answer_concepts(final List<Map<String, String>> answersIdentifiers) {
+    public void uniquely_identify_answer_concepts(List<Map<String, String>> answersIdentifiers) {
         // TODO: re-enable when match is implemented
 //        assertEquals(
 //                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
@@ -206,7 +206,7 @@ public class GraqlSteps {
     }
 
     @Then("order of answer concepts is")
-    public void order_of_answer_concepts_is(final List<Map<String, String>> answersIdentifiers) {
+    public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
         // TODO
 //        final List<ConceptMap> answerList = answers.collect(Collectors.toList());
 //        assertEquals(
@@ -225,7 +225,7 @@ public class GraqlSteps {
     }
 
     @Then("aggregate value is: {double}")
-    public void aggregate_value_is(final double expectedAnswer) {
+    public void aggregate_value_is(double expectedAnswer) {
         // TODO
         /*assertNotNull("The last executed query was not an aggregate query", numericAnswer);
         assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, numericAnswers.get(0).number().doubleValue()),
@@ -241,7 +241,7 @@ public class GraqlSteps {
     }
 
     @Then("group identifiers are")
-    public void group_identifiers_are(final Map<String, Map<String, String>> identifiers) {
+    public void group_identifiers_are(Map<String, Map<String, String>> identifiers) {
         for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
             final String groupIdentifier = entry.getKey();
             final Map<String, String> variables = entry.getValue();
@@ -250,7 +250,7 @@ public class GraqlSteps {
     }
 
     @Then("answer groups are")
-    public void answer_groups_are(final List<Map<String, String>> answerIdentifierTable) {
+    public void answer_groups_are(List<Map<String, String>> answerIdentifierTable) {
         // TODO
 //        Set<AnswerIdentifierGroup> answerIdentifierGroups = answerIdentifierTable.stream()
 //                .collect(Collectors.groupingBy(x -> x.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME)))
@@ -292,7 +292,7 @@ public class GraqlSteps {
     }
 
     @Then("group aggregate values are")
-    public void group_aggregate_values_are(final List<Map<String, String>> answerIdentifierTable) {
+    public void group_aggregate_values_are(List<Map<String, String>> answerIdentifierTable) {
         // TODO
         /*Map<String, Double> expectations = new HashMap<>();
         for (Map<String, String> answerIdentifierRow : answerIdentifierTable) {
@@ -326,7 +326,7 @@ public class GraqlSteps {
     }
 
     @Then("number of groups is: {int}")
-    public void number_of_groups_is(final int expectedGroupCount) {
+    public void number_of_groups_is(int expectedGroupCount) {
         // TODO
 //        assertEquals(expectedGroupCount, answerGroups.size());
     }
@@ -337,11 +337,11 @@ public class GraqlSteps {
 
         private static final String GROUP_COLUMN_NAME = "group";
 
-        public AnswerIdentifierGroup(final List<Map<String, String>> answerIdentifierTable, final Map<String, String> groupOwnerIdentifiers) {
+        public AnswerIdentifierGroup(List<Map<String, String>> answerIdentifierTable, Map<String, String> groupOwnerIdentifiers) {
             final String groupIdentifier = answerIdentifierTable.get(0).get(GROUP_COLUMN_NAME);
             groupOwnerIdentifier = groupOwnerIdentifiers.get(groupIdentifier);
             answersIdentifiers = new ArrayList<>();
-            for (final Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
+            for (Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
                 answersIdentifiers.add(rawAnswerIdentifiers.entrySet().stream()
                                                .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
                                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
@@ -349,7 +349,7 @@ public class GraqlSteps {
         }
     }
 
-    private boolean matchAnswer(final Map<String, String> answerIdentifiers, final ConceptMap answer) {
+    private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
 
         if (!(answerIdentifiers).keySet().equals(answer.concepts().keySet())) {
             return false;
@@ -372,12 +372,12 @@ public class GraqlSteps {
     }
 
     @Then("rules are")
-    public void rules_are(final Map<String, Map<String, String>> rules) {
+    public void rules_are(Map<String, Map<String, String>> rules) {
         this.rules = rules;
     }
 
     @Then("answers contain explanation tree")
-    public void answers_contain_explanation_tree(final Map<Integer, Map<String, String>> explanationTree) {
+    public void answers_contain_explanation_tree(Map<Integer, Map<String, String>> explanationTree) {
         // TODO
         throw new UnsupportedOperationException();
         //checkExplanationEntry(answers, explanationTree, 0);
@@ -446,7 +446,7 @@ public class GraqlSteps {
     } */
 
     @Then("each answer satisfies")
-    public void each_answer_satisfies(final String templatedGraqlQuery) {
+    public void each_answer_satisfies(String templatedGraqlQuery) {
         // TODO
         /*final String templatedQuery = String.join("\n", templatedGraqlQuery);
         for (ConceptMap answer : answers.collect(Collectors.toList())) {
@@ -457,7 +457,7 @@ public class GraqlSteps {
         }*/
     }
 
-    private String applyQueryTemplate(final String template, final ConceptMap templateFiller) {
+    private String applyQueryTemplate(String template, ConceptMap templateFiller) {
         throw new UnsupportedOperationException(); // TODO fix
         /* // find shortest matching strings between <>
         Pattern pattern = Pattern.compile("<.+?>");
@@ -485,7 +485,7 @@ public class GraqlSteps {
         return builder.toString(); */
     }
 
-    private String variableFromTemplatePlaceholder(final String placeholder) {
+    private String variableFromTemplatePlaceholder(String placeholder) {
         if (placeholder.endsWith(".id")) {
             final String stripped = placeholder.replace(".id", "");
             final String withoutPrefix = stripped.replace("answer.", "");
@@ -496,7 +496,7 @@ public class GraqlSteps {
     }
 
     private static class ScenarioDefinitionException extends RuntimeException {
-        ScenarioDefinitionException(final String message) {
+        ScenarioDefinitionException(String message) {
             super(message);
         }
     }
@@ -509,12 +509,12 @@ public class GraqlSteps {
 
         private final String label;
 
-        LabelUniquenessCheck(final String label) {
+        LabelUniquenessCheck(String label) {
             this.label = label;
         }
 
         @Override
-        public boolean check(final Concept concept) {
+        public boolean check(Concept concept) {
             if (concept instanceof Type) {
                 return label.equals(concept.asType().getLabel());
             }
@@ -528,7 +528,7 @@ public class GraqlSteps {
         protected final String type;
         protected final String value;
 
-        AttributeUniquenessCheck(final String typeAndValue) {
+        AttributeUniquenessCheck(String typeAndValue) {
             final String[] s = typeAndValue.split(":");
             assertEquals(
                     String.format("A check for attribute uniqueness should be given in the format \"type:value\", but received %s", typeAndValue),
@@ -540,11 +540,11 @@ public class GraqlSteps {
     }
 
     public static class ValueUniquenessCheck extends AttributeUniquenessCheck implements UniquenessCheck {
-        ValueUniquenessCheck(final String typeAndValue) {
+        ValueUniquenessCheck(String typeAndValue) {
             super(typeAndValue);
         }
 
-        public boolean check(final Concept concept) {
+        public boolean check(Concept concept) {
             if (!(concept instanceof Attribute)) {
                 return false;
             }
@@ -574,19 +574,19 @@ public class GraqlSteps {
     }
 
     public static class KeyUniquenessCheck extends AttributeUniquenessCheck implements UniquenessCheck {
-        KeyUniquenessCheck(final String typeAndValue) {
+        KeyUniquenessCheck(String typeAndValue) {
             super(typeAndValue);
         }
 
         @Override
-        public boolean check(final Concept concept) {
+        public boolean check(Concept concept) {
             if (!(concept instanceof Thing)) { return false; }
 
             final Set<Attribute> keys = concept.asThing().getHas(true).collect(Collectors.toSet());
 
             final HashMap<String, String> keyMap = new HashMap<>();
 
-            for (final Attribute key : keys) {
+            for (Attribute key : keys) {
                 final String keyValue;
                 switch (key.getType().getValueType()) {
                     case BOOLEAN:

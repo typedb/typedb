@@ -39,7 +39,7 @@ import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ENTITY;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
-    private EntityTypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+    private EntityTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
             throw exception(TYPE_ROOT_MISMATCH.message(
@@ -48,23 +48,23 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
     }
 
-    private EntityTypeImpl(final GraphManager graphMgr, final String label) {
+    private EntityTypeImpl(GraphManager graphMgr, String label) {
         super(graphMgr, label, ENTITY_TYPE);
         assert !label.equals(ENTITY.label());
     }
 
-    public static EntityTypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
+    public static EntityTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
         if (vertex.label().equals(ENTITY.label())) {
             return new EntityTypeImpl.Root(graphMgr, vertex);
         } else return new EntityTypeImpl(graphMgr, vertex);
     }
 
-    public static EntityTypeImpl of(final GraphManager graphMgr, final String label) {
+    public static EntityTypeImpl of(GraphManager graphMgr, String label) {
         return new EntityTypeImpl(graphMgr, label);
     }
 
     @Override
-    public void setSupertype(final EntityType superType) {
+    public void setSupertype(EntityType superType) {
         super.setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
@@ -100,7 +100,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public EntityImpl create(final boolean isInferred) {
+    public EntityImpl create(boolean isInferred) {
         validateIsCommittedAndNotAbstract(Entity.class);
         final ThingVertex instance = graphMgr.data().create(vertex.iid(), isInferred);
         return EntityImpl.of(instance);
@@ -111,7 +111,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private static class Root extends EntityTypeImpl {
 
-        private Root(final GraphManager graphMgr, final TypeVertex vertex) {
+        private Root(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             assert vertex.label().equals(ENTITY.label());
         }
@@ -120,7 +120,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(final String label) {
+        public void setLabel(String label) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
@@ -130,32 +130,32 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public void setSupertype(final EntityType superType) {
+        public void setSupertype(EntityType superType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setOwns(final AttributeType attributeType, final boolean isKey) {
+        public void setOwns(AttributeType attributeType, boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setOwns(final AttributeType attributeType, final AttributeType overriddenType, final boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(final RoleType roleType) {
+        public void setPlays(RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void setPlays(final RoleType roleType, final RoleType overriddenType) {
+        public void setPlays(RoleType roleType, RoleType overriddenType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
 
         @Override
-        public void unsetPlays(final RoleType roleType) {
+        public void unsetPlays(RoleType roleType) {
             throw exception(ROOT_TYPE_MUTATION.message());
         }
     }

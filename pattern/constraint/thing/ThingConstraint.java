@@ -35,13 +35,13 @@ public abstract class ThingConstraint extends Constraint {
 
     final ThingVariable owner;
 
-    ThingConstraint(final ThingVariable owner) {
+    ThingConstraint(ThingVariable owner) {
         this.owner = owner;
     }
 
-    public static ThingConstraint of(final ThingVariable owner,
-                                     final graql.lang.pattern.constraint.ThingConstraint constraint,
-                                     final VariableRegistry registry) {
+    public static ThingConstraint of(ThingVariable owner,
+                                     graql.lang.pattern.constraint.ThingConstraint constraint,
+                                     VariableRegistry registry) {
         if (constraint.isIID()) return IIDConstraint.of(owner, constraint.asIID());
         else if (constraint.isIsa()) return IsaConstraint.of(owner, constraint.asIsa(), registry);
         else if (constraint.isValue()) return ValueConstraint.of(owner, constraint.asValue(), registry);
@@ -50,9 +50,9 @@ public abstract class ThingConstraint extends Constraint {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public static ThingConstraint of(final ThingVariable owner,
-                                     final graql.lang.pattern.constraint.ConceptConstraint constraint,
-                                     final VariableRegistry registry) {
+    public static ThingConstraint of(ThingVariable owner,
+                                     graql.lang.pattern.constraint.ConceptConstraint constraint,
+                                     VariableRegistry registry) {
         if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
         else throw GraknException.of(ILLEGAL_STATE);
     }

@@ -33,7 +33,7 @@ public class TreeIterator<T> implements ResourceIterator<T> {
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    TreeIterator(final T root, final Function<T, ResourceIterator<T>> childrenFn) {
+    TreeIterator(T root, Function<T, ResourceIterator<T>> childrenFn) {
         this.next = root;
         this.childrenFn = childrenFn;
 

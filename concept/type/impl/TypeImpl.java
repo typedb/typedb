@@ -56,23 +56,23 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     protected final GraphManager graphMgr;
     public final TypeVertex vertex;
 
-    TypeImpl(final GraphManager graphMgr, final TypeVertex vertex) {
+    TypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         this.graphMgr = graphMgr;
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(final GraphManager graphMgr, final String label, final Encoding.Vertex.Type encoding) {
+    TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
         this(graphMgr, label, encoding, null);
     }
 
-    TypeImpl(final GraphManager graphMgr, final String label, final Encoding.Vertex.Type encoding, final String scope) {
+    TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(encoding, label, scope);
         final TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
     }
 
-    public static TypeImpl of(final GraphManager graphMgr, final TypeVertex vertex) {
+    public static TypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
         switch (vertex.encoding()) {
             case ROLE_TYPE:
                 return RoleTypeImpl.of(graphMgr, vertex);
@@ -97,7 +97,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public void setLabel(final String label) {
+    public void setLabel(String label) {
         vertex.label(label);
     }
 
@@ -114,7 +114,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     @Override
     public abstract Stream<? extends TypeImpl> getSubtypes();
 
-    <THING> Stream<THING> instances(final Function<ThingVertex, THING> thingConstructor) {
+    <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
     }
 
@@ -133,7 +133,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         return vertex.ins().edge(CONCLUSION).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
 
-    void setSuperTypeVertex(final TypeVertex superTypeVertex) {
+    void setSuperTypeVertex(TypeVertex superTypeVertex) {
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(SUB, superTypeVertex);
         validateTypeHierarchyIsNotCyclic();
@@ -153,13 +153,13 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Nullable
-    <TYPE extends grakn.core.concept.type.Type> TYPE getSupertype(final Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends grakn.core.concept.type.Type> TYPE getSupertype(Function<TypeVertex, TYPE> typeConstructor) {
         final ResourceIterator<TypeVertex> iterator = vertex.outs().edge(SUB).to().filter(v -> v.encoding().equals(vertex.encoding()));
         if (iterator.hasNext()) return typeConstructor.apply(iterator.next());
         else return null;
     }
 
-    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(final Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(Function<TypeVertex, TYPE> typeConstructor) {
         return loop(
                 vertex,
                 v -> v != null && v.encoding().equals(this.vertex.encoding()),
@@ -174,7 +174,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         ).map(typeConstructor).stream();
     }
 
-    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(final Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
         return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor).stream();
     }
 
@@ -211,7 +211,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RoleType.class)));
     }
 
-    void validateIsCommittedAndNotAbstract(final Class<?> instanceClass) {
+    void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
             throw exception(SESSION_SCHEMA_VIOLATION.message());
         } else if (isAbstract()) {
@@ -220,7 +220,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public GraknException exception(final String message) {
+    public GraknException exception(String message) {
         return graphMgr.exception(message);
     }
 
@@ -230,7 +230,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public boolean equals(final Object object) {
+    public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         final TypeImpl that = (TypeImpl) object;

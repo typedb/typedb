@@ -32,14 +32,14 @@ public class ValueTypeConstraint extends TypeConstraint {
     private final GraqlArg.ValueType valueType;
     private final int hash;
 
-    private ValueTypeConstraint(final TypeVariable owner, final GraqlArg.ValueType valueType) {
+    private ValueTypeConstraint(TypeVariable owner, GraqlArg.ValueType valueType) {
         super(owner);
         this.valueType = valueType;
         this.hash = Objects.hash(ValueTypeConstraint.class, this.owner, this.valueType);
     }
 
-    public static ValueTypeConstraint of(final TypeVariable owner,
-                                         final graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
+    public static ValueTypeConstraint of(TypeVariable owner,
+                                         graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
         return new ValueTypeConstraint(owner, constraint.valueType());
     }
 
@@ -53,7 +53,7 @@ public class ValueTypeConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(final Traversal traversal) {
+    public void addTo(Traversal traversal) {
         traversal.valueType(owner.identifier(), valueType);
     }
 
@@ -68,7 +68,7 @@ public class ValueTypeConstraint extends TypeConstraint {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final ValueTypeConstraint that = (ValueTypeConstraint) o;

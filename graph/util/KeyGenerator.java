@@ -42,14 +42,14 @@ public class KeyGenerator {
         protected final int initialValue;
         protected final int delta;
 
-        Schema(final int initialValue, final int delta) {
+        Schema(int initialValue, int delta) {
             typeKeys = new ConcurrentHashMap<>();
             ruleKey = new AtomicInteger(initialValue);
             this.initialValue = initialValue;
             this.delta = delta;
         }
 
-        public byte[] forType(final PrefixIID root) {
+        public byte[] forType(PrefixIID root) {
             return shortToSortedBytes(typeKeys.computeIfAbsent(
                     root, k -> new AtomicInteger(initialValue)
             ).getAndAdd(delta));
@@ -72,12 +72,12 @@ public class KeyGenerator {
                 super(Encoding.Key.PERSISTED.initialValue(), Encoding.Key.PERSISTED.isIncrement() ? 1 : -1);
             }
 
-            public void sync(final Storage storage) {
+            public void sync(Storage storage) {
                 syncTypeKeys(storage);
                 syncRuleKey(storage);
             }
 
-            private void syncTypeKeys(final Storage storage) {
+            private void syncTypeKeys(Storage storage) {
                 for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
                     final byte[] prefix = encoding.prefix().bytes();
                     final byte[] lastIID = storage.getLastKey(prefix);
@@ -88,7 +88,7 @@ public class KeyGenerator {
                 }
             }
 
-            private void syncRuleKey(final Storage storage) {
+            private void syncRuleKey(Storage storage) {
                 final byte[] prefix = Encoding.Vertex.Rule.RULE.prefix().bytes();
                 final byte[] lastIID = storage.getLastKey(prefix);
                 ruleKey = lastIID != null ?
@@ -106,7 +106,7 @@ public class KeyGenerator {
         protected final int initialValue;
         protected final int delta;
 
-        Data(final int initialValue, final int delta) {
+        Data(int initialValue, int delta) {
             typeKeys = new ConcurrentHashMap<>();
             ruleKey = new AtomicInteger(initialValue);
             thingKeys = new ConcurrentHashMap<>();
@@ -114,7 +114,7 @@ public class KeyGenerator {
             this.delta = delta;
         }
 
-        public byte[] forThing(final VertexIID.Schema schemaIID) {
+        public byte[] forThing(VertexIID.Schema schemaIID) {
             return longToSortedBytes(thingKeys.computeIfAbsent(
                     schemaIID, k -> new AtomicLong(initialValue)
             ).getAndAdd(delta));
@@ -133,7 +133,7 @@ public class KeyGenerator {
                 super(Encoding.Key.PERSISTED.initialValue(), Encoding.Key.PERSISTED.isIncrement() ? 1 : -1);
             }
 
-            public void sync(final Storage storage) {
+            public void sync(Storage storage) {
                 final Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{
                         Encoding.Vertex.Thing.ENTITY, Encoding.Vertex.Thing.RELATION, Encoding.Vertex.Thing.ROLE
                 };

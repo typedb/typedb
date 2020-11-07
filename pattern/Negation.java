@@ -31,11 +31,11 @@ public class Negation implements Pattern {
     private static final String TRACE_PREFIX = "negation.";
     private final Disjunction disjunction;
 
-    private Negation(final Disjunction disjunction) {
+    private Negation(Disjunction disjunction) {
         this.disjunction = disjunction;
     }
 
-    public static Negation create(final graql.lang.pattern.Negation<?> graql, final VariableRegistry bounds) {
+    public static Negation create(graql.lang.pattern.Negation<?> graql, VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             Disjunction disjunction = Disjunction.create(graql.normalise().pattern(), bounds);
             disjunction.conjunctions().forEach(conjunction -> {

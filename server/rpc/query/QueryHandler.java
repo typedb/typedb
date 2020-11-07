@@ -42,12 +42,12 @@ public class QueryHandler {
     private final TransactionRPC transactionRPC;
     private final QueryManager queryManager;
 
-    public QueryHandler(final TransactionRPC transactionRPC, final QueryManager queryManager) {
+    public QueryHandler(TransactionRPC transactionRPC, QueryManager queryManager) {
         this.queryManager = queryManager;
         this.transactionRPC = transactionRPC;
     }
 
-    public void handleRequest(final Transaction.Req request) {
+    public void handleRequest(Transaction.Req request) {
         final QueryProto.Query.Req req = request.getQueryReq();
         final Options.Query options = getOptions(Options.Query::new, req.getOptions());
         switch (req.getReqCase()) {
@@ -72,11 +72,11 @@ public class QueryHandler {
         }
     }
 
-    private static TransactionProto.Transaction.Res response(final Transaction.Req request, final QueryProto.Query.Res.Builder response) {
+    private static TransactionProto.Transaction.Res response(Transaction.Req request, QueryProto.Query.Res.Builder response) {
         return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setQueryRes(response).build();
     }
 
-    private void match(final Transaction.Req request, final QueryProto.Graql.Match.Req req, final Options.Query options) {
+    private void match(Transaction.Req request, QueryProto.Graql.Match.Req req, Options.Query options) {
         final GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
         final ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
         final ResourceIterator<TransactionProto.Transaction.Res> responseIterator = answers.map(a -> response(request, QueryProto.Query.Res.newBuilder()
@@ -84,7 +84,7 @@ public class QueryHandler {
         transactionRPC.respond(request, responseIterator, options);
     }
 
-    private void insert(final Transaction.Req request, final QueryProto.Graql.Insert.Req req, final Options.Query options) {
+    private void insert(Transaction.Req request, QueryProto.Graql.Insert.Req req, Options.Query options) {
         final GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
         final ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
         final ResourceIterator<TransactionProto.Transaction.Res> responseIterator = answers.map(a -> response(request, QueryProto.Query.Res.newBuilder()
@@ -92,19 +92,19 @@ public class QueryHandler {
         transactionRPC.respond(request, responseIterator, options);
     }
 
-    private void delete(final Transaction.Req request, final QueryProto.Graql.Delete.Req req, final Options.Query options) {
+    private void delete(Transaction.Req request, QueryProto.Graql.Delete.Req req, Options.Query options) {
         final GraqlDelete query = Graql.parseQuery(req.getQuery()).asDelete();
         queryManager.delete(query, options);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setDeleteRes(QueryProto.Graql.Delete.Res.getDefaultInstance())));
     }
 
-    private void define(final Transaction.Req request, final QueryProto.Graql.Define.Req req) {
+    private void define(Transaction.Req request, QueryProto.Graql.Define.Req req) {
         final GraqlDefine query = Graql.parseQuery(req.getQuery()).asDefine();
         queryManager.define(query);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setDefineRes(QueryProto.Graql.Define.Res.getDefaultInstance())));
     }
 
-    private void undefine(final Transaction.Req request, final QueryProto.Graql.Undefine.Req req) {
+    private void undefine(Transaction.Req request, QueryProto.Graql.Undefine.Req req) {
         final GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
         queryManager.undefine(query);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setUndefineRes(QueryProto.Graql.Undefine.Res.getDefaultInstance())));

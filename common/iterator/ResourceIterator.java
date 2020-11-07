@@ -41,19 +41,19 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return new DistinctIterator<>(this);
     }
 
-    default <U> ResourceIterator<U> map(final Function<T, U> function) {
+    default <U> ResourceIterator<U> map(Function<T, U> function) {
         return new MappedIterator<>(this, function);
     }
 
-    default ResourceIterator<T> filter(final Predicate<T> predicate) {
+    default ResourceIterator<T> filter(Predicate<T> predicate) {
         return new FilteredIterator<>(this, predicate);
     }
 
-    default ResourceIterator<T> link(final ResourceIterator<T> iterator) {
+    default ResourceIterator<T> link(ResourceIterator<T> iterator) {
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.first(iterator))));
     }
 
-    default ResourceIterator<T> link(final Iterator<T> iterator) {
+    default ResourceIterator<T> link(Iterator<T> iterator) {
         if (iterator instanceof ResourceIterator<?>) return link((ResourceIterator<T>) iterator);
         return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.second(iterator))));
     }

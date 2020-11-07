@@ -23,39 +23,39 @@ import java.util.List;
 public class GraknException extends RuntimeException {
 
     // TODO replace usages with GraknException.of()
-    public GraknException(final String error) {
+    public GraknException(String error) {
         super(error);
     }
 
     // TODO replace usages with GraknException.of()
-    public GraknException(final ErrorMessage error) {
+    public GraknException(ErrorMessage error) {
         super(error.toString());
         assert !getMessage().contains("%s");
     }
 
     // TODO replace usages with GraknException.of()
-    public GraknException(final Exception e) {
+    public GraknException(Exception e) {
         super(e);
     }
 
     // TODO replace usages with GraknException.of()
-    public GraknException(final List<GraknException> exceptions) {
+    public GraknException(List<GraknException> exceptions) {
         super(getMessages(exceptions));
     }
 
-    public static GraknException of(final Exception e) {
+    public static GraknException of(Exception e) {
         return new GraknException(e);
     }
 
-    public static GraknException of(final ErrorMessage errorMessage) {
+    public static GraknException of(ErrorMessage errorMessage) {
         return new GraknException(errorMessage.message());
     }
 
-    public static GraknException of(final String error) {
+    public static GraknException of(String error) {
         return new GraknException(error);
     }
 
-    public static String getMessages(final List<GraknException> exceptions) {
+    public static String getMessages(List<GraknException> exceptions) {
         final StringBuilder messages = new StringBuilder();
         for (GraknException exception : exceptions) {
             messages.append(exception.getMessage()).append("\n");

@@ -93,7 +93,7 @@ public abstract class Identifier {
         }
 
         @Override
-        public boolean equals(final Object o) {
+        public boolean equals(Object o) {
             if (this == o) return true;
             else if (o == null || getClass() != o.getClass()) return false;
 
@@ -108,7 +108,7 @@ public abstract class Identifier {
 
         static class Referrable extends Variable {
 
-            Referrable(final Reference reference) {
+            Referrable(Reference reference) {
                 super(reference, null);
             }
 
@@ -120,7 +120,7 @@ public abstract class Identifier {
 
         static class Name extends Referrable {
 
-            private Name(final Reference.Name reference) {
+            private Name(Reference.Name reference) {
                 super(reference);
             }
 
@@ -132,7 +132,7 @@ public abstract class Identifier {
 
         static class Label extends Referrable {
 
-            private Label(final Reference.Label reference) {
+            private Label(Reference.Label reference) {
                 super(reference);
             }
 
@@ -144,7 +144,7 @@ public abstract class Identifier {
 
         static class Anonymous extends Variable {
 
-            private Anonymous(final Reference.Anonymous reference, final int id) {
+            private Anonymous(Reference.Anonymous reference, int id) {
                 super(reference, id);
             }
 

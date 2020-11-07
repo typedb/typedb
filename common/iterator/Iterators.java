@@ -36,23 +36,23 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 
 public class Iterators {
 
-    public static <T> TreeIterator<T> tree(final T root, final Function<T, ResourceIterator<T>> childrenFn) {
+    public static <T> TreeIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
         return new TreeIterator<>(root, childrenFn);
     }
 
-    public static <T> LoopIterator<T> loop(final T seed, final Predicate<T> predicate, final UnaryOperator<T> function) {
+    public static <T> LoopIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
         return new LoopIterator<>(seed, predicate, function);
     }
 
-    public static <T> BaseIterator<T> iterate(final Collection<T> collection) {
+    public static <T> BaseIterator<T> iterate(Collection<T> collection) {
         return new BaseIterator<>(Either.second(collection.iterator()));
     }
 
-    public static <T> BaseIterator<T> iterate(final Iterator<T> iterator) {
+    public static <T> BaseIterator<T> iterate(Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T> LinkedIterators<T> link(final List<Iterator<T>> iterators) {
+    public static <T> LinkedIterators<T> link(List<Iterator<T>> iterators) {
         final LinkedList<Either<ResourceIterator<T>, Iterator<T>>> converted = new LinkedList<>();
         iterators.forEach(iterator -> {
             if (iterator instanceof ResourceIterator<?>) {
@@ -64,11 +64,11 @@ public class Iterators {
         return new LinkedIterators<>(converted);
     }
 
-    public static <T> ParallelIterators<T> parallel(final List<ResourceIterator<T>> iterators) {
+    public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators) {
         return new ParallelIterators<>(iterators);
     }
 
-    public static <T> Stream<T> stream(final Iterator<T> iterator) {
+    public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }
 }

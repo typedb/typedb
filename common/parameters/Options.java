@@ -33,7 +33,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     abstract SELF getThis();
 
-    public SELF parent(final PARENT parent) {
+    public SELF parent(PARENT parent) {
         this.parent = parent;
         return getThis();
     }
@@ -48,7 +48,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
     }
 
-    public SELF infer(final boolean infer) {
+    public SELF infer(boolean infer) {
         this.infer = infer;
         return getThis();
     }
@@ -63,7 +63,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
     }
 
-    public SELF explain(final boolean explain) {
+    public SELF explain(boolean explain) {
         this.explain = explain;
         return getThis();
     }
@@ -78,7 +78,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
     }
 
-    public SELF batchSize(final int batchSize) {
+    public SELF batchSize(int batchSize) {
         this.batchSize = batchSize;
         return getThis();
     }
@@ -90,7 +90,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
-        public Database parent(final Options<?, ?> parent) {
+        public Database parent(Options<?, ?> parent) {
             throw new GraknException(ErrorMessage.Internal.ILLEGAL_ARGUMENT);
         }
     }

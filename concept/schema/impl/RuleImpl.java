@@ -58,14 +58,14 @@ public class RuleImpl implements Rule {
     private Conjunction when;
     private Set<Variable> then;
 
-    private RuleImpl(final GraphManager graphMgr, final RuleVertex vertex) {
+    private RuleImpl(GraphManager graphMgr, RuleVertex vertex) {
         this.graphMgr = graphMgr;
         this.vertex = vertex;
     }
 
-    private RuleImpl(final GraphManager graphMgr, final String label,
-                     final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
-                     final graql.lang.pattern.variable.ThingVariable<?> then) {
+    private RuleImpl(GraphManager graphMgr, String label,
+                     graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
+                     graql.lang.pattern.variable.ThingVariable<?> then) {
         graql.lang.pattern.schema.Rule.validate(label, when, then);
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(label, when, then);
@@ -75,13 +75,13 @@ public class RuleImpl implements Rule {
         validateLabelsExist();
     }
 
-    public static RuleImpl of(final GraphManager graphMgr, final RuleVertex vertex) {
+    public static RuleImpl of(GraphManager graphMgr, RuleVertex vertex) {
         return new RuleImpl(graphMgr, vertex);
     }
 
-    public static RuleImpl of(final GraphManager graphMgr, final String label,
-                              final graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
-                              final graql.lang.pattern.variable.ThingVariable<?> then) {
+    public static RuleImpl of(GraphManager graphMgr, String label,
+                              graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
+                              graql.lang.pattern.variable.ThingVariable<?> then) {
         return new RuleImpl(graphMgr, label, when, then);
     }
 
@@ -100,7 +100,7 @@ public class RuleImpl implements Rule {
                 .forEach(constraint -> putCondition(constraint.asType().asLabel(), CONDITION_NEGATIVE));
     }
 
-    private void putCondition(final LabelConstraint constraint, final Encoding.Edge.Rule encoding) {
+    private void putCondition(LabelConstraint constraint, Encoding.Edge.Rule encoding) {
         if (constraint.scope().isPresent()) {
             TypeVertex relation = graphMgr.schema().getType(constraint.scope().get());
             TypeVertex role = graphMgr.schema().getType(constraint.label(), constraint.scope().get());
@@ -161,7 +161,7 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public void setLabel(final String label) {
+    public void setLabel(String label) {
         vertex.label(label);
     }
 
@@ -238,7 +238,7 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public boolean equals(final Object object) {
+    public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 

@@ -38,15 +38,15 @@ public class Matcher {
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    private Matcher(final TraversalEngine traversalEng, final ConceptManager conceptMgr,
-                    final Disjunction disjunction, final Context.Query context) {
+    private Matcher(TraversalEngine traversalEng, ConceptManager conceptMgr,
+                    Disjunction disjunction, Context.Query context) {
         this.reasoner = new Reasoner(traversalEng, conceptMgr);
         this.disjunction = disjunction;
         this.context = context;
     }
 
-    public static Matcher create(final TraversalEngine traversalEng, final ConceptManager conceptMgr,
-                                 final Conjunction<? extends Pattern> conjunction, final Context.Query context) {
+    public static Matcher create(TraversalEngine traversalEng, ConceptManager conceptMgr,
+                                 Conjunction<? extends Pattern> conjunction, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Matcher(traversalEng, conceptMgr, Disjunction.create(conjunction.normalise()), context);
         }
