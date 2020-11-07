@@ -22,10 +22,8 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,7 +33,6 @@ public class IsConstraint extends ThingConstraint {
 
     private final ThingVariable variable;
     private final int hash;
-    private List<Traversal> traversals;
 
     private IsConstraint(final ThingVariable owner, final ThingVariable variable) {
         super(owner);

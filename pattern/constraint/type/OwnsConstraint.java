@@ -22,10 +22,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 
 import javax.annotation.Nullable;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -39,7 +37,6 @@ public class OwnsConstraint extends TypeConstraint {
     private final TypeVariable overriddenAttributeType;
     private final boolean isKey;
     private final int hash;
-    private List<Traversal> traversals;
 
     private OwnsConstraint(final TypeVariable owner, final TypeVariable attributeType,
                            @Nullable final TypeVariable overriddenAttributeType, final boolean isKey) {

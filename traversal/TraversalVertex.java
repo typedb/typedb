@@ -20,16 +20,12 @@ package grakn.core.traversal;
 
 import graql.lang.common.GraqlArg;
 
-import java.util.regex.Pattern;
-
 public class TraversalVertex {
 
     private final Identifier identifier;
-    private final TraversalPlan plan;
 
-    TraversalVertex(Identifier identifier, TraversalPlan plan) {
+    TraversalVertex(Identifier identifier) {
         this.identifier = identifier;
-        this.plan = plan;
     }
 
     public Identifier identifier() {
@@ -48,11 +44,33 @@ public class TraversalVertex {
 
     }
 
-    public void regex(Pattern regex) {
+    public void regex(java.util.regex.Pattern regex) {
 
     }
 
     public void valueType(GraqlArg.ValueType valueType) {
+
+    }
+
+    public static class Pattern extends TraversalVertex {
+
+        public Pattern(Identifier identifier, Traversal.Pattern pattern) {
+            super(identifier);
+        }
+    }
+
+    public static class Planner extends TraversalVertex {
+
+        Planner(Identifier identifier, Traversal.Planner planner) {
+            super(identifier);
+        }
+    }
+
+    public static class Plan extends TraversalVertex {
+
+        Plan(Identifier identifier, Traversal.Plan plan) {
+            super(identifier);
+        }
 
     }
 }

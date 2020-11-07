@@ -36,9 +36,7 @@ public class TraversalEngine {
     }
 
     public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(final Traversal traversal) {
-        traversal.replacePlan(cache.get(traversal.plan()));
-        if (!traversal.plan().updateCostAndCheckIsOptimal(graphMgr.schema())) traversal.plan().optimise();
-
-        return null;
+        traversal.initialisePlanner(cache);
+        return traversal.execute(graphMgr);
     }
 }

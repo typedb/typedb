@@ -21,7 +21,6 @@ package grakn.core.pattern.constraint.thing;
 import grakn.common.collection.Bytes;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 
 import java.util.Arrays;
 import java.util.Objects;

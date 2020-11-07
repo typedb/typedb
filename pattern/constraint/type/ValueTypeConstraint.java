@@ -22,7 +22,6 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlArg;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,7 +31,6 @@ public class ValueTypeConstraint extends TypeConstraint {
 
     private final GraqlArg.ValueType valueType;
     private final int hash;
-    private List<Traversal> traversals;
 
     private ValueTypeConstraint(final TypeVariable owner, final GraqlArg.ValueType valueType) {
         super(owner);

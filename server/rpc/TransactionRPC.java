@@ -122,15 +122,15 @@ public class TransactionRPC {
 
     private void commit(String requestId) {
         transaction.commit();
-        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId)
-                .setCommitRes(TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build());
+        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId).setCommitRes(
+                TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build());
         close();
     }
 
     private void rollback(String requestId) {
         transaction.rollback();
-        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId)
-                .setRollbackRes(TransactionProto.Transaction.Rollback.Res.getDefaultInstance()).build());
+        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId).setRollbackRes(
+                TransactionProto.Transaction.Rollback.Res.getDefaultInstance()).build());
     }
 
     void close() {
@@ -178,8 +178,8 @@ public class TransactionRPC {
             final int latencyMillis = request.getLatencyMillis();
             final BatchingIterator batchingIterator = new BatchingIterator(requestId, iterator, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
-               if (oldValue == null) return batchingIterator;
-               else throw new GraknException(DUPLICATE_REQUEST.message(requestId));
+                if (oldValue == null) return batchingIterator;
+                else throw new GraknException(DUPLICATE_REQUEST.message(requestId));
             });
             batchingIterator.iterateBatch();
         }

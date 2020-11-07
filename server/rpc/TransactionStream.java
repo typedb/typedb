@@ -134,7 +134,7 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
             transactionRPC = sessionRPC.transaction(this, openReq);
             final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
             responder.onNext(TransactionProto.Transaction.Res.newBuilder().setId(request.getId())
-                    .setOpenRes(TransactionProto.Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)).build());
+                                     .setOpenRes(TransactionProto.Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)).build());
         } else {
             throw new GraknException(TRANSACTION_ALREADY_OPENED);
         }

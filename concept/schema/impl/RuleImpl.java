@@ -195,7 +195,7 @@ public class RuleImpl implements Rule {
         Stream<String> whenPositiveLabels = getTypeLabels(when.variables().stream());
         Stream<String> whenNegativeLabels = getTypeLabels(when.negations().stream().flatMap(this::negationVariables));
         Stream<String> thenLabels = getTypeLabels(then.stream());
-        Set<String> missingLabels =  Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity())
+        Set<String> missingLabels = Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity())
                 .filter(label -> graphMgr.schema().getType(label) == null).collect(Collectors.toSet());
         if (!missingLabels.isEmpty()) {
             throw GraqlException.of(TYPE_NOT_FOUND.message(getLabel(), String.join(", ", missingLabels)));

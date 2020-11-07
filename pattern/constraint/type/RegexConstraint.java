@@ -21,7 +21,6 @@ package grakn.core.pattern.constraint.type;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,7 +30,6 @@ public class RegexConstraint extends TypeConstraint {
 
     private final java.util.regex.Pattern regex;
     private final int hash;
-    private List<Traversal> traversals;
 
     private RegexConstraint(final TypeVariable owner, final java.util.regex.Pattern regex) {
         super(owner);

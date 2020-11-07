@@ -20,9 +20,7 @@ package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,7 +29,6 @@ import static grakn.common.collection.Collections.set;
 public class AbstractConstraint extends TypeConstraint {
 
     private final int hash;
-    private List<Traversal> traversals;
 
     private AbstractConstraint(final TypeVariable owner) {
         super(owner);

@@ -21,9 +21,7 @@ package grakn.core.pattern.constraint.type;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -34,7 +32,6 @@ public class SubConstraint extends TypeConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private List<Traversal> traversals;
 
     private SubConstraint(final TypeVariable owner, final TypeVariable type, final boolean isExplicit) {
         super(owner);

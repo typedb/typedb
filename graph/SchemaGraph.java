@@ -54,6 +54,7 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
     private boolean isModified;
+    private long snapshot;
 
     public SchemaGraph(final Storage.Schema storage) {
         this.storage = storage;
@@ -70,6 +71,10 @@ public class SchemaGraph implements Graph {
     @Override
     public Storage.Schema storage() {
         return storage;
+    }
+
+    public long snapshot() {
+        return snapshot++; // TODO: update snapshot everytime we update type statistics
     }
 
     public boolean isInitialised() throws GraknException {

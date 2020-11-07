@@ -23,7 +23,6 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 
 import java.util.Objects;
 import java.util.Set;

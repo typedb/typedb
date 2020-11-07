@@ -22,7 +22,6 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
 import javax.annotation.Nullable;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,7 +30,6 @@ public class LabelConstraint extends TypeConstraint {
     private final String label;
     private final String scope;
     private final int hash;
-    private List<Traversal> traversals;
 
     private LabelConstraint(final TypeVariable owner, final String label, @Nullable final String scope) {
         super(owner);

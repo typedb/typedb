@@ -22,11 +22,9 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -39,7 +37,6 @@ public class PlaysConstraint extends TypeConstraint {
     private final TypeVariable roleType;
     private final TypeVariable overriddenRoleType;
     private final int hash;
-    private List<Traversal> traversals;
 
     private PlaysConstraint(final TypeVariable owner, @Nullable final TypeVariable relationType,
                             final TypeVariable roleType, @Nullable final TypeVariable overriddenRoleType) {
