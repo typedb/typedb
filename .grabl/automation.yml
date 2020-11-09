@@ -34,9 +34,9 @@ build:
     build:
       machine: graknlabs-ubuntu-20.04
       script: |
-        bazel build --config=rbe //...
+        bazel build //...
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
-        bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
     build-dependency:
       machine: graknlabs-ubuntu-20.04
       script: |
@@ -46,14 +46,14 @@ build:
     test-integration:
       machine: graknlabs-ubuntu-20.04
       script: |
-        bazel test --config=rbe //test/integration:test-basic --test_output=errors
-        bazel test --config=rbe //test/integration:test-query --test_output=errors
+        bazel test //test/integration:test-basic --test_output=errors
+        bazel test //test/integration:test-query --test_output=errors
     test-behaviour:
       machine: graknlabs-ubuntu-20.04
       script: |
-        bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
-        bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
-        bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=errors
+        bazel test //test/behaviour/connection/... --test_output=errors
+        bazel test //test/behaviour/concept/... --test_output=errors
+        bazel test //test/behaviour/graql/language/define/... --test_output=errors
     deploy-artifact-snapshot:
       machine: graknlabs-ubuntu-20.04
       filter:

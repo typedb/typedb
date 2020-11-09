@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_dependencies//library/ortools:deps.bzl", "google_or_tools")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
 package(
     default_visibility = [
         "//pattern:__subpackages__",
@@ -43,8 +45,8 @@ java_library(
         # External dependencies from Maven
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_ortools_ortools_java_darwin",
-    ],
+
+    ] + google_or_tools,
     tags = ["maven_coordinates=io.grakn.core:grakn-traversal:{pom_version}"],
     visibility = ["//visibility:public"],
 )
