@@ -16,6 +16,8 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+
 package(
     default_visibility = [
         "//concept:__pkg__",
@@ -24,7 +26,7 @@ package(
     ]
 )
 
-java_library(
+native_java_libraries(
     name = "pattern",
     srcs = glob([
         "*.java",
@@ -36,7 +38,6 @@ java_library(
     deps = [
         # Internal dependencies
         "//common:common",
-        "//traversal:traversal",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
@@ -46,6 +47,9 @@ java_library(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
+    ],
+    native_libraries_deps = [
+        "//traversal:traversal",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-query-pattern:{pom_version}"],
 )

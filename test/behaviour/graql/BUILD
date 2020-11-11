@@ -18,16 +18,15 @@
 package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-java_library(
+host_compatible_java_library(
     name = "steps",
     srcs = [
         "GraqlSteps.java"
     ],
     deps = [
         # Package dependencies
-        "//concept:concept",
         "//test/behaviour/connection:steps",
         "//test/behaviour/util:util",
 
@@ -39,6 +38,9 @@ java_library(
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
         "@maven//:com_google_guava_guava",
+    ],
+    native_libraries_deps = [
+        "//concept:concept",
     ],
     runtime_deps = [
         "//test/behaviour/connection/database:steps",

@@ -17,6 +17,7 @@
 
 load("@graknlabs_dependencies//library/ortools:deps.bzl", "google_or_tools")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 package(
     default_visibility = [
@@ -25,17 +26,13 @@ package(
     ]
 )
 
-java_library(
+native_java_libraries(
     name = "rocks",
     srcs = glob(["*.java"]),
     deps = [
         # Internal dependencies
-        "//:grakn",
         "//common:common",
-        "//concept:concept",
         "//graph:graph",
-        "//query:query",
-        "//traversal:traversal",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
@@ -44,7 +41,25 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
 #        "@maven//:org_rocksdb_rocksdbjni_dev", # Use this JAR for debugging RocksDB on Mac
         "@maven//:org_rocksdb_rocksdbjni",
-    ] + google_or_tools,
+    ],
+    native_libraries_deps = [
+        "//:grakn",
+        "//traversal:traversal",
+        "//concept:concept",
+        "//query:query"
+    ],
+    mac_deps = [
+        "@maven//:com_google_ortools_ortools_darwin",
+        "@maven//:com_google_ortools_ortools_darwin_java",
+    ],
+    linux_deps = [
+        "@maven//:com_google_ortools_ortools_linux_x86_64",
+        "@maven//:com_google_ortools_ortools_linux_x86_64_java"
+    ],
+    windows_deps = [
+        "@maven//:com_google_ortools_ortools_win32_x86_64",
+        "@maven//:com_google_ortools_ortools_win32_x86_64_java"
+    ],
     tags = ["maven_coordinates=io.grakn.core:grakn-rocks:{pom_version}"],
 )
 

@@ -16,8 +16,9 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-java_test(
+host_compatible_java_test(
     name = "test-basic",
     srcs = [
         "BasicTest.java",
@@ -26,20 +27,22 @@ java_test(
     test_class = "grakn.core.test.integration.BasicTest",
     deps = [
         # Internal dependencies
-        "//:grakn",
         "//common:common",
-        "//concept:concept",
-        "//rocks:rocks",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
     ],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+    ],
     size = "large",
 )
 
-java_test(
+host_compatible_java_test(
     name = "test-query",
     srcs = [
         "QueryTest.java",
@@ -48,14 +51,16 @@ java_test(
     test_class = "grakn.core.test.integration.QueryTest",
     deps = [
         # Internal dependencies
-        "//:grakn",
         "//common:common",
-        "//concept:concept",
-        "//rocks:rocks",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
+    ],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
     ],
     data = [":schema.gql"]
 )

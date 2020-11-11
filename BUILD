@@ -17,17 +17,20 @@
 
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 exports_files(
     ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
 )
 
-java_library(
+native_java_libraries(
     name = "grakn",
     srcs = glob(["*.java"]),
     deps = [
         # Internal dependencies
         "//common:common",
+    ],
+    native_libraries_deps = [
         "//query:query",
         "//concept:concept",
     ],

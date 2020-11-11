@@ -17,24 +17,24 @@
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-java_library(
+host_compatible_java_library(
     name = "steps",
     srcs = [
         "AttributeTypeSteps.java"
     ],
     deps = [
         # Internal dependencies
-        "//concept:concept",
         "//common:common",
         "//test/behaviour/connection:steps",
-
-        # Internal Repository Dependencies
-        # "@graknlabs_common//:common",
 
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
+    ],
+    native_libraries_deps = [
+        "//concept:concept",
     ]
 )
 

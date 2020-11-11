@@ -17,6 +17,7 @@
 
 load("@graknlabs_dependencies//library/ortools:deps.bzl", "google_or_tools")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 package(
     default_visibility = [
@@ -27,7 +28,7 @@ package(
     ]
 )
 
-java_library(
+native_java_libraries(
     name = "traversal",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
@@ -45,8 +46,19 @@ java_library(
         # External dependencies from Maven
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
-
-    ] + google_or_tools,
+    ],
+    mac_deps = [
+        "@maven//:com_google_ortools_ortools_darwin",
+        "@maven//:com_google_ortools_ortools_darwin_java",
+    ],
+    linux_deps = [
+        "@maven//:com_google_ortools_ortools_linux_x86_64",
+        "@maven//:com_google_ortools_ortools_linux_x86_64_java"
+    ],
+    windows_deps = [
+        "@maven//:com_google_ortools_ortools_win32_x86_64",
+        "@maven//:com_google_ortools_ortools_win32_x86_64_java"
+    ],
     tags = ["maven_coordinates=io.grakn.core:grakn-traversal:{pom_version}"],
     visibility = ["//visibility:public"],
 )

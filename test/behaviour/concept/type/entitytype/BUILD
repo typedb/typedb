@@ -23,17 +23,6 @@ java_library(
     srcs = [
         "EntityTypeSteps.java"
     ],
-    deps = [
-        # Internal dependencies
-        # "//test/behaviour/connection:steps",
-
-        # Internal Repository Dependencies
-        # "@graknlabs_common//:common",
-
-        # External Maven Dependencies
-        # "@maven//:junit_junit",
-        # "@maven//:io_cucumber_cucumber_java",
-    ]
 )
 
 java_test(

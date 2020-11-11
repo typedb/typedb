@@ -16,22 +16,26 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+
 package(default_visibility = ["//query:__subpackages__"])
 
-java_library(
+native_java_libraries(
     name = "reasoner",
     srcs = glob(["*.java"]),
     deps = [
         # Internal dependencies
         "//common:common",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//traversal:traversal",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
 
         # External dependencies from Maven
+    ],
+    native_libraries_deps = [
+        "//concept:concept",
+        "//pattern:pattern",
+        "//traversal:traversal",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
 )

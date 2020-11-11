@@ -16,6 +16,7 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 package(
     default_visibility = [
         "//:__pkg__",
@@ -28,7 +29,7 @@ package(
     ]
 )
 
-java_library(
+native_java_libraries(
     name = "concept",
     srcs = glob([
         "**/*.java",
@@ -37,16 +38,17 @@ java_library(
         # Internal dependencies
         "//common:common",
         "//graph:graph",
-        "//pattern:pattern",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",
         "@graknlabs_graql//java/common:common",
         "@graknlabs_graql//java/pattern:pattern",
 
-
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
+    ],
+    native_libraries_deps = [
+        "//pattern:pattern",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
     visibility = ["//visibility:public"],

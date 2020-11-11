@@ -19,6 +19,7 @@ load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_
 load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 package(default_visibility = ["//visibility:private",])
 
@@ -39,17 +40,13 @@ java_library(
     tags = ["maven_coordinates=io.grakn.core:grakn-version:{pom_version}"],
 )
 
-java_library(
+native_java_libraries(
     name = "server",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
     deps = [
         # Internal dependencies
         ":version",
-        "//:grakn",
         "//common:common",
-        "//concept:concept",
-        "//query:query",
-        "//rocks:rocks",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
@@ -69,6 +66,12 @@ java_library(
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
     ],
+    native_libraries_deps = [
+        "//:grakn",
+        "//concept:concept",
+        "//query:query",
+        "//rocks:rocks",
+    ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
@@ -77,15 +80,57 @@ java_library(
 )
 
 java_binary(
-    name = "server-bin",
+    name = "server-bin-mac",
     main_class = "grakn.core.server.GraknServer",
-    runtime_deps = [":server"],
+    runtime_deps = [":server-mac"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+)
+
+java_binary(
+    name = "server-bin-linux",
+    main_class = "grakn.core.server.GraknServer",
+    runtime_deps = [":server-linux"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+)
+
+java_binary(
+    name = "server-bin-windows",
+    main_class = "grakn.core.server.GraknServer",
+    runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
 )
 
 java_deps(
-    name = "server-deps",
-    target = ":server-bin",
+    name = "server-deps-mac",
+    target = ":server-bin-mac",
+    java_deps_root = "server/lib/common/",
+#    java_deps_root_overrides = {
+#        "rocksdbjni-dev-*": "server/lib/dev/",
+#    },
+    java_deps_root_overrides = {
+        "rocksdbjni-*": "server/lib/prod/",
+    },
+    visibility = ["//:__pkg__"],
+    maven_name = True,
+)
+
+java_deps(
+    name = "server-deps-linux",
+    target = ":server-bin-linux",
+    java_deps_root = "server/lib/common/",
+#    java_deps_root_overrides = {
+#        "rocksdbjni-dev-*": "server/lib/dev/",
+#    },
+    java_deps_root_overrides = {
+        "rocksdbjni-*": "server/lib/prod/",
+    },
+    visibility = ["//:__pkg__"],
+    maven_name = True,
+)
+
+java_deps(
+    name = "server-deps-windows",
+    target = ":server-bin-windows",
     java_deps_root = "server/lib/common/",
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",
@@ -115,8 +160,7 @@ java_deps(
 #    maven_name = True,
 #)
 
-assemble_deps = [
-    ":server-deps",
+assemble_deps_common = [
     ":server-deps-dev",
 #    ":server-deps-prod",
     "@graknlabs_common//binary:assemble-bash-targz",
@@ -132,7 +176,7 @@ assemble_files = {
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps,
+    targets = assemble_deps_common + ["server-deps-linux"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-linux",
     visibility = ["//visibility:public"]
@@ -140,7 +184,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps,
+    targets = assemble_deps_common + ["server-deps-mac"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-mac",
 )
