@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,11 +89,11 @@ public class Traversal {
     }
 
     public void is(Identifier.Variable concept1, Identifier.Variable concept2) {
-        // TODO
+        pattern.edge(new TraversalEdge.Type.Equal(), concept1, concept2);
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-        pattern.edge(HAS, thing, attribute);
+        pattern.edge(new TraversalEdge.Type.Encoded(HAS), thing, attribute);
     }
 
     public void isa(Identifier thing, Identifier.Variable type) {
@@ -100,15 +101,15 @@ public class Traversal {
     }
 
     public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-        pattern.edge(ISA, thing, type, isTransitive);
+        pattern.edge(new TraversalEdge.Type.Encoded(ISA), thing, type, isTransitive);
     }
 
     public void relating(Identifier.Variable relation, Identifier.Generated role) {
-        pattern.edge(RELATING, relation, role);
+        pattern.edge(new TraversalEdge.Type.Encoded(RELATING), relation, role);
     }
 
     public void playing(Identifier.Variable thing, Identifier.Generated role) {
-        pattern.edge(PLAYING, thing, role);
+        pattern.edge(new TraversalEdge.Type.Encoded(PLAYING), thing, role);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
@@ -116,24 +117,24 @@ public class Traversal {
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, String[] labels) {
-        pattern.edge(ROLEPLAYER, relation, player, labels);
+        pattern.edge(new TraversalEdge.Type.Encoded(ROLEPLAYER), relation, player, labels);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
-        if (isKey) pattern.edge(OWNS_KEY, thingType, attributeType);
-        else pattern.edge(OWNS, thingType, attributeType);
+        if (isKey) pattern.edge(new TraversalEdge.Type.Encoded(OWNS_KEY), thingType, attributeType);
+        else pattern.edge(new TraversalEdge.Type.Encoded(OWNS), thingType, attributeType);
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
-        pattern.edge(PLAYS, thingType, roleType);
+        pattern.edge(new TraversalEdge.Type.Encoded(PLAYS), thingType, roleType);
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
-        pattern.edge(RELATES, relationType, roleType);
+        pattern.edge(new TraversalEdge.Type.Encoded(RELATES), relationType, roleType);
     }
 
     public void sub(Identifier.Variable subType, Identifier.Variable superType, boolean isTransitive) {
-        pattern.edge(SUB, subType, superType, isTransitive);
+        pattern.edge(new TraversalEdge.Type.Encoded(SUB), subType, superType, isTransitive);
     }
 
     public void iid(Identifier.Variable thing, byte[] iid) {
@@ -187,7 +188,7 @@ public class Traversal {
     }
 
     public void value(Identifier.Variable attribute1, GraqlToken.Comparator.Equality comparator, Identifier.Variable attribute2) {
-        // TODO
+        pattern.edge(new TraversalEdge.Type.Comparator(comparator), attribute1, attribute2);
     }
 
     static class Pattern {
@@ -210,25 +211,39 @@ public class Traversal {
             return Identifier.Generated.of(generatedIdentifierCount++);
         }
 
-        private void edge(Encoding.Edge encoding, Identifier from, Identifier to) {
-            edge(encoding, from, to, false, new String[]{});
+        private void edge(TraversalEdge.Type type, Identifier from, Identifier to) {
+            edge(type, from, to, false, new String[]{});
         }
 
-        private void edge(Encoding.Edge encoding, Identifier from, Identifier to, boolean isTransitive) {
-            edge(encoding, from, to, isTransitive, new String[]{});
+        private void edge(TraversalEdge.Type type, Identifier from, Identifier to, boolean isTransitive) {
+            edge(type, from, to, isTransitive, new String[]{});
         }
 
-        private void edge(Encoding.Edge encoding, Identifier from, Identifier to, String[] labels) {
-            edge(encoding, from, to, false, labels);
+        private void edge(TraversalEdge.Type type, Identifier from, Identifier to, String[] labels) {
+            edge(type, from, to, false, labels);
         }
 
-        private void edge(Encoding.Edge encoding, Identifier from, Identifier to, boolean isTransitive, String[] labels) {
+        private void edge(TraversalEdge.Type type, Identifier from, Identifier to, boolean isTransitive, String[] labels) {
             TraversalVertex.Pattern fromVertex = vertex(from);
             TraversalVertex.Pattern toVertex = vertex(to);
-            TraversalEdge.Pattern edge = new TraversalEdge.Pattern(encoding, fromVertex, toVertex, isTransitive, labels);
+            TraversalEdge.Pattern edge = new TraversalEdge.Pattern(type, fromVertex, toVertex, isTransitive, labels);
             edges.add(edge);
             fromVertex.out(edge);
             toVertex.in(edge);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            else if (o == null || getClass() != o.getClass()) return false;
+
+            Pattern that = (Pattern) o;
+            return (this.vertices.equals(that.vertices) && this.edges.equals(that.edges));
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.vertices, this.edges);
         }
     }
 

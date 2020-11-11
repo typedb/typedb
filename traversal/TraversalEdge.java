@@ -19,26 +19,27 @@
 package grakn.core.traversal;
 
 import grakn.core.graph.util.Encoding;
+import graql.lang.common.GraqlToken;
 
 import java.util.Arrays;
 import java.util.Objects;
 
 abstract class TraversalEdge<V extends TraversalVertex<?>> {
 
-    private final Encoding.Edge encoding;
+    private final Type type;
     private final V from;
     private final V to;
     private final boolean isTransitive;
     private final String[] labels;
     private final int hash;
 
-    TraversalEdge(Encoding.Edge encoding, V from, V to, boolean isTransitive, String[] labels) {
-        this.encoding = encoding;
+    TraversalEdge(Type type, V from, V to, boolean isTransitive, String[] labels) {
+        this.type = type;
         this.from = from;
         this.to = to;
         this.isTransitive = isTransitive;
         this.labels = labels;
-        this.hash = Objects.hash(encoding, from, to, isTransitive, Arrays.hashCode(labels));
+        this.hash = Objects.hash(this.type, from, to, isTransitive, Arrays.hashCode(labels));
     }
 
     V from() {
@@ -55,7 +56,7 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
         if (object == null || getClass() != object.getClass()) return false;
 
         final TraversalEdge<?> that = (TraversalEdge<?>) object;
-        return (this.encoding.equals(that.encoding) &&
+        return (this.type.equals(that.type) &&
                 this.from.equals(that.from) &&
                 this.to.equals(that.to) &&
                 this.isTransitive == that.isTransitive &&
@@ -67,27 +68,86 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
         return hash;
     }
 
+    static class Type {
+
+        boolean isEqual() {
+            return false;
+        }
+
+        boolean isComparator() {
+            return false;
+        }
+
+        boolean isEncoded() {
+            return false;
+        }
+
+        static class Equal extends Type {
+
+            @Override
+            boolean isEqual() {
+                return true;
+            }
+        }
+
+        static class Comparator extends Type {
+
+            private final GraqlToken.Comparator.Equality comparator;
+
+            Comparator(GraqlToken.Comparator.Equality comparator) {
+                this.comparator = comparator;
+            }
+
+            GraqlToken.Comparator.Equality comparator() {
+                return comparator;
+            }
+
+            @Override
+            boolean isComparator() {
+                return false;
+            }
+        }
+
+        static class Encoded extends Type {
+
+            private final Encoding.Edge encoding;
+
+            Encoded(Encoding.Edge encoding) {
+                this.encoding = encoding;
+            }
+
+            Encoding.Edge encoding() {
+                return encoding;
+            }
+
+            @Override
+            boolean isEncoded() {
+                return true;
+            }
+        }
+    }
+
     static class Pattern extends TraversalEdge<TraversalVertex.Pattern> {
 
-        Pattern(Encoding.Edge encoding, TraversalVertex.Pattern from, TraversalVertex.Pattern to,
+        Pattern(Type type, TraversalVertex.Pattern from, TraversalVertex.Pattern to,
                 boolean isTransitive, String[] labels) {
-            super(encoding, from, to, isTransitive, labels);
+            super(type, from, to, isTransitive, labels);
         }
     }
 
     static class Planner extends TraversalEdge<TraversalVertex.Planner> {
 
-        Planner(Encoding.Edge encoding, TraversalVertex.Planner from, TraversalVertex.Planner to,
+        Planner(Type type, TraversalVertex.Planner from, TraversalVertex.Planner to,
                 boolean isTranstive, String[] labels) {
-            super(encoding, from, to, isTranstive, labels);
+            super(type, from, to, isTranstive, labels);
         }
     }
 
     static class Plan extends TraversalEdge<TraversalVertex.Plan> {
 
-        Plan(Encoding.Edge encoding, TraversalVertex.Plan from, TraversalVertex.Plan to,
+        Plan(Type type, TraversalVertex.Plan from, TraversalVertex.Plan to,
              boolean isTransitive, String[] labels) {
-            super(encoding, from, to, isTransitive, labels);
+            super(type, from, to, isTransitive, labels);
         }
     }
 }
