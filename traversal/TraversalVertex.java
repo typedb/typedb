@@ -18,59 +18,92 @@
 
 package grakn.core.traversal;
 
-import graql.lang.common.GraqlArg;
+import java.util.HashSet;
+import java.util.Set;
 
-public class TraversalVertex {
+abstract class TraversalVertex<E extends TraversalEdge<?>> {
 
     private final Identifier identifier;
+    private final Set<TraversalProperty> properties;
+    final Set<E> outgoing;
+    final Set<E> incoming;
 
     TraversalVertex(Identifier identifier) {
         this.identifier = identifier;
+        this.properties = new HashSet<>();
+        this.outgoing = new HashSet<>();
+        this.incoming = new HashSet<>();
     }
 
-    public Identifier identifier() {
+    abstract void out(E edge);
+
+    abstract void in(E edge);
+
+    Identifier identifier() {
         return identifier;
     }
 
-    void type(String[] labels) {
-
+    void property(TraversalProperty property) {
+        properties.add(property);
     }
 
-    void isAbstract() {
+    static class Pattern extends TraversalVertex<TraversalEdge.Pattern> {
 
-    }
+        private final Traversal.Pattern pattern;
 
-    public void label(String label, String scope) {
-
-    }
-
-    public void regex(java.util.regex.Pattern regex) {
-
-    }
-
-    public void valueType(GraqlArg.ValueType valueType) {
-
-    }
-
-    public static class Pattern extends TraversalVertex {
-
-        public Pattern(Identifier identifier, Traversal.Pattern pattern) {
+        Pattern(Identifier identifier, Traversal.Pattern pattern) {
             super(identifier);
+            this.pattern = pattern;
+        }
+
+        @Override
+        void out(TraversalEdge.Pattern edge) {
+            outgoing.add(edge);
+        }
+
+        @Override
+        void in(TraversalEdge.Pattern edge) {
+            incoming.add(edge);
         }
     }
 
-    public static class Planner extends TraversalVertex {
+    static class Planner extends TraversalVertex<TraversalEdge.Planner> {
+
+        private final Traversal.Planner planner;
 
         Planner(Identifier identifier, Traversal.Planner planner) {
             super(identifier);
+            this.planner = planner;
+        }
+
+        @Override
+        void out(TraversalEdge.Planner edge) {
+            // TODO
+        }
+
+        @Override
+        void in(TraversalEdge.Planner edge) {
+            // TODO
         }
     }
 
-    public static class Plan extends TraversalVertex {
+    static class Plan extends TraversalVertex<TraversalEdge.Plan> {
+
+        private final Traversal.Plan plan;
 
         Plan(Identifier identifier, Traversal.Plan plan) {
             super(identifier);
+            this.plan = plan;
         }
 
+        @Override
+        void out(TraversalEdge.Plan edge) {
+            // TODO
+        }
+
+        @Override
+        void in(TraversalEdge.Plan edge) {
+            // TODO
+        }
     }
 }

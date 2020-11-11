@@ -41,6 +41,7 @@ public class IsaConstraint extends ThingConstraint {
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
+        this.labels = new String[]{};
     }
 
     public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
@@ -56,7 +57,7 @@ public class IsaConstraint extends ThingConstraint {
         return isExplicit;
     }
 
-    public void setLabels(String[] labels) {
+    public void labels(String[] labels) {
         this.labels = labels;
     }
 
@@ -67,7 +68,7 @@ public class IsaConstraint extends ThingConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        if (!type.reference().isName() && labels != null && labels.length > 0) {
+        if (type.reference().isLabel() && labels.length > 0) {
             traversal.type(owner.identifier(), labels);
         } else {
             traversal.isa(owner.identifier(), type.identifier(), !isExplicit);

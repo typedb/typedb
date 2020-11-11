@@ -43,8 +43,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     ValueConstraint(ThingVariable owner, GraqlToken.Comparator comparator, T value) {
         super(owner);
         assert !comparator.isEquality() || value instanceof Comparable || value instanceof ThingVariable;
-        assert !comparator.isSubString() || value instanceof java.lang.String || value instanceof ThingVariable;
-        assert !comparator.isPattern() || value instanceof java.lang.String;
+        assert !comparator.isSubString() || value instanceof java.lang.String;
         if (value == null) throw GraknException.of(MISSING_CONSTRAINT_VALUE);
         this.comparator = comparator;
         this.value = value;
@@ -61,11 +60,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         } else if (valueConstraint.isBoolean()) {
             return new Boolean(owner, valueConstraint.comparator().asEquality(), valueConstraint.asBoolean().value());
         } else if (valueConstraint.isString()) {
-            return new String(owner, valueConstraint.comparator().asString(), valueConstraint.asString().value());
+            return new String(owner, valueConstraint.comparator(), valueConstraint.asString().value());
         } else if (valueConstraint.isDateTime()) {
             return new DateTime(owner, valueConstraint.comparator().asEquality(), valueConstraint.asDateTime().value());
         } else if (valueConstraint.isVariable()) {
-            return new Variable(owner, valueConstraint.comparator().asVariable(), register.register(valueConstraint.asVariable().value()));
+            return new Variable(owner, valueConstraint.comparator().asEquality(), register.register(valueConstraint.asVariable().value()));
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -182,7 +181,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.value(owner.identifier(), comparator, value);
+            traversal.value(owner.identifier(), comparator.asEquality(), value);
         }
     }
 
@@ -204,7 +203,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.value(owner.identifier(), comparator, value);
+            traversal.value(owner.identifier(), comparator.asEquality(), value);
         }
     }
 
@@ -226,13 +225,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.value(owner.identifier(), comparator, value);
+            traversal.value(owner.identifier(), comparator.asEquality(), value);
         }
     }
 
     public static class String extends ValueConstraint<java.lang.String> {
 
-        public String(ThingVariable owner, GraqlToken.Comparator.String comparator, java.lang.String value) {
+        public String(ThingVariable owner, GraqlToken.Comparator comparator, java.lang.String value) {
             super(owner, comparator, value);
         }
 
@@ -272,15 +271,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.value(owner.identifier(), comparator, value);
+            traversal.value(owner.identifier(), comparator.asEquality(), value);
         }
     }
 
     public static class Variable extends ValueConstraint<ThingVariable> {
 
-        public Variable(ThingVariable owner,
-                        GraqlToken.Comparator.Variable comparator,
-                        ThingVariable variable) {
+        public Variable(ThingVariable owner, GraqlToken.Comparator.Equality comparator, ThingVariable variable) {
             super(owner, comparator, variable);
         }
 
@@ -296,7 +293,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.value(owner.identifier(), comparator, value.identifier());
+            traversal.value(owner.identifier(), comparator.asEquality(), value.identifier());
         }
     }
 }

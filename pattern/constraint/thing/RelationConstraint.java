@@ -71,14 +71,12 @@ public class RelationConstraint extends ThingConstraint {
     public void addTo(Traversal traversal) {
         rolePlayers.forEach(rp -> {
             if (rp.roleType().isPresent() && rp.roleType().get().reference().isName()) {
-                Identifier role = traversal.newIdentifier();
+                Identifier.Generated role = traversal.newIdentifier();
                 traversal.relating(owner.identifier(), role);
                 traversal.playing(rp.player().identifier(), role);
-                traversal.isa(rp.player().identifier(), rp.roleType().get().identifier());
-            } else if (rp.roleType().isPresent()) {
-                assert rp.roleType().get().label().isPresent();
-                traversal.rolePlayer(owner.identifier(), rp.player().identifier(),
-                                     rp.roleType().get().label().get().scopedLabel());
+                traversal.isa(role, rp.roleType().get().identifier());
+            } else if (rp.roleType().isPresent() && rp.labels.length > 0) {
+                traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.labels);
             } else {
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier());
             }
@@ -113,12 +111,14 @@ public class RelationConstraint extends ThingConstraint {
         private final TypeVariable roleType;
         private final ThingVariable player;
         private final int hash;
+        private String[] labels;
 
         private RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
             this.hash = Objects.hash(this.roleType, this.player);
+            this.labels = new String[]{};
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
@@ -135,6 +135,10 @@ public class RelationConstraint extends ThingConstraint {
 
         public ThingVariable player() {
             return player;
+        }
+
+        public void labels(String[] labels) {
+            this.labels = labels;
         }
 
         @Override

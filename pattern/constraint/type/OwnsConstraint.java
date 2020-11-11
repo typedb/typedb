@@ -77,7 +77,7 @@ public class OwnsConstraint extends TypeConstraint {
     @Override
     public void addTo(Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
-        traversal.owns(owner.identifier(), attributeType.identifier());
+        traversal.owns(owner.identifier(), attributeType.identifier(), isKey);
     }
 
     @Override

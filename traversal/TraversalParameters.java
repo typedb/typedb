@@ -30,116 +30,97 @@ import static grakn.common.collection.Collections.pair;
 
 public class TraversalParameters {
 
-    private final Map<Identifier, LinkedList<byte[]>> iids;
+    private final Map<Identifier, byte[]> iid;
     private final Map<Pair<Identifier, GraqlToken.Comparator>, LinkedList<Value>> values;
 
     public TraversalParameters() {
-        iids = new HashMap<>();
+        iid = new HashMap<>();
         values = new HashMap<>();
     }
 
-    public void pushIID(Identifier identifier, byte[] iid) {
-        iids.computeIfAbsent(identifier, r -> new LinkedList<>()).addLast(iid);
+    public void putIID(Identifier.Variable identifier, byte[] iid) {
+        this.iid.put(identifier, iid);
     }
 
-    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, boolean value) {
+    public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, boolean value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, int value) {
+    public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, long value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, double value) {
+    public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, double value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, String value) {
+    public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, String value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, LocalDateTime value) {
+    public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, LocalDateTime value) {
         values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
     }
 
-    public void pushValue(Identifier identifier, GraqlToken.Comparator comparator, Identifier value) {
-        values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
+    public byte[] getIID(Identifier.Variable identifier) {
+        return iid.get(identifier);
     }
 
-    public byte[] popIID(Identifier identifier) {
-        return iids.get(identifier).removeFirst();
-    }
-
-    public Value popValue(Identifier identifier, GraqlToken.Comparator comparator) {
+    public Value popValue(Identifier.Variable identifier, GraqlToken.Comparator comparator) {
         return values.get(pair(identifier, comparator)).removeFirst();
     }
 
     static class Value {
 
         final Boolean booleanValue;
-        final Integer integerValue;
+        final Long longValue;
         final Double doubleValue;
         final String stringValue;
         final LocalDateTime dateTimeValue;
-        final Identifier variableValue;
 
         Value(boolean value) {
             booleanValue = value;
-            integerValue = null;
+            longValue = null;
             doubleValue = null;
             stringValue = null;
             dateTimeValue = null;
-            variableValue = null;
         }
 
-        Value(int value) {
+        Value(long value) {
             booleanValue = null;
-            integerValue = value;
+            longValue = value;
             doubleValue = null;
             stringValue = null;
             dateTimeValue = null;
-            variableValue = null;
         }
 
         Value(double value) {
             booleanValue = null;
-            integerValue = null;
+            longValue = null;
             doubleValue = value;
             stringValue = null;
             dateTimeValue = null;
-            variableValue = null;
         }
 
         Value(String value) {
             booleanValue = null;
-            integerValue = null;
+            longValue = null;
             doubleValue = null;
             stringValue = value;
             dateTimeValue = null;
-            variableValue = null;
         }
 
         Value(LocalDateTime value) {
             booleanValue = null;
-            integerValue = null;
+            longValue = null;
             doubleValue = null;
             stringValue = null;
             dateTimeValue = value;
-            variableValue = null;
-        }
-
-        Value(Identifier value) {
-            booleanValue = null;
-            integerValue = null;
-            doubleValue = null;
-            stringValue = null;
-            dateTimeValue = null;
-            variableValue = value;
         }
 
         boolean isBoolean() { return booleanValue != null; }
 
-        boolean isInteger() { return integerValue != null; }
+        boolean isLong() { return longValue != null; }
 
         boolean isDouble() { return doubleValue != null; }
 
@@ -147,16 +128,12 @@ public class TraversalParameters {
 
         boolean isDateTime() { return dateTimeValue != null; }
 
-        boolean isVariable() { return variableValue != null; }
-
         Boolean getBoolean() { return booleanValue; }
 
-        Integer getInteger() { return integerValue; }
+        Long getLong() { return longValue; }
 
         Double getDouble() { return doubleValue; }
 
         LocalDateTime getDateTime() { return dateTimeValue; }
-
-        Identifier getVariable() { return variableValue; }
     }
 }

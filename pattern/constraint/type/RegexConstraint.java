@@ -53,7 +53,7 @@ public class RegexConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.regex(owner.identifier(), regex);
+        traversal.regex(owner.identifier(), regex.pattern());
     }
 
     @Override

@@ -18,113 +18,72 @@
 
 package grakn.core.traversal;
 
-public abstract class TraversalProperty {
+import grakn.core.graph.util.Encoding;
+import graql.lang.common.GraqlToken;
 
-//    public static class Label extends TraversalProperty {
-//
-//        private final Reference vertex;
-//        private final String label, scope;
-//
-//        public Label(final Reference vertex, final String label, final String scope) {
-//            this.vertex = vertex;
-//            this.label = label;
-//            this.scope = scope;
-//            directedTraversals.add(new Label.Lookup());
-//            directedTraversals.add(new Label.Filter());
-//        }
-//
-//        public static Label of(final Reference vertex, final String label, final String scope) {
-//            return new Label(vertex, label, scope);
-//        }
-//
-//        private class Lookup extends Directed {}
-//
-//        private class Filter extends Directed {}
-//    }
-//
-//    public static class Abstract extends TraversalProperty {
-//
-//        private final Reference vertex;
-//
-//        public Abstract(final Reference vertex) {
-//            this.vertex = vertex;
-//            directedTraversals.add(new Abstract.Lookup());
-//            directedTraversals.add(new Abstract.Filter());
-//        }
-//
-//        public static Abstract of(final Reference vertex) {
-//            return new Abstract(vertex);
-//        }
-//
-//        private class Lookup extends Directed {}
-//
-//        private class Filter extends Directed {}
-//    }
-//
-//    public static class ValueType extends TraversalProperty {
-//
-//        private final Reference attributeType;
-//        private final Encoding.ValueType valueType;
-//
-//        public ValueType(final Reference attributeType, final Encoding.ValueType valueType) {
-//            this.attributeType = attributeType;
-//            this.valueType = valueType;
-//            directedTraversals.add(new ValueType.Lookup());
-//            directedTraversals.add(new ValueType.Filter());
-//        }
-//
-//        public static ValueType of(final Reference attributeType, final GraqlArg.ValueType valueType) {
-//            return new ValueType(attributeType, Encoding.ValueType.of(valueType));
-//        }
-//
-//        private class Lookup extends Directed {}
-//
-//        private class Filter extends Directed {}
-//    }
-//
-//    public static class Regex extends TraversalProperty {
-//
-//        private final Reference attributeType;
-//        private final String regex;
-//
-//        public Regex(final Reference attributeType, final String regex) {
-//            this.attributeType = attributeType;
-//            this.regex = regex;
-//            directedTraversals.add(new Regex.Lookup());
-//            directedTraversals.add(new Regex.Filter());
-//        }
-//
-//        public static Regex of(final Reference attributeType, final String regex) {
-//            return new Regex(attributeType, regex);
-//        }
-//
-//        private class Lookup extends Directed {}
-//
-//        private class Filter extends Directed {}
-//    }
-//
-//    public static class IID extends TraversalProperty {
-//
-//        private final Reference vertex;
-//        private final byte[] iid;
-//
-//        public IID(final Reference vertex, final byte[] iid) {
-//            this.vertex = vertex;
-//            this.iid = iid;
-//            directedTraversals.add(new IID.Lookup());
-//            directedTraversals.add(new IID.Filter());
-//        }
-//
-//        public static IID of(final Reference vertex, final byte[] iid) {
-//            return new IID(vertex, iid);
-//        }
-//
-//        private class Lookup extends Directed {}
-//
-//        private class Filter extends Directed {}
-//    }
-//
-//    public static class Value extends TraversalProperty {
-//
-//    }
+import javax.annotation.Nullable;
+
+abstract class TraversalProperty {
+
+    static class Abstract extends TraversalProperty {
+
+        Abstract() {}
+    }
+
+    static class IID extends TraversalProperty {
+
+        private final Identifier param;
+
+        IID(Identifier param) {
+            this.param = param;
+        }
+    }
+
+    static class Label extends TraversalProperty {
+
+        private final String label, scope;
+
+        Label(String label, @Nullable String scope) {
+            this.label = label;
+            this.scope = scope;
+        }
+    }
+
+    static class Regex extends TraversalProperty {
+
+        private final String regex;
+
+        Regex(String regex) {
+            this.regex = regex;
+        }
+    }
+
+    static class Type extends TraversalProperty {
+
+        private final String[] labels;
+
+        Type(String[] labels) {
+            this.labels = labels;
+        }
+    }
+
+    static class ValueType extends TraversalProperty {
+
+        private final Encoding.ValueType valueType;
+
+        ValueType(Encoding.ValueType valueType) {
+            this.valueType = valueType;
+        }
+    }
+
+    static class Value extends TraversalProperty {
+
+        private final GraqlToken.Comparator comparator;
+        private final Identifier param;
+
+        public Value(GraqlToken.Comparator comparator, Identifier param) {
+            this.comparator = comparator;
+            this.param = param;
+        }
+    }
 }

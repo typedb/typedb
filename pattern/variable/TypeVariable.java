@@ -70,7 +70,7 @@ public class TypeVariable extends Variable {
 
     Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
-        return null;
+        return this;
     }
 
     private void constrain(TypeConstraint constraint) {
