@@ -21,6 +21,7 @@ package grakn.core.traversal;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
@@ -34,6 +35,7 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,12 +61,13 @@ import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static java.util.stream.Collectors.toList;
 
 public class Traversal {
 
     private final TraversalParameters parameters;
     private final Pattern pattern;
-    private Planner planner;
+    private List<Planner> planners;
 
     public Traversal() {
         pattern = new Pattern();
@@ -76,16 +79,28 @@ public class Traversal {
     }
 
     void initialisePlanner(TraversalCache cache) {
-        planner = cache.get(pattern, p -> {
+        planners = pattern.graphs().stream().map(p1 -> cache.get(p1, p2 -> {
             // TODO
             return new Planner();
-        });
+        })).collect(toList());
     }
 
     ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
-        planner.updateCost(graphMgr.schema());
-        if (!planner.isOptimal()) planner.optimise();
-        return planner.plan().execute(graphMgr, parameters);
+        if (planners.size() == 1) {
+            planners.get(0).optimise(graphMgr.schema());
+            return planners.get(0).plan().execute(graphMgr, parameters);
+        } else {
+            return Iterators.cartesian(
+                    planners.stream().map(planner -> {
+                        planner.optimise(graphMgr.schema());
+                        return planner.plan();
+                    }).map(plan -> plan.execute(graphMgr, parameters)).collect(toList())
+            ).map(list -> {
+                Map<Reference, Vertex<?, ?>> answer = new HashMap<>();
+                list.forEach(answer::putAll);
+                return answer;
+            });
+        }
     }
 
     public void is(Identifier.Variable concept1, Identifier.Variable concept2) {
@@ -232,6 +247,11 @@ public class Traversal {
             toVertex.in(edge);
         }
 
+        private List<Pattern> graphs() {
+            // TODO
+            return null;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -298,7 +318,7 @@ public class Traversal {
             return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
         }
 
-        private synchronized void updateCost(SchemaGraph schema) {
+        private void updateCost(SchemaGraph schema) {
             if (schema.snapshot() < snapshot) {
                 snapshot = schema.snapshot();
 
@@ -306,8 +326,9 @@ public class Traversal {
             }
         }
 
-        private synchronized void optimise() {
-            if (!isUpToDate() || !isOptimal()) {
+        private synchronized void optimise(SchemaGraph schema) {
+            updateCost(schema);
+            if (!isOptimal()) {
                 do {
                     totalDuration += TIME_LIMIT_MILLIS;
                     solver.setTimeLimit(totalDuration);

@@ -68,6 +68,10 @@ public class Iterators {
         return new ParallelIterators<>(iterators);
     }
 
+    public static <T> CartesianIterator<T> cartesian(List<ResourceIterator<T>> iteratorProducers) {
+        return new CartesianIterator<>(iteratorProducers);
+    }
+
     public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }

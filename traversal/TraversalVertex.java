@@ -47,6 +47,20 @@ abstract class TraversalVertex<E extends TraversalEdge<?>> {
         properties.add(property);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TraversalVertex<?> that = (TraversalVertex<?>) o;
+        return this.identifier.equals(that.identifier);
+    }
+
+    @Override
+    public int hashCode() {
+        return identifier.hashCode();
+    }
+
     static class Pattern extends TraversalVertex<TraversalEdge.Pattern> {
 
         private final Traversal.Pattern pattern;
