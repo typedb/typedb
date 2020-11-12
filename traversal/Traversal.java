@@ -20,6 +20,7 @@ package grakn.core.traversal;
 
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
+import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.ortools.linearsolver.MPSolver.ResultStatus.ABNORMAL;
 import static com.google.ortools.linearsolver.MPSolver.ResultStatus.FEASIBLE;
@@ -272,6 +274,8 @@ public class Traversal {
         private final Map<Identifier, TraversalVertex.Planner> vertices;
         private final MPSolver solver;
         private final MPSolverParameters parameters;
+        private final AtomicBoolean isOptimising;
+        private final ManagedBlockingQueue<Plan> planHolder;
         private MPSolver.ResultStatus resultStatus;
         private Plan plan;
         private boolean isUpToDate;
@@ -281,19 +285,17 @@ public class Traversal {
         private Planner() {
             vertices = new ConcurrentHashMap<>();
             solver = MPSolver.createSolver("SCIP");
+            isOptimising = new AtomicBoolean(false);
             parameters = new MPSolverParameters();
             parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
             parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
             resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
+            planHolder = new ManagedBlockingQueue<>(1);
             totalDuration = 0L;
         }
 
         MPSolver solver() {
             return solver;
-        }
-
-        private Plan plan() {
-            return plan;
         }
 
         private void setUpToDate(boolean isUpToDate) {
@@ -305,15 +307,43 @@ public class Traversal {
         }
 
         private boolean isPlanned() {
-            return isUpToDate && (resultStatus == FEASIBLE || resultStatus == OPTIMAL);
+            return resultStatus == FEASIBLE || resultStatus == OPTIMAL;
         }
 
         private boolean isOptimal() {
-            return isUpToDate && resultStatus == OPTIMAL;
+            return resultStatus == OPTIMAL;
         }
 
         private boolean isError() {
             return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
+        }
+
+        private Plan plan() {
+            if (plan == null) {
+                try {
+                    plan = planHolder.take();
+                } catch (InterruptedException e) {
+                    throw GraknException.of(e);
+                }
+            }
+            return plan;
+        }
+
+        private void optimise(SchemaGraph schema) {
+            if (isOptimising.compareAndSet(false, true)) {
+                updateCost(schema);
+                if (!isUpToDate() || !isOptimal()) {
+                    do {
+                        totalDuration += TIME_LIMIT_MILLIS;
+                        solver.setTimeLimit(totalDuration);
+                        resultStatus = solver.solve(parameters);
+                        if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
+                    } while (!isPlanned());
+                    exportPlan();
+                    isUpToDate = true;
+                }
+                isOptimising.set(false);
+            }
         }
 
         private void updateCost(SchemaGraph schema) {
@@ -324,22 +354,18 @@ public class Traversal {
             }
         }
 
-        private synchronized void optimise(SchemaGraph schema) {
-            updateCost(schema);
-            if (!isOptimal()) {
-                do {
-                    totalDuration += TIME_LIMIT_MILLIS;
-                    solver.setTimeLimit(totalDuration);
-                    resultStatus = solver.solve(parameters);
-                    if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
-                } while (resultStatus != FEASIBLE && resultStatus != OPTIMAL);
-                exportPlan();
-                isUpToDate = true;
-            }
-        }
-
         private void exportPlan() {
-            // TODO
+            Plan newPlan = new Plan();
+
+            // TODO: extract Traversal Plan from the MPVariables of Traversal Planner
+
+            planHolder.clear();
+            try {
+                planHolder.put(newPlan);
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            }
+            plan = null;
         }
     }
 

@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TODO: implement our LinkedBlockingQueue that has the features of:
+ * TODO: implement our own LinkedBlockingQueue that has the features of:
  * 1) ResizingBlockingQueue
  * 2) ManagedBlocker
  * 3) Cancellable via {@code Condition} signalling
@@ -71,6 +71,10 @@ public class ManagedBlockingQueue<E> {
 
     public boolean isCancelled() {
         return cancelled;
+    }
+
+    public void clear() {
+        queue.clear();
     }
 
     class QueueTaker implements ForkJoinPool.ManagedBlocker {
