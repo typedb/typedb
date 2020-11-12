@@ -90,12 +90,10 @@ public class Traversal {
             planners.get(0).optimise(graphMgr.schema());
             return planners.get(0).plan().execute(graphMgr, parameters);
         } else {
-            return Iterators.cartesian(
-                    planners.stream().map(planner -> {
-                        planner.optimise(graphMgr.schema());
-                        return planner.plan();
-                    }).map(plan -> plan.execute(graphMgr, parameters)).collect(toList())
-            ).map(list -> {
+            return Iterators.cartesian(planners.stream().map(planner -> {
+                planner.optimise(graphMgr.schema());
+                return planner.plan().execute(graphMgr, parameters);
+            }).collect(toList())).map(list -> {
                 Map<Reference, Vertex<?, ?>> answer = new HashMap<>();
                 list.forEach(answer::putAll);
                 return answer;
@@ -334,7 +332,7 @@ public class Traversal {
                     solver.setTimeLimit(totalDuration);
                     resultStatus = solver.solve(parameters);
                     if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
-                } while (!isPlanned());
+                } while (resultStatus != FEASIBLE && resultStatus != OPTIMAL);
                 exportPlan();
                 isUpToDate = true;
             }
