@@ -39,6 +39,14 @@ abstract class TraversalVertex<E extends TraversalEdge<?>> {
 
     abstract void in(E edge);
 
+    public Set<E> outs() {
+        return outgoing;
+    }
+
+    public Set<E> ins() {
+        return incoming;
+    }
+
     Identifier identifier() {
         return identifier;
     }

@@ -34,6 +34,7 @@ import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -211,6 +212,7 @@ public class Traversal {
         private final Map<Identifier, TraversalVertex.Pattern> vertices;
         private final Set<TraversalEdge.Pattern> edges;
         private int generatedIdentifierCount;
+        private List<Pattern> patterns;
 
         private Pattern() {
             vertices = new HashMap<>();
@@ -248,8 +250,36 @@ public class Traversal {
         }
 
         private List<Pattern> graphs() {
-            // TODO
-            return null;
+            if (patterns == null) {
+                patterns = new ArrayList<>();
+                while (!vertices.isEmpty()) {
+                    Pattern newPattern = new Pattern();
+                    splitGraph(vertices.values().iterator().next(), newPattern);
+                    patterns.add(newPattern);
+                }
+            }
+            return patterns;
+        }
+
+        private void splitGraph(TraversalVertex.Pattern vertex, Pattern newPattern) {
+            if (!vertices.containsKey(vertex.identifier())) return;
+
+            this.vertices.remove(vertex.identifier());
+            newPattern.vertices.put(vertex.identifier(), vertex);
+            vertex.outs().forEach(outgoing -> {
+                if (this.edges.contains(outgoing)) {
+                    this.edges.remove(outgoing);
+                    newPattern.edges.add(outgoing);
+                    splitGraph(outgoing.to(), newPattern);
+                }
+            });
+            vertex.ins().forEach(incoming -> {
+                if (this.edges.contains(incoming)) {
+                    this.edges.remove(incoming);
+                    newPattern.edges.add(incoming);
+                    splitGraph(incoming.from(), newPattern);
+                }
+            });
         }
 
         @Override
