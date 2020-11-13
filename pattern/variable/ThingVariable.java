@@ -28,12 +28,17 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.traversal.Identifier;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static graql.lang.common.GraqlToken.Char.COMMA;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class ThingVariable extends Variable {
 
@@ -116,4 +121,20 @@ public class ThingVariable extends Variable {
     public ThingVariable asThing() {
         return this;
     }
+
+    @Override
+    public String toString() {
+
+        StringBuilder syntax = new StringBuilder();
+
+        if (reference().isName()) syntax.append(reference()).append(SPACE);
+
+        syntax.append(Stream.of(relationConstraints, isaConstraints, hasConstraints, valueConstraints, isConstraints)
+                .flatMap(Collection::stream).map(ThingConstraint::toString).collect(Collectors.joining("" + COMMA + SPACE)));
+
+        if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
+
+        return syntax.toString();
+    }
+
 }

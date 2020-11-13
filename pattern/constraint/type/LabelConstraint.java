@@ -25,6 +25,9 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.TYPE;
+
 public class LabelConstraint extends TypeConstraint {
 
     private final String label;
@@ -84,4 +87,7 @@ public class LabelConstraint extends TypeConstraint {
     public int hashCode() {
         return hash;
     }
+
+    @Override
+    public String toString() { return "" + TYPE + SPACE + scopedLabel(); }
 }

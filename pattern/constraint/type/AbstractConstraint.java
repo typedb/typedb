@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Constraint.ABSTRACT;
 
 public class AbstractConstraint extends TypeConstraint {
 
@@ -72,4 +73,7 @@ public class AbstractConstraint extends TypeConstraint {
     public int hashCode() {
         return hash;
     }
+
+    @Override
+    public String toString() { return ABSTRACT.toString(); }
 }

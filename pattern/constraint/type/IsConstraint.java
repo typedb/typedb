@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class IsConstraint extends TypeConstraint {
 
@@ -39,6 +41,7 @@ public class IsConstraint extends TypeConstraint {
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
 
+    //TODO perhaps we should throw an error if the type/thing collide
     public static IsConstraint of(TypeVariable owner,
                                   ConceptConstraint.Is constraint,
                                   VariableRegistry registry) {
@@ -80,5 +83,10 @@ public class IsConstraint extends TypeConstraint {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    @Override
+    public String toString() {
+        return "" + IS + SPACE + variable.referenceSyntax();
     }
 }

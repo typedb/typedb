@@ -24,8 +24,12 @@ import graql.lang.pattern.Conjunctable;
 
 import javax.annotation.Nullable;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Text.NEW_LINE;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
+import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
 import static java.util.stream.Collectors.toSet;
 
 public class Disjunction implements Pattern {
@@ -54,5 +58,11 @@ public class Disjunction implements Pattern {
 
     public Set<Conjunction> conjunctions() {
         return conjunctions;
+    }
+
+    @Override
+    public String toString() {
+        return conjunctions.stream().map(Conjunction::toString)
+                .collect(Collectors.joining(CURLY_CLOSE + NEW_LINE + " or " + NEW_LINE + CURLY_OPEN, "" + CURLY_OPEN, "" + CURLY_CLOSE));
     }
 }

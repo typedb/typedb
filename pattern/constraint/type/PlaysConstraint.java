@@ -30,6 +30,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
+import static graql.lang.common.GraqlToken.Char.COLON;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.AS;
+import static graql.lang.common.GraqlToken.Constraint.PLAYS;
 
 public class PlaysConstraint extends TypeConstraint {
 
@@ -109,4 +113,15 @@ public class PlaysConstraint extends TypeConstraint {
     public int hashCode() {
         return hash;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder syntax = new StringBuilder();
+        syntax.append(PLAYS).append(SPACE);
+        if (relationType != null) syntax.append(relationType.referenceSyntax()).append(COLON);
+        if (roleType != null) syntax.append(roleType.referenceSyntax());
+        if (overriddenRoleType != null) syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
+        return syntax.toString();
+    }
+
 }

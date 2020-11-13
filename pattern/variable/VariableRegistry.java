@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
@@ -39,6 +40,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_CONCEPT_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_TYPE_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_CONCEPT_VARIABLE;
+import static grakn.core.common.exception.ErrorMessage.Pattern.VARIABLE_CONTRADICTION;
 import static java.util.Collections.unmodifiableSet;
 
 public class VariableRegistry {
@@ -114,7 +116,7 @@ public class VariableRegistry {
 
     public TypeVariable register(graql.lang.pattern.variable.TypeVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_TYPE_VARIABLE);
-        return types.computeIfAbsent(
+        return computeTypeIfAbsent(
                 graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferrable()))
         ).constrainType(graqlVar.constraints(), this);
     }
@@ -125,7 +127,7 @@ public class VariableRegistry {
             graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymous.size()));
             anonymous.add(graknVar);
         } else {
-            graknVar = things.computeIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferrable())));
+            graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferrable())));
         }
         return graknVar.constrainThing(graqlVar.constraints(), this);
     }
@@ -155,13 +157,15 @@ public class VariableRegistry {
         else return types.get(reference);
     }
 
-    public Variable put(Reference reference, Variable variable) {
-        if (variable.isType()) {
-            things.remove(reference);
-            return types.put(reference, variable.asType());
-        } else if (variable.isThing()) {
-            types.remove(reference);
-            return things.put(reference, variable.asThing());
-        } else throw GraknException.of(ILLEGAL_STATE);
+    public TypeVariable computeTypeIfAbsent(Reference reference, Function<Reference, TypeVariable> constructor) {
+        if (things.containsKey(reference)) {
+            throw GraknException.of(VARIABLE_CONTRADICTION.message(reference));
+        }
+        else return types.computeIfAbsent(reference, constructor);
+    }
+
+    public ThingVariable computeThingIfAbsent(Reference reference, Function<Reference, ThingVariable> constructor) {
+        if (types.containsKey(reference)) throw GraknException.of(VARIABLE_CONTRADICTION.message(reference));
+        else return things.computeIfAbsent(reference, constructor);
     }
 }

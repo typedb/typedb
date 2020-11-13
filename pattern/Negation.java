@@ -25,6 +25,8 @@ import grakn.core.pattern.variable.VariableRegistry;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Operator.NOT;
 
 public class Negation implements Pattern {
 
@@ -47,7 +49,10 @@ public class Negation implements Pattern {
         }
     }
 
-    public Disjunction disjunction() {
-        return disjunction;
+    public Disjunction disjunction() { return disjunction; }
+
+    @Override
+    public String toString() {
+        return "" + NOT + SPACE + disjunction.toString();
     }
 }

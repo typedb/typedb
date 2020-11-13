@@ -32,6 +32,8 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MISSING_CONSTRAINT_VALUE;
+import static graql.lang.common.GraqlToken.Char.QUOTE;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Comparator.Equality.EQ;
 
 public abstract class ValueConstraint<T> extends ThingConstraint {
@@ -158,6 +160,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         return hash;
     }
 
+    @Override
+    public java.lang.String toString() {
+        return comparator.toString() + SPACE + value.toString();
+    }
+
     public static class Long extends ValueConstraint<java.lang.Long> {
 
         public Long(ThingVariable owner, GraqlToken.Comparator.Equality comparator, long value) {
@@ -248,6 +255,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         @Override
         public void addTo(Traversal traversal) {
             traversal.value(owner.identifier(), comparator, value);
+        }
+
+        @Override
+        public java.lang.String toString() {
+            return comparator.toString() + SPACE + QUOTE + value + QUOTE;
         }
     }
 

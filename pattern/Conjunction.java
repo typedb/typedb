@@ -20,6 +20,8 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -30,11 +32,15 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static graql.lang.common.GraqlToken.Char.NEW_LINE;
+import static graql.lang.common.GraqlToken.Char.SEMICOLON;
 import static java.util.stream.Collectors.toSet;
 
 public class Conjunction implements Pattern {
@@ -85,4 +91,18 @@ public class Conjunction implements Pattern {
         variables.forEach(variable -> variable.addTo(traversal));
         return traversal;
     }
+
+    @Override
+    public String toString() {
+        return Stream.concat(variables.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
+                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
+    }
+
+    private boolean printable(Variable variable) {
+        if (variable.reference().isName()) return !variable.constraints().isEmpty();
+        if (variable.isThing()) return !variable.asThing().relation().isEmpty();
+        if (variable.isType()) return variable.constraints().size()>1;
+        throw GraknException.of(ILLEGAL_STATE);
+    }
+
 }

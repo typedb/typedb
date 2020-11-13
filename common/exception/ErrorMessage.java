@@ -168,6 +168,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(5, "Invalid query containing unbounded negation pattern.");
         public static final Pattern MISSING_CONSTRAINT_VALUE =
                 new Pattern(6, "The value constraint for variable has not been provided with a variable or literal value.");
+        public static final Pattern VARIABLE_CONTRADICTION =
+                new Pattern(7, "The variable %s cannot be both a type and a thing.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Execution";

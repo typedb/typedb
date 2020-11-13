@@ -31,7 +31,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static graql.lang.common.GraqlToken.Char.PARAN_CLOSE;
+import static graql.lang.common.GraqlToken.Char.PARAN_OPEN;
 import static java.util.stream.Collectors.toList;
 
 public class RelationConstraint extends ThingConstraint {
@@ -153,5 +156,16 @@ public class RelationConstraint extends ThingConstraint {
         public int hashCode() {
             return hash;
         }
+
+        @Override
+        public String toString() {
+            return (roleType == null ? "" : roleType.referenceSyntax() + ":") + player.reference().toString();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return rolePlayers.stream().map(RolePlayer::toString)
+                .collect(Collectors.joining(", ", PARAN_OPEN.toString(), PARAN_CLOSE.toString()));
     }
 }

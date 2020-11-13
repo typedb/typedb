@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.HAS;
 
 public class HasConstraint extends ThingConstraint {
 
@@ -81,5 +83,21 @@ public class HasConstraint extends ThingConstraint {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder syntax = new StringBuilder();
+        syntax.append(HAS).append(SPACE);
+
+        if (attribute.reference().isName()) {
+            syntax.append(attribute.reference().toString());
+        } else {
+            syntax.append(attribute.isa().iterator().next().type().label().get().label());
+            syntax.append(SPACE);
+            syntax.append(attribute.value().iterator().next());
+        }
+
+        return syntax.toString();
     }
 }

@@ -26,6 +26,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.SUB;
+import static graql.lang.common.GraqlToken.Constraint.SUBX;
 
 public class SubConstraint extends TypeConstraint {
 
@@ -84,5 +87,10 @@ public class SubConstraint extends TypeConstraint {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    @Override
+    public String toString() {
+        return "" + (isExplicit ? SUBX : SUB) + SPACE + type.referenceSyntax();
     }
 }

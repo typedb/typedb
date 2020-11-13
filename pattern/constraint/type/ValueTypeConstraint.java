@@ -26,6 +26,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.VALUE_TYPE;
 
 public class ValueTypeConstraint extends TypeConstraint {
 
@@ -78,5 +80,10 @@ public class ValueTypeConstraint extends TypeConstraint {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    @Override
+    public String toString() {
+        return "" + VALUE_TYPE + SPACE + valueType.toString();
     }
 }

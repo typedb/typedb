@@ -34,10 +34,16 @@ import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static graql.lang.common.GraqlToken.Char.COMMA;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class TypeVariable extends Variable {
 
@@ -137,4 +143,29 @@ public class TypeVariable extends Variable {
     public TypeVariable asType() {
         return this;
     }
+
+    @Override
+    public String toString() {
+
+        StringBuilder syntax = new StringBuilder();
+        if (reference().isName()) syntax.append(reference());
+        else if (reference().isLabel()) syntax.append(labelConstraint.label());
+        else if (!reference().isLabel() && labelConstraint != null) syntax.append(labelConstraint.toString());
+
+        syntax.append(SPACE);
+
+        syntax.append(Stream.of(subConstraints, set(abstractConstraint), ownsConstraints, relatesConstraints,
+                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
+                .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+                .collect(Collectors.joining("" + COMMA + SPACE)));
+
+        return syntax.toString();
+    }
+
+    public String referenceSyntax() {
+        if (reference().isName()) return reference().toString();
+        else if (reference().isLabel()) return labelConstraint.label();
+        else throw new RuntimeException("Unhandled reference type.");
+    }
+
 }

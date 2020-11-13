@@ -28,6 +28,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.ISA;
+import static graql.lang.common.GraqlToken.Constraint.ISAX;
 
 public class IsaConstraint extends ThingConstraint {
 
@@ -98,5 +101,10 @@ public class IsaConstraint extends ThingConstraint {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    @Override
+    public String toString() {
+        return  "" + (isExplicit ? ISAX : ISA) + SPACE + type.referenceSyntax();
     }
 }

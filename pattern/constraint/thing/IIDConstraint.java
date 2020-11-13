@@ -25,6 +25,9 @@ import grakn.core.traversal.Traversal;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Constraint.IID;
+
 public class IIDConstraint extends ThingConstraint {
 
     private final byte[] iid;
@@ -72,4 +75,20 @@ public class IIDConstraint extends ThingConstraint {
     public int hashCode() {
         return hash;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder syntax = new StringBuilder();
+        syntax.append(IID).append(SPACE);
+        syntax.append(iidAsHexString());
+        return syntax.toString();
+    }
+
+    private String iidAsHexString() {
+        StringBuilder syntax = new StringBuilder();
+        syntax.append("0x");
+        for (byte b : iid) { syntax.append(String.format("%02x", b)); }
+        return syntax.toString();
+    }
+
 }
