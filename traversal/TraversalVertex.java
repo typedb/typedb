@@ -109,22 +109,22 @@ abstract class TraversalVertex<E extends TraversalEdge<?>> {
         }
     }
 
-    static class Plan extends TraversalVertex<TraversalEdge.Plan> {
+    static class Procedure extends TraversalVertex<TraversalEdge.Procedure> {
 
-        private final Traversal.Plan plan;
+        private final Traversal.Procedure procedure;
 
-        Plan(Identifier identifier, Traversal.Plan plan) {
+        Procedure(Identifier identifier, Traversal.Procedure procedure) {
             super(identifier);
-            this.plan = plan;
+            this.procedure = procedure;
         }
 
         @Override
-        void out(TraversalEdge.Plan edge) {
+        void out(TraversalEdge.Procedure edge) {
             // TODO
         }
 
         @Override
-        void in(TraversalEdge.Plan edge) {
+        void in(TraversalEdge.Procedure edge) {
             // TODO
         }
     }

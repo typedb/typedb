@@ -143,10 +143,10 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
         }
     }
 
-    static class Plan extends TraversalEdge<TraversalVertex.Plan> {
+    static class Procedure extends TraversalEdge<TraversalVertex.Procedure> {
 
-        Plan(Type type, TraversalVertex.Plan from, TraversalVertex.Plan to,
-             boolean isTransitive, String[] labels) {
+        Procedure(Type type, TraversalVertex.Procedure from, TraversalVertex.Procedure to,
+                  boolean isTransitive, String[] labels) {
             super(type, from, to, isTransitive, labels);
         }
     }

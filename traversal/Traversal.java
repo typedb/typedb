@@ -91,11 +91,11 @@ public class Traversal {
     ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr.schema());
-            return planners.get(0).plan().execute(graphMgr, parameters);
+            return planners.get(0).procedure().execute(graphMgr, parameters);
         } else {
             return Iterators.cartesian(planners.stream().map(planner -> {
                 planner.optimise(graphMgr.schema());
-                return planner.plan().execute(graphMgr, parameters);
+                return planner.procedure().execute(graphMgr, parameters);
             }).collect(toList())).map(list -> {
                 Map<Reference, Vertex<?, ?>> answer = new HashMap<>();
                 list.forEach(answer::putAll);
@@ -305,9 +305,9 @@ public class Traversal {
         private final MPSolver solver;
         private final MPSolverParameters parameters;
         private final AtomicBoolean isOptimising;
-        private final ManagedBlockingQueue<Plan> planHolder;
+        private final ManagedBlockingQueue<Procedure> procedureHolder;
         private MPSolver.ResultStatus resultStatus;
-        private Plan plan;
+        private Procedure procedure;
         private boolean isUpToDate;
         private long totalDuration;
         private long snapshot;
@@ -320,7 +320,7 @@ public class Traversal {
             parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
             parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
             resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
-            planHolder = new ManagedBlockingQueue<>(1);
+            procedureHolder = new ManagedBlockingQueue<>(1);
             totalDuration = 0L;
         }
 
@@ -348,15 +348,15 @@ public class Traversal {
             return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
         }
 
-        private Plan plan() {
-            if (plan == null) {
+        private Procedure procedure() {
+            if (procedure == null) {
                 try {
-                    plan = planHolder.take();
+                    procedure = procedureHolder.take();
                 } catch (InterruptedException e) {
                     throw GraknException.of(e);
                 }
             }
-            return plan;
+            return procedure;
         }
 
         private void optimise(SchemaGraph schema) {
@@ -369,7 +369,7 @@ public class Traversal {
                         resultStatus = solver.solve(parameters);
                         if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
                     } while (!isPlanned());
-                    exportPlan();
+                    exportProcedure();
                     isUpToDate = true;
                 }
                 isOptimising.set(false);
@@ -384,26 +384,26 @@ public class Traversal {
             }
         }
 
-        private void exportPlan() {
-            Plan newPlan = new Plan();
+        private void exportProcedure() {
+            Procedure newPlan = new Procedure();
 
-            // TODO: extract Traversal Plan from the MPVariables of Traversal Planner
+            // TODO: extract Traversal Procedure from the MPVariables of Traversal Planner
 
-            planHolder.clear();
+            procedureHolder.clear();
             try {
-                planHolder.put(newPlan);
+                procedureHolder.put(newPlan);
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
             }
-            plan = null;
+            procedure = null;
         }
     }
 
-    static class Plan {
+    static class Procedure {
 
-        private final Map<Identifier, TraversalVertex.Plan> vertices;
+        private final Map<Identifier, TraversalVertex.Procedure> vertices;
 
-        private Plan() {
+        private Procedure() {
             vertices = new ConcurrentHashMap<>();
         }
 
