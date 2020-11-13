@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.traversal;
+package grakn.core.traversal.structure;
 
 import grakn.core.graph.util.Encoding;
 import graql.lang.common.GraqlToken;
@@ -24,16 +24,17 @@ import graql.lang.common.GraqlToken;
 import java.util.Arrays;
 import java.util.Objects;
 
-abstract class TraversalEdge<V extends TraversalVertex<?>> {
+class StructureEdge {
 
     private final Type type;
-    private final V from;
-    private final V to;
+    private final StructureVertex from;
+    private final StructureVertex to;
     private final boolean isTransitive;
     private final String[] labels;
     private final int hash;
 
-    TraversalEdge(Type type, V from, V to, boolean isTransitive, String[] labels) {
+    StructureEdge(Type type, StructureVertex from, StructureVertex to,
+                  boolean isTransitive, String[] labels) {
         this.type = type;
         this.from = from;
         this.to = to;
@@ -42,11 +43,11 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
         this.hash = Objects.hash(this.type, from, to, isTransitive, Arrays.hashCode(labels));
     }
 
-    V from() {
+    StructureVertex from() {
         return from;
     }
 
-    V to() {
+    StructureVertex to() {
         return to;
     }
 
@@ -55,7 +56,7 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        final TraversalEdge<?> that = (TraversalEdge<?>) object;
+        final StructureEdge that = (StructureEdge) object;
         return (this.type.equals(that.type) &&
                 this.from.equals(that.from) &&
                 this.to.equals(that.to) &&
@@ -124,30 +125,6 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
             boolean isEncoded() {
                 return true;
             }
-        }
-    }
-
-    static class Structure extends TraversalEdge<TraversalVertex.Structure> {
-
-        Structure(Type type, TraversalVertex.Structure from, TraversalVertex.Structure to,
-                  boolean isTransitive, String[] labels) {
-            super(type, from, to, isTransitive, labels);
-        }
-    }
-
-    static class Planner extends TraversalEdge<TraversalVertex.Planner> {
-
-        Planner(Type type, TraversalVertex.Planner from, TraversalVertex.Planner to,
-                boolean isTranstive, String[] labels) {
-            super(type, from, to, isTranstive, labels);
-        }
-    }
-
-    static class Procedure extends TraversalEdge<TraversalVertex.Procedure> {
-
-        Procedure(Type type, TraversalVertex.Procedure from, TraversalVertex.Procedure to,
-                  boolean isTransitive, String[] labels) {
-            super(type, from, to, isTransitive, labels);
         }
     }
 }

@@ -18,42 +18,27 @@
 
 package grakn.core.traversal;
 
-import com.google.ortools.linearsolver.MPSolver;
-import com.google.ortools.linearsolver.MPSolverParameters;
-import grakn.core.common.concurrent.ManagedBlockingQueue;
-import grakn.core.common.exception.GraknException;
+import grakn.common.collection.Pair;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
+import grakn.core.traversal.planner.Planner;
+import grakn.core.traversal.structure.Structure;
+import grakn.core.traversal.structure.StructureVertex;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.ABNORMAL;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.FEASIBLE;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.INFEASIBLE;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.OPTIMAL;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.UNBOUNDED;
-import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityValues.INCREMENTALITY_ON;
-import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.INCREMENTALITY;
-import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
-import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
+import static grakn.common.collection.Collections.pair;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
@@ -68,13 +53,13 @@ import static java.util.stream.Collectors.toList;
 
 public class Traversal {
 
-    private final TraversalParameters parameters;
+    private final Parameters parameters;
     private final Structure structure;
     private List<Planner> planners;
 
     public Traversal() {
         structure = new Structure();
-        parameters = new TraversalParameters();
+        parameters = new Parameters();
     }
 
     public Identifier.Generated newIdentifier() {
@@ -105,11 +90,11 @@ public class Traversal {
     }
 
     public void is(Identifier.Variable concept1, Identifier.Variable concept2) {
-        structure.edge(new TraversalEdge.Type.Equal(), concept1, concept2);
+        structure.edge(concept1, concept2);
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-        structure.edge(new TraversalEdge.Type.Encoded(HAS), thing, attribute);
+        structure.edge(HAS, thing, attribute);
     }
 
     public void isa(Identifier thing, Identifier.Variable type) {
@@ -117,15 +102,15 @@ public class Traversal {
     }
 
     public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-        structure.edge(new TraversalEdge.Type.Encoded(ISA), thing, type, isTransitive);
+        structure.edge(ISA, thing, type, isTransitive);
     }
 
     public void relating(Identifier.Variable relation, Identifier.Generated role) {
-        structure.edge(new TraversalEdge.Type.Encoded(RELATING), relation, role);
+        structure.edge(RELATING, relation, role);
     }
 
     public void playing(Identifier.Variable thing, Identifier.Generated role) {
-        structure.edge(new TraversalEdge.Type.Encoded(PLAYING), thing, role);
+        structure.edge(PLAYING, thing, role);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
@@ -133,282 +118,187 @@ public class Traversal {
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, String[] labels) {
-        structure.edge(new TraversalEdge.Type.Encoded(ROLEPLAYER), relation, player, labels);
+        structure.edge(ROLEPLAYER, relation, player, labels);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
-        if (isKey) structure.edge(new TraversalEdge.Type.Encoded(OWNS_KEY), thingType, attributeType);
-        else structure.edge(new TraversalEdge.Type.Encoded(OWNS), thingType, attributeType);
+        if (isKey) structure.edge(OWNS_KEY, thingType, attributeType);
+        else structure.edge(OWNS, thingType, attributeType);
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
-        structure.edge(new TraversalEdge.Type.Encoded(PLAYS), thingType, roleType);
+        structure.edge(PLAYS, thingType, roleType);
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
-        structure.edge(new TraversalEdge.Type.Encoded(RELATES), relationType, roleType);
+        structure.edge(RELATES, relationType, roleType);
     }
 
     public void sub(Identifier.Variable subType, Identifier.Variable superType, boolean isTransitive) {
-        structure.edge(new TraversalEdge.Type.Encoded(SUB), subType, superType, isTransitive);
+        structure.edge(SUB, subType, superType, isTransitive);
     }
 
     public void iid(Identifier.Variable thing, byte[] iid) {
         parameters.putIID(thing, iid);
-        structure.vertex(thing).property(new TraversalProperty.IID(thing));
+        structure.vertex(thing).property(new StructureVertex.Property.IID(thing));
     }
 
     public void type(Identifier.Variable thing, String[] labels) {
-        structure.vertex(thing).property(new TraversalProperty.Type(labels));
+        structure.vertex(thing).property(new StructureVertex.Property.Type(labels));
     }
 
     public void isAbstract(Identifier.Variable type) {
-        structure.vertex(type).property(new TraversalProperty.Abstract());
+        structure.vertex(type).property(new StructureVertex.Property.Abstract());
     }
 
     public void label(Identifier.Variable type, String label, @Nullable String scope) {
-        structure.vertex(type).property(new TraversalProperty.Label(label, scope));
+        structure.vertex(type).property(new StructureVertex.Property.Label(label, scope));
     }
 
     public void regex(Identifier.Variable type, String regex) {
-        structure.vertex(type).property(new TraversalProperty.Regex(regex));
+        structure.vertex(type).property(new StructureVertex.Property.Regex(regex));
     }
 
     public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
-        structure.vertex(attributeType).property(new TraversalProperty.ValueType(Encoding.ValueType.of(valueType)));
+        structure.vertex(attributeType).property(new StructureVertex.Property.ValueType(Encoding.ValueType.of(valueType)));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator comparator, String value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new StructureVertex.Property.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Boolean value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new StructureVertex.Property.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Long value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new StructureVertex.Property.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Double value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new StructureVertex.Property.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, LocalDateTime value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new StructureVertex.Property.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute1, GraqlToken.Comparator.Equality comparator, Identifier.Variable attribute2) {
-        structure.edge(new TraversalEdge.Type.Comparator(comparator), attribute1, attribute2);
+        structure.edge(comparator, attribute1, attribute2);
     }
 
-    static class Structure {
+    public static class Parameters {
 
-        private final Map<Identifier, TraversalVertex.Structure> vertices;
-        private final Set<TraversalEdge.Structure> edges;
-        private int generatedIdentifierCount;
-        private List<Structure> patterns;
+        private final Map<Identifier, byte[]> iid;
+        private final Map<Pair<Identifier, GraqlToken.Comparator>, LinkedList<Value>> values;
 
-        private Structure() {
-            vertices = new HashMap<>();
-            edges = new HashSet<>();
-            generatedIdentifierCount = 0;
+        public Parameters() {
+            iid = new HashMap<>();
+            values = new HashMap<>();
         }
 
-        private TraversalVertex.Structure vertex(Identifier identifier) {
-            return vertices.computeIfAbsent(identifier, i -> new TraversalVertex.Structure(i, this));
+        public void putIID(Identifier.Variable identifier, byte[] iid) {
+            this.iid.put(identifier, iid);
         }
 
-        private Identifier.Generated newIdentifier() {
-            return Identifier.Generated.of(generatedIdentifierCount++);
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, boolean value) {
+            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        private void edge(TraversalEdge.Type type, Identifier from, Identifier to) {
-            edge(type, from, to, false, new String[]{});
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, long value) {
+            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        private void edge(TraversalEdge.Type type, Identifier from, Identifier to, boolean isTransitive) {
-            edge(type, from, to, isTransitive, new String[]{});
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, double value) {
+            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        private void edge(TraversalEdge.Type type, Identifier from, Identifier to, String[] labels) {
-            edge(type, from, to, false, labels);
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, String value) {
+            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        private void edge(TraversalEdge.Type type, Identifier from, Identifier to, boolean isTransitive, String[] labels) {
-            TraversalVertex.Structure fromVertex = vertex(from);
-            TraversalVertex.Structure toVertex = vertex(to);
-            TraversalEdge.Structure edge = new TraversalEdge.Structure(type, fromVertex, toVertex, isTransitive, labels);
-            edges.add(edge);
-            fromVertex.out(edge);
-            toVertex.in(edge);
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, LocalDateTime value) {
+            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        private List<Structure> graphs() {
-            if (patterns == null) {
-                patterns = new ArrayList<>();
-                while (!vertices.isEmpty()) {
-                    Structure newPattern = new Structure();
-                    splitGraph(vertices.values().iterator().next(), newPattern);
-                    patterns.add(newPattern);
-                }
+        public byte[] getIID(Identifier.Variable identifier) {
+            return iid.get(identifier);
+        }
+
+        public Value popValue(Identifier.Variable identifier, GraqlToken.Comparator comparator) {
+            return values.get(pair(identifier, comparator)).removeFirst();
+        }
+
+        static class Value {
+
+            final Boolean booleanValue;
+            final Long longValue;
+            final Double doubleValue;
+            final String stringValue;
+            final LocalDateTime dateTimeValue;
+
+            Value(boolean value) {
+                booleanValue = value;
+                longValue = null;
+                doubleValue = null;
+                stringValue = null;
+                dateTimeValue = null;
             }
-            return patterns;
-        }
 
-        private void splitGraph(TraversalVertex.Structure vertex, Structure newPattern) {
-            if (!vertices.containsKey(vertex.identifier())) return;
-
-            this.vertices.remove(vertex.identifier());
-            newPattern.vertices.put(vertex.identifier(), vertex);
-            vertex.outs().forEach(outgoing -> {
-                if (this.edges.contains(outgoing)) {
-                    this.edges.remove(outgoing);
-                    newPattern.edges.add(outgoing);
-                    splitGraph(outgoing.to(), newPattern);
-                }
-            });
-            vertex.ins().forEach(incoming -> {
-                if (this.edges.contains(incoming)) {
-                    this.edges.remove(incoming);
-                    newPattern.edges.add(incoming);
-                    splitGraph(incoming.from(), newPattern);
-                }
-            });
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            else if (o == null || getClass() != o.getClass()) return false;
-
-            Structure that = (Structure) o;
-            return (this.vertices.equals(that.vertices) && this.edges.equals(that.edges));
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.vertices, this.edges);
-        }
-    }
-
-    static class Planner {
-
-        private static final long TIME_LIMIT_MILLIS = 100;
-
-        private final Map<Identifier, TraversalVertex.Planner> vertices;
-        private final MPSolver solver;
-        private final MPSolverParameters parameters;
-        private final AtomicBoolean isOptimising;
-        private final ManagedBlockingQueue<Procedure> procedureHolder;
-        private MPSolver.ResultStatus resultStatus;
-        private Procedure procedure;
-        private boolean isUpToDate;
-        private long totalDuration;
-        private long snapshot;
-
-        private Planner() {
-            vertices = new ConcurrentHashMap<>();
-            solver = MPSolver.createSolver("SCIP");
-            isOptimising = new AtomicBoolean(false);
-            parameters = new MPSolverParameters();
-            parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
-            parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
-            resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
-            procedureHolder = new ManagedBlockingQueue<>(1);
-            totalDuration = 0L;
-        }
-
-        MPSolver solver() {
-            return solver;
-        }
-
-        private void setUpToDate(boolean isUpToDate) {
-            this.isUpToDate = isUpToDate;
-        }
-
-        private boolean isUpToDate() {
-            return isUpToDate;
-        }
-
-        private boolean isPlanned() {
-            return resultStatus == FEASIBLE || resultStatus == OPTIMAL;
-        }
-
-        private boolean isOptimal() {
-            return resultStatus == OPTIMAL;
-        }
-
-        private boolean isError() {
-            return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
-        }
-
-        private Procedure procedure() {
-            if (procedure == null) {
-                try {
-                    procedure = procedureHolder.take();
-                } catch (InterruptedException e) {
-                    throw GraknException.of(e);
-                }
+            Value(long value) {
+                booleanValue = null;
+                longValue = value;
+                doubleValue = null;
+                stringValue = null;
+                dateTimeValue = null;
             }
-            return procedure;
-        }
 
-        private void optimise(SchemaGraph schema) {
-            if (isOptimising.compareAndSet(false, true)) {
-                updateCost(schema);
-                if (!isUpToDate() || !isOptimal()) {
-                    do {
-                        totalDuration += TIME_LIMIT_MILLIS;
-                        solver.setTimeLimit(totalDuration);
-                        resultStatus = solver.solve(parameters);
-                        if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
-                    } while (!isPlanned());
-                    exportProcedure();
-                    isUpToDate = true;
-                }
-                isOptimising.set(false);
+            Value(double value) {
+                booleanValue = null;
+                longValue = null;
+                doubleValue = value;
+                stringValue = null;
+                dateTimeValue = null;
             }
-        }
 
-        private void updateCost(SchemaGraph schema) {
-            if (schema.snapshot() < snapshot) {
-                snapshot = schema.snapshot();
-
-                // TODO: update the cost of every traversal vertex and edge
+            Value(String value) {
+                booleanValue = null;
+                longValue = null;
+                doubleValue = null;
+                stringValue = value;
+                dateTimeValue = null;
             }
-        }
 
-        private void exportProcedure() {
-            Procedure newPlan = new Procedure();
-
-            // TODO: extract Traversal Procedure from the MPVariables of Traversal Planner
-
-            procedureHolder.clear();
-            try {
-                procedureHolder.put(newPlan);
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
+            Value(LocalDateTime value) {
+                booleanValue = null;
+                longValue = null;
+                doubleValue = null;
+                stringValue = null;
+                dateTimeValue = value;
             }
-            procedure = null;
-        }
-    }
 
-    static class Procedure {
+            boolean isBoolean() { return booleanValue != null; }
 
-        private final Map<Identifier, TraversalVertex.Procedure> vertices;
+            boolean isLong() { return longValue != null; }
 
-        private Procedure() {
-            vertices = new ConcurrentHashMap<>();
-        }
+            boolean isDouble() { return doubleValue != null; }
 
-        private ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, TraversalParameters parameters) {
-            return null; // TODO
+            boolean isString() { return stringValue != null; }
+
+            boolean isDateTime() { return dateTimeValue != null; }
+
+            Boolean getBoolean() { return booleanValue; }
+
+            Long getLong() { return longValue; }
+
+            Double getDouble() { return doubleValue; }
+
+            LocalDateTime getDateTime() { return dateTimeValue; }
         }
     }
 }
