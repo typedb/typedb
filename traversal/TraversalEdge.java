@@ -127,10 +127,10 @@ abstract class TraversalEdge<V extends TraversalVertex<?>> {
         }
     }
 
-    static class Pattern extends TraversalEdge<TraversalVertex.Pattern> {
+    static class Structure extends TraversalEdge<TraversalVertex.Structure> {
 
-        Pattern(Type type, TraversalVertex.Pattern from, TraversalVertex.Pattern to,
-                boolean isTransitive, String[] labels) {
+        Structure(Type type, TraversalVertex.Structure from, TraversalVertex.Structure to,
+                  boolean isTransitive, String[] labels) {
             super(type, from, to, isTransitive, labels);
         }
     }

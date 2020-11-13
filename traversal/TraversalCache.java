@@ -29,7 +29,7 @@ public class TraversalCache {
 
     private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through grakn.properties
     private static final int CACHE_TIMEOUT_MINUTES = 1_440;
-    private final Cache<Traversal.Pattern, Traversal.Planner> cache;
+    private final Cache<Traversal.Structure, Traversal.Planner> cache;
 
     public TraversalCache() {
         this(CACHE_SIZE, CACHE_TIMEOUT_MINUTES);
@@ -39,7 +39,7 @@ public class TraversalCache {
         cache = Caffeine.newBuilder().maximumSize(size).expireAfterAccess(timeoutMinutes, MINUTES).build();
     }
 
-    public Traversal.Planner get(Traversal.Pattern pattern, Function<Traversal.Pattern, Traversal.Planner> constructor) {
-        return cache.get(pattern, constructor);
+    public Traversal.Planner get(Traversal.Structure structure, Function<Traversal.Structure, Traversal.Planner> constructor) {
+        return cache.get(structure, constructor);
     }
 }

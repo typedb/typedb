@@ -69,20 +69,20 @@ import static java.util.stream.Collectors.toList;
 public class Traversal {
 
     private final TraversalParameters parameters;
-    private final Pattern pattern;
+    private final Structure structure;
     private List<Planner> planners;
 
     public Traversal() {
-        pattern = new Pattern();
+        structure = new Structure();
         parameters = new TraversalParameters();
     }
 
     public Identifier.Generated newIdentifier() {
-        return pattern.newIdentifier();
+        return structure.newIdentifier();
     }
 
     void initialisePlanner(TraversalCache cache) {
-        planners = pattern.graphs().stream().map(p1 -> cache.get(p1, p2 -> {
+        planners = structure.graphs().stream().map(p1 -> cache.get(p1, p2 -> {
             // TODO
             return new Planner();
         })).collect(toList());
@@ -105,11 +105,11 @@ public class Traversal {
     }
 
     public void is(Identifier.Variable concept1, Identifier.Variable concept2) {
-        pattern.edge(new TraversalEdge.Type.Equal(), concept1, concept2);
+        structure.edge(new TraversalEdge.Type.Equal(), concept1, concept2);
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-        pattern.edge(new TraversalEdge.Type.Encoded(HAS), thing, attribute);
+        structure.edge(new TraversalEdge.Type.Encoded(HAS), thing, attribute);
     }
 
     public void isa(Identifier thing, Identifier.Variable type) {
@@ -117,15 +117,15 @@ public class Traversal {
     }
 
     public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-        pattern.edge(new TraversalEdge.Type.Encoded(ISA), thing, type, isTransitive);
+        structure.edge(new TraversalEdge.Type.Encoded(ISA), thing, type, isTransitive);
     }
 
     public void relating(Identifier.Variable relation, Identifier.Generated role) {
-        pattern.edge(new TraversalEdge.Type.Encoded(RELATING), relation, role);
+        structure.edge(new TraversalEdge.Type.Encoded(RELATING), relation, role);
     }
 
     public void playing(Identifier.Variable thing, Identifier.Generated role) {
-        pattern.edge(new TraversalEdge.Type.Encoded(PLAYING), thing, role);
+        structure.edge(new TraversalEdge.Type.Encoded(PLAYING), thing, role);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
@@ -133,95 +133,95 @@ public class Traversal {
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, String[] labels) {
-        pattern.edge(new TraversalEdge.Type.Encoded(ROLEPLAYER), relation, player, labels);
+        structure.edge(new TraversalEdge.Type.Encoded(ROLEPLAYER), relation, player, labels);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
-        if (isKey) pattern.edge(new TraversalEdge.Type.Encoded(OWNS_KEY), thingType, attributeType);
-        else pattern.edge(new TraversalEdge.Type.Encoded(OWNS), thingType, attributeType);
+        if (isKey) structure.edge(new TraversalEdge.Type.Encoded(OWNS_KEY), thingType, attributeType);
+        else structure.edge(new TraversalEdge.Type.Encoded(OWNS), thingType, attributeType);
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
-        pattern.edge(new TraversalEdge.Type.Encoded(PLAYS), thingType, roleType);
+        structure.edge(new TraversalEdge.Type.Encoded(PLAYS), thingType, roleType);
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
-        pattern.edge(new TraversalEdge.Type.Encoded(RELATES), relationType, roleType);
+        structure.edge(new TraversalEdge.Type.Encoded(RELATES), relationType, roleType);
     }
 
     public void sub(Identifier.Variable subType, Identifier.Variable superType, boolean isTransitive) {
-        pattern.edge(new TraversalEdge.Type.Encoded(SUB), subType, superType, isTransitive);
+        structure.edge(new TraversalEdge.Type.Encoded(SUB), subType, superType, isTransitive);
     }
 
     public void iid(Identifier.Variable thing, byte[] iid) {
         parameters.putIID(thing, iid);
-        pattern.vertex(thing).property(new TraversalProperty.IID(thing));
+        structure.vertex(thing).property(new TraversalProperty.IID(thing));
     }
 
     public void type(Identifier.Variable thing, String[] labels) {
-        pattern.vertex(thing).property(new TraversalProperty.Type(labels));
+        structure.vertex(thing).property(new TraversalProperty.Type(labels));
     }
 
     public void isAbstract(Identifier.Variable type) {
-        pattern.vertex(type).property(new TraversalProperty.Abstract());
+        structure.vertex(type).property(new TraversalProperty.Abstract());
     }
 
     public void label(Identifier.Variable type, String label, @Nullable String scope) {
-        pattern.vertex(type).property(new TraversalProperty.Label(label, scope));
+        structure.vertex(type).property(new TraversalProperty.Label(label, scope));
     }
 
     public void regex(Identifier.Variable type, String regex) {
-        pattern.vertex(type).property(new TraversalProperty.Regex(regex));
+        structure.vertex(type).property(new TraversalProperty.Regex(regex));
     }
 
     public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
-        pattern.vertex(attributeType).property(new TraversalProperty.ValueType(Encoding.ValueType.of(valueType)));
+        structure.vertex(attributeType).property(new TraversalProperty.ValueType(Encoding.ValueType.of(valueType)));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator comparator, String value) {
         parameters.pushValue(attribute, comparator, value);
-        pattern.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Boolean value) {
         parameters.pushValue(attribute, comparator, value);
-        pattern.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Long value) {
         parameters.pushValue(attribute, comparator, value);
-        pattern.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Double value) {
         parameters.pushValue(attribute, comparator, value);
-        pattern.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, LocalDateTime value) {
         parameters.pushValue(attribute, comparator, value);
-        pattern.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
+        structure.vertex(attribute).property(new TraversalProperty.Value(comparator, attribute));
     }
 
     public void value(Identifier.Variable attribute1, GraqlToken.Comparator.Equality comparator, Identifier.Variable attribute2) {
-        pattern.edge(new TraversalEdge.Type.Comparator(comparator), attribute1, attribute2);
+        structure.edge(new TraversalEdge.Type.Comparator(comparator), attribute1, attribute2);
     }
 
-    static class Pattern {
+    static class Structure {
 
-        private final Map<Identifier, TraversalVertex.Pattern> vertices;
-        private final Set<TraversalEdge.Pattern> edges;
+        private final Map<Identifier, TraversalVertex.Structure> vertices;
+        private final Set<TraversalEdge.Structure> edges;
         private int generatedIdentifierCount;
-        private List<Pattern> patterns;
+        private List<Structure> patterns;
 
-        private Pattern() {
+        private Structure() {
             vertices = new HashMap<>();
             edges = new HashSet<>();
             generatedIdentifierCount = 0;
         }
 
-        private TraversalVertex.Pattern vertex(Identifier identifier) {
-            return vertices.computeIfAbsent(identifier, i -> new TraversalVertex.Pattern(i, this));
+        private TraversalVertex.Structure vertex(Identifier identifier) {
+            return vertices.computeIfAbsent(identifier, i -> new TraversalVertex.Structure(i, this));
         }
 
         private Identifier.Generated newIdentifier() {
@@ -241,19 +241,19 @@ public class Traversal {
         }
 
         private void edge(TraversalEdge.Type type, Identifier from, Identifier to, boolean isTransitive, String[] labels) {
-            TraversalVertex.Pattern fromVertex = vertex(from);
-            TraversalVertex.Pattern toVertex = vertex(to);
-            TraversalEdge.Pattern edge = new TraversalEdge.Pattern(type, fromVertex, toVertex, isTransitive, labels);
+            TraversalVertex.Structure fromVertex = vertex(from);
+            TraversalVertex.Structure toVertex = vertex(to);
+            TraversalEdge.Structure edge = new TraversalEdge.Structure(type, fromVertex, toVertex, isTransitive, labels);
             edges.add(edge);
             fromVertex.out(edge);
             toVertex.in(edge);
         }
 
-        private List<Pattern> graphs() {
+        private List<Structure> graphs() {
             if (patterns == null) {
                 patterns = new ArrayList<>();
                 while (!vertices.isEmpty()) {
-                    Pattern newPattern = new Pattern();
+                    Structure newPattern = new Structure();
                     splitGraph(vertices.values().iterator().next(), newPattern);
                     patterns.add(newPattern);
                 }
@@ -261,7 +261,7 @@ public class Traversal {
             return patterns;
         }
 
-        private void splitGraph(TraversalVertex.Pattern vertex, Pattern newPattern) {
+        private void splitGraph(TraversalVertex.Structure vertex, Structure newPattern) {
             if (!vertices.containsKey(vertex.identifier())) return;
 
             this.vertices.remove(vertex.identifier());
@@ -287,7 +287,7 @@ public class Traversal {
             if (this == o) return true;
             else if (o == null || getClass() != o.getClass()) return false;
 
-            Pattern that = (Pattern) o;
+            Structure that = (Structure) o;
             return (this.vertices.equals(that.vertices) && this.edges.equals(that.edges));
         }
 

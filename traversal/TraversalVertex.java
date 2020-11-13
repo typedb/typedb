@@ -69,22 +69,22 @@ abstract class TraversalVertex<E extends TraversalEdge<?>> {
         return identifier.hashCode();
     }
 
-    static class Pattern extends TraversalVertex<TraversalEdge.Pattern> {
+    static class Structure extends TraversalVertex<TraversalEdge.Structure> {
 
-        private final Traversal.Pattern pattern;
+        private final Traversal.Structure structure;
 
-        Pattern(Identifier identifier, Traversal.Pattern pattern) {
+        Structure(Identifier identifier, Traversal.Structure structure) {
             super(identifier);
-            this.pattern = pattern;
+            this.structure = structure;
         }
 
         @Override
-        void out(TraversalEdge.Pattern edge) {
+        void out(TraversalEdge.Structure edge) {
             outgoing.add(edge);
         }
 
         @Override
-        void in(TraversalEdge.Pattern edge) {
+        void in(TraversalEdge.Structure edge) {
             incoming.add(edge);
         }
     }
