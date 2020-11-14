@@ -88,8 +88,8 @@ public class Planner {
         if (registered.contains(structureVertex)) return;
         List<StructureVertex> adjacents = new LinkedList<>();
         PlannerVertex vertex = vertex(structureVertex);
-        if (vertex.isThing()) vertex.asThing().properties(structureVertex.asThing().properties());
-        else vertex.asType().properties(structureVertex.asType().properties());
+        if (vertex.isThing()) structureVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
+        else structureVertex.asType().properties().forEach(p -> vertex.asType().property(p));
         structureVertex.outs().forEach(structureEdge -> {
             adjacents.add(structureEdge.to());
             PlannerVertex to = vertex(structureEdge.to());
@@ -122,7 +122,7 @@ public class Planner {
     }
 
     private void initialise() {
-        vertices.values().forEach(PlannerVertex::initalise);
+        vertices.values().forEach(PlannerVertex::initialise);
         edges.forEach(PlannerEdge::initialise);
     }
 

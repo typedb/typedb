@@ -18,6 +18,7 @@
 
 package grakn.core.traversal.property;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.Identifier;
 import graql.lang.common.GraqlToken;
@@ -26,9 +27,32 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+
 public abstract class VertexProperty {
 
+    public boolean isIndexed() { return false; }
+
     public static abstract class Thing extends VertexProperty {
+
+        public boolean isIID() { return false; }
+
+        public boolean isIsa() { return false; }
+
+        public boolean isValue() { return false; }
+
+        public IID asIID() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Thing.IID.class)));
+        }
+
+        public Isa asIsa() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Thing.Isa.class)));
+        }
+
+        public Value asValue() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Thing.Value.class)));
+        }
 
         public static class IID extends Thing {
 
@@ -39,6 +63,15 @@ public abstract class VertexProperty {
                 this.param = param;
                 this.hash = Objects.hash(this.param);
             }
+
+            @Override
+            public boolean isIndexed() { return true; }
+
+            @Override
+            public boolean isIID() { return true; }
+
+            @Override
+            public IID asIID() { return this; }
 
             @Override
             public boolean equals(Object o) {
@@ -64,6 +97,15 @@ public abstract class VertexProperty {
                 this.labels = labels;
                 this.hash = Arrays.hashCode(this.labels);
             }
+
+            @Override
+            public boolean isIndexed() { return true; }
+
+            @Override
+            public boolean isIsa() { return true; }
+
+            @Override
+            public Isa asIsa() { return this; }
 
             @Override
             public boolean equals(Object o) {
@@ -93,6 +135,12 @@ public abstract class VertexProperty {
             }
 
             @Override
+            public boolean isValue() { return true; }
+
+            @Override
+            public Value asValue() { return this; }
+
+            @Override
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
@@ -110,6 +158,33 @@ public abstract class VertexProperty {
 
     public static abstract class Type extends VertexProperty {
 
+        @Override
+        public boolean isIndexed() { return true; }
+
+        public boolean isLabel() { return false; }
+
+        public boolean isAbstract() { return false; }
+
+        public boolean isValueType() { return false; }
+
+        public boolean isRegex() { return false; }
+
+        public Label asLabel() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Type.Label.class)));
+        }
+
+        public Abstract asAbstract() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Type.Abstract.class)));
+        }
+
+        public ValueType asValueType() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Type.ValueType.class)));
+        }
+
+        public Regex asRegex() {
+            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(VertexProperty.Type.Regex.class)));
+        }
+
         public static class Label extends Type {
 
             private final String label, scope;
@@ -120,6 +195,12 @@ public abstract class VertexProperty {
                 this.scope = scope;
                 this.hash = Objects.hash(this.label, this.scope);
             }
+
+            @Override
+            public boolean isLabel() { return true; }
+
+            @Override
+            public Label asLabel() { return this; }
 
             @Override
             public boolean equals(Object o) {
@@ -145,6 +226,12 @@ public abstract class VertexProperty {
             }
 
             @Override
+            public boolean isAbstract() { return true; }
+
+            @Override
+            public Abstract asAbstract() { return this; }
+
+            @Override
             public boolean equals(Object o) {
                 if (this == o) return true;
                 return o != null && getClass() == o.getClass();
@@ -165,6 +252,12 @@ public abstract class VertexProperty {
                 this.valueType = valueType;
                 this.hash = Objects.hash(this.valueType);
             }
+
+            @Override
+            public boolean isValueType() { return true; }
+
+            @Override
+            public ValueType asValueType() { return this; }
 
             @Override
             public boolean equals(Object o) {
@@ -190,6 +283,12 @@ public abstract class VertexProperty {
                 this.regex = regex;
                 this.hash = Objects.hash(this.regex);
             }
+
+            @Override
+            public boolean isRegex() { return true; }
+
+            @Override
+            public Regex asRegex() { return this; }
 
             @Override
             public boolean equals(Object o) {

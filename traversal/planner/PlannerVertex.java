@@ -32,24 +32,26 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 abstract class PlannerVertex {
 
-    private final Planner planner;
+    final Planner planner;
     final Identifier identifier;
-    private final Set<PlannerEdge> outgoing;
-    private final Set<PlannerEdge> incoming;
-    private MPVariable varIsStartingPoint;
-    private MPVariable varHasIncomingEdge;
-    private MPVariable varHasOutgoingEdge;
+    final Set<PlannerEdge> outgoing;
+    final Set<PlannerEdge> incoming;
+    boolean isIndexed;
+    MPVariable varIsStartingPoint;
+    MPVariable varHasIncomingEdge;
+    MPVariable varHasOutgoingEdge;
 
     PlannerVertex(Planner planner, Identifier identifier) {
         this.planner = planner;
         this.identifier = identifier;
         this.outgoing = new HashSet<>();
         this.incoming = new HashSet<>();
+        this.isIndexed = false;
     }
 
     abstract Set<? extends VertexProperty> properties();
 
-    abstract void initalise();
+    abstract void initialise();
 
     void out(PlannerEdge edge) {
         outgoing.add(edge);
@@ -57,6 +59,10 @@ abstract class PlannerVertex {
 
     void in(PlannerEdge edge) {
         incoming.add(edge);
+    }
+
+    boolean isIndexed() {
+        return isIndexed;
     }
 
     Identifier identifier() {
@@ -103,10 +109,14 @@ abstract class PlannerVertex {
 
     static class Thing extends PlannerVertex {
 
-        private Set<VertexProperty.Thing> properties;
+        private final Set<VertexProperty.Thing> properties;
+        private VertexProperty.Thing.IID iid;
+        private VertexProperty.Thing.Isa isa;
+        private VertexProperty.Thing.Value value;
 
         Thing(Planner planner, Identifier identifier) {
             super(planner, identifier);
+            this.properties = new HashSet<>();
         }
 
         @Override
@@ -124,22 +134,32 @@ abstract class PlannerVertex {
             return properties;
         }
 
-        void properties(Set<VertexProperty.Thing> properties) {
-            this.properties = properties;
+        void property(VertexProperty.Thing property) {
+            if (property.isIndexed()) isIndexed = true;
+            if (property.isIndexed()) iid = property.asIID();
+            else if (property.isIsa()) isa = property.asIsa();
+            else if (property.isValue()) value = property.asValue();
+            properties.add(property);
         }
 
         @Override
-        void initalise() {
-            // TODO
+        void initialise() {
+
         }
     }
 
     static class Type extends PlannerVertex {
 
-        private Set<VertexProperty.Type> properties;
+        private final Set<VertexProperty.Type> properties;
+        private VertexProperty.Type.Label label;
+        private VertexProperty.Type.Abstract abstractProp;
+        private VertexProperty.Type.ValueType valueType;
+        private VertexProperty.Type regex;
 
         Type(Planner planner, Identifier identifier) {
             super(planner, identifier);
+            this.properties = new HashSet<>();
+            this.isIndexed = true; // VertexProperty.Type is always indexed
         }
 
         @Override
@@ -157,12 +177,17 @@ abstract class PlannerVertex {
             return properties;
         }
 
-        void properties(Set<VertexProperty.Type> properties) {
-            this.properties = properties;
+        void property(VertexProperty.Type property) {
+            assert property.isIndexed();
+            if (property.isLabel()) label = property.asLabel();
+            else if (property.isAbstract()) abstractProp = property.asAbstract();
+            else if (property.isValueType()) valueType = property.asValueType();
+            else if (property.isRegex()) regex = property = property.asRegex();
+            properties.add(property);
         }
 
         @Override
-        void initalise() {
+        void initialise() {
             // TODO
         }
     }

@@ -105,14 +105,10 @@ public abstract class StructureVertex {
         }
 
         @Override
-        public boolean isThing() {
-            return true;
-        }
+        public boolean isThing() { return true; }
 
         @Override
-        public StructureVertex.Thing asThing() {
-            return this;
-        }
+        public StructureVertex.Thing asThing() { return this; }
 
         @Override
         public Set<VertexProperty.Thing> properties() {
@@ -134,14 +130,10 @@ public abstract class StructureVertex {
         }
 
         @Override
-        public boolean isType() {
-            return true;
-        }
+        public boolean isType() { return true; }
 
         @Override
-        public StructureVertex.Type asType() {
-            return this;
-        }
+        public StructureVertex.Type asType() { return this; }
 
         @Override
         public Set<VertexProperty.Type> properties() {
