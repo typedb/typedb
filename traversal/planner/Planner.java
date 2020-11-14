@@ -87,9 +87,9 @@ public class Planner {
     private void register(StructureVertex structureVertex, Set<StructureVertex> registered) {
         if (registered.contains(structureVertex)) return;
         List<StructureVertex> adjacents = new LinkedList<>();
-
         PlannerVertex vertex = vertex(structureVertex);
-        vertex.properties(structureVertex.properties());
+        if (vertex.isThing()) vertex.asThing().properties(structureVertex.asThing().properties());
+        else vertex.asType().properties(structureVertex.asType().properties());
         structureVertex.outs().forEach(structureEdge -> {
             adjacents.add(structureEdge.to());
             PlannerVertex to = vertex(structureEdge.to());
@@ -108,13 +108,22 @@ public class Planner {
         adjacents.forEach(v -> register(v, registered));
     }
 
+    private PlannerVertex vertex(StructureVertex structureVertex) {
+        if (structureVertex.isThing()) return thingVertex(structureVertex.asThing());
+        else return typeVertex(structureVertex.asType());
+    }
+
+    private PlannerVertex.Thing thingVertex(StructureVertex.Thing structureVertex) {
+        return vertices.computeIfAbsent(structureVertex.identifier(), i -> new PlannerVertex.Thing(this, i)).asThing();
+    }
+
+    private PlannerVertex.Type typeVertex(StructureVertex.Type structureVertex) {
+        return vertices.computeIfAbsent(structureVertex.identifier(), i -> new PlannerVertex.Type(this, i)).asType();
+    }
+
     private void initialise() {
         vertices.values().forEach(PlannerVertex::initalise);
         edges.forEach(PlannerEdge::initialise);
-    }
-
-    private PlannerVertex vertex(StructureVertex structureVertex) {
-        return vertices.computeIfAbsent(structureVertex.identifier(), i -> new PlannerVertex(this, i));
     }
 
     MPSolver solver() {

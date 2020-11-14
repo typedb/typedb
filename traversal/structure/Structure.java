@@ -43,12 +43,12 @@ public class Structure {
         generatedIdentifierCount = 0;
     }
 
-    public StructureVertex thingVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Thing(i, this));
+    public StructureVertex.Thing thingVertex(Identifier identifier) {
+        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Thing(i, this)).asThing();
     }
 
-    public StructureVertex typeVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Type(i, this));
+    public StructureVertex.Type typeVertex(Identifier identifier) {
+        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Type(i, this)).asType();
     }
 
     public Identifier.Generated newIdentifier() {

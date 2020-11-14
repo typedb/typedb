@@ -29,21 +29,21 @@ import java.util.Set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public class StructureVertex {
+public abstract class StructureVertex {
 
     public final Set<StructureEdge> outgoing;
     public final Set<StructureEdge> incoming;
     private final Structure structure;
-    private final Identifier identifier;
-    private final Set<VertexProperty> properties;
+    final Identifier identifier;
 
     StructureVertex(Identifier identifier, Structure structure) {
         this.structure = structure;
         this.identifier = identifier;
-        this.properties = new HashSet<>();
         this.outgoing = new HashSet<>();
         this.incoming = new HashSet<>();
     }
+
+    public abstract Set<? extends VertexProperty> properties();
 
     void out(StructureEdge edge) {
         outgoing.add(edge);
@@ -63,14 +63,6 @@ public class StructureVertex {
 
     public Identifier identifier() {
         return identifier;
-    }
-
-    public Set<VertexProperty> properties() {
-        return properties;
-    }
-
-    public void property(VertexProperty property) {
-        properties.add(property);
     }
 
     public boolean isThing() {
@@ -94,43 +86,70 @@ public class StructureVertex {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        StructureVertex that = (StructureVertex) o;
-        return (this.identifier.equals(that.identifier) && this.properties.equals(that.properties));
+        StructureVertex.Thing that = (StructureVertex.Thing) o;
+        return (this.identifier.equals(that.identifier) && Objects.equals(this.properties(), that.properties()));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, properties);
+        return Objects.hash(identifier, this.properties());
     }
 
     public static class Thing extends StructureVertex {
 
+        private final Set<VertexProperty.Thing> properties;
+
         public Thing(Identifier identifier, Structure structure) {
             super(identifier, structure);
+            this.properties = new HashSet<>();
         }
 
+        @Override
         public boolean isThing() {
             return true;
         }
 
+        @Override
         public StructureVertex.Thing asThing() {
             return this;
+        }
+
+        @Override
+        public Set<VertexProperty.Thing> properties() {
+            return properties;
+        }
+
+        public void property(VertexProperty.Thing property) {
+            properties.add(property);
         }
     }
 
     public static class Type extends StructureVertex {
 
+        private final Set<VertexProperty.Type> properties;
+
         public Type(Identifier identifier, Structure structure) {
             super(identifier, structure);
+            this.properties = new HashSet<>();
         }
 
+        @Override
         public boolean isType() {
             return true;
         }
 
+        @Override
         public StructureVertex.Type asType() {
             return this;
         }
-    }
 
+        @Override
+        public Set<VertexProperty.Type> properties() {
+            return properties;
+        }
+
+        public void property(VertexProperty.Type property) {
+            properties.add(property);
+        }
+    }
 }

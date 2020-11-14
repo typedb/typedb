@@ -28,176 +28,182 @@ import java.util.Objects;
 
 public abstract class VertexProperty {
 
-    public static class Abstract extends VertexProperty {
+    public static abstract class Thing extends VertexProperty {
 
-        private final int hash;
+        public static class IID extends Thing {
 
-        public Abstract() {
-            this.hash = Objects.hash(getClass());
+            private final Identifier param;
+            private final int hash;
+
+            public IID(Identifier param) {
+                this.param = param;
+                this.hash = Objects.hash(this.param);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                IID that = (IID) o;
+                return this.param.equals(that.param);
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            return o != null && getClass() == o.getClass();
+        public static class Isa extends Thing {
+
+            private final String[] labels;
+            private final int hash;
+
+            public Isa(String[] labels) {
+                this.labels = labels;
+                this.hash = Arrays.hashCode(this.labels);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Isa that = (Isa) o;
+                return Arrays.equals(this.labels, that.labels);
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
 
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
+        public static class Value extends Thing {
 
-    public static class IID extends VertexProperty {
+            private final GraqlToken.Comparator comparator;
+            private final Identifier param;
+            private final int hash;
 
-        private final Identifier param;
-        private final int hash;
+            public Value(GraqlToken.Comparator comparator, Identifier param) {
+                this.comparator = comparator;
+                this.param = param;
+                this.hash = Objects.hash(this.comparator, this.param);
+            }
 
-        public IID(Identifier param) {
-            this.param = param;
-            this.hash = Objects.hash(this.param);
-        }
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+                Value that = (Value) o;
+                return (this.comparator.equals(that.comparator) && this.param.equals(that.param));
+            }
 
-            IID that = (IID) o;
-            return this.param.equals(that.param);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
-
-    public static class Label extends VertexProperty {
-
-        private final String label, scope;
-        private final int hash;
-
-        public Label(String label, @Nullable String scope) {
-            this.label = label;
-            this.scope = scope;
-            this.hash = Objects.hash(this.label, this.scope);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Label that = (Label) o;
-            return (this.label.equals(that.label) && Objects.equals(this.scope, that.scope));
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
-
-    public static class Regex extends VertexProperty {
-
-        private final String regex;
-        private final int hash;
-
-        public Regex(String regex) {
-            this.regex = regex;
-            this.hash = Objects.hash(this.regex);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Regex that = (Regex) o;
-            return this.regex.equals(that.regex);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
     }
 
-    public static class Type extends VertexProperty {
+    public static abstract class Type extends VertexProperty {
 
-        private final String[] labels;
-        private final int hash;
+        public static class Label extends Type {
 
-        public Type(String[] labels) {
-            this.labels = labels;
-            this.hash = Arrays.hashCode(this.labels);
+            private final String label, scope;
+            private final int hash;
+
+            public Label(String label, @Nullable String scope) {
+                this.label = label;
+                this.scope = scope;
+                this.hash = Objects.hash(this.label, this.scope);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Label that = (Label) o;
+                return (this.label.equals(that.label) && Objects.equals(this.scope, that.scope));
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public static class Abstract extends Type {
 
-            Type that = (Type) o;
-            return Arrays.equals(this.labels, that.labels);
+            private final int hash;
+
+            public Abstract() {
+                this.hash = Objects.hash(getClass());
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                return o != null && getClass() == o.getClass();
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
 
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
+        public static class ValueType extends Type {
 
-    public static class ValueType extends VertexProperty {
+            private final Encoding.ValueType valueType;
+            private final int hash;
 
-        private final Encoding.ValueType valueType;
-        private final int hash;
+            public ValueType(Encoding.ValueType valueType) {
+                this.valueType = valueType;
+                this.hash = Objects.hash(this.valueType);
+            }
 
-        public ValueType(Encoding.ValueType valueType) {
-            this.valueType = valueType;
-            this.hash = Objects.hash(this.valueType);
-        }
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+                ValueType that = (ValueType) o;
+                return this.valueType.equals(that.valueType);
+            }
 
-            ValueType that = (ValueType) o;
-            return this.valueType.equals(that.valueType);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-    }
-
-    public static class Value extends VertexProperty {
-
-        private final GraqlToken.Comparator comparator;
-        private final Identifier param;
-        private final int hash;
-
-        public Value(GraqlToken.Comparator comparator, Identifier param) {
-            this.comparator = comparator;
-            this.param = param;
-            this.hash = Objects.hash(this.comparator, this.param);
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public static class Regex extends Type {
 
-            Value that = (Value) o;
-            return (this.comparator.equals(that.comparator) && this.param.equals(that.param));
-        }
+            private final String regex;
+            private final int hash;
 
-        @Override
-        public int hashCode() {
-            return hash;
+            public Regex(String regex) {
+                this.regex = regex;
+                this.hash = Objects.hash(this.regex);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Regex that = (Regex) o;
+                return this.regex.equals(that.regex);
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
     }
 }
