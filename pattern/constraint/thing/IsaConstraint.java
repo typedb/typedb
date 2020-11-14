@@ -105,6 +105,6 @@ public class IsaConstraint extends ThingConstraint {
 
     @Override
     public String toString() {
-        return  "" + (isExplicit ? ISAX : ISA) + SPACE + type.referenceSyntax();
+        return "" + (isExplicit ? ISAX : ISA) + SPACE + type.referenceSyntax();
     }
 }

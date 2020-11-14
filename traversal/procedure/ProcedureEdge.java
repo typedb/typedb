@@ -18,24 +18,18 @@
 
 package grakn.core.traversal.procedure;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 class ProcedureEdge {
 
     private final ProcedureVertex from;
     private final ProcedureVertex to;
-    private final boolean isTransitive;
-    private final String[] labels;
     private final int hash;
 
-    ProcedureEdge(ProcedureVertex from, ProcedureVertex to,
-                  boolean isTransitive, String[] labels) {
+    ProcedureEdge(ProcedureVertex from, ProcedureVertex to) {
         this.from = from;
         this.to = to;
-        this.isTransitive = isTransitive;
-        this.labels = labels;
-        this.hash = Objects.hash(from, to, isTransitive, Arrays.hashCode(labels));
+        this.hash = Objects.hash(from, to);
     }
 
     ProcedureVertex from() {
@@ -53,9 +47,7 @@ class ProcedureEdge {
 
         final ProcedureEdge that = (ProcedureEdge) object;
         return (this.from.equals(that.from) &&
-                this.to.equals(that.to) &&
-                this.isTransitive == that.isTransitive &&
-                Arrays.equals(this.labels, that.labels));
+                this.to.equals(that.to));
     }
 
     @Override

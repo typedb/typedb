@@ -19,30 +19,41 @@
 package grakn.core.traversal.planner;
 
 import grakn.core.traversal.Identifier;
+import grakn.core.traversal.structure.StructureVertex;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 class PlannerVertex {
 
-    private final Identifier identifier;
     private final Planner planner;
+    private final Identifier identifier;
     private final Set<PlannerEdge> outgoing;
     private final Set<PlannerEdge> incoming;
+    private Set<StructureVertex.Property> properties;
 
-    PlannerVertex(Identifier identifier, Planner planner) {
-        this.identifier = identifier;
+    PlannerVertex(Planner planner, Identifier identifier) {
         this.planner = planner;
+        this.identifier = identifier;
         this.outgoing = new HashSet<>();
         this.incoming = new HashSet<>();
     }
 
     void out(PlannerEdge edge) {
-        // TODO
+        outgoing.add(edge);
     }
 
     void in(PlannerEdge edge) {
-        // TODO
+        incoming.add(edge);
+    }
+
+    void properties(Set<StructureVertex.Property> properties) {
+        this.properties = properties;
+    }
+
+    Identifier identifier() {
+        return identifier;
     }
 
     Set<PlannerEdge> outs() {
@@ -53,8 +64,8 @@ class PlannerVertex {
         return incoming;
     }
 
-    Identifier identifier() {
-        return identifier;
+    void initalise() {
+        // TODO
     }
 
     @Override
@@ -63,11 +74,11 @@ class PlannerVertex {
         if (o == null || getClass() != o.getClass()) return false;
 
         PlannerVertex that = (PlannerVertex) o;
-        return this.identifier.equals(that.identifier);
+        return (this.identifier.equals(that.identifier) && this.properties.equals(that.properties));
     }
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return Objects.hash(identifier, properties);
     }
 }

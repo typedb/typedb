@@ -18,24 +18,22 @@
 
 package grakn.core.traversal.planner;
 
-import java.util.Arrays;
+import grakn.core.traversal.structure.StructureEdge;
+
 import java.util.Objects;
 
 class PlannerEdge {
 
+    private final StructureEdge.Property property;
     private final PlannerVertex from;
     private final PlannerVertex to;
-    private final boolean isTransitive;
-    private final String[] labels;
     private final int hash;
 
-    PlannerEdge(PlannerVertex from, PlannerVertex to,
-                boolean isTranstive, String[] labels) {
+    PlannerEdge(StructureEdge.Property property, PlannerVertex from, PlannerVertex to) {
+        this.property = property;
         this.from = from;
         this.to = to;
-        this.isTransitive = isTranstive;
-        this.labels = labels;
-        this.hash = Objects.hash(from, to, isTranstive, Arrays.hashCode(labels));
+        this.hash = Objects.hash(this.property, this.from, this.to);
     }
 
     PlannerVertex from() {
@@ -46,16 +44,19 @@ class PlannerEdge {
         return to;
     }
 
+    void initialise() {
+        // TODO
+    }
+
     @Override
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
         final PlannerEdge that = (PlannerEdge) object;
-        return (this.from.equals(that.from) &&
-                this.to.equals(that.to) &&
-                this.isTransitive == that.isTransitive &&
-                Arrays.equals(this.labels, that.labels));
+        return (this.property.equals(that.property) &&
+                this.from.equals(that.from) &&
+                this.to.equals(that.to));
     }
 
     @Override

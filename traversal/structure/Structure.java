@@ -23,6 +23,7 @@ import grakn.core.traversal.Identifier;
 import graql.lang.common.GraqlToken;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +36,7 @@ public class Structure {
     private final Map<Identifier, StructureVertex> vertices;
     private final Set<StructureEdge> edges;
     private int generatedIdentifierCount;
-    private List<Structure> patterns;
+    private List<Structure> structures;
 
     public Structure() {
         vertices = new HashMap<>();
@@ -51,45 +52,49 @@ public class Structure {
         return Identifier.Generated.of(generatedIdentifierCount++);
     }
 
+    public Collection<StructureVertex> vertices() {
+        return vertices.values();
+    }
+
     public void edge(Identifier from, Identifier to) {
-        edge(new StructureEdge.Type.Equal(), from, to, false, new String[]{});
+        edge(new StructureEdge.Property.Equal(), from, to);
     }
 
     public void edge(Encoding.Edge encoding, Identifier from, Identifier to) {
-        edge(new StructureEdge.Type.Encoded(encoding), from, to, false, new String[]{});
+        edge(new StructureEdge.Property.Type(encoding), from, to);
     }
 
     public void edge(Encoding.Edge encoding, Identifier from, Identifier to, boolean isTransitive) {
-        edge(new StructureEdge.Type.Encoded(encoding), from, to, isTransitive, new String[]{});
+        edge(new StructureEdge.Property.Type(encoding, isTransitive), from, to);
     }
 
     public void edge(Encoding.Edge encoding, Identifier from, Identifier to, String[] labels) {
-        edge(new StructureEdge.Type.Encoded(encoding), from, to, false, labels);
+        edge(new StructureEdge.Property.Type(encoding, labels), from, to);
     }
 
     public void edge(GraqlToken.Comparator.Equality comparator, Identifier from, Identifier to) {
-        edge(new StructureEdge.Type.Comparator(comparator), from, to, false, new String[]{});
+        edge(new StructureEdge.Property.Comparator(comparator), from, to);
     }
 
-    private void edge(StructureEdge.Type type, Identifier from, Identifier to, boolean isTransitive, String[] labels) {
+    private void edge(StructureEdge.Property type, Identifier from, Identifier to) {
         StructureVertex fromVertex = vertex(from);
         StructureVertex toVertex = vertex(to);
-        StructureEdge edge = new StructureEdge(type, fromVertex, toVertex, isTransitive, labels);
+        StructureEdge edge = new StructureEdge(type, fromVertex, toVertex);
         edges.add(edge);
         fromVertex.out(edge);
         toVertex.in(edge);
     }
 
-    public List<Structure> graphs() {
-        if (patterns == null) {
-            patterns = new ArrayList<>();
+    public List<Structure> asGraphs() {
+        if (structures == null) {
+            structures = new ArrayList<>();
             while (!vertices.isEmpty()) {
                 Structure newPattern = new Structure();
                 splitGraph(vertices.values().iterator().next(), newPattern);
-                patterns.add(newPattern);
+                structures.add(newPattern);
             }
         }
-        return patterns;
+        return structures;
     }
 
     private void splitGraph(StructureVertex vertex, Structure newPattern) {

@@ -20,8 +20,6 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -101,7 +99,7 @@ public class Conjunction implements Pattern {
     private boolean printable(Variable variable) {
         if (variable.reference().isName()) return !variable.constraints().isEmpty();
         if (variable.isThing()) return !variable.asThing().relation().isEmpty();
-        if (variable.isType()) return variable.constraints().size()>1;
+        if (variable.isType()) return variable.constraints().size() > 1;
         throw GraknException.of(ILLEGAL_STATE);
     }
 

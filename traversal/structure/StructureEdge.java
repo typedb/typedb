@@ -24,30 +24,29 @@ import graql.lang.common.GraqlToken;
 import java.util.Arrays;
 import java.util.Objects;
 
-class StructureEdge {
+public class StructureEdge {
 
-    private final Type type;
+    private final Property property;
     private final StructureVertex from;
     private final StructureVertex to;
-    private final boolean isTransitive;
-    private final String[] labels;
     private final int hash;
 
-    StructureEdge(Type type, StructureVertex from, StructureVertex to,
-                  boolean isTransitive, String[] labels) {
-        this.type = type;
+    StructureEdge(Property property, StructureVertex from, StructureVertex to) {
+        this.property = property;
         this.from = from;
         this.to = to;
-        this.isTransitive = isTransitive;
-        this.labels = labels;
-        this.hash = Objects.hash(this.type, from, to, isTransitive, Arrays.hashCode(labels));
+        this.hash = Objects.hash(this.property, this.from, this.to);
     }
 
-    StructureVertex from() {
+    public Property property() {
+        return property;
+    }
+
+    public StructureVertex from() {
         return from;
     }
 
-    StructureVertex to() {
+    public StructureVertex to() {
         return to;
     }
 
@@ -56,12 +55,10 @@ class StructureEdge {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        final StructureEdge that = (StructureEdge) object;
-        return (this.type.equals(that.type) &&
+        StructureEdge that = (StructureEdge) object;
+        return (this.property.equals(that.property) &&
                 this.from.equals(that.from) &&
-                this.to.equals(that.to) &&
-                this.isTransitive == that.isTransitive &&
-                Arrays.equals(this.labels, that.labels));
+                this.to.equals(that.to));
     }
 
     @Override
@@ -69,7 +66,7 @@ class StructureEdge {
         return hash;
     }
 
-    static class Type {
+    public static class Property {
 
         boolean isEqual() {
             return false;
@@ -79,24 +76,37 @@ class StructureEdge {
             return false;
         }
 
-        boolean isEncoded() {
+        boolean isProperty() {
             return false;
         }
 
-        static class Equal extends Type {
+        static class Equal extends Property {
 
             @Override
             boolean isEqual() {
                 return true;
             }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                return o != null && getClass() == o.getClass();
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(getClass());
+            }
         }
 
-        static class Comparator extends Type {
+        static class Comparator extends Property {
 
             private final GraqlToken.Comparator.Equality comparator;
+            private final int hash;
 
             Comparator(GraqlToken.Comparator.Equality comparator) {
                 this.comparator = comparator;
+                this.hash = Objects.hash(this.comparator);
             }
 
             GraqlToken.Comparator.Equality comparator() {
@@ -107,23 +117,79 @@ class StructureEdge {
             boolean isComparator() {
                 return false;
             }
-        }
 
-        static class Encoded extends Type {
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
 
-            private final Encoding.Edge encoding;
-
-            Encoded(Encoding.Edge encoding) {
-                this.encoding = encoding;
-            }
-
-            Encoding.Edge encoding() {
-                return encoding;
+                Comparator that = (Comparator) o;
+                return this.comparator.equals(that.comparator);
             }
 
             @Override
-            boolean isEncoded() {
+            public int hashCode() {
+                return hash;
+            }
+        }
+
+        static class Type extends Property {
+
+            private final Encoding.Edge encoding;
+            private final String[] labels;
+            private final boolean isTransitive;
+            private final int hash;
+
+            Type(Encoding.Edge encoding) {
+                this(encoding, new String[]{}, false);
+            }
+
+            Type(Encoding.Edge encoding, boolean isTransitive) {
+                this(encoding, new String[]{}, isTransitive);
+            }
+
+            Type(Encoding.Edge encoding, String[] labels) {
+                this(encoding, labels, false);
+            }
+
+            private Type(Encoding.Edge encoding, String[] labels, boolean isTransitive) {
+                this.encoding = encoding;
+                this.labels = labels;
+                this.isTransitive = isTransitive;
+                this.hash = Objects.hash(this.encoding, Arrays.hashCode(this.labels), this.isTransitive);
+            }
+
+            public Encoding.Edge encoding() {
+                return encoding;
+            }
+
+            public String[] labels() {
+                return labels;
+            }
+
+            public boolean isTransitive() {
+                return isTransitive;
+            }
+
+            @Override
+            boolean isProperty() {
                 return true;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Type that = (Type) o;
+                return (this.encoding.equals(that.encoding) &&
+                        Arrays.equals(this.labels, that.labels) &&
+                        this.isTransitive == that.isTransitive);
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
             }
         }
     }

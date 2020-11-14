@@ -160,8 +160,7 @@ public class VariableRegistry {
     public TypeVariable computeTypeIfAbsent(Reference reference, Function<Reference, TypeVariable> constructor) {
         if (things.containsKey(reference)) {
             throw GraknException.of(VARIABLE_CONTRADICTION.message(reference));
-        }
-        else return types.computeIfAbsent(reference, constructor);
+        } else return types.computeIfAbsent(reference, constructor);
     }
 
     public ThingVariable computeThingIfAbsent(Reference reference, Function<Reference, ThingVariable> constructor) {

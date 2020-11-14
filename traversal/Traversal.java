@@ -67,10 +67,7 @@ public class Traversal {
     }
 
     void initialisePlanner(TraversalCache cache) {
-        planners = structure.graphs().stream().map(p1 -> cache.get(p1, p2 -> {
-            // TODO
-            return new Planner();
-        })).collect(toList());
+        planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
     ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
@@ -114,7 +111,7 @@ public class Traversal {
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
-        rolePlayer(relation, player, new String[]{});
+        structure.edge(ROLEPLAYER, relation, player);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, String[] labels) {

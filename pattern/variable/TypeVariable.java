@@ -155,9 +155,9 @@ public class TypeVariable extends Variable {
         syntax.append(SPACE);
 
         syntax.append(Stream.of(subConstraints, set(abstractConstraint), ownsConstraints, relatesConstraints,
-                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
-                .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
-                .collect(Collectors.joining("" + COMMA + SPACE)));
+                                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
+                              .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+                              .collect(Collectors.joining("" + COMMA + SPACE)));
 
         return syntax.toString();
     }

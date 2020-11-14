@@ -25,9 +25,15 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.procedure.Procedure;
+import grakn.core.traversal.structure.Structure;
+import grakn.core.traversal.structure.StructureVertex;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.ortools.linearsolver.MPSolver.ResultStatus.ABNORMAL;
@@ -45,11 +51,12 @@ public class Planner {
 
     private static final long TIME_LIMIT_MILLIS = 100;
 
-    private final Map<Identifier, PlannerVertex> vertices;
     private final MPSolver solver;
     private final MPSolverParameters parameters;
-    private final AtomicBoolean isOptimising;
+    private final Map<Identifier, PlannerVertex> vertices;
+    private final Set<PlannerEdge> edges;
     private final ManagedBlockingQueue<Procedure> procedureHolder;
+    private final AtomicBoolean isOptimising;
     private MPSolver.ResultStatus resultStatus;
     private Procedure procedure;
     private boolean isUpToDate;
@@ -57,15 +64,57 @@ public class Planner {
     private long snapshot;
 
     public Planner() {
-        vertices = new ConcurrentHashMap<>();
         solver = MPSolver.createSolver("SCIP");
-        isOptimising = new AtomicBoolean(false);
         parameters = new MPSolverParameters();
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
-        resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
+        vertices = new HashMap<>();
+        edges = new HashSet<>();
         procedureHolder = new ManagedBlockingQueue<>(1);
+        isOptimising = new AtomicBoolean(false);
+        resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
         totalDuration = 0L;
+    }
+
+    public static Planner create(Structure structure) {
+        Planner planner = new Planner();
+        Set<StructureVertex> registered = new HashSet<>();
+        structure.vertices().forEach(vertex -> planner.register(vertex, registered));
+        planner.initialise();
+        return planner;
+    }
+
+    private void register(StructureVertex structureVertex, Set<StructureVertex> registered) {
+        if (registered.contains(structureVertex)) return;
+        List<StructureVertex> adjacents = new LinkedList<>();
+
+        PlannerVertex vertex = vertex(structureVertex);
+        vertex.properties(structureVertex.properties());
+        structureVertex.outs().forEach(structureEdge -> {
+            adjacents.add(structureEdge.to());
+            PlannerVertex to = vertex(structureEdge.to());
+            PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, to);
+            vertex.out(edge);
+            to.in(edge);
+        });
+        structureVertex.ins().forEach(structureEdge -> {
+            adjacents.add(structureEdge.from());
+            PlannerVertex from = vertex(structureEdge.from());
+            PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, from);
+            vertex.in(edge);
+            from.out(edge);
+        });
+        registered.add(structureVertex);
+        adjacents.forEach(v -> register(v, registered));
+    }
+
+    private void initialise() {
+        vertices.values().forEach(PlannerVertex::initalise);
+        edges.forEach(PlannerEdge::initialise);
+    }
+
+    private PlannerVertex vertex(StructureVertex structureVertex) {
+        return vertices.computeIfAbsent(structureVertex.identifier(), i -> new PlannerVertex(this, i));
     }
 
     MPSolver solver() {
@@ -121,7 +170,7 @@ public class Planner {
     }
 
     private void updateCost(SchemaGraph schema) {
-        if (schema.snapshot() < snapshot) {
+        if (snapshot < schema.snapshot()) {
             snapshot = schema.snapshot();
 
             // TODO: update the cost of every traversal vertex and edge

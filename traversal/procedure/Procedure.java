@@ -25,15 +25,15 @@ import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Procedure {
 
     private final Map<Identifier, ProcedureVertex> vertices;
 
     public Procedure() {
-        vertices = new ConcurrentHashMap<>();
+        vertices = new HashMap<>();
     }
 
     public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
