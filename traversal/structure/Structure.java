@@ -18,9 +18,8 @@
 
 package grakn.core.traversal.structure;
 
-import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.Identifier;
-import graql.lang.common.GraqlToken;
+import grakn.core.traversal.property.EdgeProperty;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,8 +43,12 @@ public class Structure {
         generatedIdentifierCount = 0;
     }
 
-    public StructureVertex vertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, i -> new StructureVertex(i, this));
+    public StructureVertex thingVertex(Identifier identifier) {
+        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Thing(i, this));
+    }
+
+    public StructureVertex typeVertex(Identifier identifier) {
+        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Type(i, this));
     }
 
     public Identifier.Generated newIdentifier() {
@@ -56,33 +59,11 @@ public class Structure {
         return vertices.values();
     }
 
-    public void edge(Identifier from, Identifier to) {
-        edge(new StructureEdge.Property.Equal(), from, to);
-    }
-
-    public void edge(Encoding.Edge encoding, Identifier from, Identifier to) {
-        edge(new StructureEdge.Property.Type(encoding), from, to);
-    }
-
-    public void edge(Encoding.Edge encoding, Identifier from, Identifier to, boolean isTransitive) {
-        edge(new StructureEdge.Property.Type(encoding, isTransitive), from, to);
-    }
-
-    public void edge(Encoding.Edge encoding, Identifier from, Identifier to, String[] labels) {
-        edge(new StructureEdge.Property.Type(encoding, labels), from, to);
-    }
-
-    public void edge(GraqlToken.Comparator.Equality comparator, Identifier from, Identifier to) {
-        edge(new StructureEdge.Property.Comparator(comparator), from, to);
-    }
-
-    private void edge(StructureEdge.Property type, Identifier from, Identifier to) {
-        StructureVertex fromVertex = vertex(from);
-        StructureVertex toVertex = vertex(to);
-        StructureEdge edge = new StructureEdge(type, fromVertex, toVertex);
+    public void edge(EdgeProperty property, StructureVertex from, StructureVertex to) {
+        StructureEdge edge = new StructureEdge(property, from, to);
         edges.add(edge);
-        fromVertex.out(edge);
-        toVertex.in(edge);
+        from.out(edge);
+        to.in(edge);
     }
 
     public List<Structure> asGraphs() {

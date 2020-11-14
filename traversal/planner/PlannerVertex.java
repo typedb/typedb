@@ -18,8 +18,9 @@
 
 package grakn.core.traversal.planner;
 
+import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.traversal.Identifier;
-import grakn.core.traversal.structure.StructureVertex;
+import grakn.core.traversal.property.VertexProperty;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -31,7 +32,10 @@ class PlannerVertex {
     private final Identifier identifier;
     private final Set<PlannerEdge> outgoing;
     private final Set<PlannerEdge> incoming;
-    private Set<StructureVertex.Property> properties;
+    private Set<VertexProperty> properties;
+    private MPVariable varIsStartingPoint;
+    private MPVariable varHasIncomingEdge;
+    private MPVariable varHasOutgoingEdge;
 
     PlannerVertex(Planner planner, Identifier identifier) {
         this.planner = planner;
@@ -48,7 +52,7 @@ class PlannerVertex {
         incoming.add(edge);
     }
 
-    void properties(Set<StructureVertex.Property> properties) {
+    void properties(Set<VertexProperty> properties) {
         this.properties = properties;
     }
 

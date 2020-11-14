@@ -18,18 +18,18 @@
 
 package grakn.core.traversal.planner;
 
-import grakn.core.traversal.structure.StructureEdge;
+import grakn.core.traversal.property.EdgeProperty;
 
 import java.util.Objects;
 
 class PlannerEdge {
 
-    private final StructureEdge.Property property;
+    private final EdgeProperty property;
     private final PlannerVertex from;
     private final PlannerVertex to;
     private final int hash;
 
-    PlannerEdge(StructureEdge.Property property, PlannerVertex from, PlannerVertex to) {
+    PlannerEdge(EdgeProperty property, PlannerVertex from, PlannerVertex to) {
         this.property = property;
         this.from = from;
         this.to = to;

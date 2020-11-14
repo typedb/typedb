@@ -18,15 +18,16 @@
 
 package grakn.core.traversal.structure;
 
-import grakn.core.graph.util.Encoding;
+import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
-import graql.lang.common.GraqlToken;
+import grakn.core.traversal.property.VertexProperty;
 
-import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public class StructureVertex {
 
@@ -34,7 +35,7 @@ public class StructureVertex {
     public final Set<StructureEdge> incoming;
     private final Structure structure;
     private final Identifier identifier;
-    private final Set<Property> properties;
+    private final Set<VertexProperty> properties;
 
     StructureVertex(Identifier identifier, Structure structure) {
         this.structure = structure;
@@ -64,12 +65,28 @@ public class StructureVertex {
         return identifier;
     }
 
-    public Set<Property> properties() {
+    public Set<VertexProperty> properties() {
         return properties;
     }
 
-    public void property(Property property) {
+    public void property(VertexProperty property) {
         properties.add(property);
+    }
+
+    public boolean isThing() {
+        return false;
+    }
+
+    public boolean isType() {
+        return false;
+    }
+
+    public StructureVertex.Thing asThing() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(StructureVertex.Thing.class)));
+    }
+
+    public StructureVertex.Type asType() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(StructureVertex.Type.class)));
     }
 
     @Override
@@ -86,179 +103,34 @@ public class StructureVertex {
         return Objects.hash(identifier, properties);
     }
 
-    public abstract static class Property {
+    public static class Thing extends StructureVertex {
 
-        public static class Abstract extends Property {
-
-            private final int hash;
-
-            public Abstract() {
-                this.hash = Objects.hash(getClass());
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                return o != null && getClass() == o.getClass();
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
+        public Thing(Identifier identifier, Structure structure) {
+            super(identifier, structure);
         }
 
-        public static class IID extends Property {
-
-            private final Identifier param;
-            private final int hash;
-
-            public IID(Identifier param) {
-                this.param = param;
-                this.hash = Objects.hash(this.param);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                IID that = (IID) o;
-                return this.param.equals(that.param);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
+        public boolean isThing() {
+            return true;
         }
 
-        public static class Label extends Property {
-
-            private final String label, scope;
-            private final int hash;
-
-            public Label(String label, @Nullable String scope) {
-                this.label = label;
-                this.scope = scope;
-                this.hash = Objects.hash(this.label, this.scope);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                Label that = (Label) o;
-                return (this.label.equals(that.label) && Objects.equals(this.scope, that.scope));
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-        }
-
-        public static class Regex extends Property {
-
-            private final String regex;
-            private final int hash;
-
-            public Regex(String regex) {
-                this.regex = regex;
-                this.hash = Objects.hash(this.regex);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                Regex that = (Regex) o;
-                return this.regex.equals(that.regex);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-        }
-
-        public static class Type extends Property {
-
-            private final String[] labels;
-            private final int hash;
-
-            public Type(String[] labels) {
-                this.labels = labels;
-                this.hash = Arrays.hashCode(this.labels);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                Type that = (Type) o;
-                return Arrays.equals(this.labels, that.labels);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-        }
-
-        public static class ValueType extends Property {
-
-            private final Encoding.ValueType valueType;
-            private final int hash;
-
-            public ValueType(Encoding.ValueType valueType) {
-                this.valueType = valueType;
-                this.hash = Objects.hash(this.valueType);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                ValueType that = (ValueType) o;
-                return this.valueType.equals(that.valueType);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-        }
-
-        public static class Value extends Property {
-
-            private final GraqlToken.Comparator comparator;
-            private final Identifier param;
-            private final int hash;
-
-            public Value(GraqlToken.Comparator comparator, Identifier param) {
-                this.comparator = comparator;
-                this.param = param;
-                this.hash = Objects.hash(this.comparator, this.param);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                Value that = (Value) o;
-                return (this.comparator.equals(that.comparator) && this.param.equals(that.param));
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
+        public StructureVertex.Thing asThing() {
+            return this;
         }
     }
+
+    public static class Type extends StructureVertex {
+
+        public Type(Identifier identifier, Structure structure) {
+            super(identifier, structure);
+        }
+
+        public boolean isType() {
+            return true;
+        }
+
+        public StructureVertex.Type asType() {
+            return this;
+        }
+    }
+
 }

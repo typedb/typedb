@@ -59,7 +59,7 @@ public class IsConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.is(owner.identifier(), variable.identifier());
+        traversal.equalTypes(owner.identifier(), variable.identifier());
     }
 
     @Override
