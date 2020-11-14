@@ -33,14 +33,13 @@ public class IIDConstraint extends ThingConstraint {
     private final byte[] iid;
     private final int hash;
 
-    public IIDConstraint(ThingVariable owner, byte[] iid) {
+    private IIDConstraint(ThingVariable owner, byte[] iid) {
         super(owner);
         this.iid = iid;
         this.hash = Objects.hash(IIDConstraint.class, this.owner, Arrays.hashCode(this.iid));
     }
 
-    public static IIDConstraint of(ThingVariable owner,
-                                   graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
+    static IIDConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
         return new IIDConstraint(owner, Bytes.hexStringToBytes(constraint.iid()));
     }
 

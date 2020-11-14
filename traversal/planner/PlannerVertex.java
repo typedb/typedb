@@ -37,9 +37,11 @@ abstract class PlannerVertex {
     final Set<PlannerEdge> outgoing;
     final Set<PlannerEdge> incoming;
     boolean isIndexed;
-    MPVariable varIsStartingPoint;
-    MPVariable varHasIncomingEdge;
-    MPVariable varHasOutgoingEdge;
+
+    private boolean isInitialised;
+    private MPVariable varIsStartingPoint;
+    private MPVariable varHasIncomingEdge;
+    private MPVariable varHasOutgoingEdge;
 
     PlannerVertex(Planner planner, Identifier identifier) {
         this.planner = planner;
@@ -51,8 +53,6 @@ abstract class PlannerVertex {
 
     abstract Set<? extends VertexProperty> properties();
 
-    abstract void initialise();
-
     void out(PlannerEdge edge) {
         outgoing.add(edge);
     }
@@ -63,6 +63,10 @@ abstract class PlannerVertex {
 
     boolean isIndexed() {
         return isIndexed;
+    }
+
+    boolean isInitialised() {
+        return isInitialised;
     }
 
     Identifier identifier() {
@@ -93,6 +97,10 @@ abstract class PlannerVertex {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(PlannerVertex.Type.class)));
     }
 
+    void initialise() {
+        // TODO
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -112,7 +120,7 @@ abstract class PlannerVertex {
         private final Set<VertexProperty.Thing> properties;
         private VertexProperty.Thing.IID iid;
         private VertexProperty.Thing.Isa isa;
-        private VertexProperty.Thing.Value value;
+        private Set<VertexProperty.Thing.Value> value;
 
         Thing(Planner planner, Identifier identifier) {
             super(planner, identifier);
@@ -138,13 +146,8 @@ abstract class PlannerVertex {
             if (property.isIndexed()) isIndexed = true;
             if (property.isIndexed()) iid = property.asIID();
             else if (property.isIsa()) isa = property.asIsa();
-            else if (property.isValue()) value = property.asValue();
+            else if (property.isValue()) value.add(property.asValue());
             properties.add(property);
-        }
-
-        @Override
-        void initialise() {
-
         }
     }
 
@@ -184,11 +187,6 @@ abstract class PlannerVertex {
             else if (property.isValueType()) valueType = property.asValueType();
             else if (property.isRegex()) regex = property = property.asRegex();
             properties.add(property);
-        }
-
-        @Override
-        void initialise() {
-            // TODO
         }
     }
 }

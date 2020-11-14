@@ -42,7 +42,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     final T value;
     private final int hash;
 
-    ValueConstraint(ThingVariable owner, GraqlToken.Comparator comparator, T value) {
+    private ValueConstraint(ThingVariable owner, GraqlToken.Comparator comparator, T value) {
         super(owner);
         assert !comparator.isEquality() || value instanceof Comparable || value instanceof ThingVariable;
         assert !comparator.isSubString() || value instanceof java.lang.String;
@@ -52,9 +52,9 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         this.hash = Objects.hash(this.comparator, this.value);
     }
 
-    public static ValueConstraint<?> of(ThingVariable owner,
-                                        graql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
-                                        VariableRegistry register) {
+    static ValueConstraint<?> of(ThingVariable owner,
+                                 graql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
+                                 VariableRegistry register) {
         if (valueConstraint.isLong()) {
             return new Long(owner, valueConstraint.comparator().asEquality(), valueConstraint.asLong().value());
         } else if (valueConstraint.isDouble()) {

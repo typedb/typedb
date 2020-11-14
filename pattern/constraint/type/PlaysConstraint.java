@@ -52,9 +52,8 @@ public class PlaysConstraint extends TypeConstraint {
         this.hash = Objects.hash(PlaysConstraint.class, this.owner, this.relationType, this.roleType, this.overriddenRoleType);
     }
 
-    public static PlaysConstraint of(TypeVariable owner,
-                                     graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
-                                     VariableRegistry registry) {
+    static PlaysConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
+                              VariableRegistry registry) {
         final TypeVariable roleType = registry.register(constraint.role());
         final TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
         final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
@@ -120,7 +119,8 @@ public class PlaysConstraint extends TypeConstraint {
         syntax.append(PLAYS).append(SPACE);
         if (relationType != null) syntax.append(relationType.referenceSyntax()).append(COLON);
         if (roleType != null) syntax.append(roleType.referenceSyntax());
-        if (overriddenRoleType != null) syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
+        if (overriddenRoleType != null)
+            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
         return syntax.toString();
     }
 

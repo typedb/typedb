@@ -44,9 +44,8 @@ public class SubConstraint extends TypeConstraint {
         this.hash = Objects.hash(SubConstraint.class, this.owner, this.type, this.isExplicit);
     }
 
-    public static SubConstraint of(TypeVariable owner,
-                                   graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
-                                   VariableRegistry registry) {
+    static SubConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
+                            VariableRegistry registry) {
         return new SubConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
     }
 

@@ -48,9 +48,8 @@ public class RelatesConstraint extends TypeConstraint {
         this.hash = Objects.hash(RelatesConstraint.class, this.owner, this.roleType, this.overriddenRoleType);
     }
 
-    public static RelatesConstraint of(TypeVariable owner,
-                                       graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
-                                       VariableRegistry registry) {
+    static RelatesConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
+                                VariableRegistry registry) {
         final TypeVariable roleType = registry.register(constraint.role());
         final TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
         return new RelatesConstraint(owner, roleType, overriddenRoleType);
@@ -104,7 +103,8 @@ public class RelatesConstraint extends TypeConstraint {
     public String toString() {
         StringBuilder syntax = new StringBuilder();
         syntax.append(RELATES).append(SPACE).append(roleType.referenceSyntax());
-        if (overriddenRoleType != null) syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
+        if (overriddenRoleType != null)
+            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
         return syntax.toString();
     }
 }

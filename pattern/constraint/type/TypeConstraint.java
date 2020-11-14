@@ -39,8 +39,7 @@ public abstract class TypeConstraint extends Constraint {
         this.owner = owner;
     }
 
-    public static TypeConstraint of(TypeVariable owner,
-                                    graql.lang.pattern.constraint.TypeConstraint constraint,
+    public static TypeConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint constraint,
                                     VariableRegistry registry) {
         if (constraint.isLabel()) return LabelConstraint.of(owner, constraint.asLabel());
         else if (constraint.isSub()) return SubConstraint.of(owner, constraint.asSub(), registry);

@@ -44,11 +44,11 @@ public class Structure {
     }
 
     public StructureVertex.Thing thingVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Thing(i, this)).asThing();
+        return vertices.computeIfAbsent(identifier, StructureVertex.Thing::new).asThing();
     }
 
     public StructureVertex.Type typeVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, i -> new StructureVertex.Type(i, this)).asType();
+        return vertices.computeIfAbsent(identifier, StructureVertex.Type::new).asType();
     }
 
     public Identifier.Generated newIdentifier() {

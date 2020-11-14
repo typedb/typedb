@@ -42,6 +42,9 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_LABEL;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_REGEX;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE;
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
@@ -81,10 +84,19 @@ public class TypeVariable extends Variable {
 
     private void constrain(TypeConstraint constraint) {
         constraints.add(constraint);
-        if (constraint.isLabel()) labelConstraint = constraint.asLabel();
-        else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
-        else if (constraint.isValueType()) valueTypeConstraint = constraint.asValueType();
-        else if (constraint.isRegex()) regexConstraint = constraint.asRegex();
+        if (constraint.isLabel()) {
+            if (labelConstraint != null && !labelConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL.message(identifier()));
+            } else labelConstraint = constraint.asLabel();
+        } else if (constraint.isValueType()) {
+            if (valueTypeConstraint != null && !valueTypeConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE.message(identifier()));
+            } else valueTypeConstraint = constraint.asValueType();
+        } else if (constraint.isRegex()) {
+            if (regexConstraint != null && !regexConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX.message(identifier()));
+            } else regexConstraint = constraint.asRegex();
+        } else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
         else if (constraint.isSub()) subConstraints.add(constraint.asSub());
         else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
         else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());

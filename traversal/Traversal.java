@@ -87,16 +87,16 @@ public class Traversal {
         }
     }
 
-    public void equalThings(Identifier.Variable concept1, Identifier.Variable concept2) {
+    public void equalThings(Identifier.Variable thing1, Identifier.Variable thing2) {
         structure.edge(new EdgeProperty.Equal(),
-                       structure.thingVertex(concept1),
-                       structure.thingVertex(concept2));
+                       structure.thingVertex(thing1),
+                       structure.thingVertex(thing2));
     }
 
-    public void equalTypes(Identifier.Variable concept1, Identifier.Variable concept2) {
+    public void equalTypes(Identifier.Variable type1, Identifier.Variable type2) {
         structure.edge(new EdgeProperty.Equal(),
-                       structure.typeVertex(concept1),
-                       structure.typeVertex(concept2));
+                       structure.typeVertex(type1),
+                       structure.typeVertex(type2));
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {

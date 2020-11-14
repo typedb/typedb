@@ -42,7 +42,7 @@ public class LabelConstraint extends TypeConstraint {
         this.hash = Objects.hash(LabelConstraint.class, this.owner, this.scope, this.label);
     }
 
-    public static LabelConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
+    static LabelConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
         return new LabelConstraint(owner, constraint.label(), constraint.scope().orElse(null));
     }
 

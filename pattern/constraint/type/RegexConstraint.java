@@ -39,7 +39,7 @@ public class RegexConstraint extends TypeConstraint {
         this.hash = Objects.hash(RegexConstraint.class, this.owner, this.regex.pattern());
     }
 
-    public static RegexConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
+    static RegexConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
         return new RegexConstraint(owner, constraint.regex());
     }
 

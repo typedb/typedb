@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
@@ -60,22 +61,23 @@ public class ThingVariable extends Variable {
         this.constraints = new HashSet<>();
     }
 
-    ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints,
-                                 VariableRegistry registry) {
+    ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
 
-    ThingVariable constrainConcept(List<graql.lang.pattern.constraint.ConceptConstraint> constraints,
-                                   VariableRegistry registry) {
+    ThingVariable constrainConcept(List<graql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
 
     private void constrain(ThingConstraint constraint) {
         constraints.add(constraint);
-        if (constraint.isIID()) iidConstraint = constraint.asIID();
-        else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
+        if (constraint.isIID()) {
+            if (iidConstraint != null && !iidConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID.message(identifier()));
+            } else iidConstraint = constraint.asIID();
+        } else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
         else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());

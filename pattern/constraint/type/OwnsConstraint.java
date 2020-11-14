@@ -51,9 +51,8 @@ public class OwnsConstraint extends TypeConstraint {
         this.hash = Objects.hash(OwnsConstraint.class, this.owner, this.attributeType, this.overriddenAttributeType, this.isKey);
     }
 
-    public static OwnsConstraint of(TypeVariable owner,
-                                    graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
-                                    VariableRegistry registry) {
+    static OwnsConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
+                             VariableRegistry registry) {
         final TypeVariable attributeType = registry.register(constraint.attribute());
         final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
         return new OwnsConstraint(owner, attributeType, overriddenType, constraint.isKey());

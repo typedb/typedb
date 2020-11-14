@@ -57,7 +57,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Server(14, "The request with ID '%s' is a duplicate.");
 
         private static final String codePrefix = "SRV";
-        private static final String messagePrefix = "Server Error";
+        private static final String messagePrefix = "Invalid Server Operation";
 
         Server(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
@@ -169,10 +169,18 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Pattern MISSING_CONSTRAINT_VALUE =
                 new Pattern(6, "The value constraint for variable has not been provided with a variable or literal value.");
         public static final Pattern VARIABLE_CONTRADICTION =
-                new Pattern(7, "The variable %s cannot be both a type and a thing.");
+                new Pattern(7, "The variable '%s' is both a type and a thing.");
+        public static final Pattern MULTIPLE_THING_CONSTRAINT_IID =
+                new Pattern(8, "The thing variable '%s' has multiple 'iid' constraints.");
+        public static final Pattern MULTIPLE_TYPE_CONSTRAINT_LABEL =
+                new Pattern(9, "The type variable '%s' has multiple 'label' constraints.");
+        public static final Pattern MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE =
+                new Pattern(10, "Tye type variable '%s' has multiple 'value' constraints.");
+        public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
+                new Pattern(11, "The type variable '%s' has multiple 'regex' constraints.");
 
         private static final String codePrefix = "QRY";
-        private static final String messagePrefix = "Invalid Query Execution";
+        private static final String messagePrefix = "Invalid Query Pattern";
 
         Pattern(int number, String message) {
             super(codePrefix, number, messagePrefix, message);

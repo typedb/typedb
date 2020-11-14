@@ -49,9 +49,8 @@ public class RelationConstraint extends ThingConstraint {
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
     }
 
-    public static RelationConstraint of(ThingVariable owner,
-                                        graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
-                                        VariableRegistry register) {
+    static RelationConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
+                                 VariableRegistry register) {
         return new RelationConstraint(owner, constraint.players().stream()
                 .map(rp -> RolePlayer.of(rp, register)).collect(toList()));
     }

@@ -36,7 +36,7 @@ public class AbstractConstraint extends TypeConstraint {
         this.hash = Objects.hash(AbstractConstraint.class, this.owner);
     }
 
-    public static AbstractConstraint of(TypeVariable owner) {
+    static AbstractConstraint of(TypeVariable owner) {
         return new AbstractConstraint(owner);
     }
 

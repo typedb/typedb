@@ -42,9 +42,8 @@ public class HasConstraint extends ThingConstraint {
         this.hash = Objects.hash(HasConstraint.class, this.owner, this.attribute);
     }
 
-    public static HasConstraint of(ThingVariable owner,
-                                   graql.lang.pattern.constraint.ThingConstraint.Has constraint,
-                                   VariableRegistry register) {
+    static HasConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Has constraint,
+                            VariableRegistry register) {
         return new HasConstraint(owner, register.register(constraint.attribute()));
     }
 

@@ -40,8 +40,7 @@ public class ValueTypeConstraint extends TypeConstraint {
         this.hash = Objects.hash(ValueTypeConstraint.class, this.owner, this.valueType);
     }
 
-    public static ValueTypeConstraint of(TypeVariable owner,
-                                         graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
+    static ValueTypeConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
         return new ValueTypeConstraint(owner, constraint.valueType());
     }
 

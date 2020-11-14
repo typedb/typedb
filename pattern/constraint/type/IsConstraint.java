@@ -41,10 +41,7 @@ public class IsConstraint extends TypeConstraint {
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
 
-    //TODO perhaps we should throw an error if the type/thing collide
-    public static IsConstraint of(TypeVariable owner,
-                                  ConceptConstraint.Is constraint,
-                                  VariableRegistry registry) {
+    static IsConstraint of(TypeVariable owner, ConceptConstraint.Is constraint, VariableRegistry registry) {
         return new IsConstraint(owner, registry.register(constraint.variable()).asType());
     }
 

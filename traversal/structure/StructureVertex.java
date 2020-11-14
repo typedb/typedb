@@ -28,16 +28,15 @@ import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class StructureVertex {
 
     public final Set<StructureEdge> outgoing;
     public final Set<StructureEdge> incoming;
-    private final Structure structure;
     final Identifier identifier;
 
-    StructureVertex(Identifier identifier, Structure structure) {
-        this.structure = structure;
+    StructureVertex(Identifier identifier) {
         this.identifier = identifier;
         this.outgoing = new HashSet<>();
         this.incoming = new HashSet<>();
@@ -98,9 +97,10 @@ public abstract class StructureVertex {
     public static class Thing extends StructureVertex {
 
         private final Set<VertexProperty.Thing> properties;
+        private VertexProperty.Thing.Isa isa;
 
-        public Thing(Identifier identifier, Structure structure) {
-            super(identifier, structure);
+        Thing(Identifier identifier) {
+            super(identifier);
             this.properties = new HashSet<>();
         }
 
@@ -116,6 +116,10 @@ public abstract class StructureVertex {
         }
 
         public void property(VertexProperty.Thing property) {
+            if (property.isIsa()) {
+                if (isa != null && !isa.equals(property)) throw GraknException.of(ILLEGAL_STATE);
+                isa = property.asIsa();
+            }
             properties.add(property);
         }
     }
@@ -124,8 +128,8 @@ public abstract class StructureVertex {
 
         private final Set<VertexProperty.Type> properties;
 
-        public Type(Identifier identifier, Structure structure) {
-            super(identifier, structure);
+        Type(Identifier identifier) {
+            super(identifier);
             this.properties = new HashSet<>();
         }
 

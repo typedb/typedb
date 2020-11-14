@@ -42,9 +42,7 @@ public class IsConstraint extends ThingConstraint {
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
 
-    public static IsConstraint of(ThingVariable owner,
-                                  ConceptConstraint.Is constraint,
-                                  VariableRegistry registry) {
+    static IsConstraint of(ThingVariable owner, ConceptConstraint.Is constraint, VariableRegistry registry) {
         return new IsConstraint(owner, registry.register(constraint.variable()).asThing());
     }
 
