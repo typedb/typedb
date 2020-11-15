@@ -20,9 +20,8 @@ package grakn.core.traversal.procedure;
 
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
-import grakn.core.traversal.graph.VertexProperty;
 
-abstract class ProcedureVertex<PROPERTY extends VertexProperty> extends TraversalVertex<ProcedureEdge, PROPERTY> {
+abstract class ProcedureVertex<PROPERTY extends TraversalVertex.Property> extends TraversalVertex<ProcedureEdge, PROPERTY> {
 
     private final Procedure procedure;
 

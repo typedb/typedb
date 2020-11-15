@@ -22,14 +22,13 @@ import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
-import grakn.core.traversal.graph.VertexProperty;
 
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-abstract class PlannerVertex<PROPERTY extends VertexProperty> extends TraversalVertex<PlannerEdge, PROPERTY> {
+abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property> extends TraversalVertex<PlannerEdge, PROPERTY> {
 
     private final Planner planner;
     private MPVariable varIsStartingPoint;
@@ -68,11 +67,11 @@ abstract class PlannerVertex<PROPERTY extends VertexProperty> extends TraversalV
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(PlannerVertex.Type.class)));
     }
 
-    static class Thing extends PlannerVertex<VertexProperty.Thing> {
+    static class Thing extends PlannerVertex<TraversalVertex.Property.Thing> {
 
-        private VertexProperty.Thing.IID iid;
-        private VertexProperty.Thing.Isa isa;
-        private Set<VertexProperty.Thing.Value> value;
+        private TraversalVertex.Property.Thing.IID iid;
+        private TraversalVertex.Property.Thing.Isa isa;
+        private Set<TraversalVertex.Property.Thing.Value> value;
 
         Thing(Planner planner, Identifier identifier) {
             super(planner, identifier);
@@ -85,7 +84,7 @@ abstract class PlannerVertex<PROPERTY extends VertexProperty> extends TraversalV
         PlannerVertex.Thing asThing() { return this; }
 
         @Override
-        public void property(VertexProperty.Thing property) {
+        public void property(TraversalVertex.Property.Thing property) {
             if (property.isIndexed()) isIndexed = true;
             if (property.isIndexed()) iid = property.asIID();
             else if (property.isIsa()) isa = property.asIsa();
@@ -94,12 +93,12 @@ abstract class PlannerVertex<PROPERTY extends VertexProperty> extends TraversalV
         }
     }
 
-    static class Type extends PlannerVertex<VertexProperty.Type> {
+    static class Type extends PlannerVertex<TraversalVertex.Property.Type> {
 
-        private VertexProperty.Type.Label label;
-        private VertexProperty.Type.Abstract abstractProp;
-        private VertexProperty.Type.ValueType valueType;
-        private VertexProperty.Type regex;
+        private TraversalVertex.Property.Type.Label label;
+        private TraversalVertex.Property.Type.Abstract abstractProp;
+        private TraversalVertex.Property.Type.ValueType valueType;
+        private TraversalVertex.Property.Type regex;
 
         Type(Planner planner, Identifier identifier) {
             super(planner, identifier);
@@ -113,7 +112,7 @@ abstract class PlannerVertex<PROPERTY extends VertexProperty> extends TraversalV
         public PlannerVertex.Type asType() { return this; }
 
         @Override
-        public void property(VertexProperty.Type property) {
+        public void property(TraversalVertex.Property.Type property) {
             assert property.isIndexed();
             if (property.isLabel()) label = property.asLabel();
             else if (property.isAbstract()) abstractProp = property.asAbstract();

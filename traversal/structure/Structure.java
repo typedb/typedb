@@ -19,7 +19,7 @@
 package grakn.core.traversal.structure;
 
 import grakn.core.traversal.Identifier;
-import grakn.core.traversal.graph.EdgeProperty;
+import grakn.core.traversal.graph.TraversalEdge;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,7 +59,7 @@ public class Structure {
         return vertices.values();
     }
 
-    public void edge(EdgeProperty property, StructureVertex<?> from, StructureVertex<?> to) {
+    public void edge(TraversalEdge.Property property, StructureVertex<?> from, StructureVertex<?> to) {
         StructureEdge edge = new StructureEdge(property, from, to);
         edges.add(edge);
         from.out(edge);

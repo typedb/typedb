@@ -18,12 +18,11 @@
 
 package grakn.core.traversal.planner;
 
-import grakn.core.traversal.graph.EdgeProperty;
 import grakn.core.traversal.graph.TraversalEdge;
 
 class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
-    PlannerEdge(EdgeProperty property, PlannerVertex<?> from, PlannerVertex<?> to) {
+    PlannerEdge(TraversalEdge.Property property, PlannerVertex<?> from, PlannerVertex<?> to) {
         super(property, from, to);
     }
 

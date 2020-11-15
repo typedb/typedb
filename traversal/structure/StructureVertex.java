@@ -21,13 +21,13 @@ package grakn.core.traversal.structure;
 import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
-import grakn.core.traversal.graph.VertexProperty;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public abstract class StructureVertex<PROPERTY extends VertexProperty> extends TraversalVertex<StructureEdge, PROPERTY> {
+public abstract class StructureVertex<PROPERTY extends TraversalVertex.Property>
+        extends TraversalVertex<StructureEdge, PROPERTY> {
 
     StructureVertex(Identifier identifier) {
         super(identifier);
@@ -41,9 +41,9 @@ public abstract class StructureVertex<PROPERTY extends VertexProperty> extends T
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(StructureVertex.Type.class)));
     }
 
-    public static class Thing extends StructureVertex<VertexProperty.Thing> {
+    public static class Thing extends StructureVertex<TraversalVertex.Property.Thing> {
 
-        private VertexProperty.Thing.Isa isa;
+        private TraversalVertex.Property.Thing.Isa isa;
 
         Thing(Identifier identifier) {
             super(identifier);
@@ -56,7 +56,7 @@ public abstract class StructureVertex<PROPERTY extends VertexProperty> extends T
         public StructureVertex.Thing asThing() { return this; }
 
         @Override
-        public void property(VertexProperty.Thing property) {
+        public void property(TraversalVertex.Property.Thing property) {
             if (property.isIsa()) {
                 if (isa != null && !isa.equals(property)) throw GraknException.of(ILLEGAL_STATE);
                 isa = property.asIsa();
@@ -65,7 +65,7 @@ public abstract class StructureVertex<PROPERTY extends VertexProperty> extends T
         }
     }
 
-    public static class Type extends StructureVertex<VertexProperty.Type> {
+    public static class Type extends StructureVertex<TraversalVertex.Property.Type> {
 
         Type(Identifier identifier) {
             super(identifier);
@@ -77,7 +77,7 @@ public abstract class StructureVertex<PROPERTY extends VertexProperty> extends T
         @Override
         public StructureVertex.Type asType() { return this; }
 
-        public void property(VertexProperty.Type property) {
+        public void property(TraversalVertex.Property.Type property) {
             properties.add(property);
         }
     }

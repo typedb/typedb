@@ -18,12 +18,11 @@
 
 package grakn.core.traversal.procedure;
 
-import grakn.core.traversal.graph.EdgeProperty;
 import grakn.core.traversal.graph.TraversalEdge;
 
 class ProcedureEdge extends TraversalEdge<ProcedureVertex<?>> {
 
-    ProcedureEdge(EdgeProperty property, ProcedureVertex<?> from, ProcedureVertex<?> to) {
+    ProcedureEdge(TraversalEdge.Property property, ProcedureVertex<?> from, ProcedureVertex<?> to) {
         super(property, from, to);
     }
 }

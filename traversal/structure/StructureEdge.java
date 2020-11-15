@@ -18,12 +18,11 @@
 
 package grakn.core.traversal.structure;
 
-import grakn.core.traversal.graph.EdgeProperty;
 import grakn.core.traversal.graph.TraversalEdge;
 
 public class StructureEdge extends TraversalEdge<StructureVertex<?>> {
 
-    StructureEdge(EdgeProperty property, StructureVertex<?> from, StructureVertex<?> to) {
+    StructureEdge(TraversalEdge.Property property, StructureVertex<?> from, StructureVertex<?> to) {
         super(property, from, to);
     }
 }
