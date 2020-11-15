@@ -20,7 +20,7 @@ package grakn.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
-import grakn.core.common.concurrent.ManagedBlockingQueue;
+import grakn.core.common.concurrent.ManagedCountDownLatch;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
@@ -56,11 +56,12 @@ public class Planner {
     private final MPSolverParameters parameters;
     private final Map<Identifier, PlannerVertex<?>> vertices;
     private final Set<PlannerEdge> edges;
-    private final ManagedBlockingQueue<Procedure> procedureHolder;
     private final AtomicBoolean isOptimising;
+    private final ManagedCountDownLatch procedureLatch;
+
+    private volatile Procedure procedure;
 
     private MPSolver.ResultStatus resultStatus;
-    private Procedure procedure;
     private boolean isUpToDate;
     private long totalDuration;
     private long snapshot;
@@ -72,7 +73,7 @@ public class Planner {
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         vertices = new HashMap<>();
         edges = new HashSet<>();
-        procedureHolder = new ManagedBlockingQueue<>(1);
+        procedureLatch = new ManagedCountDownLatch(1);
         isOptimising = new AtomicBoolean(false);
         resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
         totalDuration = 0L;
@@ -167,13 +168,12 @@ public class Planner {
     }
 
     public Procedure procedure() {
-        if (procedure == null) {
-            try {
-                procedure = procedureHolder.take();
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            }
+        try {
+            procedureLatch.await();
+        } catch (InterruptedException e) {
+            throw GraknException.of(e);
         }
+        assert procedure != null;
         return procedure;
     }
 
@@ -203,16 +203,11 @@ public class Planner {
     }
 
     private void exportProcedure() {
-        Procedure newPlan = new Procedure();
+        Procedure newProcedure = new Procedure();
 
         // TODO: extract Traversal Procedure from the MPVariables of Traversal Planner
 
-        procedureHolder.clear();
-        try {
-            procedureHolder.put(newPlan);
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
-        }
-        procedure = null;
+        procedure = newProcedure;
+        if (procedureLatch.getCount() > 0) procedureLatch.countDown();
     }
 }

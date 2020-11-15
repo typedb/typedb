@@ -77,7 +77,7 @@ public class ManagedBlockingQueue<E> {
         queue.clear();
     }
 
-    class QueueTaker implements ForkJoinPool.ManagedBlocker {
+    private class QueueTaker implements ForkJoinPool.ManagedBlocker {
 
         private E item = null;
 
@@ -97,7 +97,7 @@ public class ManagedBlockingQueue<E> {
         }
     }
 
-    class QueuePutter implements ForkJoinPool.ManagedBlocker {
+    private class QueuePutter implements ForkJoinPool.ManagedBlocker {
 
         private E item;
 

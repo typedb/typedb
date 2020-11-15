@@ -61,7 +61,7 @@ public class ManagedReadWriteLock {
         localWriteLocker.get().unlock();
     }
 
-    class ReadLocker implements ForkJoinPool.ManagedBlocker {
+    private class ReadLocker implements ForkJoinPool.ManagedBlocker {
 
         boolean hasLock = false;
 
@@ -82,7 +82,7 @@ public class ManagedReadWriteLock {
         }
     }
 
-    class WriteLocker implements ForkJoinPool.ManagedBlocker {
+    private class WriteLocker implements ForkJoinPool.ManagedBlocker {
 
         boolean hasLock = false;
 
