@@ -76,7 +76,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             return false;
         }
 
-        boolean isProperty() {
+        boolean isEncoder() {
             return false;
         }
 
@@ -115,7 +115,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
 
             @Override
             boolean isComparator() {
-                return false;
+                return true;
             }
 
             @Override
@@ -133,26 +133,26 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             }
         }
 
-        public static class Type extends Property {
+        public static class Encoder extends Property {
 
             private final Encoding.Edge encoding;
             private final String[] labels;
             private final boolean isTransitive;
             private final int hash;
 
-            public Type(Encoding.Edge encoding) {
+            public Encoder(Encoding.Edge encoding) {
                 this(encoding, new String[]{}, false);
             }
 
-            public Type(Encoding.Edge encoding, boolean isTransitive) {
+            public Encoder(Encoding.Edge encoding, boolean isTransitive) {
                 this(encoding, new String[]{}, isTransitive);
             }
 
-            public Type(Encoding.Edge encoding, String[] labels) {
+            public Encoder(Encoding.Edge encoding, String[] labels) {
                 this(encoding, labels, false);
             }
 
-            private Type(Encoding.Edge encoding, String[] labels, boolean isTransitive) {
+            private Encoder(Encoding.Edge encoding, String[] labels, boolean isTransitive) {
                 this.encoding = encoding;
                 this.labels = labels;
                 this.isTransitive = isTransitive;
@@ -172,7 +172,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             }
 
             @Override
-            boolean isProperty() {
+            boolean isEncoder() {
                 return true;
             }
 
@@ -181,7 +181,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
 
-                Type that = (Type) o;
+                Encoder that = (Encoder) o;
                 return (this.encoding.equals(that.encoding) &&
                         Arrays.equals(this.labels, that.labels) &&
                         this.isTransitive == that.isTransitive);

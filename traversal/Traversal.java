@@ -100,7 +100,7 @@ public class Traversal {
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-        structure.edge(new TraversalEdge.Property.Type(HAS),
+        structure.edge(new TraversalEdge.Property.Encoder(HAS),
                        structure.thingVertex(thing),
                        structure.thingVertex(attribute));
     }
@@ -110,55 +110,55 @@ public class Traversal {
     }
 
     public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-        structure.edge(new TraversalEdge.Property.Type(ISA, isTransitive),
+        structure.edge(new TraversalEdge.Property.Encoder(ISA, isTransitive),
                        structure.thingVertex(thing),
                        structure.typeVertex(type));
     }
 
     public void relating(Identifier.Variable relation, Identifier.Generated role) {
-        structure.edge(new TraversalEdge.Property.Type(RELATING),
+        structure.edge(new TraversalEdge.Property.Encoder(RELATING),
                        structure.thingVertex(relation),
                        structure.thingVertex(role));
     }
 
     public void playing(Identifier.Variable thing, Identifier.Generated role) {
-        structure.edge(new TraversalEdge.Property.Type(PLAYING),
+        structure.edge(new TraversalEdge.Property.Encoder(PLAYING),
                        structure.thingVertex(thing),
                        structure.thingVertex(role));
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
-        structure.edge(new TraversalEdge.Property.Type(ROLEPLAYER),
+        structure.edge(new TraversalEdge.Property.Encoder(ROLEPLAYER),
                        structure.thingVertex(relation),
                        structure.thingVertex(player));
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, String[] labels) {
-        structure.edge(new TraversalEdge.Property.Type(ROLEPLAYER, labels),
+        structure.edge(new TraversalEdge.Property.Encoder(ROLEPLAYER, labels),
                        structure.thingVertex(relation),
                        structure.thingVertex(player));
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
-        structure.edge(new TraversalEdge.Property.Type(isKey ? OWNS_KEY : OWNS),
+        structure.edge(new TraversalEdge.Property.Encoder(isKey ? OWNS_KEY : OWNS),
                        structure.typeVertex(thingType),
                        structure.typeVertex(attributeType));
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
-        structure.edge(new TraversalEdge.Property.Type(PLAYS),
+        structure.edge(new TraversalEdge.Property.Encoder(PLAYS),
                        structure.typeVertex(thingType),
                        structure.typeVertex(roleType));
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
-        structure.edge(new TraversalEdge.Property.Type(RELATES),
+        structure.edge(new TraversalEdge.Property.Encoder(RELATES),
                        structure.typeVertex(relationType),
                        structure.typeVertex(roleType));
     }
 
     public void sub(Identifier.Variable subType, Identifier.Variable superType, boolean isTransitive) {
-        structure.edge(new TraversalEdge.Property.Type(SUB, isTransitive),
+        structure.edge(new TraversalEdge.Property.Encoder(SUB, isTransitive),
                        structure.typeVertex(subType),
                        structure.typeVertex(superType));
     }
