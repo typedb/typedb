@@ -26,6 +26,7 @@ import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.structure.Structure;
+import grakn.core.traversal.structure.StructureEdge;
 import grakn.core.traversal.structure.StructureVertex;
 
 import java.util.HashMap;
@@ -64,7 +65,7 @@ public class Planner {
     private long totalDuration;
     private long snapshot;
 
-    public Planner() {
+    private Planner() {
         solver = MPSolver.createSolver("SCIP");
         parameters = new MPSolverParameters();
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
@@ -79,34 +80,42 @@ public class Planner {
 
     public static Planner create(Structure structure) {
         Planner planner = new Planner();
-        Set<StructureVertex<?>> registered = new HashSet<>();
-        structure.vertices().forEach(vertex -> planner.register(vertex, registered));
+        Set<StructureVertex<?>> registeredVertices = new HashSet<>();
+        Set<StructureEdge> registeredEdges = new HashSet<>();
+        structure.vertices().forEach(vertex -> planner.register(vertex, registeredVertices, registeredEdges));
         planner.initialise();
         return planner;
     }
 
-    private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registered) {
-        if (registered.contains(structureVertex)) return;
+    private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
+                          Set<StructureEdge> registeredEdges) {
+        if (registeredVertices.contains(structureVertex)) return;
+        registeredVertices.add(structureVertex);
         List<StructureVertex<?>> adjacents = new LinkedList<>();
         PlannerVertex<?> vertex = vertex(structureVertex);
         if (vertex.isThing()) structureVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
         else structureVertex.asType().properties().forEach(p -> vertex.asType().property(p));
         structureVertex.outs().forEach(structureEdge -> {
-            adjacents.add(structureEdge.to());
-            PlannerVertex<?> to = vertex(structureEdge.to());
-            PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, to);
-            vertex.out(edge);
-            to.in(edge);
+            if (!registeredEdges.contains(structureEdge)) {
+                registeredEdges.add(structureEdge);
+                adjacents.add(structureEdge.to());
+                PlannerVertex<?> to = vertex(structureEdge.to());
+                PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, to);
+                vertex.out(edge);
+                to.in(edge);
+            }
         });
         structureVertex.ins().forEach(structureEdge -> {
-            adjacents.add(structureEdge.from());
-            PlannerVertex<?> from = vertex(structureEdge.from());
-            PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, from);
-            vertex.in(edge);
-            from.out(edge);
+            if (!registeredEdges.contains(structureEdge)) {
+                registeredEdges.add(structureEdge);
+                adjacents.add(structureEdge.from());
+                PlannerVertex<?> from = vertex(structureEdge.from());
+                PlannerEdge edge = new PlannerEdge(structureEdge.property(), from, vertex);
+                vertex.in(edge);
+                from.out(edge);
+            }
         });
-        registered.add(structureVertex);
-        adjacents.forEach(v -> register(v, registered));
+        adjacents.forEach(v -> register(v, registeredVertices, registeredEdges));
     }
 
     private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
@@ -115,11 +124,15 @@ public class Planner {
     }
 
     private PlannerVertex.Thing thingVertex(StructureVertex.Thing structureVertex) {
-        return vertices.computeIfAbsent(structureVertex.identifier(), i -> new PlannerVertex.Thing(this, i)).asThing();
+        return vertices.computeIfAbsent(
+                structureVertex.identifier(), i -> new PlannerVertex.Thing(this, i)
+        ).asThing();
     }
 
     private PlannerVertex.Type typeVertex(StructureVertex.Type structureVertex) {
-        return vertices.computeIfAbsent(structureVertex.identifier(), i -> new PlannerVertex.Type(this, i)).asType();
+        return vertices.computeIfAbsent(
+                structureVertex.identifier(), i -> new PlannerVertex.Type(this, i)
+        ).asType();
     }
 
     private void initialise() {

@@ -22,8 +22,12 @@ import grakn.core.traversal.graph.TraversalEdge;
 
 class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
+    private final Planner planner;
+
     PlannerEdge(TraversalEdge.Property property, PlannerVertex<?> from, PlannerVertex<?> to) {
         super(property, from, to);
+        this.planner = from.planner();
+        assert this.planner.equals(to.planner());
     }
 
     void initialiseVariables() {

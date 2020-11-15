@@ -70,33 +70,35 @@ public class Structure {
         if (structures == null) {
             structures = new ArrayList<>();
             while (!vertices.isEmpty()) {
-                Structure newPattern = new Structure();
-                splitGraph(vertices.values().iterator().next(), newPattern);
-                structures.add(newPattern);
+                Structure newStructure = new Structure();
+                splitGraph(vertices.values().iterator().next(), newStructure);
+                structures.add(newStructure);
             }
         }
         return structures;
     }
 
-    private void splitGraph(StructureVertex<?> vertex, Structure newPattern) {
+    private void splitGraph(StructureVertex<?> vertex, Structure newStructure) {
         if (!vertices.containsKey(vertex.identifier())) return;
 
         this.vertices.remove(vertex.identifier());
-        newPattern.vertices.put(vertex.identifier(), vertex);
+        newStructure.vertices.put(vertex.identifier(), vertex);
+        List<StructureVertex<?>> adjacents = new ArrayList<>();
         vertex.outs().forEach(outgoing -> {
             if (this.edges.contains(outgoing)) {
                 this.edges.remove(outgoing);
-                newPattern.edges.add(outgoing);
-                splitGraph(outgoing.to(), newPattern);
+                newStructure.edges.add(outgoing);
+                adjacents.add(outgoing.to());
             }
         });
         vertex.ins().forEach(incoming -> {
             if (this.edges.contains(incoming)) {
                 this.edges.remove(incoming);
-                newPattern.edges.add(incoming);
-                splitGraph(incoming.from(), newPattern);
+                newStructure.edges.add(incoming);
+                adjacents.add(incoming.from());
             }
         });
+        adjacents.forEach(v -> splitGraph(v, newStructure));
     }
 
     @Override

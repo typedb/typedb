@@ -35,16 +35,20 @@ abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property> extends 
     private MPVariable varHasIncomingEdges;
     private MPVariable varHasOutgoingEdges;
     private boolean isInitialised;
-    boolean isIndexed;
+    boolean hasIndex;
 
     PlannerVertex(Planner planner, Identifier identifier) {
         super(identifier);
         this.planner = planner;
-        this.isIndexed = false;
+        this.hasIndex = false;
     }
 
-    boolean isIndexed() {
-        return isIndexed;
+    Planner planner() {
+        return planner;
+    }
+
+    boolean hasIndex() {
+        return hasIndex;
     }
 
     boolean isInitialised() {
@@ -85,7 +89,7 @@ abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property> extends 
 
         @Override
         public void property(TraversalVertex.Property.Thing property) {
-            if (property.isIndexed()) isIndexed = true;
+            if (property.isIndexed()) hasIndex = true;
             if (property.isIndexed()) iid = property.asIID();
             else if (property.isIsa()) isa = property.asIsa();
             else if (property.isValue()) value.add(property.asValue());
@@ -102,7 +106,7 @@ abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property> extends 
 
         Type(Planner planner, Identifier identifier) {
             super(planner, identifier);
-            this.isIndexed = true; // VertexProperty.Type is always indexed
+            this.hasIndex = true; // VertexProperty.Type is always indexed
         }
 
         @Override
