@@ -18,8 +18,12 @@
 
 package grakn.core.graph.vertex;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
+
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Vertex> {
 
@@ -38,6 +42,30 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
     void delete();
 
     boolean isDeleted();
+
+    default boolean isThing() { return false; }
+
+    default boolean isType() { return false; }
+
+    default boolean isRule() { return false; }
+
+    default boolean isSchema() { return false; }
+
+    default ThingVertex asThing() {
+        throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(ThingVertex.class)));
+    }
+
+    default TypeVertex asType() {
+        throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(TypeVertex.class)));
+    }
+
+    default RuleVertex asRule() {
+        throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(RuleVertex.class)));
+    }
+
+    default SchemaVertex<?, ?> asSchema() {
+        throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(SchemaVertex.class)));
+    }
 
     /**
      * Commits this {@code ThingVertex} to be persisted onto storage.

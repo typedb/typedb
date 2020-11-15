@@ -42,8 +42,4 @@ public interface SchemaVertex<
     String label();
 
     void label(String label);
-
-    TypeVertex asType();
-
-    RuleVertex asRule();
 }

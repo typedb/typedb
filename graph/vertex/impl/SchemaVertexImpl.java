@@ -18,18 +18,13 @@
 
 package grakn.core.graph.vertex.impl;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.SchemaVertex;
-import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_VERTEX_CASTING;
 
 
 public abstract class SchemaVertexImpl<
@@ -51,14 +46,6 @@ public abstract class SchemaVertexImpl<
         this.outs = newAdjacency(Encoding.Direction.OUT);
         this.ins = newAdjacency(Encoding.Direction.IN);
         this.isDeleted = new AtomicBoolean(false);
-    }
-
-    public TypeVertex asType() {
-        throw new GraknException(INVALID_SCHEMA_VERTEX_CASTING.message(TypeVertex.class.getCanonicalName()));
-    }
-
-    public RuleVertex asRule() {
-        throw new GraknException(INVALID_SCHEMA_VERTEX_CASTING.message(RuleVertex.class.getCanonicalName()));
     }
 
     /**

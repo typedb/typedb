@@ -19,7 +19,6 @@
 package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
-import grakn.core.graph.vertex.Vertex;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
@@ -37,12 +36,12 @@ public class ConceptMap implements Answer {
         this.concepts = concepts;
     }
 
-    public static ConceptMap of(Map<Reference, Vertex<?, ?>> vertexMap) {
-        return null; // TODO
-    }
-
     public boolean contains(Reference variable) {
         return concepts.containsKey(variable);
+    }
+
+    public Concept get(String variable) {
+        return get(Reference.named(variable));
     }
 
     public Concept get(Reference variable) {

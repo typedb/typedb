@@ -132,14 +132,10 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public boolean isAttribute() {
-        return true;
-    }
+    public boolean isAttribute() { return true; }
 
     @Override
-    public AttributeVertexImpl<?> asAttribute() {
-        return this;
-    }
+    public AttributeVertexImpl<?> asAttribute() { return this; }
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {

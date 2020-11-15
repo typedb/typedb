@@ -268,12 +268,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class SchemaGraph extends ErrorMessage {
         public static final SchemaGraph INVALID_SCHEMA_IID_CASTING =
                 new SchemaGraph(1, "Invalid Schema IID cast to '%s'.");
-        public static final SchemaGraph INVALID_SCHEMA_IID =
-                new SchemaGraph(2, "IID '%s' is not a known Schema IID");
-        public static final SchemaGraph INVALID_SCHEMA_VERTEX_CASTING =
-                new SchemaGraph(3, "Invalid SchemaVertex cast to '%s'.");
         public static final SchemaGraph INVALID_SCHEMA_WRITE =
-                new SchemaGraph(4, "The label '%s' is already in use in the schema graph.");
+                new SchemaGraph(2, "The label '%s' is already in use in the schema graph.");
 
         private static final String codePrefix = "SCG";
         private static final String messagePrefix = "Invalid Schema Graph Operation";

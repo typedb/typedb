@@ -18,13 +18,14 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.iterator.ParallelIterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.traversal.TraversalEngine;
+
+import java.util.Collections;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -34,9 +35,11 @@ import static grakn.core.common.iterator.Iterators.parallel;
 public class Reasoner {
 
     private final TraversalEngine traversalEng;
+    private final ConceptManager conceptMgr;
 
     public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr) {
         this.traversalEng = traversalEng;
+        this.conceptMgr = conceptMgr;
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
@@ -50,7 +53,7 @@ public class Reasoner {
     public ResourceIterator<ConceptMap> execute(Conjunction conjunction) {
         Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
         ResourceIterator<ConceptMap> answers = link(list(
-                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(ConceptMap::of),
+                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap),
                 infer(conjunctionResolvedTypes)
         ));
 
@@ -61,14 +64,14 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(Conjunction conjunction, ConceptMap bounds) {
-        return null; // TODO
+        return iterate(Collections.emptyIterator()); // TODO
     }
 
     private Conjunction resolveTypes(Conjunction conjunction) {
         return conjunction; // TODO
     }
 
-    private ParallelIterators<ConceptMap> infer(Conjunction conjunction) {
-        return null; // TODO
+    private ResourceIterator<ConceptMap> infer(Conjunction conjunction) {
+        return iterate(Collections.emptyIterator()); // TODO
     }
 }

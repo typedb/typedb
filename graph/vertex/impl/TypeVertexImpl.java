@@ -55,6 +55,10 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         return iid.encoding();
     }
 
+    @Override
+    public boolean isType() { return true; }
+
+    @Override
     public TypeVertex asType() { return this; }
 
     @Override

@@ -62,7 +62,6 @@ public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-    private static final int MAX_THREADS_X_2 = MAX_THREADS * 2;
 
     private final Grakn grakn;
     private final Server server;
@@ -78,7 +77,6 @@ public class GraknServer implements AutoCloseable {
             LOG.info("Running Grakn Core Server in debug mode.");
         }
 
-        CommonExecutorService.init(MAX_THREADS_X_2);
         grakn = RocksGrakn.open(options.dataDir());
         graknRPCService = new GraknRPCService(grakn);
 

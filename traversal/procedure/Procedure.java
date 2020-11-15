@@ -25,8 +25,11 @@ import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Procedure {
 
@@ -37,6 +40,6 @@ public class Procedure {
     }
 
     public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
-        return null; // TODO
+        return iterate(Collections.emptyIterator()); // TODO
     }
 }

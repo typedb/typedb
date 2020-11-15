@@ -127,9 +127,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public boolean isAttribute() {
-        return false;
-    }
+    public boolean isThing() { return true; }
+
+    @Override
+    public boolean isAttribute() { return false; }
+
+    @Override
+    public ThingVertex asThing() { return this; }
 
     @Override
     public AttributeVertexImpl<?> asAttribute() {

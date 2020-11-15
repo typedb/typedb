@@ -65,8 +65,6 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         graph.delete(this);
     }
 
-    public RuleVertex asRule() { return this; }
-
     @Override
     public void when(Conjunction<? extends Pattern> when) {
         this.when = when;
@@ -77,6 +75,11 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         this.then = then;
     }
 
+    @Override
+    public boolean isRule() { return true; }
+
+    @Override
+    public RuleVertex asRule() { return this; }
 
     public static class Buffered extends RuleVertexImpl {
 

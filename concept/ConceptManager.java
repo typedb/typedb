@@ -19,6 +19,7 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.schema.Rule;
 import grakn.core.concept.schema.impl.RuleImpl;
 import grakn.core.concept.thing.Thing;
@@ -42,10 +43,13 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
@@ -57,6 +61,18 @@ public final class ConceptManager {
 
     public ConceptManager(GraphManager graphMgr) {
         this.graphMgr = graphMgr;
+    }
+
+    public ConceptMap conceptMap(Map<Reference, Vertex<?, ?>> vertexMap) {
+        Map<Reference, Concept> map = new HashMap<>();
+        vertexMap.forEach((r, v) -> {
+            if (!r.isName()) throw GraknException.of(ILLEGAL_STATE);
+            if (v.isThing()) map.put(r, ThingImpl.of(v.asThing()));
+            else if (v.isType()) map.put(r, TypeImpl.of(graphMgr, v.asType()));
+            else throw GraknException.of(ILLEGAL_STATE);
+            // TODO: introduce QueryableVertex that only abstracts thing and type
+        });
+        return new ConceptMap(map);
     }
 
     public ThingType getRootThingType() {

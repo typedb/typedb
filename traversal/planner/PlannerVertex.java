@@ -23,6 +23,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
@@ -75,10 +76,11 @@ abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property> extends 
 
         private TraversalVertex.Property.Thing.IID iid;
         private TraversalVertex.Property.Thing.Isa isa;
-        private Set<TraversalVertex.Property.Thing.Value> value;
+        private final Set<TraversalVertex.Property.Thing.Value> value;
 
         Thing(Planner planner, Identifier identifier) {
             super(planner, identifier);
+            this.value = new HashSet<>();
         }
 
         @Override
