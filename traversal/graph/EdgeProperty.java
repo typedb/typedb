@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.traversal.property;
+package grakn.core.traversal.graph;
 
 import grakn.core.graph.util.Encoding;
 import graql.lang.common.GraqlToken;

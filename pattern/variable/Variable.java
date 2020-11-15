@@ -25,6 +25,7 @@ import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
@@ -33,9 +34,11 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 public abstract class Variable implements Pattern {
 
     private final Identifier.Variable identifier;
+    private final int hash;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
+        this.hash = Objects.hash(identifier);
     }
 
     public abstract Set<? extends Constraint> constraints();
@@ -79,6 +82,6 @@ public abstract class Variable implements Pattern {
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return hash;
     }
 }

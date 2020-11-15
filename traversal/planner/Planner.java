@@ -57,6 +57,7 @@ public class Planner {
     private final Set<PlannerEdge> edges;
     private final ManagedBlockingQueue<Procedure> procedureHolder;
     private final AtomicBoolean isOptimising;
+
     private MPSolver.ResultStatus resultStatus;
     private Procedure procedure;
     private boolean isUpToDate;
@@ -78,15 +79,15 @@ public class Planner {
 
     public static Planner create(Structure structure) {
         Planner planner = new Planner();
-        Set<StructureVertex> registered = new HashSet<>();
+        Set<StructureVertex<?>> registered = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.register(vertex, registered));
         planner.initialise();
         return planner;
     }
 
-    private void register(StructureVertex structureVertex, Set<StructureVertex> registered) {
+    private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registered) {
         if (registered.contains(structureVertex)) return;
-        List<StructureVertex> adjacents = new LinkedList<>();
+        List<StructureVertex<?>> adjacents = new LinkedList<>();
         PlannerVertex vertex = vertex(structureVertex);
         if (vertex.isThing()) structureVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
         else structureVertex.asType().properties().forEach(p -> vertex.asType().property(p));
@@ -108,7 +109,7 @@ public class Planner {
         adjacents.forEach(v -> register(v, registered));
     }
 
-    private PlannerVertex vertex(StructureVertex structureVertex) {
+    private PlannerVertex vertex(StructureVertex<?> structureVertex) {
         if (structureVertex.isThing()) return thingVertex(structureVertex.asThing());
         else return typeVertex(structureVertex.asType());
     }
@@ -122,8 +123,10 @@ public class Planner {
     }
 
     private void initialise() {
-        vertices.values().forEach(PlannerVertex::initialise);
-        edges.forEach(PlannerEdge::initialise);
+        vertices.values().forEach(PlannerVertex::initialiseVariables);
+        edges.forEach(PlannerEdge::initialiseVariables);
+        vertices.values().forEach(PlannerVertex::initialiseConstraints);
+        edges.forEach(PlannerEdge::initialiseConstraints);
     }
 
     MPSolver solver() {

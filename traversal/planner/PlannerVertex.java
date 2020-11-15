@@ -21,7 +21,7 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
-import grakn.core.traversal.property.VertexProperty;
+import grakn.core.traversal.graph.VertexProperty;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -32,16 +32,15 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 abstract class PlannerVertex {
 
-    final Planner planner;
-    final Identifier identifier;
-    final Set<PlannerEdge> outgoing;
-    final Set<PlannerEdge> incoming;
-    boolean isIndexed;
-
-    private boolean isInitialised;
+    private final Planner planner;
+    private final Identifier identifier;
+    private final Set<PlannerEdge> outgoing;
+    private final Set<PlannerEdge> incoming;
     private MPVariable varIsStartingPoint;
-    private MPVariable varHasIncomingEdge;
-    private MPVariable varHasOutgoingEdge;
+    private MPVariable varHasIncomingEdges;
+    private MPVariable varHasOutgoingEdges;
+    private boolean isInitialised;
+    boolean isIndexed;
 
     PlannerVertex(Planner planner, Identifier identifier) {
         this.planner = planner;
@@ -97,8 +96,12 @@ abstract class PlannerVertex {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(PlannerVertex.Type.class)));
     }
 
-    void initialise() {
-        // TODO
+    void initialiseVariables() {
+
+    }
+
+    void initialiseConstraints() {
+
     }
 
     @Override
@@ -107,12 +110,12 @@ abstract class PlannerVertex {
         if (o == null || getClass() != o.getClass()) return false;
 
         PlannerVertex that = (PlannerVertex) o;
-        return (this.identifier.equals(that.identifier) && Objects.equals(this.properties(), that.properties()));
+        return this.identifier.equals(that.identifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, properties());
+        return Objects.hash(identifier);
     }
 
     static class Thing extends PlannerVertex {

@@ -19,7 +19,7 @@
 package grakn.core.traversal.structure;
 
 import grakn.core.traversal.Identifier;
-import grakn.core.traversal.property.EdgeProperty;
+import grakn.core.traversal.graph.EdgeProperty;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +32,7 @@ import java.util.Set;
 
 public class Structure {
 
-    private final Map<Identifier, StructureVertex> vertices;
+    private final Map<Identifier, StructureVertex<?>> vertices;
     private final Set<StructureEdge> edges;
     private int generatedIdentifierCount;
     private List<Structure> structures;
@@ -55,11 +55,11 @@ public class Structure {
         return Identifier.Generated.of(generatedIdentifierCount++);
     }
 
-    public Collection<StructureVertex> vertices() {
+    public Collection<StructureVertex<?>> vertices() {
         return vertices.values();
     }
 
-    public void edge(EdgeProperty property, StructureVertex from, StructureVertex to) {
+    public void edge(EdgeProperty property, StructureVertex<?> from, StructureVertex<?> to) {
         StructureEdge edge = new StructureEdge(property, from, to);
         edges.add(edge);
         from.out(edge);
@@ -78,7 +78,7 @@ public class Structure {
         return structures;
     }
 
-    private void splitGraph(StructureVertex vertex, Structure newPattern) {
+    private void splitGraph(StructureVertex<?> vertex, Structure newPattern) {
         if (!vertices.containsKey(vertex.identifier())) return;
 
         this.vertices.remove(vertex.identifier());

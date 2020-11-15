@@ -20,56 +20,17 @@ package grakn.core.traversal.structure;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
-import grakn.core.traversal.property.VertexProperty;
-
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import grakn.core.traversal.graph.TraversalVertex;
+import grakn.core.traversal.graph.VertexProperty;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public abstract class StructureVertex {
-
-    public final Set<StructureEdge> outgoing;
-    public final Set<StructureEdge> incoming;
-    final Identifier identifier;
+public abstract class StructureVertex<PROPERTY extends VertexProperty> extends TraversalVertex<StructureEdge, PROPERTY> {
 
     StructureVertex(Identifier identifier) {
-        this.identifier = identifier;
-        this.outgoing = new HashSet<>();
-        this.incoming = new HashSet<>();
-    }
-
-    public abstract Set<? extends VertexProperty> properties();
-
-    void out(StructureEdge edge) {
-        outgoing.add(edge);
-    }
-
-    void in(StructureEdge edge) {
-        incoming.add(edge);
-    }
-
-    public Set<StructureEdge> outs() {
-        return outgoing;
-    }
-
-    public Set<StructureEdge> ins() {
-        return incoming;
-    }
-
-    public Identifier identifier() {
-        return identifier;
-    }
-
-    public boolean isThing() {
-        return false;
-    }
-
-    public boolean isType() {
-        return false;
+        super(identifier);
     }
 
     public StructureVertex.Thing asThing() {
@@ -80,28 +41,12 @@ public abstract class StructureVertex {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(StructureVertex.Type.class)));
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public static class Thing extends StructureVertex<VertexProperty.Thing> {
 
-        StructureVertex.Thing that = (StructureVertex.Thing) o;
-        return (this.identifier.equals(that.identifier) && Objects.equals(this.properties(), that.properties()));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(identifier, this.properties());
-    }
-
-    public static class Thing extends StructureVertex {
-
-        private final Set<VertexProperty.Thing> properties;
         private VertexProperty.Thing.Isa isa;
 
         Thing(Identifier identifier) {
             super(identifier);
-            this.properties = new HashSet<>();
         }
 
         @Override
@@ -111,10 +56,6 @@ public abstract class StructureVertex {
         public StructureVertex.Thing asThing() { return this; }
 
         @Override
-        public Set<VertexProperty.Thing> properties() {
-            return properties;
-        }
-
         public void property(VertexProperty.Thing property) {
             if (property.isIsa()) {
                 if (isa != null && !isa.equals(property)) throw GraknException.of(ILLEGAL_STATE);
@@ -124,13 +65,10 @@ public abstract class StructureVertex {
         }
     }
 
-    public static class Type extends StructureVertex {
-
-        private final Set<VertexProperty.Type> properties;
+    public static class Type extends StructureVertex<VertexProperty.Type> {
 
         Type(Identifier identifier) {
             super(identifier);
-            this.properties = new HashSet<>();
         }
 
         @Override
@@ -138,11 +76,6 @@ public abstract class StructureVertex {
 
         @Override
         public StructureVertex.Type asType() { return this; }
-
-        @Override
-        public Set<VertexProperty.Type> properties() {
-            return properties;
-        }
 
         public void property(VertexProperty.Type property) {
             properties.add(property);

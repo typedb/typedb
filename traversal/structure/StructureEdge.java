@@ -18,50 +18,12 @@
 
 package grakn.core.traversal.structure;
 
-import grakn.core.traversal.property.EdgeProperty;
+import grakn.core.traversal.graph.EdgeProperty;
+import grakn.core.traversal.graph.TraversalEdge;
 
-import java.util.Objects;
+public class StructureEdge extends TraversalEdge<StructureVertex<?>> {
 
-public class StructureEdge {
-
-    private final EdgeProperty property;
-    private final StructureVertex from;
-    private final StructureVertex to;
-    private final int hash;
-
-    StructureEdge(EdgeProperty property, StructureVertex from, StructureVertex to) {
-        this.property = property;
-        this.from = from;
-        this.to = to;
-        this.hash = Objects.hash(this.property, this.from, this.to);
+    StructureEdge(EdgeProperty property, StructureVertex<?> from, StructureVertex<?> to) {
+        super(property, from, to);
     }
-
-    public EdgeProperty property() {
-        return property;
-    }
-
-    public StructureVertex from() {
-        return from;
-    }
-
-    public StructureVertex to() {
-        return to;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-
-        StructureEdge that = (StructureEdge) object;
-        return (this.property.equals(that.property) &&
-                this.from.equals(that.from) &&
-                this.to.equals(that.to));
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
-    }
-
 }
