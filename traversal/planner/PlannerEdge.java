@@ -19,29 +19,12 @@
 package grakn.core.traversal.planner;
 
 import grakn.core.traversal.graph.EdgeProperty;
+import grakn.core.traversal.graph.TraversalEdge;
 
-import java.util.Objects;
+class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
-class PlannerEdge {
-
-    private final EdgeProperty property;
-    private final PlannerVertex from;
-    private final PlannerVertex to;
-    private final int hash;
-
-    PlannerEdge(EdgeProperty property, PlannerVertex from, PlannerVertex to) {
-        this.property = property;
-        this.from = from;
-        this.to = to;
-        this.hash = Objects.hash(this.property, this.from, this.to);
-    }
-
-    PlannerVertex from() {
-        return from;
-    }
-
-    PlannerVertex to() {
-        return to;
+    PlannerEdge(EdgeProperty property, PlannerVertex<?> from, PlannerVertex<?> to) {
+        super(property, from, to);
     }
 
     void initialiseVariables() {
@@ -50,21 +33,5 @@ class PlannerEdge {
 
     void initialiseConstraints() {
 
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-
-        final PlannerEdge that = (PlannerEdge) object;
-        return (this.property.equals(that.property) &&
-                this.from.equals(that.from) &&
-                this.to.equals(that.to));
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
     }
 }

@@ -21,6 +21,7 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.traversal.Identifier;
+import grakn.core.traversal.graph.TraversalVertex;
 import grakn.core.traversal.graph.VertexProperty;
 
 import java.util.HashSet;
@@ -30,12 +31,9 @@ import java.util.Set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-abstract class PlannerVertex {
+abstract class PlannerVertex<PROPERTY extends VertexProperty> extends TraversalVertex<PlannerEdge, PROPERTY> {
 
     private final Planner planner;
-    private final Identifier identifier;
-    private final Set<PlannerEdge> outgoing;
-    private final Set<PlannerEdge> incoming;
     private MPVariable varIsStartingPoint;
     private MPVariable varHasIncomingEdges;
     private MPVariable varHasOutgoingEdges;
@@ -43,21 +41,9 @@ abstract class PlannerVertex {
     boolean isIndexed;
 
     PlannerVertex(Planner planner, Identifier identifier) {
+        super(identifier);
         this.planner = planner;
-        this.identifier = identifier;
-        this.outgoing = new HashSet<>();
-        this.incoming = new HashSet<>();
         this.isIndexed = false;
-    }
-
-    abstract Set<? extends VertexProperty> properties();
-
-    void out(PlannerEdge edge) {
-        outgoing.add(edge);
-    }
-
-    void in(PlannerEdge edge) {
-        incoming.add(edge);
     }
 
     boolean isIndexed() {
@@ -68,24 +54,12 @@ abstract class PlannerVertex {
         return isInitialised;
     }
 
-    Identifier identifier() {
-        return identifier;
+    void initialiseVariables() {
+
     }
 
-    Set<PlannerEdge> outs() {
-        return outgoing;
-    }
+    void initialiseConstraints() {
 
-    Set<PlannerEdge> ins() {
-        return incoming;
-    }
-
-    boolean isThing() {
-        return false;
-    }
-
-    boolean isType() {
-        return false;
     }
 
     PlannerVertex.Thing asThing() {
@@ -96,56 +70,24 @@ abstract class PlannerVertex {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(PlannerVertex.Type.class)));
     }
 
-    void initialiseVariables() {
+    static class Thing extends PlannerVertex<VertexProperty.Thing> {
 
-    }
-
-    void initialiseConstraints() {
-
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        PlannerVertex that = (PlannerVertex) o;
-        return this.identifier.equals(that.identifier);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(identifier);
-    }
-
-    static class Thing extends PlannerVertex {
-
-        private final Set<VertexProperty.Thing> properties;
         private VertexProperty.Thing.IID iid;
         private VertexProperty.Thing.Isa isa;
         private Set<VertexProperty.Thing.Value> value;
 
         Thing(Planner planner, Identifier identifier) {
             super(planner, identifier);
-            this.properties = new HashSet<>();
         }
 
         @Override
-        boolean isThing() {
-            return true;
-        }
+        public boolean isThing() { return true; }
 
         @Override
-        PlannerVertex.Thing asThing() {
-            return this;
-        }
+        PlannerVertex.Thing asThing() { return this; }
 
         @Override
-        Set<VertexProperty.Thing> properties() {
-            return properties;
-        }
-
-        void property(VertexProperty.Thing property) {
+        public void property(VertexProperty.Thing property) {
             if (property.isIndexed()) isIndexed = true;
             if (property.isIndexed()) iid = property.asIID();
             else if (property.isIsa()) isa = property.asIsa();
@@ -154,9 +96,8 @@ abstract class PlannerVertex {
         }
     }
 
-    static class Type extends PlannerVertex {
+    static class Type extends PlannerVertex<VertexProperty.Type> {
 
-        private final Set<VertexProperty.Type> properties;
         private VertexProperty.Type.Label label;
         private VertexProperty.Type.Abstract abstractProp;
         private VertexProperty.Type.ValueType valueType;
@@ -164,26 +105,17 @@ abstract class PlannerVertex {
 
         Type(Planner planner, Identifier identifier) {
             super(planner, identifier);
-            this.properties = new HashSet<>();
             this.isIndexed = true; // VertexProperty.Type is always indexed
         }
 
         @Override
-        public boolean isType() {
-            return true;
-        }
+        public boolean isType() { return true; }
 
         @Override
-        public PlannerVertex.Type asType() {
-            return this;
-        }
+        public PlannerVertex.Type asType() { return this; }
 
         @Override
-        Set<VertexProperty.Type> properties() {
-            return properties;
-        }
-
-        void property(VertexProperty.Type property) {
+        public void property(VertexProperty.Type property) {
             assert property.isIndexed();
             if (property.isLabel()) label = property.asLabel();
             else if (property.isAbstract()) abstractProp = property.asAbstract();

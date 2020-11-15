@@ -53,7 +53,7 @@ public class Planner {
 
     private final MPSolver solver;
     private final MPSolverParameters parameters;
-    private final Map<Identifier, PlannerVertex> vertices;
+    private final Map<Identifier, PlannerVertex<?>> vertices;
     private final Set<PlannerEdge> edges;
     private final ManagedBlockingQueue<Procedure> procedureHolder;
     private final AtomicBoolean isOptimising;
@@ -88,19 +88,19 @@ public class Planner {
     private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registered) {
         if (registered.contains(structureVertex)) return;
         List<StructureVertex<?>> adjacents = new LinkedList<>();
-        PlannerVertex vertex = vertex(structureVertex);
+        PlannerVertex<?> vertex = vertex(structureVertex);
         if (vertex.isThing()) structureVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
         else structureVertex.asType().properties().forEach(p -> vertex.asType().property(p));
         structureVertex.outs().forEach(structureEdge -> {
             adjacents.add(structureEdge.to());
-            PlannerVertex to = vertex(structureEdge.to());
+            PlannerVertex<?> to = vertex(structureEdge.to());
             PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, to);
             vertex.out(edge);
             to.in(edge);
         });
         structureVertex.ins().forEach(structureEdge -> {
             adjacents.add(structureEdge.from());
-            PlannerVertex from = vertex(structureEdge.from());
+            PlannerVertex<?> from = vertex(structureEdge.from());
             PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, from);
             vertex.in(edge);
             from.out(edge);
@@ -109,7 +109,7 @@ public class Planner {
         adjacents.forEach(v -> register(v, registered));
     }
 
-    private PlannerVertex vertex(StructureVertex<?> structureVertex) {
+    private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
         if (structureVertex.isThing()) return thingVertex(structureVertex.asThing());
         else return typeVertex(structureVertex.asType());
     }
