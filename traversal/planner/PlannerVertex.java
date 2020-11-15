@@ -24,8 +24,6 @@ import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 import grakn.core.traversal.graph.VertexProperty;
 
-import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;

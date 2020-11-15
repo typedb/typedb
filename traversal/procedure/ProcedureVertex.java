@@ -19,55 +19,15 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.traversal.Identifier;
+import grakn.core.traversal.graph.TraversalVertex;
+import grakn.core.traversal.graph.VertexProperty;
 
-import java.util.HashSet;
-import java.util.Set;
+abstract class ProcedureVertex<PROPERTY extends VertexProperty> extends TraversalVertex<ProcedureEdge, PROPERTY> {
 
-class ProcedureVertex {
-
-    private final Identifier identifier;
     private final Procedure procedure;
-    private final Set<ProcedureEdge> outgoing;
-    private final Set<ProcedureEdge> incoming;
 
     ProcedureVertex(Identifier identifier, Procedure procedure) {
-        this.identifier = identifier;
+        super(identifier);
         this.procedure = procedure;
-        this.outgoing = new HashSet<>();
-        this.incoming = new HashSet<>();
-    }
-
-    void out(ProcedureEdge edge) {
-        // TODO
-    }
-
-    void in(ProcedureEdge edge) {
-        // TODO
-    }
-
-    Set<ProcedureEdge> outs() {
-        return outgoing;
-    }
-
-    Set<ProcedureEdge> ins() {
-        return incoming;
-    }
-
-    Identifier identifier() {
-        return identifier;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ProcedureVertex that = (ProcedureVertex) o;
-        return this.identifier.equals(that.identifier);
-    }
-
-    @Override
-    public int hashCode() {
-        return identifier.hashCode();
     }
 }

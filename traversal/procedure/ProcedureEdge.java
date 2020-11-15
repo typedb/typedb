@@ -18,40 +18,12 @@
 
 package grakn.core.traversal.procedure;
 
-import java.util.Objects;
+import grakn.core.traversal.graph.EdgeProperty;
+import grakn.core.traversal.graph.TraversalEdge;
 
-class ProcedureEdge {
+class ProcedureEdge extends TraversalEdge<ProcedureVertex<?>> {
 
-    private final ProcedureVertex from;
-    private final ProcedureVertex to;
-    private final int hash;
-
-    ProcedureEdge(ProcedureVertex from, ProcedureVertex to) {
-        this.from = from;
-        this.to = to;
-        this.hash = Objects.hash(from, to);
-    }
-
-    ProcedureVertex from() {
-        return from;
-    }
-
-    ProcedureVertex to() {
-        return to;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-
-        final ProcedureEdge that = (ProcedureEdge) object;
-        return (this.from.equals(that.from) &&
-                this.to.equals(that.to));
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
+    ProcedureEdge(EdgeProperty property, ProcedureVertex<?> from, ProcedureVertex<?> to) {
+        super(property, from, to);
     }
 }

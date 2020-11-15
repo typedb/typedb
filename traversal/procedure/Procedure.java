@@ -30,7 +30,7 @@ import java.util.Map;
 
 public class Procedure {
 
-    private final Map<Identifier, ProcedureVertex> vertices;
+    private final Map<Identifier, ProcedureVertex<?>> vertices;
 
     public Procedure() {
         vertices = new HashMap<>();
