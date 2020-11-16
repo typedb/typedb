@@ -34,6 +34,7 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -218,6 +219,7 @@ public class QueryTest {
         }
     }
 
+    @Ignore
     @Test
     public void test_query_match() throws IOException {
         Util.resetDirectory(directory);
