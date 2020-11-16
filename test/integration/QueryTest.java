@@ -34,7 +34,6 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -220,7 +219,6 @@ public class QueryTest {
     }
 
     @Test
-    @Ignore
     public void test_query_match() throws IOException {
         Util.resetDirectory(directory);
 
@@ -245,7 +243,7 @@ public class QueryTest {
                     final String queryString = "insert " +
                             "$a isa person, has name 'alice', has age 25; " +
                             "$b isa person, has name 'bob', has age 25; " +
-                            "$c isa person, has name 'charlie', has age 21; " +
+                            "$c isa person, has name 'charlie', has age 20; " +
                             "($a, $b) isa friendship; " +
                             "($b, $c) isa friendship; " +
                             "($a, $c) isa friendship;";
@@ -257,7 +255,7 @@ public class QueryTest {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     final String queryString = "match $x isa person, has name 'alice'; " +
-                            "$y isa person, has age > 22;" +
+                            "$y isa person, has age >= 21;" +
                             "(friend: $x, friend: $y) isa friendship; ";
                     final GraqlMatch query = Graql.parseQuery(queryString);
                     ResourceIterator<ConceptMap> answers = transaction.query().match(query);

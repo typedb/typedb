@@ -51,6 +51,11 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
     }
 
     @Override
+    public String toString() {
+        return String.format("(%s --> %s), %s", from, to, property);
+    }
+
+    @Override
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
@@ -80,11 +85,19 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             return false;
         }
 
+        @Override
+        public abstract String toString();
+
         public static class Equal extends Property {
 
             @Override
             boolean isEqual() {
                 return true;
+            }
+
+            @Override
+            public String toString() {
+                return "Property: Equal";
             }
 
             @Override
@@ -116,6 +129,11 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             @Override
             boolean isComparator() {
                 return true;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("Property: Comparator { comparator: %s }", comparator);
             }
 
             @Override
@@ -174,6 +192,12 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             @Override
             boolean isEncoder() {
                 return true;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("Property: Encoder { encoding: %s, labels: %s, isTransitive: %s }",
+                                     encoding(), Arrays.toString(labels), isTransitive);
             }
 
             @Override

@@ -66,6 +66,7 @@ public class SchemaGraph implements Graph {
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
         isModified = false;
+        snapshot = 1L;
     }
 
     @Override

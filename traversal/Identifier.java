@@ -18,12 +18,32 @@
 
 package grakn.core.traversal;
 
+import grakn.core.common.exception.GraknException;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+
 public abstract class Identifier {
+
+    public boolean isNamedReference() {
+        return isVariable() && asVariable().reference().isName();
+    }
+
+    public boolean isGenerated() { return false; }
+
+    public boolean isVariable() { return false; }
+
+    public Generated asGenerated() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Generated.class)));
+    }
+
+    public Variable asVariable() {
+        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Variable.class)));
+    }
 
     @Override
     public abstract boolean equals(Object o);
@@ -44,6 +64,12 @@ public abstract class Identifier {
         public static Generated of(int id) {
             return new Generated(id);
         }
+
+        @Override
+        public boolean isGenerated() { return true; }
+
+        @Override
+        public Generated asGenerated() { return this; }
 
         @Override
         public String toString() {
@@ -91,6 +117,12 @@ public abstract class Identifier {
         public Reference reference() {
             return reference;
         }
+
+        @Override
+        public boolean isVariable() { return true; }
+
+        @Override
+        public Variable asVariable() { return this; }
 
         @Override
         public String toString() {

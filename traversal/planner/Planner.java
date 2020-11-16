@@ -59,12 +59,11 @@ public class Planner {
     private final AtomicBoolean isOptimising;
     private final ManagedCountDownLatch procedureLatch;
 
+    private volatile MPSolver.ResultStatus resultStatus;
     private volatile Procedure procedure;
-
-    private MPSolver.ResultStatus resultStatus;
-    private boolean isUpToDate;
-    private long totalDuration;
-    private long snapshot;
+    private volatile boolean isUpToDate;
+    private volatile long totalDuration;
+    private volatile long snapshot;
 
     private Planner() {
         solver = MPSolver.createSolver("SCIP");
@@ -76,7 +75,9 @@ public class Planner {
         procedureLatch = new ManagedCountDownLatch(1);
         isOptimising = new AtomicBoolean(false);
         resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
+        isUpToDate = false;
         totalDuration = 0L;
+        snapshot = 0L;
     }
 
     public static Planner create(Structure structure) {
@@ -102,6 +103,7 @@ public class Planner {
                 adjacents.add(structureEdge.to());
                 PlannerVertex<?> to = vertex(structureEdge.to());
                 PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, to);
+                edges.add(edge);
                 vertex.out(edge);
                 to.in(edge);
             }
@@ -112,6 +114,7 @@ public class Planner {
                 adjacents.add(structureEdge.from());
                 PlannerVertex<?> from = vertex(structureEdge.from());
                 PlannerEdge edge = new PlannerEdge(structureEdge.property(), from, vertex);
+                edges.add(edge);
                 vertex.in(edge);
                 from.out(edge);
             }
@@ -147,8 +150,8 @@ public class Planner {
         return solver;
     }
 
-    private void setUpToDate(boolean isUpToDate) {
-        this.isUpToDate = isUpToDate;
+    private void setOutOfDate() {
+        this.isUpToDate = false;
     }
 
     private boolean isUpToDate() {
@@ -168,12 +171,14 @@ public class Planner {
     }
 
     public Procedure procedure() {
-        try {
-            procedureLatch.await();
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
+        if (procedure == null) {
+            try {
+                procedureLatch.await();
+                assert procedure != null;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            }
         }
-        assert procedure != null;
         return procedure;
     }
 
@@ -182,6 +187,7 @@ public class Planner {
             updateCost(schema);
             if (!isUpToDate() || !isOptimal()) {
                 do {
+                    //noinspection NonAtomicOperationOnVolatileField
                     totalDuration += TIME_LIMIT_MILLIS;
                     solver.setTimeLimit(totalDuration);
                     resultStatus = solver.solve(parameters);

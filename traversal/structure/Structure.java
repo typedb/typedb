@@ -72,7 +72,10 @@ public class Structure {
             while (!vertices.isEmpty()) {
                 Structure newStructure = new Structure();
                 splitGraph(vertices.values().iterator().next(), newStructure);
-                structures.add(newStructure);
+                if (newStructure.vertices().size() > 1 &&
+                        !newStructure.vertices().iterator().next().identifier().isNamedReference()) {
+                    structures.add(newStructure);
+                }
             }
         }
         return structures;

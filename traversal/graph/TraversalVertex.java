@@ -82,6 +82,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
     }
 
     @Override
+    public String toString() {
+        return identifier.toString();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -98,6 +103,9 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
     public static abstract class Property {
 
         public boolean isIndexed() { return false; }
+
+        @Override
+        public abstract String toString();
 
         public static abstract class Thing extends Property {
 
@@ -139,6 +147,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
                 public IID asIID() { return this; }
 
                 @Override
+                public String toString() {
+                    return String.format("Thing Property: IID { param: %s }", param);
+                }
+
+                @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
@@ -173,6 +186,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
                 public Isa asIsa() { return this; }
 
                 @Override
+                public String toString() {
+                    return String.format("Thing Property: Isa { labels: %s }", Arrays.toString(labels));
+                }
+
+                @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
@@ -204,6 +222,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
 
                 @Override
                 public Value asValue() { return this; }
+
+                @Override
+                public String toString() {
+                    return String.format("Thing Property: Value { comparator: %s, param: %s }", comparator, param);
+                }
 
                 @Override
                 public boolean equals(Object o) {
@@ -268,6 +291,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
                 public Label asLabel() { return this; }
 
                 @Override
+                public String toString() {
+                    return String.format("Type Property: Label { label: %s, scope: %s }", label, scope);
+                }
+
+                @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
@@ -297,6 +325,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
                 public Abstract asAbstract() { return this; }
 
                 @Override
+                public String toString() {
+                    return "Type Property: Abstract";
+                }
+
+                @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     return o != null && getClass() == o.getClass();
@@ -323,6 +356,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
 
                 @Override
                 public ValueType asValueType() { return this; }
+
+                @Override
+                public String toString() {
+                    return String.format("Type Property: Value Type { valueType: %s }", valueType);
+                }
 
                 @Override
                 public boolean equals(Object o) {
@@ -354,6 +392,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
 
                 @Override
                 public Regex asRegex() { return this; }
+
+                @Override
+                public String toString() {
+                    return String.format("Type Property: Regex { regex: %s }", regex);
+                }
 
                 @Override
                 public boolean equals(Object o) {

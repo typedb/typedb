@@ -523,6 +523,8 @@ public class Encoding {
 
         boolean isOptimisation();
 
+        String name();
+
         Edge ISA = new Edge() {
 
             @Override
@@ -533,6 +535,12 @@ public class Encoding {
 
             @Override
             public boolean isOptimisation() { return false; }
+
+            @Override
+            public String name() { return "ISA"; }
+
+            @Override
+            public String toString() { return name(); }
         };
 
         interface Schema extends Edge {
