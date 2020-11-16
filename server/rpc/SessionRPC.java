@@ -19,29 +19,27 @@ package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options;
-import grakn.protocol.SessionProto;
 import grakn.protocol.TransactionProto;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.server.rpc.util.RequestReader.getOptions;
 
 class SessionRPC {
 
     private final Grakn.Session session;
-    // TODO: does this need to be concurrent?
+    private final GraknRPCService graknRPCService;
     private final Set<TransactionRPC> transactionRPCs;
+    private final AtomicBoolean isOpen;
 
-    SessionRPC(Grakn grakn, SessionProto.Session.Open.Req request) {
-        final Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
-        final Options.Session options = getOptions(Options.Session::new, request.getOptions());
-        session = grakn.session(request.getDatabase(), sessionType, options);
+    SessionRPC(GraknRPCService graknRPCService, Grakn.Session session) {
+        this.graknRPCService = graknRPCService;
+        this.session = session;
         transactionRPCs = new HashSet<>();
+        isOpen = new AtomicBoolean(true);
     }
 
     TransactionRPC transaction(TransactionStream transactionStream, TransactionProto.Transaction.Open.Req request) {
@@ -63,12 +61,20 @@ class SessionRPC {
     }
 
     void close() {
-        transactionRPCs.parallelStream().forEach(TransactionRPC::close);
-        session.close();
+        if (isOpen.compareAndSet(true, false)) {
+            final Set<TransactionRPC> transactionRPCsCopy = new HashSet<>(transactionRPCs);
+            transactionRPCsCopy.parallelStream().forEach(TransactionRPC::close);
+            session.close();
+            graknRPCService.removeSession(session.uuid());
+        }
     }
 
     void closeWithError(Throwable error) {
-        transactionRPCs.parallelStream().forEach(ts -> ts.closeWithError(error));
-        session.close();
+        if (isOpen.compareAndSet(true, false)) {
+            final Set<TransactionRPC> transactionRPCsCopy = new HashSet<>(transactionRPCs);
+            transactionRPCsCopy.parallelStream().forEach(tr -> tr.closeWithError(error));
+            session.close();
+            graknRPCService.removeSession(session.uuid());
+        }
     }
 }

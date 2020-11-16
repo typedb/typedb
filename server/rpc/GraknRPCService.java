@@ -19,6 +19,8 @@ package grakn.core.server.rpc;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.protocol.DatabaseProto;
 import grakn.protocol.GraknGrpc;
 import grakn.protocol.SessionProto;
@@ -38,6 +40,7 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
+import static grakn.core.server.rpc.util.RequestReader.getOptions;
 import static grakn.core.server.rpc.util.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
@@ -120,7 +123,10 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void sessionOpen(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responder) {
         try {
-            final SessionRPC sessionRPC = new SessionRPC(grakn, request);
+            final Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
+            final Options.Session options = getOptions(Options.Session::new, request.getOptions());
+            final Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
+            final SessionRPC sessionRPC = new SessionRPC(this, session);
             rpcSessions.put(sessionRPC.session().uuid(), sessionRPC);
             responder.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionRPC.uuidAsByteString()).build());
             responder.onCompleted();
@@ -155,7 +161,11 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
         rpcSessions.clear();
     }
 
-    ConcurrentMap<UUID, SessionRPC> rpcSessions() {
-        return rpcSessions;
+    SessionRPC getSession(UUID id) {
+        return rpcSessions.get(id);
+    }
+
+    void removeSession(UUID id) {
+        rpcSessions.remove(id);
     }
 }

@@ -20,18 +20,18 @@ package grakn.core.server.rpc;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.protocol.TransactionProto;
+import grakn.core.Grakn;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
 import static grakn.core.common.collection.Bytes.bytesToUUID;
@@ -51,15 +51,18 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
 
     private final GraknRPCService graknRPCService;
     private final StreamObserver<Transaction.Res> responder;
+    /**
+     * Whether or not the {@link StreamObserver} is currently open and capable of transmitting responses.
+     * This does not necessarily correspond to the {@link Grakn.Transaction} being open.
+     */
     private final AtomicBoolean isOpen;
-
-    @Nullable
-    private TransactionRPC transactionRPC;
+    private final AtomicReference<TransactionRPC> transactionRPC;
 
     TransactionStream(GraknRPCService graknRPCService, StreamObserver<Transaction.Res> responder) {
         this.graknRPCService = graknRPCService;
         this.responder = responder;
-        isOpen = new AtomicBoolean(false);
+        isOpen = new AtomicBoolean(true);
+        transactionRPC = new AtomicReference<>();
     }
 
     @Override
@@ -84,7 +87,14 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
 
     @Override
     public void onCompleted() {
-        close();
+        try {
+            TransactionRPC t;
+            if ((t = transactionRPC.get()) != null) t.close();
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+        } finally {
+            close();
+        }
     }
 
     /**
@@ -101,9 +111,13 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
      */
     @Override
     public void onError(Throwable error) {
-        if (isOpen.compareAndSet(true, false)) {
-            assert transactionRPC != null;
-            transactionRPC.sessionRPC().closeWithError(error);
+        try {
+            TransactionRPC t;
+            if ((t = transactionRPC.get()) != null) t.sessionRPC().closeWithError(error);
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+        } finally {
+            closeWithError(error);
         }
     }
 
@@ -111,9 +125,9 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         if (request.getReqCase() == Transaction.Req.ReqCase.OPEN_REQ) {
             open(request);
         } else {
-            if (!isOpen.get()) throw new GraknException(TRANSACTION_NOT_OPENED);
-            assert transactionRPC != null;
-            transactionRPC.handleRequest(request);
+            TransactionRPC t;
+            if ((t = transactionRPC.get()) == null) throw new GraknException(TRANSACTION_NOT_OPENED);
+            t.handleRequest(request);
         }
     }
 
@@ -127,28 +141,29 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         final Instant processingStartTime = Instant.now();
         final Transaction.Open.Req openReq = request.getOpenReq();
         final UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
-        final SessionRPC sessionRPC = graknRPCService.rpcSessions().get(sessionID);
+        final SessionRPC sessionRPC = graknRPCService.getSession(sessionID);
         if (sessionRPC == null) throw new GraknException(SESSION_NOT_FOUND.message(sessionID));
 
-        if (isOpen.compareAndSet(false, true)) {
-            transactionRPC = sessionRPC.transaction(this, openReq);
-            final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
-            responder.onNext(TransactionProto.Transaction.Res.newBuilder().setId(request.getId())
-                                     .setOpenRes(TransactionProto.Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)).build());
-        } else {
+        if (!transactionRPC.compareAndSet(null, sessionRPC.transaction(this, openReq))) {
             throw new GraknException(TRANSACTION_ALREADY_OPENED);
         }
+
+        final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
+        responder.onNext(Transaction.Res.newBuilder().setId(request.getId())
+                .setOpenRes(Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)).build());
     }
 
+    /** Sends an OK response that terminates the stream if it is open. Otherwise, performs no action. */
     void close() {
         if (isOpen.compareAndSet(true, false)) {
             responder.onCompleted();
         }
     }
 
+    /** Sends an error response that terminates the stream if it is open. Otherwise, performs no action. */
     void closeWithError(Throwable error) {
-        LOG.error(error.getMessage(), error);
         if (isOpen.compareAndSet(true, false)) {
+            LOG.error(error.getMessage(), error);
             responder.onError(exception(error));
         }
     }

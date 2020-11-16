@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
@@ -51,6 +52,7 @@ public class TransactionRPC {
     private final TransactionStream stream;
     private final Iterators iterators;
     private final RequestHandlers handlers;
+    private final AtomicBoolean isOpen;
 
     TransactionRPC(SessionRPC sessionRPC, TransactionStream stream, TransactionProto.Transaction.Open.Req request) {
         this.sessionRPC = sessionRPC;
@@ -61,6 +63,7 @@ public class TransactionRPC {
         final Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
 
         transaction = sessionRPC.session().transaction(transactionType, transactionOptions);
+        isOpen = new AtomicBoolean(true);
         iterators = new Iterators();
         handlers = new RequestHandlers();
     }
@@ -70,41 +73,45 @@ public class TransactionRPC {
     }
 
     void handleRequest(TransactionProto.Transaction.Req request) {
-        switch (request.getReqCase()) {
-            case CONTINUE:
-                iterators.continueIteration(request.getId());
-                return;
-            case OPEN_REQ:
-                throw new GraknException(TRANSACTION_ALREADY_OPENED);
-            case COMMIT_REQ:
-                commit(request.getId());
-                return;
-            case ROLLBACK_REQ:
-                rollback(request.getId());
-                return;
-            case QUERY_REQ:
-                try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
-                    handlers.query.handleRequest(request);
-                }
-                return;
-            case CONCEPT_MANAGER_REQ:
-                handlers.conceptManager.handleRequest(request);
-                return;
-            case THING_REQ:
-                handlers.thing.handleRequest(request);
-                return;
-            case TYPE_REQ:
-                handlers.type.handleRequest(request);
-                return;
-            case RULE_REQ:
-                handlers.rule.handleRequest(request);
-                return;
+        try {
+            switch (request.getReqCase()) {
+                case CONTINUE:
+                    iterators.continueIteration(request.getId());
+                    return;
+                case OPEN_REQ:
+                    throw new GraknException(TRANSACTION_ALREADY_OPENED);
+                case COMMIT_REQ:
+                    commit(request.getId());
+                    return;
+                case ROLLBACK_REQ:
+                    rollback(request.getId());
+                    return;
+                case QUERY_REQ:
+                    try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
+                        handlers.query.handleRequest(request);
+                    }
+                    return;
+                case CONCEPT_MANAGER_REQ:
+                    handlers.conceptManager.handleRequest(request);
+                    return;
+                case THING_REQ:
+                    handlers.thing.handleRequest(request);
+                    return;
+                case TYPE_REQ:
+                    handlers.type.handleRequest(request);
+                    return;
+                case RULE_REQ:
+                    handlers.rule.handleRequest(request);
+                    return;
 //            case EXPLANATION_REQ:
 //                explanation(request.getExplanationReq());
 //                return;
-            default:
-            case REQ_NOT_SET:
-                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                default:
+                case REQ_NOT_SET:
+                    throw new GraknException(UNKNOWN_REQUEST_TYPE);
+            }
+        } catch (Exception ex) {
+            closeWithError(ex);
         }
     }
 
@@ -134,18 +141,19 @@ public class TransactionRPC {
     }
 
     void close() {
-        stream.close();
-        closeResources();
+        if (isOpen.compareAndSet(true, false)) {
+            stream.close();
+            transaction.close();
+            sessionRPC.remove(this);
+        }
     }
 
     void closeWithError(Throwable error) {
-        stream.closeWithError(error);
-        closeResources();
-    }
-
-    private void closeResources() {
-        transaction.close();
-        sessionRPC.remove(this);
+        if (isOpen.compareAndSet(true, false)) {
+            stream.closeWithError(error);
+            transaction.close();
+            sessionRPC.remove(this);
+        }
     }
 
 //    /**

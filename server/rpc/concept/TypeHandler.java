@@ -129,7 +129,7 @@ public class TypeHandler {
                 create(request, type.asRelationType());
                 return;
             case RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ:
-                getRelates(request, type.asRelationType(), typeReq.getRelationTypeGetRelatesForRoleLabelReq().getLabel());
+                getRelatesForRoleLabel(request, type.asRelationType(), typeReq.getRelationTypeGetRelatesForRoleLabelReq().getLabel());
                 return;
             case RELATION_TYPE_SET_RELATES_REQ:
                 setRelates(request, type.asRelationType(), typeReq.getRelationTypeSetRelatesReq());
@@ -395,9 +395,9 @@ public class TypeHandler {
                 throw new GraknException(BAD_VALUE_TYPE);
         }
 
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
-                .setAttributeTypeGetRes(ConceptProto.AttributeType.Get.Res.newBuilder().setAttribute(thing(attribute)));
-        transactionRPC.respond(response(request, response));
+        final ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();
+        if (attribute != null) getAttributeTypeRes.setAttribute(thing(attribute));
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRes(getAttributeTypeRes)));
     }
 
     private void getRegex(Transaction.Req request, AttributeType attributeType) {
@@ -432,10 +432,11 @@ public class TypeHandler {
         transactionRPC.respond(request, responses.iterator());
     }
 
-    private void getRelates(Transaction.Req request, RelationType relationType, String label) {
-        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(
-                ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder().setRoleType(type(relationType.getRelates(label)))
-        )));
+    private void getRelatesForRoleLabel(Transaction.Req request, RelationType relationType, String roleLabel) {
+        final RoleType roleType = relationType.getRelates(roleLabel);
+        final ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes = ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
+        if (roleType != null) getRelatesRes.setRoleType(type(roleType));
+        transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(getRelatesRes)));
     }
 
     private void setRelates(Transaction.Req request, RelationType relationType, ConceptProto.RelationType.SetRelates.Req setRelatesReq) {
