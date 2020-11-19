@@ -21,6 +21,7 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
+import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.graph.TraversalEdge;
 
 import static grakn.common.util.Objects.className;
@@ -61,6 +62,10 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
         forward.initialiseConstraints();
         backward.initialiseConstraints();
+    }
+
+    public void updateCost(SchemaGraph schema) {
+        // TODO
     }
 
     void recordValues() {

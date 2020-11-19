@@ -21,6 +21,7 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
+import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
@@ -116,7 +117,13 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
     void initialiseConstraints() {
         assert ins().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         assert outs().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
+        initialiseConstraintsForIncomingEdges();
+        initialiseConstraintsForOutGoingEdges();
+        initialiseConstraintsForVertexFlow();
+        isInitialisedConstraints = true;
+    }
 
+    void initialiseConstraintsForIncomingEdges() {
         varUnselectedIncomingEdges = planner.solver().makeIntVar(0, ins().size(), varPrefix + "unselected_incoming_edges");
         MPConstraint conUnSelectedIncomingEdges = planner.solver().makeConstraint(ins().size(), ins().size(), conPrefix + "unselected_incoming_edges");
         conUnSelectedIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
@@ -124,7 +131,9 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(1, ins().size(), conPrefix + "has_incoming_edges");
         conHasIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
         conHasIncomingEdges.setCoefficient(varHasIncomingEdges, 1);
+    }
 
+    void initialiseConstraintsForOutGoingEdges() {
         varUnselectedOutgoingEdges = planner.solver().makeIntVar(0, outs().size(), varPrefix + "unselected_outgoing_edges");
         MPConstraint conUnselectedOutgoingEdges = planner.solver().makeConstraint(outs().size(), outs().size(), conPrefix + "unselected_outgoing_edges");
         conUnselectedOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
@@ -132,7 +141,9 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(1, outs().size(), conPrefix + "has_outgoing_edges");
         conHasOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
         conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, 1);
+    }
 
+    void initialiseConstraintsForVertexFlow() {
         MPConstraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
         if (hasIndex) conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
@@ -141,13 +152,15 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
 
-        MPConstraint conEdgeFlow = planner.solver().makeConstraint(0, 0, conPrefix + "edge_flow");
-        if (hasIndex) conEdgeFlow.setCoefficient(varIsStartingVertex, 1);
-        conEdgeFlow.setCoefficient(varHasIncomingEdges, 1);
-        conEdgeFlow.setCoefficient(varIsEndingVertex, -1);
-        conEdgeFlow.setCoefficient(varHasOutgoingEdges, -1);
+        MPConstraint conVertexFlow = planner.solver().makeConstraint(0, 0, conPrefix + "vertex_flow");
+        if (hasIndex) conVertexFlow.setCoefficient(varIsStartingVertex, 1);
+        conVertexFlow.setCoefficient(varHasIncomingEdges, 1);
+        conVertexFlow.setCoefficient(varIsEndingVertex, -1);
+        conVertexFlow.setCoefficient(varHasOutgoingEdges, -1);
+    }
 
-        isInitialisedConstraints = true;
+    public void updateCost(SchemaGraph schema) {
+        // TODO
     }
 
     void recordValues() {

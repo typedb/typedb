@@ -19,6 +19,7 @@
 package grakn.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import grakn.core.common.concurrent.ManagedCountDownLatch;
@@ -72,6 +73,7 @@ public class Planner {
 
     private Planner() {
         solver = MPSolver.createSolver("SCIP");
+        solver.objective().setMinimization();
         parameters = new MPSolverParameters();
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
@@ -92,6 +94,50 @@ public class Planner {
         structure.vertices().forEach(vertex -> planner.register(vertex, registeredVertices, registeredEdges));
         planner.initialise();
         return planner;
+    }
+
+    public Collection<PlannerVertex<?>> vertices() {
+        return vertices.values();
+    }
+
+    public Set<PlannerEdge> edges() {
+        return edges;
+    }
+
+    private void setOutOfDate() {
+        this.isUpToDate = false;
+    }
+
+    private boolean isUpToDate() {
+        return isUpToDate;
+    }
+
+    private boolean isPlanned() {
+        return resultStatus == FEASIBLE || resultStatus == OPTIMAL;
+    }
+
+    private boolean isOptimal() {
+        return resultStatus == OPTIMAL;
+    }
+
+    private boolean isError() {
+        return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
+    }
+
+    public Procedure procedure() {
+        if (procedure == null) {
+            try {
+                procedureLatch.await();
+                assert procedure != null;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            }
+        }
+        return procedure;
+    }
+
+    MPSolver solver() {
+        return solver;
     }
 
     private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
@@ -145,11 +191,19 @@ public class Planner {
     }
 
     private void initialise() {
-        boolean hasPotentialStartingVertex = false;
-        String conPrefix = "planner::con::";
+        intialiseVariables();
+        initialiseConstraintsForVariables();
+        initialiseConstraintsForEdges();
+    }
+
+    private void intialiseVariables() {
         vertices.values().forEach(PlannerVertex::initialiseVariables);
         edges.forEach(PlannerEdge::initialiseVariables);
+    }
 
+    private void initialiseConstraintsForVariables() {
+        String conPrefix = "planner::vertex::con::";
+        boolean hasPotentialStartingVertex = false;
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
         MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
@@ -159,65 +213,31 @@ public class Planner {
             }
         }
         if (!hasPotentialStartingVertex) throw GraknException.of(ILLEGAL_STATE);
+    }
 
+    private void initialiseConstraintsForEdges() {
+        String conPrefix = "planner::edge::con::";
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
-            MPConstraint conOneEdgePerOrder = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
+            MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
             for (PlannerEdge edge : edges) {
-                conOneEdgePerOrder.setCoefficient(edge.forward().varOrderAssignment[i], 1);
-                conOneEdgePerOrder.setCoefficient(edge.backward().varOrderAssignment[i], 1);
+                conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
+                conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);
             }
         }
     }
 
-    public Collection<PlannerVertex<?>> vertices() {
-        return vertices.values();
-    }
-
-    MPSolver solver() {
-        return solver;
-    }
-
-    public Set<PlannerEdge> edges() {
-        return edges;
-    }
-
-    private void setOutOfDate() {
-        this.isUpToDate = false;
-    }
-
-    private boolean isUpToDate() {
-        return isUpToDate;
-    }
-
-    private boolean isPlanned() {
-        return resultStatus == FEASIBLE || resultStatus == OPTIMAL;
-    }
-
-    private boolean isOptimal() {
-        return resultStatus == OPTIMAL;
-    }
-
-    private boolean isError() {
-        return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
-    }
-
-    public Procedure procedure() {
-        if (procedure == null) {
-            try {
-                procedureLatch.await();
-                assert procedure != null;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            }
+    private void updateCost(SchemaGraph schema) {
+        if (snapshot < schema.snapshot()) {
+            snapshot = schema.snapshot();
+            vertices.values().forEach(v -> v.updateCost(schema));
+            edges.forEach(e -> e.updateCost(schema));
         }
-        return procedure;
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void optimise(SchemaGraph schema) {
         if (isOptimising.compareAndSet(false, true)) {
-
             updateCost(schema);
             if (!isUpToDate() || !isOptimal()) {
                 do {
@@ -234,14 +254,6 @@ public class Planner {
                 isUpToDate = true;
             }
             isOptimising.set(false);
-        }
-    }
-
-    private void updateCost(SchemaGraph schema) {
-        if (snapshot < schema.snapshot()) {
-            snapshot = schema.snapshot();
-
-            // TODO: update the cost of every traversal vertex and edge
         }
     }
 
