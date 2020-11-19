@@ -77,6 +77,7 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Property>
         @Override
         public StructureVertex.Type asType() { return this; }
 
+        @Override
         public void property(TraversalVertex.Property.Type property) {
             properties.add(property);
         }

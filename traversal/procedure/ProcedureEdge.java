@@ -22,7 +22,16 @@ import grakn.core.traversal.graph.TraversalEdge;
 
 class ProcedureEdge extends TraversalEdge<ProcedureVertex<?>> {
 
-    ProcedureEdge(TraversalEdge.Property property, ProcedureVertex<?> from, ProcedureVertex<?> to) {
+    private final boolean isForward;
+    private final int order;
+
+    private ProcedureEdge(Property property, ProcedureVertex<?> from, ProcedureVertex<?> to, boolean isForward, int order) {
         super(property, from, to);
+        this.isForward = isForward;
+        this.order = order;
+    }
+
+    public static ProcedureEdge of(Property property, ProcedureVertex<?> vertex, ProcedureVertex<?> to, boolean isForward, int order) {
+        return new ProcedureEdge(property, vertex, to, isForward, order); // TODO
     }
 }

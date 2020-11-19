@@ -66,10 +66,12 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
     }
 
     public void out(EDGE edge) {
+        assert edge.from().equals(this);
         outgoing.add(edge);
     }
 
     public void in(EDGE edge) {
+        assert edge.to().equals(this);
         incoming.add(edge);
     }
 

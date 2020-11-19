@@ -18,6 +18,7 @@
 
 package grakn.core.traversal.planner;
 
+import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import grakn.core.common.concurrent.ManagedCountDownLatch;
@@ -29,9 +30,10 @@ import grakn.core.traversal.structure.Structure;
 import grakn.core.traversal.structure.StructureEdge;
 import grakn.core.traversal.structure.StructureVertex;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +48,7 @@ import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityV
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.INCREMENTALITY;
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
 import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 
 public class Planner {
@@ -93,7 +96,7 @@ public class Planner {
                           Set<StructureEdge> registeredEdges) {
         if (registeredVertices.contains(structureVertex)) return;
         registeredVertices.add(structureVertex);
-        List<StructureVertex<?>> adjacents = new LinkedList<>();
+        List<StructureVertex<?>> adjacents = new ArrayList<>();
         PlannerVertex<?> vertex = vertex(structureVertex);
         if (vertex.isThing()) structureVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
         else structureVertex.asType().properties().forEach(p -> vertex.asType().property(p));
@@ -129,25 +132,52 @@ public class Planner {
 
     private PlannerVertex.Thing thingVertex(StructureVertex.Thing structureVertex) {
         return vertices.computeIfAbsent(
-                structureVertex.identifier(), i -> new PlannerVertex.Thing(this, i)
+                structureVertex.identifier(), i -> new PlannerVertex.Thing(i, this)
         ).asThing();
     }
 
     private PlannerVertex.Type typeVertex(StructureVertex.Type structureVertex) {
         return vertices.computeIfAbsent(
-                structureVertex.identifier(), i -> new PlannerVertex.Type(this, i)
+                structureVertex.identifier(), i -> new PlannerVertex.Type(i, this)
         ).asType();
     }
 
     private void initialise() {
+        boolean hasPotentialStartingVertex = false;
+        String conPrefix = "planner::con::";
         vertices.values().forEach(PlannerVertex::initialiseVariables);
         edges.forEach(PlannerEdge::initialiseVariables);
+
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
+        MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
+        for (PlannerVertex<?> vertex : vertices.values()) {
+            if (vertex.hasIndex()) {
+                conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
+                hasPotentialStartingVertex = true;
+            }
+        }
+        if (!hasPotentialStartingVertex) throw GraknException.of(ILLEGAL_STATE);
+
         edges.forEach(PlannerEdge::initialiseConstraints);
+        for (int i = 0; i < edges.size(); i++) {
+            MPConstraint conOneEdgePerOrder = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
+            for (PlannerEdge edge : edges) {
+                conOneEdgePerOrder.setCoefficient(edge.forward().varOrderAssignment[i], 1);
+                conOneEdgePerOrder.setCoefficient(edge.backward().varOrderAssignment[i], 1);
+            }
+        }
+    }
+
+    public Collection<PlannerVertex<?>> vertices() {
+        return vertices.values();
     }
 
     MPSolver solver() {
         return solver;
+    }
+
+    public Set<PlannerEdge> edges() {
+        return edges;
     }
 
     private void setOutOfDate() {
@@ -193,7 +223,7 @@ public class Planner {
                     resultStatus = solver.solve(parameters);
                     if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
                 } while (!isPlanned());
-                exportProcedure();
+                recordResults();
                 isUpToDate = true;
             }
             isOptimising.set(false);
@@ -208,12 +238,10 @@ public class Planner {
         }
     }
 
-    private void exportProcedure() {
-        Procedure newProcedure = new Procedure();
-
-        // TODO: extract Traversal Procedure from the MPVariables of Traversal Planner
-
-        procedure = newProcedure;
+    private void recordResults() {
+        vertices.values().forEach(PlannerVertex::recordValues);
+        edges.forEach(PlannerEdge::recordValues);
+        procedure = Procedure.create(this);
         if (procedureLatch.getCount() > 0) procedureLatch.countDown();
     }
 }

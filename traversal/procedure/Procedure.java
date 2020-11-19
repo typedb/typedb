@@ -23,20 +23,89 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.planner.Planner;
+import grakn.core.traversal.planner.PlannerEdge;
+import grakn.core.traversal.planner.PlannerVertex;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Procedure {
 
     private final Map<Identifier, ProcedureVertex<?>> vertices;
+    private final Set<ProcedureEdge> edges;
 
-    public Procedure() {
+    private Procedure() {
         vertices = new HashMap<>();
+        edges = new HashSet<>();
+    }
+
+    public static Procedure create(Planner planner) {
+        Procedure procedure = new Procedure();
+        Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
+        Set<PlannerEdge.Directional> registeredEdges = new HashSet<>();
+        planner.vertices().forEach(vertex -> procedure.register(vertex, registeredVertices, registeredEdges));
+        return procedure;
+    }
+
+    private void register(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
+                          Set<PlannerEdge.Directional> registeredEdges) {
+        if (registeredVertices.contains(plannerVertex)) return;
+        registeredVertices.add(plannerVertex);
+        List<PlannerVertex<?>> adjacents = new ArrayList<>();
+        ProcedureVertex<?> vertex = vertex(plannerVertex);
+        if (vertex.isThing()) plannerVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
+        else plannerVertex.asType().properties().forEach(p -> vertex.asType().property(p));
+        plannerVertex.outs().forEach(plannerEdge -> {
+            if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                registeredEdges.add(plannerEdge);
+                adjacents.add(plannerEdge.to());
+                ProcedureVertex<?> to = vertex(plannerEdge.to());
+                ProcedureEdge edge = ProcedureEdge.of(plannerEdge.property(), vertex, to,
+                                                      plannerEdge.isForward(), plannerEdge.orderNumber());
+                edges.add(edge);
+                vertex.out(edge);
+                to.in(edge);
+            }
+        });
+        plannerVertex.ins().forEach(plannerEdge -> {
+            if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                registeredEdges.add(plannerEdge);
+                adjacents.add(plannerEdge.from());
+                ProcedureVertex<?> from = vertex(plannerEdge.from());
+                ProcedureEdge edge = ProcedureEdge.of(plannerEdge.property(), from, vertex,
+                                                      plannerEdge.isForward(), plannerEdge.orderNumber());
+                edges.add(edge);
+                vertex.in(edge);
+                from.out(edge);
+            }
+        });
+        adjacents.forEach(v -> register(v, registeredVertices, registeredEdges));
+    }
+
+    private ProcedureVertex<?> vertex(PlannerVertex<?> plannerVertex) {
+        if (plannerVertex.isThing()) return thingVertex(plannerVertex.asThing());
+        else return typeVertex(plannerVertex.asType());
+    }
+
+    private ProcedureVertex<?> thingVertex(PlannerVertex.Thing plannerVertex) {
+        return vertices.computeIfAbsent(
+                plannerVertex.identifier(), i -> new ProcedureVertex.Thing(i, this, plannerVertex.isStartingVertex())
+        ).asThing();
+    }
+
+    private ProcedureVertex<?> typeVertex(PlannerVertex.Type plannerVertex) {
+        return vertices.computeIfAbsent(
+                plannerVertex.identifier(), i -> new ProcedureVertex.Type(i, this, plannerVertex.isStartingVertex())
+        ).asType();
     }
 
     public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, Traversal.Parameters parameters) {

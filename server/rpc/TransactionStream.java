@@ -19,8 +19,8 @@ package grakn.core.server.rpc;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.exception.GraknException;
 import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -149,18 +149,23 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         }
 
         final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
-        responder.onNext(Transaction.Res.newBuilder().setId(request.getId())
-                .setOpenRes(Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)).build());
+        responder.onNext(Transaction.Res.newBuilder().setId(request.getId()).setOpenRes(
+                Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)
+        ).build());
     }
 
-    /** Sends an OK response that terminates the stream if it is open. Otherwise, performs no action. */
+    /**
+     * Sends an OK response that terminates the stream if it is open. Otherwise, performs no action.
+     */
     void close() {
         if (isOpen.compareAndSet(true, false)) {
             responder.onCompleted();
         }
     }
 
-    /** Sends an error response that terminates the stream if it is open. Otherwise, performs no action. */
+    /**
+     * Sends an error response that terminates the stream if it is open. Otherwise, performs no action.
+     */
     void closeWithError(Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
             LOG.error(error.getMessage(), error);
