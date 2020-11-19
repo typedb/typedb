@@ -30,6 +30,8 @@ import grakn.core.traversal.structure.Structure;
 import grakn.core.traversal.structure.StructureEdge;
 import grakn.core.traversal.structure.StructureVertex;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -212,15 +214,20 @@ public class Planner {
         return procedure;
     }
 
+    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void optimise(SchemaGraph schema) {
         if (isOptimising.compareAndSet(false, true)) {
+
             updateCost(schema);
             if (!isUpToDate() || !isOptimal()) {
                 do {
-                    //noinspection NonAtomicOperationOnVolatileField
                     totalDuration += TIME_LIMIT_MILLIS;
                     solver.setTimeLimit(totalDuration);
+                    Instant start = Instant.now();
                     resultStatus = solver.solve(parameters);
+                    Instant finish = Instant.now();
+                    long timeElapsed = Duration.between(start, finish).toMillis();
+                    totalDuration -= (TIME_LIMIT_MILLIS - timeElapsed);
                     if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
                 } while (!isPlanned());
                 recordResults();
