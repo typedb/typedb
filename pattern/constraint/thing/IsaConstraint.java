@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
@@ -37,14 +38,14 @@ public class IsaConstraint extends ThingConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private String[] labels;
+    private Label[] labels;
 
     private IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
-        this.labels = new String[]{};
+        this.labels = new Label[0];
     }
 
     static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
@@ -60,7 +61,7 @@ public class IsaConstraint extends ThingConstraint {
         return isExplicit;
     }
 
-    public void labels(String[] labels) {
+    public void labels(Label[] labels) {
         this.labels = labels;
     }
 

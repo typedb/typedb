@@ -19,6 +19,7 @@
 package grakn.core.traversal.graph;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.Identifier;
 import graql.lang.common.GraqlToken;
@@ -167,10 +168,10 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
 
             public static class Isa extends Thing {
 
-                private final String[] labels;
+                private final Label[] labels;
                 private final int hash;
 
-                public Isa(String[] labels) {
+                public Isa(Label[] labels) {
                     this.labels = labels;
                     this.hash = Arrays.hashCode(this.labels);
                 }

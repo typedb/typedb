@@ -21,6 +21,7 @@ package grakn.core.traversal;
 import grakn.common.collection.Pair;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
@@ -168,7 +169,7 @@ public class Traversal {
         structure.thingVertex(thing).property(new TraversalVertex.Property.Thing.IID(thing));
     }
 
-    public void type(Identifier.Variable thing, String[] labels) {
+    public void type(Identifier.Variable thing, Label[] labels) {
         structure.thingVertex(thing).property(new TraversalVertex.Property.Thing.Isa(labels));
     }
 
