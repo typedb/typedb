@@ -59,6 +59,8 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         isInitialisedConstraints = false;
     }
 
+    abstract void updateCost(SchemaGraph schema);
+
     public boolean isStartingVertex() {
         return valueIsStartingVertex == 1;
     }
@@ -159,10 +161,6 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         conVertexFlow.setCoefficient(varHasOutgoingEdges, -1);
     }
 
-    public void updateCost(SchemaGraph schema) {
-        // TODO
-    }
-
     void recordValues() {
         valueIsStartingVertex = hasIndex ? (int) Math.round(varIsStartingVertex.solutionValue()) : 0;
         valueIsEndingVertex = (int) Math.round(varIsEndingVertex.solutionValue());
@@ -190,6 +188,11 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         }
 
         @Override
+        void updateCost(SchemaGraph schema) {
+            // TODO
+        }
+
+        @Override
         public boolean isThing() { return true; }
 
         @Override
@@ -197,10 +200,15 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
 
         @Override
         public void property(TraversalVertex.Property.Thing property) {
-            if (property.isIndexed()) hasIndex = true;
-            if (property.isIndexed()) iid = property.asIID();
-            else if (property.isIsa()) isa = property.asIsa();
-            else if (property.isValue()) value.add(property.asValue());
+            if (property.isIID()) {
+                iid = property.asIID();
+                hasIndex = true;
+            } else if (property.isIsa()) {
+                isa = property.asIsa();
+                hasIndex = true;
+            } else if (property.isValue()) {
+                value.add(property.asValue());
+            }
             properties.add(property);
         }
     }
@@ -215,6 +223,11 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         Type(Identifier identifier, Planner planner) {
             super(identifier, planner);
             this.hasIndex = true; // VertexProperty.Type is always indexed
+        }
+
+        @Override
+        void updateCost(SchemaGraph schema) {
+            // TODO
         }
 
         @Override

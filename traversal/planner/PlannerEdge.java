@@ -64,7 +64,7 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         backward.initialiseConstraints();
     }
 
-    public void updateCost(SchemaGraph schema) {
+    void updateCost(SchemaGraph schema) {
         // TODO
     }
 

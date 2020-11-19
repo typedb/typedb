@@ -92,9 +92,6 @@ abstract class ProcedureVertex<PROPERTY extends ProcedureVertex.Filter<?>> exten
         }
 
         @Override
-        public boolean isIndexed() { return property().isIndexed(); }
-
-        @Override
         public String toString() {
             return "Filter: " + property.toString();
         }

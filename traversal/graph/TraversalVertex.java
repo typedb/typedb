@@ -140,9 +140,6 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
                 }
 
                 @Override
-                public boolean isIndexed() { return true; }
-
-                @Override
                 public boolean isIID() { return true; }
 
                 @Override
@@ -177,9 +174,6 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
                     this.labels = labels;
                     this.hash = Arrays.hashCode(this.labels);
                 }
-
-                @Override
-                public boolean isIndexed() { return true; }
 
                 @Override
                 public boolean isIsa() { return true; }
@@ -247,9 +241,6 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTY ex
         }
 
         public static abstract class Type extends Property {
-
-            @Override
-            public boolean isIndexed() { return true; }
 
             public boolean isLabel() { return false; }
 
