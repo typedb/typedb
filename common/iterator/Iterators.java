@@ -52,13 +52,13 @@ public class Iterators {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T> LinkedIterators<T> link(List<Iterator<T>> iterators) {
-        final LinkedList<Either<ResourceIterator<T>, Iterator<T>>> converted = new LinkedList<>();
+    public static <T> LinkedIterators<T> link(List<? extends Iterator<T>> iterators) {
+        final LinkedList<ResourceIterator<T>> converted = new LinkedList<>();
         iterators.forEach(iterator -> {
             if (iterator instanceof ResourceIterator<?>) {
-                converted.addLast(Either.first((ResourceIterator<T>) iterator));
+                converted.addLast((ResourceIterator<T>) iterator);
             } else {
-                converted.addLast(Either.second(iterator));
+                converted.addLast(Iterators.iterate(iterator));
             }
         });
         return new LinkedIterators<>(converted);

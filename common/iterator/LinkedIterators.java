@@ -18,52 +18,38 @@
 
 package grakn.core.common.iterator;
 
-import grakn.common.collection.Either;
-
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 public class LinkedIterators<T> implements ResourceIterator<T> {
 
-    private final List<Either<ResourceIterator<T>, Iterator<T>>> iterators;
+    private final List<ResourceIterator<T>> iterators;
 
-    LinkedIterators(LinkedList<Either<ResourceIterator<T>, Iterator<T>>> iterators) {
+    LinkedIterators(LinkedList<ResourceIterator<T>> iterators) {
         this.iterators = iterators;
-    }
-
-    private Iterator<T> headIterator() {
-        return iterators.get(0).apply(r -> r, i -> i);
     }
 
     @Override
     public final LinkedIterators<T> link(ResourceIterator<T> iterator) {
-        iterators.add(Either.first(iterator));
-        return this;
-    }
-
-    @Override
-    public final LinkedIterators<T> link(Iterator<T> iterator) {
-        if (iterator instanceof ResourceIterator<?>) return link((ResourceIterator<T>) iterator);
-        iterators.add(Either.second(iterator));
+        iterators.add(iterator);
         return this;
     }
 
     @Override
     public boolean hasNext() {
-        while (iterators.size() > 1 && !headIterator().hasNext()) iterators.remove(0);
-        return !iterators.isEmpty() && headIterator().hasNext();
+        while (iterators.size() > 1 && !iterators.get(0).hasNext()) iterators.remove(0);
+        return !iterators.isEmpty() && iterators.get(0).hasNext();
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        return headIterator().next();
+        return iterators.get(0).next();
     }
 
     @Override
     public void recycle() {
-        iterators.forEach(iterator -> iterator.ifFirst(ResourceIterator::recycle));
+        iterators.forEach(ResourceIterator::recycle);
     }
 }

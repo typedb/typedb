@@ -30,7 +30,6 @@ import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.util.stream.Collectors.toSet;
 
 abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge, PROPERTIES> {
@@ -118,7 +117,6 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
                 else if (!property.values().isEmpty()) filters.addAll(
                         property.values().stream().map(c -> new Value(c, identifier)).collect(toSet())
                 );
-                else throw new GraknException(UNRECOGNISED_VALUE);
                 return filters;
             }
 
@@ -175,7 +173,6 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
                 else if (properties.isAbstract()) filters.add(new Abstract());
                 else if (properties.valueType().isPresent()) filters.add(new ValueType(properties.valueType().get()));
                 else if (properties.regex().isPresent()) filters.add(new Regex(properties.regex().get()));
-                else throw GraknException.of(UNRECOGNISED_VALUE);
                 return filters;
             }
 

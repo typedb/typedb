@@ -18,8 +18,6 @@
 
 package grakn.core.common.iterator;
 
-import grakn.common.collection.Either;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -50,12 +48,12 @@ public interface ResourceIterator<T> extends Iterator<T> {
     }
 
     default ResourceIterator<T> link(ResourceIterator<T> iterator) {
-        return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.first(iterator))));
+        return new LinkedIterators<>(new LinkedList<>(list(this, iterator)));
     }
 
     default ResourceIterator<T> link(Iterator<T> iterator) {
         if (iterator instanceof ResourceIterator<?>) return link((ResourceIterator<T>) iterator);
-        return new LinkedIterators<>(new LinkedList<>(list(Either.first(this), Either.second(iterator))));
+        return new LinkedIterators<>(new LinkedList<>(list(this, Iterators.iterate(iterator))));
     }
 
     default Stream<T> stream() {
