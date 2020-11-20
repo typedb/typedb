@@ -79,10 +79,10 @@ public class Traversal {
             return Iterators.cartesian(planners.stream().map(planner -> {
                 planner.optimise(graphMgr.schema());
                 return planner.procedure().execute(graphMgr, parameters);
-            }).collect(toList())).map(list -> {
-                Map<Reference, Vertex<?, ?>> answer = new HashMap<>();
-                list.forEach(answer::putAll);
-                return answer;
+            }).collect(toList())).map(partialAnswers -> {
+                Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+                partialAnswers.forEach(combinedAnswers::putAll);
+                return combinedAnswers;
             });
         }
     }

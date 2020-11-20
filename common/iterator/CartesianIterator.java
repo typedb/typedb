@@ -43,6 +43,11 @@ public class CartesianIterator<T> implements ResourceIterator<List<T>> {
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     private boolean initialiseAndCheck() {
+        if (iterators.isEmpty()) {
+            state = State.COMPLETED;
+            return false;
+        }
+
         for (ResourceIterator<T> iterator : iterators) {
             if (iterator.hasNext()) {
                 T next = iterator.next();
