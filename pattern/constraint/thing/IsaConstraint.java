@@ -25,6 +25,7 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -38,14 +39,14 @@ public class IsaConstraint extends ThingConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private Label[] labels;
+    private Set<Label> labels;
 
     private IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
-        this.labels = new Label[0];
+        this.labels = new HashSet<>();
     }
 
     static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
@@ -61,7 +62,7 @@ public class IsaConstraint extends ThingConstraint {
         return isExplicit;
     }
 
-    public void labels(Label[] labels) {
+    public void labels(Set<Label> labels) {
         this.labels = labels;
     }
 
@@ -72,7 +73,7 @@ public class IsaConstraint extends ThingConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        if (type.reference().isLabel() && labels.length > 0) {
+        if (type.reference().isLabel() && !labels.isEmpty()) {
             traversal.type(owner.identifier(), labels);
         } else {
             traversal.isa(owner.identifier(), type.identifier(), !isExplicit);

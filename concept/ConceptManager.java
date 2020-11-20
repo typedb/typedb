@@ -184,7 +184,7 @@ public final class ConceptManager {
     }
 
     public void validateTypes() {
-        final List<GraknException> exceptions = graphMgr.schema().types().parallel()
+        final List<GraknException> exceptions = graphMgr.schema().bufferedTypes().parallel()
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(graphMgr, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);

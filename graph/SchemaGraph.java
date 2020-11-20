@@ -41,6 +41,8 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
+import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
 
 public class SchemaGraph implements Graph {
@@ -53,11 +55,15 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<VertexIID.Rule, RuleVertex> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
+    private final boolean isReadOnly;
     private boolean isModified;
     private long snapshot;
+    private Long typeCount;
+    private Long attributeTypeCount;
 
-    public SchemaGraph(Storage.Schema storage) {
+    public SchemaGraph(Storage.Schema storage, boolean isReadOnly) {
         this.storage = storage;
+        this.isReadOnly = isReadOnly;
         keyGenerator = new KeyGenerator.Schema.Buffered();
         typesByLabel = new ConcurrentHashMap<>();
         rulesByLabel = new ConcurrentHashMap<>();
@@ -75,7 +81,7 @@ public class SchemaGraph implements Graph {
     }
 
     public long snapshot() {
-        return snapshot++; // TODO: update snapshot everytime we update type statistics
+        return ++snapshot; // TODO: update snapshot everytime we update type statistics
     }
 
     public boolean isInitialised() throws GraknException {
@@ -106,11 +112,29 @@ public class SchemaGraph implements Graph {
         rootRelationType.outs().put(Encoding.Edge.Type.RELATES, rootRoleType);
     }
 
+    public long typeCount() {
+        if (typeCount == null || isReadOnly) typeCount = types().count();
+        return typeCount;
+    }
+
+    public long attributeTypeCount() {
+        if (attributeTypeCount == null || isReadOnly) attributeTypeCount = attributeTypes().count();
+        return attributeTypeCount;
+    }
+
     public Stream<TypeVertex> types() {
+        return tree(getType(Encoding.Vertex.Type.Root.THING.label()), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> attributeTypes() {
+        return tree(getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label()), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> bufferedTypes() {
         return typesByIID.values().stream();
     }
 
-    public Stream<RuleVertex> rules() {
+    public Stream<RuleVertex> bufferedRules() {
         return rulesByIID.values().stream();
     }
 

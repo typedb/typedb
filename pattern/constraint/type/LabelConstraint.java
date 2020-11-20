@@ -18,10 +18,10 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -30,37 +30,35 @@ import static graql.lang.common.GraqlToken.Constraint.TYPE;
 
 public class LabelConstraint extends TypeConstraint {
 
-    private final String label;
-    private final String scope;
+    private final Label label;
     private final int hash;
 
-    private LabelConstraint(TypeVariable owner, String label, @Nullable String scope) {
+    private LabelConstraint(TypeVariable owner, Label label) {
         super(owner);
         if (label == null) throw new NullPointerException("Null label");
-        this.scope = scope;
         this.label = label;
-        this.hash = Objects.hash(LabelConstraint.class, this.owner, this.scope, this.label);
+        this.hash = Objects.hash(LabelConstraint.class, this.owner, this.label);
     }
 
     static LabelConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
-        return new LabelConstraint(owner, constraint.label(), constraint.scope().orElse(null));
+        return new LabelConstraint(owner, Label.of(constraint.label(), constraint.scope().orElse(null)));
     }
 
     public Optional<String> scope() {
-        return Optional.ofNullable(scope);
+        return label.scope();
     }
 
     public String label() {
-        return label;
+        return label.name();
     }
 
     public String scopedLabel() {
-        return (scope != null ? scope + ":" : "") + label;
+        return label.scopedName();
     }
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.label(owner.identifier(), label, scope);
+        traversal.label(owner.identifier(), label);
     }
 
     @Override
@@ -78,9 +76,7 @@ public class LabelConstraint extends TypeConstraint {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final LabelConstraint that = (LabelConstraint) o;
-        return (this.owner.equals(that.owner) &&
-                this.label.equals(that.label) &&
-                Objects.equals(this.scope, that.scope));
+        return this.owner.equals(that.owner) && this.label.equals(that.label);
     }
 
     @Override

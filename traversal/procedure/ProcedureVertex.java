@@ -19,14 +19,21 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
+import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
+import graql.lang.common.GraqlToken;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static java.util.stream.Collectors.toSet;
 
-abstract class ProcedureVertex<PROPERTY extends ProcedureVertex.Filter<?>> extends TraversalVertex<ProcedureEdge, PROPERTY> {
+abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge, PROPERTIES> {
 
     private final Procedure procedure;
     private final boolean isStartingVertex;
@@ -45,14 +52,23 @@ abstract class ProcedureVertex<PROPERTY extends ProcedureVertex.Filter<?>> exten
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(ProcedureVertex.Type.class)));
     }
 
-    static class Thing extends ProcedureVertex<Filter.Thing<?>> {
+    static class Thing extends ProcedureVertex<Properties.Thing> {
+
+        private Set<Filter.Thing> filters;
 
         Thing(Identifier identifier, Procedure procedure, boolean isStartingVertex) {
             super(identifier, procedure, isStartingVertex);
         }
 
-        public void property(TraversalVertex.Property.Thing property) {
-            super.property(Filter.Thing.of(property));
+        @Override
+        protected Properties.Thing newProperties() {
+            return new Properties.Thing();
+        }
+
+        @Override
+        public void properties(Properties.Thing properties) {
+            filters = Filter.Thing.of(properties, identifier());
+            super.properties(properties);
         }
 
         @Override
@@ -62,10 +78,23 @@ abstract class ProcedureVertex<PROPERTY extends ProcedureVertex.Filter<?>> exten
         public ProcedureVertex.Thing asThing() { return this; }
     }
 
-    static class Type extends ProcedureVertex<Filter.Type<?>> {
+    static class Type extends ProcedureVertex<Properties.Type> {
+
+        private Set<Filter.Type> filters;
 
         Type(Identifier identifier, Procedure procedure, boolean isStartingVertex) {
             super(identifier, procedure, isStartingVertex);
+        }
+
+        @Override
+        protected Properties.Type newProperties() {
+            return new Properties.Type();
+        }
+
+        @Override
+        public void properties(Properties.Type properties) {
+            filters = Filter.Type.of(properties);
+            super.properties(properties);
         }
 
         @Override
@@ -73,103 +102,132 @@ abstract class ProcedureVertex<PROPERTY extends ProcedureVertex.Filter<?>> exten
 
         @Override
         public ProcedureVertex.Type asType() { return this; }
-
-        public void property(TraversalVertex.Property.Type property) {
-            super.property(Filter.Type.of(property));
-        }
     }
 
-    static abstract class Filter<P extends TraversalVertex.Property> extends TraversalVertex.Property {
-
-        private final P property;
-
-        Filter(P property) {
-            this.property = property;
-        }
-
-        P property() {
-            return property;
-        }
+    abstract static class Filter {
 
         @Override
-        public String toString() {
-            return "Filter: " + property.toString();
-        }
+        public abstract String toString();
 
-        static abstract class Thing<P extends TraversalVertex.Property.Thing> extends Filter<P> {
+        abstract static class Thing extends Filter {
 
-            Thing(P property) {
-                super(property);
-            }
-
-            public static Filter.Thing<?> of(TraversalVertex.Property.Thing property) {
-                if (property.isIID()) return new IID(property.asIID());
-                else if (property.isIsa()) return new Isa(property.asIsa());
-                else if (property.isValue()) return new Value(property.asValue());
+            static Set<Filter.Thing> of(Properties.Thing property, Identifier identifier) {
+                Set<Filter.Thing> filters = new HashSet<>();
+                if (property.hasIID()) filters.add(new IID(identifier));
+                else if (!property.types().isEmpty()) filters.add(new Types(property.types()));
+                else if (!property.values().isEmpty()) filters.addAll(
+                        property.values().stream().map(c -> new Value(c, identifier)).collect(toSet())
+                );
                 else throw new GraknException(UNRECOGNISED_VALUE);
+                return filters;
             }
 
-            static class IID extends Filter.Thing<TraversalVertex.Property.Thing.IID> {
+            static class IID extends Filter.Thing {
 
-                IID(TraversalVertex.Property.Thing.IID property) {
-                    super(property);
+                private final Identifier param;
+
+                IID(Identifier param) {
+                    this.param = param;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Filter: IID { iid: param(%s) }", param);
                 }
             }
 
-            static class Isa extends Filter.Thing<TraversalVertex.Property.Thing.Isa> {
+            static class Types extends Filter.Thing {
 
-                Isa(TraversalVertex.Property.Thing.Isa property) {
-                    super(property);
+                private final Set<Label> labels;
+
+                Types(Set<Label> labels) {
+                    this.labels = labels;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Filter: Types { labels: %s }", labels);
                 }
             }
 
-            static class Value extends Filter.Thing<TraversalVertex.Property.Thing.Value> {
+            static class Value extends Filter.Thing {
 
-                Value(TraversalVertex.Property.Thing.Value property) {
-                    super(property);
+                private final GraqlToken.Comparator comparator;
+                private final Identifier param;
+
+                Value(GraqlToken.Comparator comparator, Identifier param) {
+                    this.comparator = comparator;
+                    this.param = param;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Filter: Value { comparator: %s, value: param(%s) }", comparator, param);
                 }
             }
         }
 
-        static abstract class Type<P extends TraversalVertex.Property.Type> extends Filter<P> {
+        static abstract class Type extends Filter {
 
-            Type(P property) {
-                super(property);
-            }
-
-            public static Filter.Type<?> of(TraversalVertex.Property.Type property) {
-                if (property.isLabel()) return new Label(property.asLabel());
-                else if (property.isAbstract()) return new Abstract(property.asAbstract());
-                else if (property.isValueType()) return new ValueType(property.asValueType());
-                else if (property.isRegex()) return new Regex(property.asRegex());
+            static Set<Filter.Type> of(Properties.Type properties) {
+                Set<Filter.Type> filters = new HashSet<>();
+                if (properties.label().isPresent()) filters.add(new Label(properties.label().get()));
+                else if (properties.isAbstract()) filters.add(new Abstract());
+                else if (properties.valueType().isPresent()) filters.add(new ValueType(properties.valueType().get()));
+                else if (properties.regex().isPresent()) filters.add(new Regex(properties.regex().get()));
                 else throw GraknException.of(UNRECOGNISED_VALUE);
+                return filters;
             }
 
-            static class Label extends Filter.Type<TraversalVertex.Property.Type.Label> {
+            static class Label extends Filter.Type {
 
-                Label(TraversalVertex.Property.Type.Label property) {
-                    super(property);
+                private final grakn.core.common.parameters.Label label;
+
+                Label(grakn.core.common.parameters.Label label) {
+                    this.label = label;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Filter: Label { label: %s }", label);
                 }
             }
 
-            static class Abstract extends Filter.Type<TraversalVertex.Property.Type.Abstract> {
+            static class Abstract extends Filter.Type {
 
-                Abstract(TraversalVertex.Property.Type.Abstract property) {
-                    super(property);
+                Abstract() {}
+
+                @Override
+                public String toString() {
+                    return "Filter: Abstract { abstract: true }";
                 }
             }
 
-            static class ValueType extends Filter.Type<TraversalVertex.Property.Type.ValueType> {
+            static class ValueType extends Filter.Type {
 
-                ValueType(TraversalVertex.Property.Type.ValueType property) {
-                    super(property);
+                private final Encoding.ValueType valueType;
+
+                ValueType(Encoding.ValueType valueType) {
+                    this.valueType = valueType;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Filter: Value Type { value: %s }", valueType);
                 }
             }
 
-            static class Regex extends Filter.Type<TraversalVertex.Property.Type.Regex> {
+            static class Regex extends Filter.Type {
 
-                Regex(TraversalVertex.Property.Type.Regex property) {
-                    super(property);
+                private final String regex;
+
+                Regex(String regex) {
+                    this.regex = regex;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Filter: Regex { regex: %s }", regex);
                 }
             }
         }

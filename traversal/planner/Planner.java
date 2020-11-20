@@ -19,6 +19,7 @@
 package grakn.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import grakn.core.common.concurrent.ManagedCountDownLatch;
@@ -139,14 +140,18 @@ public class Planner {
         return solver;
     }
 
+    MPObjective objective() {
+        return solver.objective();
+    }
+
     private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
                           Set<StructureEdge> registeredEdges) {
         if (registeredVertices.contains(structureVertex)) return;
         registeredVertices.add(structureVertex);
         List<StructureVertex<?>> adjacents = new ArrayList<>();
         PlannerVertex<?> vertex = vertex(structureVertex);
-        if (vertex.isThing()) structureVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
-        else structureVertex.asType().properties().forEach(p -> vertex.asType().property(p));
+        if (vertex.isThing()) vertex.asThing().properties(structureVertex.asThing().properties());
+        else vertex.asType().properties(structureVertex.asType().properties());
         structureVertex.outs().forEach(structureEdge -> {
             if (!registeredEdges.contains(structureEdge)) {
                 registeredEdges.add(structureEdge);
@@ -226,18 +231,18 @@ public class Planner {
         }
     }
 
-    private void updateCost(SchemaGraph schema) {
-        if (snapshot < schema.snapshot()) {
-            snapshot = schema.snapshot();
-            vertices.values().forEach(v -> v.updateCost(schema));
-            edges.forEach(e -> e.updateCost(schema));
+    private void updateObjective(SchemaGraph graph) {
+        if (snapshot < graph.snapshot()) {
+            snapshot = graph.snapshot();
+            vertices.values().forEach(v -> v.updateObjective(graph));
+            edges.forEach(e -> e.updateObjective(graph));
         }
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    public void optimise(SchemaGraph schema) {
+    public void optimise(SchemaGraph graph) {
         if (isOptimising.compareAndSet(false, true)) {
-            updateCost(schema);
+            updateObjective(graph);
             if (!isUpToDate() || !isOptimal()) {
                 do {
                     totalDuration += TIME_LIMIT_MILLIS;

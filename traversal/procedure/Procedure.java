@@ -62,8 +62,8 @@ public class Procedure {
         registeredVertices.add(plannerVertex);
         List<PlannerVertex<?>> adjacents = new ArrayList<>();
         ProcedureVertex<?> vertex = vertex(plannerVertex);
-        if (vertex.isThing()) plannerVertex.asThing().properties().forEach(p -> vertex.asThing().property(p));
-        else plannerVertex.asType().properties().forEach(p -> vertex.asType().property(p));
+        if (vertex.isThing()) vertex.asThing().properties(plannerVertex.asThing().properties());
+        else vertex.asType().properties(plannerVertex.asType().properties());
         plannerVertex.outs().forEach(plannerEdge -> {
             if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
                 registeredEdges.add(plannerEdge);

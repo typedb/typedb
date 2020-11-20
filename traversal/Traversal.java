@@ -26,19 +26,18 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.graph.TraversalEdge;
-import grakn.core.traversal.graph.TraversalVertex;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
@@ -166,54 +165,52 @@ public class Traversal {
 
     public void iid(Identifier.Variable thing, byte[] iid) {
         parameters.putIID(thing, iid);
-        structure.thingVertex(thing).property(new TraversalVertex.Property.Thing.IID(thing));
+        structure.thingVertex(thing).properties().hasIID(true);
     }
 
-    public void type(Identifier.Variable thing, Label[] labels) {
-        structure.thingVertex(thing).property(new TraversalVertex.Property.Thing.Isa(labels));
+    public void type(Identifier.Variable thing, Set<Label> labels) {
+        structure.thingVertex(thing).properties().types(labels);
     }
 
     public void isAbstract(Identifier.Variable type) {
-        structure.typeVertex(type).property(new TraversalVertex.Property.Type.Abstract());
+        structure.typeVertex(type).properties().isAbstract(true);
     }
 
-    public void label(Identifier.Variable type, String label, @Nullable String scope) {
-        structure.typeVertex(type).property(new TraversalVertex.Property.Type.Label(label, scope));
+    public void label(Identifier.Variable type, Label label) {
+        structure.typeVertex(type).properties().label(label);
     }
 
     public void regex(Identifier.Variable type, String regex) {
-        structure.typeVertex(type).property(new TraversalVertex.Property.Type.Regex(regex));
+        structure.typeVertex(type).properties().regex(regex);
     }
 
     public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
-        structure.typeVertex(attributeType).property(
-                new TraversalVertex.Property.Type.ValueType(Encoding.ValueType.of(valueType))
-        );
+        structure.typeVertex(attributeType).properties().valueType(Encoding.ValueType.of(valueType));
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator comparator, String value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).property(new TraversalVertex.Property.Thing.Value(comparator, attribute));
+        structure.thingVertex(attribute).properties().value(comparator);
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Boolean value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).property(new TraversalVertex.Property.Thing.Value(comparator, attribute));
+        structure.thingVertex(attribute).properties().value(comparator);
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Long value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).property(new TraversalVertex.Property.Thing.Value(comparator, attribute));
+        structure.thingVertex(attribute).properties().value(comparator);
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Double value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).property(new TraversalVertex.Property.Thing.Value(comparator, attribute));
+        structure.thingVertex(attribute).properties().value(comparator);
     }
 
     public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, LocalDateTime value) {
         parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).property(new TraversalVertex.Property.Thing.Value(comparator, attribute));
+        structure.thingVertex(attribute).properties().value(comparator);
     }
 
     public void value(Identifier.Variable attribute1, GraqlToken.Comparator.Equality comparator,

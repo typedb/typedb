@@ -43,4 +43,6 @@ public interface TypeVertex extends SchemaVertex<VertexIID.Type, Encoding.Vertex
     Pattern regex();
 
     TypeVertex regex(Pattern regex);
+
+    long instanceCount();
 }

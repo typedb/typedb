@@ -21,18 +21,17 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
-
-import java.util.HashSet;
-import java.util.Set;
+import graql.lang.common.GraqlToken;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
-        extends TraversalVertex<PlannerEdge.Directional, PROPERTY> {
+public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
+        extends TraversalVertex<PlannerEdge.Directional, PROPERTIES> {
 
     private final Planner planner;
     private final String varPrefix = "vertex::var::" + identifier() + "::";
@@ -59,7 +58,7 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         isInitialisedConstraints = false;
     }
 
-    abstract void updateCost(SchemaGraph schema);
+    abstract void updateObjective(SchemaGraph graph);
 
     public boolean isStartingVertex() {
         return valueIsStartingVertex == 1;
@@ -176,20 +175,34 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.class)));
     }
 
-    public static class Thing extends PlannerVertex<TraversalVertex.Property.Thing> {
-
-        private TraversalVertex.Property.Thing.IID iid;
-        private TraversalVertex.Property.Thing.Isa isa;
-        private final Set<TraversalVertex.Property.Thing.Value> value;
+    public static class Thing extends PlannerVertex<Properties.Thing> {
 
         Thing(Identifier identifier, Planner planner) {
             super(identifier, planner);
-            this.value = new HashSet<>();
         }
 
         @Override
-        void updateCost(SchemaGraph schema) {
-            // TODO
+        protected Properties.Thing newProperties() {
+            return new Properties.Thing();
+        }
+
+        @Override
+        void updateObjective(SchemaGraph graph) {
+            if (properties().hasIID()) {
+                planner().objective().setCoefficient(varIsStartingVertex, 1);
+            } else if (!properties().types().isEmpty()) {
+                if (!properties().values().isEmpty() &&
+                        properties().values().stream().anyMatch(GraqlToken.Comparator::isEquality)) {
+                    planner().objective().setCoefficient(varIsStartingVertex, properties().types().size());
+                } else {
+                    long count = 0;
+                    for (Label label : properties().types()) {
+                        count += graph.getType(label.name(), label.scope().orElse(null)).instanceCount();
+                    }
+                    planner().objective().setCoefficient(varIsStartingVertex, count);
+                }
+            }
+
         }
 
         @Override
@@ -199,26 +212,13 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         public PlannerVertex.Thing asThing() { return this; }
 
         @Override
-        public void property(TraversalVertex.Property.Thing property) {
-            if (property.isIID()) {
-                iid = property.asIID();
-                hasIndex = true;
-            } else if (property.isIsa()) {
-                isa = property.asIsa();
-                hasIndex = true;
-            } else if (property.isValue()) {
-                value.add(property.asValue());
-            }
-            properties.add(property);
+        public void properties(TraversalVertex.Properties.Thing properties) {
+            if (properties.hasIID() || !properties.types().isEmpty()) hasIndex = true;
+            super.properties(properties);
         }
     }
 
-    public static class Type extends PlannerVertex<TraversalVertex.Property.Type> {
-
-        private TraversalVertex.Property.Type.Label label;
-        private TraversalVertex.Property.Type.Abstract abstractProp;
-        private TraversalVertex.Property.Type.ValueType valueType;
-        private TraversalVertex.Property.Type regex;
+    public static class Type extends PlannerVertex<Properties.Type> {
 
         Type(Identifier identifier, Planner planner) {
             super(identifier, planner);
@@ -226,8 +226,19 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
         }
 
         @Override
-        void updateCost(SchemaGraph schema) {
-            // TODO
+        void updateObjective(SchemaGraph graph) {
+            if (properties().label().isPresent()) {
+                planner().objective().setCoefficient(varIsStartingVertex, 1);
+            } else if (properties().isAbstract()) {
+                planner().objective().setCoefficient(varIsStartingVertex, graph.typeCount());
+            } else if (properties().valueType().isPresent() || properties().regex().isPresent()) {
+                planner().objective().setCoefficient(varIsStartingVertex, graph.attributeTypeCount());
+            }
+        }
+
+        @Override
+        protected Properties.Type newProperties() {
+            return new Properties.Type();
         }
 
         @Override
@@ -235,15 +246,5 @@ public abstract class PlannerVertex<PROPERTY extends TraversalVertex.Property>
 
         @Override
         public PlannerVertex.Type asType() { return this; }
-
-        @Override
-        public void property(TraversalVertex.Property.Type property) {
-            assert property.isIndexed();
-            if (property.isLabel()) label = property.asLabel();
-            else if (property.isAbstract()) abstractProp = property.asAbstract();
-            else if (property.isValueType()) valueType = property.asValueType();
-            else if (property.isRegex()) regex = property = property.asRegex();
-            properties.add(property);
-        }
     }
 }

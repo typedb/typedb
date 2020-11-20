@@ -176,7 +176,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
             storage = new SchemaCoreStorage();
-            final SchemaGraph schemaGraph = new SchemaGraph(storage);
+            final SchemaGraph schemaGraph = new SchemaGraph(storage, type.isRead());
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphMgr = new GraphManager(schemaGraph, dataGraph);
             traversalCache = new TraversalCache();

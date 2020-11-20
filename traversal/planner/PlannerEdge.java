@@ -64,7 +64,7 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         backward.initialiseConstraints();
     }
 
-    void updateCost(SchemaGraph schema) {
+    void updateObjective(SchemaGraph graph) {
         // TODO
     }
 
@@ -118,14 +118,19 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             for (int i = 0; i < planner.edges().size(); i++) {
                 varOrderAssignment[i] = planner.solver().makeIntVar(0, 1, varPrefix + "order_assignment[" + i + "]");
             }
-
             isInitialisedVariables = true;
         }
 
         void initialiseConstraints() {
             assert from().isInitialisedVariables();
             assert to().isInitialisedConstraints();
+            initialiseConstraintsForOrderNumber();
+            initialiseConstraintsForVertexFlow();
+            initialiseConstraintsForOrderSequence();
+            isInitialisedConstraints = true;
+        }
 
+        private void initialiseConstraintsForOrderNumber() {
             MPConstraint conOrderIfSelected = planner.solver().makeConstraint(0, 0, conPrefix + "order_if_selected");
             conOrderIfSelected.setCoefficient(varIsSelected, -1);
 
@@ -136,7 +141,9 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 conOrderIfSelected.setCoefficient(varOrderAssignment[i], 1);
                 conAssignOrderNumber.setCoefficient(varOrderAssignment[i], i + 1);
             }
+        }
 
+        private void initialiseConstraintsForVertexFlow() {
             MPConstraint conOutFromVertex = planner.solver().makeConstraint(0, 1, conPrefix + "out_from_vertex");
             conOutFromVertex.setCoefficient(from().varHasOutgoingEdges, 1);
             conOutFromVertex.setCoefficient(varIsSelected, -1);
@@ -144,7 +151,9 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             MPConstraint conInToVertex = planner.solver().makeConstraint(0, 1, conPrefix + "in_to_vertex");
             conInToVertex.setCoefficient(to().varHasIncomingEdges, 1);
             conInToVertex.setCoefficient(varIsSelected, -1);
+        }
 
+        private void initialiseConstraintsForOrderSequence() {
             to().outs().stream().filter(e -> !e.parent.equals(this.parent)).forEach(subsequentEdge -> {
                 MPConstraint conOrderSequence = planner.solver().makeConstraint(0, planner.edges().size() + 1, conPrefix + "order_sequence");
                 conOrderSequence.setCoefficient(to().varIsEndingVertex, planner.edges().size());
@@ -152,8 +161,6 @@ public class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 conOrderSequence.setCoefficient(this.varIsSelected, -1);
                 conOrderSequence.setCoefficient(this.varOrderNumber, -1);
             });
-
-            isInitialisedConstraints = true;
         }
 
         void recordValues() {
