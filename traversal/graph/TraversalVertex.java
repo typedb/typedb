@@ -113,11 +113,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
 
             private boolean hasIID;
             private final Set<Label> types;
-            private final List<GraqlToken.Comparator> comparators;
+            private final List<GraqlToken.Predicate> predicates;
 
             public Thing() {
                 types = new HashSet<>();
-                comparators = new ArrayList<>();
+                predicates = new ArrayList<>();
             }
 
             public boolean hasIID() {
@@ -136,18 +136,18 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
                 this.types.addAll(types);
             }
 
-            public List<GraqlToken.Comparator> values() {
-                return comparators;
+            public List<GraqlToken.Predicate> predicates() {
+                return predicates;
             }
 
-            public void value(GraqlToken.Comparator comparator) {
-                comparators.add(comparator);
+            public void predicate(GraqlToken.Predicate predicate) {
+                predicates.add(predicate);
             }
 
             @Override
             public String toString() {
-                return String.format("Thing Vertex { hasIID: %s, types: %s, comparators: %s }",
-                                     hasIID, types, comparators);
+                return String.format("Thing Vertex { hasIID: %s, types: %s, predicates: %s }",
+                                     hasIID, types, predicates);
             }
         }
 

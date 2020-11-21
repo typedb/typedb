@@ -188,34 +188,34 @@ public class Traversal {
         structure.typeVertex(attributeType).properties().valueType(Encoding.ValueType.of(valueType));
     }
 
-    public void value(Identifier.Variable attribute, GraqlToken.Comparator comparator, String value) {
-        parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).properties().value(comparator);
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate predicate, String value) {
+        parameters.pushValue(attribute, predicate, value);
+        structure.thingVertex(attribute).properties().predicate(predicate);
     }
 
-    public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Boolean value) {
-        parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).properties().value(comparator);
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Boolean value) {
+        parameters.pushValue(attribute, predicate, value);
+        structure.thingVertex(attribute).properties().predicate(predicate);
     }
 
-    public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Long value) {
-        parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).properties().value(comparator);
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Long value) {
+        parameters.pushValue(attribute, predicate, value);
+        structure.thingVertex(attribute).properties().predicate(predicate);
     }
 
-    public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, Double value) {
-        parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).properties().value(comparator);
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Double value) {
+        parameters.pushValue(attribute, predicate, value);
+        structure.thingVertex(attribute).properties().predicate(predicate);
     }
 
-    public void value(Identifier.Variable attribute, GraqlToken.Comparator.Equality comparator, LocalDateTime value) {
-        parameters.pushValue(attribute, comparator, value);
-        structure.thingVertex(attribute).properties().value(comparator);
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, LocalDateTime value) {
+        parameters.pushValue(attribute, predicate, value);
+        structure.thingVertex(attribute).properties().predicate(predicate);
     }
 
-    public void value(Identifier.Variable attribute1, GraqlToken.Comparator.Equality comparator,
-                      Identifier.Variable attribute2) {
-        structure.edge(new TraversalEdge.Property.Comparator(comparator),
+    public void predicate(Identifier.Variable attribute1, GraqlToken.Predicate.Equality predicate,
+                          Identifier.Variable attribute2) {
+        structure.edge(new TraversalEdge.Property.Predicate(predicate),
                        structure.thingVertex(attribute1),
                        structure.thingVertex(attribute2));
     }
@@ -223,7 +223,7 @@ public class Traversal {
     public static class Parameters {
 
         private final Map<Identifier, byte[]> iid;
-        private final Map<Pair<Identifier, GraqlToken.Comparator>, LinkedList<Value>> values;
+        private final Map<Pair<Identifier, GraqlToken.Predicate>, LinkedList<Value>> values;
 
         public Parameters() {
             iid = new HashMap<>();
@@ -234,32 +234,32 @@ public class Traversal {
             this.iid.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, boolean value) {
-            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, boolean value) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, long value) {
-            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, long value) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, double value) {
-            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, double value) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, String value) {
-            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, String value) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Comparator comparator, LocalDateTime value) {
-            values.computeIfAbsent(pair(identifier, comparator), k -> new LinkedList<>()).addLast(new Value(value));
+        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, LocalDateTime value) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
         public byte[] getIID(Identifier.Variable identifier) {
             return iid.get(identifier);
         }
 
-        public Value popValue(Identifier.Variable identifier, GraqlToken.Comparator comparator) {
-            return values.get(pair(identifier, comparator)).removeFirst();
+        public Value popValue(Identifier.Variable identifier, GraqlToken.Predicate predicate) {
+            return values.get(pair(identifier, predicate)).removeFirst();
         }
 
         static class Value {

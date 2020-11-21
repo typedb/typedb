@@ -26,7 +26,7 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Comparator.SubString.LIKE;
+import static graql.lang.common.GraqlToken.Predicate.SubString.LIKE;
 
 public class RegexConstraint extends TypeConstraint {
 

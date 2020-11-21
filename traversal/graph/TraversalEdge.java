@@ -79,7 +79,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             return false;
         }
 
-        boolean isComparator() {
+        boolean isPredicate() {
             return false;
         }
 
@@ -114,28 +114,28 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             }
         }
 
-        public static class Comparator extends Property {
+        public static class Predicate extends Property {
 
-            private final GraqlToken.Comparator.Equality comparator;
+            private final GraqlToken.Predicate.Equality predicate;
             private final int hash;
 
-            public Comparator(GraqlToken.Comparator.Equality comparator) {
-                this.comparator = comparator;
-                this.hash = Objects.hash(this.comparator);
+            public Predicate(GraqlToken.Predicate.Equality predicate) {
+                this.predicate = predicate;
+                this.hash = Objects.hash(this.predicate);
             }
 
-            GraqlToken.Comparator.Equality comparator() {
-                return comparator;
+            GraqlToken.Predicate.Equality predicate() {
+                return predicate;
             }
 
             @Override
-            boolean isComparator() {
+            boolean isPredicate() {
                 return true;
             }
 
             @Override
             public String toString() {
-                return String.format("Property: Comparator { comparator: %s }", comparator);
+                return String.format("Property: Predicate { predicate: %s }", predicate);
             }
 
             @Override
@@ -143,8 +143,8 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
 
-                Comparator that = (Comparator) o;
-                return this.comparator.equals(that.comparator);
+                Predicate that = (Predicate) o;
+                return this.predicate.equals(that.predicate);
             }
 
             @Override

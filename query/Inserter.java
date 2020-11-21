@@ -222,7 +222,7 @@ public class Inserter {
             if (variable.value().size() > 1) {
                 throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY.message(variable.reference(), attributeType.getLabel()));
             } else if (!variable.value().isEmpty() &&
-                    (valueConstraint = variable.value().iterator().next()).isValueEquality()) {
+                    (valueConstraint = variable.value().iterator().next()).isValueIdentity()) {
                 switch (attributeType.getValueType()) {
                     case LONG:
                         return attributeType.asLong().put(valueConstraint.asLong().value());

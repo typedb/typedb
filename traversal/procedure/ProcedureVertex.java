@@ -114,8 +114,8 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
                 Set<Filter.Thing> filters = new HashSet<>();
                 if (property.hasIID()) filters.add(new IID(identifier));
                 else if (!property.types().isEmpty()) filters.add(new Types(property.types()));
-                else if (!property.values().isEmpty()) filters.addAll(
-                        property.values().stream().map(c -> new Value(c, identifier)).collect(toSet())
+                else if (!property.predicates().isEmpty()) filters.addAll(
+                        property.predicates().stream().map(c -> new Predicate(c, identifier)).collect(toSet())
                 );
                 return filters;
             }
@@ -148,19 +148,19 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
                 }
             }
 
-            static class Value extends Filter.Thing {
+            static class Predicate extends Filter.Thing {
 
-                private final GraqlToken.Comparator comparator;
+                private final GraqlToken.Predicate predicate;
                 private final Identifier param;
 
-                Value(GraqlToken.Comparator comparator, Identifier param) {
-                    this.comparator = comparator;
+                Predicate(GraqlToken.Predicate predicate, Identifier param) {
+                    this.predicate = predicate;
                     this.param = param;
                 }
 
                 @Override
                 public String toString() {
-                    return String.format("Filter: Value { comparator: %s, value: param(%s) }", comparator, param);
+                    return String.format("Filter: Value { predicate: %s, value: param(%s) }", predicate, param);
                 }
             }
         }

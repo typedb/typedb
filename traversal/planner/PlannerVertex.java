@@ -25,10 +25,10 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
-import graql.lang.common.GraqlToken;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
         extends TraversalVertex<PlannerEdge.Directional, PROPERTIES> {
@@ -191,8 +191,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             if (properties().hasIID()) {
                 planner().objective().setCoefficient(varIsStartingVertex, 1);
             } else if (!properties().types().isEmpty()) {
-                if (!properties().values().isEmpty() &&
-                        properties().values().stream().anyMatch(GraqlToken.Comparator::isEquality)) {
+                if (!properties().predicates().isEmpty() && properties().predicates().stream().anyMatch(p -> p.equals(EQ))) {
                     planner().objective().setCoefficient(varIsStartingVertex, properties().types().size());
                 } else {
                     long count = 0;
