@@ -146,7 +146,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
 
             @Override
             public String toString() {
-                return String.format("Thing Vertex { hasIID: %s, types: %s, comparators: %s",
+                return String.format("Thing Vertex { hasIID: %s, types: %s, comparators: %s }",
                                      hasIID, types, comparators);
             }
         }
@@ -194,7 +194,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
 
             @Override
             public String toString() {
-                return String.format("Type Vertex { label: %s, abstract: %s, value: %s, regex: %s",
+                return String.format("Type Vertex { label: %s, abstract: %s, value: %s, regex: %s }",
                                      label, isAbstract, valueType, regex);
             }
         }

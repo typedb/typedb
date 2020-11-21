@@ -133,7 +133,7 @@ public class Traversal {
                        structure.thingVertex(player));
     }
 
-    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, String[] labels) {
+    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> labels) {
         structure.edge(new TraversalEdge.Property.Encoder(ROLEPLAYER, labels),
                        structure.thingVertex(relation),
                        structure.thingVertex(player));

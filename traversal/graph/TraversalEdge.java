@@ -18,11 +18,13 @@
 
 package grakn.core.traversal.graph;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import graql.lang.common.GraqlToken;
 
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
 
@@ -154,34 +156,34 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
         public static class Encoder extends Property {
 
             private final Encoding.Edge encoding;
-            private final String[] labels;
+            private final Set<Label> labels;
             private final boolean isTransitive;
             private final int hash;
 
             public Encoder(Encoding.Edge encoding) {
-                this(encoding, new String[]{}, false);
+                this(encoding, new HashSet<>(), false);
             }
 
             public Encoder(Encoding.Edge encoding, boolean isTransitive) {
-                this(encoding, new String[]{}, isTransitive);
+                this(encoding, new HashSet<>(), isTransitive);
             }
 
-            public Encoder(Encoding.Edge encoding, String[] labels) {
+            public Encoder(Encoding.Edge encoding, Set<Label> labels) {
                 this(encoding, labels, false);
             }
 
-            private Encoder(Encoding.Edge encoding, String[] labels, boolean isTransitive) {
+            private Encoder(Encoding.Edge encoding, Set<Label> labels, boolean isTransitive) {
                 this.encoding = encoding;
                 this.labels = labels;
                 this.isTransitive = isTransitive;
-                this.hash = Objects.hash(this.encoding, Arrays.hashCode(this.labels), this.isTransitive);
+                this.hash = Objects.hash(this.encoding, this.labels, this.isTransitive);
             }
 
             public Encoding.Edge encoding() {
                 return encoding;
             }
 
-            public String[] labels() {
+            public Set<Label> labels() {
                 return labels;
             }
 
@@ -197,7 +199,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
             @Override
             public String toString() {
                 return String.format("Property: Encoder { encoding: %s, labels: %s, isTransitive: %s }",
-                                     encoding(), Arrays.toString(labels), isTransitive);
+                                     encoding(), labels, isTransitive);
             }
 
             @Override
@@ -207,7 +209,7 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
 
                 Encoder that = (Encoder) o;
                 return (this.encoding.equals(that.encoding) &&
-                        Arrays.equals(this.labels, that.labels) &&
+                        this.labels.equals(that.labels) &&
                         this.isTransitive == that.isTransitive);
             }
 
