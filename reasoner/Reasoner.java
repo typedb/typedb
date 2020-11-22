@@ -53,8 +53,8 @@ public class Reasoner {
     public ResourceIterator<ConceptMap> execute(Conjunction conjunction) {
         Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
         ResourceIterator<ConceptMap> answers = link(list(
-                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap),
-                infer(conjunctionResolvedTypes)
+                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap)
+//                infer(conjunctionResolvedTypes)
         ));
 
         if (conjunctionResolvedTypes.negations().isEmpty()) return answers;
@@ -72,6 +72,9 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> infer(Conjunction conjunction) {
+        /*
+
+         */
         return iterate(Collections.emptyIterator()); // TODO
     }
 }

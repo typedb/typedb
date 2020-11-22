@@ -18,18 +18,9 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//visibility:public"])
 
-
-java_library(
-    name = "common",
-    srcs = glob(["*/*.java"], exclude=["test/*"]),
-    deps = [
-        # Internal Repository Dependencies
-        "@graknlabs_common//:common",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-    ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],
+filegroup(
+    name = "logback",
+    srcs = ["logback.xml"],
 )
 
 checkstyle_test(

@@ -17,8 +17,9 @@
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-package(default_visibility = ["//query:__subpackages__"])
+package(default_visibility = ["//query:__subpackages__", "//reasoner:__subpackages__"])
 
 native_java_libraries(
     name = "reasoner",
@@ -40,8 +41,48 @@ native_java_libraries(
     tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
 )
 
+native_java_libraries(
+    name = "reasoner-execution",
+    srcs = glob([
+        "execution/*.java",
+        "execution/actor/*.java",
+        "execution/framework/*.java",
+    ], exclude=[
+        "execution/*Test.java"
+    ]),
+    deps = [
+        "@graknlabs_common//:common",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api"
+    ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+    visibility = ["//visibility:__subpackages__"]
+)
+
+host_compatible_java_test(
+    name = "execution-test",
+    test_class = "grakn.reasoner.execution.ExecutionTest",
+    srcs = ["execution/ExecutionTest.java"],
+    deps = [
+        "@graknlabs_common//:common",
+    ],
+    native_libraries_deps = [
+        "//reasoner:reasoner-execution",
+    ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+)
+
+
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["**/*"]),
     license_type = "agpl",
 )
