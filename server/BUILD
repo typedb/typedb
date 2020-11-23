@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private", "deployment")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
@@ -230,6 +231,40 @@ deploy_artifact(
     artifact_name = "grakn-core-server-mac-{version}.tar.gz",
     release = deployment_private['artifact.release'],
     snapshot = deployment_private['artifact.snapshot'],
+)
+
+assemble_apt(
+    name = "assemble-linux-apt",
+    package_name = "grakn-core-server",
+    maintainer = "Grakn Labs <community@grakn.ai>",
+    description = "Grakn Core (server)",
+    depends = [
+      "openjdk-8-jre",
+      "grakn-bin (>=%{@graknlabs_common})"
+    ],
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+    archives = [":server-deps-dev", ":server-deps-linux"],
+    installation_dir = "/opt/grakn/core/",
+    files = assemble_files,
+    empty_dirs = [
+        "opt/grakn/core/server/lib/dev",
+        "opt/grakn/core/server/lib/prod",
+        "opt/grakn/core/server/lib/common",
+        "var/lib/grakn/db/"
+     ],
+    permissions = {
+        "var/lib/grakn/db/": "0777",
+    },
+    symlinks = {
+        "opt/grakn/core/server/data": "/var/lib/grakn/db/",
+    },
+)
+
+deploy_apt(
+    name = "deploy-apt",
+    target = ":assemble-linux-apt",
+    snapshot = deployment['apt.snapshot'],
+    release = deployment['apt.release']
 )
 
 checkstyle_test(
