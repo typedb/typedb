@@ -128,6 +128,9 @@ graknlabs_protocol()
 graknlabs_grabl_tracing()
 graknlabs_behaviour()
 
+load("//dependencies/graknlabs:artifacts.bzl", "graknlabs_console_artifact")
+graknlabs_console_artifact()
+
 # Load maven artifacts
 load("//dependencies/maven:artifacts.bzl",
 graknlabs_grakn_core_artifacts = "artifacts",

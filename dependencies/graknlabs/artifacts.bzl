@@ -15,18 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//server:__subpackages__", "//:__pkg__"])
+load("@graknlabs_bazel_distribution//artifact:rules.bzl", "artifact_file")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-
-filegroup(
-    name = "logo",
-    srcs = ["grakn-core-ascii.txt"],
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    include = glob(["*"]),
-    exclude = ["grakn-core-ascii.txt"],
-    license_type = "agpl",
-)
+def graknlabs_console_artifact():
+    artifact_file(
+        name = "graknlabs_console_artifact",
+        group_name = "graknlabs_console",
+        artifact_name = "console-artifact.tgz",
+        tag_source = deployment["artifact.release"],
+        commit_source = deployment["artifact.snapshot"],
+        commit = "c0175531f5b439b48d100b789bc492623aaafd09"
+    )
