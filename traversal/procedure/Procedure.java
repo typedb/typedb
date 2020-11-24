@@ -52,12 +52,12 @@ public class Procedure {
         Procedure procedure = new Procedure();
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
         Set<PlannerEdge.Directional> registeredEdges = new HashSet<>();
-        planner.vertices().forEach(vertex -> procedure.register(vertex, registeredVertices, registeredEdges));
+        planner.vertices().forEach(vertex -> procedure.registerVertex(vertex, registeredVertices, registeredEdges));
         return procedure;
     }
 
-    private void register(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
-                          Set<PlannerEdge.Directional> registeredEdges) {
+    private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
+                                Set<PlannerEdge.Directional> registeredEdges) {
         if (registeredVertices.contains(plannerVertex)) return;
         registeredVertices.add(plannerVertex);
         List<PlannerVertex<?>> adjacents = new ArrayList<>();
@@ -68,27 +68,26 @@ public class Procedure {
             if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
                 registeredEdges.add(plannerEdge);
                 adjacents.add(plannerEdge.to());
-                ProcedureVertex<?> to = vertex(plannerEdge.to());
-                ProcedureEdge edge = ProcedureEdge.of(plannerEdge.property(), vertex, to,
-                                                      plannerEdge.isForward(), plannerEdge.orderNumber());
-                edges.add(edge);
-                vertex.out(edge);
-                to.in(edge);
+                registerEdge(plannerEdge);
             }
         });
         plannerVertex.ins().forEach(plannerEdge -> {
             if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
                 registeredEdges.add(plannerEdge);
                 adjacents.add(plannerEdge.from());
-                ProcedureVertex<?> from = vertex(plannerEdge.from());
-                ProcedureEdge edge = ProcedureEdge.of(plannerEdge.property(), from, vertex,
-                                                      plannerEdge.isForward(), plannerEdge.orderNumber());
-                edges.add(edge);
-                vertex.in(edge);
-                from.out(edge);
+                registerEdge(plannerEdge);
             }
         });
-        adjacents.forEach(v -> register(v, registeredVertices, registeredEdges));
+        adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
+    }
+
+    private void registerEdge(PlannerEdge.Directional plannerEdge) {
+        ProcedureVertex<?> from = vertex(plannerEdge.from());
+        ProcedureVertex<?> to = vertex(plannerEdge.to());
+        ProcedureEdge edge = ProcedureEdge.of(from, to, plannerEdge);
+        edges.add(edge);
+        from.out(edge);
+        to.in(edge);
     }
 
     private ProcedureVertex<?> vertex(PlannerVertex<?> plannerVertex) {

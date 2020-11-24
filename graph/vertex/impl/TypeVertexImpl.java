@@ -145,7 +145,12 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public long instanceCount() {
+        public long instancesCount() {
+            return 0;
+        }
+
+        @Override
+        public long instancesCountTransitive() {
             return 0;
         }
 
@@ -203,12 +208,14 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     public static class Persisted extends TypeVertexImpl {
 
         private boolean regexLookedUp;
-        private long instanceCount;
+        private long instancesCount;
+        private long instancesCountTransitive;
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             regexLookedUp = false;
-            instanceCount = new Random(label.hashCode()).nextInt(); // TODO
+            instancesCount = new Random(label.hashCode()).nextInt(); // TODO
+            instancesCountTransitive = instancesCount * 10; // TODO
         }
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid) {
@@ -304,8 +311,13 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public long instanceCount() {
-            return instanceCount; // TODO
+        public long instancesCount() {
+            return instancesCount; // TODO
+        }
+
+        @Override
+        public long instancesCountTransitive() {
+            return instancesCountTransitive; // TODO
         }
 
         @Override

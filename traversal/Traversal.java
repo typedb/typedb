@@ -25,7 +25,6 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;
 import graql.lang.common.GraqlArg;
@@ -88,21 +87,15 @@ public class Traversal {
     }
 
     public void equalThings(Identifier.Variable thing1, Identifier.Variable thing2) {
-        structure.edge(new TraversalEdge.Property.Equal(),
-                       structure.thingVertex(thing1),
-                       structure.thingVertex(thing2));
+        structure.equalEdge(structure.thingVertex(thing1), structure.thingVertex(thing2));
     }
 
     public void equalTypes(Identifier.Variable type1, Identifier.Variable type2) {
-        structure.edge(new TraversalEdge.Property.Equal(),
-                       structure.typeVertex(type1),
-                       structure.typeVertex(type2));
+        structure.equalEdge(structure.typeVertex(type1), structure.typeVertex(type2));
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-        structure.edge(new TraversalEdge.Property.Encoder(HAS),
-                       structure.thingVertex(thing),
-                       structure.thingVertex(attribute));
+        structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(attribute), HAS);
     }
 
     public void isa(Identifier thing, Identifier.Variable type) {
@@ -110,57 +103,39 @@ public class Traversal {
     }
 
     public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-        structure.edge(new TraversalEdge.Property.Encoder(ISA, isTransitive),
-                       structure.thingVertex(thing),
-                       structure.typeVertex(type));
+        structure.nativeEdge(structure.thingVertex(thing), structure.typeVertex(type), ISA, isTransitive);
     }
 
     public void relating(Identifier.Variable relation, Identifier.Generated role) {
-        structure.edge(new TraversalEdge.Property.Encoder(RELATING),
-                       structure.thingVertex(relation),
-                       structure.thingVertex(role));
+        structure.nativeEdge(structure.thingVertex(relation), structure.thingVertex(role), RELATING);
     }
 
     public void playing(Identifier.Variable thing, Identifier.Generated role) {
-        structure.edge(new TraversalEdge.Property.Encoder(PLAYING),
-                       structure.thingVertex(thing),
-                       structure.thingVertex(role));
+        structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
-        structure.edge(new TraversalEdge.Property.Encoder(ROLEPLAYER),
-                       structure.thingVertex(relation),
-                       structure.thingVertex(player));
+        structure.optimisedEdge(structure.thingVertex(relation), structure.thingVertex(player), ROLEPLAYER);
     }
 
-    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> labels) {
-        structure.edge(new TraversalEdge.Property.Encoder(ROLEPLAYER, labels),
-                       structure.thingVertex(relation),
-                       structure.thingVertex(player));
+    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes) {
+        structure.optimisedEdge(structure.thingVertex(relation), structure.thingVertex(player), ROLEPLAYER, roleTypes);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
-        structure.edge(new TraversalEdge.Property.Encoder(isKey ? OWNS_KEY : OWNS),
-                       structure.typeVertex(thingType),
-                       structure.typeVertex(attributeType));
+        structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), isKey ? OWNS_KEY : OWNS);
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
-        structure.edge(new TraversalEdge.Property.Encoder(PLAYS),
-                       structure.typeVertex(thingType),
-                       structure.typeVertex(roleType));
+        structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(roleType), PLAYS);
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
-        structure.edge(new TraversalEdge.Property.Encoder(RELATES),
-                       structure.typeVertex(relationType),
-                       structure.typeVertex(roleType));
+        structure.nativeEdge(structure.typeVertex(relationType), structure.typeVertex(roleType), RELATES);
     }
 
-    public void sub(Identifier.Variable subType, Identifier.Variable superType, boolean isTransitive) {
-        structure.edge(new TraversalEdge.Property.Encoder(SUB, isTransitive),
-                       structure.typeVertex(subType),
-                       structure.typeVertex(superType));
+    public void sub(Identifier.Variable subtype, Identifier.Variable supertype, boolean isTransitive) {
+        structure.nativeEdge(structure.typeVertex(subtype), structure.typeVertex(supertype), SUB, isTransitive);
     }
 
     public void iid(Identifier.Variable thing, byte[] iid) {
@@ -168,7 +143,7 @@ public class Traversal {
         structure.thingVertex(thing).properties().hasIID(true);
     }
 
-    public void type(Identifier.Variable thing, Set<Label> labels) {
+    public void types(Identifier.Variable thing, Set<Label> labels) {
         structure.thingVertex(thing).properties().types(labels);
     }
 
@@ -176,8 +151,12 @@ public class Traversal {
         structure.typeVertex(type).properties().isAbstract(true);
     }
 
-    public void label(Identifier.Variable type, Label label) {
-        structure.typeVertex(type).properties().label(label);
+    public void labels(Identifier.Variable type, Label label) {
+        structure.typeVertex(type).properties().labels(label);
+    }
+
+    public void labels(Identifier.Variable type, Set<Label> label) {
+        structure.typeVertex(type).properties().labels(label);
     }
 
     public void regex(Identifier.Variable type, String regex) {
@@ -213,11 +192,8 @@ public class Traversal {
         structure.thingVertex(attribute).properties().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable attribute1, GraqlToken.Predicate.Equality predicate,
-                          Identifier.Variable attribute2) {
-        structure.edge(new TraversalEdge.Property.Predicate(predicate),
-                       structure.thingVertex(attribute1),
-                       structure.thingVertex(attribute2));
+    public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality predicate, Identifier.Variable att2) {
+        structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
     public static class Parameters {

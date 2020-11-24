@@ -62,7 +62,7 @@ public class LabelConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.label(owner.identifier(), label);
+        traversal.labels(owner.identifier(), label);
     }
 
     @Override

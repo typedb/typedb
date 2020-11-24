@@ -18,8 +18,10 @@
 
 package grakn.core.traversal.structure;
 
+import grakn.core.common.parameters.Label;
+import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.Identifier;
-import grakn.core.traversal.graph.TraversalEdge;
+import graql.lang.common.GraqlToken;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,8 +61,37 @@ public class Structure {
         return vertices.values();
     }
 
-    public void edge(TraversalEdge.Property property, StructureVertex<?> from, StructureVertex<?> to) {
-        StructureEdge edge = new StructureEdge(property, from, to);
+    public void equalEdge(StructureVertex<?> from, StructureVertex<?> to) {
+        StructureEdge.Equal edge = new StructureEdge.Equal(from, to);
+        edges.add(edge);
+        from.out(edge);
+        to.in(edge);
+    }
+
+    public void predicateEdge(StructureVertex<?> from, StructureVertex<?> to, GraqlToken.Predicate.Equality predicate) {
+        StructureEdge.Predicate edge = new StructureEdge.Predicate(from, to, predicate);
+        edges.add(edge);
+        from.out(edge);
+        to.in(edge);
+    }
+
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding) {
+        nativeEdge(from, to, encoding, false);
+    }
+
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
+        StructureEdge.Native edge = new StructureEdge.Native(from, to, encoding, isTransitive);
+        edges.add(edge);
+        from.out(edge);
+        to.in(edge);
+    }
+
+    public void optimisedEdge(StructureVertex.Thing from, StructureVertex.Thing to, Encoding.Edge.Thing encoding) {
+        optimisedEdge(from, to, encoding, new HashSet<>());
+    }
+
+    public void optimisedEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<Label> types) {
+        StructureEdge.Native.Optimised edge = new StructureEdge.Native.Optimised(from, to, encoding, types);
         edges.add(edge);
         from.out(edge);
         to.in(edge);

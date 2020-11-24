@@ -113,7 +113,7 @@ public class TypeInference {
     private static void addInferredIsaLabels(ThingVariable variable, Set<Label> labels, TypeVariable metaThing) {
         if (variable.isa().isEmpty()) variable.isa(metaThing, false);
         IsaConstraint isaConstraint = variable.isa().iterator().next();
-        isaConstraint.labels(labels);
+        isaConstraint.typeHints(labels);
     }
 
     private static void addInferredRoleLabels(ThingVariable variable, Map<Reference, Set<Label>> labels, InferenceVariables inferenceVariables) {
@@ -127,7 +127,7 @@ public class TypeInference {
                 } else {
                     typeVariable = inferenceVariables.getConversion(rolePlayer);
                 }
-                rolePlayer.labels(labels.get(typeVariable.reference()));
+                rolePlayer.roleTypeHints(labels.get(typeVariable.reference()));
             }
         }
     }

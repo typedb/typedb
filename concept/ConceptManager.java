@@ -76,25 +76,25 @@ public final class ConceptManager {
     }
 
     public ThingType getRootThingType() {
-        final TypeVertex vertex = graphMgr.schema().getType(Encoding.Vertex.Type.Root.THING.label());
+        final TypeVertex vertex = graphMgr.schema().rootThingType();
         if (vertex != null) return new ThingTypeImpl.Root(graphMgr, vertex);
         else throw graphMgr.exception(ILLEGAL_STATE.message());
     }
 
     public EntityType getRootEntityType() {
-        final TypeVertex vertex = graphMgr.schema().getType(Encoding.Vertex.Type.Root.ENTITY.label());
+        final TypeVertex vertex = graphMgr.schema().rootEntityType();
         if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
         else throw graphMgr.exception(ILLEGAL_STATE.message());
     }
 
     public RelationType getRootRelationType() {
-        final TypeVertex vertex = graphMgr.schema().getType(Encoding.Vertex.Type.Root.RELATION.label());
+        final TypeVertex vertex = graphMgr.schema().rootRelationType();
         if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
         else throw graphMgr.exception(ILLEGAL_STATE.message());
     }
 
     public AttributeType getRootAttributeType() {
-        final TypeVertex vertex = graphMgr.schema().getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label());
+        final TypeVertex vertex = graphMgr.schema().rootAttributeType();
         if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
         else throw graphMgr.exception(ILLEGAL_STATE.message());
     }

@@ -78,8 +78,9 @@ public class RelationConstraint extends ThingConstraint {
                 traversal.relating(owner.identifier(), role);
                 traversal.playing(rp.player().identifier(), role);
                 traversal.isa(role, rp.roleType().get().identifier());
-            } else if (rp.roleType().isPresent() && rp.labels.size() > 0) {
-                traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.labels);
+            } else if (rp.roleType().isPresent()) {
+                assert rp.roleType().get().reference().isLabel() && rp.roleTypeHints.size() > 0;
+                traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.roleTypeHints);
             } else {
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier());
             }
@@ -114,14 +115,14 @@ public class RelationConstraint extends ThingConstraint {
         private final TypeVariable roleType;
         private final ThingVariable player;
         private final int hash;
-        private Set<Label> labels;
+        private Set<Label> roleTypeHints;
 
         private RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
             this.hash = Objects.hash(this.roleType, this.player);
-            this.labels = new HashSet<>();
+            this.roleTypeHints = new HashSet<>();
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
@@ -140,8 +141,8 @@ public class RelationConstraint extends ThingConstraint {
             return player;
         }
 
-        public void labels(Set<Label> labels) {
-            this.labels = labels;
+        public void roleTypeHints(Set<Label> labels) {
+            this.roleTypeHints = labels;
         }
 
         @Override

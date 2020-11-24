@@ -19,19 +19,15 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.traversal.graph.TraversalEdge;
+import grakn.core.traversal.planner.PlannerEdge;
 
 class ProcedureEdge extends TraversalEdge<ProcedureVertex<?>> {
 
-    private final boolean isForward;
-    private final int order;
-
-    private ProcedureEdge(Property property, ProcedureVertex<?> from, ProcedureVertex<?> to, boolean isForward, int order) {
-        super(property, from, to);
-        this.isForward = isForward;
-        this.order = order;
+    private ProcedureEdge(ProcedureVertex<?> from, ProcedureVertex<?> to) {
+        super(from, to); // TODO
     }
 
-    public static ProcedureEdge of(Property property, ProcedureVertex<?> vertex, ProcedureVertex<?> to, boolean isForward, int order) {
-        return new ProcedureEdge(property, vertex, to, isForward, order); // TODO
+    public static ProcedureEdge of(ProcedureVertex<?> from, ProcedureVertex<?> to, PlannerEdge.Directional plannerEdge) {
+        return new ProcedureEdge(from, to); // TODO
     }
 }

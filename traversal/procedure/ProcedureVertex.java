@@ -169,24 +169,24 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
 
             static Set<Filter.Type> of(Properties.Type properties) {
                 Set<Filter.Type> filters = new HashSet<>();
-                if (properties.label().isPresent()) filters.add(new Label(properties.label().get()));
+                if (!properties.labels().isEmpty()) filters.add(new Labels(properties.labels()));
                 else if (properties.isAbstract()) filters.add(new Abstract());
                 else if (properties.valueType().isPresent()) filters.add(new ValueType(properties.valueType().get()));
                 else if (properties.regex().isPresent()) filters.add(new Regex(properties.regex().get()));
                 return filters;
             }
 
-            static class Label extends Filter.Type {
+            static class Labels extends Filter.Type {
 
-                private final grakn.core.common.parameters.Label label;
+                private final Set<Label> labels;
 
-                Label(grakn.core.common.parameters.Label label) {
-                    this.label = label;
+                Labels(Set<Label> labels) {
+                    this.labels = labels;
                 }
 
                 @Override
                 public String toString() {
-                    return String.format("Filter: Label { label: %s }", label);
+                    return String.format("Filter: Label { label: %s }", labels);
                 }
             }
 

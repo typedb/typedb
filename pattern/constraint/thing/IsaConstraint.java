@@ -39,14 +39,14 @@ public class IsaConstraint extends ThingConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private Set<Label> labels;
+    private final Set<Label> typeHints;
 
     public IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
-        this.labels = new HashSet<>();
+        this.typeHints = new HashSet<>();
     }
 
     static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
@@ -62,8 +62,8 @@ public class IsaConstraint extends ThingConstraint {
         return isExplicit;
     }
 
-    public void labels(Set<Label> labels) {
-        this.labels = labels;
+    public void typeHints(Set<Label> labels) {
+        this.typeHints.addAll(labels);
     }
 
     @Override
@@ -73,11 +73,9 @@ public class IsaConstraint extends ThingConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        if (type.reference().isLabel() && !labels.isEmpty()) {
-            traversal.type(owner.identifier(), labels);
-        } else {
-            traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
-        }
+        assert !type.reference().isLabel() || !typeHints.isEmpty();
+        if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
+        if (type.reference().isName()) traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
     }
 
     @Override

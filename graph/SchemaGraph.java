@@ -18,8 +18,10 @@
 
 package grakn.core.graph;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -35,14 +37,29 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.ValueType.OBJECT;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ENTITY;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.RELATION;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.THING;
+import static grakn.core.graph.util.Encoding.Vertex.Type.THING_TYPE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
 
 public class SchemaGraph implements Graph {
@@ -54,12 +71,15 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
     private final ConcurrentMap<VertexIID.Rule, RuleVertex> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
+    private final ConcurrentMap<Pair<Label, Boolean>, Long> subTypeCounts;
     private final ManagedReadWriteLock multiLabelLock;
+    private final AtomicLong thingTypeCount;
+    private final AtomicLong attributeTypeCount;
+    private final AtomicLong relationTypeCount;
+    private final AtomicLong roleTypeCount;
     private final boolean isReadOnly;
     private boolean isModified;
     private long snapshot;
-    private Long typeCount;
-    private Long attributeTypeCount;
 
     public SchemaGraph(Storage.Schema storage, boolean isReadOnly) {
         this.storage = storage;
@@ -71,6 +91,11 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
+        subTypeCounts = new ConcurrentHashMap<>();
+        thingTypeCount = new AtomicLong(0);
+        attributeTypeCount = new AtomicLong(0);
+        relationTypeCount = new AtomicLong(0);
+        roleTypeCount = new AtomicLong(0);
         isModified = false;
         snapshot = 1L;
     }
@@ -85,49 +110,127 @@ public class SchemaGraph implements Graph {
     }
 
     public boolean isInitialised() throws GraknException {
-        return getType(Encoding.Vertex.Type.Root.THING.label()) != null;
+        return rootThingType() != null;
     }
 
     public void initialise() throws GraknException {
-        final TypeVertex rootThingType = create(
-                Encoding.Vertex.Type.THING_TYPE,
-                Encoding.Vertex.Type.Root.THING.label()).isAbstract(true);
-        final TypeVertex rootEntityType = create(
-                Encoding.Vertex.Type.ENTITY_TYPE,
-                Encoding.Vertex.Type.Root.ENTITY.label()).isAbstract(true);
-        final TypeVertex rootAttributeType = create(
-                Encoding.Vertex.Type.ATTRIBUTE_TYPE,
-                Encoding.Vertex.Type.Root.ATTRIBUTE.label()).isAbstract(true).valueType(Encoding.ValueType.OBJECT);
-        final TypeVertex rootRelationType = create(
-                Encoding.Vertex.Type.RELATION_TYPE,
-                Encoding.Vertex.Type.Root.RELATION.label()).isAbstract(true);
-        final TypeVertex rootRoleType = create(
-                Encoding.Vertex.Type.ROLE_TYPE,
-                Encoding.Vertex.Type.Root.ROLE.label(),
-                Encoding.Vertex.Type.Root.RELATION.label()).isAbstract(true);
+        final TypeVertex rootThingType = create(THING_TYPE, THING.label()).isAbstract(true);
+        final TypeVertex rootEntityType = create(ENTITY_TYPE, ENTITY.label()).isAbstract(true);
+        final TypeVertex rootAttributeType = create(ATTRIBUTE_TYPE, ATTRIBUTE.label()).isAbstract(true).valueType(OBJECT);
+        final TypeVertex rootRelationType = create(RELATION_TYPE, RELATION.label()).isAbstract(true);
+        final TypeVertex rootRoleType = create(ROLE_TYPE, ROLE.label(), RELATION.label()).isAbstract(true);
 
-        rootEntityType.outs().put(Encoding.Edge.Type.SUB, rootThingType);
-        rootAttributeType.outs().put(Encoding.Edge.Type.SUB, rootThingType);
-        rootRelationType.outs().put(Encoding.Edge.Type.SUB, rootThingType);
-        rootRelationType.outs().put(Encoding.Edge.Type.RELATES, rootRoleType);
+        rootEntityType.outs().put(SUB, rootThingType);
+        rootAttributeType.outs().put(SUB, rootThingType);
+        rootRelationType.outs().put(SUB, rootThingType);
+        rootRelationType.outs().put(RELATES, rootRoleType);
     }
 
-    public long typeCount() {
-        if (typeCount == null || isReadOnly) typeCount = types().count();
-        return typeCount;
+    public long countThingTypes() {
+        if (isReadOnly) {
+            thingTypeCount.compareAndSet(0, thingTypes().count());
+            return thingTypeCount.get();
+        } else {
+            return thingTypes().count();
+        }
     }
 
-    public long attributeTypeCount() {
-        if (attributeTypeCount == null || isReadOnly) attributeTypeCount = attributeTypes().count();
-        return attributeTypeCount;
+    public long countAttributeTypes() {
+        if (isReadOnly) {
+            attributeTypeCount.compareAndSet(0, attributeTypes().count());
+            return attributeTypeCount.get();
+        } else {
+            return attributeTypes().count();
+        }
     }
 
-    public Stream<TypeVertex> types() {
-        return tree(getType(Encoding.Vertex.Type.Root.THING.label()), v -> v.ins().edge(SUB).from()).stream();
+    public long countRelationTypes() {
+        if (isReadOnly) {
+            relationTypeCount.compareAndSet(0, relationTypes().count());
+            return relationTypeCount.get();
+        } else {
+            return relationTypes().count();
+        }
+    }
+
+    public long countRoleTypes() {
+        if (isReadOnly) {
+            roleTypeCount.compareAndSet(0, roleTypes().count());
+            return roleTypeCount.get();
+        } else {
+            return roleTypes().count();
+        }
+    }
+
+    public long countSubTypes(Set<Label> labels, boolean isTransitive) {
+        long count = 0;
+        for (final Label label : labels) {
+            count += countSubTypes(label, isTransitive);
+        }
+        return count;
+    }
+
+    public long countSubTypes(Label label, boolean isTransitive) {
+        if (isReadOnly) {
+            return subTypeCounts.computeIfAbsent(pair(label, isTransitive), k -> subTypes(label, isTransitive).count());
+        } else {
+            return subTypes(label, isTransitive).count();
+        }
+    }
+
+    public Stream<TypeVertex> subTypes(Label label, boolean isTransitive) {
+        if (!isTransitive) return getType(label).ins().edge(SUB).from().stream();
+        else return tree(getType(label), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public long countInstances(Set<Label> labels, boolean isTransitive) {
+        long count = 0;
+        for (Label label : labels) {
+            TypeVertex typeVertex = getType(label.name(), label.scope().orElse(null));
+            if (isTransitive) count += typeVertex.instancesCountTransitive();
+            else count += typeVertex.instancesCount();
+        }
+        return count;
+    }
+
+    public Stream<TypeVertex> thingTypes() {
+        return tree(rootThingType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> entityTypes() {
+        return tree(rootEntityType(), v -> v.ins().edge(SUB).from()).stream();
     }
 
     public Stream<TypeVertex> attributeTypes() {
-        return tree(getType(Encoding.Vertex.Type.Root.ATTRIBUTE.label()), v -> v.ins().edge(SUB).from()).stream();
+        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    private Stream<TypeVertex> relationTypes() {
+        return tree(rootRelationType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    private Stream<TypeVertex> roleTypes() {
+        return tree(rootRoleType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public TypeVertex rootThingType() {
+        return getType(THING.label());
+    }
+
+    public TypeVertex rootEntityType() {
+        return getType(ENTITY.label());
+    }
+
+    public TypeVertex rootAttributeType() {
+        return getType(ATTRIBUTE.label());
+    }
+
+    public TypeVertex rootRelationType() {
+        return getType(RELATION.label());
+    }
+
+    public TypeVertex rootRoleType() {
+        return getType(ROLE.label(), ROLE.scope());
     }
 
     public Stream<TypeVertex> bufferedTypes() {
@@ -158,6 +261,10 @@ public class SchemaGraph implements Graph {
             rulesByLabel.putIfAbsent(vertex.label(), vertex);
             return vertex;
         });
+    }
+
+    public TypeVertex getType(Label label) {
+        return getType(label.name(), label.scope().orElse(null));
     }
 
     public TypeVertex getType(String label) {

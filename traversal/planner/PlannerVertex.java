@@ -21,7 +21,6 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
@@ -194,10 +193,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 if (!properties().predicates().isEmpty() && properties().predicates().stream().anyMatch(p -> p.equals(EQ))) {
                     planner().objective().setCoefficient(varIsStartingVertex, properties().types().size());
                 } else {
-                    long count = 0;
-                    for (Label label : properties().types()) {
-                        count += graph.getType(label.name(), label.scope().orElse(null)).instanceCount();
-                    }
+                    long count = graph.countInstances(properties().types(), true);
                     planner().objective().setCoefficient(varIsStartingVertex, count);
                 }
             }
@@ -226,12 +222,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
         @Override
         void updateObjective(SchemaGraph graph) {
-            if (properties().label().isPresent()) {
+            if (!properties().labels().isEmpty()) {
                 planner().objective().setCoefficient(varIsStartingVertex, 1);
             } else if (properties().isAbstract()) {
-                planner().objective().setCoefficient(varIsStartingVertex, graph.typeCount());
+                planner().objective().setCoefficient(varIsStartingVertex, graph.countThingTypes());
             } else if (properties().valueType().isPresent() || properties().regex().isPresent()) {
-                planner().objective().setCoefficient(varIsStartingVertex, graph.attributeTypeCount());
+                planner().objective().setCoefficient(varIsStartingVertex, graph.countAttributeTypes());
             }
         }
 

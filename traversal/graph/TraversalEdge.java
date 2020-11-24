@@ -18,30 +18,14 @@
 
 package grakn.core.traversal.graph;
 
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.util.Encoding;
-import graql.lang.common.GraqlToken;
-
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-
 public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
 
-    private final Property property;
-    private final VERTEX from;
-    private final VERTEX to;
-    private final int hash;
+    protected final VERTEX from;
+    protected final VERTEX to;
 
-    public TraversalEdge(Property property, VERTEX from, VERTEX to) {
-        this.property = property;
+    public TraversalEdge(VERTEX from, VERTEX to) {
         this.from = from;
         this.to = to;
-        this.hash = Objects.hash(property, from, to);
-    }
-
-    public Property property() {
-        return property;
     }
 
     public VERTEX from() {
@@ -54,169 +38,6 @@ public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
 
     @Override
     public String toString() {
-        return String.format("(%s --> %s), %s", from, to, property);
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-
-        TraversalEdge<?> that = (TraversalEdge<?>) object;
-        return (this.property.equals(that.property) &&
-                this.from.equals(that.from) &&
-                this.to.equals(that.to));
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
-    }
-
-    public static abstract class Property {
-
-        boolean isEqual() {
-            return false;
-        }
-
-        boolean isPredicate() {
-            return false;
-        }
-
-        boolean isEncoder() {
-            return false;
-        }
-
-        @Override
-        public abstract String toString();
-
-        public static class Equal extends Property {
-
-            @Override
-            boolean isEqual() {
-                return true;
-            }
-
-            @Override
-            public String toString() {
-                return "Property: Equal";
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                return o != null && getClass() == o.getClass();
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(getClass());
-            }
-        }
-
-        public static class Predicate extends Property {
-
-            private final GraqlToken.Predicate.Equality predicate;
-            private final int hash;
-
-            public Predicate(GraqlToken.Predicate.Equality predicate) {
-                this.predicate = predicate;
-                this.hash = Objects.hash(this.predicate);
-            }
-
-            GraqlToken.Predicate.Equality predicate() {
-                return predicate;
-            }
-
-            @Override
-            boolean isPredicate() {
-                return true;
-            }
-
-            @Override
-            public String toString() {
-                return String.format("Property: Predicate { predicate: %s }", predicate);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                Predicate that = (Predicate) o;
-                return this.predicate.equals(that.predicate);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-        }
-
-        public static class Encoder extends Property {
-
-            private final Encoding.Edge encoding;
-            private final Set<Label> labels;
-            private final boolean isTransitive;
-            private final int hash;
-
-            public Encoder(Encoding.Edge encoding) {
-                this(encoding, new HashSet<>(), false);
-            }
-
-            public Encoder(Encoding.Edge encoding, boolean isTransitive) {
-                this(encoding, new HashSet<>(), isTransitive);
-            }
-
-            public Encoder(Encoding.Edge encoding, Set<Label> labels) {
-                this(encoding, labels, false);
-            }
-
-            private Encoder(Encoding.Edge encoding, Set<Label> labels, boolean isTransitive) {
-                this.encoding = encoding;
-                this.labels = labels;
-                this.isTransitive = isTransitive;
-                this.hash = Objects.hash(this.encoding, this.labels, this.isTransitive);
-            }
-
-            public Encoding.Edge encoding() {
-                return encoding;
-            }
-
-            public Set<Label> labels() {
-                return labels;
-            }
-
-            public boolean isTransitive() {
-                return isTransitive;
-            }
-
-            @Override
-            boolean isEncoder() {
-                return true;
-            }
-
-            @Override
-            public String toString() {
-                return String.format("Property: Encoder { encoding: %s, labels: %s, isTransitive: %s }",
-                                     encoding(), labels, isTransitive);
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-
-                Encoder that = (Encoder) o;
-                return (this.encoding.equals(that.encoding) &&
-                        this.labels.equals(that.labels) &&
-                        this.isTransitive == that.isTransitive);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
-        }
+        return String.format("(%s --> %s)", from, to);
     }
 }

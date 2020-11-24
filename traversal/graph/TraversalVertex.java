@@ -153,19 +153,25 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
 
         public static class Type extends Properties {
 
-            private Label label;
+            private final Set<Label> labels;
             private boolean isAbstract;
             private Encoding.ValueType valueType;
             private String regex;
 
-            public Type() {}
-
-            public Optional<Label> label() {
-                return Optional.ofNullable(label);
+            public Type() {
+                labels = new HashSet<>();
             }
 
-            public void label(Label label) {
-                this.label = label;
+            public Set<Label> labels() {
+                return labels;
+            }
+
+            public void labels(Label label) {
+                this.labels.add(label);
+            }
+
+            public void labels(Set<Label> labels) {
+                this.labels.addAll(labels);
             }
 
             public boolean isAbstract() {
@@ -194,8 +200,8 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
 
             @Override
             public String toString() {
-                return String.format("Type Vertex { label: %s, abstract: %s, value: %s, regex: %s }",
-                                     label, isAbstract, valueType, regex);
+                return String.format("Type Vertex { labels: %s, abstract: %s, value: %s, regex: %s }",
+                                     labels, isAbstract, valueType, regex);
             }
         }
     }

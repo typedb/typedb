@@ -18,10 +18,12 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,6 +37,7 @@ public class SubConstraint extends TypeConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
+    private final Set<Label> labelHints;
 
     public SubConstraint(TypeVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
@@ -42,6 +45,7 @@ public class SubConstraint extends TypeConstraint {
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(SubConstraint.class, this.owner, this.type, this.isExplicit);
+        this.labelHints = new HashSet<>();
     }
 
     static SubConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
@@ -53,6 +57,10 @@ public class SubConstraint extends TypeConstraint {
         return type;
     }
 
+    public void labelHints(Set<Label> labels) {
+        this.labelHints.addAll(labels);
+    }
+
     @Override
     public Set<TypeVariable> variables() {
         return set(type);
@@ -60,7 +68,10 @@ public class SubConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
+        if (!labelHints.isEmpty()) traversal.labels(owner.identifier(), labelHints);
+        if (type.reference().isName() || labelHints.isEmpty()) {
+            traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
+        }
     }
 
     @Override

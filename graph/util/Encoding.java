@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Objects;
 
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -521,9 +523,21 @@ public class Encoding {
 
         Infix in();
 
-        boolean isOptimisation();
-
         String name();
+
+        default boolean isOptimisation() { return false; }
+
+        default boolean isType() { return false; }
+
+        default boolean isThing() { return false; }
+
+        default Type asType() {
+            throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Type.class)));
+        }
+
+        default Thing asThing() {
+            throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.class)));
+        }
 
         Edge ISA = new Edge() {
 
@@ -532,9 +546,6 @@ public class Encoding {
 
             @Override
             public Infix in() { return Infix.EDGE_ISA_IN; }
-
-            @Override
-            public boolean isOptimisation() { return false; }
 
             @Override
             public String name() { return "ISA"; }
@@ -597,9 +608,10 @@ public class Encoding {
             }
 
             @Override
-            public boolean isOptimisation() {
-                return false;
-            }
+            public boolean isType() { return true; }
+
+            @Override
+            public Type asType() { return this; }
         }
 
         enum Rule implements Schema {
@@ -691,6 +703,12 @@ public class Encoding {
             public boolean isOptimisation() {
                 return isOptimisation;
             }
+
+            @Override
+            public boolean isThing() { return true; }
+
+            @Override
+            public Thing asThing() { return this; }
 
             public int tailSize() {
                 return tailSize;

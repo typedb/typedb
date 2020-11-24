@@ -166,7 +166,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         final ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised);
-        final IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
+        final IID[] infixes = new IID[]{optimised.type().iid(), adjacent.iid().prefix(), adjacent.iid().type()};
         return put(encoding, edge, infixes, true, true);
     }
 

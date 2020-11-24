@@ -91,7 +91,7 @@ public class Planner {
         Planner planner = new Planner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge> registeredEdges = new HashSet<>();
-        structure.vertices().forEach(vertex -> planner.register(vertex, registeredVertices, registeredEdges));
+        structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
         planner.initialise();
         return planner;
     }
@@ -144,8 +144,8 @@ public class Planner {
         return solver.objective();
     }
 
-    private void register(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
-                          Set<StructureEdge> registeredEdges) {
+    private void registerVertex(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
+                                Set<StructureEdge> registeredEdges) {
         if (registeredVertices.contains(structureVertex)) return;
         registeredVertices.add(structureVertex);
         List<StructureVertex<?>> adjacents = new ArrayList<>();
@@ -156,25 +156,26 @@ public class Planner {
             if (!registeredEdges.contains(structureEdge)) {
                 registeredEdges.add(structureEdge);
                 adjacents.add(structureEdge.to());
-                PlannerVertex<?> to = vertex(structureEdge.to());
-                PlannerEdge edge = new PlannerEdge(structureEdge.property(), vertex, to);
-                edges.add(edge);
-                vertex.out(edge);
-                to.in(edge);
+                registerEdge(structureEdge);
             }
         });
         structureVertex.ins().forEach(structureEdge -> {
             if (!registeredEdges.contains(structureEdge)) {
                 registeredEdges.add(structureEdge);
                 adjacents.add(structureEdge.from());
-                PlannerVertex<?> from = vertex(structureEdge.from());
-                PlannerEdge edge = new PlannerEdge(structureEdge.property(), from, vertex);
-                edges.add(edge);
-                vertex.in(edge);
-                from.out(edge);
+                registerEdge(structureEdge);
             }
         });
-        adjacents.forEach(v -> register(v, registeredVertices, registeredEdges));
+        adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
+    }
+
+    private void registerEdge(StructureEdge structureEdge) {
+        PlannerVertex<?> from = vertex(structureEdge.from());
+        PlannerVertex<?> to = vertex(structureEdge.to());
+        PlannerEdge edge = PlannerEdge.of(from, to, structureEdge);
+        edges.add(edge);
+        from.out(edge);
+        to.in(edge);
     }
 
     private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
