@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip")
+load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
@@ -73,6 +76,40 @@ assemble_zip(
     targets = assemble_deps_common + ["//server:server-deps-windows"],
     additional_files = assemble_files,
     output_filename = "grakn-core-all-windows",
+)
+
+assemble_apt(
+    name = "assemble-linux-apt",
+    package_name = "grakn-core-all",
+    maintainer = "Grakn Labs <community@grakn.ai>",
+    description = "Grakn Core (all)",
+    depends = [
+        "openjdk-8-jre",
+        "grakn-core-server (=%{version})",
+        "grakn-console (=%{@graknlabs_console_artifact})",
+    ],
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+)
+
+deploy_apt(
+    name = "deploy-apt",
+    target = ":assemble-linux-apt",
+    snapshot = deployment['apt.snapshot'],
+    release = deployment['apt.release'],
+)
+
+assemble_rpm(
+    name = "assemble-linux-rpm",
+    package_name = "grakn-core-all",
+    spec_file = "//config/rpm:grakn-core-all.spec",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+)
+
+deploy_rpm(
+    name = "deploy-rpm",
+    target = ":assemble-linux-rpm",
+    snapshot = deployment['rpm.snapshot'],
+    release = deployment['rpm.release'],
 )
 
 release_validate_deps(
