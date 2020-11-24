@@ -22,9 +22,7 @@ load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private", "deployment")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
-load("@io_bazel_rules_docker//container:image.bzl", "container_image")
-load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
+
 
 package(default_visibility = ["//visibility:private",])
 
@@ -201,28 +199,6 @@ assemble_zip(
     additional_files = assemble_files,
     output_filename = "grakn-core-server-windows",
     visibility = ["//:__pkg__"]
-)
-
-container_image(
-    name = "assemble-docker",
-    base = "@openjdk_image//image",
-    tars = [":assemble-linux-targz"],
-    ports = ["1729"],
-    cmd = ["/grakn-core-server-linux/grakn", "server"],
-    volumes = ["/grakn-core-server-linux/server/data/"]
-)
-
-container_bundle(
-    name = "assemble-docker-bundle",
-    images = {
-        "index.docker.io/graknlabs/grakn:{DOCKER_VERSION}": ":assemble-docker",
-        "index.docker.io/graknlabs/grakn:latest": ":assemble-docker",
-    }
-)
-
-docker_push(
-    name = "deploy-docker",
-    bundle = ":assemble-docker-bundle",
 )
 
 deploy_artifact(

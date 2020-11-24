@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//:deployment.bzl", deployment_github = "deployment")
+load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
@@ -25,6 +25,9 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
+load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
+load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 
 exports_files(
     ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
@@ -166,6 +169,34 @@ release_validate_deps(
         "@graknlabs_protocol",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
+)
+
+container_image(
+    name = "assemble-docker",
+    base = "@openjdk_image//image",
+    tars = [":assemble-linux-targz"],
+    directory = "opt",
+    workdir = "/opt/grakn-core-all-linux",
+    ports = ["1729"],
+    cmd = ["/opt/grakn-core-all-linux/grakn", "server"],
+    volumes = ["/opt/grakn-core-all-linux/server/data/"],
+)
+
+container_bundle(
+    name = "assemble-docker-bundle",
+    images = {
+        "{}/{}/{}:{{DOCKER_VERSION}}".format(
+            deployment_docker['docker.release'], deployment_docker['docker.organisation'], deployment_docker['docker.repository']
+        ): ":assemble-docker",
+        "{}/{}/{}:latest".format(
+            deployment_docker['docker.release'], deployment_docker['docker.organisation'], deployment_docker['docker.repository']
+        ): ":assemble-docker",
+    }
+)
+
+docker_push(
+    name = "deploy-docker",
+    bundle = ":assemble-docker-bundle",
 )
 
 checkstyle_test(
