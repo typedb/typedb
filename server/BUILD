@@ -184,7 +184,7 @@ assemble_targz(
     targets = assemble_deps_common + ["server-deps-linux"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-linux",
-    visibility = ["//visibility:public"]
+    visibility = ["//:__pkg__"]
 )
 
 assemble_zip(
@@ -192,6 +192,7 @@ assemble_zip(
     targets = assemble_deps_common + ["server-deps-mac"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-mac",
+    visibility = ["//:__pkg__"]
 )
 
 assemble_zip(
@@ -199,6 +200,7 @@ assemble_zip(
     targets = assemble_deps_common + ["server-deps-windows"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-windows",
+    visibility = ["//:__pkg__"]
 )
 
 container_image(

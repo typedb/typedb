@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-deployment = {
-  'github.organisation': 'graknlabs',
-  'github.repository': 'grakn-2.0' # TODO: revert to 'grakn'
-}
+exports_files(["grakn-core.rb"])
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "agpl",
+)

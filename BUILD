@@ -15,13 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//:deployment.bzl", deployment_github = "deployment")
+load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
+load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
-load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 
 exports_files(
     ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
@@ -76,6 +79,48 @@ assemble_zip(
     targets = assemble_deps_common + ["//server:server-deps-windows"],
     additional_files = assemble_files,
     output_filename = "grakn-core-all-windows",
+)
+
+assemble_versioned(
+    name = "assemble-versioned-all",
+    targets = [
+        ":assemble-linux-targz",
+        ":assemble-mac-zip",
+        ":assemble-windows-zip",
+        "//server:assemble-linux-targz",
+        "//server:assemble-mac-zip",
+        "//server:assemble-windows-zip",
+    ],
+)
+
+assemble_versioned(
+    name = "assemble-versioned-mac",
+    targets = [":assemble-mac-zip"],
+)
+
+checksum(
+    name = "checksum-mac",
+    archive = ":assemble-versioned-mac",
+)
+
+deploy_github(
+    name = "deploy-github",
+    organisation = deployment_github['github.organisation'],
+    repository = deployment_github['github.repository'],
+    title = "Grakn Core",
+    title_append_version = True,
+    release_description = "//:RELEASE_TEMPLATE.md",
+    archive = ":assemble-versioned-all",
+    draft = False
+)
+
+deploy_brew(
+    name = "deploy-brew",
+    snapshot = deployment['brew.snapshot'],
+    release = deployment['brew.release'],
+    formula = "//config/brew:grakn-core.rb",
+    checksum = "//:checksum-mac",
+    version_file = "//:VERSION"
 )
 
 assemble_apt(
