@@ -93,8 +93,20 @@ public class ThingVariable extends Variable {
         return isaConstraints;
     }
 
+    public IsaConstraint isa(TypeVariable type, boolean isExplicit) {
+        IsaConstraint isaConstraint = new IsaConstraint(this, type, isExplicit);
+        constrain(isaConstraint);
+        return isaConstraint;
+    }
+
     public Set<IsConstraint> is() {
         return isConstraints;
+    }
+
+    public IsConstraint is(ThingVariable variable) {
+        IsConstraint isConstraint = new IsConstraint(this, variable);
+        constrain(isConstraint);
+        return isConstraint;
     }
 
     public Set<ValueConstraint<?>> value() {
@@ -105,8 +117,20 @@ public class ThingVariable extends Variable {
         return relationConstraints;
     }
 
+    public RelationConstraint relation(List<RelationConstraint.RolePlayer> rolePlayers) {
+        RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
+        constrain(relationConstraint);
+        return relationConstraint;
+    }
+
     public Set<HasConstraint> has() {
         return hasConstraints;
+    }
+
+    public HasConstraint has(ThingVariable attribute) {
+        HasConstraint hasConstraint = new HasConstraint(this, attribute);
+        constrain(hasConstraint);
+        return hasConstraint;
     }
 
     @Override
@@ -132,8 +156,8 @@ public class ThingVariable extends Variable {
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
         syntax.append(Stream.of(relationConstraints, isaConstraints, hasConstraints, valueConstraints, isConstraints)
-                              .flatMap(Collection::stream).map(ThingConstraint::toString)
-                              .collect(Collectors.joining("" + COMMA + SPACE)));
+                .flatMap(Collection::stream).map(ThingConstraint::toString)
+                .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 

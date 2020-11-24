@@ -21,13 +21,13 @@ package grakn.core.reasoner.execution.actor;
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.reasoner.execution.AnswerRecorder;
+import grakn.core.reasoner.execution.MockTransaction;
 import grakn.core.reasoner.execution.Registry;
 import grakn.core.reasoner.execution.framework.Answer;
 import grakn.core.reasoner.execution.framework.ExecutionActor;
 import grakn.core.reasoner.execution.framework.Request;
 import grakn.core.reasoner.execution.framework.Response;
 import grakn.core.reasoner.execution.framework.ResponseProducer;
-import grakn.core.reasoner.execution.MockTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

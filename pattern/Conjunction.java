@@ -47,7 +47,7 @@ public class Conjunction implements Pattern {
     private final Set<Variable> variables;
     private final Set<Negation> negations;
 
-    private Conjunction(Set<Variable> variables, Set<Negation> negations) {
+    public Conjunction(Set<Variable> variables, Set<Negation> negations) {
         this.variables = variables;
         this.negations = negations;
     }
@@ -83,6 +83,13 @@ public class Conjunction implements Pattern {
     public Set<Negation> negations() {
         return negations;
     }
+    
+    public boolean equals(Object obj) {
+        if (this==obj) return true;
+        if (obj==null || obj.getClass() != getClass()) return false;
+        final Conjunction that = (Conjunction) obj;
+        return that.variables().equals(variables) && that.negations().equals(negations);
+    }
 
     public Traversal traversal() {
         Traversal traversal = new Traversal();
@@ -97,9 +104,9 @@ public class Conjunction implements Pattern {
     }
 
     private boolean printable(Variable variable) {
-        if (variable.reference().isName()) return !variable.constraints().isEmpty();
-        if (variable.isThing()) return !variable.asThing().relation().isEmpty();
-        if (variable.isType()) return variable.constraints().size() > 1;
+        if (variable.reference().isName() || !variable.reference().isLabel()) return !variable.constraints().isEmpty();
+        if (variable.isThing()) return !variable.asThing().relation().isEmpty() && !variable.asThing().has().isEmpty();
+        if (variable.isType() && variable.reference().isLabel()) return variable.constraints().size()>1;
         throw GraknException.of(ILLEGAL_STATE);
     }
 

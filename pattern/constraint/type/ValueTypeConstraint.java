@@ -34,7 +34,7 @@ public class ValueTypeConstraint extends TypeConstraint {
     private final GraqlArg.ValueType valueType;
     private final int hash;
 
-    private ValueTypeConstraint(TypeVariable owner, GraqlArg.ValueType valueType) {
+    public ValueTypeConstraint(TypeVariable owner, GraqlArg.ValueType valueType) {
         super(owner);
         this.valueType = valueType;
         this.hash = Objects.hash(ValueTypeConstraint.class, this.owner, this.valueType);

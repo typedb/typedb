@@ -42,7 +42,7 @@ public class OwnsConstraint extends TypeConstraint {
     private final boolean isKey;
     private final int hash;
 
-    private OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
+    public OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
                            @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
         super(owner);
         this.attributeType = attributeType;

@@ -35,7 +35,7 @@ public class IsConstraint extends TypeConstraint {
     private final TypeVariable variable;
     private final int hash;
 
-    private IsConstraint(TypeVariable owner, TypeVariable variable) {
+    public IsConstraint(TypeVariable owner, TypeVariable variable) {
         super(owner);
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);

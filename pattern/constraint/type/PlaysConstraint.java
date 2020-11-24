@@ -42,8 +42,8 @@ public class PlaysConstraint extends TypeConstraint {
     private final TypeVariable overriddenRoleType;
     private final int hash;
 
-    private PlaysConstraint(TypeVariable owner, @Nullable TypeVariable relationType,
-                            TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+    public PlaysConstraint(TypeVariable owner, @Nullable TypeVariable relationType,
+                           TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         super(owner);
         if (roleType == null) throw new NullPointerException("Null role");
         this.relationType = relationType;

@@ -36,7 +36,7 @@ public class IsConstraint extends ThingConstraint {
     private final ThingVariable variable;
     private final int hash;
 
-    private IsConstraint(ThingVariable owner, ThingVariable variable) {
+    public IsConstraint(ThingVariable owner, ThingVariable variable) {
         super(owner);
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);

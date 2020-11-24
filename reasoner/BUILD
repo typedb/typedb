@@ -19,67 +19,91 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-package(default_visibility = ["//query:__subpackages__", "//reasoner:__subpackages__"])
+package(default_visibility = [
+    "//query:__subpackages__",
+    "//reasoner:__subpackages__",
+    "//test/integration:__pkg__",
+])
 
 native_java_libraries(
     name = "reasoner",
-    srcs = glob(["*.java"]),
-    deps = [
-        # Internal dependencies
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-
-        # External dependencies from Maven
-    ],
+    srcs = glob(
+        ["*.java"],
+        exclude = ["*Test.java"],
+    ),
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
+    deps = [
+        # Internal dependencies
+        "//common",
+        "//graph",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common",
+        "@graknlabs_graql//java/pattern",
+
+        # External dependencies from Maven
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-type-inference",
+    srcs = [
+        "TypeInferenceTest.java",
+    ],
+    native_libraries_deps = [
+        "//pattern:pattern",
+        "//reasoner:reasoner",
+    ],
+    test_class = "grakn.core.reasoner.TypeInferenceTest",
 )
 
 native_java_libraries(
     name = "reasoner-execution",
-    srcs = glob([
-        "execution/*.java",
-        "execution/actor/*.java",
-        "execution/framework/*.java",
-    ], exclude=[
-        "execution/*Test.java"
-    ]),
-    deps = [
-        "@graknlabs_common//:common",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:org_slf4j_slf4j_api"
-    ],
+    srcs = glob(
+        [
+            "execution/*.java",
+            "execution/actor/*.java",
+            "execution/framework/*.java",
+        ],
+        exclude = [
+            "execution/*Test.java",
+        ],
+    ),
+    visibility = ["//visibility:__subpackages__"],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    visibility = ["//visibility:__subpackages__"]
+    deps = [
+        "@graknlabs_common//:common",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api",
+    ],
 )
 
 host_compatible_java_test(
     name = "execution-test",
-    test_class = "grakn.reasoner.execution.ExecutionTest",
     srcs = ["execution/ExecutionTest.java"],
-    deps = [
-        "@graknlabs_common//:common",
-    ],
     native_libraries_deps = [
         "//reasoner:reasoner-execution",
     ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
+    ],
+    test_class = "grakn.reasoner.execution.ExecutionTest",
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    resources = [
-        "//common/test:logback"
+    deps = [
+        "@graknlabs_common//:common",
     ],
-    resource_strip_prefix = "common/test",
 )
-
 
 checkstyle_test(
     name = "checkstyle",

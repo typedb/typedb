@@ -35,7 +35,7 @@ public class HasConstraint extends ThingConstraint {
     private final ThingVariable attribute;
     private final int hash;
 
-    private HasConstraint(ThingVariable owner, ThingVariable attribute) {
+    public HasConstraint(ThingVariable owner, ThingVariable attribute) {
         super(owner);
         assert attribute != null;
         this.attribute = attribute;

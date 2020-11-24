@@ -43,7 +43,7 @@ public class RelationConstraint extends ThingConstraint {
     private final List<RolePlayer> rolePlayers;
     private final int hash;
 
-    private RelationConstraint(ThingVariable owner, List<RolePlayer> rolePlayers) {
+    public RelationConstraint(ThingVariable owner, List<RolePlayer> rolePlayers) {
         super(owner);
         assert rolePlayers != null && !rolePlayers.isEmpty();
         this.rolePlayers = new ArrayList<>(rolePlayers);

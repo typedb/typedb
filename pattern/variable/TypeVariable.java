@@ -19,6 +19,7 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.type.AbstractConstraint;
 import grakn.core.pattern.constraint.type.IsConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
@@ -30,8 +31,10 @@ import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
 import grakn.core.traversal.Identifier;
+import graql.lang.common.GraqlArg;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -62,7 +65,7 @@ public class TypeVariable extends Variable {
     private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
 
-    TypeVariable(Identifier.Variable identifier) {
+    public TypeVariable(Identifier.Variable identifier) {
         super(identifier);
         subConstraints = new HashSet<>();
         ownsConstraints = new HashSet<>();
@@ -82,7 +85,7 @@ public class TypeVariable extends Variable {
         return this;
     }
 
-    private void constrain(TypeConstraint constraint) {
+    public void constrain(TypeConstraint constraint) {
         constraints.add(constraint);
         if (constraint.isLabel()) {
             if (labelConstraint != null && !labelConstraint.equals(constraint)) {
@@ -109,12 +112,24 @@ public class TypeVariable extends Variable {
         return Optional.ofNullable(labelConstraint);
     }
 
+    public LabelConstraint label(Label label) {
+        LabelConstraint labelConstraint = new LabelConstraint(this, label);
+        constrain(labelConstraint);
+        return labelConstraint;
+    }
+
     public Optional<AbstractConstraint> abstractConstraint() {
         return Optional.ofNullable(abstractConstraint);
     }
 
     public Optional<ValueTypeConstraint> valueType() {
         return Optional.ofNullable(valueTypeConstraint);
+    }
+
+    public ValueTypeConstraint valueType(GraqlArg.ValueType valueType) {
+        ValueTypeConstraint valueTypeConstraint = new ValueTypeConstraint(this, valueType);
+        constrain(valueTypeConstraint);
+        return valueTypeConstraint;
     }
 
     public Optional<RegexConstraint> regex() {
@@ -125,20 +140,50 @@ public class TypeVariable extends Variable {
         return subConstraints;
     }
 
+    public SubConstraint sub(TypeVariable type, boolean isExplicit) {
+        SubConstraint subConstraint = new SubConstraint(this, type, isExplicit);
+        constrain(subConstraint);
+        return subConstraint;
+    }
+
     public Set<OwnsConstraint> owns() {
         return ownsConstraints;
+    }
+
+    public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
+        OwnsConstraint ownsConstraint = new OwnsConstraint(this, attributeType, overriddenAttributeType, isKey);
+        constrain(ownsConstraint);
+        return ownsConstraint;
     }
 
     public Set<PlaysConstraint> plays() {
         return playsConstraints;
     }
 
+    public PlaysConstraint plays(@Nullable TypeVariable relationType, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+        PlaysConstraint playsConstraint = new PlaysConstraint(this, relationType, roleType, overriddenRoleType);
+        constrain(playsConstraint);
+        return playsConstraint;
+    }
+
     public Set<RelatesConstraint> relates() {
         return relatesConstraints;
     }
 
+    public RelatesConstraint relates(TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+        RelatesConstraint relatesConstraint = new RelatesConstraint(this, roleType, overriddenRoleType);
+        constrain(relatesConstraint);
+        return relatesConstraint;
+    }
+
     public Set<IsConstraint> is() {
         return isConstraints;
+    }
+
+    public IsConstraint is(TypeVariable variable) {
+        IsConstraint isConstraint = new IsConstraint(this, variable);
+        constrain(isConstraint);
+        return isConstraint;
     }
 
     @Override
@@ -160,23 +205,28 @@ public class TypeVariable extends Variable {
     public String toString() {
 
         StringBuilder syntax = new StringBuilder();
-        if (reference().isName()) syntax.append(reference());
-        else if (reference().isLabel()) syntax.append(labelConstraint.label());
-        else if (!reference().isLabel() && labelConstraint != null) syntax.append(labelConstraint.toString());
+        if (!reference().isLabel()){
+            syntax.append(reference());
+            if (labelConstraint != null) syntax.append(SPACE).append(labelConstraint.toString());
+        } else {
+            syntax.append(labelConstraint.label());
+        }
 
-        syntax.append(SPACE);
+        if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
 
         syntax.append(Stream.of(subConstraints, set(abstractConstraint), ownsConstraints, relatesConstraints,
-                                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
-                              .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
-                              .collect(Collectors.joining("" + COMMA + SPACE)));
+                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
+                .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+                .collect(Collectors.joining("" + COMMA + SPACE)));
 
         return syntax.toString();
     }
 
+
+
     public String referenceSyntax() {
-        if (reference().isName()) return reference().toString();
-        else if (reference().isLabel()) return labelConstraint.label();
+        if (reference().isLabel()) return labelConstraint.label();
+        else if (reference().isName() || reference().isAnonymous()) return reference().toString();
         else throw new RuntimeException("Unhandled reference type.");
     }
 

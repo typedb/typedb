@@ -41,7 +41,7 @@ public class IsaConstraint extends ThingConstraint {
     private final int hash;
     private Set<Label> labels;
 
-    private IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
+    public IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         this.type = type;
         this.isExplicit = isExplicit;

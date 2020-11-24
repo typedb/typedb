@@ -71,7 +71,7 @@ public class Traversal {
         planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
-    ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
+    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr.schema());
             return planners.get(0).procedure().execute(graphMgr, parameters);

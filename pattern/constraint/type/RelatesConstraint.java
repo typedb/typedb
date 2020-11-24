@@ -40,7 +40,7 @@ public class RelatesConstraint extends TypeConstraint {
     private final TypeVariable overriddenRoleType;
     private final int hash;
 
-    private RelatesConstraint(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
+    public RelatesConstraint(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         super(owner);
         if (roleType == null) throw new NullPointerException("Null role");
         this.roleType = roleType;

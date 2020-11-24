@@ -20,7 +20,8 @@ package(
     default_visibility = [
         "//concept:__pkg__",
         "//rocks:__pkg__",
-        "//traversal:__pkg__"
+        "//traversal:__pkg__",
+        "//reasoner:__pkg__"
     ]
 )
 

@@ -36,7 +36,7 @@ public class SubConstraint extends TypeConstraint {
     private final boolean isExplicit;
     private final int hash;
 
-    private SubConstraint(TypeVariable owner, TypeVariable type, boolean isExplicit) {
+    public SubConstraint(TypeVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
         if (type == null) throw new NullPointerException("Null superType");
         this.type = type;

@@ -23,6 +23,7 @@ package(
         "//concept:__pkg__",
         "//query:__subpackages__",
         "//reasoner:__subpackages__",
+        "//test/integration:__pkg__",
     ]
 )
 

@@ -33,7 +33,7 @@ public class LabelConstraint extends TypeConstraint {
     private final Label label;
     private final int hash;
 
-    private LabelConstraint(TypeVariable owner, Label label) {
+    public LabelConstraint(TypeVariable owner, Label label) {
         super(owner);
         if (label == null) throw new NullPointerException("Null label");
         this.label = label;
@@ -54,6 +54,10 @@ public class LabelConstraint extends TypeConstraint {
 
     public String scopedLabel() {
         return label.scopedName();
+    }
+
+    public Label labelLabel() {
+        return label;
     }
 
     @Override
