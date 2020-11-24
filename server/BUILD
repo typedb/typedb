@@ -194,6 +194,13 @@ assemble_zip(
     output_filename = "grakn-core-server-mac",
 )
 
+assemble_zip(
+    name = "assemble-windows-zip",
+    targets = assemble_deps_common + ["server-deps-windows"],
+    additional_files = assemble_files,
+    output_filename = "grakn-core-server-windows",
+)
+
 container_image(
     name = "assemble-docker",
     base = "@openjdk_image//image",
