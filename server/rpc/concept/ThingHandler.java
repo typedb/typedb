@@ -17,6 +17,7 @@
 
 package grakn.core.server.rpc.concept;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
@@ -27,14 +28,17 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.server.rpc.TransactionRPC;
+import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
@@ -155,9 +159,10 @@ public class ThingHandler {
             attributes = thing.getHas(attributeTypes);
         }
 
-        final Stream<Transaction.Res> responses = attributes.map(con -> response(request, ConceptProto.Thing.Res.newBuilder()
-                .setThingGetHasRes(ConceptProto.Thing.GetHas.Res.newBuilder().setAttribute(thing(con)))));
-        transactionRPC.respond(request, responses.iterator());
+        transactionRPC.respond(request, attributes.iterator(),
+                cons -> response(request, ConceptProto.Thing.Res.newBuilder().setThingGetHasRes(
+                        ConceptProto.Thing.GetHas.Res.newBuilder().addAllAttribute(
+                                cons.stream().map(ResponseBuilder.Concept::thing).collect(Collectors.toList())))));
     }
 
     private void getRelations(Transaction.Req request, Thing thing, List<ConceptProto.Type> protoRoleTypes) {
@@ -165,20 +170,18 @@ public class ThingHandler {
                 .map(type -> notNull(getRoleType(type)))
                 .toArray(RoleType[]::new);
         final Stream<? extends Relation> concepts = thing.getRelations(roleTypes);
-        final Stream<Transaction.Res> responses = concepts.map(
-                con -> response(request, ConceptProto.Thing.Res.newBuilder().setThingGetRelationsRes(
-                        ConceptProto.Thing.GetRelations.Res.newBuilder().setRelation(thing(con))
-                )));
-        transactionRPC.respond(request, responses.iterator());
+        transactionRPC.respond(request, concepts.iterator(),
+                cons -> response(request, ConceptProto.Thing.Res.newBuilder().setThingGetRelationsRes(
+                        ConceptProto.Thing.GetRelations.Res.newBuilder().addAllRelation(
+                                cons.stream().map(ResponseBuilder.Concept::thing).collect(Collectors.toList())))));
     }
 
     private void getPlays(Transaction.Req request, Thing thing) {
         final Stream<? extends RoleType> roleTypes = thing.getPlays();
-        final Stream<Transaction.Res> responses = roleTypes.map(
-                con -> response(request, ConceptProto.Thing.Res.newBuilder().setThingGetPlaysRes(
-                        ConceptProto.Thing.GetPlays.Res.newBuilder().setRoleType(type(con))
-                )));
-        transactionRPC.respond(request, responses.iterator());
+        transactionRPC.respond(request, roleTypes.iterator(),
+                cons -> response(request, ConceptProto.Thing.Res.newBuilder().setThingGetPlaysRes(
+                        ConceptProto.Thing.GetPlays.Res.newBuilder().addAllRoleType(
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
     }
 
     private void setHas(Transaction.Req request, Thing thing, ConceptProto.Thing protoAttribute) {
@@ -199,15 +202,19 @@ public class ThingHandler {
 
     private void getPlayersByRoleType(Transaction.Req request, Relation relation) {
         final Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
-        final Stream.Builder<Transaction.Res> responses = Stream.builder();
+        final Stream.Builder<Pair<RoleType, Thing>> responses = Stream.builder();
         for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> players : playersByRole.entrySet()) {
             for (Thing player : players.getValue()) {
-                responses.add(response(request, ConceptProto.Thing.Res.newBuilder().setRelationGetPlayersByRoleTypeRes(
-                        ConceptProto.Relation.GetPlayersByRoleType.Res.newBuilder().setRoleType(type(players.getKey())).setPlayer(thing(player))
-                )));
+                responses.add(pair(players.getKey(), player));
             }
         }
-        transactionRPC.respond(request, responses.build().iterator());
+        transactionRPC.respond(request, responses.build().iterator(),
+                cons -> response(request, ConceptProto.Thing.Res.newBuilder().setRelationGetPlayersByRoleTypeRes(
+                        ConceptProto.Relation.GetPlayersByRoleType.Res.newBuilder().addAllRoleTypeWithPlayer(
+                                cons.stream().map(con ->
+                                        ConceptProto.Relation.GetPlayersByRoleType.RoleTypeWithPlayer.newBuilder()
+                                                .setRoleType(type(con.first()))
+                                                .setPlayer(thing(con.second())).build()).collect(Collectors.toList())))));
     }
 
     private void getPlayers(Transaction.Req request, Relation relation, List<ConceptProto.Type> protoRoleTypes) {
@@ -216,9 +223,10 @@ public class ThingHandler {
                 .toArray(RoleType[]::new);
         final Stream<? extends Thing> things = relation.getPlayers(roleTypes);
 
-        final Stream<Transaction.Res> responses = things.map(con -> response(request, ConceptProto.Thing.Res.newBuilder()
-                .setRelationGetPlayersRes(ConceptProto.Relation.GetPlayers.Res.newBuilder().setThing(thing(con)))));
-        transactionRPC.respond(request, responses.iterator());
+        transactionRPC.respond(request, things.iterator(),
+                cons -> response(request, ConceptProto.Thing.Res.newBuilder().setRelationGetPlayersRes(
+                        ConceptProto.Relation.GetPlayers.Res.newBuilder().addAllThing(
+                                cons.stream().map(ResponseBuilder.Concept::thing).collect(Collectors.toList())))));
     }
 
     private void addPlayer(Transaction.Req request, Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq) {
@@ -250,8 +258,9 @@ public class ThingHandler {
                 things = attribute.getOwners();
         }
 
-        final Stream<Transaction.Res> responses = things.map(con -> response(request, ConceptProto.Thing.Res.newBuilder()
-                .setAttributeGetOwnersRes(ConceptProto.Attribute.GetOwners.Res.newBuilder().setThing(thing(con)))));
-        transactionRPC.respond(request, responses.iterator());
+        transactionRPC.respond(request, things.iterator(),
+                cons -> response(request, ConceptProto.Thing.Res.newBuilder().setAttributeGetOwnersRes(
+                        ConceptProto.Attribute.GetOwners.Res.newBuilder().addAllThing(
+                                cons.stream().map(ResponseBuilder.Concept::thing).collect(Collectors.toList())))));
     }
 }

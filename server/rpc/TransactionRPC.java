@@ -30,11 +30,16 @@ import grakn.core.server.rpc.query.QueryHandler;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.protocol.TransactionProto;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
@@ -119,12 +124,12 @@ public class TransactionRPC {
         stream.responder().onNext(response);
     }
 
-    public void respond(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator) {
-        iterators.beginIteration(request, iterator);
+    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+        iterators.beginIteration(request, iterator, responseBuilderFn);
     }
 
-    public void respond(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator, Options.Query queryOptions) {
-        iterators.beginIteration(request, iterator, queryOptions.batchSize());
+    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn, Options.Query queryOptions) {
+        iterators.beginIteration(request, iterator, responseBuilderFn, queryOptions.batchSize());
     }
 
     private void commit(String requestId) {
@@ -172,19 +177,19 @@ public class TransactionRPC {
      */
     private class Iterators {
 
-        private final ConcurrentMap<String, BatchingIterator> iterators = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, BatchingIterator<?>> iterators = new ConcurrentHashMap<>();
 
         /**
          * Spin up an iterator and begin batch iterating.
          */
-        void beginIteration(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator) {
-            beginIteration(request, iterator, transaction.options().batchSize());
+        <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+            beginIteration(request, iterator, responseBuilderFn, transaction.options().batchSize());
         }
 
-        void beginIteration(TransactionProto.Transaction.Req request, Iterator<TransactionProto.Transaction.Res> iterator, int batchSize) {
+        <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn, int batchSize) {
             final String requestId = request.getId();
             final int latencyMillis = request.getLatencyMillis();
-            final BatchingIterator batchingIterator = new BatchingIterator(requestId, iterator, batchSize, latencyMillis);
+            final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
                 if (oldValue == null) return batchingIterator;
                 else throw new GraknException(DUPLICATE_REQUEST.message(requestId));
@@ -196,29 +201,44 @@ public class TransactionRPC {
          * Instruct an existing iterator to iterate another batch.
          */
         void continueIteration(String requestId) {
-            final BatchingIterator iterator = iterators.get(requestId);
+            final BatchingIterator<?> iterator = iterators.get(requestId);
             if (iterator == null) throw new GraknException(ITERATION_WITH_UNKNOWN_ID.message(requestId));
             iterator.iterateBatch();
         }
 
-        private class BatchingIterator {
+        private class BatchingIterator<T> {
             private static final int MAX_LATENCY_MILLIS = 3000;
 
             private final String id;
-            private final Iterator<TransactionProto.Transaction.Res> iterator;
+            private final Iterator<T> iterator;
+            private final Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn;
             private final int batchSize;
             private final int latencyMillis;
 
-            BatchingIterator(String id, Iterator<TransactionProto.Transaction.Res> iterator, int batchSize, int latencyMillis) {
+            BatchingIterator(String id, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn, int batchSize, int latencyMillis) {
                 this.id = id;
                 this.iterator = iterator;
+                this.responseBuilderFn = responseBuilderFn;
                 this.batchSize = batchSize;
                 this.latencyMillis = Math.min(latencyMillis, MAX_LATENCY_MILLIS);
             }
 
             synchronized void iterateBatch() {
+                List<T> answers = new ArrayList<>();
+                Instant startTime = Instant.now();
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
-                    respond(iterator.next());
+                    answers.add(iterator.next());
+                    Instant currTime = Instant.now();
+                    if (Duration.between(currTime, startTime).get(ChronoUnit.MILLIS) >= 1) {
+                        respond(responseBuilderFn.apply(answers));
+                        answers.clear();
+                        startTime = currTime;
+                    }
+                }
+
+                if (!answers.isEmpty()) {
+                    respond(responseBuilderFn.apply(answers));
+                    answers.clear();
                 }
 
                 if (!iterator.hasNext()) {
@@ -232,7 +252,12 @@ public class TransactionRPC {
                 // Compensate for network latency
                 final Instant endTime = Instant.now().plusMillis(latencyMillis);
                 while (iterator.hasNext() && Instant.now().isBefore(endTime)) {
-                    respond(iterator.next());
+                    answers.add(iterator.next());
+                }
+
+                if (!answers.isEmpty()) {
+                    respond(responseBuilderFn.apply(answers));
+                    answers.clear();
                 }
 
                 if (!iterator.hasNext()) {
@@ -240,7 +265,6 @@ public class TransactionRPC {
                     respond(done(id));
                 }
             }
-
         }
     }
 

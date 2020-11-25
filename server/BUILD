@@ -87,6 +87,8 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    resources = [ "//server/conf:logback.xml" ],
+    resource_strip_prefix = "server/conf/"
 )
 
 java_binary(
@@ -94,6 +96,8 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    resources = [ "//server/conf:logback.xml" ],
+    resource_strip_prefix = "server/conf/"
 )
 
 java_binary(
@@ -101,6 +105,8 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
+    resources = [ "//server/conf:logback.xml" ],
+    resource_strip_prefix = "server/conf/"
 )
 
 java_deps(

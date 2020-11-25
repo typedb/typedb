@@ -23,6 +23,7 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.query.QueryManager;
 import grakn.core.server.rpc.TransactionRPC;
+import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
@@ -33,9 +34,10 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
 
+import java.util.stream.Collectors;
+
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.rpc.util.RequestReader.getOptions;
-import static grakn.core.server.rpc.util.ResponseBuilder.Answer.conceptMap;
 
 public class QueryHandler {
 
@@ -79,17 +81,21 @@ public class QueryHandler {
     private void match(Transaction.Req request, QueryProto.Graql.Match.Req req, Options.Query options) {
         final GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
         final ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
-        final ResourceIterator<TransactionProto.Transaction.Res> responseIterator = answers.map(a -> response(request, QueryProto.Query.Res.newBuilder()
-                .setMatchRes(QueryProto.Graql.Match.Res.newBuilder().setAnswer(conceptMap(a)))));
-        transactionRPC.respond(request, responseIterator, options);
+        transactionRPC.respond(request, answers,
+                as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
+                        QueryProto.Graql.Match.Res.newBuilder().addAllAnswer(
+                                as.stream().map(ResponseBuilder.Answer::conceptMap).collect(Collectors.toList())))),
+                options);
     }
 
     private void insert(Transaction.Req request, QueryProto.Graql.Insert.Req req, Options.Query options) {
         final GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
         final ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
-        final ResourceIterator<TransactionProto.Transaction.Res> responseIterator = answers.map(a -> response(request, QueryProto.Query.Res.newBuilder()
-                .setInsertRes(QueryProto.Graql.Insert.Res.newBuilder().setAnswer(conceptMap(a)))));
-        transactionRPC.respond(request, responseIterator, options);
+        transactionRPC.respond(request, answers,
+                as -> response(request, QueryProto.Query.Res.newBuilder().setInsertRes(
+                        QueryProto.Graql.Insert.Res.newBuilder().addAllAnswer(
+                                as.stream().map(ResponseBuilder.Answer::conceptMap).collect(Collectors.toList())))),
+                options);
     }
 
     private void delete(Transaction.Req request, QueryProto.Graql.Delete.Req req, Options.Query options) {
