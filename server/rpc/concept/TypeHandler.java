@@ -234,7 +234,7 @@ public class TypeHandler {
     }
 
     private void getSubtypes(Transaction.Req request, Type type) {
-        transactionRPC.respond(request, type.getSupertypes().iterator(), cons ->
+        transactionRPC.respond(request, type.getSubtypes().iterator(), cons ->
                 response(request, ConceptProto.Type.Res.newBuilder().setTypeGetSubtypesRes(
                     ConceptProto.Type.GetSubtypes.Res.newBuilder().addAllType(
                             cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));

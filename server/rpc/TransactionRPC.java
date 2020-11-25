@@ -32,7 +32,6 @@ import grakn.protocol.TransactionProto;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -229,7 +228,7 @@ public class TransactionRPC {
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
                     answers.add(iterator.next());
                     Instant currTime = Instant.now();
-                    if (Duration.between(currTime, startTime).get(ChronoUnit.MILLIS) >= 1) {
+                    if (Duration.between(currTime, startTime).toMillis() >= 1) {
                         respond(responseBuilderFn.apply(answers));
                         answers.clear();
                         startTime = currTime;
