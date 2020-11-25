@@ -27,12 +27,16 @@ import grakn.core.traversal.graph.TraversalVertex;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_COST_MAX_CHANGE;
+import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
+@SuppressWarnings("NonAtomicOperationOnVolatileField") // Because Planner.optimise() is synchronised
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
         extends TraversalVertex<PlannerEdge.Directional, PROPERTIES> {
 
-    private final Planner planner;
+    final Planner planner;
+
     private final String varPrefix = "vertex::var::" + identifier() + "::";
     private final String conPrefix = "vertex::con::" + identifier() + "::";
     private int valueIsStartingVertex;
@@ -41,6 +45,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     private int valueHasOutgoingEdges;
     private boolean isInitialisedVariables;
     private boolean isInitialisedConstraints;
+    private double costPrevious;
+    private double costNext;
     MPVariable varIsStartingVertex;
     MPVariable varIsEndingVertex;
     MPVariable varHasIncomingEdges;
@@ -55,6 +61,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         this.hasIndex = false;
         isInitialisedVariables = false;
         isInitialisedConstraints = false;
+        costPrevious = 0.01; // non-zero value for safe division
     }
 
     abstract void updateObjective(SchemaGraph graph);
@@ -97,10 +104,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         out(edge.backward());
     }
 
-    Planner planner() {
-        return planner;
-    }
-
     boolean hasIndex() {
         return hasIndex;
     }
@@ -123,7 +126,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         isInitialisedConstraints = true;
     }
 
-    void initialiseConstraintsForIncomingEdges() {
+    private void initialiseConstraintsForIncomingEdges() {
         varUnselectedIncomingEdges = planner.solver().makeIntVar(0, ins().size(), varPrefix + "unselected_incoming_edges");
         MPConstraint conUnSelectedIncomingEdges = planner.solver().makeConstraint(ins().size(), ins().size(), conPrefix + "unselected_incoming_edges");
         conUnSelectedIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
@@ -133,7 +136,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         conHasIncomingEdges.setCoefficient(varHasIncomingEdges, 1);
     }
 
-    void initialiseConstraintsForOutGoingEdges() {
+    private void initialiseConstraintsForOutGoingEdges() {
         varUnselectedOutgoingEdges = planner.solver().makeIntVar(0, outs().size(), varPrefix + "unselected_outgoing_edges");
         MPConstraint conUnselectedOutgoingEdges = planner.solver().makeConstraint(outs().size(), outs().size(), conPrefix + "unselected_outgoing_edges");
         conUnselectedOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
@@ -143,7 +146,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, 1);
     }
 
-    void initialiseConstraintsForVertexFlow() {
+    private void initialiseConstraintsForVertexFlow() {
         MPConstraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
         if (hasIndex) conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
@@ -157,6 +160,22 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         conVertexFlow.setCoefficient(varHasIncomingEdges, 1);
         conVertexFlow.setCoefficient(varIsEndingVertex, -1);
         conVertexFlow.setCoefficient(varHasOutgoingEdges, -1);
+    }
+
+    protected void setObjectiveCoefficient(double cost) {
+        planner.objective().setCoefficient(varIsStartingVertex, cost);
+        planner.totalCostNext += cost;
+
+        assert costPrevious > 0;
+        if (cost / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE &&
+                cost / planner.totalCostPrevious >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE) {
+            planner.setOutOfDate();
+        }
+        costNext = cost;
+    }
+
+    void recordCost() {
+        costPrevious = costNext;
     }
 
     void recordValues() {
@@ -188,16 +207,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         @Override
         void updateObjective(SchemaGraph graph) {
             if (properties().hasIID()) {
-                planner().objective().setCoefficient(varIsStartingVertex, 1);
+                setObjectiveCoefficient(1);
             } else if (!properties().types().isEmpty()) {
                 if (!properties().predicates().isEmpty() && properties().predicates().stream().anyMatch(p -> p.equals(EQ))) {
-                    planner().objective().setCoefficient(varIsStartingVertex, properties().types().size());
+                    setObjectiveCoefficient(properties().types().size());
                 } else {
-                    long count = graph.countInstances(properties().types(), true);
-                    planner().objective().setCoefficient(varIsStartingVertex, count);
+                    setObjectiveCoefficient(graph.countInstances(properties().types(), true));
                 }
             }
-
         }
 
         @Override
@@ -223,11 +240,11 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         @Override
         void updateObjective(SchemaGraph graph) {
             if (!properties().labels().isEmpty()) {
-                planner().objective().setCoefficient(varIsStartingVertex, 1);
+                setObjectiveCoefficient(1);
             } else if (properties().isAbstract()) {
-                planner().objective().setCoefficient(varIsStartingVertex, graph.countThingTypes());
+                setObjectiveCoefficient(graph.countThingTypes());
             } else if (properties().valueType().isPresent() || properties().regex().isPresent()) {
-                planner().objective().setCoefficient(varIsStartingVertex, graph.countAttributeTypes());
+                setObjectiveCoefficient(graph.countAttributeTypes());
             }
         }
 

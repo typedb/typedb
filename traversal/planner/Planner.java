@@ -56,7 +56,11 @@ import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANN
 
 public class Planner {
 
-    private static final long TIME_LIMIT_MILLIS = 100;
+    static final long TIME_LIMIT_MILLIS = 100;
+    static final double OBJECTIVE_COEFFICIENT_BASE = 2.0;
+    static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
+    static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
+    static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
 
     private final MPSolver solver;
     private final MPSolverParameters parameters;
@@ -71,6 +75,9 @@ public class Planner {
     private volatile long totalDuration;
     private volatile long snapshot;
 
+    volatile double totalCostPrevious;
+    volatile double totalCostNext;
+
     private Planner() {
         solver = MPSolver.createSolver("SCIP");
         solver.objective().setMinimization();
@@ -84,6 +91,8 @@ public class Planner {
         resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
         isUpToDate = false;
         totalDuration = 0L;
+        totalCostPrevious = 0.01;
+        totalCostNext = 0.01;
         snapshot = 0L;
     }
 
@@ -104,7 +113,7 @@ public class Planner {
         return edges;
     }
 
-    private void setOutOfDate() {
+    void setOutOfDate() {
         this.isUpToDate = false;
     }
 
@@ -235,8 +244,16 @@ public class Planner {
     private void updateObjective(SchemaGraph graph) {
         if (snapshot < graph.snapshot()) {
             snapshot = graph.snapshot();
+            totalCostNext = 0.0;
             vertices.values().forEach(v -> v.updateObjective(graph));
             edges.forEach(e -> e.updateObjective(graph));
+
+            if (totalCostNext / totalCostPrevious >= OBJECTIVE_PLANNER_COST_MAX_CHANGE) setOutOfDate();
+            if (!isUpToDate) {
+                totalCostPrevious = totalCostNext;
+                vertices.values().forEach(PlannerVertex::recordCost);
+                edges.forEach(PlannerEdge::recordCost);
+            }
         }
     }
 

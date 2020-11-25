@@ -40,7 +40,10 @@ import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_COST_MAX_CHANGE;
+import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
 
+@SuppressWarnings("NonAtomicOperationOnVolatileField") // Because Planner.optimise() is synchronised
 public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
     protected final Planner planner;
@@ -49,8 +52,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
     PlannerEdge(PlannerVertex<?> from, PlannerVertex<?> to) {
         super(from, to);
-        this.planner = from.planner();
-        assert this.planner.equals(to.planner());
+        this.planner = from.planner;
+        assert this.planner.equals(to.planner);
         initialiseDirectionalEdges();
     }
 
@@ -58,7 +61,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
     static PlannerEdge of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge structureEdge) {
         if (structureEdge.isEqual()) return new PlannerEdge.Equal(from, to);
-        else if (structureEdge.isPredicate()) return new PlannerEdge.Predicate(from, to, structureEdge.asPredicate().predicate());
+        else if (structureEdge.isPredicate())
+            return new PlannerEdge.Predicate(from, to, structureEdge.asPredicate().predicate());
         else if (structureEdge.isNative()) return PlannerEdge.Native.of(from, to, structureEdge.asNative());
         else throw GraknException.of(ILLEGAL_STATE);
     }
@@ -91,14 +95,17 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         backward.updateObjective(graph);
     }
 
+    void recordCost() {
+        forward.recordCost();
+        backward.recordCost();
+    }
+
     void recordValues() {
         forward.recordValues();
         backward.recordValues();
     }
 
     public abstract class Directional extends TraversalEdge<PlannerVertex<?>> {
-
-        private static final double OBJ_COEFF_BASE = 2.0;
 
         MPVariable varIsSelected;
         MPVariable[] varOrderAssignment;
@@ -109,6 +116,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         private final String conPrefix;
         private final PlannerEdge parent;
         private final boolean isForward;
+        private double costPrevious;
+        private double costNext;
         private boolean isInitialisedVariables;
         private boolean isInitialisedConstraints;
 
@@ -116,6 +125,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             super(from, to);
             this.parent = parent;
             this.isForward = isForward;
+            this.costPrevious = 0.01; // non-zero value for safe division
             this.isInitialisedVariables = false;
             this.isInitialisedConstraints = false;
             this.varPrefix = "edge::var::" + from + "::" + to + "::";
@@ -195,8 +205,19 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         protected void setObjectiveCoefficient(double cost) {
             int exp = planner.edges().size() - 1;
             for (int i = 0; i < planner.edges().size(); i++) {
-                planner.objective().setCoefficient(varOrderAssignment[i], cost * Math.pow(OBJ_COEFF_BASE, exp--));
+                planner.objective().setCoefficient(varOrderAssignment[i], cost * Math.pow(Planner.OBJECTIVE_COEFFICIENT_BASE, exp--));
             }
+            planner.totalCostNext += cost;
+            assert costPrevious > 0;
+            if (cost / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE &&
+                    cost / planner.totalCostPrevious >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE) {
+                planner.setOutOfDate();
+            }
+            costNext = cost;
+        }
+
+        private void recordCost() {
+            costPrevious = costNext;
         }
 
         private void recordValues() {
