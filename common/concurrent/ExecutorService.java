@@ -18,19 +18,28 @@
 
 package grakn.core.common.concurrent;
 
+import grakn.common.concurrent.actor.EventLoopGroup;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
-public class CommonExecutorService {
+public class ExecutorService {
 
-    private static ForkJoinPool executorService;
+    private static ForkJoinPool forkJoinPool;
+    private static EventLoopGroup eventLoopGroup;
 
-    public static void init(int threadCount) {
-        executorService = (ForkJoinPool) Executors.newWorkStealingPool(threadCount);
+    public static void init(int forkJoinPoolSize, int eventLoopGroupSize) {
+        forkJoinPool = (ForkJoinPool) Executors.newWorkStealingPool(forkJoinPoolSize);
+        eventLoopGroup = new EventLoopGroup(eventLoopGroupSize, "grakn-elg");
     }
 
-    public static ForkJoinPool get() {
-        assert executorService != null;
-        return executorService;
+    public static ForkJoinPool forkJoinPool() {
+        assert forkJoinPool != null;
+        return forkJoinPool;
+    }
+
+    public static EventLoopGroup eventLoopGroup() {
+        assert eventLoopGroup != null;
+        return eventLoopGroup;
     }
 }

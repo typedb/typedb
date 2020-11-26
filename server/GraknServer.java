@@ -22,7 +22,7 @@ import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
-import grakn.core.common.concurrent.CommonExecutorService;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.rpc.GraknRPCService;
@@ -202,7 +202,7 @@ public class GraknServer implements AutoCloseable {
                 MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker")
         );
         return NettyServerBuilder.forPort(options.port())
-                .executor(CommonExecutorService.get())
+                .executor(ExecutorService.forkJoinPool())
                 .workerEventLoopGroup(workerELG)
                 .bossEventLoopGroup(workerELG)
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?

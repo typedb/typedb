@@ -16,31 +16,32 @@
  *
  */
 
-package grakn.core.reasoner.execution.framework;
+package grakn.core.reasoner.resolution.framework;
+
+import grakn.core.concept.answer.ConceptMap;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 public class ResponseProducer {
-    private final Set<List<Long>> produced;
-    private final Iterator<List<Long>> traversalProducer;
+    private final Set<ConceptMap> produced;
+    private final Iterator<ConceptMap> traversalProducer;
     private final Set<Request> downstreamProducer;
     private Iterator<Request> downstreamProducerSelector;
 
-    public ResponseProducer(Iterator<List<Long>> traversalProducer) {
+    public ResponseProducer(Iterator<ConceptMap> traversalProducer) {
         produced = new HashSet<>();
         this.traversalProducer = traversalProducer;
         downstreamProducer = new HashSet<>();
         downstreamProducerSelector = downstreamProducer.iterator();
     }
 
-    public void recordProduced(List<Long> conceptMap) {
+    public void recordProduced(ConceptMap conceptMap) {
         produced.add(conceptMap);
     }
 
-    public boolean hasProduced(List<Long> conceptMap) {
+    public boolean hasProduced(ConceptMap conceptMap) {
         return produced.contains(conceptMap);
     }
 
@@ -48,7 +49,7 @@ public class ResponseProducer {
         return traversalProducer.hasNext();
     }
 
-    public Iterator<List<Long>> traversalProducer() {
+    public Iterator<ConceptMap> traversalProducer() {
         return traversalProducer;
     }
 

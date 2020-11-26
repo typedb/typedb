@@ -43,6 +43,10 @@ public class ManagedBlockingQueue<E> {
         cancelled = false;
     }
 
+    public ManagedBlockingQueue() {
+        this(Integer.MAX_VALUE);
+    }
+
     public E poll() {
         return queue.poll();
     }
@@ -75,6 +79,10 @@ public class ManagedBlockingQueue<E> {
 
     public void clear() {
         queue.clear();
+    }
+
+    public int size() {
+        return queue.size();
     }
 
     private class QueueTaker implements ForkJoinPool.ManagedBlocker {

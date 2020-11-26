@@ -16,9 +16,10 @@
  *
  */
 
-package grakn.core.reasoner.execution.framework;
+package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
+import grakn.core.concept.answer.ConceptMap;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -29,12 +30,12 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final List<Long> partialConceptMap;
+    private final ConceptMap partialConceptMap;
     private final List<Object> unifiers;
     private final Answer.Derivation partialDerivation;
 
     public Request(Path path,
-                   List<Long> partialConceptMap,
+                   ConceptMap partialConceptMap,
                    List<Object> unifiers,
                    Answer.Derivation partialDerivation) {
         this.path = path;
@@ -48,18 +49,18 @@ public class Request {
     }
 
     @Nullable
-    public Actor<? extends ExecutionActor<?>> sender() {
+    public Actor<? extends Resolver<?>> sender() {
         if (path.path.size() < 2) {
             return null;
         }
         return path.path.get(path.path.size() - 2);
     }
 
-    public Actor<? extends ExecutionActor<?>> receiver() {
+    public Actor<? extends Resolver<?>> receiver() {
         return path.path.get(path.path.size() - 1);
     }
 
-    public List<Long> partialConceptMap() {
+    public ConceptMap partialConceptMap() {
         return partialConceptMap;
     }
 
@@ -92,19 +93,19 @@ public class Request {
     }
 
     public static class Path {
-        final List<Actor<? extends ExecutionActor<?>>> path;
+        final List<Actor<? extends Resolver<?>>> path;
 
-        public Path(Actor<? extends ExecutionActor<?>> sender) {
+        public Path(Actor<? extends Resolver<?>> sender) {
             this(list(sender));
         }
 
-        private Path(List<Actor<? extends ExecutionActor<?>>> path) {
+        private Path(List<Actor<? extends Resolver<?>>> path) {
             assert !path.isEmpty() : "Path cannot be empty";
             this.path = path;
         }
 
-        public Path append(Actor<? extends ExecutionActor<?>> actor) {
-            List<Actor<? extends ExecutionActor<?>>> appended = new ArrayList<>(path);
+        public Path append(Actor<? extends Resolver<?>> actor) {
+            List<Actor<? extends Resolver<?>>> appended = new ArrayList<>(path);
             appended.add(actor);
             return new Path(appended);
         }

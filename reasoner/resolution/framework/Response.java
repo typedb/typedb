@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.reasoner.execution.framework;
+package grakn.core.reasoner.resolution.framework;
 
 import java.util.List;
 
@@ -25,6 +25,7 @@ public interface Response {
 
     boolean isAnswer();
     boolean isExhausted();
+    boolean isRootResponse();
 
     default Answer asAnswer() {
         throw new ClassCastException("Cannot cast " + this.getClass().getSimpleName() + " to " + Answer.class.getSimpleName());
@@ -36,11 +37,11 @@ public interface Response {
 
     class Answer implements Response {
         private final Request sourceRequest;
-        private final grakn.core.reasoner.execution.framework.Answer answer;
+        private final grakn.core.reasoner.resolution.framework.Answer answer;
         private final List<Object> unifiers;
 
         public Answer(Request sourceRequest,
-                      grakn.core.reasoner.execution.framework.Answer answer,
+                      grakn.core.reasoner.resolution.framework.Answer answer,
                       List<Object> unifiers) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
@@ -52,7 +53,7 @@ public interface Response {
             return sourceRequest;
         }
 
-        public grakn.core.reasoner.execution.framework.Answer answer() {
+        public grakn.core.reasoner.resolution.framework.Answer answer() {
             return answer;
         }
 
@@ -65,6 +66,9 @@ public interface Response {
 
         @Override
         public boolean isExhausted() { return false; }
+
+        @Override
+        public boolean isRootResponse() { return false; }
 
         @Override
         public Answer asAnswer() {
@@ -100,6 +104,9 @@ public interface Response {
         public boolean isExhausted() { return true; }
 
         @Override
+        public boolean isRootResponse() { return false; }
+
+        @Override
         public Exhausted asExhausted() {
             return this;
         }
@@ -111,6 +118,27 @@ public interface Response {
                     "sourceRequest=" + sourceRequest +
                     '}';
         }
+    }
+
+    class RootResponse implements Response {
+
+        private final Request sourceRequest;
+
+        public RootResponse(Request sourceRequest) {
+            this.sourceRequest = sourceRequest;
+        }
+
+        @Override
+        public Request sourceRequest() { return sourceRequest; }
+
+        @Override
+        public boolean isAnswer() { return false; }
+
+        @Override
+        public boolean isExhausted() { return false; }
+
+        @Override
+        public boolean isRootResponse() { return true; }
     }
 
 }

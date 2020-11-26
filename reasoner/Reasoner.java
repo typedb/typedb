@@ -18,11 +18,13 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 
 import java.util.Collections;
@@ -36,10 +38,12 @@ public class Reasoner {
 
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
+    private final ResolverRegistry resolverRegistry;
 
-    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr) {
+    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr, EventLoopGroup elg) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
+        this.resolverRegistry = new ResolverRegistry(elg);
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
@@ -54,7 +58,7 @@ public class Reasoner {
         Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
         ResourceIterator<ConceptMap> answers = link(list(
                 traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap)
-//                infer(conjunctionResolvedTypes)
+//                resolve(conjunctionResolvedTypes)
         ));
 
         if (conjunctionResolvedTypes.negations().isEmpty()) return answers;
@@ -71,10 +75,9 @@ public class Reasoner {
         return conjunction; // TODO
     }
 
-    private ResourceIterator<ConceptMap> infer(Conjunction conjunction) {
-        /*
-
-         */
-        return iterate(Collections.emptyIterator()); // TODO
+    private ReasonerProducer resolve(Conjunction conjunction) {
+        // TODO get onAnswer and onDone callbacks
+//        return new ReasonerProducer(conjunction, resolverRegistry, null, null);
+        return null;
     }
 }

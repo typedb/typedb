@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.core.reasoner.execution;
+package grakn.core.reasoner.resolution;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.execution.framework.Answer;
-import grakn.core.reasoner.execution.framework.ExecutionActor;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class AnswerRecorder extends Actor.State<AnswerRecorder> {
-    private static final Logger LOG = LoggerFactory.getLogger(AnswerRecorder.class);
+public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
+    private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
 
-    Map<Actor<? extends ExecutionActor<?>>, Integer> actorIndices;
+    Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
     Map<AnswerIndex, Answer> answers;
 
-    public AnswerRecorder(final Actor<AnswerRecorder> self) {
+    public ResolutionRecorder(final Actor<ResolutionRecorder> self) {
         super(self);
         answers = new HashMap<>();
         actorIndices = new HashMap<>();
@@ -56,10 +56,10 @@ public class AnswerRecorder extends Actor.State<AnswerRecorder> {
      */
     private Answer merge(Answer newAnswer) {
         Answer.Derivation newDerivation = newAnswer.derivation();
-        Map<Actor<? extends ExecutionActor<?>>, Answer> subAnswers = newDerivation.answers();
+        Map<Actor<? extends Resolver<?>>, Answer> subAnswers = newDerivation.answers();
 
-        Map<Actor<? extends ExecutionActor<?>>, Answer> mergedSubAnswers = new HashMap<>();
-        for (Actor<? extends ExecutionActor<?>> key : subAnswers.keySet()) {
+        Map<Actor<? extends Resolver<?>>, Answer> mergedSubAnswers = new HashMap<>();
+        for (Actor<? extends Resolver<?>> key : subAnswers.keySet()) {
             Answer subAnswer = subAnswers.get(key);
             Answer mergedSubAnswer = merge(subAnswer);
             mergedSubAnswers.put(key, mergedSubAnswer);
@@ -82,9 +82,9 @@ public class AnswerRecorder extends Actor.State<AnswerRecorder> {
 
     static class AnswerIndex {
         private final int actorIndex;
-        private final List<Long> conceptMap;
+        private final ConceptMap conceptMap;
 
-        public AnswerIndex(int actorIndex, final List<Long> conceptMap) {
+        public AnswerIndex(int actorIndex, final ConceptMap conceptMap) {
             this.actorIndex = actorIndex;
             this.conceptMap = conceptMap;
         }
@@ -95,7 +95,7 @@ public class AnswerRecorder extends Actor.State<AnswerRecorder> {
             if (o == null || getClass() != o.getClass()) return false;
             AnswerIndex that = (AnswerIndex) o;
             return actorIndex == that.actorIndex &&
-                    Objects.equals(conceptMap, that.conceptMap);
+                   Objects.equals(conceptMap, that.conceptMap);
         }
 
         @Override

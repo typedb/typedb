@@ -18,7 +18,7 @@
 
 package grakn.core.common.iterator;
 
-import grakn.core.common.concurrent.CommonExecutorService;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.concurrent.ResizingBlockingQueue;
 
 import java.util.List;
@@ -40,7 +40,7 @@ public class ParallelIterators<T> implements ResourceIterator<T> {
         this.iterators = iterators;
         this.iterators.forEach(iterator -> {
             queue.incrementPublisher();
-            CommonExecutorService.get().submit(() -> {
+            ExecutorService.forkJoinPool().submit(() -> {
                 while (!queue.isCancelled() && iterator.hasNext()) queue.put(iterator.next());
                 queue.decrementPublisher();
             });

@@ -32,6 +32,7 @@ native_java_libraries(
         exclude = ["*Test.java"],
     ),
     native_libraries_deps = [
+        "//reasoner/resolution:resolution",
         "//concept:concept",
         "//pattern:pattern",
         "//traversal:traversal",
@@ -63,50 +64,8 @@ host_compatible_java_test(
     test_class = "grakn.core.reasoner.TypeInferenceTest",
 )
 
-native_java_libraries(
-    name = "reasoner-execution",
-    srcs = glob(
-        [
-            "execution/*.java",
-            "execution/actor/*.java",
-            "execution/framework/*.java",
-        ],
-        exclude = [
-            "execution/*Test.java",
-        ],
-    ),
-    visibility = ["//visibility:__subpackages__"],
-    runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
-    ],
-    deps = [
-        "@graknlabs_common//:common",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:org_slf4j_slf4j_api",
-    ],
-)
-
-host_compatible_java_test(
-    name = "execution-test",
-    srcs = ["execution/ExecutionTest.java"],
-    native_libraries_deps = [
-        "//reasoner:reasoner-execution",
-    ],
-    resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback",
-    ],
-    test_class = "grakn.reasoner.execution.ExecutionTest",
-    runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
-    ],
-    deps = [
-        "@graknlabs_common//:common",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["**/*"]),
+    include = glob(["*"]),
     license_type = "agpl",
 )

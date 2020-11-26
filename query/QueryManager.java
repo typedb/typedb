@@ -19,12 +19,15 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.pattern.Disjunction;
+import grakn.core.reasoner.Reasoner;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
@@ -46,6 +49,7 @@ public class QueryManager {
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
     private final Context.Transaction transactionCtx;
+    private final Reasoner reasoner;
 
     public QueryManager(TraversalEngine traversalEng,
                         ConceptManager conceptMgr,
@@ -53,6 +57,7 @@ public class QueryManager {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.transactionCtx = transactionCtx;
+        this.reasoner = new Reasoner(traversalEng, conceptMgr, ExecutorService.eventLoopGroup());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
@@ -61,8 +66,8 @@ public class QueryManager {
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
-            final Context.Query context = new Context.Query(transactionCtx, options);
-            return Matcher.create(traversalEng, conceptMgr, query.conjunction(), context).execute();
+            Disjunction disjunction = Disjunction.create(query.conjunction().normalise());
+            return reasoner.execute(disjunction);
         } catch (GraknException exception) {
             throw conceptMgr.exception(exception);
         } catch (Exception exception) {

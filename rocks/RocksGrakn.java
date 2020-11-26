@@ -20,7 +20,7 @@ package grakn.core.rocks;
 
 import com.google.ortools.Loader;
 import grakn.core.Grakn;
-import grakn.core.common.concurrent.CommonExecutorService;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -38,7 +38,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
  */
 public class RocksGrakn implements Grakn {
 
-    private static final int MAX_THREADS_X_2 = Runtime.getRuntime().availableProcessors() * 2;
+    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     static {
         RocksDB.loadLibrary();
@@ -61,7 +61,7 @@ public class RocksGrakn implements Grakn {
         databaseMgr = new RocksDatabaseManager(this);
         databaseMgr.loadAll();
 
-        CommonExecutorService.init(MAX_THREADS_X_2);
+        ExecutorService.init(MAX_THREADS, MAX_THREADS);
         isOpen = new AtomicBoolean(true);
     }
 

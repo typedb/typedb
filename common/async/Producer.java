@@ -13,19 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package grakn.core.reasoner.execution.actor;
+package grakn.core.common.async;
 
-import grakn.common.concurrent.actor.Actor;
+import java.util.function.Consumer;
 
-import java.util.List;
+/**
+ * Grakn's abstraction for async iterators
+ *
+ * @param <T>
+ */
+public abstract class Producer<T> {
 
-// TODO unify and materialise in receiveAnswer
-public class Rule extends Conjunction<Rule> {
-    public Rule(Actor<Rule> self, List<Long> when,
-                Long traversalSize, Long traversalOffset) {
-        super(self, Rule.class.getSimpleName() + "(pattern:" + when + ")", when, traversalSize, traversalOffset, null);
+    protected final Consumer<T> onAnswer;
+    protected final Runnable onDone;
+
+    public Producer(Consumer<T> onProduce, Runnable onDone) {
+        this.onAnswer = onProduce;
+        this.onDone = onDone;
     }
+
+    protected abstract void next();
 }

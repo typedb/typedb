@@ -16,18 +16,19 @@
  *
  */
 
-package grakn.core.reasoner.execution.actor;
+package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.execution.AnswerRecorder;
-import grakn.core.reasoner.execution.MockTransaction;
-import grakn.core.reasoner.execution.Registry;
-import grakn.core.reasoner.execution.framework.Answer;
-import grakn.core.reasoner.execution.framework.ExecutionActor;
-import grakn.core.reasoner.execution.framework.Request;
-import grakn.core.reasoner.execution.framework.Response;
-import grakn.core.reasoner.execution.framework.ResponseProducer;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.reasoner.resolution.MockTransaction;
+import grakn.core.reasoner.resolution.ResolutionRecorder;
+import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.reasoner.resolution.framework.Response;
+import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,21 +37,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 
-public class Concludable extends ExecutionActor<Concludable> {
+public class Concludable extends Resolver<Concludable> {
     private static final Logger LOG = LoggerFactory.getLogger(Concludable.class);
 
     private final Long traversalPattern;
     private final long traversalSize;
     private final List<List<Long>> rules;
     private final Map<Actor<Rule>, List<Long>> ruleActorSources;
-    private final Set<RuleTrigger> triggered;
-    private Actor<AnswerRecorder> executionRecorder;
+    private final Set<ConceptMap> receivedConceptMaps;
+    private Actor<ResolutionRecorder> resolutionRecorder;
 
     public Concludable(Actor<Concludable> self, Long traversalPattern, List<List<Long>> rules, long traversalSize) {
         super(self, Concludable.class.getSimpleName() + "(pattern: " + traversalPattern + ")");
@@ -58,7 +58,7 @@ public class Concludable extends ExecutionActor<Concludable> {
         this.traversalSize = traversalSize;
         this.rules = rules;
         ruleActorSources = new HashMap<>();
-        triggered = new HashSet<>();
+        receivedConceptMaps = new HashSet<>();
     }
 
     @Override
@@ -84,7 +84,7 @@ public class Concludable extends ExecutionActor<Concludable> {
             Answer.Derivation derivation = new Answer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
             Answer deduplicated = new Answer(fromDownstream.answer().conceptMap(), traversalPattern.toString(), derivation, self());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
-            executionRecorder.tell(actor -> actor.record(deduplicated));
+            resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
             return produceMessage(fromUpstream, responseProducer);
         }
@@ -98,29 +98,28 @@ public class Concludable extends ExecutionActor<Concludable> {
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<List<Long>> traversal = (new MockTransaction(traversalSize, traversalPattern, 1)).query(request.partialConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(traversalPattern, request.partialConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
-        RuleTrigger trigger = new RuleTrigger(request.partialConceptMap());
-        if (!triggered.contains(trigger)) {
+        if (!receivedConceptMaps.contains(request.partialConceptMap())) {
             registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap(), request.unifiers());
-            triggered.add(trigger);
+            receivedConceptMaps.add(request.partialConceptMap());
         }
         return responseProducer;
     }
 
     @Override
-    protected void initialiseDownstreamActors(Registry registry) {
-        executionRecorder = registry.executionRecorder();
+    protected void initialiseDownstreamActors(ResolverRegistry registry) {
+        resolutionRecorder = registry.resolutionRecorder();
         for (List<Long> rule : rules) {
-            Actor<Rule> ruleActor = registry.registerRule(rule, pattern -> Actor.create(self().eventLoopGroup(), actor -> new Rule(actor, pattern, 1L, 0L)));
+            Actor<Rule> ruleActor = registry.registerRule(rule, 1L);
             ruleActorSources.put(ruleActor, rule);
         }
     }
 
     private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
-            List<Long> conceptMap = responseProducer.traversalProducer().next();
+            ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: hasProduced: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
@@ -136,7 +135,7 @@ public class Concludable extends ExecutionActor<Concludable> {
         }
     }
 
-    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, List<Long> partialConceptMap,
+    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap,
                                          List<Object> unifiers) {
         for (Actor<Rule> ruleActor : ruleActorSources.keySet()) {
             Request toDownstream = new Request(path.append(ruleActor), partialConceptMap, unifiers, Answer.Derivation.EMPTY);
@@ -149,27 +148,5 @@ public class Concludable extends ExecutionActor<Concludable> {
         LOG.error("Actor exception", e);
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
     }
-
-    private static class RuleTrigger {
-        private final List<Long> partialConceptMap;
-
-        public RuleTrigger(List<Long> partialConceptMap) {
-            this.partialConceptMap = partialConceptMap;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            RuleTrigger that = (RuleTrigger) o;
-            return Objects.equals(partialConceptMap, that.partialConceptMap);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(partialConceptMap);
-        }
-    }
-
 }
 
