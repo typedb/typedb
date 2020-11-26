@@ -92,7 +92,7 @@ public class HasConstraint extends ThingConstraint {
         if (attribute.reference().isName()) {
             syntax.append(attribute.reference().toString());
         } else {
-            syntax.append(attribute.isa().iterator().next().type().label().get().label());
+            syntax.append(attribute.isa().get().type().label().get().label());
             syntax.append(SPACE);
             syntax.append(attribute.value().iterator().next());
         }

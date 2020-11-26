@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_TYPE_VARIABLE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
@@ -120,10 +119,9 @@ public class RuleImpl implements Rule {
         //       First you filter out TypeConstraints, then you retrieved it again via constraint.asIsa().type()
         then().stream().flatMap(var -> var.constraints().stream())
                 .filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
-            Set<IsaConstraint> isaConstraints;
-            if (constraint.isHas() && !(isaConstraints = constraint.asHas().attribute().isa()).isEmpty()) {
-                if (isaConstraints.size() > 1) throw GraknException.of(THING_ISA_MANY);
-                else putConclusion(isaConstraints.iterator().next().type().label().orElseThrow(
+            Optional<IsaConstraint> isaConstraint;
+            if (constraint.isHas() && (isaConstraint = constraint.asHas().attribute().isa()).isPresent()) {
+                putConclusion(isaConstraint.get().type().label().orElseThrow(
                         () -> GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE)
                 ));
             } else if (constraint.isIsa()) putConclusion(constraint.asIsa().type().label().orElseThrow(
@@ -140,7 +138,7 @@ public class RuleImpl implements Rule {
     }
 
     private void putRelationConclusion(RelationConstraint relation) {
-        String relationLabel = relation.owner().isa().iterator().next().type().label().get().label();
+        String relationLabel = relation.owner().isa().get().type().label().get().label();
         TypeVertex relationVertex = graphMgr.schema().getType(relationLabel);
         if (relationVertex == null) throw GraknException.of(TYPE_NOT_FOUND.message(relationLabel));
         RelationTypeImpl relationConcept = RelationTypeImpl.of(graphMgr, relationVertex);

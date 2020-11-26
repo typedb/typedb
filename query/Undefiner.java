@@ -53,7 +53,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFIN
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 
@@ -90,10 +89,8 @@ public class Undefiner {
     private void sort(TypeVariable variable, Set<TypeVariable> sorted) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "sort")) {
             if (sorted.contains(variable)) return;
-            if (variable.sub().size() == 1) {
-                sort(variable.sub().iterator().next().type(), sorted);
-            } else if (variable.sub().size() > 1) {
-                throw GraknException.of(SUPERTYPE_TOO_MANY.message(variable.label().get().scopedLabel()));
+            if (variable.sub().isPresent()) {
+                sort(variable.sub().get().type(), sorted);
             }
             this.variables.addFirst(variable);
             sorted.add(variable);
@@ -131,10 +128,8 @@ public class Undefiner {
             if (variable.regex().isPresent()) undefineRegex(type.asAttributeType().asString(), variable.regex().get());
             if (variable.abstractConstraint().isPresent()) undefineAbstract(type);
 
-            if (variable.sub().size() == 1) undefineSub(type, variable.sub().iterator().next());
-            else if (variable.sub().size() > 1) {
-                throw GraknException.of(SUPERTYPE_TOO_MANY.message(labelConstraint.label()));
-            } else if (variable.valueType().isPresent()) { // variable.sub().size() == 0
+            if (variable.sub().isPresent()) undefineSub(type, variable.sub().get());
+            else if (variable.valueType().isPresent()) {
                 throw new GraknException(ATTRIBUTE_VALUE_TYPE_UNDEFINED.message(
                         variable.valueType().get().valueType().name(),
                         variable.label().get().label()

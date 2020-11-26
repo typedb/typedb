@@ -50,7 +50,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.SUPERTYPE_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 
@@ -103,10 +102,8 @@ public class Definer {
             visited.add(variable);
 
             ThingType type = getThingType(labelConstraint);
-            if (variable.sub().size() == 1) {
-                type = defineSub(type, variable.sub().iterator().next(), variable);
-            } else if (variable.sub().size() > 1) {
-                throw GraknException.of(SUPERTYPE_TOO_MANY.message(labelConstraint.label()));
+            if (variable.sub().isPresent()) {
+                type = defineSub(type, variable.sub().get(), variable);
             } else if (variable.valueType().isPresent()) { // && variable.sub().size() == 0
                 throw new GraknException(ATTRIBUTE_VALUE_TYPE_MODIFIED.message(
                         variable.valueType().get().valueType().name(), labelConstraint.label()
@@ -138,8 +135,8 @@ public class Definer {
             final LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
             hierarchy.add(variable.label().get().scopedLabel());
             visited.add(variable);
-            while (variable.sub().size() == 1) {
-                variable = variable.sub().iterator().next().type();
+            if (variable.sub().isPresent()) {
+                variable = variable.sub().get().type();
                 assert variable.label().isPresent();
                 if (!hierarchy.add(variable.label().get().scopedLabel())) {
                     throw new GraknException(CYCLIC_TYPE_HIERARCHY.message(hierarchy));

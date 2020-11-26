@@ -36,15 +36,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class ThingVariable extends Variable {
 
     private IIDConstraint iidConstraint;
-    private final Set<IsaConstraint> isaConstraints;
+    private IsaConstraint isaConstraint;
     private final Set<IsConstraint> isConstraints;
     private final Set<RelationConstraint> relationConstraints;
     private final Set<HasConstraint> hasConstraints;
@@ -53,7 +55,6 @@ public class ThingVariable extends Variable {
 
     ThingVariable(Identifier.Variable identifier) {
         super(identifier);
-        this.isaConstraints = new HashSet<>();
         this.isConstraints = new HashSet<>();
         this.valueConstraints = new HashSet<>();
         this.relationConstraints = new HashSet<>();
@@ -76,9 +77,14 @@ public class ThingVariable extends Variable {
         if (constraint.isIID()) {
             if (iidConstraint != null && !iidConstraint.equals(constraint)) {
                 throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID.message(identifier()));
-            } else iidConstraint = constraint.asIID();
-        } else if (constraint.isIsa()) isaConstraints.add(constraint.asIsa());
-        else if (constraint.isIs()) isConstraints.add(constraint.asIs());
+            }
+            iidConstraint = constraint.asIID();
+        } else if (constraint.isIsa()) {
+            if (isaConstraint != null && !isaConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA.message(identifier()));
+            }
+            isaConstraint = constraint.asIsa();
+        } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
         else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
@@ -89,8 +95,8 @@ public class ThingVariable extends Variable {
         return Optional.ofNullable(iidConstraint);
     }
 
-    public Set<IsaConstraint> isa() {
-        return isaConstraints;
+    public Optional<IsaConstraint> isa() {
+        return Optional.ofNullable(isaConstraint);
     }
 
     public IsaConstraint isa(TypeVariable type, boolean isExplicit) {
@@ -155,7 +161,7 @@ public class ThingVariable extends Variable {
 
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
-        syntax.append(Stream.of(relationConstraints, isaConstraints, hasConstraints, valueConstraints, isConstraints)
+        syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
                 .flatMap(Collection::stream).map(ThingConstraint::toString)
                 .collect(Collectors.joining("" + COMMA + SPACE)));
 

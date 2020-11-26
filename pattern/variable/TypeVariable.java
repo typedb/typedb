@@ -47,6 +47,7 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_LABEL;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_REGEX;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_SUB;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE;
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
@@ -57,8 +58,8 @@ public class TypeVariable extends Variable {
     private AbstractConstraint abstractConstraint;
     private ValueTypeConstraint valueTypeConstraint;
     private RegexConstraint regexConstraint;
+    private SubConstraint subConstraint;
 
-    private final Set<SubConstraint> subConstraints;
     private final Set<OwnsConstraint> ownsConstraints;
     private final Set<PlaysConstraint> playsConstraints;
     private final Set<RelatesConstraint> relatesConstraints;
@@ -67,7 +68,6 @@ public class TypeVariable extends Variable {
 
     public TypeVariable(Identifier.Variable identifier) {
         super(identifier);
-        subConstraints = new HashSet<>();
         ownsConstraints = new HashSet<>();
         playsConstraints = new HashSet<>();
         relatesConstraints = new HashSet<>();
@@ -90,17 +90,25 @@ public class TypeVariable extends Variable {
         if (constraint.isLabel()) {
             if (labelConstraint != null && !labelConstraint.equals(constraint)) {
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL.message(identifier()));
-            } else labelConstraint = constraint.asLabel();
+            }
+            labelConstraint = constraint.asLabel();
         } else if (constraint.isValueType()) {
             if (valueTypeConstraint != null && !valueTypeConstraint.equals(constraint)) {
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE.message(identifier()));
-            } else valueTypeConstraint = constraint.asValueType();
+            }
+            valueTypeConstraint = constraint.asValueType();
         } else if (constraint.isRegex()) {
-            if (regexConstraint != null && !regexConstraint.equals(constraint)) {
+            if (regexConstraint != null && !regexConstraint.equals(constraint)){
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX.message(identifier()));
-            } else regexConstraint = constraint.asRegex();
+            }
+            regexConstraint = constraint.asRegex();
         } else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
-        else if (constraint.isSub()) subConstraints.add(constraint.asSub());
+        else if (constraint.isSub()) {
+            if (subConstraint != null && !subConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB.message(identifier()));
+            }
+            subConstraint = constraint.asSub();
+        }
         else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
         else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
         else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
@@ -136,8 +144,8 @@ public class TypeVariable extends Variable {
         return Optional.ofNullable(regexConstraint);
     }
 
-    public Set<SubConstraint> sub() {
-        return subConstraints;
+    public Optional<SubConstraint> sub() {
+        return Optional.ofNullable(subConstraint);
     }
 
     public SubConstraint sub(TypeVariable type, boolean isExplicit) {
@@ -214,15 +222,13 @@ public class TypeVariable extends Variable {
 
         if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
 
-        syntax.append(Stream.of(subConstraints, set(abstractConstraint), ownsConstraints, relatesConstraints,
+        syntax.append(Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
                 playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
                 .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
                 .collect(Collectors.joining("" + COMMA + SPACE)));
 
         return syntax.toString();
     }
-
-
 
     public String referenceSyntax() {
         if (reference().isLabel()) return labelConstraint.label();

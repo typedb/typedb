@@ -172,12 +172,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(7, "The variable '%s' is both a type and a thing.");
         public static final Pattern MULTIPLE_THING_CONSTRAINT_IID =
                 new Pattern(8, "The thing variable '%s' has multiple 'iid' constraints.");
+        public static final Pattern MULTIPLE_THING_CONSTRAINT_ISA =
+                new Pattern(9, "The thing variable '%s' has multiple 'isa' constraints.");
+        public static final Pattern MULTIPLE_TYPE_CONSTRAINT_SUB =
+                new Pattern(10, "The type variable '%s' has multiple 'sub' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_LABEL =
-                new Pattern(9, "The type variable '%s' has multiple 'label' constraints.");
+                new Pattern(11, "The type variable '%s' has multiple 'label' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE =
-                new Pattern(10, "Tye type variable '%s' has multiple 'value' constraints.");
+                new Pattern(12, "Tye type variable '%s' has multiple 'value' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
-                new Pattern(11, "The type variable '%s' has multiple 'regex' constraints.");
+                new Pattern(13, "The type variable '%s' has multiple 'regex' constraints.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -236,26 +240,24 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(13, "Attempted to re-assert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_IID_CONFLICT =
                 new ThingWrite(14, "Attempted to refer to a thing with IID '%s' and assert it as a new instance (isa) of type '%s' at the same time.");
-        public static final ThingWrite THING_ISA_MANY =
-                new ThingWrite(15, "The thing variable '%s' cannot be asserted as new instance for more than one type (isa).");
         public static final ThingWrite THING_ISA_MISSING =
-                new ThingWrite(16, "The thing variable '%s' cannot be asserted as a new instance without providing its type (isa).");
+                new ThingWrite(15, "The thing variable '%s' cannot be asserted as a new instance without providing its type (isa).");
         public static final ThingWrite THING_CONSTRAINT_TYPE_VARIABLE =
-                new ThingWrite(17, "Types can only be referred to by their labels in 'insert' queries or 'then' clauses, unlike the the type variable '%s'.");
+                new ThingWrite(16, "Types can only be referred to by their labels in 'insert' queries or 'then' clauses, unlike the the type variable '%s'.");
         public static final ThingWrite THING_CONSTRAINT_UNACCEPTED =
-                new ThingWrite(18, "The thing constraint '%s' is not accepted in an insert query.");
+                new ThingWrite(17, "The thing constraint '%s' is not accepted in an insert query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
-                new ThingWrite(19, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
+                new ThingWrite(18, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(20, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+                new ThingWrite(19, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(21, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
+                new ThingWrite(20, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
         public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(22, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(21, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(23, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(22, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(24, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(23, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
@@ -306,78 +308,76 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(3, "The type '%s' has instances, and cannot be deleted.");
         public static final TypeWrite CYCLIC_TYPE_HIERARCHY =
                 new TypeWrite(4, "There is a cyclic type hierarchy, which is not allowed: '%s'.");
-        public static final TypeWrite SUPERTYPE_TOO_MANY =
-                new TypeWrite(5, "The type '%s' cannot be a subtype of more than one type");
         public static final TypeWrite OWNS_ABSTRACT_ATT_TYPE =
-                new TypeWrite(6, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
+                new TypeWrite(5, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
         public static final TypeWrite OVERRIDDEN_NOT_SUPERTYPE =
-                new TypeWrite(7, "The type '%s' cannot override '%s' as it is not a supertype.");
+                new TypeWrite(6, "The type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDE_NOT_AVAILABLE = // TODO: this can be split between 'has', 'key' and 'plays' once pushed to commit
-                new TypeWrite(8, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
+                new TypeWrite(7, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
-                new TypeWrite(9, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
+                new TypeWrite(8, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
-                new TypeWrite(10, "The attribute type '%s' is missing a value type.");
+                new TypeWrite(9, "The attribute type '%s' is missing a value type.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MODIFIED =
-                new TypeWrite(11, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
+                new TypeWrite(10, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
-                new TypeWrite(12, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
+                new TypeWrite(11, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
         public static final TypeWrite ATTRIBUTE_SUBTYPE_NOT_ABSTRACT =
-                new TypeWrite(13, "The attribute type '%s' cannot be set to abstract as its subtypes are not abstract.");
+                new TypeWrite(12, "The attribute type '%s' cannot be set to abstract as its subtypes are not abstract.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
-                new TypeWrite(14, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
+                new TypeWrite(13, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
-                new TypeWrite(15, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
+                new TypeWrite(14, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE =
-                new TypeWrite(16, "The type '%s' is not an attribute type, so it can not have a value type defined.");
+                new TypeWrite(15, "The type '%s' is not an attribute type, so it can not have a value type defined.");
         public static final TypeWrite OWNS_ATT_NOT_AVAILABLE =
-                new TypeWrite(17, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
+                new TypeWrite(16, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
         public static final TypeWrite OWNS_KEY_NOT_AVAILABLE =
-                new TypeWrite(18, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
+                new TypeWrite(17, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
         public static final TypeWrite OWNS_KEY_VALUE_TYPE =
-                new TypeWrite(19, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
+                new TypeWrite(18, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP =
-                new TypeWrite(20, "The instances of type '%s' do not have exactly one attribute of type '%s' to convert to key.");
+                new TypeWrite(19, "The instances of type '%s' do not have exactly one attribute of type '%s' to convert to key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_UNIQUENESS =
-                new TypeWrite(21, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
+                new TypeWrite(20, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_NO_INSTANCES =
-                new TypeWrite(22, "The instances of type '%s' do not have any attribute of type '%s' that could be converted to a key.");
+                new TypeWrite(21, "The instances of type '%s' do not have any attribute of type '%s' that could be converted to a key.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(23, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
+                new TypeWrite(22, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
-                new TypeWrite(24, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
+                new TypeWrite(23, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(25, "The relation type '%s' does not relate any role type.");
+                new TypeWrite(24, "The relation type '%s' does not relate any role type.");
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
-                new TypeWrite(26, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
+                new TypeWrite(25, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
-                new TypeWrite(27, "The role type '%s' is already declared by a supertype.");
+                new TypeWrite(26, "The role type '%s' is already declared by a supertype.");
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
-                new TypeWrite(28, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
+                new TypeWrite(27, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         public static final TypeWrite ROLE_DEFINED_OUTSIDE_OF_RELATION =
-                new TypeWrite(29, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
+                new TypeWrite(28, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
         public static final TypeWrite INVALID_DEFINE_SUB =
-                new TypeWrite(30, "The type '%s' cannot be defined, as the provided supertype '%s' is not a valid thing type.");
+                new TypeWrite(29, "The type '%s' cannot be defined, as the provided supertype '%s' is not a valid thing type.");
         public static final TypeWrite INVALID_UNDEFINE_SUB =
-                new TypeWrite(31, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
+                new TypeWrite(30, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
         public static final TypeWrite INVALID_UNDEFINE_RELATES_OVERRIDE =
-                new TypeWrite(32, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
+                new TypeWrite(31, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_OVERRIDE =
-                new TypeWrite(33, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
+                new TypeWrite(32, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_OVERRIDE =
-                new TypeWrite(34, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
+                new TypeWrite(33, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_KEY =
-                new TypeWrite(35, "The annotation @key on attribute type '%s' cannot be undefined. You should re-define owning '%s' without @key annotation.");
+                new TypeWrite(34, "The annotation @key on attribute type '%s' cannot be undefined. You should re-define owning '%s' without @key annotation.");
         public static final TypeWrite INVALID_UNDEFINE_RELATES_HAS_INSTANCES =
-                new TypeWrite(36, "The role type '%s' cannot be undefined because it is currently played by existing instances.");
+                new TypeWrite(35, "The role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_HAS_INSTANCES =
-                new TypeWrite(37, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it is currently owned by existing instances.");
+                new TypeWrite(36, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it is currently owned by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_HAS_INSTANCES =
-                new TypeWrite(38, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
+                new TypeWrite(37, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite TYPE_CONSTRAINT_UNACCEPTED =
-                new TypeWrite(39, "The type constraint '%s' is not accepted in a define/undefine query.");
+                new TypeWrite(38, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
-                new TypeWrite(40, "Unable to set type with class '%s' as a supertype.");
+                new TypeWrite(39, "Unable to set type with class '%s' as a supertype.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";

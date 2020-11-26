@@ -111,8 +111,8 @@ public class TypeInference {
     }
 
     private static void addInferredIsaLabels(ThingVariable variable, Set<Label> labels, TypeVariable metaThing) {
-        if (variable.isa().isEmpty()) variable.isa(metaThing, false);
-        IsaConstraint isaConstraint = variable.isa().iterator().next();
+        if (!variable.isa().isPresent()) variable.isa(metaThing, false);
+        IsaConstraint isaConstraint = variable.isa().get();
         isaConstraint.typeHints(labels);
     }
 
@@ -205,7 +205,7 @@ public class TypeInference {
         }
 
         private boolean isMapped(TypeVariable variable) {
-            return !variable.reference().isLabel() && variable.sub().isEmpty() &&
+            return !variable.reference().isLabel() && !variable.sub().isPresent() &&
                     !variable.label().isPresent() && variable.is().isEmpty();
         }
 
@@ -224,7 +224,7 @@ public class TypeInference {
 
             if (thingVariable.constraints().isEmpty()) return;
 
-            thingVariable.isa().forEach(constraint -> convertIsa(inferenceVariable, constraint));
+            thingVariable.isa().ifPresent(constraint -> convertIsa(inferenceVariable, constraint));
             thingVariable.is().forEach(constraint -> convertIs(inferenceVariable, constraint));
             thingVariable.has().forEach(constraint -> convertHas(inferenceVariable, constraint));
             thingVariable.value().forEach(constraint -> convertValue(inferenceVariable, constraint));
@@ -235,11 +235,11 @@ public class TypeInference {
             if (isMapped(owner)) owner.sub(metaRelation, true);
             ThingVariable ownerThing = relationConstraint.owner();
             TypeVariable relationTypeVar;
-            if (ownerThing.isa().isEmpty()) {
+            if (!ownerThing.isa().isPresent()) {
                 relationTypeVar = inferenceVariables.newInferenceVariable();
                 neighbours.put(relationTypeVar, new HashSet<>());
             } else {
-                relationTypeVar = convertVariable(ownerThing.isa().iterator().next().type());
+                relationTypeVar = convertVariable(ownerThing.isa().get().type());
             }
             if (isMapped(relationTypeVar)) relationTypeVar.sub(metaRelation, true);
             for (RelationConstraint.RolePlayer rolePlayer : relationConstraint.players()) {
