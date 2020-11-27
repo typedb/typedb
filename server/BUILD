@@ -188,7 +188,7 @@ assemble_targz(
     targets = assemble_deps_common + ["server-deps-linux"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-linux",
-    visibility = ["//:__pkg__"]
+    visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
 
 assemble_zip(
@@ -196,7 +196,7 @@ assemble_zip(
     targets = assemble_deps_common + ["server-deps-mac"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-mac",
-    visibility = ["//:__pkg__"]
+    visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
 
 assemble_zip(
@@ -204,7 +204,7 @@ assemble_zip(
     targets = assemble_deps_common + ["server-deps-windows"],
     additional_files = assemble_files,
     output_filename = "grakn-core-server-windows",
-    visibility = ["//:__pkg__"]
+    visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
 
 deploy_artifact(

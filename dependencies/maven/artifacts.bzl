@@ -17,6 +17,7 @@
 
 artifacts = [
     "ch.qos.logback:logback-classic",
+    "commons-io:commons-io",
     "com.github.ben-manes.caffeine:caffeine",
     "com.google.code.findbugs:jsr305",
     "com.google.errorprone:error_prone_annotations",
@@ -38,4 +39,5 @@ artifacts = [
     "org.rocksdb:rocksdbjni",
     "org.rocksdb:rocksdbjni-dev",
     "org.slf4j:slf4j-api",
+    "org.zeroturnaround:zt-exec"
 ]

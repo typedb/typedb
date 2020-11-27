@@ -34,6 +34,8 @@
 @maven//:com_google_ortools_ortools_win32_x86_64_java_8_0_8283
 @maven//:com_google_protobuf_protobuf_java
 @maven//:com_google_protobuf_protobuf_java_3_5_1
+@maven//:commons_io_commons_io
+@maven//:commons_io_commons_io_2_3
 @maven//:info_picocli_picocli
 @maven//:info_picocli_picocli_4_3_2
 @maven//:io_cucumber_cucumber_core
@@ -136,3 +138,5 @@
 @maven//:org_rocksdb_rocksdbjni_dev_6_11_4
 @maven//:org_slf4j_slf4j_api
 @maven//:org_slf4j_slf4j_api_1_7_28
+@maven//:org_zeroturnaround_zt_exec
+@maven//:org_zeroturnaround_zt_exec_1_10
