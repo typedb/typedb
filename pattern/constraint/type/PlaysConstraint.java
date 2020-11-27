@@ -44,7 +44,7 @@ public class PlaysConstraint extends TypeConstraint {
 
     public PlaysConstraint(TypeVariable owner, @Nullable TypeVariable relationType,
                            TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
-        super(owner);
+        super(owner, additionalTypes(roleType, relationType, overriddenRoleType));
         if (roleType == null) throw new NullPointerException("Null role");
         this.relationType = relationType;
         this.roleType = roleType;
@@ -70,15 +70,6 @@ public class PlaysConstraint extends TypeConstraint {
 
     public Optional<TypeVariable> overridden() {
         return Optional.ofNullable(overriddenRoleType);
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        final Set<TypeVariable> variables = new HashSet<>();
-        variables.add(roleType);
-        if (relationType != null) variables.add(relationType);
-        if (overriddenRoleType != null) variables.add(overriddenRoleType);
-        return variables;
     }
 
     @Override
@@ -122,6 +113,14 @@ public class PlaysConstraint extends TypeConstraint {
         if (overriddenRoleType != null)
             syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
         return syntax.toString();
+    }
+
+    private static Set<TypeVariable> additionalTypes(TypeVariable roleType, TypeVariable relationType, TypeVariable overriddenRoleType) {
+        final Set<TypeVariable> variables = new HashSet<>();
+        variables.add(roleType);
+        if (relationType != null) variables.add(relationType);
+        if (overriddenRoleType != null) variables.add(overriddenRoleType);
+        return variables;
     }
 
 }

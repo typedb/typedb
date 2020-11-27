@@ -22,7 +22,6 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
@@ -34,7 +33,7 @@ public class RegexConstraint extends TypeConstraint {
     private final int hash;
 
     private RegexConstraint(TypeVariable owner, java.util.regex.Pattern regex) {
-        super(owner);
+        super(owner, set());
         this.regex = regex;
         this.hash = Objects.hash(RegexConstraint.class, this.owner, this.regex.pattern());
     }
@@ -45,11 +44,6 @@ public class RegexConstraint extends TypeConstraint {
 
     public java.util.regex.Pattern regex() {
         return regex;
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return set();
     }
 
     @Override

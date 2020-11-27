@@ -21,7 +21,6 @@ package grakn.core.pattern.constraint.thing;
 import grakn.core.common.parameters.Label;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -42,14 +41,14 @@ public class IsaConstraint extends ThingConstraint {
     private final Set<Label> typeHints;
 
     public IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
-        super(owner);
+        super(owner, set(type));
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
         this.typeHints = new HashSet<>();
     }
 
-    static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
+    public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
                             VariableRegistry registry) {
         return new IsaConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
     }
@@ -78,9 +77,8 @@ public class IsaConstraint extends ThingConstraint {
         return typeHints;
     }
 
-    @Override
-    public Set<Variable> variables() {
-        return set(type);
+    public Set<Label> typeHints() {
+        return typeHints;
     }
 
     @Override

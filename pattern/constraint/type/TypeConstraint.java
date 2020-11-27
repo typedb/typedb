@@ -23,20 +23,22 @@ import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 
+import java.util.Collections;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-
 public abstract class TypeConstraint extends Constraint {
 
     final TypeVariable owner;
+    private final Set<TypeVariable> variables;
 
-    TypeConstraint(TypeVariable owner) {
+    TypeConstraint(TypeVariable owner, Set<TypeVariable> additionalVariables) {
         if (owner == null) throw new NullPointerException("Null owner");
         this.owner = owner;
+        variables = Collections.unmodifiableSet(set(additionalVariables, set(owner)));
     }
 
     public static TypeConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint constraint,
@@ -66,7 +68,7 @@ public abstract class TypeConstraint extends Constraint {
 
     @Override
     public Set<TypeVariable> variables() {
-        return set();
+        return Collections.unmodifiableSet(variables);
     }
 
     @Override

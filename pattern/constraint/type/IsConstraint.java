@@ -24,7 +24,6 @@ import grakn.core.traversal.Traversal;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
@@ -36,7 +35,7 @@ public class IsConstraint extends TypeConstraint {
     private final int hash;
 
     public IsConstraint(TypeVariable owner, TypeVariable variable) {
-        super(owner);
+        super(owner, set(variable));
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
@@ -47,11 +46,6 @@ public class IsConstraint extends TypeConstraint {
 
     public TypeVariable variable() {
         return variable;
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return set(variable());
     }
 
     @Override

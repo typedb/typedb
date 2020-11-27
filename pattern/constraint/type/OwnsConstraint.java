@@ -44,7 +44,7 @@ public class OwnsConstraint extends TypeConstraint {
 
     public OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
                            @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
-        super(owner);
+        super(owner, attributeTypes(attributeType, overriddenAttributeType));
         this.attributeType = attributeType;
         this.overriddenAttributeType = overriddenAttributeType;
         this.isKey = isKey;
@@ -68,13 +68,6 @@ public class OwnsConstraint extends TypeConstraint {
 
     public boolean isKey() {
         return isKey;
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return overriddenAttributeType == null
-                ? set(attributeType)
-                : set(attributeType, overriddenAttributeType);
     }
 
     @Override
@@ -119,5 +112,11 @@ public class OwnsConstraint extends TypeConstraint {
         if (isKey) syntax.append(SPACE).append(IS_KEY);
 
         return syntax.toString();
+    }
+
+    private static Set<TypeVariable> attributeTypes(TypeVariable attributeType, TypeVariable overriddenAttributeType) {
+        return overriddenAttributeType == null
+                ? set(attributeType)
+                : set(attributeType, overriddenAttributeType);
     }
 }

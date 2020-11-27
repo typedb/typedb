@@ -23,7 +23,6 @@ import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlArg;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
@@ -35,7 +34,7 @@ public class ValueTypeConstraint extends TypeConstraint {
     private final int hash;
 
     public ValueTypeConstraint(TypeVariable owner, GraqlArg.ValueType valueType) {
-        super(owner);
+        super(owner, set());
         this.valueType = valueType;
         this.hash = Objects.hash(ValueTypeConstraint.class, this.owner, this.valueType);
     }
@@ -46,11 +45,6 @@ public class ValueTypeConstraint extends TypeConstraint {
 
     public GraqlArg.ValueType valueType() {
         return valueType;
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return set();
     }
 
     @Override

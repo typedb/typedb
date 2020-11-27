@@ -20,7 +20,7 @@ package grakn.core.concept.schema;
 
 import grakn.core.concept.type.Type;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.constraint.Constraint;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -37,7 +37,7 @@ public interface Rule {
 
     Conjunction when();
 
-    Set<Variable> then();
+    Set<Constraint> then();
 
     Stream<? extends Type> positiveConditionTypes();
 

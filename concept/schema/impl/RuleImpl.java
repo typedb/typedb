@@ -55,7 +55,7 @@ public class RuleImpl implements Rule {
     private final GraphManager graphMgr;
     private final RuleVertex vertex;
     private Conjunction when;
-    private Set<Variable> then;
+    private Set<Constraint> then;
 
     private RuleImpl(GraphManager graphMgr, RuleVertex vertex) {
         this.graphMgr = graphMgr;
@@ -117,8 +117,7 @@ public class RuleImpl implements Rule {
         vertex.outs().delete(CONCLUSION);
         // TODO: @flyingsilverfin to revise this logic. It's a big wonky.
         //       First you filter out TypeConstraints, then you retrieved it again via constraint.asIsa().type()
-        then().stream().flatMap(var -> var.constraints().stream())
-                .filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
+        then().stream().filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
             Optional<IsaConstraint> isaConstraint;
             if (constraint.isHas() && (isaConstraint = constraint.asHas().attribute().isa()).isPresent()) {
                 putConclusion(isaConstraint.get().type().label().orElseThrow(
@@ -182,9 +181,9 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public Set<Variable> then() {
+    public Set<Constraint> then() {
         if (then == null) {
-            then = VariableRegistry.createFromThings(list(getThenPreNormalised())).variables();
+            then = VariableRegistry.createFromThings(list(getThenPreNormalised())).variables().stream().flatMap(variable -> variable.constraints().stream()).collect(Collectors.toSet());
         }
         return then;
     }
@@ -192,7 +191,7 @@ public class RuleImpl implements Rule {
     private void validateLabelsExist() {
         Stream<String> whenPositiveLabels = getTypeLabels(when.variables().stream());
         Stream<String> whenNegativeLabels = getTypeLabels(when.negations().stream().flatMap(this::negationVariables));
-        Stream<String> thenLabels = getTypeLabels(then.stream());
+        Stream<String> thenLabels = getTypeLabels(then.stream().flatMap(constraint -> constraint.variables().stream()));
         Set<String> missingLabels = Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity())
                 .filter(label -> graphMgr.schema().getType(label) == null).collect(Collectors.toSet());
         if (!missingLabels.isEmpty()) {

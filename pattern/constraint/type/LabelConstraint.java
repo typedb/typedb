@@ -25,6 +25,7 @@ import grakn.core.traversal.Traversal;
 import java.util.Objects;
 import java.util.Optional;
 
+import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.TYPE;
 
@@ -34,7 +35,7 @@ public class LabelConstraint extends TypeConstraint {
     private final int hash;
 
     public LabelConstraint(TypeVariable owner, Label label) {
-        super(owner);
+        super(owner, set());
         if (label == null) throw new NullPointerException("Null label");
         this.label = label;
         this.hash = Objects.hash(LabelConstraint.class, this.owner, this.label);

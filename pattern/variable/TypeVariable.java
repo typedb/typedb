@@ -75,6 +75,10 @@ public class TypeVariable extends Variable {
         constraints = new HashSet<>();
     }
 
+    public static TypeVariable of(Identifier.Variable identifier) {
+        return new TypeVariable(identifier);
+    }
+
     TypeVariable constrainType(List<graql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;

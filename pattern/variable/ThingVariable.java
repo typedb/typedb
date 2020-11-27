@@ -27,7 +27,9 @@ import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.traversal.Identifier;
+import graql.lang.common.GraqlToken;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -70,6 +72,10 @@ public class ThingVariable extends Variable {
     ThingVariable constrainConcept(List<graql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
+    }
+
+    public static ThingVariable of(Identifier.Variable identifier) {
+        return new ThingVariable(identifier);
     }
 
     private void constrain(ThingConstraint constraint) {
@@ -117,6 +123,36 @@ public class ThingVariable extends Variable {
 
     public Set<ValueConstraint<?>> value() {
         return valueConstraints;
+    }
+
+    public ValueConstraint.Long valueLong(GraqlToken.Predicate.Equality comparator, long value) {
+        ValueConstraint.Long valueLongConstraint = new ValueConstraint.Long(this, comparator, value);
+        constrain(valueLongConstraint);
+        return valueLongConstraint;
+    }
+
+    public ValueConstraint.Double valueDouble(GraqlToken.Predicate.Equality comparator, double value) {
+        ValueConstraint.Double valueDoubleConstraint = new ValueConstraint.Double(this, comparator, value);
+        constrain(valueDoubleConstraint);
+        return valueDoubleConstraint;
+    }
+
+    public ValueConstraint.Boolean valueBoolean(GraqlToken.Predicate.Equality comparator, boolean value) {
+        ValueConstraint.Boolean valueBooleanConstraint = new ValueConstraint.Boolean(this, comparator, value);
+        constrain(valueBooleanConstraint);
+        return valueBooleanConstraint;
+    }
+
+    public ValueConstraint.String valueString(GraqlToken.Predicate comparator, String value) {
+        ValueConstraint.String valueStringConstraint = new ValueConstraint.String(this, comparator, value);
+        constrain(valueStringConstraint);
+        return valueStringConstraint;
+    }
+
+    public ValueConstraint.DateTime valueDateTime(GraqlToken.Predicate.Equality comparator, LocalDateTime value) {
+        ValueConstraint.DateTime valueDateTimeConstraint = new ValueConstraint.DateTime(this, comparator, value);
+        constrain(valueDateTimeConstraint);
+        return valueDateTimeConstraint;
     }
 
     public Set<RelationConstraint> relation() {

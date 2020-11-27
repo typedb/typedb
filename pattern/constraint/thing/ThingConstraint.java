@@ -24,6 +24,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 
+import java.util.Collections;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -33,10 +34,12 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class ThingConstraint extends Constraint {
 
-    final ThingVariable owner;
+    protected final ThingVariable owner;
+    private final Set<Variable> variables;
 
-    ThingConstraint(ThingVariable owner) {
+    ThingConstraint(ThingVariable owner, Set<Variable> additionalVariables) {
         this.owner = owner;
+        variables = Collections.unmodifiableSet(set(additionalVariables, set(owner)));
     }
 
     public static ThingConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint constraint,
@@ -62,7 +65,7 @@ public abstract class ThingConstraint extends Constraint {
 
     @Override
     public Set<Variable> variables() {
-        return set();
+        return variables;
     }
 
     @Override

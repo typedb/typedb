@@ -41,7 +41,7 @@ public class RelatesConstraint extends TypeConstraint {
     private final int hash;
 
     public RelatesConstraint(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
-        super(owner);
+        super(owner, roleTypes(roleType, overriddenRoleType));
         if (roleType == null) throw new NullPointerException("Null role");
         this.roleType = roleType;
         this.overriddenRoleType = overriddenRoleType;
@@ -61,11 +61,6 @@ public class RelatesConstraint extends TypeConstraint {
 
     public Optional<TypeVariable> overridden() {
         return Optional.ofNullable(overriddenRoleType);
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return overriddenRoleType == null ? set(roleType) : set(roleType, overriddenRoleType);
     }
 
     @Override
@@ -106,5 +101,9 @@ public class RelatesConstraint extends TypeConstraint {
         if (overriddenRoleType != null)
             syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
         return syntax.toString();
+    }
+
+    private static Set<TypeVariable> roleTypes(TypeVariable roleType, TypeVariable overriddenRoleType) {
+        return overriddenRoleType == null ? set(roleType) : set(roleType, overriddenRoleType);
     }
 }

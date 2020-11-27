@@ -22,7 +22,6 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Constraint.ABSTRACT;
@@ -32,17 +31,12 @@ public class AbstractConstraint extends TypeConstraint {
     private final int hash;
 
     private AbstractConstraint(TypeVariable owner) {
-        super(owner);
+        super(owner, set());
         this.hash = Objects.hash(AbstractConstraint.class, this.owner);
     }
 
     static AbstractConstraint of(TypeVariable owner) {
         return new AbstractConstraint(owner);
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return set();
     }
 
     @Override

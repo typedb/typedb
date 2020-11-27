@@ -19,13 +19,11 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
@@ -37,7 +35,7 @@ public class IsConstraint extends ThingConstraint {
     private final int hash;
 
     public IsConstraint(ThingVariable owner, ThingVariable variable) {
-        super(owner);
+        super(owner, set(variable));
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
     }
@@ -48,11 +46,6 @@ public class IsConstraint extends ThingConstraint {
 
     public ThingVariable variable() {
         return variable;
-    }
-
-    @Override
-    public Set<Variable> variables() {
-        return set(variable());
     }
 
     @Override

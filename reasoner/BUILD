@@ -102,6 +102,27 @@ host_compatible_java_test(
     resource_strip_prefix = "common/test",
 )
 
+host_compatible_java_test(
+    name = "test-concludable",
+    srcs = [
+        "ConcludableTest.java",
+    ],
+    test_class = "grakn.core.reasoner.ConcludableTest",
+    deps = [
+        # Internal dependencies
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common",
+        "@graknlabs_graql//java/pattern",
+        "@graknlabs_graql//java:graql",
+    ],
+    native_libraries_deps = [
+        "//pattern:pattern",
+        "//reasoner:reasoner",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),

@@ -25,6 +25,7 @@ import grakn.core.traversal.Traversal;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.IID;
 
@@ -34,7 +35,7 @@ public class IIDConstraint extends ThingConstraint {
     private final int hash;
 
     private IIDConstraint(ThingVariable owner, byte[] iid) {
-        super(owner);
+        super(owner, set());
         this.iid = iid;
         this.hash = Objects.hash(IIDConstraint.class, this.owner, Arrays.hashCode(this.iid));
     }

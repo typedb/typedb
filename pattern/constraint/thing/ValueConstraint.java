@@ -42,8 +42,9 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     final T value;
     private final int hash;
 
-    private ValueConstraint(ThingVariable owner, GraqlToken.Predicate predicate, T value) {
-        super(owner);
+    private ValueConstraint(ThingVariable owner, GraqlToken.Predicate predicate, T value,
+                            Set<grakn.core.pattern.variable.Variable> additionalVariables) {
+        super(owner, additionalVariables);
         assert !predicate.isEquality() || value instanceof Comparable || value instanceof ThingVariable;
         assert !predicate.isSubString() || value instanceof java.lang.String;
         if (value == null) throw GraknException.of(MISSING_CONSTRAINT_VALUE);
@@ -78,11 +79,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     @Override
     public ValueConstraint<?> asValue() {
         return this;
-    }
-
-    @Override
-    public Set<grakn.core.pattern.variable.Variable> variables() {
-        return isVariable() ? set(asVariable().value()) : set();
     }
 
     public GraqlToken.Predicate predicate() {
@@ -168,7 +164,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     public static class Long extends ValueConstraint<java.lang.Long> {
 
         public Long(ThingVariable owner, GraqlToken.Predicate.Equality predicate, long value) {
-            super(owner, predicate, value);
+            super(owner, predicate, value, set());
         }
 
         @Override
@@ -195,7 +191,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     public static class Double extends ValueConstraint<java.lang.Double> {
 
         public Double(ThingVariable owner, GraqlToken.Predicate.Equality predicate, double value) {
-            super(owner, predicate, value);
+            super(owner, predicate, value, set());
         }
 
         @Override
@@ -217,7 +213,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     public static class Boolean extends ValueConstraint<java.lang.Boolean> {
 
         public Boolean(ThingVariable owner, GraqlToken.Predicate.Equality predicate, boolean value) {
-            super(owner, predicate, value);
+            super(owner, predicate, value, set());
         }
 
         @Override
@@ -239,7 +235,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     public static class String extends ValueConstraint<java.lang.String> {
 
         public String(ThingVariable owner, GraqlToken.Predicate predicate, java.lang.String value) {
-            super(owner, predicate, value);
+            super(owner, predicate, value, set());
         }
 
         @Override
@@ -265,10 +261,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
 
     public static class DateTime extends ValueConstraint<LocalDateTime> {
 
-        public DateTime(ThingVariable owner,
-                        GraqlToken.Predicate.Equality predicate,
-                        LocalDateTime value) {
-            super(owner, predicate, value);
+        public DateTime(ThingVariable owner, GraqlToken.Predicate.Equality predicate, LocalDateTime value) {
+            super(owner, predicate, value, set());
         }
 
         @Override
@@ -290,7 +284,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     public static class Variable extends ValueConstraint<ThingVariable> {
 
         public Variable(ThingVariable owner, GraqlToken.Predicate.Equality predicate, ThingVariable variable) {
-            super(owner, predicate, variable);
+            super(owner, predicate, variable, set(variable));
         }
 
         @Override

@@ -65,6 +65,29 @@ host_compatible_java_test(
     data = [":schema.gql"]
 )
 
+host_compatible_java_test(
+    name = "test-implication",
+    srcs = [
+        "ImplicationTest.java",
+        "Util.java",
+    ],
+    test_class = "grakn.core.test.integration.ImplicationTest",
+    deps = [
+        # Internal dependencies
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java:graql",
+    ],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//reasoner:reasoner",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

@@ -21,6 +21,7 @@ package grakn.core.pattern.constraint.thing;
 import grakn.core.common.parameters.Label;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
@@ -44,7 +45,7 @@ public class RelationConstraint extends ThingConstraint {
     private final int hash;
 
     public RelationConstraint(ThingVariable owner, List<RolePlayer> rolePlayers) {
-        super(owner);
+        super(owner, rolePlayerVariables(rolePlayers));
         assert rolePlayers != null && !rolePlayers.isEmpty();
         this.rolePlayers = new ArrayList<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
@@ -58,16 +59,6 @@ public class RelationConstraint extends ThingConstraint {
 
     public List<RolePlayer> players() {
         return rolePlayers;
-    }
-
-    @Override
-    public Set<grakn.core.pattern.variable.Variable> variables() {
-        final Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
-        players().forEach(player -> {
-            variables.add(player.player());
-            if (player.roleType().isPresent()) variables.add(player.roleType().get());
-        });
-        return variables;
     }
 
     @Override
@@ -110,6 +101,15 @@ public class RelationConstraint extends ThingConstraint {
         return hash;
     }
 
+    private static Set<Variable> rolePlayerVariables(List<RolePlayer> rolePlayers) {
+        final Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
+        rolePlayers.forEach(player -> {
+            variables.add(player.player());
+            if (player.roleType().isPresent()) variables.add(player.roleType().get());
+        });
+        return variables;
+    }
+
     public static class RolePlayer {
 
         private final TypeVariable roleType;
@@ -117,7 +117,7 @@ public class RelationConstraint extends ThingConstraint {
         private final int hash;
         private Set<Label> roleTypeHints;
 
-        private RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
+        public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
@@ -143,6 +143,10 @@ public class RelationConstraint extends ThingConstraint {
 
         public void addRoleTypeHints(Set<Label> labels) {
             this.roleTypeHints = labels;
+        }
+
+        public Set<Label> roleTypeHints() {
+            return roleTypeHints;
         }
 
         @Override

@@ -40,7 +40,7 @@ public class SubConstraint extends TypeConstraint {
     private final Set<Label> typeHints;
 
     public SubConstraint(TypeVariable owner, TypeVariable type, boolean isExplicit) {
-        super(owner);
+        super(owner, set(type));
         if (type == null) throw new NullPointerException("Null superType");
         this.type = type;
         this.isExplicit = isExplicit;
@@ -71,11 +71,6 @@ public class SubConstraint extends TypeConstraint {
 
     public Set<Label> getTypeHints() {
         return typeHints;
-    }
-
-    @Override
-    public Set<TypeVariable> variables() {
-        return set(type);
     }
 
     @Override
