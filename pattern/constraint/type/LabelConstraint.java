@@ -56,7 +56,7 @@ public class LabelConstraint extends TypeConstraint {
         return label.scopedName();
     }
 
-    public Label labelLabel() {
+    public Label properLabel() {
         return label;
     }
 

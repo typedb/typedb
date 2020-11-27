@@ -141,7 +141,7 @@ public class RelationConstraint extends ThingConstraint {
             return player;
         }
 
-        public void roleTypeHints(Set<Label> labels) {
+        public void addRoleTypeHints(Set<Label> labels) {
             this.roleTypeHints = labels;
         }
 

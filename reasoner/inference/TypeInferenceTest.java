@@ -16,10 +16,24 @@
  *
  */
 
-package grakn.core.reasoner;
+package grakn.core.reasoner.inference;
 
+import grakn.core.common.parameters.Label;
+import grakn.core.concept.type.Type;
+import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.graph.GraphManager;
+import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.variable.Variable;
+import graql.lang.Graql;
+import graql.lang.query.GraqlQuery;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static junit.framework.TestCase.assertTrue;
 
 @Ignore
 public class TypeInferenceTest {
@@ -172,6 +186,44 @@ public class TypeInferenceTest {
         String input = "match $r (wife: $yoko) isa marriage;";
     }
 
-    //TODO: keep quereis but delete rest
+    @Test
+    public void label_conform_to_supers() {
+        String input = "match $a isa $t;\n" +
+                "  $b isa $t;\n" +
+                "  $t owns $c;\n" +
+                "  $t sub entity;\n" +
+                "  ($a, $b) isa $rel;\n" +
+                "  $rel owns $c\n" +
+                "  \n" +
+                "  $a has left-attr true;\n" +
+                "  $b has right-attr true;";
+        GraqlQuery graqlQuery = Graql.parseQuery(input);
+        //TODO: this test needs to go into integration
+        GraphManager graphManager = new GraphManager(null, null);
+        Conjunction conjunction = Disjunction.create(graqlQuery.asMatch().conjunction().normalise()).conjunctions().iterator().next();
+        TypeInference.full(conjunction, graphManager);
+
+
+        for (Variable variable : conjunction.variables()) {
+            if (variable.isThing() && variable.asThing().isa().isPresent() && variable.asThing().isa().get().type().sub().isPresent()) {
+                Set<Label> subHints = variable.asThing().isa().get().getTypeHints();
+                Set<Label> hintsOfSuper = variable.asThing().isa().get().type().sub().get().getTypeHints();
+                for (Label hint : subHints) {
+                    Type hintType = TypeImpl.of(graphManager, graphManager.schema().getType(hint));
+                    Stream<Label> supersOfHint = hintType.getSupertypes().map(Type::getLabel).map(Label::of);
+                    assertTrue(supersOfHint.anyMatch(hintsOfSuper::contains));
+                }
+            } else if (variable.isType() && variable.asType().sub().isPresent() && variable.asType().sub().get().type().sub().isPresent()) {
+                Set<Label> subHints = variable.asType().sub().get().getTypeHints();
+                Set<Label> hintsOfSuper = variable.asType().sub().get().type().sub().get().getTypeHints();
+                for (Label hint : subHints) {
+                    Type hintType = TypeImpl.of(graphManager, graphManager.schema().getType(hint));
+                    Stream<Label> supersOfHint = hintType.getSupertypes().map(Type::getLabel).map(Label::of);
+                    assertTrue(supersOfHint.anyMatch(hintsOfSuper::contains));
+                }
+            }
+        }
+    }
+
 
 }

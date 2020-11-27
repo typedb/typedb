@@ -62,8 +62,20 @@ public class IsaConstraint extends ThingConstraint {
         return isExplicit;
     }
 
-    public void typeHints(Set<Label> labels) {
-        this.typeHints.addAll(labels);
+    public void addHints(Set<Label> labels) {
+        typeHints.addAll(labels);
+    }
+
+    public void removeHint(Label label) {
+        typeHints.remove(label);
+    }
+
+    public void clearHintLabels() {
+        typeHints.clear();
+    }
+
+    public Set<Label> getTypeHints() {
+        return typeHints;
     }
 
     @Override

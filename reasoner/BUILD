@@ -27,15 +27,15 @@ package(default_visibility = [
 
 native_java_libraries(
     name = "reasoner",
-    srcs = glob([
-        "*.java",
-        "resolution/*.java",
-        "resolution/framework/*.java",
-        "resolution/resolver/*.java",
-    ], exclude = [
-        "*Test.java",
-        "*/*Test.java",
-    ]),
+    srcs = glob(
+        ["*.java",
+         "inference/*.java",
+         "resolution/*.java",
+         "resolution/framework/*.java",
+         "resolution/resolver/*.java",
+         ],
+        exclude = ["*Test.java", "*/*Test.java"],
+    ),
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
@@ -64,11 +64,20 @@ native_java_libraries(
 host_compatible_java_test(
     name = "test-type-inference",
     srcs = [
-        "TypeInferenceTest.java",
+        "inference/TypeInferenceTest.java",
     ],
     native_libraries_deps = [
         "//pattern:pattern",
         "//reasoner:reasoner",
+        "//concept:concept",
+    ],
+    deps = [
+        "@maven//:junit_junit",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/query",
+
+        "//graph:graph",
+        "//common:common",
     ],
     test_class = "grakn.core.reasoner.TypeInferenceTest",
 )

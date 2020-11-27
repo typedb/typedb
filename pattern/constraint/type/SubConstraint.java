@@ -37,7 +37,7 @@ public class SubConstraint extends TypeConstraint {
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private final Set<Label> labelHints;
+    private final Set<Label> typeHints;
 
     public SubConstraint(TypeVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner);
@@ -45,7 +45,7 @@ public class SubConstraint extends TypeConstraint {
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(SubConstraint.class, this.owner, this.type, this.isExplicit);
-        this.labelHints = new HashSet<>();
+        this.typeHints = new HashSet<>();
     }
 
     static SubConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
@@ -57,8 +57,20 @@ public class SubConstraint extends TypeConstraint {
         return type;
     }
 
-    public void labelHints(Set<Label> labels) {
-        this.labelHints.addAll(labels);
+    public void addHints(Set<Label> labels) {
+        typeHints.addAll(labels);
+    }
+
+    public void removeHint(Label label) {
+        typeHints.remove(label);
+    }
+
+    public void clearHintLabels() {
+        typeHints.clear();
+    }
+
+    public Set<Label> getTypeHints() {
+        return typeHints;
     }
 
     @Override
@@ -68,8 +80,8 @@ public class SubConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        if (!labelHints.isEmpty()) traversal.labels(owner.identifier(), labelHints);
-        if (type.reference().isName() || labelHints.isEmpty()) {
+        if (!typeHints.isEmpty()) traversal.labels(owner.identifier(), typeHints);
+        if (type.reference().isName() || typeHints.isEmpty()) {
             traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
         }
     }

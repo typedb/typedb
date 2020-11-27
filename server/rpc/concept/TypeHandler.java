@@ -22,12 +22,12 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.Type;
-import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
@@ -40,10 +40,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
-import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
@@ -236,8 +236,8 @@ public class TypeHandler {
     private void getSubtypes(Transaction.Req request, Type type) {
         transactionRPC.respond(request, type.getSubtypes().iterator(), cons ->
                 response(request, ConceptProto.Type.Res.newBuilder().setTypeGetSubtypesRes(
-                    ConceptProto.Type.GetSubtypes.Res.newBuilder().addAllType(
-                            cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                        ConceptProto.Type.GetSubtypes.Res.newBuilder().addAllType(
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
     }
 
     private void getInstances(Transaction.Req request, ThingType thingType) {
@@ -271,8 +271,8 @@ public class TypeHandler {
     private void getPlays(Transaction.Req request, ThingType thingType) {
         transactionRPC.respond(request, thingType.getPlays().iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setThingTypeGetPlaysRes(
-                    ConceptProto.ThingType.GetPlays.Res.newBuilder().addAllRole(
-                            cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                        ConceptProto.ThingType.GetPlays.Res.newBuilder().addAllRole(
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
     }
 
     private void setOwns(Transaction.Req request, ThingType thingType, ConceptProto.ThingType.SetOwns.Req req) {
