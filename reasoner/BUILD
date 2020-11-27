@@ -27,17 +27,20 @@ package(default_visibility = [
 
 native_java_libraries(
     name = "reasoner",
-    srcs = glob(
-        ["*.java"],
-        exclude = ["*Test.java"],
-    ),
+    srcs = glob([
+        "*.java",
+        "resolution/*.java",
+        "resolution/framework/*.java",
+        "resolution/resolver/*.java",
+    ], exclude = [
+        "*Test.java",
+        "*/*Test.java",
+    ]),
     native_libraries_deps = [
-        "//reasoner/resolution:resolution",
         "//concept:concept",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
     deps = [
         # Internal dependencies
         "//common",
@@ -48,8 +51,14 @@ native_java_libraries(
         "@graknlabs_graql//java/common",
         "@graknlabs_graql//java/pattern",
 
-        # External dependencies from Maven
+        # External Maven Dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api"
     ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
 )
 
 host_compatible_java_test(
@@ -64,8 +73,28 @@ host_compatible_java_test(
     test_class = "grakn.core.reasoner.TypeInferenceTest",
 )
 
+host_compatible_java_test(
+    name = "test-resolution",
+    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
+    srcs = ["resolution/ResolutionTest.java"],
+    deps = [
+        "@graknlabs_common//:common",
+    ],
+    native_libraries_deps = [
+        "//concept:concept",
+        "//reasoner:reasoner",
+    ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+)
+
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl",
 )
