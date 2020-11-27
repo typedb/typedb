@@ -24,6 +24,7 @@ native_grakn_artifact(
     name = "native-grakn-artifact",
     mac_artifact = "//server:assemble-mac-zip",
     linux_artifact = "//server:assemble-linux-targz",
+    windows_artifact = "//server:assemble-windows-zip",
     visibility = ["//test:__subpackages__"],
 )
 

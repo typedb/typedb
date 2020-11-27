@@ -201,8 +201,8 @@ docker_push(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", ".grabl/*", "bin/*"]),
-    exclude = glob(["docs/*"]),
+    include = glob(["*", ".grabl/*", "bin/*", ".circleci/*"]),
+    exclude = glob(["docs/*", ".circleci/windows/*"]),
     license_type = "agpl",
 )
 
