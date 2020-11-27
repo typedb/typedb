@@ -21,6 +21,7 @@ import grakn.core.concept.schema.Rule;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.reasoner.concludable.Concludable;
 
 import java.util.HashSet;
 import java.util.Set;

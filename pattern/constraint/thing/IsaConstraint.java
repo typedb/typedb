@@ -73,10 +73,6 @@ public class IsaConstraint extends ThingConstraint {
         typeHints.clear();
     }
 
-    public Set<Label> getTypeHints() {
-        return typeHints;
-    }
-
     public Set<Label> typeHints() {
         return typeHints;
     }

@@ -29,6 +29,7 @@ native_java_libraries(
     name = "reasoner",
     srcs = glob(
         ["*.java",
+         "concludable/*.java",
          "inference/*.java",
          "resolution/*.java",
          "resolution/framework/*.java",
@@ -105,7 +106,7 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-concludable",
     srcs = [
-        "ConcludableTest.java",
+        "concludable/ConcludableTest.java",
     ],
     test_class = "grakn.core.reasoner.ConcludableTest",
     deps = [

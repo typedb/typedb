@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package grakn.core.reasoner.concludable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
@@ -29,6 +29,8 @@ import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.reasoner.Implication;
+import grakn.core.reasoner.Unification;
 
 import java.util.HashSet;
 import java.util.List;
@@ -141,7 +143,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
     private static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
         IsaConstraint newIsa = variableToConstrain.isa(typeCopy, toCopy.isExplicit());
-        newIsa.typeHints(toCopy.typeHints());
+        newIsa.addHints(toCopy.typeHints());
         return newIsa;
     }
 
@@ -221,7 +223,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
                 TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? copyVariableWithLabelAndValueType(rolePlayer.roleType().get()) : null;
                 ThingVariable playerCopy = copyIsaAndValues(rolePlayer.player());
                 RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
-                rolePlayerCopy.roleTypeHints(rolePlayer.roleTypeHints());
+                rolePlayerCopy.addRoleTypeHints(rolePlayer.roleTypeHints());
                 return rolePlayerCopy;
             }).collect(Collectors.toList());
         }

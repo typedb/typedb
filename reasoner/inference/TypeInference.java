@@ -134,7 +134,7 @@ public class TypeInference {
             if (variable.asType().sub().isPresent()) return variable.asType().sub().get().getTypeHints();
             return null;
         } else if (variable.isThing()) {
-            if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().getTypeHints();
+            if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().typeHints();
             return null;
         } else throw GraknException.of(ILLEGAL_STATE);
     }

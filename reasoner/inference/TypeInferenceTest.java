@@ -206,7 +206,7 @@ public class TypeInferenceTest {
 
         for (Variable variable : conjunction.variables()) {
             if (variable.isThing() && variable.asThing().isa().isPresent() && variable.asThing().isa().get().type().sub().isPresent()) {
-                Set<Label> subHints = variable.asThing().isa().get().getTypeHints();
+                Set<Label> subHints = variable.asThing().isa().get().typeHints();
                 Set<Label> hintsOfSuper = variable.asThing().isa().get().type().sub().get().getTypeHints();
                 for (Label hint : subHints) {
                     Type hintType = TypeImpl.of(graphManager, graphManager.schema().getType(hint));

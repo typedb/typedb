@@ -24,7 +24,7 @@ import grakn.core.concept.schema.Rule;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.reasoner.Concludable;
+import grakn.core.reasoner.concludable.Concludable;
 import grakn.core.reasoner.Implication;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
