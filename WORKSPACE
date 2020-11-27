@@ -133,8 +133,7 @@ graknlabs_console_artifact()
 
 # Load maven artifacts
 load("//dependencies/maven:artifacts.bzl",
-graknlabs_grakn_core_artifacts = "artifacts",
-graknlabs_grakn_core_overrides = "overrides")
+graknlabs_grakn_core_artifacts = "artifacts")
 load("@graknlabs_graql//dependencies/maven:artifacts.bzl",
 graknlabs_graql_artifacts = "artifacts")
 load("@graknlabs_protocol//dependencies/maven:artifacts.bzl",
@@ -151,8 +150,6 @@ maven(
         graknlabs_grabl_tracing_artifacts +
         graknlabs_graql_artifacts +
         graknlabs_grakn_core_artifacts,
-
-    graknlabs_grakn_core_overrides
 )
 
 ###############################################
