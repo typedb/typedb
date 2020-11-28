@@ -18,7 +18,7 @@
 class GraknCore < Formula
   desc "Grakn Core: The Knowledge Graph"
   homepage "https://grakn.ai"
-  url "https://github.com/graknlabs/grakn-2.0/releases/download/{version}/grakn-core-all-mac-{version}.zip" # TODO: revert to 'grakn'
+  url "https://github.com/graknlabs/grakn-2.0/releases/download/{version}/grakn-core-all-mac-{version}.zip"  # TODO: revert repository from 'grakn-2.0' to 'grakn'
   sha256 "{sha256}"
 
   bottle :unneeded
