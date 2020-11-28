@@ -232,7 +232,7 @@ assemble_apt(
     description = "Grakn Core (server)",
     depends = [
       "openjdk-8-jre",
-      "grakn-bin (>=%{@graknlabs_common})"
+      "grakn-bin (=%{@graknlabs_common})"
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps-dev", ":server-deps-linux"],

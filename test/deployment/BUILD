@@ -43,6 +43,22 @@ java_test(
     tags = ["no-sandbox"],
 )
 
+java_test(
+    name = "apt",
+    test_class = "grakn.core.test.deployment.AptTest",
+    srcs = ["AptTest.java"],
+    deps = [
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:org_zeroturnaround_zt_exec",
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+    ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+    data = ["@graknlabs_grakn_core_workspace_refs//:refs.json", "//:VERSION"],
+    tags = ["no-sandbox"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

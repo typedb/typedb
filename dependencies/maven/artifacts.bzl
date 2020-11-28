@@ -28,6 +28,7 @@ artifacts = [
     "com.google.ortools:ortools-win32-x86-64",
     "com.google.ortools:ortools-win32-x86-64-java",
     "com.google.protobuf:protobuf-java",
+    "com.eclipsesource.minimal-json:minimal-json",
     "info.picocli:picocli",
     "io.cucumber:cucumber-java",
     "io.cucumber:cucumber-junit",
