@@ -274,7 +274,7 @@ assemble_rpm(
         "var/lib/grakn/db/": "0777",
     },
     symlinks = {
-        "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
+        "opt/grakn/core/server/data": "/var/lib/grakn/db/",
     },
 )
 
