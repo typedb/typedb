@@ -180,6 +180,7 @@ container_image(
     ports = ["1729"],
     cmd = ["/opt/grakn-core-all-linux/grakn", "server"],
     volumes = ["/opt/grakn-core-all-linux/server/data/"],
+    visibility = ["//test:__subpackages__"],
 )
 
 container_bundle(

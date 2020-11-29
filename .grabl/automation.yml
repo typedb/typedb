@@ -64,6 +64,14 @@ build:
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel test //test/assembly:assembly --test_output=errors
+    test-assembly-docker:
+      machine: graknlabs-ubuntu-20.04-java11
+      filter:
+        owner: graknlabs
+        branch: master
+      dependencies: [build, build-dependency, test-integration, test-behaviour]
+      script: |
+        bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       machine: graknlabs-ubuntu-20.04-java11
       filter:

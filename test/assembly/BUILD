@@ -35,6 +35,22 @@ grakn_java_test(
     native_grakn_artifact = ":native-grakn-artifact",
 )
 
+java_test(
+    name = "docker",
+    srcs = ["DockerTest.java"],
+    test_class = "grakn.core.test.assembly.DockerTest",
+    deps = [
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:org_zeroturnaround_zt_exec",
+    ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
+    data = [
+        "//:assemble-docker.tar"
+    ]
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
