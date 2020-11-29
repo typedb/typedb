@@ -29,9 +29,5 @@ public interface RuleVertex extends SchemaVertex<VertexIID.Rule, Encoding.Vertex
     Conjunction<? extends Pattern> when();
 
     ThingVariable<?> then();
-
-    void when(Conjunction<? extends Pattern> when);
-
-    void then(ThingVariable<?> then);
 }
 

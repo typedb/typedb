@@ -30,7 +30,6 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.Variable;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_TYPE_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
 import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
@@ -99,40 +97,27 @@ public class RuleImpl implements Rule {
                 .forEach(constraint -> putCondition(constraint.asType().asLabel(), CONDITION_NEGATIVE));
     }
 
-    private void putCondition(LabelConstraint constraint, Encoding.Edge.Rule encoding) {
-        if (constraint.scope().isPresent()) {
-            TypeVertex relation = graphMgr.schema().getType(constraint.scope().get());
-            TypeVertex role = graphMgr.schema().getType(constraint.label(), constraint.scope().get());
-            if (role == null) throw GraknException.of(TYPE_NOT_FOUND.message(constraint.scopedLabel()));
-            vertex.outs().put(encoding, relation);
-            vertex.outs().put(encoding, role);
-        } else {
-            TypeVertex type = graphMgr.schema().getType(constraint.label());
-            if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(constraint.label()));
-            vertex.outs().put(encoding, type);
-        }
+    private void putCondition(LabelConstraint label, Encoding.Edge.Rule encoding) {
+        TypeVertex type = graphMgr.schema().getType(label.scopedLabel());
+        vertex.outs().put(encoding, type);
     }
 
     private void putConclusions() {
         vertex.outs().delete(CONCLUSION);
-        // TODO: @flyingsilverfin to revise this logic. It's a big wonky.
-        //       First you filter out TypeConstraints, then you retrieved it again via constraint.asIsa().type()
-        then().stream().filter(Constraint::isThing).map(Constraint::asThing).forEach(constraint -> {
-            Optional<IsaConstraint> isaConstraint;
-            if (constraint.isHas() && (isaConstraint = constraint.asHas().attribute().isa()).isPresent()) {
-                putConclusion(isaConstraint.get().type().label().orElseThrow(
-                        () -> GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE)
-                ));
-            } else if (constraint.isIsa()) putConclusion(constraint.asIsa().type().label().orElseThrow(
-                    () -> GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE)
-            ));
-            else if (constraint.isRelation()) putRelationConclusion(constraint.asRelation());
-        });
+        then().stream()
+                .forEach(constraint -> {
+                    if (constraint.isType() && constraint.asType().isLabel()) {
+                        putConclusion(constraint.asType().asLabel());
+                    } else if (constraint.isThing() && constraint.asThing().isRelation()) {
+                        // treat relation constraints separately, as scope and role type may not be combined
+                        putRelationConclusion(constraint.asThing().asRelation());
+                    }
+                });
     }
 
     private void putConclusion(LabelConstraint labelConstraint) {
-        TypeVertex type = graphMgr.schema().getType(labelConstraint.label());
-        if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(type));
+        TypeVertex type = graphMgr.schema().getType(labelConstraint.scopedLabel());
+        if (type == null) throw GraknException.of(TYPE_NOT_FOUND.message(labelConstraint.scopedLabel()));
         vertex.outs().put(CONCLUSION, type);
     }
 

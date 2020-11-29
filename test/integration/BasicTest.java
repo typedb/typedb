@@ -394,6 +394,13 @@ public class BasicTest {
                             "marriage-is-friendship",
                             Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                    // TODO this doesn't work when it should.
+                    // TODO this should be fixed by removing schema edges connecting rules to types, moving this structure
+                    // TODO to a higher level structure in the reasoner package
+//                    conceptMgr.putRule(
+//                            "marriage-is-friendship",
+//                            Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa $rt; $rt type marriage; }").asConjunction(),
+//                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {

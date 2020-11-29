@@ -39,6 +39,10 @@ import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.THEN;
 import static grakn.core.graph.util.Encoding.Property.WHEN;
 
+/*
+TODO: when reasoner's higher level Implication and Implication Graph structure exists, we will no longer need
+TODO: to persist rule edges and can simplify the schema edge to be a basic type edge only
+ */
 public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, Encoding.Vertex.Rule> implements RuleVertex {
 
     protected Conjunction<? extends Pattern> when;
@@ -65,20 +69,6 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         graph.delete(this);
     }
 
-    @Override
-    public void when(Conjunction<? extends Pattern> when) {
-        this.when = when;
-    }
-
-    @Override
-    public void then(ThingVariable<?> then) {
-        this.then = then;
-    }
-
-    @Override
-    public boolean isRule() { return true; }
-
-    @Override
     public RuleVertex asRule() { return this; }
 
     public static class Buffered extends RuleVertexImpl {
