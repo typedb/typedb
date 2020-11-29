@@ -25,21 +25,28 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ExecutorService {
 
-    private static ForkJoinPool forkJoinPool;
-    private static EventLoopGroup eventLoopGroup;
+    private static ExecutorService singleton;
 
-    public static void init(int forkJoinPoolSize, int eventLoopGroupSize) {
+    private ForkJoinPool forkJoinPool;
+    private EventLoopGroup eventLoopGroup;
+
+    private ExecutorService(int forkJoinPoolSize, int eventLoopGroupSize) {
         forkJoinPool = (ForkJoinPool) Executors.newWorkStealingPool(forkJoinPoolSize);
         eventLoopGroup = new EventLoopGroup(eventLoopGroupSize, "grakn-elg");
     }
 
+
+    public static synchronized void init(int forkJoinPoolSize, int eventLoopGroupSize) {
+        if (singleton == null) singleton = new ExecutorService(forkJoinPoolSize, eventLoopGroupSize);
+    }
+
     public static ForkJoinPool forkJoinPool() {
-        assert forkJoinPool != null;
-        return forkJoinPool;
+        assert singleton != null;
+        return singleton.forkJoinPool;
     }
 
     public static EventLoopGroup eventLoopGroup() {
-        assert eventLoopGroup != null;
-        return eventLoopGroup;
+        assert singleton != null;
+        return singleton.eventLoopGroup;
     }
 }

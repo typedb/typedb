@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.shortToSortedBytes;
+import static grakn.core.common.collection.Bytes.sortedBytesToLong;
+import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
@@ -106,7 +108,7 @@ public class KeyGenerator {
                     final byte[] prefix = encoding.prefix().bytes();
                     final byte[] lastIID = storage.getLastKey(prefix);
                     final AtomicInteger nextValue = lastIID != null ?
-                            new AtomicInteger(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)).getShort() + delta) :
+                            new AtomicInteger(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
                 }
@@ -116,7 +118,7 @@ public class KeyGenerator {
                 final byte[] prefix = Encoding.Vertex.RULE.prefix().bytes();
                 final byte[] lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Rule.LENGTH)).getShort() + delta);
+                    ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Rule.LENGTH)) + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -176,7 +178,7 @@ public class KeyGenerator {
                         final byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
                         final byte[] lastIID = storage.getLastKey(prefix);
                         final AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(wrap(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)).getShort() + delta) :
+                                new AtomicLong(sortedBytesToLong(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Schema.of(typeIID), nextValue);
                     }
