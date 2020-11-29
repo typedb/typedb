@@ -19,6 +19,7 @@
 package grakn.core.graph;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -34,6 +35,7 @@ import grakn.core.graph.vertex.impl.ThingVertexImpl;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,7 +45,9 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static java.util.stream.Stream.concat;
 
@@ -55,6 +59,7 @@ public class DataGraph implements Graph {
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
     private final ConcurrentMap<VertexIID.Type, Set<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
+    private final Statistics statistics;
     private boolean isModified;
 
     public DataGraph(Storage storage, SchemaGraph schemaGraph) {
@@ -64,15 +69,20 @@ public class DataGraph implements Graph {
         thingsByIID = new ConcurrentHashMap<>();
         thingsByTypeIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
+        statistics = new Statistics();
+    }
+
+    @Override
+    public Storage storage() {
+        return storage;
     }
 
     public SchemaGraph schema() {
         return schemaGraph;
     }
 
-    @Override
-    public Storage storage() {
-        return storage;
+    public DataGraph.Statistics stats() {
+        return statistics;
     }
 
     public Stream<ThingVertex> vertices() {
@@ -427,6 +437,78 @@ public class DataGraph implements Graph {
                     assert false;
                     return null;
             }
+        }
+    }
+
+    public class Statistics { // TODO
+
+        private volatile long snapshot;
+
+        public Statistics() {
+            snapshot = 0; // TODO: initialise properly
+        }
+
+        // If you want to call this method concurrently, you need to convert 'snapshot' to AtomicLong
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
+        void incrementSnapshot() {
+            snapshot++; // TODO: update properly
+        }
+
+        // If you want to call this method concurrently, you need to convert 'snapshot' to AtomicLong
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
+        public long snapshot() {
+            return ++snapshot; // TODO: this is dummy code; properly update field and remove suppression
+        }
+
+        public long hasEdgeSum(TypeVertex owner, Set<TypeVertex> attributes) { // TODO
+            return attributes.stream().map(att -> hasEdgeCount(owner, att)).mapToLong(l -> l).sum();
+        }
+
+        public long hasEdgeSum(Set<TypeVertex> owners, TypeVertex attribute) { // TODO
+            return owners.stream().map(owner -> hasEdgeCount(owner, attribute)).mapToLong(l -> l).sum();
+        }
+
+        public long hasEdgeCount(TypeVertex owner, TypeVertex attribute) { // TODO
+            return new Random(owner.hashCode()).nextInt(100);
+        }
+
+        public long thingVertexSum(Set<Label> labels) { // TODO
+            return thingVertexSum(labels.stream().map(schemaGraph::getType));
+        }
+
+        public long thingVertexSum(Stream<TypeVertex> types) { // TODO
+            return types.mapToLong(this::thingVertexCount).sum();
+        }
+
+        public long thingVertexMax(Set<Label> labels) { // TODO
+            return thingVertexMax(labels.stream().map(schemaGraph::getType));
+        }
+
+        public long thingVertexMax(Stream<TypeVertex> types) { // TODO
+            return types.mapToLong(this::thingVertexCount).max().orElse(0);
+        }
+
+        public long thingVertexCount(Label label) {
+            return thingVertexCount(schemaGraph.getType(label));
+        }
+
+        public long thingVertexCount(TypeVertex type) {
+            return new Random(type.hashCode()).nextInt(1000); // TODO
+        }
+
+        public long thingVertexTransitiveCount(TypeVertex type) {
+            return new Random(type.hashCode()).nextInt(10_000); // TODO
+        }
+
+        public long thingVertexTransitiveMax(Set<Label> labels, Set<Label> filter) { // TODO
+            return thingVertexTransitiveMax(labels.stream().map(schemaGraph::getType), filter);
+        }
+
+        public long thingVertexTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) { // TODO
+            return types.mapToLong(t -> tree(t, v -> v.ins().edge(SUB).from()
+                    .filter(tf -> !filter.contains(tf.properLabel())))
+                    .stream().mapToLong(this::thingVertexCount).sum()
+            ).max().orElse(0);
         }
     }
 }

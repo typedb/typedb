@@ -24,7 +24,7 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import grakn.core.common.concurrent.ManagedCountDownLatch;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.structure.Structure;
@@ -241,9 +241,9 @@ public class Planner {
         }
     }
 
-    private void updateObjective(SchemaGraph graph) {
-        if (snapshot < graph.stats().snapshot()) {
-            snapshot = graph.stats().snapshot();
+    private void updateObjective(GraphManager graph) {
+        if (snapshot < graph.data().stats().snapshot()) {
+            snapshot = graph.data().stats().snapshot();
             totalCostNext = 0.0;
             setBranchingFactor(graph);
             computeTotalCostNext(graph);
@@ -257,19 +257,19 @@ public class Planner {
         }
     }
 
-    private void setBranchingFactor(SchemaGraph graph) {
+    private void setBranchingFactor(GraphManager graph) {
         // TODO: We can refine the branching factor by not strictly considering entities being the only divisor
-        branchingFactor = (double) graph.stats().instancesTransitive(graph.rootRoleType()) /
-                graph.stats().instancesTransitive(graph.rootEntityType());
+        branchingFactor = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
+                graph.data().stats().thingVertexTransitiveCount(graph.schema().rootEntityType());
     }
 
-    private void computeTotalCostNext(SchemaGraph graph) {
+    private void computeTotalCostNext(GraphManager graph) {
         vertices.values().forEach(v -> v.updateObjective(graph));
         edges.forEach(e -> e.updateObjective(graph));
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    public void optimise(SchemaGraph graph) {
+    public void optimise(GraphManager graph) {
         if (isOptimising.compareAndSet(false, true)) {
             updateObjective(graph);
             if (!isUpToDate() || !isOptimal()) {

@@ -37,7 +37,6 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -464,7 +463,6 @@ public class SchemaGraph implements Graph {
 
     public class Statistics {
 
-        private volatile long snapshot;
         private final AtomicInteger abstractTypeCount;
         private final AtomicInteger thingTypeCount;
         private final AtomicInteger attributeTypeCount;
@@ -483,18 +481,6 @@ public class SchemaGraph implements Graph {
             subTypesDepth = new ConcurrentHashMap<>();
             subTypesCount = new ConcurrentHashMap<>();
             attTypesWithValueType = new ConcurrentHashMap<>();
-            snapshot = 0L;
-        }
-
-        @SuppressWarnings("NonAtomicOperationOnVolatileField")
-            // Called non-concurrently
-        void incrementSnapshot() {
-            snapshot++;
-        }
-
-        @SuppressWarnings("NonAtomicOperationOnVolatileField") // Called non-concurrently
-        public long snapshot() {
-            return ++snapshot; // TODO: this is dummy code; properly update field and remove suppression
         }
 
         public long abstractTypeCount() {
@@ -606,59 +592,6 @@ public class SchemaGraph implements Graph {
             Function<TypeVertex, Long> maxDepthFn = t -> 1 + subTypes(t, false).mapToLong(this::subTypesDepth).max().orElse(0);
             if (isReadOnly) return subTypesDepth.computeIfAbsent(type, maxDepthFn);
             else return maxDepthFn.apply(type);
-        }
-
-        public long countHasEdges(TypeVertex owner, Set<TypeVertex> attributes) {
-            // TODO: move to DataGraph.Statistics
-            return attributes.stream().map(att -> countHasEdges(owner, att)).mapToLong(l -> l).sum();
-        }
-
-        public long countHasEdges(Set<TypeVertex> owners, TypeVertex attribute) {
-            // TODO: move to DataGraph.Statistics
-            return owners.stream().map(owner -> countHasEdges(owner, attribute)).mapToLong(l -> l).sum();
-        }
-
-        public long countHasEdges(TypeVertex owner, TypeVertex attribute) {
-            // TODO: move to DataGraph.Statistics
-            return new Random(owner.hashCode()).nextInt(100);
-        }
-
-        public long instancesSum(Set<Label> labels) {
-            // TODO: move to DataGraph.Statistics
-            return instancesSum(labels.stream().map(SchemaGraph.this::getType));
-        }
-
-        public long instancesSum(Stream<TypeVertex> types) {
-            // TODO: move to DataGraph.Statistics
-            return types.mapToLong(TypeVertex::instancesCount).sum();
-        }
-
-        public long instancesMax(Set<Label> labels) {
-            // TODO: move to DataGraph.Statistics
-            return instancesMax(labels.stream().map(SchemaGraph.this::getType));
-        }
-
-        public long instancesMax(Stream<TypeVertex> types) {
-            // TODO: move to DataGraph.Statistics
-            return types.mapToLong(TypeVertex::instancesCount).max().orElse(0);
-        }
-
-        public long instancesTransitive(TypeVertex type) {
-            // TODO: move to DataGraph.Statistics
-            return new Random(type.hashCode()).nextInt(10000);
-        }
-
-        public long instancesTransitiveMax(Set<Label> labels, Set<Label> filter) {
-            // TODO: move to DataGraph.Statistics
-            return instancesTransitiveMax(labels.stream().map(SchemaGraph.this::getType), filter);
-        }
-
-        public long instancesTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) {
-            // TODO: move to DataGraph.Statistics
-            return types.mapToLong(t -> tree(t, v -> v.ins().edge(SUB).from()
-                    .filter(tf -> !filter.contains(tf.properLabel())))
-                    .stream().mapToLong(TypeVertex::instancesCount).sum()
-            ).max().orElse(0);
         }
     }
 }

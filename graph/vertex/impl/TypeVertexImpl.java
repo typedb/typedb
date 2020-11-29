@@ -29,7 +29,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -212,11 +211,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public long instancesCount() {
-            return 0;
-        }
-
-        @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
                 deleteEdges();
@@ -270,12 +264,10 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     public static class Persisted extends TypeVertexImpl {
 
         private boolean regexLookedUp;
-        private long instancesCount;
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             regexLookedUp = false;
-            instancesCount = new Random(label.hashCode()).nextInt(10000); // TODO: remove and set to 0
         }
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid) {
@@ -368,11 +360,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
             this.regex = regex;
             this.setModified();
             return this;
-        }
-
-        @Override
-        public long instancesCount() {
-            return instancesCount; // TODO
         }
 
         @Override

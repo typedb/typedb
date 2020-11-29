@@ -44,7 +44,6 @@ import static grakn.core.graph.util.Encoding.Key.PERSISTED;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
-import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;
 
 public class KeyGenerator {

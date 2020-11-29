@@ -73,11 +73,11 @@ public class Traversal {
     public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).optimise(graphMgr.schema());
+            planners.get(0).optimise(graphMgr);
             return planners.get(0).procedure().execute(graphMgr, parameters);
         } else {
             return Iterators.cartesian(planners.stream().map(planner -> {
-                planner.optimise(graphMgr.schema());
+                planner.optimise(graphMgr);
                 return planner.procedure().execute(graphMgr, parameters);
             }).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();

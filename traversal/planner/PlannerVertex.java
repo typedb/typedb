@@ -21,7 +21,7 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
@@ -64,7 +64,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         costPrevious = 0.01; // non-zero value for safe division
     }
 
-    abstract void updateObjective(SchemaGraph graph);
+    abstract void updateObjective(GraphManager graph);
 
     public boolean isStartingVertex() {
         return valueIsStartingVertex == 1;
@@ -204,14 +204,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        void updateObjective(SchemaGraph graph) {
+        void updateObjective(GraphManager graph) {
             if (props().hasIID()) {
                 setObjectiveCoefficient(1);
             } else if (!props().types().isEmpty()) {
                 if (!props().predicates().isEmpty() && props().predicates().stream().anyMatch(p -> p.equals(EQ))) {
                     setObjectiveCoefficient(props().types().size());
                 } else {
-                    setObjectiveCoefficient(graph.stats().instancesSum(props().types()));
+                    setObjectiveCoefficient(graph.data().stats().thingVertexSum(props().types()));
                 }
             } else {
                 assert !isPotentialStartingVertex;
@@ -239,13 +239,13 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        void updateObjective(SchemaGraph graph) {
+        void updateObjective(GraphManager graph) {
             if (!props().labels().isEmpty()) {
                 setObjectiveCoefficient(props().labels().size());
             } else if (props().isAbstract()) {
-                setObjectiveCoefficient(graph.stats().abstractTypeCount());
+                setObjectiveCoefficient(graph.schema().stats().abstractTypeCount());
             } else if (props().valueType().isPresent()) {
-                setObjectiveCoefficient(graph.stats().attTypesWithValueType(props().valueType().get()));
+                setObjectiveCoefficient(graph.schema().stats().attTypesWithValueType(props().valueType().get()));
             } else if (props().regex().isPresent()) {
                 setObjectiveCoefficient(1);
             } else {
