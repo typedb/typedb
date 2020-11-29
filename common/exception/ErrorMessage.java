@@ -27,34 +27,36 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class Server extends ErrorMessage {
         public static final Server DATA_DIRECTORY_NOT_FOUND =
                 new Server(1, "The expected data directory '%s' does not exist.");
+        public static final Server DATA_DIRECTORY_NOT_WRITABLE =
+                new Server(2, "The expected data directory '%s' is not writable.");
         public static final Server EXITED_WITH_ERROR =
-                new Server(2, "Exited with error.");
+                new Server(3, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =
-                new Server(3, "Uncaught exception thrown at thread '%s'.");
+                new Server(4, "Uncaught exception thrown at thread '%s'.");
         public static final Server FAILED_AT_STOPPING =
-                new Server(4, "Exception occurred while attempting to stop the server");
+                new Server(5, "Exception occurred while attempting to stop the server");
         public static final Server PROPERTIES_FILE_NOT_FOUND =
-                new Server(5, "Could not find/read default properties file '%s'.");
+                new Server(6, "Could not find/read default properties file '%s'.");
         public static final Server FAILED_PARSE_PROPERTIES =
-                new Server(6, "Failed at parsing properties file.");
+                new Server(7, "Failed at parsing properties file.");
         public static final Server ENV_VAR_NOT_FOUND =
-                new Server(7, "Environment variable '%s' is not defined.");
+                new Server(8, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
-                new Server(8, "Grakn Core server has been shutdown.");
+                new Server(9, "Grakn Core server has been shutdown.");
         public static final Server MISSING_FIELD =
-                new Server(9, "The request message does not contain the required field '%s'.");
+                new Server(10, "The request message does not contain the required field '%s'.");
         public static final Server MISSING_CONCEPT =
-                new Server(9, "Concept does not exist.");
+                new Server(11, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
-                new Server(10, "The value type '%s' was not recognised.");
+                new Server(12, "The value type '%s' was not recognised.");
         public static final Server UNKNOWN_ANSWER_TYPE =
-                new Server(11, "The answer type '%s' was not recognised.");
+                new Server(13, "The answer type '%s' was not recognised.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(12, "The request message was not recognised.");
+                new Server(14, "The request message was not recognised.");
         public static final Server ITERATION_WITH_UNKNOWN_ID =
-                new Server(13, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
+                new Server(15, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
-                new Server(14, "The request with ID '%s' is a duplicate.");
+                new Server(16, "The request with ID '%s' is a duplicate.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";

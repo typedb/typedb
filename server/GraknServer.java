@@ -48,6 +48,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
@@ -70,7 +71,7 @@ public class GraknServer implements AutoCloseable {
 
     private GraknServer(ServerOptions options) throws IOException {
         this.options = options;
-        configureDataDir();
+        configureAndVerifyDataDir();
         configureTracing();
 
         if (options.debug()) {
@@ -85,13 +86,17 @@ public class GraknServer implements AutoCloseable {
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
 
-    private void configureDataDir() throws IOException {
+    private void configureAndVerifyDataDir() throws IOException {
         if (!Files.isDirectory(this.options.dataDir())) {
             if (this.options.dataDir().equals(ServerDefaults.DATA_DIR)) {
                 Files.createDirectory(this.options.dataDir());
             } else {
                 throw new GraknException(DATA_DIRECTORY_NOT_FOUND.message(this.options.dataDir()));
             }
+        }
+
+        if (!Files.isWritable(this.options.dataDir())) {
+            throw new GraknException(DATA_DIRECTORY_NOT_WRITABLE.message(this.options.dataDir()));
         }
     }
 
