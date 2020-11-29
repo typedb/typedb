@@ -225,6 +225,15 @@ deploy_artifact(
     snapshot = deployment_private['artifact.snapshot'],
 )
 
+deploy_artifact(
+    name = "deploy-windows-zip",
+    target = ":assemble-windows-zip",
+    artifact_group = "graknlabs_grakn_core",
+    artifact_name = "grakn-core-server-windows-{version}.tar.gz",
+    release = deployment_private['artifact.release'],
+    snapshot = deployment_private['artifact.snapshot'],
+)
+
 assemble_apt(
     name = "assemble-linux-apt",
     package_name = "grakn-core-server",

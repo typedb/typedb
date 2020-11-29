@@ -75,6 +75,7 @@ build:
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       machine: graknlabs-ubuntu-20.04
       filter:
@@ -155,6 +156,11 @@ release:
         branch: master
       dependencies: [deploy-github]
       script: |
+        pyenv install 3.7.9
+        pyenv global 3.7.9
+        sudo unlink /usr/bin/python3
+        sudo ln -s $(which python3) /usr/bin/python3
+        sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
@@ -190,3 +196,4 @@ release:
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-linux-targz -- release
         bazel run --define version=$(cat VERSION) //server:deploy-mac-zip -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-windows-zip -- release
