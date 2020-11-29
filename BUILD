@@ -132,7 +132,7 @@ assemble_apt(
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (all)",
     depends = [
-        "openjdk-8-jre",
+        "openjdk-11-jre",
         "grakn-core-server (=%{version})",
         "grakn-console (=%{@graknlabs_console_artifact})",
     ],

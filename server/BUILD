@@ -240,7 +240,7 @@ assemble_apt(
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (server)",
     depends = [
-      "openjdk-8-jre",
+      "openjdk-11-jre",
       "grakn-bin (=%{@graknlabs_common})"
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",

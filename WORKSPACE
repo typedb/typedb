@@ -94,7 +94,7 @@ container_pull(
   name = "openjdk_image",
   registry = "index.docker.io",
   repository = "library/openjdk",
-  tag = "8"
+  tag = "11"
 )
 
 ######################################
