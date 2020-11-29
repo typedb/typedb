@@ -18,6 +18,7 @@
 
 package grakn.core.graph.vertex.impl;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.iid.VertexIID;
@@ -82,6 +83,11 @@ public abstract class SchemaVertexImpl<
     @Override
     public String label() {
         return label;
+    }
+
+    @Override
+    public Label properLabel() {
+        return Label.of(label);
     }
 
     @Override

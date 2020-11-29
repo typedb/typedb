@@ -18,7 +18,9 @@
 
 package grakn.core.graph.util;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
 
@@ -30,6 +32,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.shortToSortedBytes;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
+import static grakn.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
+import static grakn.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
+import static grakn.core.graph.util.Encoding.Key.BUFFERED;
+import static grakn.core.graph.util.Encoding.Key.PERSISTED;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Arrays.copyOfRange;
 
@@ -37,7 +49,10 @@ public class KeyGenerator {
 
     public abstract static class Schema {
 
-        protected AtomicInteger ruleKey;
+        private static final long SHORT_MAX_VALUE = Short.MAX_VALUE - 64;
+        private static final long SHORT_MIN_VALUE = Short.MIN_VALUE + 64;
+
+        protected final AtomicInteger ruleKey;
         protected final ConcurrentMap<PrefixIID, AtomicInteger> typeKeys;
         protected final int initialValue;
         protected final int delta;
@@ -49,27 +64,36 @@ public class KeyGenerator {
             this.delta = delta;
         }
 
-        public byte[] forType(PrefixIID root) {
-            return shortToSortedBytes(typeKeys.computeIfAbsent(
-                    root, k -> new AtomicInteger(initialValue)
-            ).getAndAdd(delta));
+        public byte[] forType(PrefixIID rootIID, Label rootLabel) {
+            int key;
+            if ((key = typeKeys.computeIfAbsent(rootIID, k -> new AtomicInteger(initialValue)).getAndAdd(delta)) >= SHORT_MAX_VALUE
+                    || key <= SHORT_MIN_VALUE) {
+                typeKeys.get(rootIID).addAndGet(-1 * delta);
+                throw GraknException.of(MAX_SUBTYPE_REACHED.message(rootLabel, SHORT_MAX_VALUE));
+            }
+            return shortToSortedBytes(key);
         }
 
         public byte[] forRule() {
-            return shortToSortedBytes(ruleKey.getAndAdd(delta));
+            int key;
+            if ((key = ruleKey.getAndAdd(delta)) >= SHORT_MAX_VALUE || key <= SHORT_MIN_VALUE) {
+                ruleKey.addAndGet(-1 * delta);
+                throw GraknException.of(MAX_RULE_REACHED.message(SHORT_MAX_VALUE));
+            }
+            return shortToSortedBytes(key);
         }
 
         public static class Buffered extends Schema {
 
             public Buffered() {
-                super(Encoding.Key.BUFFERED.initialValue(), Encoding.Key.BUFFERED.isIncrement() ? 1 : -1);
+                super(BUFFERED.initialValue(), BUFFERED.isIncrement() ? 1 : -1);
             }
         }
 
         public static class Persisted extends Schema {
 
             public Persisted() {
-                super(Encoding.Key.PERSISTED.initialValue(), Encoding.Key.PERSISTED.isIncrement() ? 1 : -1);
+                super(PERSISTED.initialValue(), PERSISTED.isIncrement() ? 1 : -1);
             }
 
             public void sync(Storage storage) {
@@ -89,18 +113,22 @@ public class KeyGenerator {
             }
 
             private void syncRuleKey(Storage storage) {
-                final byte[] prefix = Encoding.Vertex.Rule.RULE.prefix().bytes();
+                final byte[] prefix = Encoding.Vertex.RULE.prefix().bytes();
                 final byte[] lastIID = storage.getLastKey(prefix);
-                ruleKey = lastIID != null ?
-                        new AtomicInteger(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Rule.LENGTH)).getShort() + delta) :
-                        new AtomicInteger(initialValue);
+                if (lastIID != null) {
+                    ruleKey.set(wrap(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Rule.LENGTH)).getShort() + delta);
+                } else {
+                    ruleKey.set(initialValue);
+                }
             }
         }
     }
 
     public abstract static class Data {
 
-        protected AtomicInteger ruleKey;
+        private static final long LONG_MAX_VALUE = Long.MAX_VALUE - 64;
+        private static final long LONG_MIN_VALUE = Long.MIN_VALUE + 64;
+
         protected final ConcurrentMap<PrefixIID, AtomicInteger> typeKeys;
         protected final ConcurrentMap<VertexIID.Schema, AtomicLong> thingKeys;
         protected final int initialValue;
@@ -108,35 +136,36 @@ public class KeyGenerator {
 
         Data(int initialValue, int delta) {
             typeKeys = new ConcurrentHashMap<>();
-            ruleKey = new AtomicInteger(initialValue);
             thingKeys = new ConcurrentHashMap<>();
             this.initialValue = initialValue;
             this.delta = delta;
         }
 
-        public byte[] forThing(VertexIID.Schema schemaIID) {
-            return longToSortedBytes(thingKeys.computeIfAbsent(
-                    schemaIID, k -> new AtomicLong(initialValue)
-            ).getAndAdd(delta));
+        public byte[] forThing(VertexIID.Type typeIID, Label typeLabel) {
+            long key;
+            if ((key = thingKeys.computeIfAbsent(typeIID, k -> new AtomicLong(initialValue)).getAndAdd(delta)) >= LONG_MAX_VALUE
+                    || key <= LONG_MIN_VALUE) {
+                thingKeys.get(typeIID).addAndGet(-1 * delta);
+                throw GraknException.of(MAX_INSTANCE_REACHED.message(typeLabel, LONG_MAX_VALUE));
+            }
+            return longToSortedBytes(key);
         }
 
         public static class Buffered extends Data {
 
             public Buffered() {
-                super(Encoding.Key.BUFFERED.initialValue(), Encoding.Key.BUFFERED.isIncrement() ? 1 : -1);
+                super(BUFFERED.initialValue(), BUFFERED.isIncrement() ? 1 : -1);
             }
         }
 
         public static class Persisted extends Data {
 
             public Persisted() {
-                super(Encoding.Key.PERSISTED.initialValue(), Encoding.Key.PERSISTED.isIncrement() ? 1 : -1);
+                super(PERSISTED.initialValue(), PERSISTED.isIncrement() ? 1 : -1);
             }
 
             public void sync(Storage storage) {
-                final Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{
-                        Encoding.Vertex.Thing.ENTITY, Encoding.Vertex.Thing.RELATION, Encoding.Vertex.Thing.ROLE
-                };
+                final Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     final byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
@@ -147,9 +176,7 @@ public class KeyGenerator {
                         final byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
                         final byte[] lastIID = storage.getLastKey(prefix);
                         final AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(wrap(
-                                        copyOfRange(lastIID, VertexIID.Thing.PREFIX_W_TYPE_LENGTH, VertexIID.Thing.DEFAULT_LENGTH)
-                                ).getShort() + delta) :
+                                new AtomicLong(wrap(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)).getShort() + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Schema.of(typeIID), nextValue);
                     }

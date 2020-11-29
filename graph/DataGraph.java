@@ -44,6 +44,7 @@ import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
@@ -128,13 +129,13 @@ public class DataGraph implements Graph {
         }
     }
 
-    public ThingVertex create(VertexIID.Type typeIID, boolean isInferred) {
+    public ThingVertex create(TypeVertex typeVertex, boolean isInferred) {
         assert storage.isOpen();
-        assert !typeIID.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
-        final VertexIID.Thing iid = generate(keyGenerator, typeIID);
+        assert !typeVertex.encoding().equals(ATTRIBUTE_TYPE);
+        final VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
         final ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
-        thingsByTypeIID.computeIfAbsent(typeIID, t -> new HashSet<>()).add(vertex);
+        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new HashSet<>()).add(vertex);
         return vertex;
     }
 
@@ -158,7 +159,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
 
         return getOrReadFromStorage(
@@ -170,7 +171,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<Long> get(TypeVertex type, long value) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
 
         return getOrReadFromStorage(
@@ -182,7 +183,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<Double> get(TypeVertex type, double value) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
 
         return getOrReadFromStorage(
@@ -194,7 +195,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<String> get(TypeVertex type, String value) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
 
         return getOrReadFromStorage(
@@ -206,7 +207,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         return getOrReadFromStorage(
@@ -218,7 +219,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<Boolean> put(TypeVertex type, boolean value, boolean isInferred) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Boolean.class);
 
         final AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
@@ -235,7 +236,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<Long> put(TypeVertex type, long value, boolean isInferred) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Long.class);
 
         final AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
@@ -252,7 +253,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<Double> put(TypeVertex type, double value, boolean isInferred) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(Double.class);
 
         final AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
@@ -269,7 +270,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<String> put(TypeVertex type, String value, boolean isInferred) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(String.class);
         assert value.length() <= Encoding.STRING_MAX_LENGTH;
 
@@ -287,7 +288,7 @@ public class DataGraph implements Graph {
 
     public AttributeVertex<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
         assert storage.isOpen();
-        assert type.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE);
+        assert type.encoding().equals(ATTRIBUTE_TYPE);
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         final AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
@@ -332,6 +333,7 @@ public class DataGraph implements Graph {
     @Override
     public void clear() {
         thingsByIID.clear();
+        thingsByTypeIID.clear();
         attributesByIID.clear();
     }
 
@@ -348,7 +350,7 @@ public class DataGraph implements Graph {
     @Override
     public void commit() {
         thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
-                vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid()))
+                vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valueStream().forEach(Vertex::commit);

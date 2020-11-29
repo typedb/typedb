@@ -234,17 +234,21 @@ public class TypeHandler {
     }
 
     private void getSubtypes(Transaction.Req request, Type type) {
-        transactionRPC.respond(request, type.getSubtypes().iterator(), cons ->
-                response(request, ConceptProto.Type.Res.newBuilder().setTypeGetSubtypesRes(
+        transactionRPC.respond(
+                request, type.getSubtypes().iterator(),
+                cons -> response(request, ConceptProto.Type.Res.newBuilder().setTypeGetSubtypesRes(
                         ConceptProto.Type.GetSubtypes.Res.newBuilder().addAllType(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 
     private void getInstances(Transaction.Req request, ThingType thingType) {
-        transactionRPC.respond(request, thingType.getInstances().iterator(),
+        transactionRPC.respond(
+                request, thingType.getInstances().iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setThingTypeGetInstancesRes(
                         ConceptProto.ThingType.GetInstances.Res.newBuilder().addAllThing(
-                                cons.stream().map(ResponseBuilder.Concept::thing).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::thing).collect(Collectors.toList()))))
+        );
     }
 
     private void setAbstract(Transaction.Req request, ThingType thingType) {
@@ -262,17 +266,21 @@ public class TypeHandler {
     }
 
     private void getOwns(Transaction.Req request, ThingType thingType, boolean keysOnly) {
-        transactionRPC.respond(request, thingType.getOwns(keysOnly).iterator(),
+        transactionRPC.respond(
+                request, thingType.getOwns(keysOnly).iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsRes(
                         ConceptProto.ThingType.GetOwns.Res.newBuilder().addAllAttributeType(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 
     private void getPlays(Transaction.Req request, ThingType thingType) {
-        transactionRPC.respond(request, thingType.getPlays().iterator(),
+        transactionRPC.respond(
+                request, thingType.getPlays().iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setThingTypeGetPlaysRes(
                         ConceptProto.ThingType.GetPlays.Res.newBuilder().addAllRole(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 
     private void setOwns(Transaction.Req request, ThingType thingType, ConceptProto.ThingType.SetOwns.Req req) {
@@ -327,10 +335,12 @@ public class TypeHandler {
     }
 
     private void getOwners(Transaction.Req request, AttributeType attributeType, boolean onlyKey) {
-        transactionRPC.respond(request, attributeType.getOwners(onlyKey).iterator(),
+        transactionRPC.respond(
+                request, attributeType.getOwners(onlyKey).iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetOwnersRes(
                         ConceptProto.AttributeType.GetOwners.Res.newBuilder().addAllOwner(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 
     private void put(Transaction.Req request, AttributeType attributeType, ConceptProto.Attribute.Value protoValue) {
@@ -420,10 +430,12 @@ public class TypeHandler {
     }
 
     private void getRelates(Transaction.Req request, RelationType relationType) {
-        transactionRPC.respond(request, relationType.getRelates().iterator(),
+        transactionRPC.respond(
+                request, relationType.getRelates().iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesRes(
                         ConceptProto.RelationType.GetRelates.Res.newBuilder().addAllRole(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 
     private void getRelatesForRoleLabel(Transaction.Req request, RelationType relationType, String roleLabel) {
@@ -458,16 +470,20 @@ public class TypeHandler {
     }
 
     private void getRelationTypes(Transaction.Req request, RoleType roleType) {
-        transactionRPC.respond(request, roleType.getRelationTypes().iterator(),
+        transactionRPC.respond(
+                request, roleType.getRelationTypes().iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setRoleTypeGetRelationTypesRes(
                         ConceptProto.RoleType.GetRelationTypes.Res.newBuilder().addAllRelationType(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 
     private void getPlayers(Transaction.Req request, RoleType roleType) {
-        transactionRPC.respond(request, roleType.getPlayers().iterator(),
+        transactionRPC.respond(
+                request, roleType.getPlayers().iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setRoleTypeGetPlayersRes(
                         ConceptProto.RoleType.GetPlayers.Res.newBuilder().addAllThingType(
-                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList())))));
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
     }
 }

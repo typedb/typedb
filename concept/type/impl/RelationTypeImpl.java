@@ -229,7 +229,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public RelationImpl create(boolean isInferred) {
         validateIsCommittedAndNotAbstract(Relation.class);
-        final ThingVertex instance = graphMgr.data().create(vertex.iid(), isInferred);
+        final ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return RelationImpl.of(instance);
     }
 

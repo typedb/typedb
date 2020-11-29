@@ -19,14 +19,20 @@
 package grakn.core.graph.util;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import graql.lang.common.GraqlArg;
 
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
+import static grakn.common.collection.Collections.map;
+import static grakn.common.collection.Collections.pair;
+import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
@@ -182,12 +188,12 @@ public class Encoding {
         PROPERTY_LABEL(0, InfixType.PROPERTY),
         PROPERTY_SCOPE(1, InfixType.PROPERTY),
         PROPERTY_ABSTRACT(2, InfixType.PROPERTY),
-        PROPERTY_REGEX(3, InfixType.PROPERTY),
-        PROPERTY_VALUE_TYPE(4, InfixType.PROPERTY),
-        PROPERTY_VALUE_REF(5, InfixType.PROPERTY),
-        PROPERTY_VALUE(6, InfixType.PROPERTY),
-        PROPERTY_WHEN(7, InfixType.PROPERTY),
-        PROPERTY_THEN(8, InfixType.PROPERTY),
+        PROPERTY_VALUE_TYPE(3, InfixType.PROPERTY),
+        PROPERTY_REGEX(4, InfixType.PROPERTY),
+        PROPERTY_WHEN(5, InfixType.PROPERTY),
+        PROPERTY_THEN(6, InfixType.PROPERTY),
+        PROPERTY_VALUE(7, InfixType.PROPERTY),
+        PROPERTY_VALUE_REF(8, InfixType.PROPERTY),
         EDGE_ISA_IN(-20, InfixType.EDGE), // EDGE_ISA_OUT does not exist by design
         EDGE_SUB_OUT(30, InfixType.EDGE),
         EDGE_SUB_IN(-30, InfixType.EDGE),
@@ -323,6 +329,15 @@ public class Encoding {
         STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
         DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
 
+        private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
+                pair(OBJECT, set(OBJECT)),
+                pair(BOOLEAN, set(BOOLEAN)),
+                pair(LONG, set(LONG, DOUBLE)),
+                pair(DOUBLE, set(LONG, DOUBLE)),
+                pair(STRING, set(STRING)),
+                pair(DATETIME, set(DATETIME))
+        );
+
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;
@@ -333,8 +348,8 @@ public class Encoding {
                   @Nullable GraqlArg.ValueType graqlValueType) {
             this.key = (byte) key;
             this.valueClass = valueClass;
-            this.isKeyable = isKeyable;
             this.isWritable = isWritable;
+            this.isKeyable = isKeyable;
             this.graqlValueType = graqlValueType;
         }
 
@@ -375,6 +390,14 @@ public class Encoding {
             return isKeyable;
         }
 
+        public Set<ValueType> comparables() {
+            return COMPARABLES.get(this);
+        }
+
+        public boolean comparableTo(ValueType valueType) {
+            return COMPARABLES.get(this).contains(valueType);
+        }
+
         public GraqlArg.ValueType graqlValueType() {
             return graqlValueType;
         }
@@ -384,22 +407,22 @@ public class Encoding {
 
         Prefix prefix();
 
-        interface Schema extends Vertex {}
+        interface Schema extends Vertex {
 
-        enum Rule implements Schema {
-            RULE(Prefix.VERTEX_RULE);
+            interface Rule extends Schema {
 
-            private final Prefix prefix;
-
-            Rule(Prefix prefix) {
-                this.prefix = prefix;
-            }
-
-            @Override
-            public Prefix prefix() {
-                return prefix;
+                String label();
             }
         }
+
+        Schema.Rule RULE = new Schema.Rule() {
+
+            @Override
+            public Prefix prefix() { return Prefix.VERTEX_RULE; }
+
+            @Override
+            public String label() { return "rule"; }
+        };
 
         enum Type implements Schema {
             THING_TYPE(Prefix.VERTEX_THING_TYPE, Root.THING, null),
@@ -482,6 +505,10 @@ public class Encoding {
 
                 public String scope() {
                     return scope;
+                }
+
+                public Label properLabel() {
+                    return Label.of(label, scope);
                 }
             }
         }

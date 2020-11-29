@@ -71,6 +71,7 @@ public class Traversal {
     }
 
     public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
+        assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr.schema());
             return planners.get(0).procedure().execute(graphMgr, parameters);
@@ -123,6 +124,7 @@ public class Traversal {
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
+        // TODO: Something smells here. We should really just have one encoding for OWNS, and a flag for @key
         structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), isKey ? OWNS_KEY : OWNS);
     }
 
@@ -140,56 +142,56 @@ public class Traversal {
 
     public void iid(Identifier.Variable thing, byte[] iid) {
         parameters.putIID(thing, iid);
-        structure.thingVertex(thing).properties().hasIID(true);
+        structure.thingVertex(thing).props().hasIID(true);
     }
 
     public void types(Identifier.Variable thing, Set<Label> labels) {
-        structure.thingVertex(thing).properties().types(labels);
+        structure.thingVertex(thing).props().types(labels);
     }
 
     public void isAbstract(Identifier.Variable type) {
-        structure.typeVertex(type).properties().isAbstract(true);
+        structure.typeVertex(type).props().isAbstract(true);
     }
 
     public void labels(Identifier.Variable type, Label label) {
-        structure.typeVertex(type).properties().labels(label);
+        structure.typeVertex(type).props().labels(label);
     }
 
     public void labels(Identifier.Variable type, Set<Label> label) {
-        structure.typeVertex(type).properties().labels(label);
+        structure.typeVertex(type).props().labels(label);
     }
 
     public void regex(Identifier.Variable type, String regex) {
-        structure.typeVertex(type).properties().regex(regex);
+        structure.typeVertex(type).props().regex(regex);
     }
 
     public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
-        structure.typeVertex(attributeType).properties().valueType(Encoding.ValueType.of(valueType));
+        structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate predicate, String value) {
         parameters.pushValue(attribute, predicate, value);
-        structure.thingVertex(attribute).properties().predicate(predicate);
+        structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Boolean value) {
         parameters.pushValue(attribute, predicate, value);
-        structure.thingVertex(attribute).properties().predicate(predicate);
+        structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Long value) {
         parameters.pushValue(attribute, predicate, value);
-        structure.thingVertex(attribute).properties().predicate(predicate);
+        structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Double value) {
         parameters.pushValue(attribute, predicate, value);
-        structure.thingVertex(attribute).properties().predicate(predicate);
+        structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, LocalDateTime value) {
         parameters.pushValue(attribute, predicate, value);
-        structure.thingVertex(attribute).properties().predicate(predicate);
+        structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality predicate, Identifier.Variable att2) {

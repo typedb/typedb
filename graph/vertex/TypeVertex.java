@@ -46,5 +46,13 @@ public interface TypeVertex extends SchemaVertex<VertexIID.Type, Encoding.Vertex
 
     long instancesCount();
 
-    long instancesCountTransitive();
+    int outOwnsCount(boolean isKey);
+
+    int inOwnsCount(boolean isKey);
+
+    int outPlaysCount();
+
+    int inPlaysCount();
+
+    int outRelatesCount();
 }

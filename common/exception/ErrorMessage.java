@@ -258,6 +258,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(22, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
                 new ThingWrite(23, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+        public static final ThingWrite MAX_INSTANCE_REACHED =
+                new ThingWrite(24, "The maximum number of instances for type '%s' has been reached: '%s'");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
@@ -378,6 +380,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(38, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
                 new TypeWrite(39, "Unable to set type with class '%s' as a supertype.");
+        public static final TypeWrite MAX_SUBTYPE_REACHED =
+                new TypeWrite(40, "The maximum number of '%s' types has been reached: '%s'");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
@@ -404,6 +408,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new RuleWrite(1, "The rule body of '%s' ('when' or 'then') cannot be undefined. The rule must be undefined entirely by referring to its label.");
         public static final RuleWrite TYPES_NOT_FOUND =
                 new RuleWrite(2, "The rule '%s' uses type(s) %s which are not defined in the schema.");
+        public static final TypeWrite MAX_RULE_REACHED =
+                new TypeWrite(3, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

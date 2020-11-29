@@ -19,6 +19,7 @@
 package grakn.core.graph.iid;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
 
@@ -112,8 +113,9 @@ public abstract class VertexIID extends IID {
         @Override
         public String toString() {
             if (readableString == null) {
-                readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "]" +
-                        "[" + (VertexIID.Schema.LENGTH - PrefixIID.LENGTH) + ": " + sortedBytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Schema.LENGTH)) + "]";
+                readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
+                        (VertexIID.Schema.LENGTH - PrefixIID.LENGTH) + ": " +
+                        sortedBytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Schema.LENGTH)) + "]";
             }
             return readableString;
         }
@@ -125,11 +127,11 @@ public abstract class VertexIID extends IID {
             super(bytes);
         }
 
-        public static Type of(byte[] bytes) {
+        public static VertexIID.Type of(byte[] bytes) {
             return new Type(bytes);
         }
 
-        static Type extract(byte[] bytes, int from) {
+        static VertexIID.Type extract(byte[] bytes, int from) {
             return new Type(copyOfRange(bytes, from, from + LENGTH));
         }
 
@@ -137,7 +139,7 @@ public abstract class VertexIID extends IID {
             return true;
         }
 
-        public Type asType() {
+        public VertexIID.Type asType() {
             return this;
         }
 
@@ -148,10 +150,11 @@ public abstract class VertexIID extends IID {
          * @param encoding     of the {@code TypeVertex} in which the IID will be used for
          * @return a byte array representing a new IID for a {@code TypeVertex}
          */
-        public static Type generate(KeyGenerator.Schema keyGenerator, Encoding.Vertex.Type encoding) {
-            return of(join(encoding.prefix().bytes(), keyGenerator.forType(PrefixIID.of(encoding))));
+        public static VertexIID.Type generate(KeyGenerator.Schema keyGenerator, Encoding.Vertex.Type encoding) {
+            return of(join(encoding.prefix().bytes(), keyGenerator.forType(PrefixIID.of(encoding), encoding.root().properLabel())));
         }
 
+        @Override
         public Encoding.Vertex.Type encoding() {
             return Encoding.Vertex.Type.of(bytes[0]);
         }
@@ -183,15 +186,15 @@ public abstract class VertexIID extends IID {
          * Generate an IID for a {@code RuleVertex} for a given {@code Encoding}
          *
          * @param keyGenerator to generate the IID for a {@code RuleVertex}
-         * @param encoding     of the {@code RuleVertex} in which the IID will be used for
          * @return a byte array representing a new IID for a {@code RuleVertex}
          */
-        public static Rule generate(KeyGenerator.Schema keyGenerator, Encoding.Vertex.Rule encoding) {
-            return of(join(encoding.prefix().bytes(), keyGenerator.forRule()));
+        public static Rule generate(KeyGenerator.Schema keyGenerator) {
+            return of(join(Encoding.Vertex.RULE.prefix().bytes(), keyGenerator.forRule()));
         }
 
-        public Encoding.Vertex.Rule encoding() {
-            return Encoding.Vertex.Rule.RULE;
+        @Override
+        public Encoding.Vertex.Schema.Rule encoding() {
+            return Encoding.Vertex.RULE;
         }
     }
 
@@ -208,12 +211,13 @@ public abstract class VertexIID extends IID {
          * Generate an IID for a {@code ThingVertex} for a given {@code Encoding} and {@code TypeVertex}
          *
          * @param keyGenerator to generate the IID for a {@code ThingVertex}
-         * @param typeIID      of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+         * @param typeIID      {@code IID} of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+         * @param typeLabel    {@code Label} of the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
          * @return a byte array representing a new IID for a {@code ThingVertex}
          */
-        public static VertexIID.Thing generate(KeyGenerator.Data keyGenerator, Type typeIID) {
+        public static VertexIID.Thing generate(KeyGenerator.Data keyGenerator, Type typeIID, Label typeLabel) {
             return new Thing(join(typeIID.encoding().instance().prefix().bytes(),
-                                  typeIID.bytes(), keyGenerator.forThing(typeIID)));
+                                  typeIID.bytes(), keyGenerator.forThing(typeIID, typeLabel)));
         }
 
         public static VertexIID.Thing of(byte[] bytes) {
@@ -276,10 +280,10 @@ public abstract class VertexIID extends IID {
             valueType = Encoding.ValueType.of(bytes[PREFIX_W_TYPE_LENGTH]);
         }
 
-        Attribute(Encoding.ValueType valueType, Schema schemaIID, byte[] valueBytes) {
+        Attribute(Encoding.ValueType valueType, VertexIID.Type typeIID, byte[] valueBytes) {
             super(join(
                     Encoding.Vertex.Thing.ATTRIBUTE.prefix().bytes(),
-                    schemaIID.bytes(),
+                    typeIID.bytes(),
                     valueType.bytes(),
                     valueBytes
             ));
@@ -365,8 +369,8 @@ public abstract class VertexIID extends IID {
                 super(bytes);
             }
 
-            public Boolean(Schema schemaIID, boolean value) {
-                super(Encoding.ValueType.BOOLEAN, schemaIID, new byte[]{booleanToByte(value)});
+            public Boolean(VertexIID.Type typeIID, boolean value) {
+                super(Encoding.ValueType.BOOLEAN, typeIID, new byte[]{booleanToByte(value)});
             }
 
             public static VertexIID.Attribute.Boolean extract(byte[] bytes, int from) {
@@ -390,8 +394,8 @@ public abstract class VertexIID extends IID {
                 super(bytes);
             }
 
-            public Long(Schema schemaIID, long value) {
-                super(Encoding.ValueType.LONG, schemaIID, longToSortedBytes(value));
+            public Long(VertexIID.Type typeIID, long value) {
+                super(Encoding.ValueType.LONG, typeIID, longToSortedBytes(value));
             }
 
             public static VertexIID.Attribute.Long extract(byte[] bytes, int from) {
@@ -415,8 +419,8 @@ public abstract class VertexIID extends IID {
                 super(bytes);
             }
 
-            public Double(Schema schemaIID, double value) {
-                super(Encoding.ValueType.DOUBLE, schemaIID, doubleToSortedBytes(value));
+            public Double(VertexIID.Type typeIID, double value) {
+                super(Encoding.ValueType.DOUBLE, typeIID, doubleToSortedBytes(value));
             }
 
             public static VertexIID.Attribute.Double extract(byte[] bytes, int from) {
@@ -440,8 +444,8 @@ public abstract class VertexIID extends IID {
                 super(bytes);
             }
 
-            public String(Schema schemaIID, java.lang.String value) {
-                super(Encoding.ValueType.STRING, schemaIID, stringToBytes(value, STRING_ENCODING));
+            public String(VertexIID.Type typeIID, java.lang.String value) {
+                super(Encoding.ValueType.STRING, typeIID, stringToBytes(value, STRING_ENCODING));
                 assert bytes.length <= STRING_MAX_LENGTH + 1;
             }
 
@@ -467,8 +471,8 @@ public abstract class VertexIID extends IID {
                 super(bytes);
             }
 
-            public DateTime(Schema schemaIID, java.time.LocalDateTime value) {
-                super(Encoding.ValueType.DATETIME, schemaIID, dateTimeToBytes(value, TIME_ZONE_ID));
+            public DateTime(VertexIID.Type typeIID, java.time.LocalDateTime value) {
+                super(Encoding.ValueType.DATETIME, typeIID, dateTimeToBytes(value, TIME_ZONE_ID));
             }
 
             public static VertexIID.Attribute.DateTime extract(byte[] bytes, int from) {

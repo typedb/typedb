@@ -24,7 +24,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
-public interface RuleVertex extends SchemaVertex<VertexIID.Rule, Encoding.Vertex.Rule> {
+public interface RuleVertex extends SchemaVertex<VertexIID.Rule, Encoding.Vertex.Schema.Rule> {
 
     Conjunction<? extends Pattern> when();
 

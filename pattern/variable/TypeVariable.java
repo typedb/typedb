@@ -217,7 +217,7 @@ public class TypeVariable extends Variable {
     public String toString() {
 
         StringBuilder syntax = new StringBuilder();
-        if (!reference().isLabel()){
+        if (!reference().isLabel()) {
             syntax.append(reference());
             if (labelConstraint != null) syntax.append(SPACE).append(labelConstraint.toString());
         } else {
@@ -227,9 +227,9 @@ public class TypeVariable extends Variable {
         if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
 
         syntax.append(Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
-                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
-                .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
-                .collect(Collectors.joining("" + COMMA + SPACE)));
+                                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
+                              .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+                              .collect(Collectors.joining("" + COMMA + SPACE)));
 
         return syntax.toString();
     }

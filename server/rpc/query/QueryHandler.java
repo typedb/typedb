@@ -34,10 +34,9 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
 
-import java.util.stream.Collectors;
-
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.rpc.util.RequestReader.getOptions;
+import static java.util.stream.Collectors.toList;
 
 public class QueryHandler {
 
@@ -81,21 +80,23 @@ public class QueryHandler {
     private void match(Transaction.Req request, QueryProto.Graql.Match.Req req, Options.Query options) {
         final GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
         final ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
-        transactionRPC.respond(request, answers,
+        transactionRPC.respond(
+                request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
                         QueryProto.Graql.Match.Res.newBuilder().addAllAnswer(
-                                as.stream().map(ResponseBuilder.Answer::conceptMap).collect(Collectors.toList())))),
-                options);
+                                as.stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))))
+        );
     }
 
     private void insert(Transaction.Req request, QueryProto.Graql.Insert.Req req, Options.Query options) {
         final GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
         final ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
-        transactionRPC.respond(request, answers,
+        transactionRPC.respond(
+                request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setInsertRes(
                         QueryProto.Graql.Insert.Res.newBuilder().addAllAnswer(
-                                as.stream().map(ResponseBuilder.Answer::conceptMap).collect(Collectors.toList())))),
-                options);
+                                as.stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))))
+        );
     }
 
     private void delete(Transaction.Req request, QueryProto.Graql.Delete.Req req, Options.Query options) {

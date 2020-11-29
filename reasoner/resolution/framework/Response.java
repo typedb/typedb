@@ -24,6 +24,7 @@ public interface Response {
     Request sourceRequest();
 
     boolean isAnswer();
+
     boolean isExhausted();
     boolean isRootResponse();
 

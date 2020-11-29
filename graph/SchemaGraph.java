@@ -37,16 +37,23 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.ValueType.OBJECT;
@@ -61,6 +68,8 @@ import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.Root.THING;
 import static grakn.core.graph.util.Encoding.Vertex.Type.THING_TYPE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
+import static java.lang.Math.toIntExact;
+import static java.util.stream.Collectors.toSet;
 
 public class SchemaGraph implements Graph {
 
@@ -71,15 +80,11 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
     private final ConcurrentMap<VertexIID.Rule, RuleVertex> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
-    private final ConcurrentMap<Pair<Label, Boolean>, Long> subTypeCounts;
     private final ManagedReadWriteLock multiLabelLock;
-    private final AtomicLong thingTypeCount;
-    private final AtomicLong attributeTypeCount;
-    private final AtomicLong relationTypeCount;
-    private final AtomicLong roleTypeCount;
+    private final Statistics statistics;
+    private final Cache cache;
     private final boolean isReadOnly;
     private boolean isModified;
-    private long snapshot;
 
     public SchemaGraph(Storage.Schema storage, boolean isReadOnly) {
         this.storage = storage;
@@ -91,13 +96,22 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
-        subTypeCounts = new ConcurrentHashMap<>();
-        thingTypeCount = new AtomicLong(0);
-        attributeTypeCount = new AtomicLong(0);
-        relationTypeCount = new AtomicLong(0);
-        roleTypeCount = new AtomicLong(0);
+        statistics = new Statistics();
+        cache = new Cache();
         isModified = false;
-        snapshot = 1L;
+    }
+
+    class Cache {
+
+        private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
+
+        private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
+
+        Cache() {
+            ownedAttributeTypes = new ConcurrentHashMap<>();
+            ownersOfAttributeTypes = new ConcurrentHashMap<>();
+        }
+
     }
 
     @Override
@@ -105,8 +119,12 @@ public class SchemaGraph implements Graph {
         return storage;
     }
 
-    public long snapshot() {
-        return ++snapshot; // TODO: update snapshot everytime we update type statistics
+    public SchemaGraph.Statistics stats() {
+        return statistics;
+    }
+
+    public boolean isReadOnly() {
+        return isReadOnly;
     }
 
     public boolean isInitialised() throws GraknException {
@@ -124,93 +142,6 @@ public class SchemaGraph implements Graph {
         rootAttributeType.outs().put(SUB, rootThingType);
         rootRelationType.outs().put(SUB, rootThingType);
         rootRelationType.outs().put(RELATES, rootRoleType);
-    }
-
-    public long countThingTypes() {
-        if (isReadOnly) {
-            thingTypeCount.compareAndSet(0, thingTypes().count());
-            return thingTypeCount.get();
-        } else {
-            return thingTypes().count();
-        }
-    }
-
-    public long countAttributeTypes() {
-        if (isReadOnly) {
-            attributeTypeCount.compareAndSet(0, attributeTypes().count());
-            return attributeTypeCount.get();
-        } else {
-            return attributeTypes().count();
-        }
-    }
-
-    public long countRelationTypes() {
-        if (isReadOnly) {
-            relationTypeCount.compareAndSet(0, relationTypes().count());
-            return relationTypeCount.get();
-        } else {
-            return relationTypes().count();
-        }
-    }
-
-    public long countRoleTypes() {
-        if (isReadOnly) {
-            roleTypeCount.compareAndSet(0, roleTypes().count());
-            return roleTypeCount.get();
-        } else {
-            return roleTypes().count();
-        }
-    }
-
-    public long countSubTypes(Set<Label> labels, boolean isTransitive) {
-        long count = 0;
-        for (final Label label : labels) {
-            count += countSubTypes(label, isTransitive);
-        }
-        return count;
-    }
-
-    public long countSubTypes(Label label, boolean isTransitive) {
-        if (isReadOnly) {
-            return subTypeCounts.computeIfAbsent(pair(label, isTransitive), k -> subTypes(label, isTransitive).count());
-        } else {
-            return subTypes(label, isTransitive).count();
-        }
-    }
-
-    public Stream<TypeVertex> subTypes(Label label, boolean isTransitive) {
-        if (!isTransitive) return getType(label).ins().edge(SUB).from().stream();
-        else return tree(getType(label), v -> v.ins().edge(SUB).from()).stream();
-    }
-
-    public long countInstances(Set<Label> labels, boolean isTransitive) {
-        long count = 0;
-        for (Label label : labels) {
-            TypeVertex typeVertex = getType(label.name(), label.scope().orElse(null));
-            if (isTransitive) count += typeVertex.instancesCountTransitive();
-            else count += typeVertex.instancesCount();
-        }
-        return count;
-    }
-
-    public Stream<TypeVertex> thingTypes() {
-        return tree(rootThingType(), v -> v.ins().edge(SUB).from()).stream();
-    }
-
-    public Stream<TypeVertex> entityTypes() {
-        return tree(rootEntityType(), v -> v.ins().edge(SUB).from()).stream();
-    }
-
-    public Stream<TypeVertex> attributeTypes() {
-        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from()).stream();
-    }
-
-    private Stream<TypeVertex> relationTypes() {
-        return tree(rootRelationType(), v -> v.ins().edge(SUB).from()).stream();
-    }
-
-    private Stream<TypeVertex> roleTypes() {
-        return tree(rootRoleType(), v -> v.ins().edge(SUB).from()).stream();
     }
 
     public TypeVertex rootThingType() {
@@ -231,6 +162,51 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex rootRoleType() {
         return getType(ROLE.label(), ROLE.scope());
+    }
+
+    public Stream<TypeVertex> thingTypes() {
+        return tree(rootThingType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> entityTypes() {
+        return tree(rootEntityType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> attributeTypes() {
+        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> attributeTypes(Encoding.ValueType vt) {
+        return attributeTypes().filter(at -> at.valueType().equals(vt));
+    }
+
+    public Stream<TypeVertex> relationTypes() {
+        return tree(rootRelationType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> roleTypes() {
+        return tree(rootRoleType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Stream<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {
+        if (!isTransitive) return type.ins().edge(SUB).from().stream();
+        else return tree(rootThingType(), v -> v.ins().edge(SUB).from()).stream();
+    }
+
+    public Set<TypeVertex> ownedAttributeTypes(TypeVertex ownerType) {
+        Function<TypeVertex, Set<TypeVertex>> function = t -> link(
+                list(t.outs().edge(OWNS).to(), t.outs().edge(OWNS_KEY).to())
+        ).stream().collect(toSet());
+        if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(ownerType, function);
+        else return function.apply(ownerType);
+    }
+
+    public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
+        final Function<TypeVertex, Set<TypeVertex>> function = a -> link(list(
+                a.ins().edge(OWNS).from(), a.ins().edge(OWNS_KEY).from()
+        )).stream().collect(toSet());
+        if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, function);
+        else return function.apply(attType);
     }
 
     public Stream<TypeVertex> bufferedTypes() {
@@ -326,11 +302,11 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public TypeVertex create(Encoding.Vertex.Type type, String label) {
-        return create(type, label, null);
+    public TypeVertex create(Encoding.Vertex.Type encoding, String label) {
+        return create(encoding, label, null);
     }
 
-    public TypeVertex create(Encoding.Vertex.Type type, String label, @Nullable String scope) {
+    public TypeVertex create(Encoding.Vertex.Type encoding, String label, @Nullable String scope) {
         assert storage.isOpen();
         final String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
@@ -338,7 +314,7 @@ public class SchemaGraph implements Graph {
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
             final TypeVertex typeVertex = typesByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
-                    this, VertexIID.Type.generate(keyGenerator, type), label, scope
+                    this, VertexIID.Type.generate(keyGenerator, encoding), label, scope
             ));
             typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
@@ -357,8 +333,7 @@ public class SchemaGraph implements Graph {
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
 
             final RuleVertex ruleVertex = rulesByLabel.computeIfAbsent(label, i -> new RuleVertexImpl.Buffered(
-                    this, VertexIID.Rule.generate(keyGenerator, Encoding.Vertex.Rule.RULE),
-                    label, when, then
+                    this, VertexIID.Rule.generate(keyGenerator), label, when, then
             ));
             rulesByIID.put(ruleVertex.iid(), ruleVertex);
             return ruleVertex;
@@ -469,10 +444,10 @@ public class SchemaGraph implements Graph {
     @Override
     public void commit() {
         typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(VertexIID.Type.generate(storage.schemaKeyGenerator(), vertex.encoding()))
+                typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                vertex -> vertex.iid(VertexIID.Rule.generate(storage.schemaKeyGenerator(), vertex.encoding()))
+                ruleVertex -> ruleVertex.iid(VertexIID.Rule.generate(storage.schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(SchemaVertex::commit);
         rulesByIID.values().forEach(SchemaVertex::commit);
@@ -485,5 +460,205 @@ public class SchemaGraph implements Graph {
         typesByLabel.clear();
         rulesByIID.clear();
         rulesByLabel.clear();
+    }
+
+    public class Statistics {
+
+        private volatile long snapshot;
+        private final AtomicInteger abstractTypeCount;
+        private final AtomicInteger thingTypeCount;
+        private final AtomicInteger attributeTypeCount;
+        private final AtomicInteger relationTypeCount;
+        private final AtomicInteger roleTypeCount;
+        private final ConcurrentMap<TypeVertex, Long> subTypesDepth;
+        private final ConcurrentMap<Pair<TypeVertex, Boolean>, Long> subTypesCount;
+        private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
+
+        private Statistics() {
+            abstractTypeCount = new AtomicInteger(-1);
+            thingTypeCount = new AtomicInteger(-1);
+            attributeTypeCount = new AtomicInteger(-1);
+            relationTypeCount = new AtomicInteger(-1);
+            roleTypeCount = new AtomicInteger(-1);
+            subTypesDepth = new ConcurrentHashMap<>();
+            subTypesCount = new ConcurrentHashMap<>();
+            attTypesWithValueType = new ConcurrentHashMap<>();
+            snapshot = 0L;
+        }
+
+        @SuppressWarnings("NonAtomicOperationOnVolatileField")
+            // Called non-concurrently
+        void incrementSnapshot() {
+            snapshot++;
+        }
+
+        @SuppressWarnings("NonAtomicOperationOnVolatileField") // Called non-concurrently
+        public long snapshot() {
+            return ++snapshot; // TODO: this is dummy code; properly update field and remove suppression
+        }
+
+        public long abstractTypeCount() {
+            return typeCount(abstractTypeCount, () -> toIntExact(thingTypes().filter(TypeVertex::isAbstract).count()));
+        }
+
+        public long thingTypeCount() {
+            return typeCount(thingTypeCount, () -> toIntExact(thingTypes().count()));
+        }
+
+        public long relationTypeCount() {
+            return typeCount(relationTypeCount, () -> toIntExact(relationTypes().count()));
+        }
+
+        public long roleTypeCount() {
+            return typeCount(roleTypeCount, () -> toIntExact(roleTypes().count()));
+        }
+
+        public long attributeTypeCount() {
+            return typeCount(attributeTypeCount, () -> toIntExact(attributeTypes().count()));
+        }
+
+        private int typeCount(AtomicInteger cache, Supplier<Integer> function) {
+            if (isReadOnly) {
+                cache.compareAndSet(-1, function.get());
+                return cache.get();
+            } else {
+                return function.get();
+            }
+        }
+
+        public long attTypesWithValueType(Encoding.ValueType valueType) {
+            Function<Encoding.ValueType, Long> fn = vt -> attributeTypes(vt).count();
+            if (isReadOnly) return attTypesWithValueType.computeIfAbsent(valueType, fn);
+            else return fn.apply(valueType);
+        }
+
+        public long attTypesWithValTypeComparableTo(Set<Label> labels) {
+            Set<Encoding.ValueType> valueTypes =
+                    labels.stream().flatMap(l -> getType(l).valueType().comparables().stream()).collect(toSet());
+            return valueTypes.stream().mapToLong(this::attTypesWithValueType).sum();
+        }
+
+        public double outOwnsMean(Set<Label> labels, boolean isKey) {
+            return outOwnsMean(labels.stream().map(SchemaGraph.this::getType), isKey);
+        }
+
+        public double outOwnsMean(Stream<TypeVertex> types, boolean isKey) {
+            return types.mapToLong(vertex -> vertex.outOwnsCount(isKey)).average().orElse(0);
+        }
+
+        public double inOwnsMean(Set<Label> labels, boolean isKey) {
+            return inOwnsMean(labels.stream().map(SchemaGraph.this::getType), isKey);
+        }
+
+        public double inOwnsMean(Stream<TypeVertex> types, boolean isKey) {
+            return types.mapToLong(vertex -> vertex.inOwnsCount(isKey)).average().orElse(0);
+        }
+
+        public double outPlaysMean(Set<Label> labels) {
+            return outPlaysMean(labels.stream().map(SchemaGraph.this::getType));
+        }
+
+        public double outPlaysMean(Stream<TypeVertex> types) {
+            return types.mapToLong(TypeVertex::outPlaysCount).average().orElse(0);
+        }
+
+        public double inPlaysMean(Set<Label> labels) {
+            return inPlaysMean(labels.stream().map(SchemaGraph.this::getType));
+        }
+
+        public double inPlaysMean(Stream<TypeVertex> types) {
+            return types.mapToLong(TypeVertex::inPlaysCount).average().orElse(0);
+        }
+
+        public double outRelates(Set<Label> labels) {
+            return outRelates(labels.stream().map(SchemaGraph.this::getType));
+        }
+
+        public double outRelates(Stream<TypeVertex> types) {
+            return types.mapToLong(TypeVertex::outRelatesCount).average().orElse(0);
+        }
+
+        public double subTypesMean(Set<Label> labels, boolean isTransitive) {
+            return subTypesMean(labels.stream().map(SchemaGraph.this::getType), isTransitive);
+        }
+
+        public double subTypesMean(Stream<TypeVertex> types, boolean isTransitive) {
+            return types.mapToLong(t -> subTypesCount(t, isTransitive)).average().orElse(0);
+        }
+
+        public long subTypesSum(Set<Label> labels, boolean isTransitive) {
+            return labels.stream().mapToLong(l -> subTypesCount(getType(l), isTransitive)).sum();
+        }
+
+        public long subTypesCount(TypeVertex type, boolean isTransitive) {
+            if (isReadOnly) {
+                return subTypesCount.computeIfAbsent(pair(type, isTransitive), p -> subTypes(type, isTransitive).count());
+            } else {
+                return subTypes(type, isTransitive).count();
+            }
+        }
+
+        public long subTypesDepth(Set<Label> labels) {
+            return labels.stream().mapToLong(l -> subTypesDepth(getType(l))).max().orElse(0);
+        }
+
+        public long subTypesDepth(TypeVertex type) {
+            Function<TypeVertex, Long> maxDepthFn = t -> 1 + subTypes(t, false).mapToLong(this::subTypesDepth).max().orElse(0);
+            if (isReadOnly) return subTypesDepth.computeIfAbsent(type, maxDepthFn);
+            else return maxDepthFn.apply(type);
+        }
+
+        public long countHasEdges(TypeVertex owner, Set<TypeVertex> attributes) {
+            // TODO: move to DataGraph.Statistics
+            return attributes.stream().map(att -> countHasEdges(owner, att)).mapToLong(l -> l).sum();
+        }
+
+        public long countHasEdges(Set<TypeVertex> owners, TypeVertex attribute) {
+            // TODO: move to DataGraph.Statistics
+            return owners.stream().map(owner -> countHasEdges(owner, attribute)).mapToLong(l -> l).sum();
+        }
+
+        public long countHasEdges(TypeVertex owner, TypeVertex attribute) {
+            // TODO: move to DataGraph.Statistics
+            return new Random(owner.hashCode()).nextInt(100);
+        }
+
+        public long instancesSum(Set<Label> labels) {
+            // TODO: move to DataGraph.Statistics
+            return instancesSum(labels.stream().map(SchemaGraph.this::getType));
+        }
+
+        public long instancesSum(Stream<TypeVertex> types) {
+            // TODO: move to DataGraph.Statistics
+            return types.mapToLong(TypeVertex::instancesCount).sum();
+        }
+
+        public long instancesMax(Set<Label> labels) {
+            // TODO: move to DataGraph.Statistics
+            return instancesMax(labels.stream().map(SchemaGraph.this::getType));
+        }
+
+        public long instancesMax(Stream<TypeVertex> types) {
+            // TODO: move to DataGraph.Statistics
+            return types.mapToLong(TypeVertex::instancesCount).max().orElse(0);
+        }
+
+        public long instancesTransitive(TypeVertex type) {
+            // TODO: move to DataGraph.Statistics
+            return new Random(type.hashCode()).nextInt(10000);
+        }
+
+        public long instancesTransitiveMax(Set<Label> labels, Set<Label> filter) {
+            // TODO: move to DataGraph.Statistics
+            return instancesTransitiveMax(labels.stream().map(SchemaGraph.this::getType), filter);
+        }
+
+        public long instancesTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) {
+            // TODO: move to DataGraph.Statistics
+            return types.mapToLong(t -> tree(t, v -> v.ins().edge(SUB).from()
+                    .filter(tf -> !filter.contains(tf.properLabel())))
+                    .stream().mapToLong(TypeVertex::instancesCount).sum()
+            ).max().orElse(0);
+        }
     }
 }

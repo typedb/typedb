@@ -57,10 +57,10 @@ import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANN
 public class Planner {
 
     static final long TIME_LIMIT_MILLIS = 100;
-    static final double OBJECTIVE_COEFFICIENT_BASE = 2.0;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
+    double branchingFactor;
 
     private final MPSolver solver;
     private final MPSolverParameters parameters;
@@ -159,8 +159,8 @@ public class Planner {
         registeredVertices.add(structureVertex);
         List<StructureVertex<?>> adjacents = new ArrayList<>();
         PlannerVertex<?> vertex = vertex(structureVertex);
-        if (vertex.isThing()) vertex.asThing().properties(structureVertex.asThing().properties());
-        else vertex.asType().properties(structureVertex.asType().properties());
+        if (vertex.isThing()) vertex.asThing().props(structureVertex.asThing().props());
+        else vertex.asType().props(structureVertex.asType().props());
         structureVertex.outs().forEach(structureEdge -> {
             if (!registeredEdges.contains(structureEdge)) {
                 registeredEdges.add(structureEdge);
@@ -221,7 +221,7 @@ public class Planner {
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
         MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
-            if (vertex.hasIndex()) {
+            if (vertex.isPotentialStartingVertex) {
                 conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
                 hasPotentialStartingVertex = true;
             }
@@ -242,11 +242,11 @@ public class Planner {
     }
 
     private void updateObjective(SchemaGraph graph) {
-        if (snapshot < graph.snapshot()) {
-            snapshot = graph.snapshot();
+        if (snapshot < graph.stats().snapshot()) {
+            snapshot = graph.stats().snapshot();
             totalCostNext = 0.0;
-            vertices.values().forEach(v -> v.updateObjective(graph));
-            edges.forEach(e -> e.updateObjective(graph));
+            setBranchingFactor(graph);
+            computeTotalCostNext(graph);
 
             if (totalCostNext / totalCostPrevious >= OBJECTIVE_PLANNER_COST_MAX_CHANGE) setOutOfDate();
             if (!isUpToDate) {
@@ -255,6 +255,17 @@ public class Planner {
                 edges.forEach(PlannerEdge::recordCost);
             }
         }
+    }
+
+    private void setBranchingFactor(SchemaGraph graph) {
+        // TODO: We can refine the branching factor by not strictly considering entities being the only divisor
+        branchingFactor = (double) graph.stats().instancesTransitive(graph.rootRoleType()) /
+                graph.stats().instancesTransitive(graph.rootEntityType());
+    }
+
+    private void computeTotalCostNext(SchemaGraph graph) {
+        vertices.values().forEach(v -> v.updateObjective(graph));
+        edges.forEach(e -> e.updateObjective(graph));
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")

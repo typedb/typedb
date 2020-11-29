@@ -198,8 +198,8 @@ public class ThingVariable extends Variable {
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
         syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
-                .flatMap(Collection::stream).map(ThingConstraint::toString)
-                .collect(Collectors.joining("" + COMMA + SPACE)));
+                              .flatMap(Collection::stream).map(ThingConstraint::toString)
+                              .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 

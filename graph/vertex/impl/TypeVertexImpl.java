@@ -19,6 +19,7 @@
 package grakn.core.graph.vertex.impl;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.SchemaAdjacency;
 import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
@@ -30,14 +31,23 @@ import grakn.core.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Property.ABSTRACT;
 import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.REGEX;
 import static grakn.core.graph.util.Encoding.Property.SCOPE;
 import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
+import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, Encoding.Vertex.Type> implements TypeVertex {
 
@@ -46,10 +56,22 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     protected Encoding.ValueType valueType;
     protected Pattern regex;
 
+    private final AtomicInteger outOwnsCount;
+    private final AtomicInteger outPlaysCount;
+    private final AtomicInteger outRelatesCount;
+    private final AtomicInteger inOwnsCount;
+    private final AtomicInteger inPlaysCount;
+
+
     TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(graph, iid, label);
         assert iid.isType();
         this.scope = scope;
+        outOwnsCount = new AtomicInteger(-1);
+        outPlaysCount = new AtomicInteger(-1);
+        outRelatesCount = new AtomicInteger(-1);
+        inOwnsCount = new AtomicInteger(-1);
+        inPlaysCount = new AtomicInteger(-1);
     }
 
     public Encoding.Vertex.Type encoding() {
@@ -70,6 +92,51 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     @Override
     public String scopedLabel() {
         return Encoding.Vertex.Type.scopedLabel(label, scope);
+    }
+
+    @Override
+    public Label properLabel() {
+        return Label.of(label, scope);
+    }
+
+    @Override
+    public int outOwnsCount(boolean isKey) {
+        return edgeCount(outOwnsCount, () -> {
+            if (isKey) return toIntExact(outs.edge(OWNS_KEY).to().stream().count());
+            else return toIntExact(link(list(outs.edge(OWNS).to(), outs.edge(OWNS_KEY).to())).stream().count());
+        });
+    }
+
+    @Override
+    public int inOwnsCount(boolean isKey) {
+        return edgeCount(inOwnsCount, () -> {
+            if (isKey) return toIntExact(ins.edge(OWNS_KEY).from().stream().count());
+            else return toIntExact(link(list(ins.edge(OWNS).from(), ins.edge(OWNS_KEY).from())).stream().count());
+        });
+    }
+
+    @Override
+    public int outPlaysCount() {
+        return edgeCount(outPlaysCount, () -> toIntExact(outs.edge(PLAYS).to().stream().count()));
+    }
+
+    @Override
+    public int inPlaysCount() {
+        return edgeCount(inPlaysCount, () -> toIntExact(ins.edge(PLAYS).from().stream().count()));
+    }
+
+    @Override
+    public int outRelatesCount() {
+        return edgeCount(outRelatesCount, () -> toIntExact(outs.edge(RELATES).to().stream().count()));
+    }
+
+    private int edgeCount(AtomicInteger cache, Supplier<Integer> function) {
+        if (graph.isReadOnly()) {
+            cache.compareAndSet(-1, function.get());
+            return cache.get();
+        } else {
+            return function.get();
+        }
     }
 
     void deleteVertexFromGraph() {
@@ -150,11 +217,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        public long instancesCountTransitive() {
-            return 0;
-        }
-
-        @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
                 deleteEdges();
@@ -209,13 +271,11 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
         private boolean regexLookedUp;
         private long instancesCount;
-        private long instancesCountTransitive;
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             regexLookedUp = false;
-            instancesCount = new Random(label.hashCode()).nextInt(); // TODO
-            instancesCountTransitive = instancesCount * 10; // TODO
+            instancesCount = new Random(label.hashCode()).nextInt(10000); // TODO: remove and set to 0
         }
 
         public Persisted(SchemaGraph graph, VertexIID.Type iid) {
@@ -313,11 +373,6 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         @Override
         public long instancesCount() {
             return instancesCount; // TODO
-        }
-
-        @Override
-        public long instancesCountTransitive() {
-            return instancesCountTransitive; // TODO
         }
 
         @Override

@@ -65,9 +65,9 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
         }
 
         @Override
-        public void properties(Properties.Thing properties) {
+        public void props(Properties.Thing properties) {
             filters = Filter.Thing.of(properties, identifier());
-            super.properties(properties);
+            super.props(properties);
         }
 
         @Override
@@ -91,9 +91,9 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
         }
 
         @Override
-        public void properties(Properties.Type properties) {
+        public void props(Properties.Type properties) {
             filters = Filter.Type.of(properties);
-            super.properties(properties);
+            super.props(properties);
         }
 
         @Override

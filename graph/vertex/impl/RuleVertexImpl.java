@@ -43,7 +43,7 @@ import static grakn.core.graph.util.Encoding.Property.WHEN;
 TODO: when reasoner's higher level Implication and Implication Graph structure exists, we will no longer need
 TODO: to persist rule edges and can simplify the schema edge to be a basic type edge only
  */
-public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, Encoding.Vertex.Rule> implements RuleVertex {
+public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, Encoding.Vertex.Schema.Rule> implements RuleVertex {
 
     protected Conjunction<? extends Pattern> when;
     protected ThingVariable<?> then;
@@ -61,7 +61,7 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         super(graph, iid, label);
     }
 
-    public Encoding.Vertex.Rule encoding() {
+    public Encoding.Vertex.Schema.Rule encoding() {
         return iid.encoding();
     }
 

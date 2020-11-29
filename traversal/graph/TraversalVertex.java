@@ -74,11 +74,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES 
         incoming.add(edge);
     }
 
-    public PROPERTIES properties() {
+    public PROPERTIES props() {
         return properties;
     }
 
-    public void properties(PROPERTIES properties) {
+    public void props(PROPERTIES properties) {
         this.properties = properties;
     }
 

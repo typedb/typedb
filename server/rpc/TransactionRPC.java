@@ -123,12 +123,14 @@ public class TransactionRPC {
         stream.responder().onNext(response);
     }
 
-    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator,
+                            Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
         iterators.beginIteration(request, iterator, responseBuilderFn);
     }
 
-    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn, Options.Query queryOptions) {
-        iterators.beginIteration(request, iterator, responseBuilderFn, queryOptions.batchSize());
+    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Options.Query queryOptions,
+                            Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+        iterators.beginIteration(request, iterator, queryOptions.batchSize(), responseBuilderFn);
     }
 
     private void commit(String requestId) {
@@ -182,10 +184,10 @@ public class TransactionRPC {
          * Spin up an iterator and begin batch iterating.
          */
         <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            beginIteration(request, iterator, responseBuilderFn, transaction.options().batchSize());
+            beginIteration(request, iterator, transaction.options().batchSize(), responseBuilderFn);
         }
 
-        <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn, int batchSize) {
+        <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
             final String requestId = request.getId();
             final int latencyMillis = request.getLatencyMillis();
             final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);

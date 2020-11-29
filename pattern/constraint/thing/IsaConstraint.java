@@ -79,7 +79,7 @@ public class IsaConstraint extends ThingConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        assert !type.reference().isLabel() || !typeHints.isEmpty();
+        assert !(type.reference().isLabel() && typeHints.isEmpty());
         if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
         if (type.reference().isName()) traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
     }

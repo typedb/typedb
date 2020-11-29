@@ -59,7 +59,7 @@ public class TypeInference {
         InferenceVariables inferenceVariables = constraintMapper.getInferenceVariables();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
         Map<Reference, Set<Label>> referenceHintsMapping = computeHints(new HashSet<>(inferenceVariables.getInferenceVariables()), graphManager);
-        long numOfThings = graphManager.schema().countThingTypes();
+        long numOfThings = graphManager.schema().stats().thingTypeCount();
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
@@ -78,7 +78,7 @@ public class TypeInference {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         InferenceVariables inferenceVariables = constraintMapper.getInferenceVariables();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
-        long numOfThings = graphManager.schema().countThingTypes();
+        long numOfThings = graphManager.schema().stats().thingTypeCount();
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
@@ -259,8 +259,8 @@ public class TypeInference {
         Conjunction inference = new Conjunction(inferenceVariables, Collections.emptySet());
 
         Map<Reference, Set<Label>> mapping = new HashMap<>();
-        inference.traversal().execute(graphManager).forEachRemaining(result ->
-                result.forEach((ref, vertex) -> {
+        inference.traversal().execute(graphManager).forEachRemaining(
+                result -> result.forEach((ref, vertex) -> {
                     mapping.putIfAbsent(ref, new HashSet<>());
                     mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
                 })

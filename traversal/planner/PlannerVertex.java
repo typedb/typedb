@@ -53,12 +53,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     MPVariable varHasOutgoingEdges;
     MPVariable varUnselectedIncomingEdges;
     MPVariable varUnselectedOutgoingEdges;
-    boolean hasIndex;
+    boolean isPotentialStartingVertex;
 
     PlannerVertex(Identifier identifier, Planner planner) {
         super(identifier);
         this.planner = planner;
-        this.hasIndex = false;
+        isPotentialStartingVertex = false;
         isInitialisedVariables = false;
         isInitialisedConstraints = false;
         costPrevious = 0.01; // non-zero value for safe division
@@ -104,12 +104,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         out(edge.backward());
     }
 
-    boolean hasIndex() {
-        return hasIndex;
-    }
-
     void initialiseVariables() {
-        if (hasIndex) varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
+        if (isPotentialStartingVertex) {
+            varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
+        }
         varIsEndingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_ending_vertex");
         varHasIncomingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_incoming_edges");
         varHasOutgoingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_outgoing_edges");
@@ -148,7 +146,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private void initialiseConstraintsForVertexFlow() {
         MPConstraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
-        if (hasIndex) conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
+        if (isPotentialStartingVertex) conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
 
         MPConstraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
@@ -156,16 +154,17 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
 
         MPConstraint conVertexFlow = planner.solver().makeConstraint(0, 0, conPrefix + "vertex_flow");
-        if (hasIndex) conVertexFlow.setCoefficient(varIsStartingVertex, 1);
+        if (isPotentialStartingVertex) conVertexFlow.setCoefficient(varIsStartingVertex, 1);
         conVertexFlow.setCoefficient(varHasIncomingEdges, 1);
         conVertexFlow.setCoefficient(varIsEndingVertex, -1);
         conVertexFlow.setCoefficient(varHasOutgoingEdges, -1);
     }
 
     protected void setObjectiveCoefficient(double cost) {
-        planner.objective().setCoefficient(varIsStartingVertex, cost);
+        planner.objective().setCoefficient(
+                varIsStartingVertex, cost * Math.pow(planner.branchingFactor, planner.edges().size())
+        );
         planner.totalCostNext += cost;
-
         assert costPrevious > 0;
         if (cost / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE &&
                 cost / planner.totalCostPrevious >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE) {
@@ -179,7 +178,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void recordValues() {
-        valueIsStartingVertex = hasIndex ? (int) Math.round(varIsStartingVertex.solutionValue()) : 0;
+        valueIsStartingVertex = isPotentialStartingVertex ? (int) Math.round(varIsStartingVertex.solutionValue()) : 0;
         valueIsEndingVertex = (int) Math.round(varIsEndingVertex.solutionValue());
         valueHasIncomingEdges = (int) Math.round(varHasIncomingEdges.solutionValue());
         valueHasOutgoingEdges = (int) Math.round(varHasOutgoingEdges.solutionValue());
@@ -206,14 +205,16 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
         @Override
         void updateObjective(SchemaGraph graph) {
-            if (properties().hasIID()) {
+            if (props().hasIID()) {
                 setObjectiveCoefficient(1);
-            } else if (!properties().types().isEmpty()) {
-                if (!properties().predicates().isEmpty() && properties().predicates().stream().anyMatch(p -> p.equals(EQ))) {
-                    setObjectiveCoefficient(properties().types().size());
+            } else if (!props().types().isEmpty()) {
+                if (!props().predicates().isEmpty() && props().predicates().stream().anyMatch(p -> p.equals(EQ))) {
+                    setObjectiveCoefficient(props().types().size());
                 } else {
-                    setObjectiveCoefficient(graph.countInstances(properties().types(), true));
+                    setObjectiveCoefficient(graph.stats().instancesSum(props().types()));
                 }
+            } else {
+                assert !isPotentialStartingVertex;
             }
         }
 
@@ -224,9 +225,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         public PlannerVertex.Thing asThing() { return this; }
 
         @Override
-        public void properties(TraversalVertex.Properties.Thing properties) {
-            if (properties.hasIID() || !properties.types().isEmpty()) hasIndex = true;
-            super.properties(properties);
+        public void props(TraversalVertex.Properties.Thing properties) {
+            if (properties.hasIID() || !properties.types().isEmpty()) isPotentialStartingVertex = true;
+            super.props(properties);
         }
     }
 
@@ -234,17 +235,21 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
         Type(Identifier identifier, Planner planner) {
             super(identifier, planner);
-            this.hasIndex = true; // VertexProperty.Type is always indexed
+            this.isPotentialStartingVertex = true; // VertexProperty.Type is always indexed
         }
 
         @Override
         void updateObjective(SchemaGraph graph) {
-            if (!properties().labels().isEmpty()) {
+            if (!props().labels().isEmpty()) {
+                setObjectiveCoefficient(props().labels().size());
+            } else if (props().isAbstract()) {
+                setObjectiveCoefficient(graph.stats().abstractTypeCount());
+            } else if (props().valueType().isPresent()) {
+                setObjectiveCoefficient(graph.stats().attTypesWithValueType(props().valueType().get()));
+            } else if (props().regex().isPresent()) {
                 setObjectiveCoefficient(1);
-            } else if (properties().isAbstract()) {
-                setObjectiveCoefficient(graph.countThingTypes());
-            } else if (properties().valueType().isPresent() || properties().regex().isPresent()) {
-                setObjectiveCoefficient(graph.countAttributeTypes());
+            } else {
+                assert false;
             }
         }
 
