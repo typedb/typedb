@@ -102,7 +102,7 @@ public class TypeVariable extends Variable {
             }
             valueTypeConstraint = constraint.asValueType();
         } else if (constraint.isRegex()) {
-            if (regexConstraint != null && !regexConstraint.equals(constraint)){
+            if (regexConstraint != null && !regexConstraint.equals(constraint)) {
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX.message(identifier()));
             }
             regexConstraint = constraint.asRegex();
@@ -112,8 +112,7 @@ public class TypeVariable extends Variable {
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB.message(identifier()));
             }
             subConstraint = constraint.asSub();
-        }
-        else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
+        } else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
         else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
         else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
         else if (constraint.isIs()) isConstraints.add(constraint.asIs());

@@ -359,7 +359,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 void updateObjective(SchemaGraph graph) {
                     long cost;
                     if (!isTransitive) cost = 1;
-                    else if (!to.asType().props().labels().isEmpty()) cost = graph.stats().subTypesDepth(to.asType().props().labels());
+                    else if (!to.asType().props().labels().isEmpty())
+                        cost = graph.stats().subTypesDepth(to.asType().props().labels());
                     else cost = graph.stats().subTypesDepth(graph.rootThingType());
                     setObjectiveCoefficient(cost);
                 }
@@ -376,10 +377,12 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     long cost;
                     if (!to.asThing().props().types().isEmpty()) {
                         if (!isTransitive) cost = graph.stats().instancesMax(to.asThing().props().types());
-                        else cost = graph.stats().instancesTransitiveMax(to.asThing().props().types(), to.asThing().props().types());
+                        else
+                            cost = graph.stats().instancesTransitiveMax(to.asThing().props().types(), to.asThing().props().types());
                     } else if (!from.asType().props().labels().isEmpty()) {
                         if (!isTransitive) cost = graph.stats().instancesMax(from.asType().props().labels());
-                        else cost = graph.stats().instancesTransitiveMax(from.asType().props().labels(), to.asType().props().labels());
+                        else
+                            cost = graph.stats().instancesTransitiveMax(from.asType().props().labels(), to.asType().props().labels());
                     } else {
                         if (!isTransitive) cost = graph.stats().instancesMax(graph.thingTypes());
                         else cost = graph.stats().instancesTransitiveMax(graph.thingTypes(), set());
@@ -448,7 +451,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     void updateObjective(SchemaGraph graph) {
                         long cost;
                         if (!isTransitive) cost = 1;
-                        else if (!to.asType().props().labels().isEmpty()) cost = graph.stats().subTypesDepth(to.asType().props().labels());
+                        else if (!to.asType().props().labels().isEmpty())
+                            cost = graph.stats().subTypesDepth(to.asType().props().labels());
                         else cost = graph.stats().subTypesDepth(graph.rootThingType());
                         setObjectiveCoefficient(cost);
                     }
@@ -726,7 +730,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                                     .forEach(pair -> ownerToAttributeTypes.computeIfAbsent(pair.first(), o -> new HashSet<>())
                                             .add(pair.second()));
                         } else { // fromTypes == null && toTypes == null;
-                            ownerToAttributeTypes.put(graph.rootThingType(), set(graph.rootAttributeType()));
+                            // TODO: We can refine this by not strictly considering entities being the only divisor
+                            ownerToAttributeTypes.put(graph.rootEntityType(), set(graph.rootAttributeType()));
                         }
 
                         double cost = 0.0;

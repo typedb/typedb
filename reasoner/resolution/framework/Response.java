@@ -26,6 +26,7 @@ public interface Response {
     boolean isAnswer();
 
     boolean isExhausted();
+
     boolean isRootResponse();
 
     default Answer asAnswer() {

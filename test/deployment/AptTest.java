@@ -20,7 +20,6 @@ package grakn.core.test.deployment;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,8 +143,8 @@ public class AptTest {
         ProcessResult result = executor.command(cmd).execute();
         if (result.getExitValue() != 0) {
             LOG.error("An error has occurred.");
-            LOG.error(" - cmd: "  + Arrays.toString(cmd));
-            LOG.error(" - output: "  + result.outputString());
+            LOG.error(" - cmd: " + Arrays.toString(cmd));
+            LOG.error(" - output: " + result.outputString());
             throw new RuntimeException();
         } else return result;
     }

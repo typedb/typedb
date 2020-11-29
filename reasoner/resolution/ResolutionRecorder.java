@@ -95,7 +95,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
             if (o == null || getClass() != o.getClass()) return false;
             AnswerIndex that = (AnswerIndex) o;
             return actorIndex == that.actorIndex &&
-                   Objects.equals(conceptMap, that.conceptMap);
+                    Objects.equals(conceptMap, that.conceptMap);
         }
 
         @Override

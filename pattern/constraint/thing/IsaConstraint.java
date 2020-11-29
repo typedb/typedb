@@ -49,7 +49,7 @@ public class IsaConstraint extends ThingConstraint {
     }
 
     public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
-                            VariableRegistry registry) {
+                                   VariableRegistry registry) {
         return new IsaConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
     }
 

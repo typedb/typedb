@@ -18,8 +18,8 @@
 
 package grakn.core.test.assembly;
 
-import org.junit.Test;
 import grakn.common.test.server.GraknCoreRunner;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;

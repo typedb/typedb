@@ -59,7 +59,7 @@ public abstract class Conjunction<T extends Conjunction<T>> extends Resolver<T> 
         Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0)), request.partialConceptMap(),
-                request.unifiers(), new Answer.Derivation(map()));
+                                           request.unifiers(), new Answer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;

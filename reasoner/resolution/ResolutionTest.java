@@ -244,10 +244,10 @@ public class ResolutionTest {
         Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
 
         root.tell(actor ->
-                actor.executeReceiveRequest(
-                        new Request(new Request.Path(root), new ConceptMap(), list(), null),
-                        registry
-                )
+                          actor.executeReceiveRequest(
+                                  new Request(new Request.Path(root), new ConceptMap(), list(), null),
+                                  registry
+                          )
         );
         responses.take();
 
@@ -308,10 +308,10 @@ public class ResolutionTest {
 
         for (int i = 0; i < answerCount; i++) {
             root.tell(actor ->
-                    actor.executeReceiveRequest(
-                            new Request(new Request.Path(root), new ConceptMap(), list(), null),
-                            registry
-                    )
+                              actor.executeReceiveRequest(
+                                      new Request(new Request.Path(root), new ConceptMap(), list(), null),
+                                      registry
+                              )
             );
             Answer answer = responses.take();
 
@@ -340,10 +340,10 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
-                    actor.executeReceiveRequest(
-                            new Request(new Request.Path(root), new ConceptMap(), list(), Answer.Derivation.EMPTY),
-                            registry
-                    )
+                              actor.executeReceiveRequest(
+                                      new Request(new Request.Path(root), new ConceptMap(), list(), Answer.Derivation.EMPTY),
+                                      registry
+                              )
             );
         }
 

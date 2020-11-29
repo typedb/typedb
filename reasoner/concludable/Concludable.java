@@ -80,6 +80,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
 
     /**
      * Find all implications that can be unified with this Concludable
+     *
      * @param allImplications All Implications stored in the DB
      * @return Implications with a `then` that could be unified with this Concludable
      */
@@ -147,17 +148,22 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
         return newIsa;
     }
 
-    private static void copyValuesOntoVariable(Set<ValueConstraint<?>> toCopy, ThingVariable newOwner){
+    private static void copyValuesOntoVariable(Set<ValueConstraint<?>> toCopy, ThingVariable newOwner) {
         toCopy.forEach(valueConstraint -> copyValueOntoVariable(valueConstraint, newOwner));
     }
 
     private static ValueConstraint<?> copyValueOntoVariable(ValueConstraint<?> toCopy, ThingVariable toConstrain) {
         ValueConstraint<?> value;
-        if (toCopy.isLong()) value = toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
-        else if (toCopy.isDouble()) value = toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
-        else if (toCopy.isBoolean()) value = toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
-        else if (toCopy.isString()) value = toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
-        else if (toCopy.isDateTime()) value = toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
+        if (toCopy.isLong())
+            value = toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
+        else if (toCopy.isDouble())
+            value = toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
+        else if (toCopy.isBoolean())
+            value = toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
+        else if (toCopy.isString())
+            value = toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
+        else if (toCopy.isDateTime())
+            value = toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
         else throw GraknException.of(ILLEGAL_STATE);
         return value;
     }
@@ -179,15 +185,15 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
                 .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
         toVars.stream().filter(variable -> !variable.identifier().reference().isAnonymous())
                 .forEach(copyTo -> {
-            if (nonAnonfromVarsMap.containsKey(copyTo)) {
-                Variable copyFrom = nonAnonfromVarsMap.get(copyTo);
-                if (copyTo.isThing() && copyFrom.isThing()) {
-                    copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
-                } else if (copyTo.isType() && copyFrom.isType()) {
-                    copyLabelAndValueType(copyFrom.asType(), copyTo.asType());
-                } else throw new GraknException(ILLEGAL_STATE);
-            }
-        });
+                    if (nonAnonfromVarsMap.containsKey(copyTo)) {
+                        Variable copyFrom = nonAnonfromVarsMap.get(copyTo);
+                        if (copyTo.isThing() && copyFrom.isThing()) {
+                            copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
+                        } else if (copyTo.isType() && copyFrom.isType()) {
+                            copyLabelAndValueType(copyFrom.asType(), copyTo.asType());
+                        } else throw new GraknException(ILLEGAL_STATE);
+                    }
+                });
     }
 
     private static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {

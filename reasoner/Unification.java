@@ -29,7 +29,7 @@ public class Unification {
     private Concludable<?> toConcludable;
     Set<Pair<Variable, Variable>> variableMapping;
 
-    public Unification(Concludable<?> fromConcludable, Concludable<?> toConcludable, Set<Pair<Variable, Variable>> variableMapping){
+    public Unification(Concludable<?> fromConcludable, Concludable<?> toConcludable, Set<Pair<Variable, Variable>> variableMapping) {
         this.fromConcludable = fromConcludable;
         this.toConcludable = toConcludable;
         this.variableMapping = variableMapping;

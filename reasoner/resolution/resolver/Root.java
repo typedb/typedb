@@ -74,7 +74,7 @@ public class Root extends Conjunction<Root> {
         } else {
             Actor<Concludable> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream),
-                    conceptMap, fromDownstream.unifiers(), derivation);
+                                                    conceptMap, fromDownstream.unifiers(), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }

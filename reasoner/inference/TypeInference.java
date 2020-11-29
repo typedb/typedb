@@ -172,7 +172,6 @@ public class TypeInference {
         }
 
 
-
         Set<Label> temp = new HashSet<>(subLabels);
         for (Label label : temp) {
             Type hintType = TypeImpl.of(graphManager, graphManager.schema().getType(label));
@@ -189,7 +188,7 @@ public class TypeInference {
 
         conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
                 .forEach(variable -> variable.label().ifPresent(labelConstraint ->
-                        labels.putIfAbsent(labelConstraint.properLabel(), variable)));
+                                                                        labels.putIfAbsent(labelConstraint.properLabel(), variable)));
 
         return labels;
     }
@@ -210,7 +209,7 @@ public class TypeInference {
 
     private static TypeVariable lowestCommonSuperType(Set<Label> labels, GraphManager graphManager, Map<Label, TypeVariable> labelMap) {
         Set<Type> types = labels.stream().map(label ->
-                TypeImpl.of(graphManager, graphManager.schema().getType(label))).collect(Collectors.toSet());
+                                                      TypeImpl.of(graphManager, graphManager.schema().getType(label))).collect(Collectors.toSet());
 
         Type lowestCommonAncestor = null;
         for (Type type : types) {
