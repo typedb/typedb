@@ -463,6 +463,7 @@ public class SchemaGraph implements Graph {
 
     public class Statistics {
 
+        private static final int UNSET_COUNT = -1;
         private final AtomicInteger abstractTypeCount;
         private final AtomicInteger thingTypeCount;
         private final AtomicInteger attributeTypeCount;
@@ -473,11 +474,11 @@ public class SchemaGraph implements Graph {
         private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
 
         private Statistics() {
-            abstractTypeCount = new AtomicInteger(-1);
-            thingTypeCount = new AtomicInteger(-1);
-            attributeTypeCount = new AtomicInteger(-1);
-            relationTypeCount = new AtomicInteger(-1);
-            roleTypeCount = new AtomicInteger(-1);
+            abstractTypeCount = new AtomicInteger(UNSET_COUNT);
+            thingTypeCount = new AtomicInteger(UNSET_COUNT);
+            attributeTypeCount = new AtomicInteger(UNSET_COUNT);
+            relationTypeCount = new AtomicInteger(UNSET_COUNT);
+            roleTypeCount = new AtomicInteger(UNSET_COUNT);
             subTypesDepth = new ConcurrentHashMap<>();
             subTypesCount = new ConcurrentHashMap<>();
             attTypesWithValueType = new ConcurrentHashMap<>();
@@ -505,7 +506,7 @@ public class SchemaGraph implements Graph {
 
         private int typeCount(AtomicInteger cache, Supplier<Integer> function) {
             if (isReadOnly) {
-                cache.compareAndSet(-1, function.get());
+                cache.compareAndSet(UNSET_COUNT, function.get());
                 return cache.get();
             } else {
                 return function.get();

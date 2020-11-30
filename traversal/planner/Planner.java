@@ -283,14 +283,14 @@ public class Planner {
                     totalDuration -= (TIME_LIMIT_MILLIS - timeElapsed);
                     if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
                 } while (!isPlanned());
-                recordResults();
+                produceProcedure();
                 isUpToDate = true;
             }
             isOptimising.set(false);
         }
     }
 
-    private void recordResults() {
+    private void produceProcedure() {
         vertices.values().forEach(PlannerVertex::recordValues);
         edges.forEach(PlannerEdge::recordValues);
         procedure = Procedure.create(this);

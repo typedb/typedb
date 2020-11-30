@@ -440,7 +440,7 @@ public class DataGraph implements Graph {
         }
     }
 
-    public class Statistics { // TODO
+    public class Statistics { // TODO: implement properly
 
         private volatile long snapshot;
 
@@ -460,31 +460,31 @@ public class DataGraph implements Graph {
             return ++snapshot; // TODO: this is dummy code; properly update field and remove suppression
         }
 
-        public long hasEdgeSum(TypeVertex owner, Set<TypeVertex> attributes) { // TODO
+        public long hasEdgeSum(TypeVertex owner, Set<TypeVertex> attributes) {
             return attributes.stream().map(att -> hasEdgeCount(owner, att)).mapToLong(l -> l).sum();
         }
 
-        public long hasEdgeSum(Set<TypeVertex> owners, TypeVertex attribute) { // TODO
+        public long hasEdgeSum(Set<TypeVertex> owners, TypeVertex attribute) {
             return owners.stream().map(owner -> hasEdgeCount(owner, attribute)).mapToLong(l -> l).sum();
         }
 
-        public long hasEdgeCount(TypeVertex owner, TypeVertex attribute) { // TODO
+        public long hasEdgeCount(TypeVertex owner, TypeVertex attribute) { // TODO: count properly
             return new Random(owner.hashCode()).nextInt(100);
         }
 
-        public long thingVertexSum(Set<Label> labels) { // TODO
+        public long thingVertexSum(Set<Label> labels) {
             return thingVertexSum(labels.stream().map(schemaGraph::getType));
         }
 
-        public long thingVertexSum(Stream<TypeVertex> types) { // TODO
+        public long thingVertexSum(Stream<TypeVertex> types) {
             return types.mapToLong(this::thingVertexCount).sum();
         }
 
-        public long thingVertexMax(Set<Label> labels) { // TODO
+        public long thingVertexMax(Set<Label> labels) {
             return thingVertexMax(labels.stream().map(schemaGraph::getType));
         }
 
-        public long thingVertexMax(Stream<TypeVertex> types) { // TODO
+        public long thingVertexMax(Stream<TypeVertex> types) {
             return types.mapToLong(this::thingVertexCount).max().orElse(0);
         }
 
@@ -492,19 +492,19 @@ public class DataGraph implements Graph {
             return thingVertexCount(schemaGraph.getType(label));
         }
 
-        public long thingVertexCount(TypeVertex type) {
-            return new Random(type.hashCode()).nextInt(1000); // TODO
+        public long thingVertexCount(TypeVertex type) {  // TODO: count properly
+            return new Random(type.hashCode()).nextInt(1000);
         }
 
-        public long thingVertexTransitiveCount(TypeVertex type) {
-            return new Random(type.hashCode()).nextInt(10_000); // TODO
+        public long thingVertexTransitiveCount(TypeVertex type) {  // TODO: count properly
+            return new Random(type.hashCode()).nextInt(10_000);
         }
 
-        public long thingVertexTransitiveMax(Set<Label> labels, Set<Label> filter) { // TODO
+        public long thingVertexTransitiveMax(Set<Label> labels, Set<Label> filter) {
             return thingVertexTransitiveMax(labels.stream().map(schemaGraph::getType), filter);
         }
 
-        public long thingVertexTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) { // TODO
+        public long thingVertexTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) {
             return types.mapToLong(t -> tree(t, v -> v.ins().edge(SUB).from()
                     .filter(tf -> !filter.contains(tf.properLabel())))
                     .stream().mapToLong(this::thingVertexCount).sum()
