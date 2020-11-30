@@ -29,9 +29,7 @@ import grakn.core.traversal.TraversalEngine;
 
 import java.util.Collections;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.parallel;
 
 public class Reasoner {
@@ -56,10 +54,14 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> execute(Conjunction conjunction) {
         Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
-        ResourceIterator<ConceptMap> answers = link(list(
-                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap)
-//                resolve(conjunctionResolvedTypes)
-        ));
+        ResourceIterator<ConceptMap> answers =
+                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap);
+
+        // TODO enable reasoner here
+        //      ResourceIterator<ConceptMap> answers = link(list(
+        //          traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap)
+        //          resolve(conjunctionResolvedTypes)
+        //      ));
 
         if (conjunctionResolvedTypes.negations().isEmpty()) return answers;
         else return answers.filter(answer -> !parallel(iterate(conjunctionResolvedTypes.negations()).map(
@@ -72,12 +74,13 @@ public class Reasoner {
     }
 
     private Conjunction resolveTypes(Conjunction conjunction) {
-        return conjunction; // TODO
+        // TODO implement Type Inference
+        return conjunction;
     }
 
     private ReasonerProducer resolve(Conjunction conjunction) {
         // TODO get onAnswer and onDone callbacks
-//        return new ReasonerProducer(conjunction, resolverRegistry, null, null);
+        //      return new ReasonerProducer(conjunction, resolverRegistry, null, null);
         return null;
     }
 }
