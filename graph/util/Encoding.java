@@ -67,22 +67,44 @@ public class Encoding {
         }
     }
 
-    public enum Direction {
-        OUT(true),
-        IN(false);
+    public interface Direction {
 
-        private final boolean isOut;
+        enum Adjacency implements Direction {
+            OUT(true),
+            IN(false);
 
-        Direction(boolean isOut) {
-            this.isOut = isOut;
+            private final boolean isOut;
+
+            Adjacency(boolean isOut) {
+                this.isOut = isOut;
+            }
+
+            public boolean isOut() {
+                return isOut;
+            }
+
+            public boolean isIn() {
+                return !isOut;
+            }
         }
 
-        public boolean isOut() {
-            return isOut;
-        }
+        enum Edge implements Direction {
+            FORWARD(true),
+            BACKWARD(false);
 
-        public boolean isIn() {
-            return !isOut;
+            private final boolean isForward;
+
+            Edge(boolean isForward) {
+                this.isForward = isForward;
+            }
+
+            public boolean isForward() {
+                return isForward;
+            }
+
+            public boolean isBackward() {
+                return !isForward;
+            }
         }
     }
 

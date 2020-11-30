@@ -50,11 +50,11 @@ import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     final ThingVertex owner;
-    final Encoding.Direction direction;
+    final Encoding.Direction.Adjacency direction;
     final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
     final ConcurrentMap<InfixIID.Thing, Set<ThingEdge>> edges;
 
-    ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction direction) {
+    ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
         this.direction = direction;
         this.infixes = new ConcurrentHashMap<>();
@@ -219,7 +219,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     public static class Buffered extends ThingAdjacencyImpl implements ThingAdjacency {
 
-        public Buffered(ThingVertex owner, Encoding.Direction direction) {
+        public Buffered(ThingVertex owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
         }
 
@@ -248,7 +248,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         private final ConcurrentHashMap<byte[], ResourceIterator<ThingEdge>> storageIterators;
 
-        public Persisted(ThingVertex owner, Encoding.Direction direction) {
+        public Persisted(ThingVertex owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
             storageIterators = new ConcurrentHashMap<>();
         }

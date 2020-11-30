@@ -153,7 +153,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new SchemaAdjacencyImpl.Buffered(this, direction);
         }
 
@@ -284,7 +284,7 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction direction) {
+        protected SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new SchemaAdjacencyImpl.Persisted(this, direction);
         }
 

@@ -44,8 +44,8 @@ public abstract class SchemaVertexImpl<
         super(iid);
         this.graph = graph;
         this.label = label;
-        this.outs = newAdjacency(Encoding.Direction.OUT);
-        this.ins = newAdjacency(Encoding.Direction.IN);
+        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
+        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         this.isDeleted = new AtomicBoolean(false);
     }
 
@@ -55,7 +55,7 @@ public abstract class SchemaVertexImpl<
      * @param direction the direction of the edges held in {@code TypeAdjacency}
      * @return the new {@code TypeAdjacency} class
      */
-    protected abstract SchemaAdjacency newAdjacency(Encoding.Direction direction);
+    protected abstract SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
     public SchemaGraph graph() {

@@ -64,7 +64,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     protected abstract IndexIID.Attribute index();
 
     @Override
-    protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
+    protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
         return new ThingAdjacencyImpl.Persisted(this, direction);
     }
 

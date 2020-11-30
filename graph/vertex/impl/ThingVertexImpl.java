@@ -49,8 +49,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         super(iid);
         this.graph = graph;
         this.graphMgr = new GraphManager(graph.schema(), graph);
-        this.outs = newAdjacency(Encoding.Direction.OUT);
-        this.ins = newAdjacency(Encoding.Direction.IN);
+        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
+        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         this.isInferred = isInferred;
         this.isModified = false;
         this.isDeleted = new AtomicBoolean(false);
@@ -70,7 +70,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
      * @param direction the direction of the edges held in {@code ThingAdjacency}
      * @return the new {@code ThingAdjacency} class
      */
-    protected abstract ThingAdjacency newAdjacency(Encoding.Direction direction);
+    protected abstract ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
     public DataGraph graph() {
@@ -167,7 +167,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new ThingAdjacencyImpl.Buffered(this, direction);
         }
 
@@ -204,7 +204,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Encoding.Direction direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new ThingAdjacencyImpl.Persisted(this, direction);
         }
 

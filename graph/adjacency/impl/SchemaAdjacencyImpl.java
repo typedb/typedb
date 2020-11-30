@@ -45,10 +45,10 @@ import static grakn.core.common.iterator.Iterators.link;
 public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
     final SchemaVertex<?, ?> owner;
-    final Encoding.Direction direction;
+    final Encoding.Direction.Adjacency direction;
     final ConcurrentMap<Encoding.Edge.Schema, Set<SchemaEdge>> edges;
 
-    SchemaAdjacencyImpl(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
+    SchemaAdjacencyImpl(SchemaVertex<?, ?> owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
         this.direction = direction;
         this.edges = new ConcurrentHashMap<>();
@@ -152,7 +152,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
     public static class Buffered extends SchemaAdjacencyImpl implements SchemaAdjacency {
 
-        public Buffered(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
+        public Buffered(SchemaVertex<?, ?> owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
         }
 
@@ -191,7 +191,7 @@ public abstract class SchemaAdjacencyImpl implements SchemaAdjacency {
 
         private final ConcurrentHashMap<byte[], ResourceIterator<SchemaEdge>> storageIterators;
 
-        public Persisted(SchemaVertex<?, ?> owner, Encoding.Direction direction) {
+        public Persisted(SchemaVertex<?, ?> owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
             storageIterators = new ConcurrentHashMap<>();
         }

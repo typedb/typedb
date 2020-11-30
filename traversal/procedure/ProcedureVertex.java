@@ -32,7 +32,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static java.util.stream.Collectors.toSet;
 
-abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge, PROPERTIES> {
+abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private final Procedure procedure;
     private final boolean isStartingVertex;

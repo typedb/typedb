@@ -41,7 +41,7 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class Procedure {
 
     private final Map<Identifier, ProcedureVertex<?>> vertices;
-    private final Set<ProcedureEdge> edges;
+    private final Set<ProcedureEdge<?, ?>> edges;
 
     private Procedure() {
         vertices = new HashMap<>();
@@ -84,7 +84,7 @@ public class Procedure {
     private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
         ProcedureVertex<?> from = vertex(plannerEdge.from());
         ProcedureVertex<?> to = vertex(plannerEdge.to());
-        ProcedureEdge edge = ProcedureEdge.of(from, to, plannerEdge);
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
         edges.add(edge);
         from.out(edge);
         to.in(edge);
