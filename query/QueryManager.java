@@ -19,7 +19,6 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
@@ -51,7 +50,7 @@ public class QueryManager {
     private final Context.Transaction transactionCtx;
 
     public QueryManager(TraversalEngine traversalEng, ConceptManager conceptMgr, Context.Transaction transactionCtx) {
-        this.reasoner = new Reasoner(traversalEng, conceptMgr, ExecutorService.eventLoopGroup());
+        this.reasoner = new Reasoner(traversalEng, conceptMgr);
         this.conceptMgr = conceptMgr;
         this.transactionCtx = transactionCtx;
     }

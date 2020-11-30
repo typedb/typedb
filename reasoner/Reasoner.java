@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -40,10 +40,10 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final ResolverRegistry resolverRegistry;
 
-    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr, EventLoopGroup elg) {
+    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
-        this.resolverRegistry = new ResolverRegistry(elg);
+        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
