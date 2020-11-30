@@ -65,7 +65,7 @@ public class Planner {
     private final MPSolver solver;
     private final MPSolverParameters parameters;
     private final Map<Identifier, PlannerVertex<?>> vertices;
-    private final Set<PlannerEdge> edges;
+    private final Set<PlannerEdge<?, ?>> edges;
     private final AtomicBoolean isOptimising;
     private final ManagedCountDownLatch procedureLatch;
 
@@ -99,7 +99,7 @@ public class Planner {
     public static Planner create(Structure structure) {
         Planner planner = new Planner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
-        Set<StructureEdge> registeredEdges = new HashSet<>();
+        Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
         planner.initialise();
         return planner;
@@ -109,7 +109,7 @@ public class Planner {
         return vertices.values();
     }
 
-    public Set<PlannerEdge> edges() {
+    public Set<PlannerEdge<?, ?>> edges() {
         return edges;
     }
 
@@ -154,7 +154,7 @@ public class Planner {
     }
 
     private void registerVertex(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
-                                Set<StructureEdge> registeredEdges) {
+                                Set<StructureEdge<?, ?>> registeredEdges) {
         if (registeredVertices.contains(structureVertex)) return;
         registeredVertices.add(structureVertex);
         List<StructureVertex<?>> adjacents = new ArrayList<>();
@@ -178,10 +178,10 @@ public class Planner {
         adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
     }
 
-    private void registerEdge(StructureEdge structureEdge) {
+    private void registerEdge(StructureEdge<?, ?> structureEdge) {
         PlannerVertex<?> from = vertex(structureEdge.from());
         PlannerVertex<?> to = vertex(structureEdge.to());
-        PlannerEdge edge = PlannerEdge.of(from, to, structureEdge);
+        PlannerEdge<?, ?> edge = PlannerEdge.of(from, to, structureEdge);
         edges.add(edge);
         from.out(edge);
         to.in(edge);
@@ -234,7 +234,7 @@ public class Planner {
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
             MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
-            for (PlannerEdge edge : edges) {
+            for (PlannerEdge<?, ?> edge : edges) {
                 conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
                 conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);
             }

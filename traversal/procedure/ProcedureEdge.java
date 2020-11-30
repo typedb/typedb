@@ -21,13 +21,13 @@ package grakn.core.traversal.procedure;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.planner.PlannerEdge;
 
-class ProcedureEdge extends TraversalEdge<ProcedureVertex<?>> {
+class ProcedureEdge extends TraversalEdge<ProcedureVertex<?>, ProcedureVertex<?>> {
 
     private ProcedureEdge(ProcedureVertex<?> from, ProcedureVertex<?> to) {
         super(from, to); // TODO
     }
 
-    public static ProcedureEdge of(ProcedureVertex<?> from, ProcedureVertex<?> to, PlannerEdge.Directional plannerEdge) {
+    public static ProcedureEdge of(ProcedureVertex<?> from, ProcedureVertex<?> to, PlannerEdge.Directional<?, ?> plannerEdge) {
         return new ProcedureEdge(from, to); // TODO
     }
 }

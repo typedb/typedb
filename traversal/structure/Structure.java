@@ -35,7 +35,7 @@ import java.util.Set;
 public class Structure {
 
     private final Map<Identifier, StructureVertex<?>> vertices;
-    private final Set<StructureEdge> edges;
+    private final Set<StructureEdge<?, ?>> edges;
     private int generatedIdentifierCount;
     private List<Structure> structures;
 
@@ -68,7 +68,7 @@ public class Structure {
         to.in(edge);
     }
 
-    public void predicateEdge(StructureVertex<?> from, StructureVertex<?> to, GraqlToken.Predicate.Equality predicate) {
+    public void predicateEdge(StructureVertex.Thing from, StructureVertex.Thing to, GraqlToken.Predicate.Equality predicate) {
         StructureEdge.Predicate edge = new StructureEdge.Predicate(from, to, predicate);
         edges.add(edge);
         from.out(edge);
@@ -80,7 +80,7 @@ public class Structure {
     }
 
     public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
-        StructureEdge.Native edge = new StructureEdge.Native(from, to, encoding, isTransitive);
+        StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive);
         edges.add(edge);
         from.out(edge);
         to.in(edge);
@@ -90,7 +90,7 @@ public class Structure {
         optimisedEdge(from, to, encoding, new HashSet<>());
     }
 
-    public void optimisedEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<Label> types) {
+    public void optimisedEdge(StructureVertex.Thing from, StructureVertex.Thing to, Encoding.Edge encoding, Set<Label> types) {
         StructureEdge.Native.Optimised edge = new StructureEdge.Native.Optimised(from, to, encoding, types);
         edges.add(edge);
         from.out(edge);

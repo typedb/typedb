@@ -51,13 +51,13 @@ public class Procedure {
     public static Procedure create(Planner planner) {
         Procedure procedure = new Procedure();
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
-        Set<PlannerEdge.Directional> registeredEdges = new HashSet<>();
+        Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
         planner.vertices().forEach(vertex -> procedure.registerVertex(vertex, registeredVertices, registeredEdges));
         return procedure;
     }
 
     private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
-                                Set<PlannerEdge.Directional> registeredEdges) {
+                                Set<PlannerEdge.Directional<?, ?>> registeredEdges) {
         if (registeredVertices.contains(plannerVertex)) return;
         registeredVertices.add(plannerVertex);
         List<PlannerVertex<?>> adjacents = new ArrayList<>();
@@ -81,7 +81,7 @@ public class Procedure {
         adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
     }
 
-    private void registerEdge(PlannerEdge.Directional plannerEdge) {
+    private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
         ProcedureVertex<?> from = vertex(plannerEdge.from());
         ProcedureVertex<?> to = vertex(plannerEdge.to());
         ProcedureEdge edge = ProcedureEdge.of(from, to, plannerEdge);

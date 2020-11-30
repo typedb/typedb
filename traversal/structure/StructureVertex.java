@@ -26,7 +26,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public abstract class StructureVertex<PROPERTY extends TraversalVertex.Properties>
-        extends TraversalVertex<StructureEdge, PROPERTY> {
+        extends TraversalVertex<StructureEdge<?, ?>, PROPERTY> {
 
     StructureVertex(Identifier identifier) {
         super(identifier);

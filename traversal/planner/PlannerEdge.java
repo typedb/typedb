@@ -55,13 +55,14 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("NonAtomicOperationOnVolatileField") // Because Planner.optimise() is synchronised
-public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
+public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
+        extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
 
     protected final Planner planner;
-    protected Directional forward;
-    protected Directional backward;
+    protected Directional<VERTEX_FROM, VERTEX_TO> forward;
+    protected Directional<VERTEX_TO, VERTEX_FROM> backward;
 
-    PlannerEdge(PlannerVertex<?> from, PlannerVertex<?> to) {
+    PlannerEdge(VERTEX_FROM from, VERTEX_TO to) {
         super(from, to);
         this.planner = from.planner;
         assert this.planner.equals(to.planner);
@@ -70,7 +71,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
 
     protected abstract void initialiseDirectionalEdges();
 
-    static PlannerEdge of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge structureEdge) {
+    static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> structureEdge) {
         if (structureEdge.isEqual()) return new PlannerEdge.Equal(from, to);
         else if (structureEdge.isPredicate())
             return new PlannerEdge.Predicate(from.asThing(), to.asThing(), structureEdge.asPredicate().predicate());
@@ -78,11 +79,11 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Directional forward() {
+    Directional<VERTEX_FROM, VERTEX_TO> forward() {
         return forward;
     }
 
-    Directional backward() {
+    Directional<VERTEX_TO, VERTEX_FROM> backward() {
         return backward;
     }
 
@@ -116,7 +117,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         backward.recordValues();
     }
 
-    public abstract class Directional extends TraversalEdge<PlannerVertex<?>> {
+    public static abstract class Directional<VERTEX_DIR_FROM extends PlannerVertex<?>, VERTEX_DIR_TO extends PlannerVertex<?>>
+            extends TraversalEdge<VERTEX_DIR_FROM, VERTEX_DIR_TO> {
 
         MPVariable varIsSelected;
         MPVariable[] varOrderAssignment;
@@ -125,16 +127,18 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         private int valueOrderNumber;
         private final String varPrefix;
         private final String conPrefix;
-        private final PlannerEdge parent;
+        private final Planner planner;
+        private final PlannerEdge<?, ?> parent;
         private final boolean isForward;
         private double costPrevious;
         private double costNext;
         private boolean isInitialisedVariables;
         private boolean isInitialisedConstraints;
 
-        Directional(PlannerVertex<?> from, PlannerVertex<?> to, PlannerEdge parent, boolean isForward) {
+        Directional(VERTEX_DIR_FROM from, VERTEX_DIR_TO to, PlannerEdge<?, ?> parent, boolean isForward) {
             super(from, to);
             this.parent = parent;
+            this.planner = parent.planner;
             this.isForward = isForward;
             this.costPrevious = 0.01; // non-zero value for safe division
             this.isInitialisedVariables = false;
@@ -241,7 +245,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         public boolean isBackward() { return !isForward; }
     }
 
-    static class Equal extends PlannerEdge {
+    static class Equal extends PlannerEdge<PlannerVertex<?>, PlannerVertex<?>> {
 
         Equal(PlannerVertex<?> from, PlannerVertex<?> to) {
             super(from, to);
@@ -253,7 +257,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             backward = new Directional(to, from, this, false);
         }
 
-        class Directional extends PlannerEdge.Directional {
+        private class Directional extends PlannerEdge.Directional<PlannerVertex<?>, PlannerVertex<?>> {
 
             Directional(PlannerVertex<?> from, PlannerVertex<?> to, Equal parent, boolean isForward) {
                 super(from, to, parent, isForward);
@@ -266,11 +270,11 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         }
     }
 
-    static class Predicate extends PlannerEdge {
+    static class Predicate extends PlannerEdge<PlannerVertex.Thing, PlannerVertex.Thing> {
 
         private final GraqlToken.Predicate.Equality predicate;
 
-        Predicate(PlannerVertex<?> from, PlannerVertex<?> to, GraqlToken.Predicate.Equality predicate) {
+        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to, GraqlToken.Predicate.Equality predicate) {
             super(from, to);
             this.predicate = predicate;
         }
@@ -281,7 +285,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             backward = new Directional(to.asThing(), from.asThing(), this, false);
         }
 
-        class Directional extends PlannerEdge.Directional {
+        private class Directional extends PlannerEdge.Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
             Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Predicate parent, boolean isForward) {
                 super(from, to, parent, isForward);
@@ -294,18 +298,18 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             void updateObjective(GraphManager graph) {
                 long cost;
                 if (predicate.equals(EQ)) {
-                    if (!to.asThing().props().types().isEmpty()) {
-                        cost = to.asThing().props().types().size();
-                    } else if (!from.asThing().props().types().isEmpty()) {
-                        cost = graph.schema().stats().attTypesWithValTypeComparableTo(from.asThing().props().types());
+                    if (!to.props().types().isEmpty()) {
+                        cost = to.props().types().size();
+                    } else if (!from.props().types().isEmpty()) {
+                        cost = graph.schema().stats().attTypesWithValTypeComparableTo(from.props().types());
                     } else {
                         cost = graph.schema().stats().attributeTypeCount();
                     }
                 } else {
-                    if (!to.asThing().props().types().isEmpty()) {
-                        cost = graph.data().stats().thingVertexSum(to.asThing().props().types());
-                    } else if (!from.asThing().props().types().isEmpty()) {
-                        Stream<TypeVertex> types = from.asThing().props().types().stream().map(l -> graph.schema().getType(l));
+                    if (!to.props().types().isEmpty()) {
+                        cost = graph.data().stats().thingVertexSum(to.props().types());
+                    } else if (!from.props().types().isEmpty()) {
+                        Stream<TypeVertex> types = from.props().types().stream().map(l -> graph.schema().getType(l));
                         cost = graph.data().stats().thingVertexSum(types);
                     } else {
                         cost = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootAttributeType());
@@ -316,13 +320,14 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
         }
     }
 
-    static abstract class Native extends PlannerEdge {
+    static abstract class Native<VERTEX_NATIVE_FROM extends PlannerVertex<?>, VERTEX_NATIVE_TO extends PlannerVertex<?>>
+            extends PlannerEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
-        Native(PlannerVertex<?> from, PlannerVertex<?> to) {
+        Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to) {
             super(from, to);
         }
 
-        static PlannerEdge.Native of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge.Native structureEdge) {
+        static PlannerEdge.Native<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge.Native<?, ?> structureEdge) {
             if (structureEdge.encoding().equals(ISA)) {
                 return new Isa(from.asThing(), to.asType(), structureEdge.isTransitive());
             } else if (structureEdge.encoding().isType()) {
@@ -334,7 +339,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             }
         }
 
-        static class Isa extends Native {
+        static class Isa extends Native<PlannerVertex.Thing, PlannerVertex.Type> {
 
             private final boolean isTransitive;
 
@@ -349,7 +354,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 backward = new Backward(to.asType(), from.asThing(), this);
             }
 
-            private class Forward extends Directional {
+            private class Forward extends Directional<PlannerVertex.Thing, PlannerVertex.Type> {
 
                 private Forward(PlannerVertex.Thing from, PlannerVertex.Type to, Isa parent) {
                     super(from, to, parent, true);
@@ -360,8 +365,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     long cost;
                     if (!isTransitive) {
                         cost = 1;
-                    } else if (!to.asType().props().labels().isEmpty()) {
-                        cost = graph.schema().stats().subTypesDepth(to.asType().props().labels());
+                    } else if (!to.props().labels().isEmpty()) {
+                        cost = graph.schema().stats().subTypesDepth(to.props().labels());
                     } else {
                         cost = graph.schema().stats().subTypesDepth(graph.schema().rootThingType());
                     }
@@ -369,7 +374,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 }
             }
 
-            private class Backward extends Directional {
+            private class Backward extends Directional<PlannerVertex.Type, PlannerVertex.Thing> {
 
                 private Backward(PlannerVertex.Type from, PlannerVertex.Thing to, Isa parent) {
                     super(from, to, parent, false);
@@ -378,12 +383,14 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 @Override
                 void updateObjective(GraphManager graph) {
                     long cost;
-                    if (!to.asThing().props().types().isEmpty()) {
-                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(to.asThing().props().types());
-                        else cost = graph.data().stats().thingVertexTransitiveMax(to.asThing().props().types(), to.asThing().props().types());
-                    } else if (!from.asType().props().labels().isEmpty()) {
-                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(from.asType().props().labels());
-                        else cost = graph.data().stats().thingVertexTransitiveMax(from.asType().props().labels(), to.asType().props().labels());
+                    if (!to.props().types().isEmpty()) {
+                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(to.props().types());
+                        else
+                            cost = graph.data().stats().thingVertexTransitiveMax(to.props().types(), to.props().types());
+                    } else if (!from.props().labels().isEmpty()) {
+                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(from.props().labels());
+                        else
+                            cost = graph.data().stats().thingVertexTransitiveMax(from.props().labels(), to.props().types());
                     } else {
                         if (!isTransitive) cost = graph.data().stats().thingVertexMax(graph.schema().thingTypes());
                         else cost = graph.data().stats().thingVertexTransitiveMax(graph.schema().thingTypes(), set());
@@ -393,7 +400,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             }
         }
 
-        static abstract class Type extends Native {
+        static abstract class Type extends Native<PlannerVertex.Type, PlannerVertex.Type> {
 
             protected final Encoding.Edge.Type encoding;
             protected final boolean isTransitive;
@@ -412,7 +419,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 return isTransitive;
             }
 
-            static Type of(PlannerVertex.Type from, PlannerVertex.Type to, StructureEdge.Native structureEdge) {
+            static Type of(PlannerVertex.Type from, PlannerVertex.Type to, StructureEdge.Native<?, ?> structureEdge) {
                 Encoding.Edge.Type encoding = structureEdge.encoding().asType();
                 switch (encoding) {
                     case SUB:
@@ -442,7 +449,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asType(), from.asType(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, true);
@@ -453,8 +460,8 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                         long cost;
                         if (!isTransitive) {
                             cost = 1;
-                        } else if (!to.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesDepth(to.asType().props().labels());
+                        } else if (!to.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().subTypesDepth(to.props().labels());
                         } else {
                             cost = graph.schema().stats().subTypesDepth(graph.schema().rootThingType());
                         }
@@ -462,7 +469,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, false);
@@ -471,10 +478,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = to.asType().props().labels().size();
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesMean(from.asType().props().labels(), isTransitive);
+                        if (!to.props().labels().isEmpty()) {
+                            cost = to.props().labels().size();
+                        } else if (!from.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().subTypesMean(from.props().labels(), isTransitive);
                         } else {
                             cost = graph.schema().stats().subTypesMean(graph.schema().thingTypes(), isTransitive);
                         }
@@ -502,7 +509,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asType(), from.asType(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, true);
@@ -511,10 +518,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = to.asType().props().labels().size();
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().outOwnsMean(from.asType().props().labels(), isKey);
+                        if (!to.props().labels().isEmpty()) {
+                            cost = to.props().labels().size();
+                        } else if (!from.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().outOwnsMean(from.props().labels(), isKey);
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
                             cost = graph.schema().stats().outOwnsMean(graph.schema().entityTypes(), isKey);
@@ -523,7 +530,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, false);
@@ -533,10 +540,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     void updateObjective(GraphManager graph) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesSum(to.asType().props().labels(), true);
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().inOwnsMean(from.asType().props().labels(), isKey) *
+                        if (!to.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().subTypesSum(to.props().labels(), true);
+                        } else if (!from.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().inOwnsMean(from.props().labels(), isKey) *
                                     graph.schema().stats().subTypesMean(graph.schema().entityTypes(), true);
                         } else {
                             cost = graph.schema().stats().inOwnsMean(graph.schema().attributeTypes(), isKey) *
@@ -559,7 +566,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asType(), from.asType(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, true);
@@ -568,10 +575,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = to.asType().props().labels().size();
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().outPlaysMean(from.asType().props().labels());
+                        if (!to.props().labels().isEmpty()) {
+                            cost = to.props().labels().size();
+                        } else if (!from.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().outPlaysMean(from.props().labels());
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
                             cost = graph.schema().stats().outPlaysMean(graph.schema().entityTypes());
@@ -580,7 +587,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, false);
@@ -590,10 +597,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     void updateObjective(GraphManager graph) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesSum(to.asType().props().labels(), true);
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().inPlaysMean(from.asType().props().labels()) *
+                        if (!to.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().subTypesSum(to.props().labels(), true);
+                        } else if (!from.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().inPlaysMean(from.props().labels()) *
                                     graph.schema().stats().subTypesMean(graph.schema().entityTypes(), true);
                         } else {
                             cost = graph.schema().stats().inPlaysMean(graph.schema().attributeTypes()) *
@@ -616,7 +623,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asType(), from.asType(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, true);
@@ -625,10 +632,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = to.asType().props().labels().size();
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().outRelates(from.asType().props().labels());
+                        if (!to.props().labels().isEmpty()) {
+                            cost = to.props().labels().size();
+                        } else if (!from.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().outRelates(from.props().labels());
                         } else {
                             cost = graph.schema().stats().outRelates(graph.schema().relationTypes());
                         }
@@ -636,7 +643,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                     private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Type parent) {
                         super(from, to, parent, false);
@@ -645,10 +652,10 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asType().props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesMean(to.asType().props().labels(), true);
-                        } else if (!from.asType().props().labels().isEmpty()) {
-                            Stream<TypeVertex> relationTypes = from.asType().props().labels().stream().map(l -> {
+                        if (!to.props().labels().isEmpty()) {
+                            cost = graph.schema().stats().subTypesMean(to.props().labels(), true);
+                        } else if (!from.props().labels().isEmpty()) {
+                            Stream<TypeVertex> relationTypes = from.props().labels().stream().map(l -> {
                                 assert l.scope().isPresent();
                                 return Label.of(l.scope().get());
                             }).map(l -> graph.schema().getType(l));
@@ -662,7 +669,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
             }
         }
 
-        static abstract class Thing extends Native {
+        static abstract class Thing extends Native<PlannerVertex.Thing, PlannerVertex.Thing> {
 
             private final Encoding.Edge.Thing encoding;
 
@@ -675,7 +682,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                 return encoding;
             }
 
-            static Thing of(PlannerVertex.Thing from, PlannerVertex.Thing to, StructureEdge.Native structureEdge) {
+            static Thing of(PlannerVertex.Thing from, PlannerVertex.Thing to, StructureEdge.Native<?, ?> structureEdge) {
                 Encoding.Edge.Thing encoding = structureEdge.encoding().asThing();
                 switch (encoding) {
                     case HAS:
@@ -703,7 +710,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asThing(), from.asThing(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Forward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, true);
@@ -715,12 +722,12 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> ownerToAttributeTypes = new HashMap<>();
 
-                        if (!from.asThing().props().types().isEmpty()) {
-                            ownerTypes = from.asThing().props().types().stream()
+                        if (!from.props().types().isEmpty()) {
+                            ownerTypes = from.props().types().stream()
                                     .map(l -> graph.schema().getType(l)).collect(toSet());
                         }
-                        if (!to.asThing().props().types().isEmpty()) {
-                            attTypes = to.asThing().props().types().stream()
+                        if (!to.props().types().isEmpty()) {
+                            attTypes = to.props().types().stream()
                                     .map(l -> graph.schema().getType(l)).collect(toSet());
                         }
 
@@ -750,7 +757,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Backward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, false);
@@ -762,12 +769,12 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
 
-                        if (!from.asThing().props().types().isEmpty()) {
-                            attTypes = from.asThing().props().types().stream()
+                        if (!from.props().types().isEmpty()) {
+                            attTypes = from.props().types().stream()
                                     .map(l -> graph.schema().getType(l)).collect(toSet());
                         }
-                        if (!to.asThing().props().types().isEmpty()) {
-                            ownerTypes = to.asThing().props().types().stream()
+                        if (!to.props().types().isEmpty()) {
+                            ownerTypes = to.props().types().stream()
                                     .map(l -> graph.schema().getType(l)).collect(toSet());
                         }
 
@@ -808,7 +815,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asThing(), from.asThing(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Forward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, true);
@@ -817,9 +824,9 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asThing().props().types().isEmpty() && !from.asThing().props().types().isEmpty()) {
-                            cost = (double) graph.data().stats().thingVertexSum(to.asThing().props().types()) /
-                                    graph.data().stats().thingVertexSum(from.asThing().props().types());
+                        if (!to.props().types().isEmpty() && !from.props().types().isEmpty()) {
+                            cost = (double) graph.data().stats().thingVertexSum(to.props().types()) /
+                                    graph.data().stats().thingVertexSum(from.props().types());
                         } else {
                             // TODO: We can refine this by not strictly considering entities being the only divisor
                             cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
@@ -829,7 +836,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Backward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, false);
@@ -854,7 +861,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asThing(), from.asThing(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Forward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, true);
@@ -863,14 +870,14 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!to.asThing().props().types().isEmpty()) {
+                        if (!to.props().types().isEmpty()) {
                             cost = 0;
-                            for (final Label roleType : to.asThing().props().types()) {
+                            for (final Label roleType : to.props().types()) {
                                 assert roleType.scope().isPresent();
                                 cost += (double) graph.data().stats().thingVertexCount(roleType) /
                                         graph.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
                             }
-                            cost = cost / to.asThing().props().types().size();
+                            cost = cost / to.props().types().size();
                         } else {
                             cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
                                     graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRelationType());
@@ -879,7 +886,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Backward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, false);
@@ -907,7 +914,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     backward = new Backward(to.asThing(), from.asThing(), this);
                 }
 
-                private class Forward extends Directional {
+                private class Forward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Forward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, true);
@@ -932,7 +939,7 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     }
                 }
 
-                private class Backward extends Directional {
+                private class Backward extends Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                     private Backward(PlannerVertex.Thing from, PlannerVertex.Thing to, Thing parent) {
                         super(from, to, parent, false);
@@ -941,9 +948,9 @@ public abstract class PlannerEdge extends TraversalEdge<PlannerVertex<?>> {
                     @Override
                     void updateObjective(GraphManager graph) {
                         double cost;
-                        if (!roleTypes.isEmpty() && !from.asThing().props().types().isEmpty()) {
+                        if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
                             cost = (double) graph.data().stats().thingVertexSum(roleTypes) /
-                                    graph.data().stats().thingVertexSum(from.asThing().props().types());
+                                    graph.data().stats().thingVertexSum(from.props().types());
                         } else {
                             // TODO: We can refine this by not strictly considering entities being the only divisor
                             cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /

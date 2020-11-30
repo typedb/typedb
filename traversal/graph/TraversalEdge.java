@@ -18,21 +18,21 @@
 
 package grakn.core.traversal.graph;
 
-public abstract class TraversalEdge<VERTEX extends TraversalVertex<?, ?>> {
+public abstract class TraversalEdge<VERTEX_FROM extends TraversalVertex<?, ?>, VERTEX_TO extends TraversalVertex<?, ?>> {
 
-    protected final VERTEX from;
-    protected final VERTEX to;
+    protected final VERTEX_FROM from;
+    protected final VERTEX_TO to;
 
-    public TraversalEdge(VERTEX from, VERTEX to) {
+    public TraversalEdge(VERTEX_FROM from, VERTEX_TO to) {
         this.from = from;
         this.to = to;
     }
 
-    public VERTEX from() {
+    public VERTEX_FROM from() {
         return from;
     }
 
-    public VERTEX to() {
+    public VERTEX_TO to() {
         return to;
     }
 

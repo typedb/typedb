@@ -33,7 +33,7 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 @SuppressWarnings("NonAtomicOperationOnVolatileField") // Because Planner.optimise() is synchronised
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
-        extends TraversalVertex<PlannerEdge.Directional, PROPERTIES> {
+        extends TraversalVertex<PlannerEdge.Directional<?, ?>, PROPERTIES> {
 
     final Planner planner;
 
@@ -90,14 +90,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         return isInitialisedConstraints;
     }
 
-    void out(PlannerEdge edge) {
+    void out(PlannerEdge<?, ?> edge) {
         assert edge.forward().from().equals(this);
         assert edge.backward().to().equals(this);
         out(edge.forward());
         in(edge.backward());
     }
 
-    void in(PlannerEdge edge) {
+    void in(PlannerEdge<?, ?> edge) {
         assert edge.forward().to().equals(this);
         assert edge.backward().from().equals(this);
         in(edge.forward());

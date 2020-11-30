@@ -30,9 +30,10 @@ import java.util.Set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
+public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
+        extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
 
-    StructureEdge(StructureVertex<?> from, StructureVertex<?> to) {
+    StructureEdge(VERTEX_FROM from, VERTEX_TO to) {
         super(from, to);
     }
 
@@ -56,14 +57,14 @@ public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Predicate.class)));
     }
 
-    public Native asNative() {
+    public Native<?, ?> asNative() {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Native.class)));
     }
 
     @Override
     public abstract String toString();
 
-    public static class Equal extends StructureEdge {
+    public static class Equal extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
 
         private final int hash;
 
@@ -98,12 +99,12 @@ public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
         }
     }
 
-    public static class Predicate extends StructureEdge {
+    public static class Predicate extends StructureEdge<StructureVertex.Thing, StructureVertex.Thing> {
 
         private final GraqlToken.Predicate.Equality predicate;
         private final int hash;
 
-        Predicate(StructureVertex<?> from, StructureVertex<?> to, GraqlToken.Predicate.Equality predicate) {
+        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, GraqlToken.Predicate.Equality predicate) {
             super(from, to);
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
@@ -141,13 +142,14 @@ public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
         }
     }
 
-    public static class Native extends StructureEdge {
+    public static class Native<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
+            extends StructureEdge<VERTEX_FROM, VERTEX_TO> {
 
         protected final Encoding.Edge encoding;
         private final boolean isTransitive;
         private final int hash;
 
-        public Native(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
+        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive) {
             super(from, to);
             this.encoding = encoding;
             this.isTransitive = isTransitive;
@@ -174,7 +176,7 @@ public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
         public boolean isNative() { return true; }
 
         @Override
-        public Native asNative() { return this; }
+        public Native<?, ?> asNative() { return this; }
 
         @Override
         public String toString() {
@@ -187,7 +189,7 @@ public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Native that = (Native) o;
+            Native<?, ?> that = (Native<?, ?>) o;
             return (this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
                     this.encoding.equals(that.encoding) &&
@@ -199,12 +201,12 @@ public abstract class StructureEdge extends TraversalEdge<StructureVertex<?>> {
             return hash;
         }
 
-        public static class Optimised extends Native {
+        public static class Optimised extends Native<StructureVertex.Thing, StructureVertex.Thing> {
 
             private final Set<Label> types;
             private final int hash;
 
-            Optimised(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<Label> types) {
+            Optimised(StructureVertex.Thing from, StructureVertex.Thing to, Encoding.Edge encoding, Set<Label> types) {
                 super(from, to, encoding, false);
                 this.types = types;
                 this.hash = Objects.hash(this.getClass(), from, to, encoding, types);

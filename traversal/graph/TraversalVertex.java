@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-public abstract class TraversalVertex<EDGE extends TraversalEdge<?>, PROPERTIES extends TraversalVertex.Properties> {
+public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTIES extends TraversalVertex.Properties> {
 
     private final Identifier identifier;
     private final Set<EDGE> outgoing;
