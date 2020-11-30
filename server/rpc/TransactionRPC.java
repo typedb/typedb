@@ -225,7 +225,7 @@ public class TransactionRPC {
             }
 
             synchronized void iterateBatch() {
-                List<T> answers = new ArrayList<>();
+                final List<T> answers = new ArrayList<>();
                 Instant startTime = Instant.now();
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
                     answers.add(iterator.next());
@@ -243,7 +243,6 @@ public class TransactionRPC {
                 }
 
                 if (!iterator.hasNext()) {
-                    iterators.remove(id);
                     respond(done(id));
                     return;
                 }
@@ -251,9 +250,16 @@ public class TransactionRPC {
                 respond(continueRes(id));
 
                 // Compensate for network latency
+                answers.clear();
                 final Instant endTime = Instant.now().plusMillis(latencyMillis);
                 while (iterator.hasNext() && Instant.now().isBefore(endTime)) {
                     answers.add(iterator.next());
+                    Instant currTime = Instant.now();
+                    if (Duration.between(currTime, startTime).toMillis() >= 1) {
+                        respond(responseBuilderFn.apply(answers));
+                        answers.clear();
+                        startTime = currTime;
+                    }
                 }
 
                 if (!answers.isEmpty()) {
@@ -262,7 +268,6 @@ public class TransactionRPC {
                 }
 
                 if (!iterator.hasNext()) {
-                    iterators.remove(id);
                     respond(done(id));
                 }
             }

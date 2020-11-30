@@ -58,10 +58,9 @@ public class RocksGrakn implements Grakn {
                 .setCreateIfMissing(true)
                 .setMergeOperator(new UInt64AddOperator());
 
+        ExecutorService.init(MAX_THREADS, MAX_THREADS);
         databaseMgr = new RocksDatabaseManager(this);
         databaseMgr.loadAll();
-
-        ExecutorService.init(MAX_THREADS, MAX_THREADS);
         isOpen = new AtomicBoolean(true);
     }
 
