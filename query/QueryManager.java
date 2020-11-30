@@ -46,18 +46,14 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class QueryManager {
 
     private static final String TRACE_PREFIX = "query.";
-    private final TraversalEngine traversalEng;
+    private final Reasoner reasoner;
     private final ConceptManager conceptMgr;
     private final Context.Transaction transactionCtx;
-    private final Reasoner reasoner;
 
-    public QueryManager(TraversalEngine traversalEng,
-                        ConceptManager conceptMgr,
-                        Context.Transaction transactionCtx) {
-        this.traversalEng = traversalEng;
+    public QueryManager(TraversalEngine traversalEng, ConceptManager conceptMgr, Context.Transaction transactionCtx) {
+        this.reasoner = new Reasoner(traversalEng, conceptMgr, ExecutorService.eventLoopGroup());
         this.conceptMgr = conceptMgr;
         this.transactionCtx = transactionCtx;
-        this.reasoner = new Reasoner(traversalEng, conceptMgr, ExecutorService.eventLoopGroup());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
