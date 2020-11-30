@@ -61,6 +61,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
+        // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Disjunction disjunction = Disjunction.create(query.conjunction().normalise());
             return reasoner.execute(disjunction);
