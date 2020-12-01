@@ -78,7 +78,7 @@ public class Traversal {
             planners.get(0).optimise(graphMgr);
             return planners.get(0).procedure().execute(graphMgr, parameters);
         } else {
-            return produce(cartesian(planners.stream().map(planner -> {
+            return produce(cartesian(planners.parallelStream().map(planner -> {
                 planner.optimise(graphMgr);
                 return planner.procedure().execute(graphMgr, parameters);
             }).map(p -> buffer(p).iterator()).collect(toList())).map(partialAnswers -> {
