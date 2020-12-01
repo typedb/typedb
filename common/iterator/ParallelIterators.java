@@ -34,9 +34,21 @@ public class ParallelIterators<T> implements ResourceIterator<T> {
     private enum State {EMPTY, FETCHED, COMPLETED}
 
     public ParallelIterators(List<ResourceIterator<T>> iterators) {
-        queue = new ResizingBlockingQueue<>();
-        state = State.EMPTY;
-        next = null;
+        this(new ResizingBlockingQueue<>(), iterators);
+    }
+
+    public ParallelIterators(List<ResourceIterator<T>> iterators, int bufferSize) {
+        this(new ResizingBlockingQueue<>(bufferSize), iterators);
+    }
+
+    public ParallelIterators(List<ResourceIterator<T>> iterators, int bufferSize, int bufferMultiplier) {
+        this(new ResizingBlockingQueue<>(bufferSize, bufferMultiplier), iterators);
+    }
+
+    private ParallelIterators(ResizingBlockingQueue<T> queue, List<ResourceIterator<T>> iterators) {
+        this.queue = queue;
+        this.state = State.EMPTY;
+        this.next = null;
         this.iterators = iterators;
         this.iterators.forEach(iterator -> {
             queue.incrementPublisher();

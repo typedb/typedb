@@ -68,6 +68,14 @@ public class Iterators {
         return new ParallelIterators<>(iterators);
     }
 
+    public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators, int bufferSize) {
+        return new ParallelIterators<>(iterators, bufferSize);
+    }
+
+    public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators, int bufferSize, int bufferMultiplier) {
+        return new ParallelIterators<>(iterators, bufferSize, bufferMultiplier);
+    }
+
     public static <T> CartesianIterator<T> cartesian(List<ResourceIterator<T>> iteratorProducers) {
         return new CartesianIterator<>(iteratorProducers);
     }

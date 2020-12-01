@@ -28,24 +28,30 @@ import static grakn.core.common.exception.ErrorMessage.Internal.OUT_OF_BOUNDS;
 
 public class ResizingBlockingQueue<E> {
 
-    private static final int DEFAULT_INITIAL_CAPACITY = 64;
+    private static final int CAPACITY_INITIAL = 64;
     private static final int CAPACITY_MULTIPLIER = 4;
     private final AtomicInteger publishers;
     private final AtomicBoolean needsResizing;
     private ManagedBlockingQueue<Either<E, Done>> queue;
     private final AtomicInteger capacity;
+    private final int capacityMultiplier;
 
     static class Done {}
 
     public ResizingBlockingQueue() {
-        this(DEFAULT_INITIAL_CAPACITY);
+        this(CAPACITY_INITIAL);
     }
 
-    public ResizingBlockingQueue(int initialCapacity) {
-        queue = new ManagedBlockingQueue<>(initialCapacity);
-        publishers = new AtomicInteger(0);
-        needsResizing = new AtomicBoolean(false);
-        capacity = new AtomicInteger(initialCapacity);
+    public ResizingBlockingQueue(int capacityInitial) {
+        this(capacityInitial, CAPACITY_MULTIPLIER);
+    }
+
+    public ResizingBlockingQueue(int capacityInitial, int capacityMultiplier) {
+        this.queue = new ManagedBlockingQueue<>(capacityInitial);
+        this.publishers = new AtomicInteger(0);
+        this.needsResizing = new AtomicBoolean(false);
+        this.capacity = new AtomicInteger(capacityInitial);
+        this.capacityMultiplier = capacityMultiplier;
     }
 
     public void incrementPublisher() {
@@ -82,7 +88,7 @@ public class ResizingBlockingQueue<E> {
 
     private void resize() {
         ManagedBlockingQueue<Either<E, Done>> oldQueue = queue;
-        capacity.updateAndGet(oldValue -> oldValue * CAPACITY_MULTIPLIER);
+        capacity.updateAndGet(oldValue -> oldValue * capacityMultiplier);
         queue = new ManagedBlockingQueue<>(capacity.get());
         oldQueue.drainTo(queue);
     }
