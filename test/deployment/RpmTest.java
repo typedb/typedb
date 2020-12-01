@@ -57,7 +57,7 @@ public class RpmTest {
 
     private void setup() throws InterruptedException, TimeoutException, IOException {
         execute("sudo", "yum-config-manager", "--add-repo", rpmSnapshot);
-        execute("sudo", "yum", "update");
+        execute("sudo", "yum", "update", "-y");
     }
 
     private void install() throws InterruptedException, TimeoutException, IOException {
