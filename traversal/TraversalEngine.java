@@ -18,7 +18,7 @@
 
 package grakn.core.traversal;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.async.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import graql.lang.pattern.variable.Reference;
@@ -35,7 +35,7 @@ public class TraversalEngine {
         this.cache = cache;
     }
 
-    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(Traversal traversal) {
+    public Producer<Map<Reference, Vertex<?,?>>> execute(Traversal traversal) {
         traversal.initialisePlanner(cache);
         return traversal.execute(graphMgr);
     }

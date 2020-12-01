@@ -19,8 +19,7 @@
 package grakn.core.traversal;
 
 import grakn.common.collection.Pair;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.async.Producer;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
@@ -39,6 +38,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.pair;
+import static grakn.core.common.async.Producers.buffer;
+import static grakn.core.common.async.Producers.produce;
+import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
@@ -70,20 +72,20 @@ public class Traversal {
         planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
-    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
+    public Producer<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr);
             return planners.get(0).procedure().execute(graphMgr, parameters);
         } else {
-            return Iterators.cartesian(planners.stream().map(planner -> {
+            return produce(cartesian(planners.stream().map(planner -> {
                 planner.optimise(graphMgr);
                 return planner.procedure().execute(graphMgr, parameters);
-            }).collect(toList())).map(partialAnswers -> {
+            }).map(p -> buffer(p).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(combinedAnswers::putAll);
                 return combinedAnswers;
-            });
+            }));
         }
     }
 

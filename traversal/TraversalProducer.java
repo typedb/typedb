@@ -13,31 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.common.async;
+package grakn.core.traversal;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
+import grakn.core.common.async.Producer;
+import grakn.core.graph.vertex.Vertex;
+import graql.lang.pattern.variable.Reference;
 
-public interface Producer<T> {
+import java.util.Map;
 
-    void produce(Sink<T> sink, int count);
+public class TraversalProducer implements Producer<Map<Reference, Vertex<?, ?>>> {
 
-    void recycle();
+    @Override
+    public void produce(Sink<Map<Reference, Vertex<?, ?>>> sink, int count) {
 
-    default <U> Producer<U> map(Function<T, U> mappingFn) {
-        return new MappedProducer<>(this, mappingFn);
     }
 
-    default Producer<T> filter(Predicate<T> predicate) {
-        return new FilteredProducer<>(this, predicate);
-    }
+    @Override
+    public void recycle() {
 
-    interface Sink<U> {
-
-        void put(U item);
-
-        void done();
     }
 }

@@ -18,15 +18,13 @@
 
 package grakn.core.traversal.procedure;
 
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalProducer;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.planner.PlannerEdge;
 import grakn.core.traversal.planner.PlannerVertex;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -107,7 +105,7 @@ public class Procedure {
         ).asType();
     }
 
-    public ResourceIterator<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
-        return iterate(Collections.emptyIterator()); // TODO
+    public TraversalProducer execute(GraphManager graphMgr, Traversal.Parameters parameters) {
+        return null;
     }
 }

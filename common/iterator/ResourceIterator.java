@@ -39,8 +39,8 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return new DistinctIterator<>(this);
     }
 
-    default <U> ResourceIterator<U> map(Function<T, U> function) {
-        return new MappedIterator<>(this, function);
+    default <U> ResourceIterator<U> map(Function<T, U> mappingFn) {
+        return new MappedIterator<>(this, mappingFn);
     }
 
     default ResourceIterator<T> filter(Predicate<T> predicate) {

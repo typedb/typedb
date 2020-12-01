@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.common.async.Producers.buffer;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 import static graql.lang.common.GraqlToken.Type.RELATION;
@@ -258,7 +259,7 @@ public class TypeInference {
         Conjunction inference = new Conjunction(inferenceVariables, Collections.emptySet());
 
         Map<Reference, Set<Label>> mapping = new HashMap<>();
-        inference.traversal().execute(graphManager).forEachRemaining(
+        buffer(inference.traversal().execute(graphManager)).iterator().forEachRemaining(
                 result -> result.forEach((ref, vertex) -> {
                     mapping.putIfAbsent(ref, new HashSet<>());
                     mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));

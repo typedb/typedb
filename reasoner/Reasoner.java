@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.core.common.async.Producer;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
@@ -27,10 +28,12 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 
-import java.util.Collections;
+import java.util.List;
+import java.util.function.Predicate;
 
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.parallel;
+import static grakn.common.collection.Collections.list;
+import static grakn.core.common.async.Producers.buffer;
+import static java.util.stream.Collectors.toList;
 
 public class Reasoner {
 
@@ -45,17 +48,18 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
-        return parallel(iterate(disjunction.conjunctions()).map(this::execute).toList());
+        return buffer(disjunction.conjunctions().stream()
+                              .flatMap(conjunction -> execute(conjunction).stream())
+                              .collect(toList())).iterator();
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, ConceptMap bounds) {
-        return parallel(iterate(disjunction.conjunctions()).map(conj -> execute(conj, bounds)).toList());
+    public List<Producer<ConceptMap>> execute(Disjunction disjunction, ConceptMap bounds) {
+        return disjunction.conjunctions().stream().flatMap(conj -> execute(conj, bounds).stream()).collect(toList());
     }
 
-    public ResourceIterator<ConceptMap> execute(Conjunction conjunction) {
-        Conjunction conjunctionResolvedTypes = resolveTypes(conjunction);
-        ResourceIterator<ConceptMap> answers =
-                traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap);
+    public List<Producer<ConceptMap>> execute(Conjunction conjunction) {
+        Conjunction conjunctionHinted = resolveTypes(conjunction);
+        Producer<ConceptMap> answers = traversalEng.execute(conjunctionHinted.traversal()).map(conceptMgr::conceptMap);
 
         // TODO enable reasoner here
         //      ResourceIterator<ConceptMap> answers = link(list(
@@ -63,14 +67,18 @@ public class Reasoner {
         //          resolve(conjunctionResolvedTypes)
         //      ));
 
-        if (conjunctionResolvedTypes.negations().isEmpty()) return answers;
-        else return answers.filter(answer -> !parallel(iterate(conjunctionResolvedTypes.negations()).map(
-                negation -> execute(negation.disjunction(), answer)
-        ).toList()).hasNext());
+        if (conjunctionHinted.negations().isEmpty()) {
+            return list(answers);
+        } else {
+            Predicate<ConceptMap> predicate = answer -> !buffer(conjunctionHinted.negations().stream().flatMap(
+                    negation -> execute(negation.disjunction(), answer).stream()
+            ).collect(toList())).iterator().hasNext();
+            return list(answers.filter(predicate));
+        }
     }
 
-    public ResourceIterator<ConceptMap> execute(Conjunction conjunction, ConceptMap bounds) {
-        return iterate(Collections.emptyIterator()); // TODO
+    public List<Producer<ConceptMap>> execute(Conjunction conjunction, ConceptMap bounds) {
+        return null; // TODO
     }
 
     private Conjunction resolveTypes(Conjunction conjunction) {

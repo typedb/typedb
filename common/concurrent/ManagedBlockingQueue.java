@@ -36,15 +36,19 @@ public class ManagedBlockingQueue<E> {
     private final ThreadLocal<QueuePutter> queuePutter;
     private volatile boolean cancelled;
 
+    public ManagedBlockingQueue() {
+        this(new LinkedBlockingQueue<>());
+    }
+
     public ManagedBlockingQueue(int capacity) {
-        queue = new LinkedBlockingQueue<>(capacity);
+        this(new LinkedBlockingQueue<>(capacity));
+    }
+
+    private ManagedBlockingQueue(LinkedBlockingQueue<E> queue) {
+        this.queue = queue;
         queueTaker = ThreadLocal.withInitial(QueueTaker::new);
         queuePutter = ThreadLocal.withInitial(QueuePutter::new);
         cancelled = false;
-    }
-
-    public ManagedBlockingQueue() {
-        this(Integer.MAX_VALUE);
     }
 
     public E poll() {
