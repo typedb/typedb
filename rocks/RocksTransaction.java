@@ -40,6 +40,7 @@ import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 
@@ -64,14 +65,12 @@ import static grakn.core.graph.util.Encoding.SCHEMA_GRAPH_STORAGE_REFRESH_RATE;
 abstract class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
-    final OptimisticTransactionOptions rocksTxOptions;
-    final WriteOptions writeOptions;
-    final ReadOptions readOptions;
+
     final RocksSession session;
     final Arguments.Transaction.Type type;
     final Context.Transaction context;
-    Transaction rocksTransaction;
     GraphManager graphMgr;
+    Rocks rocks;
     ConceptManager conceptMgr;
     TraversalEngine traversalEng;
     Reasoner reasoner;
@@ -84,11 +83,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
         this.type = type;
         this.session = session;
         context = new Context.Transaction(session.context(), options).type(type);
-        readOptions = new ReadOptions();
-        writeOptions = new WriteOptions();
-        rocksTxOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
-        rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
-        readOptions.setSnapshot(rocksTransaction.getSnapshot());
+        rocks = new Rocks();
     }
 
     static class Cache {
@@ -161,7 +156,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
     public void rollback() {
         try {
             graphMgr.clear();
-            rocksTransaction.rollback();
+            rocks.transaction.rollback();
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
@@ -169,10 +164,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
     void closeResources() {
         closeStorage();
-        rocksTxOptions.close();
-        writeOptions.close();
-        readOptions.close();
-        rocksTransaction.close();
+        rocks.close();
         session.remove(this);
     }
 
@@ -192,6 +184,30 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
     RocksTransaction.Data asData() {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksTransaction.Data.class)));
+    }
+
+    class Rocks {
+        final WriteOptions writeOptions;
+        final ReadOptions readOptions;
+        final OptimisticTransactionOptions transactionOptions;
+        final Transaction transaction;
+        final Snapshot snapshot;
+
+        Rocks() {
+            writeOptions = new WriteOptions();
+            transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
+            transaction = session.rocks().beginTransaction(writeOptions, transactionOptions);
+            snapshot = transaction.getSnapshot();
+            readOptions = new ReadOptions().setSnapshot(snapshot);
+        }
+
+        void close() {
+            readOptions.close();
+            snapshot.close();
+            transaction.close();
+            transactionOptions.close();
+            writeOptions.close();
+        }
     }
 
     static class Schema extends RocksTransaction {
@@ -263,11 +279,11 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
                     // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
                     // TODO: We should benchmark this
-                    rocksTransaction.disableIndexing();
+                    rocks.transaction.disableIndexing();
                     conceptMgr.validateTypes();
                     graphMgr.schema().commit();
                     lock = session.database.dataReadSchemaLock().writeLock();
-                    rocksTransaction.commit();
+                    rocks.transaction.commit();
                 } catch (RocksDBException e) {
                     rollback();
                     throw new GraknException(e);
@@ -329,9 +345,9 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
             public void refresh() {
                 assert type.isRead();
-                final Transaction oldRocksTransaction = rocksTransaction;
-                rocksTransaction = session.rocks().beginTransaction(writeOptions, rocksTxOptions);
-                oldRocksTransaction.close();
+                Rocks oldRocks = rocks;
+                rocks = new Rocks();
+                oldRocks.close();
             }
         }
     }
@@ -395,10 +411,10 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
                     // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
                     // TODO: We should benchmark this
-                    rocksTransaction.disableIndexing();
+                    rocks.transaction.disableIndexing();
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
-                    rocksTransaction.commit();
+                    rocks.transaction.commit();
                 } catch (RocksDBException e) {
                     rollback();
                     throw new GraknException(e);
@@ -462,7 +478,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             try {
                 // We don't need to check isOpen.get() as tx.commit() does not involve this method
                 if (type.isWrite()) readWriteLock.lockRead();
-                return rocksTransaction.get(readOptions, key);
+                return rocks.transaction.get(rocks.readOptions, key);
             } catch (RocksDBException | InterruptedException e) {
                 throw exception(e);
             } finally {
@@ -489,7 +505,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             validateTransactionIsOpen();
             try {
                 if (isOpen.get()) readWriteLock.lockWrite();
-                rocksTransaction.delete(key);
+                rocks.transaction.delete(key);
             } catch (RocksDBException | InterruptedException e) {
                 throw exception(e);
             } finally {
@@ -507,7 +523,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             validateTransactionIsOpen();
             try {
                 if (isOpen.get()) readWriteLock.lockWrite();
-                rocksTransaction.put(key, value);
+                rocks.transaction.put(key, value);
             } catch (RocksDBException | InterruptedException e) {
                 throw exception(e);
             } finally {
@@ -525,7 +541,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
             validateTransactionIsOpen();
             try {
                 readWriteLock.lockWrite();
-                rocksTransaction.putUntracked(key, value);
+                rocks.transaction.putUntracked(key, value);
             } catch (RocksDBException | InterruptedException e) {
                 throw exception(e);
             } finally {
@@ -568,7 +584,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
                 final org.rocksdb.RocksIterator iterator = recycled.poll();
                 if (iterator != null) return iterator;
             }
-            return rocksTransaction.getIterator(readOptions);
+            return rocks.transaction.getIterator(rocks.readOptions);
         }
 
         public void recycle(org.rocksdb.RocksIterator rocksIterator) {
