@@ -36,7 +36,6 @@ public class ExecutorService {
         eventLoopGroup = new EventLoopGroup(parallelisationFactor, "grakn-elg");
     }
 
-
     public static synchronized void init(int parallelisationFactor) {
         assert PARALLELISATION_FACTOR == -1 || PARALLELISATION_FACTOR == parallelisationFactor;
         if (singleton == null) {

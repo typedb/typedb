@@ -19,6 +19,7 @@
 package grakn.core.common.async;
 
 import grakn.common.collection.Either;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -76,10 +77,11 @@ public class ProducerBuffer<T> {
     public void mayProduce() {
         int available = bufferMaxSize - queue.size() - pending.get();
         if (available > bufferMaxSize - bufferMinSize) {
-            assert !producers.isEmpty();
-            // TODO: should we call this method asynchronously?
-            producers.peek().produce(available, parallelisation, sink);
             pending.addAndGet(available);
+            ExecutorService.forkJoinPool().submit(() -> {
+                assert !producers.isEmpty();
+                producers.peek().produce(available, parallelisation, sink);
+            });
         }
     }
 

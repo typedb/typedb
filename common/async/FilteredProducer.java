@@ -31,8 +31,8 @@ public class FilteredProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(int count, int parallelisation, Producer.Sink<T> sink) {
-        baseProducer.produce(count, parallelisation, new Sink(sink, parallelisation));
+    public void produce(int count, int maxParallelisation, Producer.Sink<T> sink) {
+        baseProducer.produce(count, maxParallelisation, new Sink(sink, maxParallelisation));
     }
 
     @Override

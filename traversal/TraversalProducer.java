@@ -27,7 +27,7 @@ import java.util.Map;
 public class TraversalProducer implements Producer<Map<Reference, Vertex<?, ?>>> {
 
     @Override
-    public void produce(int count, int parallelisation, Sink<Map<Reference, Vertex<?, ?>>> sink) {
+    public void produce(int count, int maxParallelisation, Sink<Map<Reference, Vertex<?, ?>>> sink) {
 
     }
 

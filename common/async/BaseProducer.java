@@ -18,6 +18,7 @@
 
 package grakn.core.common.async;
 
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
 
 public class BaseProducer<T> implements Producer<T> {
@@ -29,15 +30,17 @@ public class BaseProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(int count, int parallelisation, Sink<T> sink) {
-        for (int i = 0; i < count; i++) {
-            if (iterator.hasNext()) {
-                sink.put(iterator.next());
-            } else {
-                sink.done();
-                break;
+    public void produce(int count, int maxParallelisation, Sink<T> sink) {
+        ExecutorService.forkJoinPool().submit(() -> {
+            for (int i = 0; i < count; i++) {
+                if (iterator.hasNext()) {
+                    sink.put(iterator.next());
+                } else {
+                    sink.done();
+                    break;
+                }
             }
-        }
+        });
     }
 
     @Override
