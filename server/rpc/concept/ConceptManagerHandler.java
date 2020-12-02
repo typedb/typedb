@@ -150,7 +150,7 @@ public class ConceptManagerHandler {
     }
 
     private void putRule(Transaction.Req request, ConceptProto.ConceptManager.PutRule.Req req) {
-        final Conjunction<? extends Pattern> when = Graql.and(Graql.parsePatterns(req.getWhen()));
+        final Conjunction<? extends Pattern> when = Graql.parsePattern(req.getWhen()).asConjunction();
         final ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
         final Rule rule = conceptManager.putRule(req.getLabel(), when, then);
         final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()

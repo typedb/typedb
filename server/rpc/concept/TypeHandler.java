@@ -47,6 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TY
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
+import static grakn.core.server.rpc.util.ResponseBuilder.Concept.valueType;
 
 public class TypeHandler {
 
@@ -118,7 +119,11 @@ public class TypeHandler {
                 getInstances(request, type.asThingType());
                 return;
             case THING_TYPE_GET_OWNS_REQ:
-                getOwns(request, type.asThingType(), typeReq.getThingTypeGetOwnsReq().getKeysOnly());
+                if (typeReq.getThingTypeGetOwnsReq().getFilterCase() == ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE) {
+                    getOwns(request, type.asThingType(), valueType(typeReq.getThingTypeGetOwnsReq().getValueType()), typeReq.getThingTypeGetOwnsReq().getKeysOnly());
+                } else {
+                    getOwns(request, type.asThingType(), typeReq.getThingTypeGetOwnsReq().getKeysOnly());
+                }
                 return;
             case THING_TYPE_GET_PLAYS_REQ:
                 getPlays(request, type.asThingType());
@@ -268,6 +273,15 @@ public class TypeHandler {
     private void getOwns(Transaction.Req request, ThingType thingType, boolean keysOnly) {
         transactionRPC.respond(
                 request, thingType.getOwns(keysOnly).iterator(),
+                cons -> response(request, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsRes(
+                        ConceptProto.ThingType.GetOwns.Res.newBuilder().addAllAttributeType(
+                                cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
+        );
+    }
+
+    private void getOwns(Transaction.Req request, ThingType thingType, AttributeType.ValueType valueType, boolean keysOnly) {
+        transactionRPC.respond(
+                request, thingType.getOwns(valueType, keysOnly).iterator(),
                 cons -> response(request, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsRes(
                         ConceptProto.ThingType.GetOwns.Res.newBuilder().addAllAttributeType(
                                 cons.stream().map(ResponseBuilder.Concept::type).collect(Collectors.toList()))))
