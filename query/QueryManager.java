@@ -27,7 +27,6 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.Reasoner;
-import grakn.core.traversal.TraversalEngine;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -49,8 +48,8 @@ public class QueryManager {
     private final ConceptManager conceptMgr;
     private final Context.Transaction transactionCtx;
 
-    public QueryManager(TraversalEngine traversalEng, ConceptManager conceptMgr, Context.Transaction transactionCtx) {
-        this.reasoner = new Reasoner(traversalEng, conceptMgr);
+    public QueryManager(ConceptManager conceptMgr, Reasoner reasoner, Context.Transaction transactionCtx) {
+        this.reasoner = reasoner;
         this.conceptMgr = conceptMgr;
         this.transactionCtx = transactionCtx;
     }

@@ -129,6 +129,7 @@ public class SessionSteps {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @Then("sessions in parallel have databases:")
     public void sessions_in_parallel_have_databases(List<String> names) {
         assertEquals(names.size(), sessionsParallel.size());

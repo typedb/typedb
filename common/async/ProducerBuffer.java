@@ -28,6 +28,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
+
 public class ProducerBuffer<T> {
 
     private static final int BUFFER_MIN_SIZE = 32;
@@ -38,17 +40,27 @@ public class ProducerBuffer<T> {
     private final Iterator iterator;
     private final Sink sink;
     private final AtomicInteger pending;
+    private final int parallelisation;
     private final int bufferMinSize;
     private final int bufferMaxSize;
 
     static class Done {}
 
     public ProducerBuffer(List<Producer<T>> producers) {
-        this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
+        this(producers, PARALLELISATION_FACTOR, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
+    }
+
+    public ProducerBuffer(List<Producer<T>> producers, int parallelisation) {
+        this(producers, parallelisation, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
     }
 
     public ProducerBuffer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+        this(producers, PARALLELISATION_FACTOR, bufferMinSize, bufferMaxSize);
+    }
+
+    public ProducerBuffer(List<Producer<T>> producers, int parallelisation, int bufferMinSize, int bufferMaxSize) {
         this.producers = new ConcurrentLinkedQueue<>(producers);
+        this.parallelisation = parallelisation;
         this.queue = new ManagedBlockingQueue<>();
         this.iterator = new Iterator();
         this.sink = new Sink();
@@ -65,7 +77,8 @@ public class ProducerBuffer<T> {
         int available = bufferMaxSize - queue.size() - pending.get();
         if (available > bufferMaxSize - bufferMinSize) {
             assert !producers.isEmpty();
-            producers.peek().produce(sink, available);
+            // TODO: should we call this method asynchronously?
+            producers.peek().produce(available, parallelisation, sink);
             pending.addAndGet(available);
         }
     }
@@ -98,6 +111,7 @@ public class ProducerBuffer<T> {
                 next = result.first();
                 state = State.FETCHED;
             } else {
+                recycle();
                 state = State.COMPLETED;
             }
 

@@ -49,6 +49,7 @@ public class DatabaseSteps {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @When("connection create databases in parallel:")
     public void connection_create_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
@@ -81,6 +82,7 @@ public class DatabaseSteps {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @When("connection delete databases in parallel:")
     public void connection_delete_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());

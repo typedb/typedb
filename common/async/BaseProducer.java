@@ -29,7 +29,7 @@ public class BaseProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(Sink<T> sink, int count) {
+    public void produce(int count, int parallelisation, Sink<T> sink) {
         for (int i = 0; i < count; i++) {
             if (iterator.hasNext()) {
                 sink.put(iterator.next());

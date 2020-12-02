@@ -39,14 +39,15 @@ native_java_libraries(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
-#        "@maven//:org_rocksdb_rocksdbjni_dev", # Use this JAR for debugging RocksDB on Mac
+        # "@maven//:org_rocksdb_rocksdbjni_dev", # Use this JAR for debugging RocksDB on Mac
         "@maven//:org_rocksdb_rocksdbjni",
     ],
     native_libraries_deps = [
         "//:grakn",
-        "//traversal:traversal",
         "//concept:concept",
-        "//query:query"
+        "//query:query",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
     ],
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",

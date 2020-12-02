@@ -25,6 +25,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.reasoner.tool.TypeHinter;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 
@@ -33,18 +34,23 @@ import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.async.Producers.buffer;
+import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
 import static java.util.stream.Collectors.toList;
 
 public class Reasoner {
 
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
+    private final TypeHinter typeHinter;
     private final ResolverRegistry resolverRegistry;
+    private final ReasonerCache cache;
 
-    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr) {
+    public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, ReasonerCache cache) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
+        this.typeHinter = new TypeHinter(traversalEng, cache);
+        this.cache = cache;
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
@@ -58,8 +64,10 @@ public class Reasoner {
     }
 
     public List<Producer<ConceptMap>> execute(Conjunction conjunction) {
-        Conjunction conjunctionHinted = resolveTypes(conjunction);
-        Producer<ConceptMap> answers = traversalEng.execute(conjunctionHinted.traversal()).map(conceptMgr::conceptMap);
+        Conjunction conjunctionHinted = typeHinter.computeHints(conjunction, PARALLELISATION_FACTOR);
+        Producer<ConceptMap> answers = traversalEng
+                .execute(conjunctionHinted.traversal(), PARALLELISATION_FACTOR)
+                .map(conceptMgr::conceptMap);
 
         // TODO enable reasoner here
         //      ResourceIterator<ConceptMap> answers = link(list(
@@ -79,11 +87,6 @@ public class Reasoner {
 
     public List<Producer<ConceptMap>> execute(Conjunction conjunction, ConceptMap bounds) {
         return null; // TODO
-    }
-
-    private Conjunction resolveTypes(Conjunction conjunction) {
-        // TODO implement Type Inference
-        return conjunction;
     }
 
     private ReasonerProducer resolve(Conjunction conjunction) {

@@ -20,6 +20,7 @@ package grakn.core.traversal;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.async.Producer;
+import grakn.core.common.cache.CommonCache;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
@@ -68,11 +69,11 @@ public class Traversal {
         return structure.newIdentifier();
     }
 
-    void initialisePlanner(TraversalCache cache) {
+    void initialisePlanner(CommonCache<Structure, Planner> cache) {
         planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
-    public Producer<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr) {
+    Producer<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, int parallisation) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr);
@@ -81,7 +82,7 @@ public class Traversal {
             return produce(cartesian(planners.parallelStream().map(planner -> {
                 planner.optimise(graphMgr);
                 return planner.procedure().execute(graphMgr, parameters);
-            }).map(p -> buffer(p).iterator()).collect(toList())).map(partialAnswers -> {
+            }).map(p -> buffer(p, parallisation).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(combinedAnswers::putAll);
                 return combinedAnswers;

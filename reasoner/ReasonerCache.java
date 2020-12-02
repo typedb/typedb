@@ -16,31 +16,25 @@
  *
  */
 
-package grakn.core.traversal;
+package grakn.core.reasoner;
 
-import grakn.core.common.async.Producer;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.Vertex;
+import grakn.core.common.cache.CommonCache;
+import grakn.core.common.parameters.Label;
+import grakn.core.pattern.Conjunction;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Map;
+import java.util.Set;
 
-public class TraversalEngine {
+public class ReasonerCache {
 
-    private final GraphManager graphMgr;
-    private final TraversalCache cache;
+    private final CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinterCache;
 
-    public TraversalEngine(GraphManager graphMgr, TraversalCache cache) {
-        this.graphMgr = graphMgr;
-        this.cache = cache;
+    public ReasonerCache() {
+        typeHinterCache = new CommonCache<>();
     }
 
-    public GraphManager graph() {
-        return graphMgr;
-    }
-
-    public Producer<Map<Reference, Vertex<?, ?>>> execute(Traversal traversal, int parallelisation) {
-        traversal.initialisePlanner(cache);
-        return traversal.execute(graphMgr, parallelisation);
+    public CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinter() {
+        return typeHinterCache;
     }
 }

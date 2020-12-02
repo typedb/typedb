@@ -44,7 +44,6 @@ native_java_libraries(
         # External dependencies from Grakn Labs
 
         # External dependencies from Maven
-        "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     mac_deps = [

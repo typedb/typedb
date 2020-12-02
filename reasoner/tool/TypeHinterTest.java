@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.reasoner.inference;
+package grakn.core.reasoner.tool;
 
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.Type;
@@ -36,26 +36,26 @@ import java.util.stream.Stream;
 import static junit.framework.TestCase.assertTrue;
 
 @Ignore
-public class TypeInferenceTest {
+public class TypeHinterTest {
 
     @Test
-    public void isa_inference() {
+    public void isa_hint() {
         String input = "match $p isa person; ";
 
     }
 
     @Test
-    public void isa_bang_inference() {
+    public void isa_bang_hint() {
         String input = "match $p isa! person; ";
     }
 
     @Test
-    public void is_inference() {
+    public void is_hint() {
         String input = "match $p sub entity; $q sub entity; $p is $q;";
     }
 
     @Test
-    public void has_inference() {
+    public void has_hint() {
         String input = "match $p isa person, has name 'bob'; ";
     }
 
@@ -201,7 +201,7 @@ public class TypeInferenceTest {
         //TODO: this test needs to go into integration
         GraphManager graphManager = new GraphManager(null, null);
         Conjunction conjunction = Disjunction.create(graqlQuery.asMatch().conjunction().normalise()).conjunctions().iterator().next();
-        TypeInference.full(conjunction, graphManager);
+        // TypeHinter.computeHintsExhaustive(conjunction, graphManager);
 
 
         for (Variable variable : conjunction.variables()) {

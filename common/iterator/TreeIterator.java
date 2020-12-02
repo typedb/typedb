@@ -25,11 +25,11 @@ import java.util.function.Function;
 public class TreeIterator<T> implements ResourceIterator<T> {
 
     private final Function<T, ResourceIterator<T>> childrenFn;
+    private final LinkedList<ResourceIterator<T>> families;
+    // a 'family' is [an iterator for] a collection of children from the same parent
 
     private T next;
     private State state;
-    private LinkedList<ResourceIterator<T>> families;
-    // a 'family' is [an iterator for] a collection of children from the same parent
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 

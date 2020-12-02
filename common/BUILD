@@ -27,6 +27,7 @@ java_library(
         "@graknlabs_common//:common",
 
         # External Maven Dependencies
+        "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],

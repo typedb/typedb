@@ -18,7 +18,6 @@
 
 package grakn.core.rocks;
 
-import grakn.common.collection.Pair;
 import grakn.core.Grakn;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
@@ -33,6 +32,8 @@ import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
 import grakn.core.query.QueryManager;
+import grakn.core.reasoner.Reasoner;
+import grakn.core.reasoner.ReasonerCache;
 import grakn.core.traversal.TraversalCache;
 import grakn.core.traversal.TraversalEngine;
 import org.rocksdb.AbstractImmutableNativeReference;
@@ -73,6 +74,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
     GraphManager graphMgr;
     ConceptManager conceptMgr;
     TraversalEngine traversalEng;
+    Reasoner reasoner;
     QueryManager queryMgr;
     AtomicBoolean isOpen;
 
@@ -89,10 +91,36 @@ abstract class RocksTransaction implements Grakn.Transaction {
         readOptions.setSnapshot(rocksTransaction.getSnapshot());
     }
 
-    void initialise(GraphManager graphMgr, TraversalCache traversalCache) {
+    static class Cache {
+
+        private final TraversalCache traversalCache;
+        private final ReasonerCache reasonerCache;
+        private final SchemaGraph schemaGraph;
+
+        Cache(SchemaGraph schemaGraph) {
+            this.schemaGraph = schemaGraph;
+            traversalCache = new TraversalCache();
+            reasonerCache = new ReasonerCache();
+        }
+
+        public TraversalCache traversal() {
+            return traversalCache;
+        }
+
+        public ReasonerCache reasoner() {
+            return reasonerCache;
+        }
+
+        public SchemaGraph schemaGraph() {
+            return schemaGraph;
+        }
+    }
+
+    void initialise(GraphManager graphMgr, Cache cache) {
         conceptMgr = new ConceptManager(graphMgr);
-        traversalEng = new TraversalEngine(graphMgr, traversalCache);
-        queryMgr = new QueryManager(traversalEng, conceptMgr, context);
+        traversalEng = new TraversalEngine(graphMgr, cache.traversal());
+        reasoner = new Reasoner(conceptMgr, traversalEng, cache.reasoner());
+        queryMgr = new QueryManager(conceptMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
     }
 
@@ -168,7 +196,7 @@ abstract class RocksTransaction implements Grakn.Transaction {
 
     static class Schema extends RocksTransaction {
 
-        private final TraversalCache traversalCache;
+        private final Cache cache;
         private boolean mayClose;
 
         SchemaCoreStorage storage;
@@ -179,8 +207,8 @@ abstract class RocksTransaction implements Grakn.Transaction {
             final SchemaGraph schemaGraph = new SchemaGraph(storage, type.isRead());
             final DataGraph dataGraph = new DataGraph(storage, schemaGraph);
             graphMgr = new GraphManager(schemaGraph, dataGraph);
-            traversalCache = new TraversalCache();
-            initialise(graphMgr, traversalCache);
+            cache = new Cache(schemaGraph);
+            initialise(graphMgr, cache);
             mayClose = false;
         }
 
@@ -194,12 +222,12 @@ abstract class RocksTransaction implements Grakn.Transaction {
             return this;
         }
 
-        SchemaGraph graph() {
-            return graphMgr.schema();
+        public Cache cache() {
+            return cache;
         }
 
-        TraversalCache traversalCache() {
-            return traversalCache;
+        SchemaGraph graph() {
+            return graphMgr.schema();
         }
 
         @Override
@@ -315,13 +343,13 @@ abstract class RocksTransaction implements Grakn.Transaction {
         public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
             storage = new CoreStorage();
-            final long lock = session.database.dataReadSchemaLock().readLock();
-            final Pair<SchemaGraph, TraversalCache> cache = session.database.getCache();
+            long lock = session.database.dataReadSchemaLock().readLock();
+            Cache cache = session.database.cache();
             session.database.dataReadSchemaLock().unlockRead(lock);
-            cache.first().incrementReference();
-            final DataGraph dataGraph = new DataGraph(storage, cache.first());
-            graphMgr = new GraphManager(cache.first(), dataGraph);
-            initialise(graphMgr, cache.second());
+            cache.schemaGraph().incrementReference();
+            final DataGraph dataGraph = new DataGraph(storage, cache.schemaGraph());
+            graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
+            initialise(graphMgr, cache);
         }
 
 

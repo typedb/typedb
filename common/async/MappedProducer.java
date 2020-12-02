@@ -31,8 +31,8 @@ public class MappedProducer<T, U> implements Producer<U> {
     }
 
     @Override
-    public void produce(Producer.Sink<U> sink, int count) {
-        baseProducer.produce(new Sink(sink), count);
+    public void produce(int count, int parallelisation, Producer.Sink<U> sink) {
+        baseProducer.produce(count, parallelisation, new Sink(sink));
     }
 
     @Override

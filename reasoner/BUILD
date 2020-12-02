@@ -22,6 +22,7 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 package(default_visibility = [
     "//query:__subpackages__",
     "//reasoner:__subpackages__",
+    "//rocks:__pkg__",
     "//test/integration:__pkg__",
 ])
 
@@ -30,10 +31,10 @@ native_java_libraries(
     srcs = glob(
         ["*.java",
          "concludable/*.java",
-         "inference/*.java",
          "resolution/*.java",
          "resolution/framework/*.java",
          "resolution/resolver/*.java",
+         "tool/*.java",
          ],
         exclude = ["*Test.java", "*/*Test.java"],
     ),
@@ -63,9 +64,9 @@ native_java_libraries(
 )
 
 host_compatible_java_test(
-    name = "test-type-inference",
+    name = "test-type-hinter",
     srcs = [
-        "inference/TypeInferenceTest.java",
+        "tool/TypeHinterTest.java",
     ],
     native_libraries_deps = [
         "//pattern:pattern",
@@ -80,7 +81,7 @@ host_compatible_java_test(
         "//graph:graph",
         "//common:common",
     ],
-    test_class = "grakn.core.reasoner.TypeInferenceTest",
+    test_class = "grakn.core.reasoner.tool.TypeHinterTest",
 )
 
 host_compatible_java_test(

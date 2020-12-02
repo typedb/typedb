@@ -13,31 +13,32 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.common.async;
+package grakn.core.common.cache;
+
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import java.util.function.Function;
-import java.util.function.Predicate;
 
-public interface Producer<T> {
+import static java.util.concurrent.TimeUnit.MINUTES;
 
-    void produce(int count, int parallelisation, Sink<T> sink);
+public class CommonCache<KEY, VALUE> {
 
-    void recycle();
+    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through grakn.properties
+    private static final int CACHE_TIMEOUT_MINUTES = 1_440;
+    private final com.github.benmanes.caffeine.cache.Cache<KEY, VALUE> cache;
 
-    default <U> Producer<U> map(Function<T, U> mappingFn) {
-        return new MappedProducer<>(this, mappingFn);
+    public CommonCache() {
+        this(CACHE_SIZE, CACHE_TIMEOUT_MINUTES);
     }
 
-    default Producer<T> filter(Predicate<T> predicate) {
-        return new FilteredProducer<>(this, predicate);
+    public CommonCache(int size, int timeoutMinutes) {
+        cache = Caffeine.newBuilder().maximumSize(size).expireAfterAccess(timeoutMinutes, MINUTES).build();
     }
 
-    interface Sink<U> {
-
-        void put(U item);
-
-        void done();
+    public VALUE get(KEY key, Function<KEY, VALUE> function) {
+        return cache.get(key, function);
     }
 }

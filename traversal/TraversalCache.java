@@ -18,30 +18,17 @@
 
 package grakn.core.traversal;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
+import grakn.core.common.cache.CommonCache;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;
 
-import java.util.function.Function;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-public class TraversalCache {
-
-    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through grakn.properties
-    private static final int CACHE_TIMEOUT_MINUTES = 1_440;
-    private final Cache<Structure, Planner> cache;
+public class TraversalCache extends CommonCache<Structure, Planner> {
 
     public TraversalCache() {
-        this(CACHE_SIZE, CACHE_TIMEOUT_MINUTES);
+        super();
     }
 
-    public TraversalCache(int size, int timeoutMinutes) {
-        cache = Caffeine.newBuilder().maximumSize(size).expireAfterAccess(timeoutMinutes, MINUTES).build();
-    }
-
-    public Planner get(Structure structure, Function<Structure, Planner> constructor) {
-        return cache.get(structure, constructor);
+    public TraversalCache(int size, int timeOutMinutes) {
+        super(size, timeOutMinutes);
     }
 }

@@ -34,15 +34,31 @@ public class Producers {
         return new ProducerBuffer<>(list(producer));
     }
 
+    public static <T> ProducerBuffer<T> buffer(Producer<T> producer, int parallelisation) {
+        return new ProducerBuffer<>(list(producer), parallelisation);
+    }
+
     public static <T> ProducerBuffer<T> buffer(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
         return new ProducerBuffer<>(list(producer), bufferMinSize, bufferMaxSize);
+    }
+
+    public static <T> ProducerBuffer<T> buffer(Producer<T> producer, int parallisation, int bufferMinSize, int bufferMaxSize) {
+        return new ProducerBuffer<>(list(producer), parallisation, bufferMinSize, bufferMaxSize);
     }
 
     public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers) {
         return new ProducerBuffer<>(producers);
     }
 
+    public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers, int parallelisation) {
+        return new ProducerBuffer<>(producers, parallelisation);
+    }
+
     public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         return new ProducerBuffer<>(producers, bufferMinSize, bufferMaxSize);
+    }
+
+    public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers, int parallelisation, int bufferMinSize, int bufferMaxSize) {
+        return new ProducerBuffer<>(producers, parallelisation, bufferMinSize, bufferMaxSize);
     }
 }

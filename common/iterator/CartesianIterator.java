@@ -58,6 +58,7 @@ public class CartesianIterator<T> implements ResourceIterator<List<T>> {
                 result.add(next);
             } else {
                 result.clear();
+                recycle();
                 state = State.COMPLETED;
                 return false;
             }

@@ -23,9 +23,7 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.KeyGenerator;
-import grakn.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -40,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -129,10 +126,10 @@ public class RocksDatabase implements Grakn.Database {
         return session;
     }
 
-    synchronized Pair<SchemaGraph, TraversalCache> getCache() {
+    synchronized RocksTransaction.Cache cache() {
         if (cachedSchemaSession == null) cachedSchemaSession = new RocksSession.Schema(this, new Options.Session());
         if (cachedSchemaTransaction == null) cachedSchemaTransaction = cachedSchemaSession.transaction(READ);
-        return pair(cachedSchemaTransaction.graph(), cachedSchemaTransaction.traversalCache());
+        return cachedSchemaTransaction.cache();
     }
 
     synchronized void closeCachedSchemaGraph() {
