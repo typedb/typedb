@@ -25,8 +25,8 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ExecutorService {
 
-    public static int PARALLELISATION_FACTOR;
-    private static ExecutorService singleton;
+    public static int PARALLELISATION_FACTOR = -1;
+    private static ExecutorService singleton = null;
 
     private ForkJoinPool forkJoinPool;
     private EventLoopGroup eventLoopGroup;
@@ -38,9 +38,11 @@ public class ExecutorService {
 
 
     public static synchronized void init(int parallelisationFactor) {
-        assert singleton == null;
-        PARALLELISATION_FACTOR = parallelisationFactor;
-        singleton = new ExecutorService(parallelisationFactor);
+        assert PARALLELISATION_FACTOR == -1 || PARALLELISATION_FACTOR == parallelisationFactor;
+        if (singleton == null) {
+            PARALLELISATION_FACTOR = parallelisationFactor;
+            singleton = new ExecutorService(parallelisationFactor);
+        }
     }
 
     public static ForkJoinPool forkJoinPool() {
