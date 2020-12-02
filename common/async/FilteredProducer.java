@@ -31,8 +31,8 @@ public class FilteredProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(int count, int maxParallelisation, Producer.Sink<T> sink) {
-        baseProducer.produce(count, maxParallelisation, new Sink(sink, maxParallelisation));
+    public void produce(int count, Producer.Sink<T> sink) {
+        baseProducer.produce(count, new Sink(sink));
     }
 
     @Override
@@ -43,17 +43,15 @@ public class FilteredProducer<T> implements Producer<T> {
     private class Sink implements Producer.Sink<T> {
 
         private final Producer.Sink<T> baseSink;
-        private final int parallelisation;
 
-        Sink(Producer.Sink<T> baseSink, int parallelisation) {
+        Sink(Producer.Sink<T> baseSink) {
             this.baseSink = baseSink;
-            this.parallelisation = parallelisation;
         }
 
         @Override
         public void put(T item) {
             if (predicate.test(item)) baseSink.put(item);
-            else baseProducer.produce(1, parallelisation, this);
+            else baseProducer.produce(1, this);
         }
 
         @Override

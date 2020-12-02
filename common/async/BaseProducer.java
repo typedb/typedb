@@ -30,7 +30,7 @@ public class BaseProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(int count, int maxParallelisation, Sink<T> sink) {
+    public void produce(int count, Sink<T> sink) {
         ExecutorService.forkJoinPool().submit(() -> {
             for (int i = 0; i < count; i++) {
                 if (iterator.hasNext()) {

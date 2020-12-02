@@ -73,16 +73,16 @@ public class Traversal {
         planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
-    Producer<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, int parallisation) {
+    Producer<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, int parallelisation) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr);
-            return planners.get(0).procedure().execute(graphMgr, parameters);
+            return planners.get(0).procedure().execute(graphMgr, parameters, parallelisation);
         } else {
             return produce(cartesian(planners.parallelStream().map(planner -> {
                 planner.optimise(graphMgr);
-                return planner.procedure().execute(graphMgr, parameters);
-            }).map(p -> buffer(p, parallisation).iterator()).collect(toList())).map(partialAnswers -> {
+                return planner.procedure().execute(graphMgr, parameters, parallelisation);
+            }).map(p -> buffer(p).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(combinedAnswers::putAll);
                 return combinedAnswers;

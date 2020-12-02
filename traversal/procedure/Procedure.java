@@ -102,7 +102,7 @@ public class Procedure {
         ).asType();
     }
 
-    public TraversalProducer execute(GraphManager graphMgr, Traversal.Parameters parameters) {
-        return null;
+    public TraversalProducer execute(GraphManager graphMgr, Traversal.Parameters parameters, int parallelisation) {
+        return new TraversalProducer(graphMgr, this, parameters, parallelisation);
     }
 }

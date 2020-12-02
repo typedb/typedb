@@ -19,15 +19,23 @@
 package grakn.core.traversal;
 
 import grakn.core.common.async.Producer;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
+import grakn.core.traversal.procedure.Procedure;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Map;
 
 public class TraversalProducer implements Producer<Map<Reference, Vertex<?, ?>>> {
 
+    private final int parallelisation;
+
+    public TraversalProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters, int parallelisation) {
+        this.parallelisation = parallelisation;
+    }
+
     @Override
-    public void produce(int count, int maxParallelisation, Sink<Map<Reference, Vertex<?, ?>>> sink) {
+    public void produce(int count, Sink<Map<Reference, Vertex<?, ?>>> sink) {
 
     }
 
