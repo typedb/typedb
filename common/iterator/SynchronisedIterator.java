@@ -16,35 +16,33 @@
  *
  */
 
-package grakn.core.common.async;
+package grakn.core.common.iterator;
 
-import grakn.core.common.concurrent.ExecutorService;
-import grakn.core.common.iterator.ResourceIterator;
+public  class SynchronisedIterator<T> implements ResourceIterator<T> {
 
-public class BaseProducer<T> implements Producer<T> {
+    private final ResourceIterator<T> iterator;
 
-    private ResourceIterator<T> iterator;
-
-    BaseProducer(ResourceIterator<T> iterator) {
+    public  SynchronisedIterator(ResourceIterator<T> iterator) {
         this.iterator = iterator;
     }
 
-    @Override
-    public void produce(Sink<T> sink, int count) {
-        ExecutorService.forkJoinPool().submit(() -> {
-            for (int i = 0; i < count; i++) {
-                if (iterator.hasNext()) {
-                    sink.put(iterator.next());
-                } else {
-                    sink.done();
-                    break;
-                }
-            }
-        });
+    public synchronized T atomicNext() {
+        if (hasNext()) return next();
+        else return null;
     }
 
     @Override
-    public void recycle() {
+    public synchronized boolean hasNext() {
+        return iterator.hasNext();
+    }
+
+    @Override
+    public synchronized T next() {
+        return iterator.next();
+    }
+
+    @Override
+    public synchronized void recycle() {
         iterator.recycle();
     }
 }

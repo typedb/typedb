@@ -31,8 +31,8 @@ public class FilteredProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(int count, Producer.Sink<T> sink) {
-        baseProducer.produce(count, new Sink(sink));
+    public void produce(Producer.Sink<T> sink, int count) {
+        baseProducer.produce(new Sink(sink), count);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class FilteredProducer<T> implements Producer<T> {
         @Override
         public void put(T item) {
             if (predicate.test(item)) baseSink.put(item);
-            else baseProducer.produce(1, this);
+            else baseProducer.produce(this, 1);
         }
 
         @Override

@@ -19,9 +19,15 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
+import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Identifier;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.graph.TraversalVertex;
 import graql.lang.common.GraqlToken;
 
@@ -32,7 +38,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static java.util.stream.Collectors.toSet;
 
-abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
+public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private final Procedure procedure;
     private final boolean isStartingVertex;
@@ -43,6 +49,12 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
         this.isStartingVertex = isStartingVertex;
     }
 
+    public abstract ResourceIterator<VERTEX> execute(GraphManager graphMgr, Traversal.Parameters parameters);
+
+    public boolean isStartingVertex() {
+        return isStartingVertex;
+    }
+
     public ProcedureVertex.Thing asThing() {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(ProcedureVertex.Thing.class)));
     }
@@ -51,7 +63,7 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(ProcedureVertex.Type.class)));
     }
 
-    static class Thing extends ProcedureVertex<Properties.Thing> {
+    static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
         private Set<Filter.Thing> filters;
 
@@ -71,13 +83,18 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
         }
 
         @Override
+        public ResourceIterator<ThingVertex> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
+            return null; // TODO
+        }
+
+        @Override
         public boolean isThing() { return true; }
 
         @Override
         public ProcedureVertex.Thing asThing() { return this; }
     }
 
-    static class Type extends ProcedureVertex<Properties.Type> {
+    static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
         private Set<Filter.Type> filters;
 
@@ -94,6 +111,11 @@ abstract class ProcedureVertex<PROPERTIES extends TraversalVertex.Properties> ex
         public void props(Properties.Type properties) {
             filters = Filter.Type.of(properties);
             super.props(properties);
+        }
+
+        @Override
+        public ResourceIterator<TypeVertex> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
+            return null; // TODO
         }
 
         @Override

@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 
 public interface Producer<T> {
 
-    void produce(int count, Sink<T> sink);
+    void produce(Sink<T> sink, int count);
 
     void recycle();
 

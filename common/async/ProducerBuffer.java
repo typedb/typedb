@@ -68,7 +68,7 @@ public class ProducerBuffer<T> {
             pending.addAndGet(available);
             ExecutorService.forkJoinPool().submit(() -> {
                 assert !producers.isEmpty();
-                producers.peek().produce(available, sink);
+                producers.peek().produce(sink, available);
             });
         }
     }
@@ -136,6 +136,7 @@ public class ProducerBuffer<T> {
         public void done() {
             assert !producers.isEmpty();
             producers.remove();
+            pending.set(0);
 
             if (producers.isEmpty()) {
                 try {
@@ -143,6 +144,8 @@ public class ProducerBuffer<T> {
                 } catch (InterruptedException e) {
                     throw GraknException.of(e);
                 }
+            } else {
+                mayProduce();
             }
         }
     }

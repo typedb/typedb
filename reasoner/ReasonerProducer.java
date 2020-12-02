@@ -23,7 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 public class ReasonerProducer implements Producer<ConceptMap> {
 
     @Override
-    public void produce(int count, Sink<ConceptMap> sink) {
+    public void produce(Sink<ConceptMap> sink, int count) {
         // TODO
     }
 

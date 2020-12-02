@@ -18,7 +18,9 @@
 
 package grakn.core.traversal.procedure;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalProducer;
@@ -32,10 +34,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class Procedure {
 
-    private final Map<Identifier, ProcedureVertex<?>> vertices;
+    private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
     private final Set<ProcedureEdge<?, ?>> edges;
 
     private Procedure() {
@@ -51,12 +54,16 @@ public class Procedure {
         return procedure;
     }
 
+    public Stream<ProcedureVertex<?, ?>> vertices() {
+        return vertices.values().stream();
+    }
+
     private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
                                 Set<PlannerEdge.Directional<?, ?>> registeredEdges) {
         if (registeredVertices.contains(plannerVertex)) return;
         registeredVertices.add(plannerVertex);
         List<PlannerVertex<?>> adjacents = new ArrayList<>();
-        ProcedureVertex<?> vertex = vertex(plannerVertex);
+        ProcedureVertex<?, ?> vertex = vertex(plannerVertex);
         if (vertex.isThing()) vertex.asThing().props(plannerVertex.asThing().props());
         else vertex.asType().props(plannerVertex.asType().props());
         plannerVertex.outs().forEach(plannerEdge -> {
@@ -77,15 +84,15 @@ public class Procedure {
     }
 
     private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
-        ProcedureVertex<?> from = vertex(plannerEdge.from());
-        ProcedureVertex<?> to = vertex(plannerEdge.to());
+        ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
+        ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
         edges.add(edge);
         from.out(edge);
         to.in(edge);
     }
 
-    private ProcedureVertex<?> vertex(PlannerVertex<?> plannerVertex) {
+    private ProcedureVertex<?, ?> vertex(PlannerVertex<?> plannerVertex) {
         if (plannerVertex.isThing()) return thingVertex(plannerVertex.asThing());
         else return typeVertex(plannerVertex.asType());
     }

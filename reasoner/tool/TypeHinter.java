@@ -28,6 +28,7 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
+import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
@@ -451,7 +452,7 @@ public class TypeHinter {
 
         TypeVariable newHintingeVariable() {
             TypeVariable tempVar = new TypeVariable(Identifier.Variable.of(
-                    new grakn.core.pattern.variable.Reference.System("temp" + addAndGetCounter())));
+                    new SystemReference("temp" + addAndGetCounter())));
             varHints.put(tempVar.reference(), tempVar);
             return tempVar;
         }
@@ -459,7 +460,7 @@ public class TypeHinter {
         public TypeVariable convert(RelationConstraint.RolePlayer key) {
             if (!rolePlayerHints.containsKey(key)) {
                 TypeVariable newTypeVar = new TypeVariable(Identifier.Variable.of(
-                        new grakn.core.pattern.variable.Reference.System("temp" + addAndGetCounter())));
+                        new SystemReference("temp" + addAndGetCounter())));
                 rolePlayerHints.put(key, newTypeVar);
             }
             return rolePlayerHints.get(key);

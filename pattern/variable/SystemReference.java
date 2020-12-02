@@ -19,18 +19,16 @@
 package grakn.core.pattern.variable;
 
 import graql.lang.common.GraqlToken;
+import graql.lang.pattern.variable.Reference;
 
-public class Reference {
-    public static class System extends graql.lang.pattern.variable.Reference.Name {
-        public System(final String name) {
-            super(name);
-        }
+public class SystemReference extends Reference.Name {
 
-        @Override
-        public String syntax() {
-            return GraqlToken.Char.$SYS + name;
-        }
+    public SystemReference(final String name) {
+        super(name);
+    }
+
+    @Override
+    public String syntax() {
+        return GraqlToken.Char.$SYS + name;
     }
 }
-
-

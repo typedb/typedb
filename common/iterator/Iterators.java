@@ -76,6 +76,10 @@ public class Iterators {
         return new ParallelIterators<>(iterators, bufferSize, bufferMultiplier);
     }
 
+    public static <T> SynchronisedIterator<T> synchronised(ResourceIterator<T> iterator) {
+        return new SynchronisedIterator<>(iterator);
+    }
+
     public static <T> CartesianIterator<T> cartesian(List<ResourceIterator<T>> iteratorProducers) {
         return new CartesianIterator<>(iteratorProducers);
     }

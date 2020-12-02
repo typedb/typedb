@@ -35,7 +35,7 @@ import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
 import static java.util.Collections.emptyIterator;
 
-abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?>, VERTEX_TO extends ProcedureVertex<?>>
+abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
 
     private final int order;
@@ -47,7 +47,7 @@ abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?>, VERTEX_TO e
         this.direction = direction;
     }
 
-    public static ProcedureEdge<?, ?> of(ProcedureVertex<?> from, ProcedureVertex<?> to, PlannerEdge.Directional<?, ?> plannerEdge) {
+    public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to, PlannerEdge.Directional<?, ?> plannerEdge) {
         int order = plannerEdge.orderNumber();
         Encoding.Direction.Edge dir = plannerEdge.direction();
         if (plannerEdge.isEqual()) {
@@ -72,14 +72,14 @@ abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?>, VERTEX_TO e
         return direction;
     }
 
-    static class Equal extends ProcedureEdge<ProcedureVertex<?>, ProcedureVertex<?>> {
+    static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
-        private Equal(ProcedureVertex<?> from, ProcedureVertex<?> to, int order, Encoding.Direction.Edge direction) {
+        private Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to, int order, Encoding.Direction.Edge direction) {
             super(from, to, order, direction);
         }
 
         @Override
-        ResourceIterator<ProcedureVertex<?>> execute(ProcedureVertex<?> procedureVertex, Traversal.Parameters parameters) {
+        ResourceIterator<ProcedureVertex<?, ?>> execute(ProcedureVertex<?, ?> procedureVertex, Traversal.Parameters parameters) {
             return iterate(emptyIterator()); // TODO
         }
     }
@@ -100,14 +100,14 @@ abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?>, VERTEX_TO e
         }
     }
 
-    static abstract class Native<VERTEX_NATIVE_FROM extends ProcedureVertex<?>, VERTEX_NATIVE_TO extends ProcedureVertex<?>>
+    static abstract class Native<VERTEX_NATIVE_FROM extends ProcedureVertex<?, ?>, VERTEX_NATIVE_TO extends ProcedureVertex<?, ?>>
             extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
         private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to, int order, Encoding.Direction.Edge direction) {
             super(from, to, order, direction);
         }
 
-        static Native<?, ?> of(ProcedureVertex<?> from, ProcedureVertex<?> to, PlannerEdge.Native.Directional<?, ?> edge) {
+        static Native<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to, PlannerEdge.Native.Directional<?, ?> edge) {
             boolean isForward = edge.direction().isForward();
             if (edge.isIsa()) {
                 int orderNumber = edge.orderNumber();
@@ -123,7 +123,7 @@ abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?>, VERTEX_TO e
             }
         }
 
-        static abstract class Isa<VERTEX_ISA_FROM extends ProcedureVertex<?>, VERTEX_ISA_TO extends ProcedureVertex<?>>
+        static abstract class Isa<VERTEX_ISA_FROM extends ProcedureVertex<?, ?>, VERTEX_ISA_TO extends ProcedureVertex<?, ?>>
                 extends Native<VERTEX_ISA_FROM, VERTEX_ISA_TO> {
 
             private final boolean isTransitive;
