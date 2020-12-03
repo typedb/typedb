@@ -33,7 +33,9 @@ import graql.lang.common.GraqlToken;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static java.util.stream.Collectors.toSet;
@@ -42,17 +44,41 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
     private final Procedure procedure;
     private final boolean isStartingVertex;
+    private final AtomicReference<Set<Integer>> dependedEdgeOrders;
+    private ProcedureEdge<?, ?> iteratorEdge;
 
     ProcedureVertex(Identifier identifier, Procedure procedure, boolean isStartingVertex) {
         super(identifier);
         this.procedure = procedure;
         this.isStartingVertex = isStartingVertex;
+        this.dependedEdgeOrders = new AtomicReference<>(null);
     }
 
     public abstract ResourceIterator<VERTEX> execute(GraphManager graphMgr, Traversal.Parameters parameters);
 
+    @Override
+    public void in(ProcedureEdge<?, ?> edge) {
+        super.in(edge);
+        if (iteratorEdge == null || edge.order() < iteratorEdge.order()) iteratorEdge = edge;
+    }
+
     public boolean isStartingVertex() {
         return isStartingVertex;
+    }
+
+    public Set<Integer> dependedEdgeOrders() {
+        dependedEdgeOrders.compareAndSet(null, computeDependedEdgeOrders());
+        return dependedEdgeOrders.get();
+    }
+
+    private Set<Integer> computeDependedEdgeOrders() {
+        if (ins().isEmpty()) return set();
+        else return set(iteratorEdge().from().dependedEdgeOrders(), iteratorEdge().order());
+    }
+
+    public ProcedureEdge<?, ?> iteratorEdge() {
+        if (ins().isEmpty()) return null;
+        else return iteratorEdge;
     }
 
     public ProcedureVertex.Thing asThing() {

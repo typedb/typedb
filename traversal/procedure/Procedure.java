@@ -18,15 +18,16 @@
 
 package grakn.core.traversal.procedure;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalProducer;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.planner.PlannerEdge;
 import grakn.core.traversal.planner.PlannerVertex;
+import grakn.core.traversal.producer.GraphProducer;
+import grakn.core.traversal.producer.TraversalProducer;
+import grakn.core.traversal.producer.VertexProducer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,18 +37,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+
 public class Procedure {
 
     private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
-    private final Set<ProcedureEdge<?, ?>> edges;
+    private final ArrayList<ProcedureEdge<?, ?>> edges;
+    private ProcedureVertex<?, ?> startVertex;
 
-    private Procedure() {
+    private Procedure(int edgeSize) {
         vertices = new HashMap<>();
-        edges = new HashSet<>();
+        edges = new ArrayList<>(edgeSize);
     }
 
     public static Procedure create(Planner planner) {
-        Procedure procedure = new Procedure();
+        Procedure procedure = new Procedure(planner.edges().size());
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
         Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
         planner.vertices().forEach(vertex -> procedure.registerVertex(vertex, registeredVertices, registeredEdges));
@@ -56,6 +60,18 @@ public class Procedure {
 
     public Stream<ProcedureVertex<?, ?>> vertices() {
         return vertices.values().stream();
+    }
+
+    public ProcedureVertex<?, ?> vertex(Identifier identifier) {
+        return vertices.get(identifier);
+    }
+
+    public ProcedureEdge<?, ?> edge(int pos) {
+        return edges.get(pos - 1);
+    }
+
+    public int edgesCount() {
+        return edges.size();
     }
 
     private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
@@ -87,7 +103,7 @@ public class Procedure {
         ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
         ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
-        edges.add(edge);
+        edges.set(edge.order() - 1, edge);
         from.out(edge);
         to.in(edge);
     }
@@ -110,6 +126,15 @@ public class Procedure {
     }
 
     public TraversalProducer execute(GraphManager graphMgr, Traversal.Parameters parameters, int parallelisation) {
-        return new TraversalProducer(graphMgr, this, parameters, parallelisation);
+        if (edgesCount() == 0) return new VertexProducer(graphMgr, this, parallelisation);
+        else return new GraphProducer(graphMgr, this, parameters, parallelisation);
+    }
+
+    public ProcedureVertex<?, ?> startVertex() {
+        if (startVertex == null) {
+            startVertex = this.vertices().filter(ProcedureVertex::isStartingVertex)
+                    .findAny().orElseThrow(() -> GraknException.of(ILLEGAL_STATE));
+        }
+        return startVertex;
     }
 }

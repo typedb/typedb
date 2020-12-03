@@ -18,11 +18,11 @@
 
 package grakn.core.common.iterator;
 
-public  class SynchronisedIterator<T> implements ResourceIterator<T> {
+public class SynchronisedIterator<T> implements ResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
 
-    public  SynchronisedIterator(ResourceIterator<T> iterator) {
+    public SynchronisedIterator(ResourceIterator<T> iterator) {
         this.iterator = iterator;
     }
 

@@ -25,8 +25,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.tool.TypeHinter;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.tool.TypeHinter;
 import grakn.core.traversal.TraversalEngine;
 
 import java.util.List;
