@@ -18,9 +18,9 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.producer.Producer;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.producer.Producer;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.common.producer.Producers.buffer;
 import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.common.producer.Producers.buffer;
 import static java.util.stream.Collectors.toList;
 
 public class Reasoner {

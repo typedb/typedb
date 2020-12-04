@@ -20,7 +20,6 @@ package grakn.core.traversal.producer;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Identifier;
 import grakn.core.traversal.Traversal;
@@ -38,8 +37,6 @@ import static java.util.stream.Collectors.toMap;
 
 public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, ?>>> {
 
-    private final GraphManager graphMgr;
-    private final Vertex<?, ?> start;
     private final Procedure procedure;
     private final Traversal.Parameters parameters;
     private final Map<Identifier, ResourceIterator<Vertex<?, ?>>> iterators;
@@ -51,12 +48,10 @@ public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, 
 
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
-    public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, Procedure procedure, Traversal.Parameters parameters) {
+    public GraphIterator(Vertex<?, ?> start, Procedure procedure, Traversal.Parameters parameters) {
         assert procedure.edgesCount() > 0;
-        this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.parameters = parameters;
-        this.start = start;
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
         this.answer = new HashMap<>();

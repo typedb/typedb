@@ -36,7 +36,6 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 public class GraphProducer implements TraversalProducer {
 
     private final int parallelisation;
-    private final GraphManager graphMgr;
     private final Procedure procedure;
     private final Traversal.Parameters parameters;
     private final SynchronisedIterator<? extends Vertex<?, ?>> start;
@@ -45,13 +44,12 @@ public class GraphProducer implements TraversalProducer {
 
     public GraphProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters, int parallelisation) {
         assert parallelisation > 0;
-        this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.parameters = parameters;
         this.parallelisation = parallelisation;
         this.isDone = new AtomicBoolean(false);
         this.futures = new ConcurrentHashMap<>();
-        this.start = synchronised(procedure.startVertex().execute(graphMgr, parameters));
+        this.start = synchronised(procedure.startVertex().iterator(graphMgr, parameters));
     }
 
     @Override
@@ -62,7 +60,7 @@ public class GraphProducer implements TraversalProducer {
             if (!start.hasNext()) sink.done();
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
-                GraphIterator iterator = new GraphIterator(graphMgr, start.next(), procedure, parameters);
+                GraphIterator iterator = new GraphIterator(start.next(), procedure, parameters);
                 futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink)));
             }
             produce(sink, (parallelisation - i) * splitCount);
@@ -90,7 +88,7 @@ public class GraphProducer implements TraversalProducer {
         futures.remove(completedIterator);
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
-            GraphIterator iterator = new GraphIterator(graphMgr, next, procedure, parameters);
+            GraphIterator iterator = new GraphIterator(next, procedure, parameters);
             futures.put(iterator, runAsync(consume(iterator, remaining, sink)));
         } else if (futures.isEmpty()) {
             done(sink);

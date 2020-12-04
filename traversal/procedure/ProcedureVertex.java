@@ -54,7 +54,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         this.dependedEdgeOrders = new AtomicReference<>(null);
     }
 
-    public abstract ResourceIterator<VERTEX> execute(GraphManager graphMgr, Traversal.Parameters parameters);
+    public abstract ResourceIterator<VERTEX> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
 
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
@@ -109,7 +109,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         }
 
         @Override
-        public ResourceIterator<ThingVertex> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
+        public ResourceIterator<ThingVertex> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
             return null; // TODO
         }
 
@@ -140,7 +140,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         }
 
         @Override
-        public ResourceIterator<TypeVertex> execute(GraphManager graphMgr, Traversal.Parameters parameters) {
+        public ResourceIterator<TypeVertex> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
             return null; // TODO
         }
 
