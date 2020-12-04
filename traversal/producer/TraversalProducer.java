@@ -18,9 +18,6 @@
 package grakn.core.traversal.producer;
 
 import grakn.core.common.producer.Producer;
-import grakn.core.graph.vertex.Vertex;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.VertexMap;
 
-import java.util.Map;
-
-public interface TraversalProducer extends Producer<Map<Reference, Vertex<?, ?>>> {}
+public interface TraversalProducer extends Producer<VertexMap> {}

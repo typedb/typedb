@@ -41,6 +41,7 @@ import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
+import grakn.core.traversal.common.VertexMap;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
@@ -63,7 +64,7 @@ public final class ConceptManager {
         this.graphMgr = graphMgr;
     }
 
-    public ConceptMap conceptMap(Map<Reference, Vertex<?, ?>> vertexMap) {
+    public ConceptMap conceptMap(VertexMap vertexMap) {
         Map<Reference, Concept> map = new HashMap<>();
         vertexMap.forEach((r, v) -> {
             if (!r.isName()) throw GraknException.of(ILLEGAL_STATE);

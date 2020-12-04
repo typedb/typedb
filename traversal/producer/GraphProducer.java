@@ -22,8 +22,8 @@ import grakn.core.common.iterator.SynchronisedIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.Procedure;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +54,7 @@ public class GraphProducer implements TraversalProducer {
     }
 
     @Override
-    public void produce(Sink<Map<Reference, Vertex<?, ?>>> sink, int count) {
+    public void produce(Sink<VertexMap> sink, int count) {
         int splitCount = (int) Math.ceil((double) count / parallelisation);
 
         if (futures.isEmpty()) {
@@ -72,7 +72,7 @@ public class GraphProducer implements TraversalProducer {
         }
     }
 
-    private Runnable consume(GraphIterator iterator, int count, Sink<Map<Reference, Vertex<?, ?>>> sink) {
+    private Runnable consume(GraphIterator iterator, int count, Sink<VertexMap> sink) {
         return () -> {
             int i = 0;
             for (; i < count; i++) {
@@ -83,7 +83,7 @@ public class GraphProducer implements TraversalProducer {
         };
     }
 
-    private void compensate(GraphIterator completedIterator, int remaining, Sink<Map<Reference, Vertex<?, ?>>> sink) {
+    private void compensate(GraphIterator completedIterator, int remaining, Sink<VertexMap> sink) {
         futures.remove(completedIterator);
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
@@ -96,7 +96,7 @@ public class GraphProducer implements TraversalProducer {
         }
     }
 
-    private void done(Sink<Map<Reference, Vertex<?, ?>>> sink) {
+    private void done(Sink<VertexMap> sink) {
         if (isDone.compareAndSet(false, true)) {
             sink.done(this);
         }

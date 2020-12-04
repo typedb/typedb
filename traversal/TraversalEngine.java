@@ -20,10 +20,7 @@ package grakn.core.traversal;
 
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.Vertex;
-import graql.lang.pattern.variable.Reference;
-
-import java.util.Map;
+import grakn.core.traversal.common.VertexMap;
 
 public class TraversalEngine {
 
@@ -39,7 +36,7 @@ public class TraversalEngine {
         return graphMgr;
     }
 
-    public Producer<Map<Reference, Vertex<?, ?>>> execute(Traversal traversal, int parallelisation) {
+    public Producer<VertexMap> execute(Traversal traversal, int parallelisation) {
         traversal.initialisePlanner(cache);
         return traversal.execute(graphMgr, parallelisation);
     }

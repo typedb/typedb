@@ -21,11 +21,11 @@ package grakn.core.traversal.producer;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.procedure.ProcedureEdge;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +35,7 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toMap;
 
-public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, ?>>> {
+public class GraphIterator implements ResourceIterator<VertexMap> {
 
     private final Procedure procedure;
     private final Traversal.Parameters parameters;
@@ -191,16 +191,18 @@ public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, 
     }
 
     @Override
-    public Map<Reference, Vertex<?, ?>> next() {
+    public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
         return toReferenceMap(answer);
     }
 
-    private Map<Reference, Vertex<?, ?>> toReferenceMap(Map<Identifier, Vertex<?, ?>> answer) {
-        return answer.entrySet().stream()
-                .filter(e -> e.getKey().isNamedReference())
-                .collect(toMap(k -> k.getKey().asVariable().reference(), Map.Entry::getValue));
+    private VertexMap toReferenceMap(Map<Identifier, Vertex<?, ?>> answer) {
+        return VertexMap.of(
+                answer.entrySet().stream()
+                        .filter(e -> e.getKey().isNamedReference())
+                        .collect(toMap(k -> k.getKey().asVariable().reference(), Map.Entry::getValue))
+        );
     }
 
     @Override

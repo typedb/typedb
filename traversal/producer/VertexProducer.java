@@ -20,13 +20,11 @@ package grakn.core.traversal.producer;
 import grakn.common.collection.Collections;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.procedure.ProcedureVertex;
-import graql.lang.pattern.variable.Reference;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static grakn.common.collection.Collections.pair;
@@ -35,24 +33,24 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 
 public class VertexProducer implements TraversalProducer {
 
-    private final ResourceIterator<Map<Reference, Vertex<?, ?>>> iterator;
+    private final ResourceIterator<VertexMap> iterator;
     private CompletableFuture<Void> future;
 
     public VertexProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters) {
         ProcedureVertex<?, ?> vertex = procedure.startVertex();
         assert vertex.identifier().isNamedReference();
         this.iterator = vertex.iterator(graphMgr, parameters).map(
-                v -> Collections.map(pair(vertex.identifier().asVariable().reference(), v))
+                v -> VertexMap.of(Collections.map(pair(vertex.identifier().asVariable().reference(), v)))
         );
     }
 
     @Override
-    public void produce(Sink<Map<Reference, Vertex<?, ?>>> sink, int count) {
+    public void produce(Sink<VertexMap> sink, int count) {
         if (future == null) future = runAsync(consume(count, sink), forkJoinPool());
         else future.thenRun(consume(count, sink));
     }
 
-    private Runnable consume(int count, Sink<Map<Reference, Vertex<?, ?>>> sink) {
+    private Runnable consume(int count, Sink<VertexMap> sink) {
         return () -> {
             int i = 0;
             for (; i < count; i++) {

@@ -26,6 +26,7 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;
 import graql.lang.common.GraqlArg;
@@ -74,7 +75,7 @@ public class Traversal {
         planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
-    Producer<Map<Reference, Vertex<?, ?>>> execute(GraphManager graphMgr, int parallelisation) {
+    Producer<VertexMap> execute(GraphManager graphMgr, int parallelisation) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).optimise(graphMgr);
@@ -85,8 +86,8 @@ public class Traversal {
                 return planner.procedure().execute(graphMgr, parameters, parallelisation);
             }).map(p -> buffer(p).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
-                partialAnswers.forEach(combinedAnswers::putAll);
-                return combinedAnswers;
+                partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
+                return VertexMap.of(combinedAnswers);
             }));
         }
     }
