@@ -18,6 +18,7 @@
 
 package grakn.core.traversal.producer;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.iterator.SynchronisedIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
@@ -25,9 +26,9 @@ import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.Procedure;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
@@ -40,7 +41,8 @@ public class GraphProducer implements TraversalProducer {
     private final Procedure procedure;
     private final Traversal.Parameters parameters;
     private final SynchronisedIterator<? extends Vertex<?, ?>> start;
-    private final Map<GraphIterator, CompletableFuture<Void>> futures;
+    private final ConcurrentMap<ResourceIterator<VertexMap>, CompletableFuture<Void>> futures;
+    private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
     private final AtomicBoolean isDone;
 
     public GraphProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters, int parallelisation) {
@@ -50,6 +52,7 @@ public class GraphProducer implements TraversalProducer {
         this.parallelisation = parallelisation;
         this.isDone = new AtomicBoolean(false);
         this.futures = new ConcurrentHashMap<>();
+        this.produced = ConcurrentHashMap.newKeySet();
         this.start = synchronised(procedure.startVertex().iterator(graphMgr, parameters));
     }
 
@@ -61,18 +64,18 @@ public class GraphProducer implements TraversalProducer {
             if (!start.hasNext()) sink.done(this);
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
-                GraphIterator iterator = new GraphIterator(start.next(), procedure, parameters);
+                ResourceIterator<VertexMap> iterator = new GraphIterator(start.next(), procedure, parameters).distinct(produced);
                 futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
             }
             produce(sink, (parallelisation - i) * splitCount);
         } else {
-            for (GraphIterator iterator : futures.keySet()) {
+            for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
                 futures.computeIfPresent(iterator, (k, v) -> v.thenRun(consume(k, splitCount, sink)));
             }
         }
     }
 
-    private Runnable consume(GraphIterator iterator, int count, Sink<VertexMap> sink) {
+    private Runnable consume(ResourceIterator<VertexMap> iterator, int count, Sink<VertexMap> sink) {
         return () -> {
             int i = 0;
             for (; i < count; i++) {
@@ -83,11 +86,11 @@ public class GraphProducer implements TraversalProducer {
         };
     }
 
-    private void compensate(GraphIterator completedIterator, int remaining, Sink<VertexMap> sink) {
+    private void compensate(ResourceIterator<VertexMap> completedIterator, int remaining, Sink<VertexMap> sink) {
         futures.remove(completedIterator);
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
-            GraphIterator iterator = new GraphIterator(next, procedure, parameters);
+            ResourceIterator<VertexMap> iterator = new GraphIterator(next, procedure, parameters).distinct(produced);
             futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
         } else if (futures.isEmpty()) {
             done(sink);
@@ -105,6 +108,6 @@ public class GraphProducer implements TraversalProducer {
     @Override
     public void recycle() {
         start.recycle();
-        futures.keySet().forEach(GraphIterator::recycle);
+        futures.keySet().forEach(ResourceIterator::recycle);
     }
 }

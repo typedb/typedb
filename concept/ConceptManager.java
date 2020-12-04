@@ -66,12 +66,11 @@ public final class ConceptManager {
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
         Map<Reference, Concept> map = new HashMap<>();
-        vertexMap.forEach((r, v) -> {
-            if (!r.isName()) throw GraknException.of(ILLEGAL_STATE);
-            if (v.isThing()) map.put(r, ThingImpl.of(v.asThing()));
-            else if (v.isType()) map.put(r, TypeImpl.of(graphMgr, v.asType()));
+        vertexMap.forEach((reference, vertex) -> {
+            if (!reference.isName()) throw GraknException.of(ILLEGAL_STATE);
+            if (vertex.isThing()) map.put(reference, ThingImpl.of(vertex.asThing()));
+            else if (vertex.isType()) map.put(reference, TypeImpl.of(graphMgr, vertex.asType()));
             else throw GraknException.of(ILLEGAL_STATE);
-            // TODO: introduce QueryableVertex that only abstracts thing and type
         });
         return new ConceptMap(map);
     }

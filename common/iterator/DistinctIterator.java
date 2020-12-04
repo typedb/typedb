@@ -22,16 +22,20 @@ import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-// TODO: verify (and potentially fix) this class to be able to hand null objects
+// TODO: verify (and potentially fix) this class is able to handle null objects
 public class DistinctIterator<T> implements ResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
     private final Set<T> consumed;
     private T next;
 
-    DistinctIterator(ResourceIterator<T> iterator) {
+    public DistinctIterator(ResourceIterator<T> iterator) {
+        this(iterator, new HashSet<>());
+    }
+
+    public DistinctIterator(ResourceIterator<T> iterator, Set<T> duplicates) {
         this.iterator = iterator;
-        this.consumed = new HashSet<>();
+        this.consumed = duplicates;
         this.next = null;
     }
 

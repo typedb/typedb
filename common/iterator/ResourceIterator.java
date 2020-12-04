@@ -39,6 +39,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return new DistinctIterator<>(this);
     }
 
+    default ResourceIterator<T> distinct(Set<T> duplicates) {
+        return new DistinctIterator<>(this, duplicates);
+    }
+
     default <U> ResourceIterator<U> map(Function<T, U> mappingFn) {
         return new MappedIterator<>(this, mappingFn);
     }

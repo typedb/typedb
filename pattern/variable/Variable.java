@@ -21,8 +21,8 @@ package grakn.core.pattern.variable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.constraint.Constraint;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Objects;

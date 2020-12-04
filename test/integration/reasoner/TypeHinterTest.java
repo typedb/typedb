@@ -424,12 +424,14 @@ public class TypeHinterTest {
 
     @Test
     public void up_down_hierarchy_isa() throws IOException {
-        define_custom_schema("define" +
-                "  animal sub entity;" +
-                "  person sub animal;" +
-                "  man sub person;" +
-                "  greek sub man;" +
-                "  socrates sub greek;");
+        define_custom_schema(
+                "define" +
+                        "  animal sub entity;" +
+                        "  person sub animal;" +
+                        "  man sub person;" +
+                        "  greek sub man;" +
+                        "  socrates sub greek;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
         String queryString = "match" +
                 "  $p isa man;" +
@@ -449,11 +451,13 @@ public class TypeHinterTest {
 
     @Test
     public void infer_from_value_type() throws IOException {
-        define_custom_schema("define" +
-                "  dog sub entity, owns weight;" +
-                "  person sub entity, owns name;" +
-                "  weight sub attribute, value double;" +
-                "  name sub attribute, value string;");
+        define_custom_schema(
+                "define" +
+                        "  dog sub entity, owns weight;" +
+                        "  person sub entity, owns name;" +
+                        "  weight sub attribute, value double;" +
+                        "  name sub attribute, value string;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
         String queryString = "match" +
                 "  $p has $a;" +
@@ -473,13 +477,15 @@ public class TypeHinterTest {
 
     @Test
     public void has_hierarchy() throws IOException {
-        define_custom_schema("define" +
-                "  animal sub entity, owns weight;" +
-                "  person sub animal, owns leg-weight" +
-                "  chair sub entity, owns leg-weight;" +
-                "  dog sub animal;" +
-                "  weight sub attribute, value long;" +
-                "  leg-weight, sub weight;");
+        define_custom_schema(
+                "define" +
+                        "  animal sub entity, owns weight;" +
+                        "  person sub animal, owns leg-weight" +
+                        "  chair sub entity, owns leg-weight;" +
+                        "  dog sub animal;" +
+                        "  weight sub attribute, value long;" +
+                        "  leg-weight, sub weight;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
         String queryString = "match" +
                 "  $a has weight $c;" +
@@ -502,11 +508,13 @@ public class TypeHinterTest {
 
     @Test
     public void has_with_cycle() throws IOException {
-        define_custom_schema("define" +
-                "  person sub entity, owns name, owns height;" +
-                "  name sub attribute, value string, owns nickname;" +
-                "  nickname sub attribute, value string, owns name;" +
-                "  surname sub attribute, value string, owns name;");
+        define_custom_schema(
+                "define" +
+                        "  person sub entity, owns name, owns height;" +
+                        "  name sub attribute, value string, owns nickname;" +
+                        "  nickname sub attribute, value string, owns name;" +
+                        "  surname sub attribute, value string, owns name;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
         String queryString = "match" +
                 "  $a has $b" +
@@ -526,14 +534,16 @@ public class TypeHinterTest {
 
     @Test
     public void has_with_big_cycle() throws IOException {
-        define_custom_schema("define" +
-                "  person sub entity, owns name, owns height;" +
-                "  name sub attribute, value string, owns nickname;" +
-                "  nickname sub attribute, value string, owns surname;" +
-                "  surname sub attribute, value string, owns middlename;" +
-                "  middlename sub attribute, value string, owns name;" +
-                "  weight sub attribute, value double, owns measure-system;" +
-                "  measure-system sub attribute, owns conversion-rate;");
+        define_custom_schema(
+                "define" +
+                        "  person sub entity, owns name, owns height;" +
+                        "  name sub attribute, value string, owns nickname;" +
+                        "  nickname sub attribute, value string, owns surname;" +
+                        "  surname sub attribute, value string, owns middlename;" +
+                        "  middlename sub attribute, value string, owns name;" +
+                        "  weight sub attribute, value double, owns measure-system;" +
+                        "  measure-system sub attribute, owns conversion-rate;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
         String queryString = "match" +
                 "  $a has $b" +
@@ -575,12 +585,14 @@ public class TypeHinterTest {
 
     @Test
     public void simple_always_infers_its_supers() {
-        define_custom_schema("define" +
-                "  animal sub entity;" +
-                "  person sub animal;" +
-                "  man sub person;" +
-                "  greek sub man;" +
-                "  socrates sub greek;");
+        define_custom_schema(
+                "define" +
+                        "  animal sub entity;" +
+                        "  person sub animal;" +
+                        "  man sub person;" +
+                        "  greek sub man;" +
+                        "  socrates sub greek;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
 
         String queryString = "match $x isa $y;" +
@@ -611,16 +623,18 @@ public class TypeHinterTest {
     // But getting only some of the children requires a more complicate query, which is shown below.
     @Test
     public void can_infer_some_but_not_all_subtypes() throws IOException {
-        define_custom_schema("define " +
-                "  animal sub entity;" +
-                "  person sub animal, owns head-weight, owns arm-weight, owns hand-weight, owns leg-weight, owns weight;" +
-                "  horse sub animal, owns head-weight, owns tail-weight, owns leg-weight, owns weight" +
-                "  weight sub entity;" +
-                "  head-weight sub weight;" +
-                "  arm-weight sub weight;" +
-                "  leg-weight weight;" +
-                "  hand-weight sub weight;" +
-                "  tail-weight sub weight");
+        define_custom_schema(
+                "define " +
+                        "  animal sub entity;" +
+                        "  person sub animal, owns head-weight, owns arm-weight, owns hand-weight, owns leg-weight, owns weight;" +
+                        "  horse sub animal, owns head-weight, owns tail-weight, owns leg-weight, owns weight" +
+                        "  weight sub entity;" +
+                        "  head-weight sub weight;" +
+                        "  arm-weight sub weight;" +
+                        "  leg-weight weight;" +
+                        "  hand-weight sub weight;" +
+                        "  tail-weight sub weight"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
 
         String queryString = "match" +
@@ -645,20 +659,22 @@ public class TypeHinterTest {
     // We also show on $a that hints can be isolated form each other completely hierarchy-wise.
     @Test
     public void hierarchy_hint_gap() throws IOException {
-        define_custom_schema("define " +
-                "  animal sub entity;" +
-                "  left-attr sub attribute, value boolean;" +
-                "  right-attr sub attribute, value boolean;" +
-                "  ownership-attr sub attribute, value boolean;" +
-                "  marriage-attr sub attribute, value boolean;" +
-                "  animal sub entity, owns ownership-attr; " +
-                "  mammal sub animal; " +
-                "  person sub mammal, plays ownership:owner, owns marriage-attr; " +
-                "  man sub person, plays marriage:husband, owns left-attr; " +
-                "  woman sub person, plays marriage:wife, owns right-attr; " +
-                "  tortoise sub animal, plays ownership:pet, owns left-attr; " +
-                "  marriage sub relation, relates husband, relates wife, owns marriage-attr; " +
-                "  ownership sub relation, relates pet, relates owner, owns ownership-attr;");
+        define_custom_schema(
+                "define " +
+                        "  animal sub entity;" +
+                        "  left-attr sub attribute, value boolean;" +
+                        "  right-attr sub attribute, value boolean;" +
+                        "  ownership-attr sub attribute, value boolean;" +
+                        "  marriage-attr sub attribute, value boolean;" +
+                        "  animal sub entity, owns ownership-attr; " +
+                        "  mammal sub animal; " +
+                        "  person sub mammal, plays ownership:owner, owns marriage-attr; " +
+                        "  man sub person, plays marriage:husband, owns left-attr; " +
+                        "  woman sub person, plays marriage:wife, owns right-attr; " +
+                        "  tortoise sub animal, plays ownership:pet, owns left-attr; " +
+                        "  marriage sub relation, relates husband, relates wife, owns marriage-attr; " +
+                        "  ownership sub relation, relates pet, relates owner, owns ownership-attr;"
+        );
         TypeHinter typeHinter = transaction.reasoner().typeHinter();
         String queryString = "match " +
                 "  $a isa $t; " +
