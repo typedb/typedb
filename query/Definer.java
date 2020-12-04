@@ -58,7 +58,7 @@ public class Definer {
     private static final String TRACE_PREFIX = "definer.";
 
     private final ConceptManager conceptMgr;
-    private final Set<TypeVariable> visited;
+    private final Set<TypeVariable> created;
     private final Set<TypeVariable> variables;
     private final List<graql.lang.pattern.schema.Rule> rules;
 
@@ -66,7 +66,7 @@ public class Definer {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.rules = rules;
-        this.visited = new HashSet<>();
+        this.created = new HashSet<>();
     }
 
     public static Definer create(ConceptManager conceptMgr,
@@ -81,7 +81,7 @@ public class Definer {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             validateTypeHierarchyIsNotCyclic(variables);
             variables.forEach(variable -> {
-                if (!visited.contains(variable)) define(variable);
+                if (!created.contains(variable)) define(variable);
             });
             rules.forEach(this::define);
         }
@@ -97,9 +97,7 @@ public class Definer {
             } else if (!variable.is().isEmpty()) {
                 throw new GraknException(TYPE_CONSTRAINT_UNACCEPTED.message(IS));
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
-            else if (visited.contains(variable)) return conceptMgr.getType(labelConstraint.scopedLabel());
-
-            visited.add(variable);
+            else if (created.contains(variable)) return conceptMgr.getType(labelConstraint.scopedLabel());
 
             ThingType type = getThingType(labelConstraint);
             if (variable.sub().isPresent()) {
@@ -115,6 +113,8 @@ public class Definer {
             if (variable.valueType().isPresent() && !(type instanceof AttributeType)) {
                 throw new GraknException(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE.message(labelConstraint.label()));
             }
+
+            created.add(variable);
 
             if (variable.abstractConstraint().isPresent()) defineAbstract(type);
             if (variable.regex().isPresent()) defineRegex(type.asAttributeType().asString(), variable.regex().get());
@@ -135,7 +135,7 @@ public class Definer {
             final LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
             hierarchy.add(variable.label().get().scopedLabel());
             visited.add(variable);
-            if (variable.sub().isPresent()) {
+            while (variable.sub().isPresent()) {
                 variable = variable.sub().get().type();
                 assert variable.label().isPresent();
                 if (!hierarchy.add(variable.label().get().scopedLabel())) {
@@ -211,11 +211,11 @@ public class Definer {
                 if (relates.overridden().isPresent()) {
                     final String overriddenTypeLabel = relates.overridden().get().label().get().label();
                     relationType.setRelates(roleTypeLabel, overriddenTypeLabel);
-                    visited.add(relates.overridden().get());
+                    created.add(relates.overridden().get());
                 } else {
                     relationType.setRelates(roleTypeLabel);
                 }
-                visited.add(relates.role());
+                created.add(relates.role());
             });
         }
     }
