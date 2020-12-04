@@ -23,7 +23,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.Traversal;
 
 import javax.annotation.Nullable;

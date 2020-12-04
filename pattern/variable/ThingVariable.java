@@ -26,7 +26,7 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 
 import java.time.LocalDateTime;

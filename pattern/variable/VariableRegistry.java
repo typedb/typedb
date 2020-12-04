@@ -20,7 +20,7 @@ package grakn.core.pattern.variable;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ConceptVariable;
 import graql.lang.pattern.variable.Reference;

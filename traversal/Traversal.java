@@ -25,6 +25,7 @@ import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;
 import graql.lang.common.GraqlArg;

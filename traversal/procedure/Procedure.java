@@ -20,7 +20,7 @@ package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.GraphManager;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.planner.PlannerEdge;

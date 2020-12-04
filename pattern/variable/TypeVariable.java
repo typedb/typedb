@@ -30,7 +30,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.pattern.constraint.ConceptConstraint;
 

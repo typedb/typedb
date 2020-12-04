@@ -20,7 +20,7 @@ package grakn.core.traversal.graph;
 
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 
 import java.util.ArrayList;

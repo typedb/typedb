@@ -21,7 +21,7 @@ package grakn.core.traversal.producer;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.procedure.ProcedureEdge;

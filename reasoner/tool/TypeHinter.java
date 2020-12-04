@@ -33,7 +33,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.ReasonerCache;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.common.GraqlArg;
 import graql.lang.pattern.variable.Reference;

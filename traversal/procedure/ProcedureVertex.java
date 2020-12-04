@@ -26,7 +26,7 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.graph.TraversalVertex;
 import graql.lang.common.GraqlToken;

@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.traversal;
+package grakn.core.traversal.common;
 
 import grakn.core.common.exception.GraknException;
 import graql.lang.pattern.variable.Reference;

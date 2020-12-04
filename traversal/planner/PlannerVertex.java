@@ -22,7 +22,7 @@ import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.GraphManager;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
 import static grakn.common.util.Objects.className;

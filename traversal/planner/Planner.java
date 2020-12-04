@@ -25,7 +25,7 @@ import com.google.ortools.linearsolver.MPSolverParameters;
 import grakn.core.common.concurrent.ManagedCountDownLatch;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.GraphManager;
-import grakn.core.traversal.Identifier;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.structure.Structure;
 import grakn.core.traversal.structure.StructureEdge;
