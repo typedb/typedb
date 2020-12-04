@@ -29,6 +29,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+
 public class ProducerBuffer<T> {
 
     private static final int BUFFER_MIN_SIZE = 32;
@@ -133,19 +135,23 @@ public class ProducerBuffer<T> {
             }
         }
 
-        public void done() {
+        public void done(Producer<T> caller) {
             assert !producers.isEmpty();
-            producers.remove();
-            pending.set(0);
+            if (producers.peek().equals(caller)) {
+                producers.remove();
+                pending.set(0);
 
-            if (producers.isEmpty()) {
-                try {
-                    queue.put(Either.second(new Done()));
-                } catch (InterruptedException e) {
-                    throw GraknException.of(e);
+                if (producers.isEmpty()) {
+                    try {
+                        queue.put(Either.second(new Done()));
+                    } catch (InterruptedException e) {
+                        throw GraknException.of(e);
+                    }
+                } else {
+                    mayProduce();
                 }
             } else {
-                mayProduce();
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
     }

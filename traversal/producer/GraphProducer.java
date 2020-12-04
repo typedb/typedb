@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 import static grakn.core.common.iterator.Iterators.synchronised;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
@@ -57,11 +58,11 @@ public class GraphProducer implements TraversalProducer {
         int splitCount = (int) Math.ceil((double) count / parallelisation);
 
         if (futures.isEmpty()) {
-            if (!start.hasNext()) sink.done();
+            if (!start.hasNext()) sink.done(this);
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
                 GraphIterator iterator = new GraphIterator(start.next(), procedure, parameters);
-                futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink)));
+                futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
             }
             produce(sink, (parallelisation - i) * splitCount);
         } else {
@@ -73,14 +74,12 @@ public class GraphProducer implements TraversalProducer {
 
     private Runnable consume(GraphIterator iterator, int count, Sink<Map<Reference, Vertex<?, ?>>> sink) {
         return () -> {
-            int j = 0;
-            for (; j < count; j++) {
+            int i = 0;
+            for (; i < count; i++) {
                 if (iterator.hasNext()) sink.put(iterator.next());
                 else break;
             }
-            if (count - j > 0) {
-                compensate(iterator, count - j, sink);
-            }
+            if (i < count) compensate(iterator, count - i, sink);
         };
     }
 
@@ -89,7 +88,7 @@ public class GraphProducer implements TraversalProducer {
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
             GraphIterator iterator = new GraphIterator(next, procedure, parameters);
-            futures.put(iterator, runAsync(consume(iterator, remaining, sink)));
+            futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
         } else if (futures.isEmpty()) {
             done(sink);
         } else {
@@ -99,7 +98,7 @@ public class GraphProducer implements TraversalProducer {
 
     private void done(Sink<Map<Reference, Vertex<?, ?>>> sink) {
         if (isDone.compareAndSet(false, true)) {
-            sink.done();
+            sink.done(this);
         }
     }
 

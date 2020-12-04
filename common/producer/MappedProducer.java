@@ -54,8 +54,8 @@ public class MappedProducer<T, U> implements Producer<U> {
         }
 
         @Override
-        public void done() {
-            baseSink.done();
+        public void done(Producer<T> producer) {
+            baseSink.done(MappedProducer.this);
         }
     }
 }

@@ -36,7 +36,7 @@ public class BaseProducer<T> implements Producer<T> {
                 if (iterator.hasNext()) {
                     sink.put(iterator.next());
                 } else {
-                    sink.done();
+                    sink.done(this);
                     break;
                 }
             }

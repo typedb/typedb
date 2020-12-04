@@ -41,10 +41,10 @@ public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, 
     private final Traversal.Parameters parameters;
     private final Map<Identifier, ResourceIterator<Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
-    private final int edgeCount;
     private final SeekStack computeFirstSeekStack;
-    private State state;
+    private final int edgeCount;
     private int computeNextSeekPos;
+    private State state;
 
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 

@@ -126,7 +126,7 @@ public class Procedure {
     }
 
     public TraversalProducer execute(GraphManager graphMgr, Traversal.Parameters parameters, int parallelisation) {
-        if (edgesCount() == 0) return new VertexProducer(graphMgr, this, parallelisation);
+        if (edgesCount() == 0) return new VertexProducer(graphMgr, this, parameters);
         else return new GraphProducer(graphMgr, this, parameters, parallelisation);
     }
 

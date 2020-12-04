@@ -38,6 +38,6 @@ public interface Producer<T> {
 
         void put(U item);
 
-        void done();
+        void done(Producer<U> producer);
     }
 }
