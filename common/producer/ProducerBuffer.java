@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.async;
+package grakn.core.common.producer;
 
 import grakn.common.collection.Either;
 import grakn.core.common.concurrent.ExecutorService;

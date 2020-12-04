@@ -19,7 +19,7 @@
 package grakn.core.traversal;
 
 import grakn.common.collection.Pair;
-import grakn.core.common.async.Producer;
+import grakn.core.common.producer.Producer;
 import grakn.core.common.cache.CommonCache;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
@@ -39,8 +39,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.pair;
-import static grakn.core.common.async.Producers.buffer;
-import static grakn.core.common.async.Producers.produce;
+import static grakn.core.common.producer.Producers.buffer;
+import static grakn.core.common.producer.Producers.produce;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;

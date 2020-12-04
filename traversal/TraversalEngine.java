@@ -18,7 +18,7 @@
 
 package grakn.core.traversal;
 
-import grakn.core.common.async.Producer;
+import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import graql.lang.pattern.variable.Reference;

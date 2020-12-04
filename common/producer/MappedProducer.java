@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.async;
+package grakn.core.common.producer;
 
 import java.util.function.Function;
 

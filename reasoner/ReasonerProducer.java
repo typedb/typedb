@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.async.Producer;
+import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
 
 public class ReasonerProducer implements Producer<ConceptMap> {

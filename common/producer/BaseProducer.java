@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.async;
+package grakn.core.common.producer;
 
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;

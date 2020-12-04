@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.async;
+package grakn.core.common.producer;
 
 import java.util.function.Function;
 import java.util.function.Predicate;

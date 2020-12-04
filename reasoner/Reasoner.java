@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.async.Producer;
+import grakn.core.common.producer.Producer;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.common.async.Producers.buffer;
+import static grakn.core.common.producer.Producers.buffer;
 import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
 import static java.util.stream.Collectors.toList;
 
