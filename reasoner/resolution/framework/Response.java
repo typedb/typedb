@@ -18,7 +18,12 @@
 
 package grakn.core.reasoner.resolution.framework;
 
+import grakn.core.common.exception.GraknException;
+
 import java.util.List;
+
+import static grakn.common.util.Objects.className;
+import static graql.lang.common.exception.ErrorMessage.INVALID_CASTING;
 
 public interface Response {
     Request sourceRequest();
@@ -30,11 +35,11 @@ public interface Response {
     boolean isRootResponse();
 
     default Answer asAnswer() {
-        throw new ClassCastException("Cannot cast " + this.getClass().getSimpleName() + " to " + Answer.class.getSimpleName());
+        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(Answer.class)));
     }
 
     default Exhausted asExhausted() {
-        throw new ClassCastException("Cannot cast " + this.getClass().getSimpleName() + " to " + Exhausted.class.getSimpleName());
+        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(Exhausted.class)));
     }
 
     class Answer implements Response {
@@ -64,13 +69,19 @@ public interface Response {
         }
 
         @Override
-        public boolean isAnswer() { return true; }
+        public boolean isAnswer() {
+            return true;
+        }
 
         @Override
-        public boolean isExhausted() { return false; }
+        public boolean isExhausted() {
+            return false;
+        }
 
         @Override
-        public boolean isRootResponse() { return false; }
+        public boolean isRootResponse() {
+            return false;
+        }
 
         @Override
         public Answer asAnswer() {
@@ -100,13 +111,19 @@ public interface Response {
         }
 
         @Override
-        public boolean isAnswer() { return false; }
+        public boolean isAnswer() {
+            return false;
+        }
 
         @Override
-        public boolean isExhausted() { return true; }
+        public boolean isExhausted() {
+            return true;
+        }
 
         @Override
-        public boolean isRootResponse() { return false; }
+        public boolean isRootResponse() {
+            return false;
+        }
 
         @Override
         public Exhausted asExhausted() {
@@ -131,16 +148,24 @@ public interface Response {
         }
 
         @Override
-        public Request sourceRequest() { return sourceRequest; }
+        public Request sourceRequest() {
+            return sourceRequest;
+        }
 
         @Override
-        public boolean isAnswer() { return false; }
+        public boolean isAnswer() {
+            return false;
+        }
 
         @Override
-        public boolean isExhausted() { return false; }
+        public boolean isExhausted() {
+            return false;
+        }
 
         @Override
-        public boolean isRootResponse() { return true; }
+        public boolean isRootResponse() {
+            return true;
+        }
     }
 
 }

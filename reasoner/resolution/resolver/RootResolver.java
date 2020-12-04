@@ -32,15 +32,15 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class Root extends Conjunction<Root> {
-    private static final Logger LOG = LoggerFactory.getLogger(Root.class);
+public class RootResolver extends ConjunctionResolver<RootResolver> {
+    private static final Logger LOG = LoggerFactory.getLogger(RootResolver.class);
 
     private final Consumer<Answer> onAnswer;
     private final Runnable onExhausted;
 
-    public Root(Actor<Root> self, List<Long> conjunction,
-                Long traversalSize, Consumer<Answer> onAnswer, Runnable onExhausted) {
-        super(self, Root.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, traversalSize);
+    public RootResolver(Actor<RootResolver> self, List<Long> conjunction,
+                        Long traversalSize, Consumer<Answer> onAnswer, Runnable onExhausted) {
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, traversalSize);
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
     }
@@ -72,7 +72,7 @@ public class Root extends Conjunction<Root> {
                 return produceMessage(fromUpstream, responseProducer);
             }
         } else {
-            Actor<Concludable> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Actor<ConcludableResolver> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream),
                                                     conceptMap, fromDownstream.unifiers(), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);

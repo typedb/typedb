@@ -42,18 +42,18 @@ import java.util.Set;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 
-public class Concludable extends Resolver<Concludable> {
-    private static final Logger LOG = LoggerFactory.getLogger(Concludable.class);
+public class ConcludableResolver extends Resolver<ConcludableResolver> {
+    private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final Long traversalPattern;
     private final long traversalSize;
     private final List<List<Long>> rules;
-    private final Map<Actor<Rule>, List<Long>> ruleActorSources;
+    private final Map<Actor<RuleResolver>, List<Long>> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
-    public Concludable(Actor<Concludable> self, Long traversalPattern, List<List<Long>> rules, long traversalSize) {
-        super(self, Concludable.class.getSimpleName() + "(pattern: " + traversalPattern + ")");
+    public ConcludableResolver(Actor<ConcludableResolver> self, Long traversalPattern, List<List<Long>> rules, long traversalSize) {
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + traversalPattern + ")");
         this.traversalPattern = traversalPattern;
         this.traversalSize = traversalSize;
         this.rules = rules;
@@ -112,7 +112,7 @@ public class Concludable extends Resolver<Concludable> {
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
         for (List<Long> rule : rules) {
-            Actor<Rule> ruleActor = registry.registerRule(rule, 1L);
+            Actor<RuleResolver> ruleActor = registry.registerRule(rule, 1L);
             ruleActorSources.put(ruleActor, rule);
         }
     }
@@ -137,7 +137,7 @@ public class Concludable extends Resolver<Concludable> {
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap,
                                          List<Object> unifiers) {
-        for (Actor<Rule> ruleActor : ruleActorSources.keySet()) {
+        for (Actor<RuleResolver> ruleActor : ruleActorSources.keySet()) {
             Request toDownstream = new Request(path.append(ruleActor), partialConceptMap, unifiers, Answer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }

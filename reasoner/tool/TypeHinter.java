@@ -199,10 +199,9 @@ public class TypeHinter {
 
     private Map<Label, TypeVariable> labelVarsFromConjunction(Conjunction conjunction) {
         Map<Label, TypeVariable> labels = new HashMap<>();
-        conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
-                .forEach(variable -> variable.label().ifPresent(
-                        labelConstraint -> labels.putIfAbsent(labelConstraint.properLabel(), variable)
-                ));
+
+        conjunction.variables().stream().filter(Variable::isType).map(Variable::asType).forEach(variable ->
+                                                                                                        variable.label().ifPresent(labelConstraint -> labels.putIfAbsent(labelConstraint.properLabel(), variable)));
 
         return labels;
     }

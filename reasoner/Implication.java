@@ -19,39 +19,37 @@ package grakn.core.reasoner;
 
 import grakn.core.concept.schema.Rule;
 import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.concludable.Concludable;
+import grakn.core.reasoner.concludable.ConjunctionConcludable;
+import grakn.core.reasoner.concludable.HeadConcludable;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class Implication {
 
-    private final Set<Concludable<?>> head;
-    private final Set<Concludable<?>> body;
+    private final Set<HeadConcludable<?, ?>> head;
+    private final Set<ConjunctionConcludable<?, ?>> body;
     private final Rule rule;
 
     public Implication(Rule rule) {
         this.rule = rule;
         head = createHead(rule.then(), rule.when().variables());
-        body = Concludable.of(rule.when());
+        body = ConjunctionConcludable.of(rule.when());
     }
 
-    public Set<Concludable<?>> body() {
+    public Set<ConjunctionConcludable<?, ?>> body() {
         return body;
     }
 
-    public Set<Concludable<?>> head() {
+    public Set<HeadConcludable<?, ?>> head() {
         return head;
     }
 
-    private Set<Concludable<?>> createHead(Set<Constraint> thenConstraints, Set<Variable> constraintContext) {
-        HashSet<Concludable<?>> thenConcludables = new HashSet<>();
-        thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isRelation).map(ThingConstraint::asRelation).findFirst().ifPresent(relationConstraint -> thenConcludables.add(new Concludable.Relation(relationConstraint, constraintContext)));
-        thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isHas).map(ThingConstraint::asHas).findFirst().ifPresent(hasConstraint -> thenConcludables.add(new Concludable.Has(hasConstraint, constraintContext)));
-        thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isIsa).map(ThingConstraint::asIsa).findFirst().ifPresent(isaConstraint -> thenConcludables.add(new Concludable.Isa(isaConstraint, constraintContext)));
-        thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isValue).map(ThingConstraint::asValue).findFirst().ifPresent(valueConstraint -> thenConcludables.add(new Concludable.Value(valueConstraint, constraintContext)));
+    private Set<HeadConcludable<?, ?>> createHead(Set<Constraint> thenConstraints, Set<Variable> constraintContext) {
+        HashSet<HeadConcludable<?, ?>> thenConcludables = new HashSet<>();
+        thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing)
+                .flatMap(constraint -> HeadConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
         return thenConcludables;
     }
 }

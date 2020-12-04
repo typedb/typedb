@@ -21,9 +21,9 @@ package grakn.core.reasoner.resolution;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.reasoner.resolution.framework.Answer;
-import grakn.core.reasoner.resolution.resolver.Concludable;
-import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.Rule;
+import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.RuleResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +33,8 @@ import java.util.function.Consumer;
 
 public class ResolverRegistry {
     Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
-    private final HashMap<Long, Actor<Concludable>> concludables;
-    private final HashMap<List<Long>, Actor<Rule>> rules;
+    private final HashMap<Long, Actor<ConcludableResolver>> concludables;
+    private final HashMap<List<Long>, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private EventLoopGroup elg;
 
@@ -45,20 +45,20 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public Actor<Concludable> registerConcludable(Long pattern, List<List<Long>> rules, long traversalSize) {
+    public Actor<ConcludableResolver> registerConcludable(Long pattern, List<List<Long>> rules, long traversalSize) {
         LOG.debug("Register retrieval for concludable actor: '{}'", pattern);
-        return concludables.computeIfAbsent(pattern, (p) -> Actor.create(elg, self -> new Concludable(self, p, rules, traversalSize)));
+        return concludables.computeIfAbsent(pattern, (p) -> Actor.create(elg, self -> new ConcludableResolver(self, p, rules, traversalSize)));
     }
 
-    public Actor<Rule> registerRule(List<Long> pattern, long traversalSize) {
+    public Actor<RuleResolver> registerRule(List<Long> pattern, long traversalSize) {
         LOG.debug("Register retrieval for rule actor: '{}'", pattern);
-        return rules.computeIfAbsent(pattern, (p) -> Actor.create(elg, self -> new Rule(self, p, traversalSize)));
+        return rules.computeIfAbsent(pattern, (p) -> Actor.create(elg, self -> new RuleResolver(self, p, traversalSize)));
     }
 
-    public Actor<Root> createRoot(final List<Long> pattern, final long traversalSize, final Consumer<Answer> onAnswer,
-                                  Runnable onExhausted) {
+    public Actor<RootResolver> createRoot(final List<Long> pattern, final long traversalSize, final Consumer<Answer> onAnswer,
+                                          Runnable onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new Root(self, pattern, traversalSize, onAnswer, onExhausted));
+        return Actor.create(elg, self -> new RootResolver(self, pattern, traversalSize, onAnswer, onExhausted));
     }
 
     public Actor<ResolutionRecorder> resolutionRecorder() {

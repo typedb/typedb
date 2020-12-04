@@ -19,27 +19,29 @@ package grakn.core.reasoner;
 
 import grakn.common.collection.Pair;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.concludable.Concludable;
+import grakn.core.reasoner.concludable.ConjunctionConcludable;
+import grakn.core.reasoner.concludable.HeadConcludable;
 
 import java.util.Set;
 
 public class Unification {
 
-    private final Concludable<?> fromConcludable;
-    private Concludable<?> toConcludable;
+    private final ConjunctionConcludable<?, ?> fromConcludable;
+    private HeadConcludable<?, ?> toConcludable;
     Set<Pair<Variable, Variable>> variableMapping;
 
-    public Unification(Concludable<?> fromConcludable, Concludable<?> toConcludable, Set<Pair<Variable, Variable>> variableMapping) {
+    public Unification(ConjunctionConcludable<?, ?> fromConcludable, HeadConcludable<?, ?> toConcludable,
+                       Set<Pair<Variable, Variable>> variableMapping) {
         this.fromConcludable = fromConcludable;
         this.toConcludable = toConcludable;
         this.variableMapping = variableMapping;
     }
 
-    public Concludable<?> fromConcludable() {
+    public ConjunctionConcludable<?, ?> fromConcludable() {
         return fromConcludable;
     }
 
-    public Concludable<?> toConcludable() {
+    public HeadConcludable<?, ?> toConcludable() {
         return toConcludable;
     }
 

@@ -25,7 +25,8 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.reasoner.Implication;
-import grakn.core.reasoner.concludable.Concludable;
+import grakn.core.reasoner.concludable.ConjunctionConcludable;
+import grakn.core.reasoner.concludable.HeadConcludable;
 import grakn.core.rocks.RocksGrakn;
 import graql.lang.Graql;
 import org.junit.Test;
@@ -41,20 +42,36 @@ public class ImplicationTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("implication-test");
     private static String database = "implication-test";
 
-    private long isaConcludablesCount(Set<Concludable<?>> concludables) {
-        return concludables.stream().filter(Concludable::isIsa).count();
+    private long isaConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ConjunctionConcludable::isIsa).count();
     }
 
-    private long hasConcludablesCount(Set<Concludable<?>> concludables) {
-        return concludables.stream().filter(Concludable::isHas).count();
+    private long hasConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ConjunctionConcludable::isHas).count();
     }
 
-    private long relationConcludablesCount(Set<Concludable<?>> concludables) {
-        return concludables.stream().filter(Concludable::isRelation).count();
+    private long relationConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ConjunctionConcludable::isRelation).count();
     }
 
-    private long valueConcludablesCount(Set<Concludable<?>> concludables) {
-        return concludables.stream().filter(Concludable::isValue).count();
+    private long valueConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ConjunctionConcludable::isValue).count();
+    }
+
+    private long isaHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(HeadConcludable::isIsa).count();
+    }
+
+    private long hasHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(HeadConcludable::isHas).count();
+    }
+
+    private long relationHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(HeadConcludable::isRelation).count();
+    }
+
+    private long valueHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(HeadConcludable::isValue).count();
     }
 
     @Test
@@ -86,17 +103,17 @@ public class ImplicationTest {
 
                     Implication implication = new Implication(rule);
 
-                    Set<Concludable<?>> headConcludables = implication.head();
-                    assertEquals(1, isaConcludablesCount(headConcludables));
-                    assertEquals(0, hasConcludablesCount(headConcludables));
-                    assertEquals(1, relationConcludablesCount(headConcludables));
-                    assertEquals(0, valueConcludablesCount(headConcludables));
+                    Set<HeadConcludable<?, ?>> headConcludables = implication.head();
+                    assertEquals(1, isaHeadConcludablesCount(headConcludables));
+                    assertEquals(0, hasHeadConcludablesCount(headConcludables));
+                    assertEquals(1, relationHeadConcludablesCount(headConcludables));
+                    assertEquals(0, valueHeadConcludablesCount(headConcludables));
 
-                    Set<Concludable<?>> bodyConcludables = implication.body();
-                    assertEquals(2, isaConcludablesCount(bodyConcludables));
-                    assertEquals(0, hasConcludablesCount(bodyConcludables));
-                    assertEquals(1, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = implication.body();
+                    assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(1, relationConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, valueConjunctionConcludablesCount(bodyConcludables));
                 }
             }
         }
@@ -129,17 +146,17 @@ public class ImplicationTest {
 
                     Implication implication = new Implication(rule);
 
-                    Set<Concludable<?>> headConcludables = implication.head();
-                    assertEquals(1, isaConcludablesCount(headConcludables));
-                    assertEquals(1, hasConcludablesCount(headConcludables));
-                    assertEquals(0, relationConcludablesCount(headConcludables));
-                    assertEquals(1, valueConcludablesCount(headConcludables));
+                    Set<HeadConcludable<?, ?>> headConcludables = implication.head();
+                    assertEquals(1, isaHeadConcludablesCount(headConcludables));
+                    assertEquals(1, hasHeadConcludablesCount(headConcludables));
+                    assertEquals(0, relationHeadConcludablesCount(headConcludables));
+                    assertEquals(1, valueHeadConcludablesCount(headConcludables));
 
-                    Set<Concludable<?>> bodyConcludables = implication.body();
-                    assertEquals(1, isaConcludablesCount(bodyConcludables));
-                    assertEquals(1, hasConcludablesCount(bodyConcludables));
-                    assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = implication.body();
+                    assertEquals(1, isaConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(1, hasConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, valueConjunctionConcludablesCount(bodyConcludables));
                 }
             }
         }
@@ -172,17 +189,17 @@ public class ImplicationTest {
 
                     Implication implication = new Implication(rule);
 
-                    Set<Concludable<?>> headConcludables = implication.head();
-                    assertEquals(0, isaConcludablesCount(headConcludables));
-                    assertEquals(1, hasConcludablesCount(headConcludables));
-                    assertEquals(0, relationConcludablesCount(headConcludables));
-                    assertEquals(0, valueConcludablesCount(headConcludables));
+                    Set<HeadConcludable<?, ?>> headConcludables = implication.head();
+                    assertEquals(0, isaHeadConcludablesCount(headConcludables));
+                    assertEquals(1, hasHeadConcludablesCount(headConcludables));
+                    assertEquals(0, relationHeadConcludablesCount(headConcludables));
+                    assertEquals(0, valueHeadConcludablesCount(headConcludables));
 
-                    Set<Concludable<?>> bodyConcludables = implication.body();
-                    assertEquals(2, isaConcludablesCount(bodyConcludables));
-                    assertEquals(0, hasConcludablesCount(bodyConcludables));
-                    assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = implication.body();
+                    assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
+                    assertEquals(0, valueConjunctionConcludablesCount(bodyConcludables));
                 }
             }
         }

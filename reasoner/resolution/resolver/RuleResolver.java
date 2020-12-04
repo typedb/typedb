@@ -32,11 +32,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 // TODO unify and materialise in receiveAnswer
-public class Rule extends Conjunction<Rule> {
-    private static final Logger LOG = LoggerFactory.getLogger(Rule.class);
+public class RuleResolver extends ConjunctionResolver<RuleResolver> {
+    private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
-    public Rule(Actor<Rule> self, List<Long> when, Long traversalSize) {
-        super(self, Rule.class.getSimpleName() + "(pattern:" + when + ")", when, traversalSize);
+    public RuleResolver(Actor<RuleResolver> self, List<Long> when, Long traversalSize) {
+        super(self, RuleResolver.class.getSimpleName() + "(pattern:" + when + ")", when, traversalSize);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class Rule extends Conjunction<Rule> {
                 return produceMessage(fromUpstream, responseProducer);
             }
         } else {
-            Actor<Concludable> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Actor<ConcludableResolver> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream),
                                                     conceptMap, fromDownstream.unifiers(), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);

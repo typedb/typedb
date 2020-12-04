@@ -22,7 +22,7 @@ import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.reasoner.resolution.framework.Answer;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public class ResolutionTest {
         List<Long> conjunctionPattern = list(atomicPattern);
         long conjunctionTraversalSize = 5L; // hard coded internally
 
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
         assertResponses(root, responses, doneReceived, atomicTraversalSize + conjunctionTraversalSize, registry);
     }
 
@@ -75,7 +75,7 @@ public class ResolutionTest {
         List<Long> conjunctionPattern = list(atomic2Pattern, atomic1Pattern);
         long conjunctionTraversalSize = 0L;
 
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
         assertResponses(root, responses, doneReceived, conjunctionTraversalSize + (atomic2TraversalSize * atomic1TraversalSize), registry);
     }
 
@@ -97,7 +97,7 @@ public class ResolutionTest {
         List<Long> conjunctionPattern = list(atomic2Pattern, atomic1Pattern);
         long conjunctionTraversalSize = 0L;
 
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
         assertResponses(root, responses, doneReceived, conjunctionTraversalSize + (atomic1TraversalSize * atomic2TraversalSize), registry);
     }
 
@@ -123,7 +123,7 @@ public class ResolutionTest {
         List<Long> conjunctionPattern = list(atomic2Pattern);
         long conjunctionTraversalSize = 0L;
 
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
         long answerCount = conjunctionTraversalSize + atomic2TraversalSize + ruleTraversalSize + atomic1TraversalSize;
         assertResponses(root, responses, doneReceived, answerCount, registry);
     }
@@ -154,7 +154,7 @@ public class ResolutionTest {
         List<Long> conjunctionPattern = list(atomic3Pattern, atomic2Pattern);
         long conjunctionTraversalSize = 0L;
 
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
         long answerCount = conjunctionTraversalSize + (atomic3TraversalSize * (atomic2TraversalSize + ruleTraversalSize + atomic1TraversalSize));
         assertResponses(root, responses, doneReceived, answerCount, registry);
     }
@@ -180,7 +180,7 @@ public class ResolutionTest {
 
         List<Long> conjunctionPattern = list(atomic3Pattern, atomic2Pattern, atomic1Pattern);
         long conjunctionTraversalSize = 0L;
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
 
         long answerCount = conjunctionTraversalSize + (atomic3TraversalSize * atomic2TraversalSize * atomic1TraversalSize);
         assertResponses(root, responses, doneReceived, answerCount, registry);
@@ -215,7 +215,7 @@ public class ResolutionTest {
 
         List<Long> conjunctionPattern = list(atomic5Pattern, atomic4Pattern, atomic3Pattern, atomic2Pattern, atomic1Pattern);
         long conjunctionTraversalSize = 0L;
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
 
         long answerCount = conjunctionTraversalSize + (atomic5TraversalSize * atomic4TraversalSize * atomic3TraversalSize * atomic2TraversalSize * atomic1TraversalSize);
         assertResponses(root, responses, doneReceived, answerCount, registry);
@@ -241,7 +241,7 @@ public class ResolutionTest {
 
         List<Long> conjunctionPattern = list(atomicPattern);
         long conjunctionTraversalSize = 0L;
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
 
         root.tell(actor ->
                           actor.executeReceiveRequest(
@@ -274,7 +274,7 @@ public class ResolutionTest {
 
         List<Long> conjunctionPattern = list(atomicPattern);
         long conjunctionTraversalSize = 0L;
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
 
         // the recursively produced answers will be identical, so will be deduplicated
         long answerCount = conjunctionTraversalSize + atomic1TraversalSize + ruleTraversalSize + atomic1TraversalSize - atomic1TraversalSize;
@@ -302,7 +302,7 @@ public class ResolutionTest {
 
         List<Long> conjunctionPattern = list(atomic2Pattern);
         long conjunctionTraversalSize = 1L;
-        Actor<Root> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
+        Actor<RootResolver> root = registerRoot(conjunctionPattern, conjunctionTraversalSize, responses::add, doneReceived::incrementAndGet, registry);
 
         long answerCount = conjunctionTraversalSize + atomic2TraversalSize + ruleTraversalSize + atomic1TraversalSize;
 
@@ -321,7 +321,7 @@ public class ResolutionTest {
     }
 
 
-    private Actor<Root> registerRoot(List<Long> pattern, long traversalSize, Consumer<Answer> onAnswer, Runnable onExhausted, ResolverRegistry resolverRegistry) {
+    private Actor<RootResolver> registerRoot(List<Long> pattern, long traversalSize, Consumer<Answer> onAnswer, Runnable onExhausted, ResolverRegistry resolverRegistry) {
         return resolverRegistry.createRoot(pattern, traversalSize, onAnswer, onExhausted);
     }
 
@@ -333,7 +333,7 @@ public class ResolutionTest {
         registry.registerRule(pattern, traversalSize);
     }
 
-    private void assertResponses(final Actor<Root> root, final LinkedBlockingQueue<Answer> responses,
+    private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<Answer> responses,
                                  final AtomicLong doneReceived, final long answerCount, ResolverRegistry registry)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();

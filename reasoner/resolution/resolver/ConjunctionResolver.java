@@ -38,15 +38,15 @@ import java.util.List;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
 
-public abstract class Conjunction<T extends Conjunction<T>> extends Resolver<T> {
-    private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
+public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> extends Resolver<T> {
+    private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
     final List<Long> conjunction;
     Actor<ResolutionRecorder> resolutionRecorder;
     private final Long traversalSize;
-    private final List<Actor<Concludable>> plannedConcludables;
+    private final List<Actor<ConcludableResolver>> plannedConcludables;
 
-    public Conjunction(Actor<T> self, String name, List<Long> conjunction, Long traversalSize) {
+    public ConjunctionResolver(Actor<T> self, String name, List<Long> conjunction, Long traversalSize) {
         super(self, name);
 
         this.conjunction = conjunction;
@@ -71,7 +71,7 @@ public abstract class Conjunction<T extends Conjunction<T>> extends Resolver<T> 
         List<Long> planned = list(conjunction);
         // in the future, we'll check if the atom is rule resolvable first
         for (Long atomicPattern : planned) {
-            Actor<Concludable> atomicActor = registry.registerConcludable(atomicPattern, Arrays.asList(), 5L);
+            Actor<ConcludableResolver> atomicActor = registry.registerConcludable(atomicPattern, Arrays.asList(), 5L);
             plannedConcludables.add(atomicActor);
         }
     }
@@ -80,7 +80,7 @@ public abstract class Conjunction<T extends Conjunction<T>> extends Resolver<T> 
         return plannedConcludables.get(plannedConcludables.size() - 1).equals(actor);
     }
 
-    Actor<Concludable> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    Actor<ConcludableResolver> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         return plannedConcludables.get(plannedConcludables.indexOf(actor) + 1);
     }
 

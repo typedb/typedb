@@ -109,7 +109,7 @@ host_compatible_java_test(
     srcs = [
         "concludable/ConcludableTest.java",
     ],
-    test_class = "grakn.core.reasoner.ConcludableTest",
+    test_class = "grakn.core.reasoner.concludable.ConcludableTest",
     deps = [
         # Internal dependencies
 
