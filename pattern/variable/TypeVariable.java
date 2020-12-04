@@ -30,6 +30,8 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.pattern.constraint.ConceptConstraint;
@@ -52,7 +54,7 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CON
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
-public class TypeVariable extends Variable {
+public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariable> {
 
     private LabelConstraint labelConstraint;
     private AbstractConstraint abstractConstraint;
@@ -239,4 +241,12 @@ public class TypeVariable extends Variable {
         else throw new RuntimeException("Unhandled reference type.");
     }
 
+    @Override
+    public AlphaEquivalence alphaEquals(TypeVariable that) {
+        return AlphaEquivalence.valid()
+                .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
+                .validIfAlphaEqual(labelConstraint, that.labelConstraint)
+                .validIfAlphaEqual(valueTypeConstraint, that.valueTypeConstraint)
+                .addMapping(this, that);
+    }
 }

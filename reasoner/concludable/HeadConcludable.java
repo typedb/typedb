@@ -28,7 +28,7 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -117,7 +117,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Relation> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList(this));
+            return Iterators.iterate(Collections.singletonList(this));
         }
 
         @Override
@@ -140,7 +140,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Has> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList(this));
+            return Iterators.iterate(Collections.singletonList(this));
         }
 
         @Override
@@ -163,7 +163,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Isa> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList(this));
+            return Iterators.iterate(Collections.singletonList(this));
         }
 
         @Override
@@ -186,7 +186,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Value> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList(this));
+            return Iterators.iterate(Collections.singletonList(this));
         }
 
         @Override

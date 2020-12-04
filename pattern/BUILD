@@ -17,6 +17,7 @@
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 package(
     default_visibility = [
@@ -29,13 +30,16 @@ package(
 
 native_java_libraries(
     name = "pattern",
-    srcs = glob([
-        "*.java",
+    srcs = glob(
+        ["*.java",
         "constraint/*.java",
         "constraint/thing/*.java",
         "constraint/type/*.java",
         "variable/*.java",
-    ]),
+        "equivalence/*.java",
+        ],
+        exclude = ["*Test.java", "*/*Test.java"],
+    ),
     deps = [
         # Internal dependencies
         "//common:common",
@@ -53,6 +57,23 @@ native_java_libraries(
         "//traversal:traversal",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-query-pattern:{pom_version}"],
+)
+
+host_compatible_java_test(
+    name = "test-alpha-equivalence",
+    srcs = [
+        "equivalence/AlphaEquivalenceTest.java",
+    ],
+    test_class = "grakn.core.pattern.equivalence.AlphaEquivalenceTest",
+    native_libraries_deps = [
+        "//pattern:pattern",
+    ],
+    deps = [
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/pattern",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(

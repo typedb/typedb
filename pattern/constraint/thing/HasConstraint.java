@@ -18,6 +18,8 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -28,7 +30,7 @@ import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.HAS;
 
-public class HasConstraint extends ThingConstraint {
+public class HasConstraint extends ThingConstraint implements AlphaEquivalent<HasConstraint> {
 
     private final ThingVariable attribute;
     private final int hash;
@@ -91,5 +93,10 @@ public class HasConstraint extends ThingConstraint {
         }
 
         return syntax.toString();
+    }
+
+    @Override
+    public AlphaEquivalence alphaEquals(HasConstraint that) {
+        return AlphaEquivalence.valid().validIfAlphaEqual(attribute, that.attribute);
     }
 }

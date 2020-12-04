@@ -18,6 +18,8 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -36,7 +38,7 @@ import static graql.lang.common.GraqlToken.Char.QUOTE;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
-public abstract class ValueConstraint<T> extends ThingConstraint {
+public abstract class ValueConstraint<T> extends ThingConstraint implements AlphaEquivalent<ValueConstraint<?>> {
 
     final GraqlToken.Predicate predicate;
     final T value;
@@ -159,6 +161,18 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
     @Override
     public java.lang.String toString() {
         return predicate.toString() + SPACE + value.toString();
+    }
+
+    public AlphaEquivalence alphaEquals(ValueConstraint<?> that) {
+        return AlphaEquivalence.valid()
+                .validIf(isLong() == that.isLong())
+                .validIf(isDouble() == that.isDouble())
+                .validIf(isBoolean() == that.isBoolean())
+                .validIf(isString() == that.isString())
+                .validIf(isDateTime() == that.isDateTime())
+                .validIf(!isVariable() && !that.isVariable())
+                .validIf(this.predicate.equals(that.predicate))
+                .validIf(this.value.equals(that.value));
     }
 
     public static class Long extends ValueConstraint<java.lang.Long> {
@@ -300,6 +314,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint {
         @Override
         public void addTo(Traversal traversal) {
             traversal.predicate(owner.identifier(), predicate.asEquality(), value.identifier());
+        }
+
+        @Override
+        public AlphaEquivalence alphaEquals(ValueConstraint<?> that) {
+            return AlphaEquivalence.valid()
+                    .validIf(isVariable() && that.isVariable())
+                    .validIf(this.predicate.equals(that.predicate))
+                    .validIfAlphaEqual(this.value, that.asVariable().value);
         }
     }
 }

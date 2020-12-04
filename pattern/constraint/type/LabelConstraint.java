@@ -19,6 +19,8 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
@@ -29,7 +31,7 @@ import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.TYPE;
 
-public class LabelConstraint extends TypeConstraint {
+public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<LabelConstraint> {
 
     private final Label label;
     private final int hash;
@@ -91,4 +93,9 @@ public class LabelConstraint extends TypeConstraint {
 
     @Override
     public String toString() { return "" + TYPE + SPACE + scopedLabel(); }
+
+    @Override
+    public AlphaEquivalence alphaEquals(LabelConstraint that) {
+        return AlphaEquivalence.valid().validIf(label().equals(that.label()));
+    }
 }

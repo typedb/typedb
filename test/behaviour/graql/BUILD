@@ -37,7 +37,6 @@ host_compatible_java_library(
         # External dependencies from Maven
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
-        "@maven//:com_google_guava_guava",
     ],
     native_libraries_deps = [
         "//concept:concept",

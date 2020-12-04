@@ -18,6 +18,8 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlArg;
@@ -28,7 +30,7 @@ import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.VALUE_TYPE;
 
-public class ValueTypeConstraint extends TypeConstraint {
+public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivalent<ValueTypeConstraint> {
 
     private final GraqlArg.ValueType valueType;
     private final int hash;
@@ -78,5 +80,10 @@ public class ValueTypeConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return "" + VALUE_TYPE + SPACE + valueType.toString();
+    }
+
+    @Override
+    public AlphaEquivalence alphaEquals(ValueTypeConstraint that) {
+        return AlphaEquivalence.valid().validIf(valueType().equals(that.valueType()));
     }
 }

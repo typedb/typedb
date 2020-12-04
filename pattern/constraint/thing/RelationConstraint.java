@@ -18,7 +18,10 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
@@ -29,6 +32,7 @@ import grakn.core.traversal.common.Identifier;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,7 +43,7 @@ import static graql.lang.common.GraqlToken.Char.PARAN_CLOSE;
 import static graql.lang.common.GraqlToken.Char.PARAN_OPEN;
 import static java.util.stream.Collectors.toList;
 
-public class RelationConstraint extends ThingConstraint {
+public class RelationConstraint extends ThingConstraint implements AlphaEquivalent<RelationConstraint> {
 
     private final List<RolePlayer> rolePlayers;
     private final int hash;
@@ -110,7 +114,25 @@ public class RelationConstraint extends ThingConstraint {
         return variables;
     }
 
-    public static class RolePlayer {
+    @Override
+    public AlphaEquivalence alphaEquals(RelationConstraint that) {
+        return AlphaEquivalence.valid()
+                .validIf(players().size() == that.players().size())
+                .addOrInvalidate(() -> Iterators.permutation(players()).stream().map(playersPermutation -> {
+                    Iterator<RolePlayer> thisRolePlayersIt = playersPermutation.iterator();
+                    Iterator<RolePlayer> thatRolePlayersIt = that.players().iterator();
+                    AlphaEquivalence permutationMap = AlphaEquivalence.valid();
+                    while (thisRolePlayersIt.hasNext() && thatRolePlayersIt.hasNext()) {
+                        permutationMap = permutationMap.validIfAlphaEqual(thisRolePlayersIt.next(), thatRolePlayersIt.next());
+                        if (!permutationMap.isValid()) {
+                            return permutationMap;
+                        }
+                    }
+                    return permutationMap;
+                }).filter(AlphaEquivalence::isValid).findFirst().orElse(AlphaEquivalence.invalid()));
+    }
+
+    public static class RolePlayer implements AlphaEquivalent<RolePlayer> {
 
         private final TypeVariable roleType;
         private final ThingVariable player;
@@ -165,6 +187,14 @@ public class RelationConstraint extends ThingConstraint {
         @Override
         public String toString() {
             return (roleType == null ? "" : roleType.referenceSyntax() + ":") + player.reference().toString();
+        }
+
+        @Override
+        public AlphaEquivalence alphaEquals(RolePlayer that) {
+            return AlphaEquivalence.valid()
+                    .validIf(roleTypeHints.equals(that.roleTypeHints))
+                    .validIfAlphaEqual(roleType, that.roleType)
+                    .validIfAlphaEqual(player, that.player);
         }
     }
 

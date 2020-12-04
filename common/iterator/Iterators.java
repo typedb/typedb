@@ -84,6 +84,10 @@ public class Iterators {
         return new CartesianIterator<>(iteratorProducers);
     }
 
+    public static <T> PermutationIterator<T> permutation(List<T> list) {
+        return new PermutationIterator<>(list);
+    }
+
     public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }

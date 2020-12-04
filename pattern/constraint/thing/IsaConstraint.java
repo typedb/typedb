@@ -19,6 +19,8 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -33,7 +35,7 @@ import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.ISA;
 import static graql.lang.common.GraqlToken.Constraint.ISAX;
 
-public class IsaConstraint extends ThingConstraint {
+public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<IsaConstraint> {
 
     private final TypeVariable type;
     private final boolean isExplicit;
@@ -112,5 +114,13 @@ public class IsaConstraint extends ThingConstraint {
     @Override
     public String toString() {
         return "" + (isExplicit ? ISAX : ISA) + SPACE + type.referenceSyntax();
+    }
+
+    @Override
+    public AlphaEquivalence alphaEquals(IsaConstraint that) {
+        return AlphaEquivalence.valid()
+                .validIf(isExplicit() == that.isExplicit())
+                .validIf(typeHints.equals(that.typeHints))
+                .validIfAlphaEqual(type, that.type);
     }
 }

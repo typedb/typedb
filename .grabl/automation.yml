@@ -54,11 +54,16 @@ build:
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
         bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
+    test-unit:
+      machine: graknlabs-ubuntu-20.04-java11
+      script: |
+        bazel test //common/... --test_output=errors
+        bazel test //pattern/... --test_output=errors
+        bazel test //reasoner/... --test_output=errors
     test-integration:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test //test/integration:test-basic --test_output=errors
-        bazel test //test/integration:test-query --test_output=errors
+        bazel test //test/integration/... --test_output=errors
     test-behaviour:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
@@ -70,7 +75,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-integration, test-behaviour]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
       script: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -80,7 +85,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-integration, test-behaviour]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
       script: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:

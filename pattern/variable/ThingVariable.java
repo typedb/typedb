@@ -26,6 +26,8 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 
@@ -45,7 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CO
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
-public class ThingVariable extends Variable {
+public class ThingVariable extends Variable implements AlphaEquivalent<ThingVariable> {
 
     private IIDConstraint iidConstraint;
     private IsaConstraint isaConstraint;
@@ -204,6 +206,17 @@ public class ThingVariable extends Variable {
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 
         return syntax.toString();
+    }
+
+    @Override
+    public AlphaEquivalence alphaEquals(ThingVariable that) {
+        return AlphaEquivalence.valid()
+        .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
+        .validIfAlphaEqual(isaConstraint, that.isaConstraint)
+        .validIfAlphaEqual(relationConstraints, that.relationConstraints)
+        .validIfAlphaEqual(hasConstraints, that.hasConstraints)
+        .validIfAlphaEqual(valueConstraints, that.valueConstraints)
+        .addMapping(this, that);
     }
 
 }
