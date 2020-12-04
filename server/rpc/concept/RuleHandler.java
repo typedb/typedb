@@ -19,7 +19,7 @@ package grakn.core.server.rpc.concept;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.schema.Rule;
+import grakn.core.concept.logic.Rule;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;

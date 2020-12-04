@@ -20,7 +20,6 @@ package grakn.core.graph.edge;
 
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 /**
@@ -28,13 +27,13 @@ import grakn.core.graph.vertex.TypeVertex;
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Type}.
  */
-public interface SchemaEdge extends Edge<Encoding.Edge.Schema, EdgeIID.Schema, SchemaVertex<?, ?>> {
+public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVertex> {
 
     @Override
-    SchemaVertex<?, ?> from();
+    TypeVertex from();
 
     @Override
-    SchemaVertex<?, ?> to();
+    TypeVertex to();
 
     /**
      * Returns the type vertex overridden by the head of this type edge.

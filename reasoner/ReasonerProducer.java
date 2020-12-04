@@ -19,8 +19,14 @@ package grakn.core.reasoner;
 
 import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.pattern.Conjunction;
+import grakn.core.reasoner.resolution.ResolverRegistry;
 
 public class ReasonerProducer implements Producer<ConceptMap> {
+
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
+
+    }
 
     @Override
     public void produce(Sink<ConceptMap> sink, int count) {

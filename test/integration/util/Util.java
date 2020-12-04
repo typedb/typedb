@@ -13,10 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package grakn.core.test.integration;
+package grakn.core.test.integration.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,13 +40,13 @@ public class Util {
         System.out.println("Database Directory created: " + directory.toString());
     }
 
-    static void assertNotNulls(Object... objects) {
+    public static void assertNotNulls(Object... objects) {
         for (Object object : objects) {
             assertNotNull(object);
         }
     }
 
-    private static void assertNulls(Object... objects) {
+    public static void assertNulls(Object... objects) {
         for (Object object : objects) {
             assertNull(object);
         }

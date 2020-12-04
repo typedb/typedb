@@ -29,6 +29,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
@@ -42,7 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static grakn.core.test.integration.Util.assertNotNulls;
+import static grakn.core.test.integration.util.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

@@ -21,6 +21,7 @@ package grakn.core.graph.util;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
+import grakn.core.graph.iid.LogicIID;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
 
@@ -114,10 +115,10 @@ public class KeyGenerator {
             }
 
             private void syncRuleKey(Storage storage) {
-                final byte[] prefix = Encoding.Vertex.RULE.prefix().bytes();
+                final byte[] prefix = Encoding.Logic.RULE.prefix().bytes();
                 final byte[] lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Rule.LENGTH)) + delta);
+                    ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, LogicIID.Rule.LENGTH)) + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -131,7 +132,7 @@ public class KeyGenerator {
         private static final long LONG_MIN_VALUE = Long.MIN_VALUE + 64;
 
         protected final ConcurrentMap<PrefixIID, AtomicInteger> typeKeys;
-        protected final ConcurrentMap<VertexIID.Schema, AtomicLong> thingKeys;
+        protected final ConcurrentMap<VertexIID.Type, AtomicLong> thingKeys;
         protected final int initialValue;
         protected final int delta;
 
@@ -171,7 +172,7 @@ public class KeyGenerator {
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     final byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
                     final ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid)
-                            .filter(iid1 -> iid1.length == VertexIID.Schema.LENGTH);
+                            .filter(iid1 -> iid1.length == VertexIID.Type.LENGTH);
                     while (typeIterator.hasNext()) {
                         final byte[] typeIID = typeIterator.next();
                         final byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
@@ -179,7 +180,7 @@ public class KeyGenerator {
                         final AtomicLong nextValue = lastIID != null ?
                                 new AtomicLong(sortedBytesToLong(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
-                        thingKeys.put(VertexIID.Schema.of(typeIID), nextValue);
+                        thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
                     }
                 }
             }

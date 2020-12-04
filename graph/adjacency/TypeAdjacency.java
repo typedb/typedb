@@ -19,13 +19,11 @@
 package grakn.core.graph.adjacency;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.graph.edge.SchemaEdge;
+import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.RuleVertex;
-import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
-public interface SchemaAdjacency {
+public interface TypeAdjacency {
 
     /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
@@ -38,8 +36,6 @@ public interface SchemaAdjacency {
      */
     TypeIteratorBuilder edge(Encoding.Edge.Type encoding);
 
-    RuleIteratorBuilder edge(Encoding.Edge.Rule encoding);
-
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
      * vertex.
@@ -48,9 +44,9 @@ public interface SchemaAdjacency {
      * @param adjacent vertex that the edge connects to
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    SchemaEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent);
+    TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent);
 
-    SchemaEdge put(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> adjacent);
+    TypeEdge put(Encoding.Edge.Type encoding, TypeVertex adjacent);
 
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.
@@ -61,29 +57,40 @@ public interface SchemaAdjacency {
      *
      * @param encoding type of the edge to the adjacent vertex
      */
-    void delete(Encoding.Edge.Schema encoding);
+    void delete(Encoding.Edge.Type encoding);
 
     void deleteAll();
 
-    SchemaEdge cache(SchemaEdge edge);
+    TypeEdge cache(TypeEdge edge);
 
-    void remove(SchemaEdge edge);
+    void remove(TypeEdge edge);
 
     void commit();
 
-    interface TypeIteratorBuilder {
 
-        ResourceIterator<TypeVertex> from();
+    /**
+     * When used in combination with purely retrieving type edges (by infix encoding),
+     * this iterator builder performs safe vertex downcasts at both ends of the edge
+     */
+    class TypeIteratorBuilder {
 
-        ResourceIterator<TypeVertex> to();
+        private final ResourceIterator<TypeEdge> edgeIterator;
 
-        ResourceIterator<TypeVertex> overridden();
+        public TypeIteratorBuilder(ResourceIterator<TypeEdge> edgeIterator) {
+            this.edgeIterator = edgeIterator;
+        }
+
+        public ResourceIterator<TypeVertex> from() {
+            return edgeIterator.map(edge -> edge.from().asType());
+        }
+
+        public ResourceIterator<TypeVertex> to() {
+            return edgeIterator.map(edge -> edge.to().asType());
+        }
+
+        public ResourceIterator<TypeVertex> overridden() {
+            return edgeIterator.map(TypeEdge::overridden);
+        }
     }
 
-    interface RuleIteratorBuilder {
-
-        ResourceIterator<RuleVertex> from();
-
-        ResourceIterator<TypeVertex> to();
-    }
 }

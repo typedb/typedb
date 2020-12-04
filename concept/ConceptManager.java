@@ -20,8 +20,8 @@ package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.schema.Rule;
-import grakn.core.concept.schema.impl.RuleImpl;
+import grakn.core.concept.logic.Rule;
+import grakn.core.concept.logic.impl.RuleImpl;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
@@ -36,8 +36,8 @@ import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.logic.RuleLogic;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.RuleVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
@@ -162,14 +162,14 @@ public final class ConceptManager {
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        final RuleVertex vertex = graphMgr.schema().getRule(label);
+        final RuleLogic vertex = graphMgr.schema().getRule(label);
         if (vertex != null) vertex.delete();
         return RuleImpl.of(graphMgr, label, when, then);
     }
 
     public Rule getRule(String label) {
-        final RuleVertex ruleVertex = graphMgr.schema().getRule(label);
-        if (ruleVertex != null) return RuleImpl.of(graphMgr, ruleVertex);
+        final RuleLogic ruleLogic = graphMgr.schema().getRule(label);
+        if (ruleLogic != null) return RuleImpl.of(graphMgr, ruleLogic);
         return null;
     }
 

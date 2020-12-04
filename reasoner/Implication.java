@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.concept.schema.Rule;
+import grakn.core.concept.logic.Rule;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.concludable.ConjunctionConcludable;

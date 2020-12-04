@@ -15,19 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.test.integration;
+package grakn.core.reasoner;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.schema.Rule;
+import grakn.core.concept.logic.Rule;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.reasoner.Implication;
 import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.concludable.HeadConcludable;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import org.junit.Test;
 

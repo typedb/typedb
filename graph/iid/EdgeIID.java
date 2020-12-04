@@ -78,36 +78,36 @@ public abstract class EdgeIID<
         return readableString;
     }
 
-    public static class Schema extends EdgeIID<Encoding.Edge.Schema, InfixIID.Schema, VertexIID.Schema, VertexIID.Schema> {
+    public static class Type extends EdgeIID<Encoding.Edge.Type, InfixIID.Type, VertexIID.Type, VertexIID.Type> {
 
-        Schema(byte[] bytes) {
+        Type(byte[] bytes) {
             super(bytes);
         }
 
-        public static Schema of(byte[] bytes) {
-            return new Schema(bytes);
+        public static Type of(byte[] bytes) {
+            return new Type(bytes);
         }
 
-        public static Schema of(VertexIID.Schema start, Encoding.Infix infix, VertexIID.Schema end) {
-            return new Schema(join(start.bytes, infix.bytes(), end.bytes));
+        public static Type of(VertexIID.Type start, Encoding.Infix infix, VertexIID.Type end) {
+            return new Type(join(start.bytes, infix.bytes(), end.bytes));
         }
 
         @Override
-        public InfixIID.Schema infix() {
-            if (infix == null) infix = InfixIID.Schema.extract(bytes, VertexIID.Schema.LENGTH);
+        public InfixIID.Type infix() {
+            if (infix == null) infix = InfixIID.Type.extract(bytes, VertexIID.Type.LENGTH);
             return infix;
         }
 
         @Override
-        public VertexIID.Schema start() {
-            if (start == null) start = VertexIID.Schema.of(copyOfRange(bytes, 0, VertexIID.Schema.LENGTH));
+        public VertexIID.Type start() {
+            if (start == null) start = VertexIID.Type.of(copyOfRange(bytes, 0, VertexIID.Type.LENGTH));
             return start;
         }
 
         @Override
-        public VertexIID.Schema end() {
+        public VertexIID.Type end() {
             if (end != null) return end;
-            end = VertexIID.Schema.of(copyOfRange(bytes, bytes.length - VertexIID.Schema.LENGTH, bytes.length));
+            end = VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length));
             return end;
         }
     }

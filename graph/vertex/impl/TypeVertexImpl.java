@@ -21,8 +21,8 @@ package grakn.core.graph.vertex.impl;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.adjacency.SchemaAdjacency;
-import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
+import grakn.core.graph.adjacency.TypeAdjacency;
+import grakn.core.graph.adjacency.impl.TypeAdjacencyImpl;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -48,12 +48,17 @@ import static grakn.core.graph.util.Encoding.Property.SCOPE;
 import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
 import static java.lang.Math.toIntExact;
 
-public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, Encoding.Vertex.Type> implements TypeVertex {
+public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 
-    protected String scope;
-    protected Boolean isAbstract; // needs to be declared as the Boolean class
-    protected Encoding.ValueType valueType;
-    protected Pattern regex;
+    final SchemaGraph graph;
+    final AtomicBoolean isDeleted;
+    final TypeAdjacency outs;
+    final TypeAdjacency ins;
+    String label;
+    String scope;
+    Boolean isAbstract; // needs to be declared as the Boolean class
+    Encoding.ValueType valueType;
+    Pattern regex;
 
     private final AtomicInteger outOwnsCount;
     private final AtomicInteger outPlaysCount;
@@ -61,11 +66,15 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     private final AtomicInteger inOwnsCount;
     private final AtomicInteger inPlaysCount;
 
-
     TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
-        super(graph, iid, label);
+        super(iid);
         assert iid.isType();
+        this.graph = graph;
+        this.label = label;
         this.scope = scope;
+        this.isDeleted = new AtomicBoolean(false);
+        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
+        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         outOwnsCount = new AtomicInteger(-1);
         outPlaysCount = new AtomicInteger(-1);
         outRelatesCount = new AtomicInteger(-1);
@@ -73,6 +82,35 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         inPlaysCount = new AtomicInteger(-1);
     }
 
+
+    @Override
+    public SchemaGraph graph() {
+        return graph;
+    }
+
+    @Override
+    public void setModified() {
+        if (!isModified) {
+            isModified = true;
+            graph.setModified();
+        }
+    }
+    @Override
+    public boolean isDeleted() {
+        return isDeleted.get();
+    }
+
+    @Override
+    public TypeAdjacency outs() {
+        return outs;
+    }
+
+    @Override
+    public TypeAdjacency ins() {
+        return ins;
+    }
+
+    @Override
     public Encoding.Vertex.Type encoding() {
         return iid.encoding();
     }
@@ -82,6 +120,11 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
 
     @Override
     public TypeVertex asType() { return this; }
+
+    @Override
+    public String label() {
+        return label;
+    }
 
     @Override
     public String scope() {
@@ -97,6 +140,14 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
     public Label properLabel() {
         return Label.of(label, scope);
     }
+
+    /**
+     * Instantiates a new {@code TypeAdjacency} class
+     *
+     * @param direction the direction of the edges held in {@code TypeAdjacency}
+     * @return the new {@code TypeAdjacency} class
+     */
+    protected abstract TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
     public int outOwnsCount(boolean isKey) {
@@ -142,6 +193,16 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         graph.delete(this);
     }
 
+    void deleteEdges() {
+        ins.deleteAll();
+        outs.deleteAll();
+    }
+
+    void commitEdges() {
+        outs.commit();
+        ins.commit();
+    }
+
     public static class Buffered extends TypeVertexImpl {
 
         private final AtomicBoolean isCommitted;
@@ -153,8 +214,8 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new SchemaAdjacencyImpl.Buffered(this, direction);
+        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
+            return new TypeAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
@@ -284,8 +345,8 @@ public abstract class TypeVertexImpl extends SchemaVertexImpl<VertexIID.Type, En
         }
 
         @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new SchemaAdjacencyImpl.Persisted(this, direction);
+        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
+            return new TypeAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override

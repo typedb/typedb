@@ -13,21 +13,43 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package grakn.core.graph.vertex;
+package grakn.core.graph.logic;
 
-import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.iid.LogicIID;
 import grakn.core.graph.util.Encoding;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
-public interface RuleVertex extends SchemaVertex<VertexIID.Rule, Encoding.Vertex.Schema.Rule> {
+public interface RuleLogic {
+
+    LogicIID.Rule iid();
+
+    void iid(LogicIID.Rule iid);
+
+    String label();
+
+    void label(String label);
+
+    Encoding.Status status();
+
+    void setModified();
+
+    boolean isModified();
+
+    void delete();
+
+    boolean isDeleted();
 
     Conjunction<? extends Pattern> when();
 
     ThingVariable<?> then();
+
+    /**
+     * Commits this {@code RuleLogic} to be persisted onto storage.
+     */
+    void commit();
 }
 

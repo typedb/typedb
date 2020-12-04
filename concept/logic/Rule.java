@@ -16,14 +16,12 @@
  *
  */
 
-package grakn.core.concept.schema;
+package grakn.core.concept.logic;
 
-import grakn.core.concept.type.Type;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 public interface Rule {
 
@@ -38,12 +36,6 @@ public interface Rule {
     Conjunction when();
 
     Set<Constraint> then();
-
-    Stream<? extends Type> positiveConditionTypes();
-
-    Stream<? extends Type> negativeConditionTypes();
-
-    Stream<? extends Type> conclusionTypes();
 
     boolean isDeleted();
 

@@ -20,7 +20,6 @@ package grakn.core.concept.type;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.schema.Rule;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -42,12 +41,6 @@ public interface Type extends Concept {
     Stream<? extends Type> getSupertypes();
 
     Stream<? extends Type> getSubtypes();
-
-    Stream<? extends Rule> getPositiveConditionRules();
-
-    Stream<? extends Rule> getNegativeConditionRules();
-
-    Stream<? extends Rule> getConcludingRules();
 
     List<GraknException> validate();
 

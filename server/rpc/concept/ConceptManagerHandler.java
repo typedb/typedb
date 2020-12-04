@@ -20,7 +20,7 @@ package grakn.core.server.rpc.concept;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.schema.Rule;
+import grakn.core.concept.logic.Rule;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;

@@ -28,7 +28,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.edge.SchemaEdge;
+import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -135,7 +135,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unsetOwns(AttributeType attributeType) {
-        SchemaEdge edge;
+        TypeEdge edge;
         final TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
             throw new GraknException(INVALID_UNDEFINE_OWNS_HAS_INSTANCES.message(vertex.label(), attVertex.label()));
@@ -163,8 +163,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         final TypeVertex attVertex = attributeType.vertex;
-        final SchemaEdge ownsEdge;
-        final SchemaEdge ownsKeyEdge;
+        final TypeEdge ownsEdge;
+        final TypeEdge ownsKeyEdge;
 
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
@@ -195,7 +195,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         final TypeVertex attVertex = attributeType.vertex;
-        final SchemaEdge keyEdge;
+        final TypeEdge keyEdge;
         if ((keyEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) keyEdge.delete();
         vertex.outs().put(OWNS, attVertex);
     }
@@ -271,7 +271,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unsetPlays(RoleType roleType) {
-        final SchemaEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        final TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) return;
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
             throw new GraknException(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES.message(vertex.label(), roleType.getScopedLabel()));

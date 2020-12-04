@@ -23,14 +23,14 @@ import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
+import grakn.core.graph.iid.LogicIID;
 import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.logic.RuleLogic;
+import grakn.core.graph.logic.impl.RuleLogicImpl;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
-import grakn.core.graph.vertex.RuleVertex;
-import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.impl.RuleVertexImpl;
 import grakn.core.graph.vertex.impl.TypeVertexImpl;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -47,7 +47,6 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
@@ -75,9 +74,9 @@ public class SchemaGraph implements Graph {
     private final Storage.Schema storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
-    private final ConcurrentMap<String, RuleVertex> rulesByLabel;
+    private final ConcurrentMap<String, RuleLogic> rulesByLabel;
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
-    private final ConcurrentMap<VertexIID.Rule, RuleVertex> rulesByIID;
+    private final ConcurrentMap<LogicIID.Rule, RuleLogic> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
     private final Statistics statistics;
@@ -212,16 +211,6 @@ public class SchemaGraph implements Graph {
         return typesByIID.values().stream();
     }
 
-    public Stream<RuleVertex> bufferedRules() {
-        return rulesByIID.values().stream();
-    }
-
-    public SchemaVertex<?, ?> convert(VertexIID.Schema iid) {
-        if (iid.isType()) return convert(iid.asType());
-        if (iid.isRule()) return convert(iid.asRule());
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
@@ -230,11 +219,11 @@ public class SchemaGraph implements Graph {
         });
     }
 
-    public RuleVertex convert(VertexIID.Rule iid) {
+    public RuleLogic convert(LogicIID.Rule iid) {
         return rulesByIID.computeIfAbsent(iid, i -> {
-            final RuleVertex vertex = new RuleVertexImpl.Persisted(this, i);
-            rulesByLabel.putIfAbsent(vertex.label(), vertex);
-            return vertex;
+            final RuleLogic logic = new RuleLogicImpl.Persisted(this, i);
+            rulesByLabel.putIfAbsent(logic.label(), logic);
+            return logic;
         });
     }
 
@@ -274,20 +263,20 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex getRule(String label) {
+    public RuleLogic getRule(String label) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
 
-            RuleVertex vertex = rulesByLabel.get(label);
+            RuleLogic vertex = rulesByLabel.get(label);
             if (vertex != null) return vertex;
 
             final IndexIID.Rule index = IndexIID.Rule.of(label);
             final byte[] iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = rulesByIID.computeIfAbsent(
-                        VertexIID.Rule.of(iid), i -> new RuleVertexImpl.Persisted(this, i)
+                        LogicIID.Rule.of(iid), i -> new RuleLogicImpl.Persisted(this, i)
                 );
                 rulesByLabel.putIfAbsent(label, vertex);
             }
@@ -325,17 +314,17 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+    public RuleLogic create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
 
-            final RuleVertex ruleVertex = rulesByLabel.computeIfAbsent(label, i -> new RuleVertexImpl.Buffered(
-                    this, VertexIID.Rule.generate(keyGenerator), label, when, then
+            final RuleLogic ruleLogic = rulesByLabel.computeIfAbsent(label, i -> new RuleLogicImpl.Buffered(
+                    this, LogicIID.Rule.generate(keyGenerator), label, when, then
             ));
-            rulesByIID.put(ruleVertex.iid(), ruleVertex);
-            return ruleVertex;
+            rulesByIID.put(ruleLogic.iid(), ruleLogic);
+            return ruleLogic;
         } catch (InterruptedException e) {
             throw new GraknException(e);
         } finally {
@@ -362,11 +351,11 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleVertex update(RuleVertex vertex, String oldLabel, String newLabel) {
+    public RuleLogic update(RuleLogic vertex, String oldLabel, String newLabel) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockWrite();
-            final RuleVertex rule = getRule(newLabel);
+            final RuleLogic rule = getRule(newLabel);
             if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE.message(newLabel));
             rulesByLabel.remove(oldLabel);
             rulesByLabel.put(newLabel, vertex);
@@ -394,7 +383,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public void delete(RuleVertex vertex) {
+    public void delete(RuleLogic vertex) {
         assert storage.isOpen();
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             // TODO do we need all these locks here? Are they applicable for this method?
@@ -446,10 +435,10 @@ public class SchemaGraph implements Graph {
                 typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                ruleVertex -> ruleVertex.iid(VertexIID.Rule.generate(storage.schemaKeyGenerator()))
+                ruleLogic -> ruleLogic.iid(LogicIID.Rule.generate(storage.schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
-        typesByIID.values().forEach(SchemaVertex::commit);
-        rulesByIID.values().forEach(SchemaVertex::commit);
+        typesByIID.values().forEach(TypeVertex::commit);
+        rulesByIID.values().forEach(RuleLogic::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
     }
 

@@ -46,11 +46,8 @@ public abstract class IndexIID extends IID {
         super(bytes);
     }
 
-    public abstract static class Schema extends IndexIID {
-        Schema(byte[] bytes) { super(bytes); }
-    }
 
-    public static class Type extends IndexIID.Schema {
+    public static class Type extends IndexIID {
 
         Type(byte[] bytes) {
             super(bytes);
@@ -77,15 +74,15 @@ public abstract class IndexIID extends IID {
         }
     }
 
-    public static class Rule extends IndexIID.Schema {
+    public static class Rule extends IndexIID {
 
         Rule(byte[] bytes) { super(bytes); }
 
         /**
-         * Returns the index address of given {@code RuleVertex}
+         * Returns the index address of given {@code RuleLogic}
          *
-         * @param label of the {@code RuleVertex}
-         * @return a byte array representing the index address of a {@code RuleVertex}
+         * @param label of the {@code RuleLogic}
+         * @return a byte array representing the index address of a {@code RuleLogic}
          */
         public static Rule of(String label) {
             return new Rule(join(Encoding.Index.RULE.prefix().bytes(), label.getBytes(STRING_ENCODING)));
@@ -113,24 +110,24 @@ public abstract class IndexIID extends IID {
             return new Attribute(join(Encoding.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
         }
 
-        public static Attribute of(boolean value, VertexIID.Schema schemaIID) {
-            return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, schemaIID.bytes);
+        public static Attribute of(boolean value, VertexIID.Type typeIID) {
+            return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
         }
 
-        public static Attribute of(long value, VertexIID.Schema schemaIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), longToSortedBytes(value), schemaIID.bytes);
+        public static Attribute of(long value, VertexIID.Type typeIID) {
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
         }
 
-        public static Attribute of(double value, VertexIID.Schema schemaIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), schemaIID.bytes);
+        public static Attribute of(double value, VertexIID.Type typeIID) {
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
         }
 
-        public static Attribute of(String value, VertexIID.Schema schemaIID) {
-            return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), schemaIID.bytes);
+        public static Attribute of(String value, VertexIID.Type typeIID) {
+            return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), typeIID.bytes);
         }
 
-        public static Attribute of(LocalDateTime value, VertexIID.Schema schemaIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), schemaIID.bytes);
+        public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
@@ -149,10 +146,10 @@ public abstract class IndexIID extends IID {
                         value = sortedBytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
                         break;
                     case STRING:
-                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Schema.LENGTH), STRING_ENCODING);
+                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), STRING_ENCODING);
                         break;
                     case DATETIME:
-                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Schema.LENGTH), TIME_ZONE_ID).toString();
+                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";
@@ -161,8 +158,8 @@ public abstract class IndexIID extends IID {
 
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
-                        "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Schema.LENGTH)) + ": " + value + "]" +
-                        "[" + VertexIID.Schema.LENGTH + ": " + VertexIID.Schema.of(copyOfRange(bytes, bytes.length - VertexIID.Schema.LENGTH, bytes.length)).toString() + "]";
+                        "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
+                        "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length)).toString() + "]";
             }
             return readableString;
         }

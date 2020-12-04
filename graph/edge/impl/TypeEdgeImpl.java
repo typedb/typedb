@@ -19,11 +19,10 @@
 package grakn.core.graph.edge.impl;
 
 import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.edge.SchemaEdge;
+import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.SchemaVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -34,12 +33,12 @@ import static java.util.Objects.hash;
 /**
  * A Type Edge that connects two Type Vertices, and an overridden Type Vertex.
  */
-public abstract class SchemaEdgeImpl implements SchemaEdge {
+public abstract class TypeEdgeImpl implements TypeEdge {
 
     final SchemaGraph graph;
-    final Encoding.Edge.Schema encoding;
+    final Encoding.Edge.Type encoding;
 
-    SchemaEdgeImpl(SchemaGraph graph, Encoding.Edge.Schema encoding) {
+    TypeEdgeImpl(SchemaGraph graph, Encoding.Edge.Type encoding) {
         this.graph = graph;
         this.encoding = encoding;
     }
@@ -47,10 +46,10 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
     /**
      * A Buffered Type Edge that connects two Type Vertices, and an overridden Type Vertex.
      */
-    public static class Buffered extends SchemaEdgeImpl implements SchemaEdge {
+    public static class Buffered extends TypeEdgeImpl implements TypeEdge {
 
-        private final SchemaVertex<?, ?> from;
-        private final SchemaVertex<?, ?> to;
+        private final TypeVertex from;
+        private final TypeVertex to;
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
         private TypeVertex overridden;
@@ -63,7 +62,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @param encoding the edge {@code Encoding}
          * @param to       the head vertex
          */
-        public Buffered(Encoding.Edge.Schema encoding, SchemaVertex<?, ?> from, SchemaVertex<?, ?> to) {
+        public Buffered(Encoding.Edge.Type encoding, TypeVertex from, TypeVertex to) {
             super(from.graph(), encoding);
             assert this.graph == to.graph();
             this.from = from;
@@ -73,27 +72,27 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         }
 
         @Override
-        public Encoding.Edge.Schema encoding() {
+        public Encoding.Edge.Type encoding() {
             return encoding;
         }
 
         @Override
-        public EdgeIID.Schema outIID() {
-            return EdgeIID.Schema.of(from().iid(), encoding.out(), to().iid());
+        public EdgeIID.Type outIID() {
+            return EdgeIID.Type.of(from().iid(), encoding.out(), to().iid());
         }
 
         @Override
-        public EdgeIID.Schema inIID() {
-            return EdgeIID.Schema.of(to().iid(), encoding.in(), from().iid());
+        public EdgeIID.Type inIID() {
+            return EdgeIID.Type.of(to().iid(), encoding.in(), from().iid());
         }
 
         @Override
-        public SchemaVertex<?, ?> from() {
+        public TypeVertex from() {
             return from;
         }
 
         @Override
-        public SchemaVertex<?, ?> to() {
+        public TypeVertex to() {
             return to;
         }
 
@@ -162,7 +161,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final SchemaEdgeImpl.Buffered that = (SchemaEdgeImpl.Buffered) object;
+            final TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
             return (this.encoding.equals(that.encoding) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to));
@@ -188,15 +187,15 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
-    public static class Persisted extends SchemaEdgeImpl implements SchemaEdge {
+    public static class Persisted extends TypeEdgeImpl implements TypeEdge {
 
-        private final EdgeIID.Schema outIID;
-        private final EdgeIID.Schema inIID;
-        private final VertexIID.Schema fromIID;
-        private final VertexIID.Schema toIID;
+        private final EdgeIID.Type outIID;
+        private final EdgeIID.Type inIID;
+        private final VertexIID.Type fromIID;
+        private final VertexIID.Type toIID;
         private final AtomicBoolean deleted;
-        private SchemaVertex<?, ?> from;
-        private SchemaVertex<?, ?> to;
+        private TypeVertex from;
+        private TypeVertex to;
         private VertexIID.Type overriddenIID;
         private TypeVertex overridden;
         private int hash;
@@ -216,19 +215,19 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(SchemaGraph graph, EdgeIID.Schema iid, @Nullable VertexIID.Type overriddenIID) {
+        public Persisted(SchemaGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
             super(graph, iid.encoding());
 
             if (iid.isOutwards()) {
                 fromIID = iid.start();
                 toIID = iid.end();
                 outIID = iid;
-                inIID = EdgeIID.Schema.of(iid.end(), iid.encoding().in(), iid.start());
+                inIID = EdgeIID.Type.of(iid.end(), iid.encoding().in(), iid.start());
             } else {
                 fromIID = iid.end();
                 toIID = iid.start();
                 inIID = iid;
-                outIID = EdgeIID.Schema.of(iid.end(), iid.encoding().out(), iid.start());
+                outIID = EdgeIID.Type.of(iid.end(), iid.encoding().out(), iid.start());
             }
 
             deleted = new AtomicBoolean(false);
@@ -242,22 +241,22 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         }
 
         @Override
-        public Encoding.Edge.Schema encoding() {
+        public Encoding.Edge.Type encoding() {
             return encoding;
         }
 
         @Override
-        public EdgeIID.Schema outIID() {
+        public EdgeIID.Type outIID() {
             return outIID;
         }
 
         @Override
-        public EdgeIID.Schema inIID() {
+        public EdgeIID.Type inIID() {
             return inIID;
         }
 
         @Override
-        public SchemaVertex<?, ?> from() {
+        public TypeVertex from() {
             if (from != null) return from;
             from = graph.convert(fromIID);
             from.outs().cache(this);
@@ -265,7 +264,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         }
 
         @Override
-        public SchemaVertex<?, ?> to() {
+        public TypeVertex to() {
             if (to != null) return to;
             to = graph.convert(toIID);
             to.ins().cache(this);
@@ -340,7 +339,7 @@ public abstract class SchemaEdgeImpl implements SchemaEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final SchemaEdgeImpl.Persisted that = (SchemaEdgeImpl.Persisted) object;
+            final TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
             return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
                     this.toIID.equals(that.toIID));

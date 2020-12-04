@@ -117,7 +117,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Relation> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList());
+            return Iterators.iterate(Arrays.asList(this));
         }
 
         @Override
@@ -140,7 +140,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Has> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList());
+            return Iterators.iterate(Arrays.asList(this));
         }
 
         @Override
@@ -163,7 +163,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Isa> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList());
+            return Iterators.iterate(Arrays.asList(this));
         }
 
         @Override
@@ -186,7 +186,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, T extends H
         @Override
         ResourceIterator<Value> getGeneralisations() {
             // TODO
-            return Iterators.iterate(Arrays.asList());
+            return Iterators.iterate(Arrays.asList(this));
         }
 
         @Override

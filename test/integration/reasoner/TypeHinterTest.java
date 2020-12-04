@@ -28,7 +28,7 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.tool.TypeHinter;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.Util;
+import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlMatch;

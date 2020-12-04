@@ -13,20 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- *
  */
 
-package grakn.core.graph.vertex.impl;
+package grakn.core.graph.logic.impl;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.adjacency.SchemaAdjacency;
-import grakn.core.graph.adjacency.impl.SchemaAdjacencyImpl;
 import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.VertexIID;
+import grakn.core.graph.iid.LogicIID;
+import grakn.core.graph.logic.RuleLogic;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.RuleVertex;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -39,29 +35,63 @@ import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.THEN;
 import static grakn.core.graph.util.Encoding.Property.WHEN;
 
-/*
-TODO: when reasoner's higher level Implication and Implication Graph structure exists, we will no longer need
-TODO: to persist rule edges and can simplify the schema edge to be a basic type edge only
- */
-public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, Encoding.Vertex.Schema.Rule> implements RuleVertex {
+public abstract class RuleLogicImpl implements RuleLogic {
 
-    protected Conjunction<? extends Pattern> when;
-    protected ThingVariable<?> then;
+    final SchemaGraph graph;
+    final AtomicBoolean isDeleted;
+    final Conjunction<? extends Pattern> when;
+    final ThingVariable<?> then;
+    LogicIID.Rule iid;
+    String label;
 
-    RuleVertexImpl(SchemaGraph graph, VertexIID.Rule iid, String label,
-                   Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        super(graph, iid, label);
+    private boolean isModified;
+
+    RuleLogicImpl(SchemaGraph graph, LogicIID.Rule iid, String label,
+                  Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert when != null;
         assert then != null;
+        this.graph = graph;
+        this.iid = iid;
+        this.label = label;
         this.when = when;
         this.then = then;
+        this.isDeleted = new AtomicBoolean(false);
     }
 
-    RuleVertexImpl(SchemaGraph graph, VertexIID.Rule iid, String label) {
-        super(graph, iid, label);
+    @Override
+    public LogicIID.Rule iid() {
+        return iid;
     }
 
-    public Encoding.Vertex.Schema.Rule encoding() {
+    @Override
+    public void iid(LogicIID.Rule iid) {
+        this.iid = iid;
+    }
+
+    @Override
+    public String label() {
+        return label;
+    }
+
+    @Override
+    public boolean isModified() {
+        return isModified;
+    }
+
+    @Override
+    public void setModified() {
+        if (!isModified) {
+            isModified = true;
+            graph.setModified();
+        }
+    }
+
+    @Override
+    public boolean isDeleted() {
+        return isDeleted.get();
+    }
+
+    public Encoding.Logic encoding() {
         return iid.encoding();
     }
 
@@ -69,21 +99,14 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         graph.delete(this);
     }
 
-    public RuleVertex asRule() { return this; }
-
-    public static class Buffered extends RuleVertexImpl {
+    public static class Buffered extends RuleLogicImpl {
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(SchemaGraph graph, VertexIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+        public Buffered(SchemaGraph graph, LogicIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
-        }
-
-        @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new SchemaAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
@@ -106,7 +129,6 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                deleteEdges();
                 deleteVertexFromGraph();
             }
         }
@@ -116,7 +138,6 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
             if (isCommitted.compareAndSet(false, true)) {
                 commitVertex();
                 commitProperties();
-                commitEdges();
             }
         }
 
@@ -145,10 +166,13 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
     }
 
-    public static class Persisted extends RuleVertexImpl {
+    public static class Persisted extends RuleLogicImpl {
 
-        public Persisted(SchemaGraph graph, VertexIID.Rule iid) {
-            super(graph, iid, new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))));
+        public Persisted(SchemaGraph graph, LogicIID.Rule iid) {
+            super(graph, iid,
+                    new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
+                    Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),
+                    Graql.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing());
         }
 
         @Override
@@ -158,23 +182,12 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
 
         @Override
         public Conjunction<? extends Pattern> when() {
-            if (when == null) {
-                when = Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction();
-            }
             return when;
         }
 
         @Override
         public ThingVariable<?> then() {
-            if (then == null) {
-                then = Graql.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing();
-            }
             return then;
-        }
-
-        @Override
-        protected SchemaAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new SchemaAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override
@@ -187,14 +200,11 @@ public abstract class RuleVertexImpl extends SchemaVertexImpl<VertexIID.Rule, En
         }
 
         @Override
-        public void commit() {
-            commitEdges();
-        }
+        public void commit() { }
 
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                deleteEdges();
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }

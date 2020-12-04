@@ -19,18 +19,35 @@
 
 package grakn.core.graph.vertex;
 
+import grakn.core.common.parameters.Label;
+import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.adjacency.TypeAdjacency;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
 import java.util.regex.Pattern;
 
-public interface TypeVertex extends SchemaVertex<VertexIID.Type, Encoding.Vertex.Type> {
+public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type> {
+    /**
+     * @return the {@code Graph} containing all Schema elements
+     */
+    SchemaGraph graph();
+
+    String label();
+
+    Label properLabel();
+
+    void label(String label);
 
     String scope();
 
     String scopedLabel();
 
     void scope(String scope);
+
+    TypeAdjacency outs();
+
+    TypeAdjacency ins();
 
     boolean isAbstract();
 

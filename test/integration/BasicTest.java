@@ -21,15 +21,15 @@ package grakn.core.test.integration;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.schema.Rule;
+import grakn.core.concept.logic.Rule;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
@@ -39,18 +39,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.concept.type.AttributeType.ValueType.BOOLEAN;
 import static grakn.core.concept.type.AttributeType.ValueType.DATETIME;
 import static grakn.core.concept.type.AttributeType.ValueType.DOUBLE;
 import static grakn.core.concept.type.AttributeType.ValueType.LONG;
 import static grakn.core.concept.type.AttributeType.ValueType.STRING;
-import static grakn.core.test.integration.Util.assertNotNulls;
+import static grakn.core.test.integration.util.Util.assertNotNulls;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -346,28 +343,6 @@ public class BasicTest {
                     final ThingVariable<?> then = rule.getThenPreNormalised();
                     assertEquals(Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"), when);
                     assertEquals(Graql.parseVariable("$x has name \"i have no friends\""), then);
-
-                    // assert that the rule contains the correct types
-                    assertEquals(person, rule.positiveConditionTypes().findFirst().get());
-                    final Set<Type> negated = set(friend, friendship);
-                    assertEquals(negated, rule.negativeConditionTypes().collect(Collectors.toSet()));
-                    assertEquals(name, rule.conclusionTypes().findFirst().get());
-
-                    // assert the dependencies are correct
-                    assertEquals(rule, person.getPositiveConditionRules().findFirst().get());
-                    assertEquals(0, friendship.getPositiveConditionRules().count());
-                    assertEquals(0, friend.getPositiveConditionRules().count());
-                    assertEquals(0, name.getPositiveConditionRules().count());
-
-                    assertEquals(0, person.getNegativeConditionRules().count());
-                    assertEquals(rule, friendship.getNegativeConditionRules().findFirst().get());
-                    assertEquals(rule, friend.getNegativeConditionRules().findFirst().get());
-                    assertEquals(0, name.getNegativeConditionRules().count());
-
-                    assertEquals(0, person.getConcludingRules().count());
-                    assertEquals(0, friendship.getConcludingRules().count());
-                    assertEquals(0, friend.getConcludingRules().count());
-                    assertEquals(rule, name.getConcludingRules().findFirst().get());
                 }
             }
         }
@@ -394,13 +369,6 @@ public class BasicTest {
                             "marriage-is-friendship",
                             Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
-                    // TODO this doesn't work when it should.
-                    // TODO this should be fixed by removing schema edges connecting rules to types, moving this structure
-                    // TODO to a higher level structure in the reasoner package
-//                    conceptMgr.putRule(
-//                            "marriage-is-friendship",
-//                            Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa $rt; $rt type marriage; }").asConjunction(),
-//                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -416,27 +384,6 @@ public class BasicTest {
                     final ThingVariable<?> then = rule.getThenPreNormalised();
                     assertEquals(Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }"), when);
                     assertEquals(Graql.parseVariable("(friend: $x, friend: $y) isa friendship"), then);
-
-                    // assert that the rule contains the correct types
-                    assertEquals(set(person, marriage, spouse), rule.positiveConditionTypes().collect(Collectors.toSet()));
-                    assertEquals(set(friendship, friend), rule.conclusionTypes().collect(Collectors.toSet()));
-
-                    // assert the dependencies are correct
-                    assertEquals(rule, person.getPositiveConditionRules().findFirst().get());
-                    assertEquals(0, friendship.getPositiveConditionRules().count());
-                    assertEquals(0, friend.getPositiveConditionRules().count());
-                    assertEquals(rule, marriage.getPositiveConditionRules().findFirst().get());
-                    assertEquals(rule, spouse.getPositiveConditionRules().findFirst().get());
-
-                    assertEquals(0, person.getNegativeConditionRules().count());
-                    assertEquals(0, friendship.getNegativeConditionRules().count());
-                    assertEquals(0, friend.getNegativeConditionRules().count());
-
-                    assertEquals(0, person.getConcludingRules().count());
-                    assertEquals(rule, friendship.getConcludingRules().findFirst().get());
-                    assertEquals(rule, friend.getConcludingRules().findFirst().get());
-                    assertEquals(0, marriage.getConcludingRules().count());
-                    assertEquals(0, spouse.getConcludingRules().count());
                 }
             }
         }

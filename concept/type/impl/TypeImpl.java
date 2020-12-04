@@ -20,7 +20,6 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.concept.schema.impl.RuleImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -46,9 +45,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CAS
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Edge.Rule.CONCLUSION;
-import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_NEGATIVE;
-import static grakn.core.graph.util.Encoding.Edge.Rule.CONDITION_POSITIVE;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl implements grakn.core.concept.type.Type {
@@ -116,21 +112,6 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
-    }
-
-    @Override
-    public Stream<RuleImpl> getPositiveConditionRules() {
-        return vertex.ins().edge(CONDITION_POSITIVE).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
-    }
-
-    @Override
-    public Stream<RuleImpl> getNegativeConditionRules() {
-        return vertex.ins().edge(CONDITION_NEGATIVE).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
-    }
-
-    @Override
-    public Stream<RuleImpl> getConcludingRules() {
-        return vertex.ins().edge(CONCLUSION).from().map(v -> RuleImpl.of(graphMgr, v)).stream();
     }
 
     void setSuperTypeVertex(TypeVertex superTypeVertex) {
