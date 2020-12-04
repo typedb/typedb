@@ -20,6 +20,7 @@ package grakn.core.traversal.producer;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.iterator.SynchronisedIterator;
+import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
@@ -35,7 +36,7 @@ import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 import static grakn.core.common.iterator.Iterators.synchronised;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
-public class GraphProducer implements TraversalProducer {
+public class GraphProducer implements Producer<VertexMap> {
 
     private final int parallelisation;
     private final Procedure procedure;

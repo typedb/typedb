@@ -19,14 +19,15 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.planner.PlannerEdge;
 import grakn.core.traversal.planner.PlannerVertex;
 import grakn.core.traversal.producer.GraphProducer;
-import grakn.core.traversal.producer.TraversalProducer;
 import grakn.core.traversal.producer.VertexProducer;
 
 import java.util.ArrayList;
@@ -125,7 +126,7 @@ public class Procedure {
         ).asType();
     }
 
-    public TraversalProducer execute(GraphManager graphMgr, Traversal.Parameters parameters, int parallelisation) {
+    public Producer<VertexMap> execute(GraphManager graphMgr, Traversal.Parameters parameters, int parallelisation) {
         if (edgesCount() == 0) return new VertexProducer(graphMgr, this, parameters);
         else return new GraphProducer(graphMgr, this, parameters, parallelisation);
     }
