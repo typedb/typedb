@@ -73,10 +73,10 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
     private Set<Integer> computeDependedEdgeOrders() {
         if (ins().isEmpty()) return set();
-        else return set(iteratorEdge().from().dependedEdgeOrders(), iteratorEdge().order());
+        else return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
     }
 
-    public ProcedureEdge<?, ?> iteratorEdge() {
+    public ProcedureEdge<?, ?> branchEdge() {
         if (ins().isEmpty()) return null;
         else return iteratorEdge;
     }

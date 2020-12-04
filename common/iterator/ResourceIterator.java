@@ -47,6 +47,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return new FilteredIterator<>(this, predicate);
     }
 
+    default ResourceIterator<T> limit(int limit) {
+        return new LimitedIterator<>(this, limit);
+    }
+
     default ResourceIterator<T> link(ResourceIterator<T> iterator) {
         return new LinkedIterators<>(new LinkedList<>(list(this, iterator)));
     }

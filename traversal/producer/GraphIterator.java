@@ -83,14 +83,17 @@ public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, 
     }
 
     private boolean computeFirst(int pos) {
-        if (answer.containsKey(procedure.edge(pos).to().identifier())) return computeFirstValidation(pos);
-        else return computeFirstIterator(pos);
+        if (answer.containsKey(procedure.edge(pos).to().identifier())) return computeFirstClosure(pos);
+        else return computeFirstBranch(pos);
     }
 
-    private boolean computeFirstIterator(int pos) {
+    private boolean computeFirstBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toID = edge.to().identifier();
-        ResourceIterator<Vertex<?, ?>> toIter = edge.retrieve(answer.get(edge.from().identifier()), parameters);
+        ResourceIterator<Vertex<?, ?>> toIter = edge.branchFrom(answer.get(edge.from().identifier()), parameters);
+        if (!toID.isNamedReference() && edge.to().outs().isEmpty() && edge.to().ins().size() == 1) {
+            toIter = toIter.limit(1);
+        }
 
         if (toIter.hasNext()) {
             iterators.put(toID, toIter);
@@ -118,9 +121,9 @@ public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, 
         }
     }
 
-    private boolean computeFirstValidation(int pos) {
+    private boolean computeFirstClosure(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        if (edge.validate(answer.get(edge.from().identifier()), answer.get(edge.to().identifier()), parameters)) {
+        if (edge.isClosure(answer.get(edge.from().identifier()), answer.get(edge.to().identifier()), parameters)) {
             if (pos == edgeCount) return true;
             else return computeFirst(pos + 1);
         } else {
@@ -137,51 +140,51 @@ public class GraphIterator implements ResourceIterator<Map<Reference, Vertex<?, 
         if (pos == computeNextSeekPos) {
             computeNextSeekPos = edgeCount;
         } else if (pos > computeNextSeekPos) {
-            if (!edge.isValidationEdge()) iterators.get(toID).recycle();
+            if (!edge.isClosureEdge()) iterators.get(toID).recycle();
             if (!computeNext(pos - 1)) return false;
-            else if (edge.isValidationEdge()) {
+            else if (edge.isClosureEdge()) {
                 Vertex<?, ?> fromVertex = answer.get(edge.from().identifier());
                 Vertex<?, ?> toVertex = answer.get(edge.to().identifier());
-                if (edge.validate(fromVertex, toVertex, parameters)) return true;
-                else return computeNextValidation(pos);
+                if (edge.isClosure(fromVertex, toVertex, parameters)) return true;
+                else return computeNextClosure(pos);
             } else {
-                iterators.put(toID, edge.retrieve(answer.get(edge.from().identifier()), parameters));
+                iterators.put(toID, edge.branchFrom(answer.get(edge.from().identifier()), parameters));
             }
-        } else if (edge.isValidationEdge()) {
-            return computeNextValidation(pos);
+        } else if (edge.isClosureEdge()) {
+            return computeNextClosure(pos);
         }
 
         if (iterators.get(toID).hasNext()) {
             answer.put(toID, iterators.get(toID).next());
             return true;
         } else {
-            return computeNextWithNewPredecessors(pos);
+            return computeNextBranch(pos);
         }
     }
 
-    private boolean computeNextValidation(int pos) {
+    private boolean computeNextClosure(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         do {
             if (computeNext(pos - 1)) {
                 Vertex<?, ?> fromVertex = answer.get(edge.from().identifier());
                 Vertex<?, ?> toVertex = answer.get(edge.to().identifier());
-                if (edge.validate(fromVertex, toVertex, parameters)) return true;
+                if (edge.isClosure(fromVertex, toVertex, parameters)) return true;
             } else {
                 return false;
             }
         } while (true);
     }
 
-    private boolean computeNextWithNewPredecessors(int pos) {
+    private boolean computeNextBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         ResourceIterator<Vertex<?, ?>> newIter;
         do {
             if (computeNext(pos - 1)) {
                 Vertex<?, ?> fromVertex = answer.get(edge.from().identifier());
-                newIter = edge.retrieve(fromVertex, parameters);
+                newIter = edge.branchFrom(fromVertex, parameters);
                 if (!newIter.hasNext()) {
                     assert !edge.from().ins().isEmpty();
-                    computeNextSeekPos = edge.from().iteratorEdge().order();
+                    computeNextSeekPos = edge.from().branchEdge().order();
                 }
             } else {
                 return false;

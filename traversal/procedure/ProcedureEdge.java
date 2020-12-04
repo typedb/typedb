@@ -63,9 +63,9 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         }
     }
 
-    public abstract ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters);
+    public abstract ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters);
 
-    public abstract boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters);
+    public abstract boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters);
 
     public int order() {
         return order;
@@ -75,8 +75,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         return direction;
     }
 
-    public boolean isValidationEdge() {
-        return order() > to().iteratorEdge().order();
+    public boolean isClosureEdge() {
+        return order() > to().branchEdge().order();
     }
 
     static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
@@ -86,12 +86,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         }
 
         @Override
-        public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+        public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
             return iterate(emptyIterator()); // TODO
         }
 
         @Override
-        public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+        public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
             return false; // TODO
         }
     }
@@ -107,12 +107,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         }
 
         @Override
-        public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+        public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
             return iterate(emptyIterator()); // TODO
         }
 
         @Override
-        public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+        public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
             return false; // TODO
         }
     }
@@ -157,12 +157,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 }
 
                 @Override
-                public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                     return iterate(emptyIterator()); // TODO
                 }
 
                 @Override
-                public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                     return false; // TODO
                 }
             }
@@ -174,12 +174,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 }
 
                 @Override
-                public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                     return iterate(emptyIterator()); // TODO
                 }
 
                 @Override
-                public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                     return false; // TODO
                 }
             }
@@ -229,12 +229,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false;
                     }
                 }
@@ -246,12 +246,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -273,12 +273,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -290,12 +290,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -314,12 +314,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -331,12 +331,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -355,12 +355,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -372,12 +372,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false;
                     }
                 }
@@ -425,12 +425,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -442,12 +442,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -466,12 +466,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -483,12 +483,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -507,12 +507,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -524,12 +524,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -551,12 +551,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
@@ -568,12 +568,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     }
 
                     @Override
-                    public ResourceIterator<Vertex<?, ?>> retrieve(Vertex<?, ?> from, Traversal.Parameters parameters) {
+                    public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
                         return iterate(emptyIterator()); // TODO
                     }
 
                     @Override
-                    public boolean validate(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
+                    public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
                         return false; // TODO
                     }
                 }
