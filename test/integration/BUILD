@@ -25,6 +25,11 @@ host_compatible_java_test(
         "Util.java",
     ],
     test_class = "grakn.core.test.integration.BasicTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+    ],
     deps = [
         # Internal dependencies
         "//common:common",
@@ -33,11 +38,6 @@ host_compatible_java_test(
         "@graknlabs_common//:common",
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
-    ],
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
     ],
     size = "large",
 )
@@ -49,6 +49,11 @@ host_compatible_java_test(
         "Util.java",
     ],
     test_class = "grakn.core.test.integration.QueryTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+    ],
     deps = [
         # Internal dependencies
         "//common:common",
@@ -57,12 +62,7 @@ host_compatible_java_test(
         "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
     ],
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-    ],
-    data = [":schema.gql"]
+    data = [":schema.gql"],
 )
 
 host_compatible_java_test(
@@ -72,13 +72,6 @@ host_compatible_java_test(
         "Util.java",
     ],
     test_class = "grakn.core.test.integration.ImplicationTest",
-    deps = [
-        # Internal dependencies
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-    ],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -86,10 +79,46 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//reasoner:reasoner",
     ],
+    deps = [
+        # Internal dependencies
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-type-hinter",
+    srcs = [
+        "Util.java",
+        "reasoner/TypeHinterTest.java",
+    ],
+    test_class = "grakn.core.reasoner.TypeHinterTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//reasoner:reasoner",
+        "//pattern:pattern",
+    ],
+    deps = [
+        # Internal dependencies
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java/query:query",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
+    ],
+    data = [":reasoner/basic-schema.gql"],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+        "reasoner/*",
+    ]),
     license_type = "agpl",
 )

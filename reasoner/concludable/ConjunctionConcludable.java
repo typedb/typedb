@@ -171,8 +171,8 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Unification> unify(HeadConcludable.Isa headIsa) {
-            Set<Label> possibleLabels = constraint().typeHints();
-            Set<Label> otherLabels = headIsa.constraint().typeHints();
+            Set<Label> possibleLabels = constraint().getTypeHints();
+            Set<Label> otherLabels = headIsa.constraint().getTypeHints();
             possibleLabels.retainAll(otherLabels);
             return Stream.of(new Unification(this, headIsa, null)); // TODO Add variable mapping
         }

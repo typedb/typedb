@@ -85,6 +85,10 @@ public class Reasoner {
         }
     }
 
+    TypeHinter typeHinter() {
+        return typeHinter;
+    }
+
     public List<Producer<ConceptMap>> execute(Conjunction conjunction, ConceptMap bounds) {
         return null; // TODO
     }

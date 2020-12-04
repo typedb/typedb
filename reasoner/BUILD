@@ -64,30 +64,9 @@ native_java_libraries(
 )
 
 host_compatible_java_test(
-    name = "test-type-hinter",
-    srcs = [
-        "tool/TypeHinterTest.java",
-    ],
-    native_libraries_deps = [
-        "//pattern:pattern",
-        "//reasoner:reasoner",
-        "//concept:concept",
-    ],
-    deps = [
-        "@maven//:junit_junit",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query",
-
-        "//graph:graph",
-        "//common:common",
-    ],
-    test_class = "grakn.core.reasoner.tool.TypeHinterTest",
-)
-
-host_compatible_java_test(
     name = "test-resolution",
-    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
     srcs = ["resolution/ResolutionTest.java"],
+    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
     deps = [
         "@graknlabs_common//:common",
     ],

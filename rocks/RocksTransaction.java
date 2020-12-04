@@ -62,7 +62,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEM
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static grakn.core.graph.util.Encoding.SCHEMA_GRAPH_STORAGE_REFRESH_RATE;
 
-abstract class RocksTransaction implements Grakn.Transaction {
+public abstract class RocksTransaction implements Grakn.Transaction {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
@@ -150,6 +150,11 @@ abstract class RocksTransaction implements Grakn.Transaction {
     public ConceptManager concepts() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return conceptMgr;
+    }
+
+    public Reasoner reasoner() {
+        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
+        return reasoner;
     }
 
     @Override
