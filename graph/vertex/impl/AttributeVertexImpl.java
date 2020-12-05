@@ -135,6 +135,21 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public boolean isAttribute() { return true; }
 
     @Override
+    public boolean isBoolean() { return false; }
+
+    @Override
+    public boolean isLong() { return false; }
+
+    @Override
+    public boolean isDouble() { return false; }
+
+    @Override
+    public boolean isString() { return false; }
+
+    @Override
+    public boolean isDateTime() { return false; }
+
+    @Override
     public AttributeVertexImpl<?> asAttribute() { return this; }
 
     @Override
@@ -178,9 +193,10 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
 
         @Override
-        public Boolean asBoolean() {
-            return this;
-        }
+        public boolean isBoolean() { return true; }
+
+        @Override
+        public Boolean asBoolean() { return this; }
     }
 
     public static class Long extends AttributeVertexImpl<java.lang.Long> {
@@ -199,9 +215,10 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
 
         @Override
-        public Long asLong() {
-            return this;
-        }
+        public boolean isLong() { return true; }
+
+        @Override
+        public Long asLong() { return this; }
     }
 
     public static class Double extends AttributeVertexImpl<java.lang.Double> {
@@ -220,9 +237,10 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
 
         @Override
-        public Double asDouble() {
-            return this;
-        }
+        public boolean isDouble() { return true; }
+
+        @Override
+        public Double asDouble() { return this; }
     }
 
     public static class String extends AttributeVertexImpl<java.lang.String> {
@@ -241,9 +259,10 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
 
         @Override
-        public String asString() {
-            return this;
-        }
+        public boolean isString() { return true; }
+
+        @Override
+        public String asString() { return this; }
     }
 
     public static class DateTime extends AttributeVertexImpl<java.time.LocalDateTime> {
@@ -262,8 +281,9 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
 
         @Override
-        public DateTime asDateTime() {
-            return this;
-        }
+        public boolean isDateTime() { return true; }
+
+        @Override
+        public DateTime asDateTime() { return this; }
     }
 }

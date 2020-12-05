@@ -29,7 +29,6 @@ import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
-import graql.lang.common.GraqlToken;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -38,18 +37,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
-    private final Procedure procedure;
     private final boolean isStartingVertex;
     private final AtomicReference<Set<Integer>> dependedEdgeOrders;
     private ProcedureEdge<?, ?> iteratorEdge;
 
-    ProcedureVertex(Identifier identifier, Procedure procedure, boolean isStartingVertex) {
+    ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
-        this.procedure = procedure;
         this.isStartingVertex = isStartingVertex;
         this.dependedEdgeOrders = new AtomicReference<>(null);
     }
@@ -93,8 +91,8 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
         private Set<Filter.Thing> filters;
 
-        Thing(Identifier identifier, Procedure procedure, boolean isStartingVertex) {
-            super(identifier, procedure, isStartingVertex);
+        Thing(Identifier identifier, boolean isStartingVertex) {
+            super(identifier, isStartingVertex);
         }
 
         @Override
@@ -110,6 +108,17 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
         @Override
         public ResourceIterator<ThingVertex> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
+            assert isStartingVertex();
+            if (props().hasIID()) return iteratorFromIID(graphMgr, parameters);
+            else if (!props().types().isEmpty()) return iteratorFromTypes(graphMgr, parameters);
+            else throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        private ResourceIterator<ThingVertex> iteratorFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
+            return null; // TODO
+        }
+
+        private ResourceIterator<ThingVertex> iteratorFromTypes(GraphManager graphMgr, Traversal.Parameters parameters) {
             return null; // TODO
         }
 
@@ -124,8 +133,8 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
         private Set<Filter.Type> filters;
 
-        Type(Identifier identifier, Procedure procedure, boolean isStartingVertex) {
-            super(identifier, procedure, isStartingVertex);
+        Type(Identifier identifier, boolean isStartingVertex) {
+            super(identifier, isStartingVertex);
         }
 
         @Override
@@ -198,10 +207,10 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
             static class Predicate extends Filter.Thing {
 
-                private final GraqlToken.Predicate predicate;
+                private final grakn.core.traversal.common.Predicate<?> predicate;
                 private final Identifier param;
 
-                Predicate(GraqlToken.Predicate predicate, Identifier param) {
+                Predicate(grakn.core.traversal.common.Predicate<?> predicate, Identifier param) {
                     this.predicate = predicate;
                     this.param = param;
                 }

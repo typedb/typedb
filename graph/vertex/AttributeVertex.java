@@ -47,6 +47,16 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      */
     VALUE value();
 
+    boolean isBoolean();
+
+    boolean isLong();
+
+    boolean isDouble();
+
+    boolean isString();
+
+    boolean isDateTime();
+
     AttributeVertex<Boolean> asBoolean();
 
     AttributeVertex<Long> asLong();

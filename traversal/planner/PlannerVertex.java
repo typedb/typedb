@@ -27,9 +27,9 @@ import grakn.core.traversal.graph.TraversalVertex;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_COST_MAX_CHANGE;
 import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
-import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 @SuppressWarnings("NonAtomicOperationOnVolatileField") // Because Planner.optimise() is synchronised
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
@@ -208,7 +208,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             if (props().hasIID()) {
                 setObjectiveCoefficient(1);
             } else if (!props().types().isEmpty()) {
-                if (!props().predicates().isEmpty() && props().predicates().stream().anyMatch(p -> p.equals(EQ))) {
+                if (props().predicates().stream().anyMatch(p -> p.operator().equals(EQ))) {
                     setObjectiveCoefficient(props().types().size());
                 } else {
                     setObjectiveCoefficient(graph.data().stats().thingVertexSum(props().types()));

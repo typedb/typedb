@@ -95,6 +95,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             graph.setModified();
         }
     }
+
     @Override
     public boolean isDeleted() {
         return isDeleted.get();

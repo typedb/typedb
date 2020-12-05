@@ -23,9 +23,11 @@ import grakn.core.common.cache.CommonCache;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;
@@ -39,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.iterator.Iterators.cartesian;
@@ -146,7 +149,7 @@ public class Traversal {
     }
 
     public void iid(Identifier.Variable thing, byte[] iid) {
-        parameters.putIID(thing, iid);
+        parameters.putIID(thing, VertexIID.Thing.of(iid));
         structure.thingVertex(thing).props().hasIID(true);
     }
 
@@ -174,27 +177,36 @@ public class Traversal {
         structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate predicate, String value) {
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
+        Predicate.String predicate = new Predicate.String(token);
+        structure.thingVertex(attribute).props().predicate(predicate);
+        if (token == GraqlToken.Predicate.SubString.LIKE) {
+            parameters.pushValue(attribute, predicate, Pattern.compile(value));
+        } else {
+            parameters.pushValue(attribute, predicate, value);
+        }
+    }
+
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Boolean value) {
+        Predicate.Boolean predicate = new Predicate.Boolean(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Boolean value) {
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Long value) {
+        Predicate.Long predicate = new Predicate.Long(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Long value) {
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Double value) {
+        Predicate.Double predicate = new Predicate.Double(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, Double value) {
-        parameters.pushValue(attribute, predicate, value);
-        structure.thingVertex(attribute).props().predicate(predicate);
-    }
-
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality predicate, LocalDateTime value) {
+    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
+        Predicate.DateTime predicate = new Predicate.DateTime(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
@@ -205,111 +217,147 @@ public class Traversal {
 
     public static class Parameters {
 
-        private final Map<Identifier, byte[]> iid;
-        private final Map<Pair<Identifier, GraqlToken.Predicate>, LinkedList<Value>> values;
+        private final Map<Identifier.Variable, VertexIID.Thing> iid;
+        private final Map<Pair<Identifier, Predicate<?>>, LinkedList<Value>> values;
 
         public Parameters() {
             iid = new HashMap<>();
             values = new HashMap<>();
         }
 
-        public void putIID(Identifier.Variable identifier, byte[] iid) {
+        public void putIID(Identifier.Variable identifier, VertexIID.Thing iid) {
             this.iid.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, boolean value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Boolean predicate, boolean value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, long value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Long predicate, long value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, double value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Double predicate, double value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, String value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.DateTime predicate, LocalDateTime value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, GraqlToken.Predicate predicate, LocalDateTime value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.String predicate, String value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
         }
 
-        public byte[] getIID(Identifier.Variable identifier) {
+        public void pushValue(Identifier.Variable identifier, Predicate.String predicate, Pattern regex) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(regex));
+        }
+
+        public VertexIID.Thing getIID(Identifier.Variable identifier) {
             return iid.get(identifier);
         }
 
-        public Value popValue(Identifier.Variable identifier, GraqlToken.Predicate predicate) {
-            return values.get(pair(identifier, predicate)).removeFirst();
+        public LinkedList<Value> getValues(Identifier.Variable identifier, Predicate<?> predicate) {
+            return values.get(pair(identifier, predicate));
         }
 
-        static class Value {
+        public static class Value {
 
-            final Boolean booleanValue;
-            final Long longValue;
-            final Double doubleValue;
-            final String stringValue;
-            final LocalDateTime dateTimeValue;
+            private final Encoding.ValueType valueType;
+            private final Boolean booleanValue;
+            private final Long longValue;
+            private final Double doubleValue;
+            private final String stringValue;
+            private final LocalDateTime dateTimeValue;
+            private final Pattern regexPattern;
 
             Value(boolean value) {
+                valueType = Encoding.ValueType.BOOLEAN;
                 booleanValue = value;
                 longValue = null;
                 doubleValue = null;
                 stringValue = null;
                 dateTimeValue = null;
+                regexPattern = null;
             }
 
             Value(long value) {
+                valueType = Encoding.ValueType.LONG;
                 booleanValue = null;
                 longValue = value;
                 doubleValue = null;
                 stringValue = null;
                 dateTimeValue = null;
+                regexPattern = null;
             }
 
             Value(double value) {
+                valueType = Encoding.ValueType.DOUBLE;
                 booleanValue = null;
                 longValue = null;
                 doubleValue = value;
                 stringValue = null;
                 dateTimeValue = null;
-            }
-
-            Value(String value) {
-                booleanValue = null;
-                longValue = null;
-                doubleValue = null;
-                stringValue = value;
-                dateTimeValue = null;
+                regexPattern = null;
             }
 
             Value(LocalDateTime value) {
+                valueType = Encoding.ValueType.DATETIME;
                 booleanValue = null;
                 longValue = null;
                 doubleValue = null;
                 stringValue = null;
                 dateTimeValue = value;
+                regexPattern = null;
             }
 
-            boolean isBoolean() { return booleanValue != null; }
+            Value(String value) {
+                valueType = Encoding.ValueType.STRING;
+                booleanValue = null;
+                longValue = null;
+                doubleValue = null;
+                stringValue = value;
+                dateTimeValue = null;
+                regexPattern = null;
+            }
 
-            boolean isLong() { return longValue != null; }
+            Value(Pattern regex) {
+                valueType = Encoding.ValueType.STRING;
+                booleanValue = null;
+                longValue = null;
+                doubleValue = null;
+                stringValue = null;
+                dateTimeValue = null;
+                regexPattern = regex;
+            }
 
-            boolean isDouble() { return doubleValue != null; }
+            public Encoding.ValueType valueType() {
+                return valueType;
+            }
 
-            boolean isString() { return stringValue != null; }
+            public boolean isBoolean() { return booleanValue != null; }
 
-            boolean isDateTime() { return dateTimeValue != null; }
+            public boolean isLong() { return longValue != null; }
 
-            Boolean getBoolean() { return booleanValue; }
+            public boolean isDouble() { return doubleValue != null; }
 
-            Long getLong() { return longValue; }
+            public boolean isDateTime() { return dateTimeValue != null; }
 
-            Double getDouble() { return doubleValue; }
+            public boolean isString() { return stringValue != null; }
 
-            LocalDateTime getDateTime() { return dateTimeValue; }
+            public boolean isRegex() { return regexPattern != null; }
+
+            public Boolean getBoolean() { return booleanValue; }
+
+            public Long getLong() { return longValue; }
+
+            public Double getDouble() { return doubleValue; }
+
+            public LocalDateTime getDateTime() { return dateTimeValue; }
+
+            public String getString() { return stringValue; }
+
+            public Pattern getRegex() { return regexPattern; }
         }
     }
 }

@@ -136,8 +136,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
         private byte[] edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
             return join(owner.iid().bytes(),
-                    direction.isOut() ? encoding.out().bytes() : encoding.in().bytes(),
-                    adjacent.iid().bytes());
+                        direction.isOut() ? encoding.out().bytes() : encoding.in().bytes(),
+                        adjacent.iid().bytes());
         }
 
         private TypeEdge newPersistedEdge(byte[] key, byte[] value) {

@@ -116,13 +116,15 @@ public class Procedure {
 
     private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {
         return vertices.computeIfAbsent(
-                plannerVertex.identifier(), i -> new ProcedureVertex.Thing(i, this, plannerVertex.isStartingVertex())
+                plannerVertex.identifier(),
+                id -> new ProcedureVertex.Thing(id, plannerVertex.isStartingVertex())
         ).asThing();
     }
 
     private ProcedureVertex.Type typeVertex(PlannerVertex.Type plannerVertex) {
         return vertices.computeIfAbsent(
-                plannerVertex.identifier(), i -> new ProcedureVertex.Type(i, this, plannerVertex.isStartingVertex())
+                plannerVertex.identifier(),
+                id -> new ProcedureVertex.Type(id, plannerVertex.isStartingVertex())
         ).asType();
     }
 

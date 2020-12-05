@@ -30,6 +30,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static grakn.common.collection.Collections.set;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -42,6 +43,10 @@ public class Iterators {
 
     public static <T> LoopIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
         return new LoopIterator<>(seed, predicate, function);
+    }
+
+    public static <T> BaseIterator<T> single(T item) {
+        return iterate(set(item));
     }
 
     public static <T> BaseIterator<T> iterate(Collection<T> collection) {

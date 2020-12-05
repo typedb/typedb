@@ -170,9 +170,9 @@ public abstract class RuleLogicImpl implements RuleLogic {
 
         public Persisted(SchemaGraph graph, LogicIID.Rule iid) {
             super(graph, iid,
-                    new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
-                    Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),
-                    Graql.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing());
+                  new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
+                  Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),
+                  Graql.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing());
         }
 
         @Override

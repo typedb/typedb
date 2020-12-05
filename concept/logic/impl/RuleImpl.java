@@ -27,8 +27,6 @@ import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.common.exception.GraqlException;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.Optional;
 import java.util.Set;

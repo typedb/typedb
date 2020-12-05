@@ -59,16 +59,21 @@ public class GraphProducer implements Producer<VertexMap> {
 
     @Override
     public void produce(Sink<VertexMap> sink, int count) {
-        int splitCount = (int) Math.ceil((double) count / parallelisation);
+        int p = futures.isEmpty() ? parallelisation : futures.size();
+        int splitCount = (int) Math.ceil((double) count / p);
 
         if (futures.isEmpty()) {
-            if (!start.hasNext()) sink.done(this);
+            if (!start.hasNext()) {
+                done(sink);
+                return;
+            }
+
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
                 ResourceIterator<VertexMap> iterator = new GraphIterator(start.next(), procedure, parameters).distinct(produced);
                 futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
             }
-            produce(sink, (parallelisation - i) * splitCount);
+            if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
         } else {
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
                 futures.computeIfPresent(iterator, (k, v) -> v.thenRun(consume(k, splitCount, sink)));

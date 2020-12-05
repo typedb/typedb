@@ -21,7 +21,7 @@ package grakn.core.traversal.graph;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.common.Identifier;
-import graql.lang.common.GraqlToken;
+import grakn.core.traversal.common.Predicate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -113,7 +113,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean hasIID;
             private final Set<Label> types;
-            private final List<GraqlToken.Predicate> predicates;
+            private final List<Predicate<?>> predicates;
 
             public Thing() {
                 types = new HashSet<>();
@@ -136,11 +136,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.types.addAll(types);
             }
 
-            public List<GraqlToken.Predicate> predicates() {
+            public List<Predicate<?>> predicates() {
                 return predicates;
             }
 
-            public void predicate(GraqlToken.Predicate predicate) {
+            public void predicate(Predicate<?> predicate) {
                 predicates.add(predicate);
             }
 

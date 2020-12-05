@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class ResolverRegistry {
+
     Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
     private final HashMap<Long, Actor<ConcludableResolver>> concludables;
     private final HashMap<List<Long>, Actor<RuleResolver>> rules;
@@ -60,9 +61,6 @@ public class ResolverRegistry {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
         return Actor.create(elg, self -> new RootResolver(self, pattern, traversalSize, onAnswer, onExhausted));
     }
-
-
-
 
     public Actor<ResolutionRecorder> resolutionRecorder() {
         return resolutionRecorder;
