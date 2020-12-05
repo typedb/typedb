@@ -25,11 +25,15 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_INFER = true;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final int DEFAULT_BATCH_SIZE = 50;
+    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10000;
+    public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10000;
 
     private PARENT parent;
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
+    private Integer sessionIdlTimeoutMillis = 10000;
+    private Integer schemaLockAcquireTimeoutMillis = 10000;
 
     abstract SELF getThis();
 
@@ -38,14 +42,10 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public Boolean infer() {
-        if (infer != null) {
-            return infer;
-        } else if (parent != null) {
-            return parent.infer();
-        } else {
-            return DEFAULT_INFER;
-        }
+    public boolean infer() {
+        if (infer != null) return infer;
+        else if (parent != null) return parent.infer();
+        else return DEFAULT_INFER;
     }
 
     public SELF infer(boolean infer) {
@@ -53,14 +53,10 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public Boolean explain() {
-        if (explain != null) {
-            return explain;
-        } else if (parent != null) {
-            return parent.explain();
-        } else {
-            return DEFAULT_EXPLAIN;
-        }
+    public boolean explain() {
+        if (explain != null) return explain;
+        else if (parent != null) return parent.explain();
+        else return DEFAULT_EXPLAIN;
     }
 
     public SELF explain(boolean explain) {
@@ -68,18 +64,37 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public Integer batchSize() {
-        if (batchSize != null) {
-            return batchSize;
-        } else if (parent != null) {
-            return parent.batchSize();
-        } else {
-            return DEFAULT_BATCH_SIZE;
-        }
+    public int batchSize() {
+        if (batchSize != null) return batchSize;
+        else if (parent != null) return parent.batchSize();
+        else return DEFAULT_BATCH_SIZE;
     }
 
     public SELF batchSize(int batchSize) {
         this.batchSize = batchSize;
+        return getThis();
+    }
+
+    public int sessionIdleTimeoutMillis() {
+        if (sessionIdlTimeoutMillis != null) return sessionIdlTimeoutMillis;
+        else if (parent != null) return parent.sessionIdleTimeoutMillis();
+        else return DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS;
+    }
+
+    public SELF sessionIdleTimeoutMillis(int idleTimeoutMillis) {
+        this.sessionIdlTimeoutMillis = idleTimeoutMillis;
+        return getThis();
+    }
+
+    // TODO: make use of this
+    public int schemaLockAcquireTimeoutMillis() {
+        if (schemaLockAcquireTimeoutMillis != null) return schemaLockAcquireTimeoutMillis;
+        else if (parent != null) return parent.schemaLockAcquireTimeoutMillis();
+        else return DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
+    }
+
+    public SELF schemaLockAcquireTimeoutMillis(int acquireSchemaLockTimeoutMillis) {
+        this.schemaLockAcquireTimeoutMillis = acquireSchemaLockTimeoutMillis;
         return getThis();
     }
 

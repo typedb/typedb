@@ -126,7 +126,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
             final Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             final Options.Session options = getOptions(Options.Session::new, request.getOptions());
             final Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
-            final SessionRPC sessionRPC = new SessionRPC(this, session);
+            final SessionRPC sessionRPC = new SessionRPC(this, session, options);
             rpcSessions.put(sessionRPC.session().uuid(), sessionRPC);
             responder.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionRPC.uuidAsByteString()).build());
             responder.onCompleted();
@@ -144,6 +144,21 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
             if (sessionRPC == null) throw new GraknException(SESSION_NOT_FOUND.message(sessionID));
             sessionRPC.close();
             responder.onNext(SessionProto.Session.Close.Res.newBuilder().build());
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void sessionPulse(SessionProto.Session.Pulse.Req request, StreamObserver<SessionProto.Session.Pulse.Res> responder) {
+        try {
+            final UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
+            final SessionRPC sessionRPC = rpcSessions.get(sessionID);
+            final boolean isAlive = sessionRPC != null && sessionRPC.isOpen();
+            if (isAlive) sessionRPC.keepAlive();
+            responder.onNext(SessionProto.Session.Pulse.Res.newBuilder().setAlive(isAlive).build());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);

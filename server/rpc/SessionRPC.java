@@ -19,27 +19,39 @@ package grakn.core.server.rpc;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
+import grakn.core.common.parameters.Options;
 import grakn.protocol.TransactionProto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
+import static grakn.core.common.concurrent.ExecutorService.scheduledThreadPool;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class SessionRPC {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SessionRPC.class);
 
     private final Grakn.Session session;
     private final GraknRPCService graknRPCService;
     private final Set<TransactionRPC> transactionRPCs;
     private final AtomicBoolean isOpen;
+    private final long idleTimeoutMillis;
+    private ScheduledFuture<?> idleTimeoutTask;
 
-    SessionRPC(GraknRPCService graknRPCService, Grakn.Session session) {
+    SessionRPC(GraknRPCService graknRPCService, Grakn.Session session, Options.Session options) {
         this.graknRPCService = graknRPCService;
         this.session = session;
         transactionRPCs = new HashSet<>();
         isOpen = new AtomicBoolean(true);
+        idleTimeoutMillis = options.sessionIdleTimeoutMillis();
+        setIdleTimeout();
     }
 
     TransactionRPC transaction(TransactionStream transactionStream, TransactionProto.Transaction.Open.Req request) {
@@ -61,6 +73,7 @@ class SessionRPC {
     }
 
     void close() {
+        if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
         if (isOpen.compareAndSet(true, false)) {
             final Set<TransactionRPC> transactionRPCsCopy = new HashSet<>(transactionRPCs);
             transactionRPCsCopy.parallelStream().forEach(TransactionRPC::close);
@@ -76,5 +89,23 @@ class SessionRPC {
             session.close();
             graknRPCService.removeSession(session.uuid());
         }
+    }
+
+    private void setIdleTimeout() {
+        if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
+        this.idleTimeoutTask = scheduledThreadPool().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
+    }
+
+    private void triggerIdleTimeout() {
+        close();
+        LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
+    }
+
+    void keepAlive() {
+        setIdleTimeout();
+    }
+
+    boolean isOpen() {
+        return isOpen.get();
     }
 }

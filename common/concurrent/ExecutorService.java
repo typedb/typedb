@@ -22,18 +22,22 @@ import grakn.common.concurrent.actor.EventLoopGroup;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class ExecutorService {
 
     public static int PARALLELISATION_FACTOR = -1;
     private static ExecutorService singleton = null;
 
-    private ForkJoinPool forkJoinPool;
-    private EventLoopGroup eventLoopGroup;
+    private final ForkJoinPool forkJoinPool;
+    private final EventLoopGroup eventLoopGroup;
+    private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
     private ExecutorService(int parallelisationFactor) {
         forkJoinPool = (ForkJoinPool) Executors.newWorkStealingPool(parallelisationFactor);
         eventLoopGroup = new EventLoopGroup(parallelisationFactor, "grakn-elg");
+        scheduledThreadPool = new ScheduledThreadPoolExecutor(1);
+        scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 
     public static synchronized void init(int parallelisationFactor) {
@@ -47,6 +51,11 @@ public class ExecutorService {
     public static ForkJoinPool forkJoinPool() {
         assert singleton != null;
         return singleton.forkJoinPool;
+    }
+
+    public static ScheduledThreadPoolExecutor scheduledThreadPool() {
+        assert singleton != null;
+        return singleton.scheduledThreadPool;
     }
 
     public static EventLoopGroup eventLoopGroup() {
