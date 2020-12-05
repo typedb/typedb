@@ -211,12 +211,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     @Override
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
-        .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
-        .validIfAlphaEqual(isaConstraint, that.isaConstraint)
-        .validIfAlphaEqual(relationConstraints, that.relationConstraints)
-        .validIfAlphaEqual(hasConstraints, that.hasConstraints)
-        .validIfAlphaEqual(valueConstraints, that.valueConstraints)
-        .addMapping(this, that);
+                .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
+                .validIfAlphaEqual(isaConstraint, that.isaConstraint)
+                .validIfAlphaEqual(relationConstraints, that.relationConstraints)
+                .validIfAlphaEqual(hasConstraints, that.hasConstraints)
+                .validIfAlphaEqual(valueConstraints, that.valueConstraints)
+                .addMapping(this, that);
     }
 
 }

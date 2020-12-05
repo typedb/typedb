@@ -31,7 +31,7 @@ public class PermutationIterator<T> implements ResourceIterator<List<T>> {
     private State state;
 
     public PermutationIterator(List<T> list) {
-        this.list = new ArrayList<T>(list);
+        this.list = new ArrayList<>(list);
         int n = list.size();
         visitCounters = new int[n];
         directions = new int[n];
@@ -94,7 +94,10 @@ public class PermutationIterator<T> implements ResourceIterator<List<T>> {
                 pointer = switchDirection(pointer);
                 continue;
             }
-            Collections.swap(list, pointer - visitCounters[pointer] + switchDirOffset, pointer - swapOffset + switchDirOffset);
+            // TODO: identify the proper names for 'i' and 'j'
+            int i = pointer - visitCounters[pointer] + switchDirOffset;
+            int j = pointer - swapOffset + switchDirOffset;
+            Collections.swap(list, i, j);
             visitCounters[pointer] = swapOffset;
             break;
         }

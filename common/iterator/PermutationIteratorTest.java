@@ -20,7 +20,6 @@ package grakn.core.common.iterator;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static grakn.common.collection.Collections.list;
@@ -34,14 +33,12 @@ public class PermutationIteratorTest {
     @Test
     public void test_permutations_with_n_equals_4() {
         PermutationIterator<Integer> it = new PermutationIterator<>(list(1, 2, 3, 4));
-        int i = 0;
-        List<List<Integer>> results = new ArrayList();
-        while (it.hasNext()) {
+        List<List<Integer>> results = new ArrayList<>();
+        for (int i = 0; it.hasNext(); i++) {
             List<Integer> p = new ArrayList<>(it.next());
             results.add(p);
             assertEquals(set(1, 2, 3, 4), set(p));
             System.out.println(i + ": " + p);
-            i ++;
         }
         assertEquals(24, results.size());
         assertEquals(24, set(results).size());
@@ -50,15 +47,13 @@ public class PermutationIteratorTest {
     @Test
     public void test_permutations_with_n_equals_2() {
         PermutationIterator<Integer> it = new PermutationIterator<>(list(1, 2));
-        int i = 0;
-        List<List<Integer>> results = new ArrayList();
-        while (it.hasNext()) {
+        List<List<Integer>> results = new ArrayList<>();
+        for (int i = 0; it.hasNext(); i++) {
             List<Integer> p = new ArrayList<>(it.next());
             results.add(p);
             assertEquals(set(1, 2), set(p));
 
             System.out.println(i + ": " + p);
-            i ++;
         }
         assertEquals(2, results.size());
         assertEquals(2, set(results).size());
