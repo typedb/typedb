@@ -21,7 +21,7 @@ package grakn.core.traversal.structure;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.common.Identifier;
-import graql.lang.common.GraqlToken;
+import grakn.core.traversal.common.Predicate;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,7 +68,7 @@ public class Structure {
         to.in(edge);
     }
 
-    public void predicateEdge(StructureVertex.Thing from, StructureVertex.Thing to, GraqlToken.Predicate.Equality predicate) {
+    public void predicateEdge(StructureVertex.Thing from, StructureVertex.Thing to, Predicate.Variable predicate) {
         StructureEdge.Predicate edge = new StructureEdge.Predicate(from, to, predicate);
         edges.add(edge);
         from.out(edge);

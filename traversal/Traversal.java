@@ -215,7 +215,8 @@ public class Traversal {
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality predicate, Identifier.Variable att2) {
+    public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality token, Identifier.Variable att2) {
+        Predicate.Variable predicate = new Predicate.Variable(token);
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 

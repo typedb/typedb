@@ -26,7 +26,6 @@ import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.planner.PlannerEdge;
-import graql.lang.common.GraqlToken;
 
 import java.util.Set;
 
@@ -100,10 +99,10 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
     static class Predicate extends ProcedureEdge<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
-        private final GraqlToken.Predicate.Equality predicate;
+        private final grakn.core.traversal.common.Predicate.Variable predicate;
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                          Encoding.Direction.Edge direction, GraqlToken.Predicate.Equality predicate) {
+                          Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
             super(from, to, order, direction);
             this.predicate = predicate;
         }

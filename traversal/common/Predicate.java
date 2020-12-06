@@ -294,7 +294,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
     public static class Variable extends Predicate<Predicate.Operator.Equality> {
 
-        protected Variable(GraqlToken.Predicate.Equality token) {
+        public Variable(GraqlToken.Predicate.Equality token) {
             super(Operator.Equality.of(token));
         }
 

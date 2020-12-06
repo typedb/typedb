@@ -22,7 +22,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.graph.TraversalEdge;
-import graql.lang.common.GraqlToken;
 
 import java.util.Objects;
 import java.util.Set;
@@ -101,16 +100,16 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
     public static class Predicate extends StructureEdge<StructureVertex.Thing, StructureVertex.Thing> {
 
-        private final GraqlToken.Predicate.Equality predicate;
+        private final grakn.core.traversal.common.Predicate.Variable predicate;
         private final int hash;
 
-        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, GraqlToken.Predicate.Equality predicate) {
+        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, grakn.core.traversal.common.Predicate.Variable predicate) {
             super(from, to);
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
         }
 
-        public GraqlToken.Predicate.Equality predicate() {
+        public grakn.core.traversal.common.Predicate.Variable predicate() {
             return predicate;
         }
 

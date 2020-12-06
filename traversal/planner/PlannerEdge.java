@@ -27,7 +27,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.structure.StructureEdge;
-import graql.lang.common.GraqlToken;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -300,9 +299,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     public static class Predicate extends PlannerEdge<PlannerVertex.Thing, PlannerVertex.Thing> {
 
-        private final GraqlToken.Predicate.Equality predicate;
+        private final grakn.core.traversal.common.Predicate.Variable predicate;
 
-        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to, GraqlToken.Predicate.Equality predicate) {
+        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to, grakn.core.traversal.common.Predicate.Variable predicate) {
             super(from, to);
             this.predicate = predicate;
         }
@@ -319,7 +318,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 super(from, to, parent, direction);
             }
 
-            public GraqlToken.Predicate.Equality predicate() {
+            public grakn.core.traversal.common.Predicate.Variable predicate() {
                 return predicate;
             }
 
