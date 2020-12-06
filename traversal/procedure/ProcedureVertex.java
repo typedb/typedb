@@ -20,9 +20,7 @@ package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -32,7 +30,6 @@ import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalVertex;
 
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,7 +42,6 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static java.util.Collections.emptyIterator;
-import static java.util.stream.Collectors.toSet;
 
 public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
@@ -96,8 +92,6 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
     static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
-        private Set<Filter.Thing> filters;
-
         Thing(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
         }
@@ -105,12 +99,6 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         @Override
         protected Properties.Thing newProperties() {
             return new Properties.Thing();
-        }
-
-        @Override
-        public void props(Properties.Thing properties) {
-            filters = Filter.Thing.of(properties, identifier());
-            super.props(properties);
         }
 
         @Override
@@ -207,8 +195,6 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
     static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
-        private Set<Filter.Type> filters;
-
         Type(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
         }
@@ -216,12 +202,6 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         @Override
         protected Properties.Type newProperties() {
             return new Properties.Type();
-        }
-
-        @Override
-        public void props(Properties.Type properties) {
-            filters = Filter.Type.of(properties);
-            super.props(properties);
         }
 
         @Override
@@ -234,132 +214,5 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
         @Override
         public ProcedureVertex.Type asType() { return this; }
-    }
-
-    abstract static class Filter {
-
-        @Override
-        public abstract String toString();
-
-        abstract static class Thing extends Filter {
-
-            static Set<Filter.Thing> of(Properties.Thing property, Identifier identifier) {
-                Set<Filter.Thing> filters = new HashSet<>();
-                if (property.hasIID()) filters.add(new IID(identifier));
-                else if (!property.types().isEmpty()) filters.add(new Types(property.types()));
-                else if (!property.predicates().isEmpty()) filters.addAll(
-                        property.predicates().stream().map(c -> new Predicate(c, identifier)).collect(toSet())
-                );
-                return filters;
-            }
-
-            static class IID extends Filter.Thing {
-
-                private final Identifier param;
-
-                IID(Identifier param) {
-                    this.param = param;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Filter: IID { iid: param(%s) }", param);
-                }
-            }
-
-            static class Types extends Filter.Thing {
-
-                private final Set<Label> labels;
-
-                Types(Set<Label> labels) {
-                    this.labels = labels;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Filter: Types { labels: %s }", labels);
-                }
-            }
-
-            static class Predicate extends Filter.Thing {
-
-                private final grakn.core.traversal.common.Predicate<?> predicate;
-                private final Identifier param;
-
-                Predicate(grakn.core.traversal.common.Predicate<?> predicate, Identifier param) {
-                    this.predicate = predicate;
-                    this.param = param;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Filter: Value { predicate: %s, value: param(%s) }", predicate, param);
-                }
-            }
-        }
-
-        static abstract class Type extends Filter {
-
-            static Set<Filter.Type> of(Properties.Type properties) {
-                Set<Filter.Type> filters = new HashSet<>();
-                if (!properties.labels().isEmpty()) filters.add(new Labels(properties.labels()));
-                else if (properties.isAbstract()) filters.add(new Abstract());
-                else if (properties.valueType().isPresent()) filters.add(new ValueType(properties.valueType().get()));
-                else if (properties.regex().isPresent()) filters.add(new Regex(properties.regex().get()));
-                return filters;
-            }
-
-            static class Labels extends Filter.Type {
-
-                private final Set<Label> labels;
-
-                Labels(Set<Label> labels) {
-                    this.labels = labels;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Filter: Label { label: %s }", labels);
-                }
-            }
-
-            static class Abstract extends Filter.Type {
-
-                Abstract() {}
-
-                @Override
-                public String toString() {
-                    return "Filter: Abstract { abstract: true }";
-                }
-            }
-
-            static class ValueType extends Filter.Type {
-
-                private final Encoding.ValueType valueType;
-
-                ValueType(Encoding.ValueType valueType) {
-                    this.valueType = valueType;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Filter: Value Type { value: %s }", valueType);
-                }
-            }
-
-            static class Regex extends Filter.Type {
-
-                private final String regex;
-
-                Regex(String regex) {
-                    this.regex = regex;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Filter: Regex { regex: %s }", regex);
-                }
-            }
-        }
     }
 }
