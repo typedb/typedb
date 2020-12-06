@@ -477,8 +477,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         else
                             cost = graph.data().stats().thingVertexTransitiveMax(from.props().labels(), to.props().types());
                     } else {
-                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(graph.schema().thingTypes());
-                        else cost = graph.data().stats().thingVertexTransitiveMax(graph.schema().thingTypes(), set());
+                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(graph.schema().thingTypes().stream());
+                        else cost = graph.data().stats().thingVertexTransitiveMax(graph.schema().thingTypes().stream(), set());
                     }
                     setObjectiveCoefficient(cost);
                 }
@@ -618,7 +618,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graph.schema().stats().subTypesMean(from.props().labels(), isTransitive);
                         } else {
-                            cost = graph.schema().stats().subTypesMean(graph.schema().thingTypes(), isTransitive);
+                            cost = graph.schema().stats().subTypesMean(graph.schema().thingTypes().stream(), isTransitive);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -676,7 +676,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graph.schema().stats().outOwnsMean(from.props().labels(), isKey);
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
-                            cost = graph.schema().stats().outOwnsMean(graph.schema().entityTypes(), isKey);
+                            cost = graph.schema().stats().outOwnsMean(graph.schema().entityTypes().stream(), isKey);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -696,10 +696,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graph.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graph.schema().stats().inOwnsMean(from.props().labels(), isKey) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes(), true);
+                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
                         } else {
-                            cost = graph.schema().stats().inOwnsMean(graph.schema().attributeTypes(), isKey) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes(), true);
+                            cost = graph.schema().stats().inOwnsMean(graph.schema().attributeTypes().stream(), isKey) *
+                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -746,7 +746,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graph.schema().stats().outPlaysMean(from.props().labels());
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
-                            cost = graph.schema().stats().outPlaysMean(graph.schema().entityTypes());
+                            cost = graph.schema().stats().outPlaysMean(graph.schema().entityTypes().stream());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -766,10 +766,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graph.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graph.schema().stats().inPlaysMean(from.props().labels()) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes(), true);
+                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
                         } else {
-                            cost = graph.schema().stats().inPlaysMean(graph.schema().attributeTypes()) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes(), true);
+                            cost = graph.schema().stats().inPlaysMean(graph.schema().attributeTypes().stream()) *
+                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -815,7 +815,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graph.schema().stats().outRelates(from.props().labels());
                         } else {
-                            cost = graph.schema().stats().outRelates(graph.schema().relationTypes());
+                            cost = graph.schema().stats().outRelates(graph.schema().relationTypes().stream());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -839,7 +839,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             }).map(l -> graph.schema().getType(l));
                             cost = graph.schema().stats().subTypesMean(relationTypes, true);
                         } else {
-                            cost = graph.schema().stats().subTypesMean(graph.schema().relationTypes(), true);
+                            cost = graph.schema().stats().subTypesMean(graph.schema().relationTypes().stream(), true);
                         }
                         setObjectiveCoefficient(cost);
                     }

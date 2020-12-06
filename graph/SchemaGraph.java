@@ -21,6 +21,7 @@ package grakn.core.graph;
 import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.LogicIID;
@@ -162,33 +163,33 @@ public class SchemaGraph implements Graph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public Stream<TypeVertex> thingTypes() {
-        return tree(rootThingType(), v -> v.ins().edge(SUB).from()).stream();
+    public ResourceIterator<TypeVertex> thingTypes() {
+        return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
-    public Stream<TypeVertex> entityTypes() {
-        return tree(rootEntityType(), v -> v.ins().edge(SUB).from()).stream();
+    public ResourceIterator<TypeVertex> entityTypes() {
+        return tree(rootEntityType(), v -> v.ins().edge(SUB).from());
     }
 
-    public Stream<TypeVertex> attributeTypes() {
-        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from()).stream();
+    public ResourceIterator<TypeVertex> attributeTypes() {
+        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from());
     }
 
-    public Stream<TypeVertex> attributeTypes(Encoding.ValueType vt) {
+    public ResourceIterator<TypeVertex> attributeTypes(Encoding.ValueType vt) {
         return attributeTypes().filter(at -> at.valueType().equals(vt));
     }
 
-    public Stream<TypeVertex> relationTypes() {
-        return tree(rootRelationType(), v -> v.ins().edge(SUB).from()).stream();
+    public ResourceIterator<TypeVertex> relationTypes() {
+        return tree(rootRelationType(), v -> v.ins().edge(SUB).from());
     }
 
-    public Stream<TypeVertex> roleTypes() {
-        return tree(rootRoleType(), v -> v.ins().edge(SUB).from()).stream();
+    public ResourceIterator<TypeVertex> roleTypes() {
+        return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
     }
 
-    public Stream<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {
-        if (!isTransitive) return type.ins().edge(SUB).from().stream();
-        else return tree(rootThingType(), v -> v.ins().edge(SUB).from()).stream();
+    public ResourceIterator<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {
+        if (!isTransitive) return type.ins().edge(SUB).from();
+        else return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex ownerType) {
@@ -474,23 +475,23 @@ public class SchemaGraph implements Graph {
         }
 
         public long abstractTypeCount() {
-            return typeCount(abstractTypeCount, () -> toIntExact(thingTypes().filter(TypeVertex::isAbstract).count()));
+            return typeCount(abstractTypeCount, () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count()));
         }
 
         public long thingTypeCount() {
-            return typeCount(thingTypeCount, () -> toIntExact(thingTypes().count()));
+            return typeCount(thingTypeCount, () -> toIntExact(thingTypes().stream().count()));
         }
 
         public long relationTypeCount() {
-            return typeCount(relationTypeCount, () -> toIntExact(relationTypes().count()));
+            return typeCount(relationTypeCount, () -> toIntExact(relationTypes().stream().count()));
         }
 
         public long roleTypeCount() {
-            return typeCount(roleTypeCount, () -> toIntExact(roleTypes().count()));
+            return typeCount(roleTypeCount, () -> toIntExact(roleTypes().stream().count()));
         }
 
         public long attributeTypeCount() {
-            return typeCount(attributeTypeCount, () -> toIntExact(attributeTypes().count()));
+            return typeCount(attributeTypeCount, () -> toIntExact(attributeTypes().stream().count()));
         }
 
         private int typeCount(AtomicInteger cache, Supplier<Integer> function) {
@@ -503,7 +504,7 @@ public class SchemaGraph implements Graph {
         }
 
         public long attTypesWithValueType(Encoding.ValueType valueType) {
-            Function<Encoding.ValueType, Long> fn = vt -> attributeTypes(vt).count();
+            Function<Encoding.ValueType, Long> fn = vt -> attributeTypes(vt).stream().count();
             if (isReadOnly) return attTypesWithValueType.computeIfAbsent(valueType, fn);
             else return fn.apply(valueType);
         }
@@ -568,9 +569,9 @@ public class SchemaGraph implements Graph {
 
         public long subTypesCount(TypeVertex type, boolean isTransitive) {
             if (isReadOnly) {
-                return subTypesCount.computeIfAbsent(pair(type, isTransitive), p -> subTypes(type, isTransitive).count());
+                return subTypesCount.computeIfAbsent(pair(type, isTransitive), p -> subTypes(type, isTransitive).stream().count());
             } else {
-                return subTypes(type, isTransitive).count();
+                return subTypes(type, isTransitive).stream().count();
             }
         }
 
@@ -579,7 +580,7 @@ public class SchemaGraph implements Graph {
         }
 
         public long subTypesDepth(TypeVertex type) {
-            Function<TypeVertex, Long> maxDepthFn = t -> 1 + subTypes(t, false).mapToLong(this::subTypesDepth).max().orElse(0);
+            Function<TypeVertex, Long> maxDepthFn = t -> 1 + subTypes(t, false).stream().mapToLong(this::subTypesDepth).max().orElse(0);
             if (isReadOnly) return subTypesDepth.computeIfAbsent(type, maxDepthFn);
             else return maxDepthFn.apply(type);
         }
