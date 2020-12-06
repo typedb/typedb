@@ -23,13 +23,12 @@ import grakn.core.common.iterator.ResourceIterator;
 
 import java.util.function.BiFunction;
 
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+
 public interface Storage {
 
     boolean isOpen();
-
-    KeyGenerator.Schema schemaKeyGenerator();
-
-    KeyGenerator.Data dataKeyGenerator();
 
     byte[] get(byte[] key);
 
@@ -53,12 +52,25 @@ public interface Storage {
 
     GraknException exception(GraknException message);
 
+    void close();
+
+    default boolean isSchema() { return false; }
+
+    default Schema asSchema() {
+        throw exception(ILLEGAL_CAST.message(className(this.getClass()), className(Schema.class)));
+    }
+
     interface Schema extends Storage {
 
-        void incrementReference();
+        KeyGenerator.Schema schemaKeyGenerator();
 
-        void decrementReference();
+        default boolean isSchema() { return true; }
 
-        void mayRefresh();
+        default Schema asSchema() { return this; }
+    }
+
+    interface Data extends Storage {
+
+        KeyGenerator.Data dataKeyGenerator();
     }
 }

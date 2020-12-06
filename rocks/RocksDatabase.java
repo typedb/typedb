@@ -23,7 +23,11 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
+import grakn.core.reasoner.ReasonerCache;
+import grakn.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -41,7 +45,6 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
@@ -51,15 +54,15 @@ public class RocksDatabase implements Grakn.Database {
 
     private final String name;
     private final RocksGrakn rocksGrakn;
-    private final OptimisticTransactionDB rocksDB;
+    private final OptimisticTransactionDB rocksData;
+    private final OptimisticTransactionDB rocksSchema;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock dataWriteSchemaLock;
     private final StampedLock dataReadSchemaLock;
     private final AtomicBoolean isOpen;
-    private RocksSession.Schema cachedSchemaSession;
-    private RocksTransaction.Schema cachedSchemaTransaction;
+    private Cache cache;
 
     private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
         this.name = name;
@@ -71,7 +74,8 @@ public class RocksDatabase implements Grakn.Database {
         dataReadSchemaLock = new StampedLock();
 
         try {
-            rocksDB = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().toString());
+            rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
+            rocksData = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
@@ -82,6 +86,11 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
+        try {
+            Files.createDirectory(rocksGrakn.directory().resolve(name));
+        } catch (IOException e) {
+            throw new GraknException(e);
+        }
         return new RocksDatabase(rocksGrakn, name, true);
     }
 
@@ -100,10 +109,10 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     private void load() {
-        try (RocksSession session = createAndOpenSession(DATA, new Options.Session())) {
+        try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(READ)) {
-                schemaKeyGenerator.sync(txn.storage());
-                dataKeyGenerator.sync(txn.storage());
+                schemaKeyGenerator.sync(txn.asSchema().schemaStorage());
+                dataKeyGenerator.sync(txn.asSchema().dataStorage());
             }
         }
     }
@@ -126,16 +135,15 @@ public class RocksDatabase implements Grakn.Database {
         return session;
     }
 
-    synchronized RocksTransaction.Cache cache() {
-        if (cachedSchemaSession == null) cachedSchemaSession = new RocksSession.Schema(this, new Options.Session());
-        if (cachedSchemaTransaction == null) cachedSchemaTransaction = cachedSchemaSession.transaction(READ);
-        return cachedSchemaTransaction.cache();
+    synchronized Cache cache() {
+        if (cache == null) cache = new Cache(this);
+        return cache;
     }
 
     synchronized void closeCachedSchemaGraph() {
-        if (cachedSchemaTransaction != null) {
-            cachedSchemaTransaction.mayClose();
-            cachedSchemaTransaction = null;
+        if (cache != null) {
+            cache.schemaGraph.mayClose();
+            cache = null;
         }
     }
 
@@ -147,8 +155,12 @@ public class RocksDatabase implements Grakn.Database {
         return rocksGrakn.options();
     }
 
-    OptimisticTransactionDB rocks() {
-        return rocksDB;
+    OptimisticTransactionDB rocksData() {
+        return rocksData;
+    }
+
+    OptimisticTransactionDB rocksSchema() {
+        return rocksSchema;
     }
 
     KeyGenerator.Schema schemaKeyGenerator() {
@@ -186,17 +198,16 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     void remove(RocksSession session) {
-        if (cachedSchemaSession != session) {
-            final long lock = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
-        }
+        final long lock = sessions.remove(session.uuid()).second();
+        if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
     }
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (cachedSchemaSession != null) cachedSchemaSession.close();
+            if (cache != null) cache.schemaGraph().storage().close();
             sessions.values().forEach(p -> p.first().close());
-            rocksDB.close();
+            rocksData.close();
+            rocksSchema.close();
         }
     }
 
@@ -229,6 +240,31 @@ public class RocksDatabase implements Grakn.Database {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
             throw new GraknException(e);
+        }
+    }
+
+    static class Cache {
+
+        private final TraversalCache traversalCache;
+        private final ReasonerCache reasonerCache;
+        private final SchemaGraph schemaGraph;
+
+        private Cache(RocksDatabase database) {
+            schemaGraph = new SchemaGraph(new RocksStorage(database.rocksSchema(), true), true);
+            traversalCache = new TraversalCache();
+            reasonerCache = new ReasonerCache();
+        }
+
+        public TraversalCache traversal() {
+            return traversalCache;
+        }
+
+        public ReasonerCache reasoner() {
+            return reasonerCache;
+        }
+
+        public SchemaGraph schemaGraph() {
+            return schemaGraph;
         }
     }
 }

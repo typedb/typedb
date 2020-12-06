@@ -40,7 +40,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
 
-    public static final int SCHEMA_GRAPH_STORAGE_REFRESH_RATE = 10;
+    public static final String ROCKS_SCHEMA = "schema";
+    public static final String ROCKS_DATA = "data";
     public static final int STRING_MAX_LENGTH = 255;
     public static final Charset STRING_ENCODING = UTF_8;
     public static final ZoneId TIME_ZONE_ID = ZoneId.of("Z");
@@ -429,10 +430,14 @@ public class Encoding {
 
         Logic.Rule RULE = new Logic.Rule() {
             @Override
-            public Prefix prefix() { return Prefix.LOGIC_RULE; }
+            public Prefix prefix() {
+                return Prefix.LOGIC_RULE;
+            }
 
             @Override
-            public String label() { return "rule"; }
+            public String label() {
+                return "rule";
+            }
         };
     }
 
@@ -568,11 +573,17 @@ public class Encoding {
 
         String name();
 
-        default boolean isOptimisation() { return false; }
+        default boolean isOptimisation() {
+            return false;
+        }
 
-        default boolean isType() { return false; }
+        default boolean isType() {
+            return false;
+        }
 
-        default boolean isThing() { return false; }
+        default boolean isThing() {
+            return false;
+        }
 
         default Type asType() {
             throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Type.class)));
@@ -585,16 +596,24 @@ public class Encoding {
         Edge ISA = new Edge() {
 
             @Override
-            public Infix out() { return null; }
+            public Infix out() {
+                return null;
+            }
 
             @Override
-            public Infix in() { return Infix.EDGE_ISA_IN; }
+            public Infix in() {
+                return Infix.EDGE_ISA_IN;
+            }
 
             @Override
-            public String name() { return "ISA"; }
+            public String name() {
+                return "ISA";
+            }
 
             @Override
-            public String toString() { return name(); }
+            public String toString() {
+                return name();
+            }
         };
 
         enum Type implements Edge {
@@ -632,10 +651,14 @@ public class Encoding {
             }
 
             @Override
-            public boolean isType() { return true; }
+            public boolean isType() {
+                return true;
+            }
 
             @Override
-            public Type asType() { return this; }
+            public Type asType() {
+                return this;
+            }
         }
 
         enum Thing implements Edge {
@@ -691,10 +714,14 @@ public class Encoding {
             }
 
             @Override
-            public boolean isThing() { return true; }
+            public boolean isThing() {
+                return true;
+            }
 
             @Override
-            public Thing asThing() { return this; }
+            public Thing asThing() {
+                return this;
+            }
 
             public int tailSize() {
                 return tailSize;

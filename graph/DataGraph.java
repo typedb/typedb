@@ -53,7 +53,7 @@ import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
 
-    private final Storage storage;
+    private final Storage.Data storage;
     private final SchemaGraph schemaGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
@@ -62,7 +62,7 @@ public class DataGraph implements Graph {
     private final Statistics statistics;
     private boolean isModified;
 
-    public DataGraph(Storage storage, SchemaGraph schemaGraph) {
+    public DataGraph(Storage.Data storage, SchemaGraph schemaGraph) {
         this.storage = storage;
         this.schemaGraph = schemaGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
@@ -73,7 +73,7 @@ public class DataGraph implements Graph {
     }
 
     @Override
-    public Storage storage() {
+    public Storage.Data storage() {
         return storage;
     }
 

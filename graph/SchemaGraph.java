@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -72,7 +73,7 @@ import static java.util.stream.Collectors.toSet;
 
 public class SchemaGraph implements Graph {
 
-    private final Storage.Schema storage;
+    private final Storage storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
     private final ConcurrentMap<String, RuleLogic> rulesByLabel;
@@ -80,12 +81,14 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<LogicIID.Rule, RuleLogic> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
+    private final AtomicLong referenceCounter;
     private final Statistics statistics;
     private final Cache cache;
     private final boolean isReadOnly;
     private boolean isModified;
+    private boolean mayClose;
 
-    public SchemaGraph(Storage.Schema storage, boolean isReadOnly) {
+    public SchemaGraph(Storage storage, boolean isReadOnly) {
         this.storage = storage;
         this.isReadOnly = isReadOnly;
         keyGenerator = new KeyGenerator.Schema.Buffered();
@@ -95,12 +98,14 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
+        referenceCounter = new AtomicLong();
         statistics = new Statistics();
         cache = new Cache();
         isModified = false;
+        mayClose = false;
     }
 
-    class Cache {
+    static class Cache {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
 
@@ -114,7 +119,7 @@ public class SchemaGraph implements Graph {
     }
 
     @Override
-    public Storage.Schema storage() {
+    public Storage storage() {
         return storage;
     }
 
@@ -410,15 +415,20 @@ public class SchemaGraph implements Graph {
     }
 
     public void incrementReference() {
-        storage.incrementReference();
+        referenceCounter.incrementAndGet();
     }
 
     public void decrementReference() {
-        storage.decrementReference();
+        if (referenceCounter.decrementAndGet() == 0 && mayClose) {
+            storage.close();
+        }
     }
 
-    public void mayRefreshStorage() {
-        storage.mayRefresh();
+    public void mayClose() {
+        mayClose = true;
+        if (referenceCounter.get() == 0) {
+            storage.close();
+        }
     }
 
     /**
@@ -432,11 +442,12 @@ public class SchemaGraph implements Graph {
      */
     @Override
     public void commit() {
+        assert storage.isSchema();
         typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.schemaKeyGenerator(), typeVertex.encoding()))
+                typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                ruleLogic -> ruleLogic.iid(LogicIID.Rule.generate(storage.schemaKeyGenerator()))
+                ruleLogic -> ruleLogic.iid(LogicIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
         rulesByIID.values().forEach(RuleLogic::commit);

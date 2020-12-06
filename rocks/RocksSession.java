@@ -23,8 +23,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.graph.util.KeyGenerator;
-import org.rocksdb.OptimisticTransactionDB;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,18 +54,6 @@ abstract class RocksSession implements Grakn.Session {
 
     Context.Session context() {
         return context;
-    }
-
-    OptimisticTransactionDB rocks() {
-        return database.rocks();
-    }
-
-    KeyGenerator.Schema schemaKeyGenerator() {
-        return database.schemaKeyGenerator();
-    }
-
-    KeyGenerator.Data dataKeyGenerator() {
-        return database.dataKeyGenerator();
     }
 
     boolean isSchema() {

@@ -253,7 +253,6 @@ public class BasicTest {
 
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
-
             assertTrue(grakn.isOpen());
             assertEquals(1, grakn.databases().all().size());
             assertEquals(database, grakn.databases().all().iterator().next().name());
@@ -412,6 +411,7 @@ public class BasicTest {
     @Test
     public void write_attributes_successfully_repeatedly() throws IOException {
         for (int i = 0; i < 100; i++) {
+            System.out.println(i + " ---- ");
             write_attributes_successfully();
         }
     }
@@ -487,6 +487,7 @@ public class BasicTest {
     @Test
     public void write_different_attributes_in_parallel_successfully_repeatedly() throws IOException {
         for (int i = 0; i < 100; i++) {
+            System.out.println(i + " ---- ");
             write_different_attributes_in_parallel_successfully();
         }
     }
@@ -608,6 +609,7 @@ public class BasicTest {
     @Test
     public void write_identical_attributes_in_parallel_successfully_repeatedly() throws IOException {
         for (int i = 0; i < 100; i++) {
+            System.out.println(i + " ---- ");
             write_identical_attributes_in_parallel_successfully();
         }
     }
@@ -709,6 +711,7 @@ public class BasicTest {
     @Test
     public void write_and_delete_attributes_concurrently_repeatedly() throws IOException {
         for (int i = 0; i < 100; i++) {
+            System.out.println(i + " ---- ");
             write_and_delete_attributes_concurrently();
         }
     }
