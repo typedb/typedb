@@ -440,6 +440,7 @@ public class DataGraph implements Graph {
         }
     }
 
+    // TODO: replace all usage of Stream in this class with our own ResourceIterator
     public class Statistics { // TODO: implement properly
 
         private volatile long snapshot;

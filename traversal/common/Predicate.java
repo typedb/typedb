@@ -85,6 +85,8 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
             abstract boolean apply(int comparisonResult);
 
+            abstract Equality reflection();
+
             @Override
             boolean isEquality() { return true; }
 
@@ -93,44 +95,50 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
             public static final Equality EQ = new Equality() {
                 @Override
-                boolean apply(int comparisonResult) {
-                    return comparisonResult == 0;
-                }
+                boolean apply(int comparisonResult) { return comparisonResult == 0; }
+
+                @Override
+                Equality reflection() { return this; }
             };
 
             public static final Equality NEQ = new Equality() {
                 @Override
-                boolean apply(int comparisonResult) {
-                    return comparisonResult != 0;
-                }
+                boolean apply(int comparisonResult) { return comparisonResult != 0; }
+
+                @Override
+                Equality reflection() { return this; }
             };
 
             public static final Equality GT = new Equality() {
                 @Override
-                boolean apply(int comparisonResult) {
-                    return comparisonResult > 0;
-                }
+                boolean apply(int comparisonResult) { return comparisonResult > 0; }
+
+                @Override
+                Equality reflection() { return LTE; }
             };
 
             public static final Equality GTE = new Equality() {
                 @Override
-                boolean apply(int comparisonResult) {
-                    return comparisonResult >= 0;
-                }
+                boolean apply(int comparisonResult) { return comparisonResult >= 0; }
+
+                @Override
+                Equality reflection() { return LT; }
             };
 
             public static final Equality LT = new Equality() {
                 @Override
-                boolean apply(int comparisonResult) {
-                    return comparisonResult < 0;
-                }
+                boolean apply(int comparisonResult) { return comparisonResult < 0; }
+
+                @Override
+                Equality reflection() { return GTE; }
             };
 
             public static final Equality LTE = new Equality() {
                 @Override
-                boolean apply(int comparisonResult) {
-                    return comparisonResult <= 0;
-                }
+                boolean apply(int comparisonResult) { return comparisonResult <= 0; }
+
+                @Override
+                Equality reflection() { return GT; }
             };
 
             private static final Map<GraqlToken.Predicate.Equality, Operator.Equality> operators = map(
@@ -295,11 +303,19 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
     public static class Variable extends Predicate<Predicate.Operator.Equality> {
 
         public Variable(GraqlToken.Predicate.Equality token) {
-            super(Operator.Equality.of(token));
+            this(Operator.Equality.of(token));
+        }
+
+        private Variable(Operator.Equality operator) {
+            super(operator);
         }
 
         public boolean apply(AttributeVertex<?> from, AttributeVertex<?> to) {
             return false; // TODO
+        }
+
+        public Variable reflection() {
+            return new Variable(operator.reflection());
         }
     }
 }

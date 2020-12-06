@@ -25,6 +25,7 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.structure.StructureEdge;
 
@@ -40,6 +41,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
@@ -52,9 +54,9 @@ import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_COST_MAX_CHANGE;
 import static grakn.core.traversal.planner.Planner.OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
-import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("NonAtomicOperationOnVolatileField") // Because Planner.optimise() is synchronised
@@ -331,7 +333,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             @Override
             void updateObjective(GraphManager graph) {
                 long cost;
-                if (predicate.equals(EQ)) {
+                if (predicate.operator().equals(EQ)) {
                     if (!to.props().types().isEmpty()) {
                         cost = to.props().types().size();
                     } else if (!from.props().types().isEmpty()) {
@@ -343,7 +345,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     if (!to.props().types().isEmpty()) {
                         cost = graph.data().stats().thingVertexSum(to.props().types());
                     } else if (!from.props().types().isEmpty()) {
-                        Stream<TypeVertex> types = from.props().types().stream().map(l -> graph.schema().getType(l));
+                        Stream<TypeVertex> types = iterate(from.props().types())
+                                .flatMap(l -> iterate(graph.schema().getType(l).valueType().comparables()))
+                                .flatMap(vt -> graph.schema().attributeTypes(vt)).stream();
                         cost = graph.data().stats().thingVertexSum(types);
                     } else {
                         cost = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootAttributeType());

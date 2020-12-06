@@ -104,7 +104,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                           Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
             super(from, to, order, direction);
-            this.predicate = predicate;
+            this.predicate = direction.isForward() ? predicate : predicate.reflection();
         }
 
         @Override
@@ -236,7 +236,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
                     @Override
                     public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
-                        return false;
+                        return false; // TODO
                     }
                 }
 
