@@ -26,6 +26,7 @@ import grakn.core.graph.adjacency.impl.TypeAdjacencyImpl;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.util.StatisticsBytes;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -442,6 +443,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
             final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
+            graph.storage().delete(StatisticsBytes.vertexCountKey(iid));
         }
     }
 }

@@ -113,7 +113,8 @@ public class Encoding {
         INDEX(0),
         TYPE(1),
         THING(2),
-        RULE(3);
+        RULE(3),
+        STATISTICS(4);
 
         private final int key;
 
@@ -133,6 +134,9 @@ public class Encoding {
         INDEX_TYPE(0, PrefixType.INDEX),
         INDEX_RULE(10, PrefixType.INDEX),
         INDEX_ATTRIBUTE(20, PrefixType.INDEX),
+        STATISTICS_THINGS(50, PrefixType.STATISTICS),
+        STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
+        STATISTICS_COUNTED(52, PrefixType.STATISTICS),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
@@ -185,6 +189,83 @@ public class Encoding {
 
         public boolean isRule() {
             return type.equals(PrefixType.RULE);
+        }
+    }
+
+    public enum StatisticsCountJobType {
+        ATTRIBUTE_VERTEX(0),
+        HAS_EDGE(1);
+
+        private final byte key;
+
+        StatisticsCountJobType(int key) {
+            this.key = (byte) key;
+        }
+
+        public static StatisticsCountJobType of(byte[] key) {
+            if (key.length == 1) {
+                for (StatisticsCountJobType i : StatisticsCountJobType.values()) {
+                    if (i.key == key[0]) return i;
+                }
+            }
+            throw new GraknException(UNRECOGNISED_VALUE);
+        }
+
+        public byte key() {
+            return key;
+        }
+
+        public byte[] bytes() {
+            return new byte[]{key};
+        }
+    }
+
+    public enum StatisticsCountJobValue {
+        CREATED(0),
+        DELETED(1);
+
+        private final byte key;
+
+        StatisticsCountJobValue(int key) {
+            this.key = (byte) key;
+        }
+
+        public static StatisticsCountJobValue of(byte[] key) {
+            if (key.length == 1) {
+                for (StatisticsCountJobValue i : StatisticsCountJobValue.values()) {
+                    if (i.key == key[0]) return i;
+                }
+            }
+            throw new GraknException(UNRECOGNISED_VALUE);
+        }
+
+        public byte key() {
+            return key;
+        }
+
+        public byte[] bytes() {
+            return new byte[]{key};
+        }
+    }
+
+    public enum StatisticsInfix {
+        VERTEX_COUNT(0),
+        VERTEX_TRANSITIVE_COUNT(1),
+        HAS_EDGE_COUNT(2),
+        HAS_EDGE_TOTAL_COUNT(3);
+
+        private final byte key;
+
+        StatisticsInfix(int key) {
+            this.key = (byte) key;
+        }
+
+        public byte key() {
+            return key;
+        }
+
+        public byte[] bytes() {
+            return new byte[]{key};
         }
     }
 

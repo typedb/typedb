@@ -154,6 +154,19 @@ class RocksStorage implements Storage {
     }
 
     @Override
+    public void mergeUntracked(byte[] key, byte[] value) {
+        validateTransactionIsOpen();
+        try {
+            readWriteLock.lockWrite();
+            rocksTx.mergeUntracked(key, value);
+        } catch (RocksDBException | InterruptedException e) {
+            throw exception(e);
+        } finally {
+            if (isOpen()) readWriteLock.unlockWrite();
+        }
+    }
+
+    @Override
     public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
         validateTransactionIsOpen();
         final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);

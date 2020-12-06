@@ -197,6 +197,10 @@ public class SchemaGraph implements Graph {
         else return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
+    public ResourceIterator<TypeVertex> subTypes(VertexIID.Type typeIID, boolean isTransitive) {
+        return subTypes(convert(typeIID), isTransitive);
+    }
+
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex ownerType) {
         Function<TypeVertex, Set<TypeVertex>> function = t -> link(
                 list(t.outs().edge(OWNS).to(), t.outs().edge(OWNS_KEY).to())

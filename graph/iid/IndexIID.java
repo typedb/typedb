@@ -68,7 +68,7 @@ public abstract class IndexIID extends IID {
         public String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.TYPE.toString() + "]" +
-                        "[" + (bytes.length - PrefixIID.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
+                        "[" + (bytes.length - PrefixIID.LENGTH) + ": " + new String(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
             }
             return readableString;
         }
@@ -92,7 +92,7 @@ public abstract class IndexIID extends IID {
         public String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.RULE.toString() + "]" +
-                        "[" + (bytes.length - PrefixIID.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
+                        "[" + (bytes.length - PrefixIID.LENGTH) + ": " + new String(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
             }
             return readableString;
         }
