@@ -24,15 +24,19 @@ description sub attribute, value string;
 priority sub attribute, value long;
 access-token sub attribute, value string;
 github-token sub attribute, value string;
+org-role sub attribute, value string;
 permission sub attribute, value string;
 fork sub attribute, value boolean;
+parent-github-id sub attribute, value long;
 default sub attribute, value boolean;
+sync sub attribute, value boolean;
 sha sub attribute, value string;
 created sub attribute, value datetime;
 version-candidate sub attribute, value string;
 reference-type sub attribute, value string;
 format sub attribute, value string;
 content sub attribute, value string;
+error sub attribute, value string;
 script sub attribute, value string;
 status sub attribute, value string;
 job-type sub attribute, value string;
@@ -57,7 +61,8 @@ offer sub attribute, value string;
 sku sub attribute, value string;
 os-type sub attribute, value string;
 resource-group sub attribute, value string;
-ssh-key sub attribute, value string;
+user-ssh-public-key sub attribute, value string;
+user-ssh-private-key sub attribute, value string;
 environment-variable sub attribute, value string;
 build-correctness-wait-for-quality sub attribute, value boolean;
 build-performance-wait-for-quality sub attribute, value boolean;
@@ -67,17 +72,22 @@ ip sub attribute, value string;
 is-approved sub attribute, value boolean;
 pattern sub attribute, value string;
 index sub attribute, value long;
+discord-webhook-url sub attribute, value string;
+discord-id sub attribute, value string;
 email sub attribute, value string, regex ".+\@.+\..+";
 
 organisation sub entity,
     owns name @key,
+    owns full-name,
     owns access-token,
     owns installation-id,
     owns environment-variable,
-    owns full-name,
+    owns permission,
+    owns discord-webhook-url,
     plays org-team:org,
     plays repo-owner:owner,
-    plays org-member:org;
+    plays org-member:org,
+    plays org-installer:org;
 
 org-team sub relation,
     relates org,
@@ -85,14 +95,19 @@ org-team sub relation,
 
 org-member sub relation,
     relates org,
-    relates member;
+    relates member,
+    owns org-role;
+
+org-installer sub relation,
+    relates org,
+    relates installer;
 
 team sub entity,
     owns symbol @key,
     owns name,
     plays org-team:team,
     plays team-member:team,
-    plays repo-team:team;
+    plays team-member:team;
 
 team-member sub relation,
     relates team,
@@ -101,25 +116,32 @@ team-member sub relation,
 user sub entity,
     owns name @key,
     owns full-name,
-    owns email,
     owns access-token,
     owns github-token,
     owns installation-id,
-    owns ssh-key,
+    owns user-ssh-public-key,
+    owns user-ssh-private-key,
     owns environment-variable,
+    owns discord-webhook-url,
+    owns discord-id,
+    owns email,
     plays team-member:member,
     plays repo-owner:owner,
     plays repo-collaborator:collaborator,
     plays commit-author:author,
-    plays org-member:member;
+    plays org-member:member,
+    plays org-installer:installer;
 
 repository sub entity,
     owns symbol @key,
     owns name,
     owns description,
-    owns fork,
     owns active,
     owns private,
+    owns fork,
+    # NOTE: parent-github-id is used to link repo forks together, this is to workaround github doesn't allow querying private children forks.
+    # We use github id because the symbol contains repository names and can be renamed
+    owns parent-github-id,
     owns environment-variable,
     plays repo-owner:repo,
     plays repo-team:repo,
@@ -136,6 +158,14 @@ repo-fork sub relation,
     relates parent,
     relates child;
 
+rule repo-fork-rule:
+    when {
+      (parent: $x, child: $y) isa repo-fork;
+      (parent: $y, child: $z) isa repo-fork;
+    } then {
+      (parent: $x, child: $z) isa repo-fork;
+    };
+
 repo-dependency sub relation,
     owns reference-type,
     relates dependee,
@@ -144,6 +174,23 @@ repo-dependency sub relation,
 repo-dependency-direct sub repo-dependency;
 
 repo-dependency-transitive sub repo-dependency;
+
+rule repo-dependency-transitive-rule:
+    when {
+        (dependee: $x, dependant: $y) isa repo-dependency;
+        (dependee: $y, dependant: $z) isa repo-dependency;
+    } then {
+        (dependee: $x, dependant: $z) isa repo-dependency-transitive;
+    };
+
+rule repo-dependency-transitive-type-rule:
+    when {
+        (dependee: $x, dependant: $y) isa repo-dependency, has reference-type $t;
+        (dependee: $y, dependant: $z) isa repo-dependency, has reference-type $t;
+        $d (dependee: $x, dependant: $z) isa repo-dependency-transitive;
+    } then {
+        $d has $t;
+    };
 
 repo-owner sub relation,
     relates repo,
@@ -158,6 +205,115 @@ repo-collaborator sub relation,
     relates repo,
     relates collaborator,
     owns permission;
+
+rule repo-collaborator-org-rule:
+    when {
+        (org: $o, member: $u) isa org-member;
+        (repo: $r, owner: $o) isa repo-owner;
+    } then {
+        (repo: $r, collaborator: $u) isa repo-collaborator;
+    };
+
+rule repo-collaborator-org-member-permission-rule:
+    when {
+        $o isa organisation, has permission $p;
+        (org: $o, member: $u) isa org-member, has org-role "member";
+        (repo: $r, owner: $o) isa repo-owner;
+        $c (repo: $r, collaborator: $u) isa repo-collaborator;
+    } then {
+        $c has $p;
+    };
+
+rule repo-collaborator-org-owner-permission-rule:
+    when {
+        (org: $o, member: $u) isa org-member, has org-role "owner";
+        (repo: $r, owner: $o) isa repo-owner;
+        $c (repo: $r, collaborator: $u) isa repo-collaborator;
+    } then {
+        $c has permission "admin";
+    };
+
+rule repo-collaborator-org-fork-rule:
+    when {
+        (org: $o, member: $u) isa org-member;
+        (repo: $r, owner: $o) isa repo-owner;
+        $r isa repository, has private true;
+        (parent: $r, child: $rc) isa repo-fork;
+    } then {
+        (repo: $rc, collaborator: $u) isa repo-collaborator;
+    };
+
+rule repo-collaborator-org-fork-member-permission-rule:
+    when {
+        $o isa organisation, has permission $p;
+        (org: $o, member: $u) isa org-member, has org-role "member";
+        (repo: $r, owner: $o) isa repo-owner;
+        $r isa repository, has private true;
+        (parent: $r, child: $rc) isa repo-fork;
+        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
+    } then {
+        $c has $p;
+    };
+
+rule repo-collaborator-org-fork-owner-permission-rule:
+    when {
+        $o isa organisation, has permission $p;
+        (org: $o, member: $u) isa org-member, has org-role "owner";
+        (repo: $r, owner: $o) isa repo-owner;
+        $r isa repository, has private true;
+        (parent: $r, child: $rc) isa repo-fork;
+        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
+    } then {
+        $c has permission "admin";
+    };
+
+rule repo-collaborator-team-rule:
+    when {
+        (repo: $x, team: $y) isa repo-team;
+        (team: $y, member: $z) isa team-member;
+    } then {
+        (repo: $x, collaborator: $z) isa repo-collaborator;
+    };
+
+rule repo-collaborator-team-permission-rule:
+    when {
+        (repo: $x, team: $y) isa repo-team, has permission $p;
+        (team: $y, member: $z) isa team-member;
+        $c (repo: $x, collaborator: $z) isa repo-collaborator;
+    } then {
+        $c has $p;
+    };
+
+rule repo-collaborator-user-rule:
+    when {
+        $owner isa user;
+        (repo: $repo, owner: $owner) isa repo-owner;
+    } then {
+        (repo: $repo, collaborator: $owner) isa repo-collaborator;
+    };
+
+rule repo-collaborator-user-permission-rule:
+    when {
+        $owner isa user;
+        (repo: $repo, owner: $owner) isa repo-owner;
+        $c (repo: $repo, collaborator: $owner) isa repo-collaborator;
+    } then {
+        $c has permission "admin";
+    };
+
+rule repo-collaborator-permission-admin-owns-write-rule:
+    when {
+        $c isa repo-collaborator, has permission "admin";
+    } then {
+        $c has permission "write";
+    };
+
+rule repo-collaborator-permission-write-owns-read-rule:
+   when {
+       $c isa repo-collaborator, has permission "write";
+   } then {
+       $c has permission "read";
+   };
 
 repo-reference sub relation,
     relates repo,
@@ -184,6 +340,7 @@ branch sub entity,
     owns symbol @key,
     owns name,
     owns default,
+    owns sync,
     owns heads,
     plays repo-reference:reference,
     plays commit-reference:reference,
@@ -196,6 +353,7 @@ tag sub entity,
     owns heads,
     plays repo-reference:reference,
     plays commit-reference:reference,
+    plays commit-dependency:dependee,
     plays pipeline-automation:trigger;
 
 commit sub entity,
@@ -236,6 +394,7 @@ file sub entity,
     owns name,
     owns format,
     owns content,
+    owns error,
     plays commit-file:file;
 
 commit-file sub relation,
@@ -334,6 +493,7 @@ analysis sub entity, abstract,
 
 dependency-analysis sub analysis,
     owns status,
+    owns error,
     plays commit-dependency:analysis;
 
 performance-analysis sub analysis,
@@ -347,6 +507,30 @@ performance-trace sub relation,
 performance-tracker sub relation,
     relates analysis,
     relates tracker;
+
+rule performance-trace-rule:
+    when {
+        (analysis: $x, trace: $y) isa performance-trace;
+        (parent: $y, child: $z) isa trace-tree;
+    } then {
+        (analysis: $x, trace: $z) isa performance-trace;
+    };
+
+rule performance-tracker-rule:
+    when {
+        (analysis: $x, tracker: $y) isa performance-tracker;
+        (parent: $y, child: $z) isa tracker-tree;
+    } then {
+        (analysis: $x, tracker: $z) isa performance-tracker;
+    };
+
+rule tracker-trace-rule:
+    when {
+        (tracker: $x, trace: $y) isa trace-tracker;
+        (parent: $y, child: $z) isa trace-tree;
+    } then {
+        (tracker: $x, trace: $z) isa trace-tracker;
+    };
 
 trace sub entity,
     owns idr @key, # TODO: rename to 'id' after completion of: https://github.com/graknlabs/graql/issues/95
@@ -366,6 +550,22 @@ trace sub entity,
 trace-tree sub relation,
     relates parent,
     relates child;
+
+rule trace-label-rule:
+    when {
+        (parent: $x, child: $y) isa trace-tree;
+        $x has label $l;
+    } then {
+        $y has $l;
+    };
+
+rule trace-iteration-rule:
+    when {
+        (parent: $x, child: $y) isa trace-tree;
+        $x has iteration $i;
+    } then {
+        $y has $i;
+    };
 
 tracker sub entity,
     owns idr @key,

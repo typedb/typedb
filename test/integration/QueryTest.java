@@ -47,6 +47,7 @@ import static grakn.core.test.integration.util.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -107,6 +108,12 @@ public class QueryTest {
                     assertTrue(team.getPlays().anyMatch(r -> r.equals(orgTeam_team)));
                     assertTrue(team.getPlays().anyMatch(r -> r.equals(teamMember_team)));
                     assertTrue(user.getPlays().anyMatch(r -> r.equals(teamMember_member)));
+
+                    // check first 4 rules
+                    assertNotNull(tx.concepts().getRule("repo-fork-rule"));
+                    assertNotNull(tx.concepts().getRule("repo-dependency-transitive-rule"));
+                    assertNotNull(tx.concepts().getRule("repo-dependency-transitive-type-rule"));
+                    assertNotNull(tx.concepts().getRule("repo-collaborator-org-rule"));
                 }
             }
         }
@@ -144,6 +151,20 @@ public class QueryTest {
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
+                    // undefine first 4 rules
+                    queryString = "undefine rule repo-fork-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+                    queryString = "undefine rule repo-dependency-transitive-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+                    queryString = "undefine rule repo-dependency-transitive-type-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+                    queryString = "undefine rule repo-collaborator-org-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+
                     transaction.commit();
                 }
 
@@ -164,6 +185,10 @@ public class QueryTest {
                     final AttributeType index = tx.concepts().getAttributeType("index");
                     assertNull(index);
 
+                    assertNull(tx.concepts().getRule("repo-fork-rule"));
+                    assertNull(tx.concepts().getRule("repo-dependency-transitive-rule"));
+                    assertNull(tx.concepts().getRule("repo-dependency-transitive-type-rule"));
+                    assertNull(tx.concepts().getRule("repo-collaborator-org-rule"));
                 }
             }
         }

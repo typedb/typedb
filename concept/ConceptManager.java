@@ -164,12 +164,12 @@ public final class ConceptManager {
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         final RuleLogic vertex = graphMgr.schema().getRule(label);
         if (vertex != null) vertex.delete();
-        return RuleImpl.of(graphMgr, label, when, then);
+        return RuleImpl.of(this, graphMgr, label, when, then);
     }
 
     public Rule getRule(String label) {
         final RuleLogic ruleLogic = graphMgr.schema().getRule(label);
-        if (ruleLogic != null) return RuleImpl.of(graphMgr, ruleLogic);
+        if (ruleLogic != null) return RuleImpl.of(this, ruleLogic);
         return null;
     }
 

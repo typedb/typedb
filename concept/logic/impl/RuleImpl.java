@@ -18,7 +18,11 @@
 
 package grakn.core.concept.logic.impl;
 
+import grakn.core.common.parameters.Label;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.logic.Rule;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.logic.RuleLogic;
 import grakn.core.pattern.Conjunction;
@@ -35,34 +39,34 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND;
 
 
 public class RuleImpl implements Rule {
 
-    private final GraphManager graphMgr;
+    private final ConceptManager conceptMgr;
     private final RuleLogic logic;
     private Conjunction when;
     private Set<Constraint> then;
 
-    private RuleImpl(GraphManager graphMgr, RuleLogic logic) {
-        this.graphMgr = graphMgr;
+    private RuleImpl(ConceptManager conceptMgr, RuleLogic logic) {
+        this.conceptMgr = conceptMgr;
         this.logic = logic;
         when = Conjunction.create(getWhenPreNormalised().normalise().patterns().get(0));
         then = VariableRegistry.createFromThings(list(getThenPreNormalised())).variables().stream().flatMap(
                 variable -> variable.constraints().stream()).collect(Collectors.toSet());
     }
 
-    public static RuleImpl of(GraphManager graphMgr, RuleLogic logic) {
-        return new RuleImpl(graphMgr, logic);
+    public static RuleImpl of(ConceptManager conceptMgr, RuleLogic logic) {
+        return new RuleImpl(conceptMgr, logic);
     }
 
-    public static RuleImpl of(GraphManager graphMgr, String label,
+    public static RuleImpl of(ConceptManager conceptMgr, GraphManager graphMgr, String label,
                               graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
                               graql.lang.pattern.variable.ThingVariable<?> then) {
         graql.lang.pattern.schema.Rule.validate(label, when, then);
         RuleLogic logic = graphMgr.schema().create(label, when, then);
-        RuleImpl rule = new RuleImpl(graphMgr, logic);
+        RuleImpl rule = new RuleImpl(conceptMgr, logic);
         rule.validateLabelsExist();
         return rule;
     }
@@ -122,23 +126,34 @@ public class RuleImpl implements Rule {
     }
 
     private void validateLabelsExist() {
-        Stream<String> whenPositiveLabels = getTypeLabels(when.variables().stream());
-        Stream<String> whenNegativeLabels = getTypeLabels(when.negations().stream().flatMap(this::negationVariables));
-        Stream<String> thenLabels = getTypeLabels(then.stream().flatMap(constraint -> constraint.variables().stream()));
-        Set<String> missingLabels = Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity())
-                .filter(label -> graphMgr.schema().getType(label) == null).collect(Collectors.toSet());
-        if (!missingLabels.isEmpty()) {
-            throw GraqlException.of(TYPE_NOT_FOUND.message(getLabel(), String.join(", ", missingLabels)));
+        Stream<Label> whenPositiveLabels = getTypeLabels(when.variables().stream());
+        Stream<Label> whenNegativeLabels = getTypeLabels(when.negations().stream().flatMap(this::negationVariables));
+        Stream<Label> thenLabels = getTypeLabels(then.stream().flatMap(constraint -> constraint.variables().stream()));
+        Set<String> invalidLabels = invalidLabels(Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
+        if (!invalidLabels.isEmpty()) {
+            throw GraqlException.of(TYPES_NOT_FOUND.message(getLabel(), String.join(", ", invalidLabels)));
         }
     }
 
-    private Stream<String> getTypeLabels(Stream<Variable> variables) {
+    private Stream<Label> getTypeLabels(Stream<Variable> variables) {
         return variables.filter(Variable::isType).map(variable -> variable.asType().label())
-                .filter(Optional::isPresent).map(labelConstraint -> labelConstraint.get().scopedLabel());
+                .filter(Optional::isPresent).map(labelConstraint -> labelConstraint.get().properLabel());
     }
 
     private Stream<Variable> negationVariables(Negation ruleNegation) {
         assert ruleNegation.disjunction().conjunctions().size() == 1;
         return ruleNegation.disjunction().conjunctions().iterator().next().variables().stream();
+    }
+
+    private Set<String> invalidLabels(Stream<Label> labels) {
+        return labels.filter(label -> {
+            if (label.scope().isPresent()) {
+                RelationType scope = conceptMgr.getRelationType(label.scope().get());
+                if (scope == null) return false;
+                return scope.getRelates(label.name()) == null;
+            } else {
+                return conceptMgr.getType(label.name()) == null;
+            }
+        }).map(Label::scopedName).collect(Collectors.toSet());
     }
 }
