@@ -1,9 +1,0 @@
-*                       @haikalpribadi @flyingsilverfin
-
-/.circleci/             @haikalpribadi @lolski
-/.circleci/windows/     @vmax
-/.github/               @haikalpribadi
-/config/                @lolski @vmax
-/daemon/                @haikalpribadi @lolski
-/dependencies/          @haikalpribadi @flyingsilverfin
-/graql/reasoner/        @flyingsilverfin

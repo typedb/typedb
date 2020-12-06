@@ -1,6 +1,0 @@
-insert
-$transaction isa transaction;
-$locates(locates_located: $transaction, locates_location: $city) isa locates;
-$country isa country, has currency "GBP", has country-name "UK";
-$city isa city, has city-name "London";
-$lh(location-hierarchy_superior: $country, location-hierarchy_subordinate: $city) isa location-hierarchy;
