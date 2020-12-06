@@ -215,6 +215,7 @@ public class RocksDatabase implements Grakn.Database {
             if (cache != null) cache.schemaGraph().storage().close();
             sessions.values().forEach(p -> p.first().close());
             statisticsBackgroundCounter.stop();
+            statisticsBackgroundCounterSession.close();
             rocksData.close();
             rocksSchema.close();
         }
@@ -278,7 +279,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     static class StatisticsBackgroundCounter {
-        private RocksSession.Data session;
+        private final RocksSession.Data session;
         private final Thread thread;
         private final Semaphore countJobNotifications;
         private boolean isStopped;
@@ -298,24 +299,24 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         private void countFn() {
-//            while (!isStopped) {
-//                waitForCountJob();
-//                if (isStopped) break;
-//
-//                try (RocksTransaction.Data tx = session.transaction(WRITE)) {
-//                    tx.graphMgr.data().stats().processCountJobs();
-//                    tx.commit();
-//                } catch (GraknException e) {
-//                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
-//                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
-//                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
-//                    if (txConflicted) {
-//                        countJobNotifications.release();
-//                    } else {
-//                        throw e;
-//                    }
-//                }
-//            }
+            while (!isStopped) {
+                waitForCountJob();
+                if (isStopped) break;
+
+                try (RocksTransaction.Data tx = session.transaction(WRITE)) {
+                    tx.graphMgr.data().stats().processCountJobs();
+                    tx.commit();
+                } catch (GraknException e) {
+                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
+                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
+                    if (txConflicted) {
+                        countJobNotifications.release();
+                    } else {
+                        throw e;
+                    }
+                }
+            }
         }
 
         private void waitForCountJob() {
@@ -332,7 +333,6 @@ public class RocksDatabase implements Grakn.Database {
                 isStopped = true;
                 countJobNotifications.release();
                 thread.join();
-                session.close();
             } catch (InterruptedException e) {
                 throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
