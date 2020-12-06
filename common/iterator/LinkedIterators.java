@@ -26,8 +26,8 @@ public class LinkedIterators<T> implements ResourceIterator<T> {
 
     private final List<ResourceIterator<T>> iterators;
 
-    LinkedIterators(LinkedList<ResourceIterator<T>> iterators) {
-        this.iterators = iterators;
+    LinkedIterators(List<ResourceIterator<T>> iterators) {
+        this.iterators = new LinkedList<>(iterators);
     }
 
     @Override

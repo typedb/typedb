@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -47,6 +49,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return new MappedIterator<>(this, mappingFn);
     }
 
+    default <U> ResourceIterator<U> flatMap(Function<T, ResourceIterator<U>> flatMappingFn) {
+        return new FlatMappedIterator<>(this, flatMappingFn);
+    }
+
     default ResourceIterator<T> filter(Predicate<T> predicate) {
         return new FilteredIterator<>(this, predicate);
     }
@@ -56,12 +62,16 @@ public interface ResourceIterator<T> extends Iterator<T> {
     }
 
     default ResourceIterator<T> link(ResourceIterator<T> iterator) {
-        return new LinkedIterators<>(new LinkedList<>(list(this, iterator)));
+        return new LinkedIterators<>(list(this, iterator));
     }
 
     default ResourceIterator<T> link(Iterator<T> iterator) {
         if (iterator instanceof ResourceIterator<?>) return link((ResourceIterator<T>) iterator);
-        return new LinkedIterators<>(new LinkedList<>(list(this, Iterators.iterate(iterator))));
+        return new LinkedIterators<>(list(this, iterate(iterator)));
+    }
+
+    default ResourceIterator<T> noNulls() {
+        return this.filter(Objects::nonNull);
     }
 
     default Stream<T> stream() {

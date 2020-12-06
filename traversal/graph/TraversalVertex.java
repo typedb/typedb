@@ -23,9 +23,7 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Predicate;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -113,11 +111,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean hasIID;
             private final Set<Label> types;
-            private final List<Predicate<?>> predicates;
+            private final Set<Predicate<?>> predicates;
 
             public Thing() {
                 types = new HashSet<>();
-                predicates = new ArrayList<>();
+                predicates = new HashSet<>();
             }
 
             public boolean hasIID() {
@@ -136,7 +134,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.types.addAll(types);
             }
 
-            public List<Predicate<?>> predicates() {
+            public Set<Predicate<?>> predicates() {
                 return predicates;
             }
 

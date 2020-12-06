@@ -43,7 +43,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         hash = Objects.hash(getClass(), operator);
     }
 
-    public abstract boolean test(AttributeVertex<?> vertex, Traversal.Parameters.Value value);
+    public abstract boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value);
 
     public OPERATOR operator() {
         return operator;
@@ -85,7 +85,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
         public static abstract class Equality extends Operator {
 
-            abstract boolean test(int comparisonResult);
+            abstract boolean apply(int comparisonResult);
 
             @Override
             boolean isEquality() { return true; }
@@ -95,42 +95,42 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
             public static final Equality EQ = new Equality() {
                 @Override
-                boolean test(int comparisonResult) {
+                boolean apply(int comparisonResult) {
                     return comparisonResult == 0;
                 }
             };
 
             public static final Equality NEQ = new Equality() {
                 @Override
-                boolean test(int comparisonResult) {
+                boolean apply(int comparisonResult) {
                     return comparisonResult != 0;
                 }
             };
 
             public static final Equality GT = new Equality() {
                 @Override
-                boolean test(int comparisonResult) {
+                boolean apply(int comparisonResult) {
                     return comparisonResult > 0;
                 }
             };
 
             public static final Equality GTE = new Equality() {
                 @Override
-                boolean test(int comparisonResult) {
+                boolean apply(int comparisonResult) {
                     return comparisonResult >= 0;
                 }
             };
 
             public static final Equality LT = new Equality() {
                 @Override
-                boolean test(int comparisonResult) {
+                boolean apply(int comparisonResult) {
                     return comparisonResult < 0;
                 }
             };
 
             public static final Equality LTE = new Equality() {
                 @Override
-                boolean test(int comparisonResult) {
+                boolean apply(int comparisonResult) {
                     return comparisonResult <= 0;
                 }
             };
@@ -151,7 +151,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
         private static abstract class SubString extends Operator {
 
-            abstract boolean test(java.lang.String vertexValue, Traversal.Parameters.Value predicateValue);
+            abstract boolean apply(java.lang.String vertexValue, Traversal.Parameters.Value predicateValue);
 
             @Override
             boolean isSubString() { return true; }
@@ -161,7 +161,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
             private static final SubString CONTAINS = new SubString() {
                 @Override
-                boolean test(java.lang.String vertexValue, Traversal.Parameters.Value predicateValue) {
+                boolean apply(java.lang.String vertexValue, Traversal.Parameters.Value predicateValue) {
                     assert predicateValue.isString();
                     return vertexValue.contains(predicateValue.getString());
                 }
@@ -169,7 +169,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
 
             private static final SubString LIKE = new SubString() {
                 @Override
-                boolean test(java.lang.String vertexValue, Traversal.Parameters.Value predicateValue) {
+                boolean apply(java.lang.String vertexValue, Traversal.Parameters.Value predicateValue) {
                     assert predicateValue.isRegex();
                     return predicateValue.getRegex().matcher(vertexValue).matches();
                 }
@@ -193,7 +193,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         }
 
         @Override
-        public boolean test(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
             if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
             assert vertex.isBoolean() && value.isBoolean();
 
@@ -208,13 +208,13 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         }
 
         @Override
-        public boolean test(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
             if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
             assert (vertex.isLong() || vertex.isDouble()) && value.isLong();
 
-            if (vertex.isLong()) return operator.test(vertex.asLong().value().compareTo(value.getLong()));
+            if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value.getLong()));
             else if (vertex.isDouble())
-                return operator.test(Double.compare(vertex.asDouble().value(), value.getLong()));
+                return operator.apply(Double.compare(vertex.asDouble().value(), value.getLong()));
             else throw GraknException.of(ILLEGAL_STATE);
         }
     }
@@ -229,7 +229,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         }
 
         @Override
-        public boolean test(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
             if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
             assert (vertex.isLong() || vertex.isDouble()) && value.isDouble();
 
@@ -237,7 +237,7 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
             if (vertex.isLong()) vertexValue = vertex.asLong().value();
             else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
             else throw GraknException.of(ILLEGAL_STATE);
-            return operator.test(Double.compare(vertexValue, value.getDouble()));
+            return operator.apply(Double.compare(vertexValue, value.getDouble()));
         }
 
         private static int compare(double vertexValue, double value) {
@@ -255,11 +255,11 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         }
 
         @Override
-        public boolean test(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
             if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
             assert vertex.isDateTime() && value.isDateTime();
 
-            return operator.test(vertex.asDateTime().value().compareTo(value.getDateTime()));
+            return operator.apply(vertex.asDateTime().value().compareTo(value.getDateTime()));
         }
     }
 
@@ -270,15 +270,15 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         }
 
         @Override
-        public boolean test(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
             if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
             assert vertex.isString();
 
             if (operator.isEquality()) {
                 assert value.isString();
-                return operator.asEquality().test(vertex.asString().value().compareTo(value.getString()));
+                return operator.asEquality().apply(vertex.asString().value().compareTo(value.getString()));
             } else if (operator.isSubString()) {
-                return operator.asSubString().test(vertex.asString().value(), value);
+                return operator.asSubString().apply(vertex.asString().value(), value);
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
             }

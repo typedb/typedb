@@ -37,9 +37,10 @@ import graql.lang.pattern.variable.Reference;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -57,6 +58,11 @@ import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
+import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
+import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
+import static grakn.core.graph.util.Encoding.ValueType.LONG;
+import static grakn.core.graph.util.Encoding.ValueType.STRING;
 import static java.util.stream.Collectors.toList;
 
 public class Traversal {
@@ -218,7 +224,7 @@ public class Traversal {
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iid;
-        private final Map<Pair<Identifier, Predicate<?>>, LinkedList<Value>> values;
+        private final Map<Pair<Identifier, Predicate<?>>, Set<Value>> values;
 
         public Parameters() {
             iid = new HashMap<>();
@@ -230,134 +236,131 @@ public class Traversal {
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.Boolean predicate, boolean value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.Long predicate, long value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.Double predicate, double value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.DateTime predicate, LocalDateTime value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.String predicate, String value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(value));
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.String predicate, Pattern regex) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new LinkedList<>()).addLast(new Value(regex));
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(regex));
         }
 
         public VertexIID.Thing getIID(Identifier.Variable identifier) {
             return iid.get(identifier);
         }
 
-        public LinkedList<Value> getValues(Identifier.Variable identifier, Predicate<?> predicate) {
+        public Set<Value> getValues(Identifier.Variable identifier, Predicate<?> predicate) {
             return values.get(pair(identifier, predicate));
         }
 
         public static class Value {
 
             private final Encoding.ValueType valueType;
-            private final Boolean booleanValue;
-            private final Long longValue;
-            private final Double doubleValue;
-            private final String stringValue;
-            private final LocalDateTime dateTimeValue;
+            private final Boolean booleanVal;
+            private final Long longVal;
+            private final Double doubleVal;
+            private final String stringVal;
+            private final LocalDateTime dateTimeVal;
             private final Pattern regexPattern;
+            private final int hash;
 
             Value(boolean value) {
-                valueType = Encoding.ValueType.BOOLEAN;
-                booleanValue = value;
-                longValue = null;
-                doubleValue = null;
-                stringValue = null;
-                dateTimeValue = null;
-                regexPattern = null;
+                this(BOOLEAN, value, null, null, null, null, null);
             }
 
             Value(long value) {
-                valueType = Encoding.ValueType.LONG;
-                booleanValue = null;
-                longValue = value;
-                doubleValue = null;
-                stringValue = null;
-                dateTimeValue = null;
-                regexPattern = null;
+                this(LONG, null, value, null, null, null, null);
             }
 
             Value(double value) {
-                valueType = Encoding.ValueType.DOUBLE;
-                booleanValue = null;
-                longValue = null;
-                doubleValue = value;
-                stringValue = null;
-                dateTimeValue = null;
-                regexPattern = null;
+                this(DOUBLE, null, null, value, null, null, null);
             }
 
             Value(LocalDateTime value) {
-                valueType = Encoding.ValueType.DATETIME;
-                booleanValue = null;
-                longValue = null;
-                doubleValue = null;
-                stringValue = null;
-                dateTimeValue = value;
-                regexPattern = null;
+                this(DATETIME, null, null, null, value, null, null);
             }
 
             Value(String value) {
-                valueType = Encoding.ValueType.STRING;
-                booleanValue = null;
-                longValue = null;
-                doubleValue = null;
-                stringValue = value;
-                dateTimeValue = null;
-                regexPattern = null;
+                this(STRING, null, null, null, null, value, null);
             }
 
             Value(Pattern regex) {
-                valueType = Encoding.ValueType.STRING;
-                booleanValue = null;
-                longValue = null;
-                doubleValue = null;
-                stringValue = null;
-                dateTimeValue = null;
-                regexPattern = regex;
+                this(STRING, null, null, null, null, null, regex);
+            }
+
+            private Value(Encoding.ValueType valueType, Boolean booleanVal, Long longVal, Double doubleVal,
+                          LocalDateTime dateTimeVal, String stringVal, Pattern regexPattern) {
+                this.valueType = valueType;
+                this.booleanVal = booleanVal;
+                this.longVal = longVal;
+                this.doubleVal = doubleVal;
+                this.dateTimeVal = dateTimeVal;
+                this.stringVal = stringVal;
+                this.regexPattern = regexPattern;
+                this.hash = Objects.hash(valueType, booleanVal, longVal, doubleVal, dateTimeVal, stringVal, regexPattern);
             }
 
             public Encoding.ValueType valueType() {
                 return valueType;
             }
 
-            public boolean isBoolean() { return booleanValue != null; }
+            public boolean isBoolean() { return booleanVal != null; }
 
-            public boolean isLong() { return longValue != null; }
+            public boolean isLong() { return longVal != null; }
 
-            public boolean isDouble() { return doubleValue != null; }
+            public boolean isDouble() { return doubleVal != null; }
 
-            public boolean isDateTime() { return dateTimeValue != null; }
+            public boolean isDateTime() { return dateTimeVal != null; }
 
-            public boolean isString() { return stringValue != null; }
+            public boolean isString() { return stringVal != null; }
 
             public boolean isRegex() { return regexPattern != null; }
 
-            public Boolean getBoolean() { return booleanValue; }
+            public Boolean getBoolean() { return booleanVal; }
 
-            public Long getLong() { return longValue; }
+            public Long getLong() { return longVal; }
 
-            public Double getDouble() { return doubleValue; }
+            public Double getDouble() { return doubleVal; }
 
-            public LocalDateTime getDateTime() { return dateTimeValue; }
+            public LocalDateTime getDateTime() { return dateTimeVal; }
 
-            public String getString() { return stringValue; }
+            public String getString() { return stringVal; }
 
             public Pattern getRegex() { return regexPattern; }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Value that = (Value) o;
+                return (Objects.equals(this.valueType, that.valueType) &&
+                        Objects.equals(this.booleanVal, that.booleanVal) &&
+                        Objects.equals(this.longVal, that.longVal) &&
+                        Objects.equals(this.doubleVal, that.doubleVal) &&
+                        Objects.equals(this.dateTimeVal, that.dateTimeVal) &&
+                        Objects.equals(this.stringVal, that.stringVal) &&
+                        Objects.equals(this.regexPattern, that.regexPattern));
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
         }
     }
 }
