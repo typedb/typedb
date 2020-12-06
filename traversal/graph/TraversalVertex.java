@@ -176,8 +176,9 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 return isAbstract;
             }
 
-            public void isAbstract(boolean isAbstract) {
-                this.isAbstract = isAbstract;
+            public void setAbstract() {
+                assert !this.isAbstract;
+                this.isAbstract = true;
             }
 
             public Optional<Encoding.ValueType> valueType() {
@@ -185,6 +186,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             }
 
             public void valueType(Encoding.ValueType valueType) {
+                assert this.valueType == null;
                 this.valueType = valueType;
             }
 

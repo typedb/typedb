@@ -164,7 +164,7 @@ public class Traversal {
     }
 
     public void isAbstract(Identifier.Variable type) {
-        structure.typeVertex(type).props().isAbstract(true);
+        structure.typeVertex(type).props().setAbstract();
     }
 
     public void labels(Identifier.Variable type, Label label) {
