@@ -148,7 +148,7 @@ public class RocksDatabase implements Grakn.Database {
 
     synchronized void closeCachedSchemaGraph() {
         if (cache != null) {
-            cache.schemaGraph.mayClose();
+//            cache.schemaGraph.mayClose();
             cache = null;
         }
     }
@@ -212,7 +212,7 @@ public class RocksDatabase implements Grakn.Database {
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (cache != null) cache.schemaGraph().storage().close();
+//            if (cache != null) cache.schemaGraph().storage().close();
             sessions.values().forEach(p -> p.first().close());
             statisticsBackgroundCounter.stop();
             statisticsBackgroundCounterSession.close();
@@ -257,10 +257,10 @@ public class RocksDatabase implements Grakn.Database {
 
         private final TraversalCache traversalCache;
         private final ReasonerCache reasonerCache;
-        private final SchemaGraph schemaGraph;
+//        private final SchemaGraph schemaGraph;
 
         private Cache(RocksDatabase database) {
-            schemaGraph = new SchemaGraph(new RocksStorage(database.rocksSchema(), true), true);
+//            schemaGraph = new SchemaGraph(new RocksStorage(database.rocksSchema(), true), true);
             traversalCache = new TraversalCache();
             reasonerCache = new ReasonerCache();
         }
@@ -273,9 +273,9 @@ public class RocksDatabase implements Grakn.Database {
             return reasonerCache;
         }
 
-        public SchemaGraph schemaGraph() {
-            return schemaGraph;
-        }
+//        public SchemaGraph schemaGraph() {
+//            return schemaGraph;
+//        }
     }
 
     static class StatisticsBackgroundCounter {
@@ -304,18 +304,20 @@ public class RocksDatabase implements Grakn.Database {
                 if (isStopped) break;
 
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
-                    tx.graphMgr.data().stats().processCountJobs();
-                    tx.commit();
-                } catch (GraknException e) {
-                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
-                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
-                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
-                    if (txConflicted) {
-                        countJobNotifications.release();
-                    } else {
-                        throw e;
-                    }
+//                    tx.graphMgr.data().stats().processCountJobs();
+//                    tx.commit();
                 }
+
+//                catch (GraknException e) {
+//                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+//                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
+//                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
+//                    if (txConflicted) {
+//                        countJobNotifications.release();
+//                    } else {
+//                        throw e;
+//                    }
+//                }
             }
         }
 

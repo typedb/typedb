@@ -149,7 +149,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
             initialise(graphMgr, new TraversalCache(), new ReasonerCache());
-            isOpen = new AtomicBoolean(true);
         }
 
         @Override
@@ -243,14 +242,18 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         private final SchemaGraph schemaGraph;
         private final RocksStorage.Data dataStorage;
+        private final RocksStorage.Schema schemaStorage;
 
         public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
 
-            long lock = session.database.dataReadSchemaLock().readLock();
-            schemaGraph = session.database.cache().schemaGraph();
-            session.database.dataReadSchemaLock().unlockRead(lock);
-            schemaGraph.incrementReference();
+            schemaStorage = new RocksStorage.Schema(session.database, this);
+            schemaGraph = new SchemaGraph(schemaStorage, type.isRead());
+
+//            long lock = session.database.dataReadSchemaLock().readLock();
+//            schemaGraph = session.database.cache().schemaGraph();
+//            session.database.dataReadSchemaLock().unlockRead(lock);
+//            schemaGraph.incrementReference();
 
             dataStorage = new RocksStorage.Data(session.database, this);
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
@@ -326,8 +329,9 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         void closeStorage() {
-            schemaGraph.decrementReference();
+//            schemaGraph.decrementReference();
             dataStorage.close();
+            schemaStorage.close();
         }
     }
 }
