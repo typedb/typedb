@@ -32,6 +32,7 @@ import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
 import static java.util.Collections.emptyIterator;
@@ -87,12 +88,13 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
         @Override
         public ResourceIterator<Vertex<?, ?>> branchFrom(Vertex<?, ?> from, Traversal.Parameters parameters) {
-            return iterate(emptyIterator()); // TODO
+            return single(from);
         }
 
         @Override
         public boolean isClosure(Vertex<?, ?> from, Vertex<?, ?> to, Traversal.Parameters parameters) {
-            return false; // TODO
+            assert from != null && to != null;
+            return from.equals(to);
         }
     }
 

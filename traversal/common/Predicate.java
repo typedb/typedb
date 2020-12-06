@@ -43,8 +43,6 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         hash = Objects.hash(getClass(), operator);
     }
 
-    public abstract boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value);
-
     public OPERATOR operator() {
         return operator;
     }
@@ -186,102 +184,122 @@ public abstract class Predicate<OPERATOR extends Predicate.Operator> {
         }
     }
 
-    public static class Boolean extends Predicate<Predicate.Operator.Equality> {
+    public static abstract class Value<VAL_OPERATOR extends Predicate.Operator> extends Predicate<VAL_OPERATOR> {
 
-        public Boolean(GraqlToken.Predicate.Equality token) {
-            super(Operator.Equality.of(token));
+        protected Value(VAL_OPERATOR operator) {
+            super(operator);
         }
 
-        @Override
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-            if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
-            assert vertex.isBoolean() && value.isBoolean();
+        public abstract boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value);
 
-            return vertex.asBoolean().value() == value.getBoolean();
-        }
-    }
+        public static class Boolean extends Predicate.Value<Operator.Equality> {
 
-    public static class Long extends Predicate<Predicate.Operator.Equality> {
-
-        public Long(GraqlToken.Predicate.Equality token) {
-            super(Operator.Equality.of(token));
-        }
-
-        @Override
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-            if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
-            assert (vertex.isLong() || vertex.isDouble()) && value.isLong();
-
-            if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value.getLong()));
-            else if (vertex.isDouble())
-                return operator.apply(Double.compare(vertex.asDouble().value(), value.getLong()));
-            else throw GraknException.of(ILLEGAL_STATE);
-        }
-    }
-
-    public static class Double extends Predicate<Predicate.Operator.Equality> {
-
-        // TODO: where should we save this constant? Encoding?
-        private static final double PRECISION = 0.0000000000000001;
-
-        public Double(GraqlToken.Predicate.Equality token) {
-            super(Operator.Equality.of(token));
-        }
-
-        @Override
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-            if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
-            assert (vertex.isLong() || vertex.isDouble()) && value.isDouble();
-
-            double vertexValue;
-            if (vertex.isLong()) vertexValue = vertex.asLong().value();
-            else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
-            else throw GraknException.of(ILLEGAL_STATE);
-            return operator.apply(Double.compare(vertexValue, value.getDouble()));
-        }
-
-        private static int compare(double vertexValue, double value) {
-            int res = java.lang.Double.compare(vertexValue, value);
-            if (res == 0) return 0;
-            else if (Math.abs(vertexValue - value) < PRECISION) return 0;
-            else return res;
-        }
-    }
-
-    public static class DateTime extends Predicate<Predicate.Operator.Equality> {
-
-        public DateTime(GraqlToken.Predicate.Equality token) {
-            super(Operator.Equality.of(token));
-        }
-
-        @Override
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-            if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
-            assert vertex.isDateTime() && value.isDateTime();
-
-            return operator.apply(vertex.asDateTime().value().compareTo(value.getDateTime()));
-        }
-    }
-
-    public static class String extends Predicate<Predicate.Operator> {
-
-        public String(GraqlToken.Predicate token) {
-            super(Operator.of(token));
-        }
-
-        @Override
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-            if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
-            assert vertex.isString();
-
-            if (operator.isEquality()) {
-                assert value.isString();
-                return operator.asEquality().apply(vertex.asString().value().compareTo(value.getString()));
-            } else if (operator.isSubString()) {
-                return operator.asSubString().apply(vertex.asString().value(), value);
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
+            public Boolean(GraqlToken.Predicate.Equality token) {
+                super(Operator.Equality.of(token));
             }
+
+            @Override
+            public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                assert vertex.isBoolean() && value.isBoolean();
+
+                return vertex.asBoolean().value() == value.getBoolean();
+            }
+        }
+
+        public static class Long extends Predicate.Value<Operator.Equality> {
+
+            public Long(GraqlToken.Predicate.Equality token) {
+                super(Operator.Equality.of(token));
+            }
+
+            @Override
+            public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
+                assert (vertex.isLong() || vertex.isDouble()) && value.isLong();
+
+                if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value.getLong()));
+                else if (vertex.isDouble())
+                    return operator.apply(Double.compare(vertex.asDouble().value(), value.getLong()));
+                else throw GraknException.of(ILLEGAL_STATE);
+            }
+        }
+
+        public static class Double extends Predicate.Value<Operator.Equality> {
+
+            // TODO: where should we save this constant? Encoding?
+            private static final double PRECISION = 0.0000000000000001;
+
+            public Double(GraqlToken.Predicate.Equality token) {
+                super(Operator.Equality.of(token));
+            }
+
+            @Override
+            public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
+                assert (vertex.isLong() || vertex.isDouble()) && value.isDouble();
+
+                double vertexValue;
+                if (vertex.isLong()) vertexValue = vertex.asLong().value();
+                else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
+                else throw GraknException.of(ILLEGAL_STATE);
+                return operator.apply(java.lang.Double.compare(vertexValue, value.getDouble()));
+            }
+
+            private static int compare(double vertexValue, double value) {
+                int res = java.lang.Double.compare(vertexValue, value);
+                if (res == 0) return 0;
+                else if (Math.abs(vertexValue - value) < PRECISION) return 0;
+                else return res;
+            }
+        }
+
+        public static class DateTime extends Predicate.Value<Operator.Equality> {
+
+            public DateTime(GraqlToken.Predicate.Equality token) {
+                super(Operator.Equality.of(token));
+            }
+
+            @Override
+            public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
+                assert vertex.isDateTime() && value.isDateTime();
+
+                return operator.apply(vertex.asDateTime().value().compareTo(value.getDateTime()));
+            }
+        }
+
+        public static class String extends Predicate.Value<Operator> {
+
+            public String(GraqlToken.Predicate token) {
+                super(Operator.of(token));
+            }
+
+            @Override
+            public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
+                assert vertex.isString();
+
+                if (operator.isEquality()) {
+                    assert value.isString();
+                    return operator.asEquality().apply(vertex.asString().value().compareTo(value.getString()));
+                } else if (operator.isSubString()) {
+                    return operator.asSubString().apply(vertex.asString().value(), value);
+                } else {
+                    throw GraknException.of(ILLEGAL_STATE);
+                }
+            }
+        }
+    }
+
+    public static class Variable extends Predicate<Predicate.Operator.Equality> {
+
+        protected Variable(GraqlToken.Predicate.Equality token) {
+            super(Operator.Equality.of(token));
+        }
+
+        public boolean apply(AttributeVertex<?> from, AttributeVertex<?> to) {
+            return false; // TODO
         }
     }
 }

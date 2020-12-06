@@ -63,6 +63,7 @@ import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
 import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
 import static grakn.core.graph.util.Encoding.ValueType.LONG;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
+import static graql.lang.common.GraqlToken.Predicate.SubString.LIKE;
 import static java.util.stream.Collectors.toList;
 
 public class Traversal {
@@ -184,35 +185,32 @@ public class Traversal {
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
-        Predicate.String predicate = new Predicate.String(token);
+        Predicate.Value.String predicate = new Predicate.Value.String(token);
         structure.thingVertex(attribute).props().predicate(predicate);
-        if (token == GraqlToken.Predicate.SubString.LIKE) {
-            parameters.pushValue(attribute, predicate, Pattern.compile(value));
-        } else {
-            parameters.pushValue(attribute, predicate, value);
-        }
+        if (token == LIKE) parameters.pushValue(attribute, predicate, Pattern.compile(value));
+        else parameters.pushValue(attribute, predicate, value);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Boolean value) {
-        Predicate.Boolean predicate = new Predicate.Boolean(token);
+        Predicate.Value.Boolean predicate = new Predicate.Value.Boolean(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Long value) {
-        Predicate.Long predicate = new Predicate.Long(token);
+        Predicate.Value.Long predicate = new Predicate.Value.Long(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Double value) {
-        Predicate.Double predicate = new Predicate.Double(token);
+        Predicate.Value.Double predicate = new Predicate.Value.Double(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
-        Predicate.DateTime predicate = new Predicate.DateTime(token);
+        Predicate.Value.DateTime predicate = new Predicate.Value.DateTime(token);
         parameters.pushValue(attribute, predicate, value);
         structure.thingVertex(attribute).props().predicate(predicate);
     }
@@ -235,27 +233,27 @@ public class Traversal {
             this.iid.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Boolean predicate, boolean value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value.Boolean predicate, boolean value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Long predicate, long value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value.Long predicate, long value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Double predicate, double value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value.Double predicate, double value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.DateTime predicate, LocalDateTime value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value.DateTime predicate, LocalDateTime value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.String predicate, String value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value.String predicate, String value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.String predicate, Pattern regex) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value.String predicate, Pattern regex) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(regex));
         }
 

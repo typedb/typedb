@@ -144,7 +144,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
                                                                          Traversal.Parameters parameters,
                                                                          Identifier.Variable id) {
             // TODO: should we throw an exception if the user assert a value non-comparable value types?
-            for (Predicate<?> predicate : props().predicates()) {
+            for (Predicate.Value<?> predicate : props().predicates()) {
                 for (Traversal.Parameters.Value value : parameters.getValues(id, predicate)) {
                     iterator = iterator.filter(a -> predicate.apply(a, value));
                 }
@@ -156,7 +156,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
                                                                           Traversal.Parameters parameters) {
             assert !props().types().isEmpty();
             ResourceIterator<? extends ThingVertex> iterator;
-            Optional<Predicate<?>> eq;
+            Optional<Predicate.Value<?>> eq;
             if ((eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst()).isPresent()) {
                 iterator = iteratorOfAttributes(graphMgr, parameters, eq.get());
             } else {
@@ -174,7 +174,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
 
         private ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(GraphManager graphMgr,
                                                                                     Traversal.Parameters parameters,
-                                                                                    Predicate<?> eqPredicate) {
+                                                                                    Predicate.Value<?> eqPredicate) {
             // TODO: should we throw an exception if the user asserts 2 values for a given vertex?
             assert identifier().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(identifier().asVariable(), eqPredicate);
