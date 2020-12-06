@@ -18,8 +18,8 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;

@@ -477,8 +477,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         else
                             cost = graph.data().stats().thingVertexTransitiveMax(from.props().labels(), to.props().types());
                     } else {
-                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(graph.schema().thingTypes().stream());
-                        else cost = graph.data().stats().thingVertexTransitiveMax(graph.schema().thingTypes().stream(), set());
+                        if (!isTransitive) {
+                            cost = graph.data().stats().thingVertexMax(graph.schema().thingTypes().stream());
+                        } else {
+                            cost = graph.data().stats().thingVertexTransitiveMax(graph.schema().thingTypes().stream(), set());
+                        }
                     }
                     setObjectiveCoefficient(cost);
                 }

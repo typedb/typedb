@@ -26,8 +26,8 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 

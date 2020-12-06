@@ -20,8 +20,8 @@ package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
+import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
