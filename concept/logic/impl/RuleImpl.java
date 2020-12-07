@@ -30,6 +30,9 @@ import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.common.exception.GraqlException;
+import graql.lang.pattern.Conjunctable;
+import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.Optional;
 import java.util.Set;
@@ -51,9 +54,19 @@ public class RuleImpl implements Rule {
     private RuleImpl(ConceptManager conceptMgr, RuleStructure logic) {
         this.conceptMgr = conceptMgr;
         this.logic = logic;
-        when = Conjunction.create(getWhenPreNormalised().normalise().patterns().get(0));
-        then = VariableRegistry.createFromThings(list(getThenPreNormalised())).variables().stream().flatMap(
-                variable -> variable.constraints().stream()).collect(Collectors.toSet());
+        when = whenPattern(getWhenPreNormalised());
+        then = thenConstraints(getThenPreNormalised());
+    }
+
+    private RuleImpl(ConceptManager conceptMgr, GraphManager graphMgr, String label,
+                     graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
+                     graql.lang.pattern.variable.ThingVariable<?> then) {
+        graql.lang.pattern.schema.Rule.validate(label, when, then);
+        this.conceptMgr = conceptMgr;
+        this.logic = graphMgr.schema().create(label, when, then);
+        this.when = whenPattern(logic.when());
+        this.then = thenConstraints(logic.then());
+        validateLabelsExist();
     }
 
     public static RuleImpl of(ConceptManager conceptMgr, RuleStructure logic) {
@@ -63,11 +76,7 @@ public class RuleImpl implements Rule {
     public static RuleImpl of(ConceptManager conceptMgr, GraphManager graphMgr, String label,
                               graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
                               graql.lang.pattern.variable.ThingVariable<?> then) {
-        graql.lang.pattern.schema.Rule.validate(label, when, then);
-        RuleStructure logic = graphMgr.schema().create(label, when, then);
-        RuleImpl rule = new RuleImpl(conceptMgr, logic);
-        rule.validateLabelsExist();
-        return rule;
+        return new RuleImpl(conceptMgr, graphMgr, label, when, then);
     }
 
     @Override
@@ -122,6 +131,15 @@ public class RuleImpl implements Rule {
     @Override
     public final int hashCode() {
         return logic.hashCode(); // does not need caching
+    }
+
+    private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
+        return Conjunction.create(conjunction.normalise().patterns().get(0));
+    }
+
+    private Set<Constraint> thenConstraints(ThingVariable<?> thenVariable) {
+        return VariableRegistry.createFromThings(list(thenVariable)).variables().stream().flatMap(
+                variable -> variable.constraints().stream()).collect(Collectors.toSet());
     }
 
     private void validateLabelsExist() {
