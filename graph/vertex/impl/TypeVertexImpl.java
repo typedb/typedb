@@ -46,6 +46,10 @@ import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.REGEX;
 import static grakn.core.graph.util.Encoding.Property.SCOPE;
 import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
 import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
@@ -149,6 +153,26 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
      * @return the new {@code TypeAdjacency} class
      */
     protected abstract TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
+
+    @Override
+    public boolean isEntityType() {
+        return encoding().equals(ENTITY_TYPE);
+    }
+
+    @Override
+    public boolean isAttributeType() {
+        return encoding().equals(ATTRIBUTE_TYPE);
+    }
+
+    @Override
+    public boolean isRelationType() {
+        return encoding().equals(RELATION_TYPE);
+    }
+
+    @Override
+    public boolean isRoleType() {
+        return encoding().equals(ROLE_TYPE);
+    }
 
     @Override
     public int outOwnsCount(boolean isKey) {

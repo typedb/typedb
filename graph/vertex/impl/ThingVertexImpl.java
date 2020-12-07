@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
@@ -57,7 +58,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     public static ThingVertexImpl of(DataGraph graph, VertexIID.Thing iid) {
-        if (iid.encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
+        if (iid.encoding().equals(ATTRIBUTE)) {
             return AttributeVertexImpl.of(graph, iid.asAttribute());
         } else {
             return new ThingVertexImpl.Persisted(graph, iid);

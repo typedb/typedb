@@ -180,12 +180,13 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             Set<Traversal.Parameters.Value> values = parameters.getValues(identifier().asVariable(), eqPredicate);
             if (values.size() > 1) return iterate(emptyIterator());
             return iterate(props().types().iterator())
-                    .map(l -> graphMgr.schema().getType(l)).noNulls()
+                    .map(l -> graphMgr.schema().getType(l)).noNulls().filter(TypeVertex::isAttributeType)
                     .map(t -> attributeVertex(graphMgr, t, values.iterator().next())).noNulls();
         }
 
         private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type,
                                                    Traversal.Parameters.Value value) {
+            assert type.isAttributeType();
             if (value.isBoolean()) return graphMgr.data().get(type, value.getBoolean());
             else if (value.isLong()) return graphMgr.data().get(type, value.getLong());
             else if (value.isDouble()) return graphMgr.data().get(type, value.getDouble());

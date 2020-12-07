@@ -48,7 +48,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         this.direction = direction;
     }
 
-    public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to, PlannerEdge.Directional<?, ?> plannerEdge) {
+    public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
+                                         PlannerEdge.Directional<?, ?> plannerEdge) {
         int order = plannerEdge.orderNumber();
         Encoding.Direction.Edge dir = plannerEdge.direction();
         if (plannerEdge.isEqual()) {

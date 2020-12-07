@@ -22,7 +22,6 @@ import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.logic.Rule;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.logic.RuleLogic;
 import grakn.core.pattern.Conjunction;

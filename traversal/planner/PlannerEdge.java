@@ -25,7 +25,6 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.structure.StructureEdge;
 
