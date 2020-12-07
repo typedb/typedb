@@ -69,7 +69,7 @@ public class SubConstraint extends TypeConstraint {
         typeHints.clear();
     }
 
-    public Set<Label> getTypeHints() {
+    public Set<Label> typeHints() {
         return typeHints;
     }
 

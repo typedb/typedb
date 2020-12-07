@@ -57,7 +57,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
 
-    ThingVariable(Identifier.Variable identifier) {
+    public ThingVariable(Identifier.Variable identifier) {
         super(identifier);
         this.isConstraints = new HashSet<>();
         this.valueConstraints = new HashSet<>();
@@ -157,6 +157,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueDateTimeConstraint;
     }
 
+    public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
+        ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
+        constrain(valueVarConstraint);
+        return valueVarConstraint;
+    }
+
     public Set<RelationConstraint> relation() {
         return relationConstraints;
     }
@@ -200,8 +206,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
         syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
-                              .flatMap(Collection::stream).map(ThingConstraint::toString)
-                              .collect(Collectors.joining("" + COMMA + SPACE)));
+                .flatMap(Collection::stream).map(ThingConstraint::toString)
+                .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 

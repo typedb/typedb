@@ -145,10 +145,10 @@ public class TypeHinter {
 
     private Set<Label> getHintLabels(Variable variable) {
         if (variable.isType()) {
-            if (variable.asType().sub().isPresent()) return variable.asType().sub().get().getTypeHints();
+            if (variable.asType().sub().isPresent()) return variable.asType().sub().get().typeHints();
             return null;
         } else if (variable.isThing()) {
-            if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().getTypeHints();
+            if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().typeHints();
             return null;
         } else throw GraknException.of(ILLEGAL_STATE);
     }

@@ -89,9 +89,9 @@ public class TypeHinterTest {
 
     private Set<Label> getHints(Variable variable) {
         if (variable.isType() && variable.asType().sub().isPresent()) {
-            return variable.asType().sub().get().getTypeHints();
+            return variable.asType().sub().get().typeHints();
         } else if (variable.isThing() && variable.asThing().isa().isPresent()) {
-            return variable.asThing().isa().get().getTypeHints();
+            return variable.asThing().isa().get().typeHints();
         } else {
             return new HashSet<>();
         }

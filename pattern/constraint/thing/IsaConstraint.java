@@ -75,7 +75,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
         typeHints.clear();
     }
 
-    public Set<Label> getTypeHints() {
+    public Set<Label> typeHints() {
         return typeHints;
     }
 
