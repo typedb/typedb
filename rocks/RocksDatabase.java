@@ -311,7 +311,7 @@ public class RocksDatabase implements Grakn.Database {
                 } catch (GraknException e) {
                     // TODO: Add specific code indicating rocksdb conflict to GraknException status code
                     boolean txConflicted = e.getCause() instanceof RocksDBException &&
-                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
+                            ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
                     if (txConflicted) {
                         countJobNotifications.release();
                     } else {

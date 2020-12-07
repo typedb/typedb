@@ -112,51 +112,27 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         @Override
         public ResourceIterator<? extends ThingVertex> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
             assert isStartingVertex();
-            if (props().hasIID()) {
-                return iteratorFromIID(graphMgr, parameters);
-            } else if (!props().types().isEmpty()) {
-                return iteratorFromTypes(graphMgr, parameters);
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
-            }
+            if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
+            else if (!props().types().isEmpty()) return iterateAndFilterFromTypes(graphMgr, parameters);
+            else throw GraknException.of(ILLEGAL_STATE);
         }
 
-        private ResourceIterator<? extends ThingVertex> iteratorFromIID(GraphManager graphMgr,
+        ResourceIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr,
                                                                         Traversal.Parameters parameters) {
             assert props().hasIID() && identifier().isVariable();
             Identifier.Variable id = identifier().asVariable();
             ResourceIterator<? extends ThingVertex> iter = single(graphMgr.data().get(parameters.getIID(id))).noNulls();
             if (!props().types().isEmpty()) iter = filterTypes(iter);
-            if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters, id);
+            if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters);
             return iter;
         }
 
-        private ResourceIterator<? extends ThingVertex> filterTypes(ResourceIterator<? extends ThingVertex> iterator) {
-            return iterator.filter(v -> props().types().contains(v.type().properLabel()));
-        }
-
-        private ResourceIterator<AttributeVertex<?>> filterAttributes(ResourceIterator<? extends ThingVertex> iterator) {
-            // TODO: should we throw an exception if the user asserts a value predicate on a non-attribute?
-            return iterator.filter(ThingVertex::isAttribute).map(ThingVertex::asAttribute);
-        }
-
-        private ResourceIterator<? extends ThingVertex> filterPredicates(ResourceIterator<AttributeVertex<?>> iterator,
-                                                                         Traversal.Parameters parameters,
-                                                                         Identifier.Variable id) {
-            // TODO: should we throw an exception if the user assert a value non-comparable value types?
-            for (Predicate.Value<?> predicate : props().predicates()) {
-                for (Traversal.Parameters.Value value : parameters.getValues(id, predicate)) {
-                    iterator = iterator.filter(a -> predicate.apply(a, value));
-                }
-            }
-            return iterator;
-        }
-
-        private ResourceIterator<? extends ThingVertex> iteratorFromTypes(GraphManager graphMgr,
+        ResourceIterator<? extends ThingVertex> iterateAndFilterFromTypes(GraphManager graphMgr,
                                                                           Traversal.Parameters parameters) {
             assert !props().types().isEmpty();
             ResourceIterator<? extends ThingVertex> iterator;
             Optional<Predicate.Value<?>> eq;
+
             if ((eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst()).isPresent()) {
                 iterator = iteratorOfAttributes(graphMgr, parameters, eq.get());
             } else {
@@ -166,15 +142,36 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             }
 
             if (!props().predicates().isEmpty()) {
-                iterator = filterPredicates(filterAttributes(iterator), parameters, identifier().asVariable());
+                iterator = filterPredicates(filterAttributes(iterator), parameters);
             }
 
             return iterator;
         }
 
-        private ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(GraphManager graphMgr,
-                                                                                    Traversal.Parameters parameters,
-                                                                                    Predicate.Value<?> eqPredicate) {
+        ResourceIterator<? extends ThingVertex> filterTypes(ResourceIterator<? extends ThingVertex> iterator) {
+            return iterator.filter(v -> props().types().contains(v.type().properLabel()));
+        }
+
+        ResourceIterator<AttributeVertex<?>> filterAttributes(ResourceIterator<? extends ThingVertex> iterator) {
+            // TODO: should we throw an exception if the user asserts a value predicate on a non-attribute?
+            return iterator.filter(ThingVertex::isAttribute).map(ThingVertex::asAttribute);
+        }
+
+        ResourceIterator<? extends ThingVertex> filterPredicates(ResourceIterator<AttributeVertex<?>> iterator,
+                                                                 Traversal.Parameters parameters) {
+            // TODO: should we throw an exception if the user assert a value non-comparable value types?
+            assert identifier().isVariable();
+            for (Predicate.Value<?> predicate : props().predicates()) {
+                for (Traversal.Parameters.Value value : parameters.getValues(identifier().asVariable(), predicate)) {
+                    iterator = iterator.filter(a -> predicate.apply(a, value));
+                }
+            }
+            return iterator;
+        }
+
+        ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(GraphManager graphMgr,
+                                                                            Traversal.Parameters parameters,
+                                                                            Predicate.Value<?> eqPredicate) {
             // TODO: should we throw an exception if the user asserts 2 values for a given vertex?
             assert identifier().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(identifier().asVariable(), eqPredicate);

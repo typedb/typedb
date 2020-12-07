@@ -49,9 +49,9 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.util.Objects.className;
-import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.bytesToLong;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.iterator.Iterators.link;
@@ -662,9 +662,9 @@ public class DataGraph implements Graph {
                 }
             });
             attributeVertexCountJobs.forEach((attIID, countWorkValue) ->
-                    storage.putUntracked(StatisticsBytes.attributeCountJobKey(attIID), countWorkValue.bytes()));
+                                                     storage.putUntracked(StatisticsBytes.attributeCountJobKey(attIID), countWorkValue.bytes()));
             hasEdgeCountJobs.forEach((hasEdge, countWorkValue) ->
-                    storage.putUntracked(StatisticsBytes.hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()));
+                                             storage.putUntracked(StatisticsBytes.hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()));
         }
 
         private void clear() {

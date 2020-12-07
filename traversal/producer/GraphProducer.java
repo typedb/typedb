@@ -39,6 +39,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 public class GraphProducer implements Producer<VertexMap> {
 
     private final int parallelisation;
+    private final GraphManager graphMgr;
     private final Procedure procedure;
     private final Traversal.Parameters parameters;
     private final SynchronisedIterator<? extends Vertex<?, ?>> start;
@@ -48,6 +49,7 @@ public class GraphProducer implements Producer<VertexMap> {
 
     public GraphProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters, int parallelisation) {
         assert parallelisation > 0;
+        this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.parameters = parameters;
         this.parallelisation = parallelisation;
@@ -70,7 +72,7 @@ public class GraphProducer implements Producer<VertexMap> {
 
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
-                ResourceIterator<VertexMap> iterator = new GraphIterator(start.next(), procedure, parameters).distinct(produced);
+                ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, parameters).distinct(produced);
                 futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
             }
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
@@ -96,7 +98,7 @@ public class GraphProducer implements Producer<VertexMap> {
         futures.remove(completedIterator);
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
-            ResourceIterator<VertexMap> iterator = new GraphIterator(next, procedure, parameters).distinct(produced);
+            ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, parameters).distinct(produced);
             futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
         } else if (futures.isEmpty()) {
             done(sink);
