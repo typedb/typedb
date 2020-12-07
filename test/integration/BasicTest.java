@@ -126,40 +126,6 @@ public class BasicTest {
     }
 
     @Test
-    public void test1() throws IOException {
-        for (int i = 0; i < 100; i++) {
-            System.out.println(i + " ---- ");
-            test1_inner();
-        }
-    }
-
-    @Test
-    public void test1_inner() throws IOException {
-        Util.resetDirectory(directory);
-
-        try (Grakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create(database);
-
-
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-
-                }
-
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-
-                    transaction.commit();
-                }
-
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-
-                }
-            }
-        }
-    }
-
-    @Test
     public void write_types_concurrently_repeatedly() throws IOException {
         for (int i = 0; i < 100; i++) {
             System.out.println(i + " ---- ");
