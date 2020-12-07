@@ -19,6 +19,7 @@
 package grakn.core.common.collection;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -48,6 +49,10 @@ public class Bytes {
         }
 
         return joint;
+    }
+
+    public static byte[] stripPrefix(byte[] bytes, int prefixLength) {
+        return Arrays.copyOfRange(bytes, prefixLength, bytes.length);
     }
 
     public static boolean bytesHavePrefix(byte[] bytes, byte[] prefix) {
@@ -103,6 +108,19 @@ public class Bytes {
         assert bytes.length == LONG_SIZE;
         bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getLong();
+    }
+
+    public static byte[] longToBytes(long num) {
+        ByteBuffer buf = ByteBuffer.allocate(LONG_SIZE).order(ByteOrder.nativeOrder());
+        buf.putLong(num);
+        return buf.array();
+    }
+
+    public static long bytesToLong(byte[] bytes) {
+        ByteBuffer buf = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).order(ByteOrder.nativeOrder());
+        buf.put(bytes);
+        buf.flip();
+        return buf.getLong();
     }
 
     /**

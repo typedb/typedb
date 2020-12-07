@@ -151,7 +151,7 @@ public abstract class VertexIID extends IID {
             }
         }
 
-        static VertexIID.Thing extract(byte[] bytes, int from) {
+        public static VertexIID.Thing extract(byte[] bytes, int from) {
             if (Encoding.Vertex.Thing.of(bytes[from]).equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
                 return VertexIID.Attribute.extract(bytes, from);
             } else {
@@ -231,7 +231,7 @@ public abstract class VertexIID extends IID {
             }
         }
 
-        public static VertexIID.Thing extract(byte[] bytes, int from) {
+        public static VertexIID.Attribute<?> extract(byte[] bytes, int from) {
             switch (Encoding.ValueType.of(bytes[from + VALUE_TYPE_INDEX])) {
                 case BOOLEAN:
                     return VertexIID.Attribute.Boolean.extract(bytes, from);

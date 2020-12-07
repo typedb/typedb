@@ -197,6 +197,10 @@ public class SchemaGraph implements Graph {
         else return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
+    public ResourceIterator<TypeVertex> subTypes(VertexIID.Type typeIID, boolean isTransitive) {
+        return subTypes(convert(typeIID), isTransitive);
+    }
+
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex ownerType) {
         Function<TypeVertex, Set<TypeVertex>> function = t -> link(
                 list(t.outs().edge(OWNS).to(), t.outs().edge(OWNS_KEY).to())
@@ -414,16 +418,19 @@ public class SchemaGraph implements Graph {
         return isModified;
     }
 
+    // TODO: verify
     public void incrementReference() {
         referenceCounter.incrementAndGet();
     }
 
+    // TODO: verify
     public void decrementReference() {
         if (referenceCounter.decrementAndGet() == 0 && mayClose) {
             storage.close();
         }
     }
 
+    // TODO: verify
     public void mayClose() {
         mayClose = true;
         if (referenceCounter.get() == 0) {

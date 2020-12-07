@@ -19,6 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.common.collection.Pair;
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
@@ -30,6 +31,7 @@ import grakn.core.reasoner.ReasonerCache;
 import grakn.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.Status;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +40,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
@@ -45,6 +48,7 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
@@ -63,6 +67,8 @@ public class RocksDatabase implements Grakn.Database {
     private final StampedLock dataReadSchemaLock;
     private final AtomicBoolean isOpen;
     private Cache cache;
+    private final RocksSession.Data statisticsBackgroundCounterSession;
+    final StatisticsBackgroundCounter statisticsBackgroundCounter;
 
     private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
         this.name = name;
@@ -83,6 +89,8 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
         if (isNew) initialise();
         else load();
+        statisticsBackgroundCounterSession = new RocksSession.Data(this, new Options.Session());
+        statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
@@ -198,14 +206,18 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     void remove(RocksSession session) {
-        final long lock = sessions.remove(session.uuid()).second();
-        if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
+        if (statisticsBackgroundCounterSession != session) {
+            final long lock = sessions.remove(session.uuid()).second();
+            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
+        }
     }
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (cache != null) cache.schemaGraph().storage().close();
             sessions.values().forEach(p -> p.first().close());
+            statisticsBackgroundCounter.stop();
+            statisticsBackgroundCounterSession.close();
+            if (cache != null) cache.schemaGraph().storage().close();
             rocksData.close();
             rocksSchema.close();
         }
@@ -265,6 +277,67 @@ public class RocksDatabase implements Grakn.Database {
 
         public SchemaGraph schemaGraph() {
             return schemaGraph;
+        }
+    }
+
+    static class StatisticsBackgroundCounter {
+        private final RocksSession.Data session;
+        private final Thread thread;
+        private final Semaphore countJobNotifications;
+        private boolean isStopped;
+
+        StatisticsBackgroundCounter(RocksSession.Data session) {
+            this.session = session;
+            // NOTE: We use a Semaphore instead of CountDownLatch here because semaphore is closer to our usage pattern here.
+            // We want to start counting as long as one transaction notifies, and be able to reset to waiting state.
+            countJobNotifications = new Semaphore(1);
+            thread = NamedThreadFactory.create(session.database.name + "::statistics-background-counter")
+                    .newThread(this::countFn);
+            thread.start();
+        }
+
+        public void needsBackgroundCounting() {
+            countJobNotifications.release();
+        }
+
+        private void countFn() {
+            while (!isStopped) {
+                waitForCountJob();
+                if (isStopped) break;
+
+                try (RocksTransaction.Data tx = session.transaction(WRITE)) {
+                    tx.graphMgr.data().stats().processCountJobs();
+                    tx.commit();
+                } catch (GraknException e) {
+                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
+                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
+                    if (txConflicted) {
+                        countJobNotifications.release();
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        private void waitForCountJob() {
+            try {
+                countJobNotifications.acquire();
+            } catch (InterruptedException e) {
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+            }
+            countJobNotifications.drainPermits();
+        }
+
+        private void stop() {
+            try {
+                isStopped = true;
+                countJobNotifications.release();
+                thread.join();
+            } catch (InterruptedException e) {
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+            }
         }
     }
 }

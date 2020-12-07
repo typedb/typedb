@@ -975,7 +975,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             attTypes.stream().flatMap(a -> graph.schema().ownersOfAttributeType(a).stream().map(o -> pair(o, a)))
                                     .forEach(pair -> ownerToAttributeTypes.computeIfAbsent(pair.first(), o -> new HashSet<>())
                                             .add(pair.second()));
-                        } else { // fromTypes == null && toTypes == null;
+                        } else { // ownerTypes == null && attTypes == null;
                             // TODO: We can refine this by not strictly considering entities being the only divisor
                             ownerToAttributeTypes.put(graph.schema().rootEntityType(), set(graph.schema().rootAttributeType()));
                         }
@@ -1021,7 +1021,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             ownerTypes.stream().flatMap(o -> graph.schema().ownedAttributeTypes(o).stream().map(a -> pair(a, o)))
                                     .forEach(pair -> attributeTypesToOwners.computeIfAbsent(pair.first(), a -> new HashSet<>())
                                             .add(pair.second()));
-                        } else { // fromTypes == null && toTypes == null;
+                        } else { // ownerTypes == null && attTypes == null;
                             attributeTypesToOwners.put(graph.schema().rootAttributeType(), set(graph.schema().rootThingType()));
                         }
 

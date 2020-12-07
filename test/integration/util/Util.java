@@ -37,7 +37,7 @@ public class Util {
 
         Files.createDirectory(directory);
 
-        System.out.println("Database Directory created: " + directory.toString());
+        System.out.println("Database directory created: " + directory.toString());
     }
 
     public static void assertNotNulls(Object... objects) {

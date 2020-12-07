@@ -153,6 +153,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     @Override
     public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         assert !encoding.isOptimisation();
+        if (encoding == Encoding.Edge.Thing.HAS && direction.isOut()) {
+            owner.graph().stats().hasEdgeCreated(owner.iid(), adjacent.iid().asAttribute());
+        }
         final ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner);
@@ -246,24 +249,16 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     public static class Persisted extends ThingAdjacencyImpl implements ThingAdjacency {
 
-        private final ConcurrentHashMap<byte[], ResourceIterator<ThingEdge>> storageIterators;
-
         public Persisted(ThingVertex owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
-            storageIterators = new ConcurrentHashMap<>();
         }
 
         private ResourceIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
-            final ResourceIterator<ThingEdge> storageIterator = storageIterators.computeIfAbsent(
-                    join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes()),
-                    iid -> owner.graph().storage().iterate(iid, (key, value) ->
-                            cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))))
-            );
-
+            byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
+            ResourceIterator<ThingEdge> storageIterator =
+                    owner.graph().storage().iterate(iid, (key, value) -> cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))));
             final ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
-            if (!bufferedIterator.hasNext()) return storageIterator;
-            else if (!storageIterator.hasNext()) return bufferedIterator;
-            else return link(list(bufferedIterator, storageIterator)).distinct();
+            return link(list(bufferedIterator, storageIterator)).distinct();
         }
 
         @Override
