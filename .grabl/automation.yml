@@ -35,7 +35,7 @@ build:
       script: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
           bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-          --project-key=graknlabs_grakn_core_2 \
+          --project-key=graknlabs_grakn_core \
           --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
       machine: graknlabs-ubuntu-20.04-java11
@@ -160,8 +160,7 @@ release:
       script: |
         pip install certifi
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-        # TODO: revert repository from 'grakn-2.0' to 'grakn'
-        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn-2.0 (cat VERSION) ./RELEASE_TEMPLATE.md
+        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn (cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:

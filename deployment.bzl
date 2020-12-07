@@ -20,5 +20,5 @@ deployment = {
   'docker.organisation': 'graknlabs',
   'docker.repository': 'grakn',
   'github.organisation': 'graknlabs',
-  'github.repository': 'grakn-2.0' # TODO: revert to 'grakn'
+  'github.repository': 'grakn'
 }

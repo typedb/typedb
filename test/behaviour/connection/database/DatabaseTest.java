@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
         glue = "grakn.core.test.behaviour",
         features = "external/graknlabs_behaviour/connection/database.feature",
         tags = "not @ignore and not @ignore-grakn-2.0"
+        // TODO: revert to @ignore-grakn once updated in @graknlabs_behaviour
 )
 public class DatabaseTest {
     // ATTENTION:
