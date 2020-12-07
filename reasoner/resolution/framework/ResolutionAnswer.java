@@ -26,16 +26,16 @@ import java.util.Map;
 
 import static grakn.common.collection.Collections.map;
 
-public class Answer {
+public class ResolutionAnswer {
     private final ConceptMap conceptMap;
     private final Derivation derivation;
     private final Actor<? extends Resolver<?>> producer;
     private final String patternAnswered;
 
-    public Answer(ConceptMap conceptMap,
-                  String patternAnswered,
-                  Derivation derivation,
-                  Actor<? extends Resolver<?>> producer) {
+    public ResolutionAnswer(ConceptMap conceptMap,
+                            String patternAnswered,
+                            Derivation derivation,
+                            Actor<? extends Resolver<?>> producer) {
         this.conceptMap = conceptMap;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
@@ -71,30 +71,30 @@ public class Answer {
     public static class Derivation {
         public static final Derivation EMPTY = new Derivation(map());
 
-        private Map<Actor<? extends Resolver<?>>, Answer> answers;
+        private Map<Actor<? extends Resolver<?>>, ResolutionAnswer> answers;
 
-        public Derivation(Map<Actor<? extends Resolver<?>>, Answer> answers) {
+        public Derivation(Map<Actor<? extends Resolver<?>>, ResolutionAnswer> answers) {
             this.answers = map(answers);
         }
 
-        public Derivation withAnswer(Actor<? extends Resolver<?>> producer, Answer answer) {
-            Map<Actor<? extends Resolver<?>>, Answer> copiedResolution = new HashMap<>(answers);
+        public Derivation withAnswer(Actor<? extends Resolver<?>> producer, ResolutionAnswer answer) {
+            Map<Actor<? extends Resolver<?>>, ResolutionAnswer> copiedResolution = new HashMap<>(answers);
             copiedResolution.put(producer, answer);
             return new Derivation(copiedResolution);
         }
 
-        public void update(Map<Actor<? extends Resolver<?>>, Answer> newResolutions) {
+        public void update(Map<Actor<? extends Resolver<?>>, ResolutionAnswer> newResolutions) {
             assert answers.keySet().stream().noneMatch(key -> answers.containsKey(key)) : "Cannot overwrite any derivations during an update";
-            Map<Actor<? extends Resolver<?>>, Answer> copiedResolutinos = new HashMap<>(answers);
+            Map<Actor<? extends Resolver<?>>, ResolutionAnswer> copiedResolutinos = new HashMap<>(answers);
             copiedResolutinos.putAll(newResolutions);
             this.answers = copiedResolutinos;
         }
 
-        public void replace(Map<Actor<? extends Resolver<?>>, Answer> newResolutions) {
+        public void replace(Map<Actor<? extends Resolver<?>>, ResolutionAnswer> newResolutions) {
             this.answers = map(newResolutions);
         }
 
-        public Map<Actor<? extends Resolver<?>>, Answer> answers() {
+        public Map<Actor<? extends Resolver<?>>, ResolutionAnswer> answers() {
             return this.answers;
         }
 

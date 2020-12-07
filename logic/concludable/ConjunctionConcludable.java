@@ -22,12 +22,14 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.Rule;
 import grakn.core.logic.Unification;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
@@ -80,6 +82,30 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return Stream.empty();
     }
 
+    public AlphaEquivalence alphaEquals(ConjunctionConcludable<?, ?> that) {
+        if (that.isRelation()) return alphaEquals(that.asRelation());
+        else if (that.isHas()) return alphaEquals(that.asHas());
+        else if (that.isIsa()) return alphaEquals(that.asIsa());
+        else if (that.isValue()) return alphaEquals(that.asValue());
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    AlphaEquivalence alphaEquals(HeadConcludable.Relation that) {
+        return null;
+    }
+
+    AlphaEquivalence alphaEquals(HeadConcludable.Has that) {
+        return null;
+    }
+
+    AlphaEquivalence alphaEquals(HeadConcludable.Isa that) {
+        return null;
+    }
+
+    AlphaEquivalence alphaEquals(HeadConcludable.Value that) {
+        return null;
+    }
+
     public boolean isRelation() {
         return false;
     }
@@ -112,6 +138,10 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
+    public Conjunction conjunction() {
+        return null; //TODO Make abstract and implement for all subtypes
+    }
+
     public static class Relation extends ConjunctionConcludable<RelationConstraint, ConjunctionConcludable.Relation> {
 
         public Relation(final RelationConstraint constraint) {
@@ -138,6 +168,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         public Relation asRelation() {
             return this;
         }
+
+        @Override
+        AlphaEquivalence alphaEquals(HeadConcludable.Relation that) {
+            return constraint.alphaEquals(that.constraint());
+        }
     }
 
     public static class Has extends ConjunctionConcludable<HasConstraint, ConjunctionConcludable.Has> {
@@ -159,6 +194,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         @Override
         public Has asHas() {
             return this;
+        }
+
+        @Override
+        AlphaEquivalence alphaEquals(HeadConcludable.Has that) {
+            return constraint.alphaEquals(that.constraint());
         }
     }
 
@@ -185,6 +225,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         public Isa asIsa() {
             return this;
         }
+
+        @Override
+        AlphaEquivalence alphaEquals(HeadConcludable.Isa that) {
+            return constraint.alphaEquals(that.constraint());
+        }
     }
 
     public static class Value extends ConjunctionConcludable<ValueConstraint<?>, ConjunctionConcludable.Value> {
@@ -206,6 +251,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         @Override
         public Value asValue() {
             return this;
+        }
+
+        @Override
+        AlphaEquivalence alphaEquals(HeadConcludable.Value that) {
+            return constraint.alphaEquals(that.constraint());
         }
     }
 

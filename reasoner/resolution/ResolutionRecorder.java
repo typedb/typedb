@@ -20,7 +20,7 @@ package grakn.core.reasoner.resolution;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
 
     private final Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
-    private final Map<AnswerIndex, Answer> answers;
+    private final Map<AnswerIndex, ResolutionAnswer> answers;
 
     public ResolutionRecorder(final Actor<ResolutionRecorder> self) {
         super(self);
@@ -46,7 +46,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
         LOG.error("Actor exception", e);
     }
 
-    public void record(Answer answer) {
+    public void record(ResolutionAnswer answer) {
         merge(answer);
     }
 
@@ -54,14 +54,14 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
      * Recursively merge derivation tree nodes into the existing derivation nodes that are recorded in the
      * answer index. Always keep the pre-existing derivation node, and merge the new ones into the existing node.
      */
-    private Answer merge(Answer newAnswer) {
-        Answer.Derivation newDerivation = newAnswer.derivation();
-        Map<Actor<? extends Resolver<?>>, Answer> subAnswers = newDerivation.answers();
+    private ResolutionAnswer merge(ResolutionAnswer newAnswer) {
+        ResolutionAnswer.Derivation newDerivation = newAnswer.derivation();
+        Map<Actor<? extends Resolver<?>>, ResolutionAnswer> subAnswers = newDerivation.answers();
 
-        Map<Actor<? extends Resolver<?>>, Answer> mergedSubAnswers = new HashMap<>();
+        Map<Actor<? extends Resolver<?>>, ResolutionAnswer> mergedSubAnswers = new HashMap<>();
         for (Actor<? extends Resolver<?>> key : subAnswers.keySet()) {
-            Answer subAnswer = subAnswers.get(key);
-            Answer mergedSubAnswer = merge(subAnswer);
+            ResolutionAnswer subAnswer = subAnswers.get(key);
+            ResolutionAnswer mergedSubAnswer = merge(subAnswer);
             mergedSubAnswers.put(key, mergedSubAnswer);
         }
         newDerivation.replace(mergedSubAnswers);
@@ -70,8 +70,8 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
         LOG.debug("actor index for " + newAnswer.producer() + ": " + actorIndex);
         AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.conceptMap());
         if (answers.containsKey(newAnswerIndex)) {
-            Answer existingAnswer = answers.get(newAnswerIndex);
-            Answer.Derivation existingDerivation = existingAnswer.derivation();
+            ResolutionAnswer existingAnswer = answers.get(newAnswerIndex);
+            ResolutionAnswer.Derivation existingDerivation = existingAnswer.derivation();
             existingDerivation.update(newDerivation.answers());
             return existingAnswer;
         } else {

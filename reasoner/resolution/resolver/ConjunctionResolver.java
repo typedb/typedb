@@ -20,11 +20,14 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.pattern.Conjunction;
+import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.reasoner.resolution.UnifiedConcludable;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import org.slf4j.Logger;
@@ -34,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
@@ -41,12 +45,12 @@ import static grakn.common.collection.Collections.map;
 public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> extends Resolver<T> {
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
-    final List<Long> conjunction;
+    final Conjunction conjunction;
     Actor<ResolutionRecorder> resolutionRecorder;
     private final Long traversalSize;
-    private final List<Actor<ConcludableResolver>> plannedConcludables;
+    private final List<UnifiedConcludable> plannedConcludables;
 
-    public ConjunctionResolver(Actor<T> self, String name, List<Long> conjunction, Long traversalSize) {
+    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Long traversalSize) {
         super(self, name);
 
         this.conjunction = conjunction;
@@ -58,8 +62,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected ResponseProducer createResponseProducer(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0)), request.partialConceptMap(),
-                                           request.unifiers(), new Answer.Derivation(map()));
+        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).concludable()), plannedConcludables.get(0).unify(request.partialConceptMap()),
+                                           request.unifiers(), new ResolutionAnswer.Derivation(map())); // TODO Keep the unifier separate rather than pass a wrapper of the actor that includes the unifier?
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;
@@ -68,20 +72,38 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
-        List<Long> planned = list(conjunction);
-        // in the future, we'll check if the atom is rule resolvable first
-        for (Long atomicPattern : planned) {
-            Actor<ConcludableResolver> atomicActor = registry.registerConcludable(atomicPattern, Arrays.asList(), 5L);
-            plannedConcludables.add(atomicActor);
+        // Build the concludables for this conjunction
+        Set<ConjunctionConcludable<?, ?>> conjunctionConcludables = ConjunctionConcludable.of(conjunction);
+
+        // TODO Find the applicable rules for each, which requires 1 or more valid unifications with a rule.
+        // TODO Mark concludables with no applicable rules as inconcludable
+        // TODO Return to the conjunction now knowing the set of inconcludable constraints
+        // TODO Tell the concludables to extend themselves by traversing all inconcludable constraints
+
+        // Plan the order in which to execute the concludables
+        List<ConjunctionConcludable<?, ?>> planned = list(conjunctionConcludables); // TODO Do some actual planning
+        for (ConjunctionConcludable<?, ?> concludable : planned) {
+            UnifiedConcludable unifiedConcludable = registry.registerConcludable(concludable, Arrays.asList(), 5L); // TODO Traversal size?
+            plannedConcludables.add(unifiedConcludable);
         }
     }
 
     boolean isLast(Actor<? extends Resolver<?>> actor) {
-        return plannedConcludables.get(plannedConcludables.size() - 1).equals(actor);
+        return plannedConcludables.get(plannedConcludables.size() - 1).concludable().equals(actor);
     }
 
-    Actor<ConcludableResolver> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
-        return plannedConcludables.get(plannedConcludables.indexOf(actor) + 1);
+    UnifiedConcludable nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+        boolean match = false;
+        for (UnifiedConcludable planned : plannedConcludables) {
+            if (match) {
+                return planned; // TODO This logic seems a bit bizarre, but is the most efficient
+            }
+            if (actor.equals(planned.concludable())) {
+                match = true;
+            }
+        }
+        assert false; // Catch the case where we can't find the given actor in the plan
+        return null;
     }
 
     @Override

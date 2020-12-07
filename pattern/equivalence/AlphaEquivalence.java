@@ -113,7 +113,7 @@ public abstract class AlphaEquivalence {
             return this;
         }
 
-        HashMap<Variable, Variable> map() {
+        public HashMap<Variable, Variable> map() {
             return new HashMap<>(map);
         }
     }

@@ -17,22 +17,55 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.concurrent.actor.Actor;
 import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.UnifiedConceptMap;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
+
+import java.util.Arrays;
 
 public class ReasonerProducer implements Producer<ConceptMap> {
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
+    private final Actor<RootResolver> rootResolver;
+    private final ResolverRegistry registry;
+    private final Request resolveRequest;
+    private boolean done;
+    private Sink<ConceptMap> sink = null;
 
+
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
+        this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
+        this.resolveRequest = new Request(new Request.Path(rootResolver), UnifiedConceptMap.empty(), Arrays.asList(), ResolutionAnswer.Derivation.EMPTY);
+        this.registry = resolverRegistry;
+    }
+
+    private void onAnswer(final ResolutionAnswer answer) {
+        sink.put(answer.conceptMap());
+    }
+
+    private void onDone() {
+        if (!done) {
+            done = true;
+            sink.done(this);
+        }
     }
 
     @Override
     public void produce(Sink<ConceptMap> sink, int count) {
-        // TODO
+        assert this.sink == null || this.sink == sink;
+        this.sink = sink;
+        for (int i = 0; i < count; i++) {
+            rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry));
+        }
     }
 
     @Override
-    public void recycle() {} // no-op
+    public void recycle() {
+
+    }
 }

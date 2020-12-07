@@ -44,11 +44,11 @@ public interface Response {
 
     class Answer implements Response {
         private final Request sourceRequest;
-        private final grakn.core.reasoner.resolution.framework.Answer answer;
+        private final ResolutionAnswer answer;
         private final List<Object> unifiers;
 
         public Answer(Request sourceRequest,
-                      grakn.core.reasoner.resolution.framework.Answer answer,
+                      ResolutionAnswer answer,
                       List<Object> unifiers) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
@@ -60,7 +60,7 @@ public interface Response {
             return sourceRequest;
         }
 
-        public grakn.core.reasoner.resolution.framework.Answer answer() {
+        public ResolutionAnswer answer() {
             return answer;
         }
 

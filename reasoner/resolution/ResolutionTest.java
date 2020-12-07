@@ -20,7 +20,7 @@ package grakn.core.reasoner.resolution;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import org.junit.Test;
@@ -40,7 +40,7 @@ public class ResolutionTest {
 
     @Test
     public void singleConcludable() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -59,7 +59,7 @@ public class ResolutionTest {
 
     @Test
     public void twoConcludables() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -81,7 +81,7 @@ public class ResolutionTest {
 
     @Test
     public void filteringConcludable() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -103,7 +103,7 @@ public class ResolutionTest {
 
     @Test
     public void simpleRule() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -130,7 +130,7 @@ public class ResolutionTest {
 
     @Test
     public void concludableChainWithRule() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -161,7 +161,7 @@ public class ResolutionTest {
 
     @Test
     public void shallowRerequestChain() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -188,7 +188,7 @@ public class ResolutionTest {
 
     @Test
     public void deepRerequestChain() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -223,7 +223,7 @@ public class ResolutionTest {
 
     @Test
     public void bulkActorCreation() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -258,7 +258,7 @@ public class ResolutionTest {
 
     @Test
     public void recursiveTerminationAndDeduplication() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -283,7 +283,7 @@ public class ResolutionTest {
 
     @Test
     public void answerRecorderTest() throws InterruptedException {
-        LinkedBlockingQueue<Answer> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
         ResolverRegistry registry = new ResolverRegistry(elg);
@@ -313,7 +313,7 @@ public class ResolutionTest {
                                       registry
                               )
             );
-            Answer answer = responses.take();
+            ResolutionAnswer answer = responses.take();
 
             // TODO write more meaningful explanation tests
             System.out.println(answer);
@@ -321,7 +321,7 @@ public class ResolutionTest {
     }
 
 
-    private Actor<RootResolver> registerRoot(List<Long> pattern, long traversalSize, Consumer<Answer> onAnswer, Runnable onExhausted, ResolverRegistry resolverRegistry) {
+    private Actor<RootResolver> registerRoot(List<Long> pattern, long traversalSize, Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted, ResolverRegistry resolverRegistry) {
         return resolverRegistry.createRoot(pattern, traversalSize, onAnswer, onExhausted);
     }
 
@@ -333,7 +333,7 @@ public class ResolutionTest {
         registry.registerRule(pattern, traversalSize);
     }
 
-    private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<Answer> responses,
+    private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
                                  final AtomicLong doneReceived, final long answerCount, ResolverRegistry registry)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();
@@ -341,14 +341,14 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.executeReceiveRequest(
-                                      new Request(new Request.Path(root), new ConceptMap(), list(), Answer.Derivation.EMPTY),
+                                      new Request(new Request.Path(root), new ConceptMap(), list(), ResolutionAnswer.Derivation.EMPTY),
                                       registry
                               )
             );
         }
 
         for (int i = 0; i < n - 1; i++) {
-            Answer answer = responses.take();
+            ResolutionAnswer answer = responses.take();
         }
         Thread.sleep(1000);
         assertEquals(1, doneReceived.get());

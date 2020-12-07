@@ -21,7 +21,9 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.pattern.Conjunction;
+import grakn.core.reasoner.resolution.UnifiedConcludable;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -29,13 +31,11 @@ import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 // TODO unify and materialise in receiveAnswer
 public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
-    public RuleResolver(Actor<RuleResolver> self, List<Long> when, Long traversalSize) {
+    public RuleResolver(Actor<RuleResolver> self, Conjunction when, Long traversalSize) {
         super(self, RuleResolver.class.getSimpleName() + "(pattern:" + when + ")", when, traversalSize);
     }
 
@@ -49,7 +49,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         ConceptMap conceptMap = fromDownstream.answer().conceptMap();
 
-        Answer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
+        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
         if (fromDownstream.answer().isInferred()) {
             derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
         }
@@ -60,16 +60,16 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                Answer answer = new Answer(conceptMap, conjunction.toString(), derivation, self());
+                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), derivation, self());
                 Response.Answer response = new Response.Answer(fromUpstream, answer, fromUpstream.unifiers());
                 return Either.second(response);
             } else {
                 return produceMessage(fromUpstream, responseProducer);
             }
         } else {
-            Actor<ConcludableResolver> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream),
-                                                    conceptMap, fromDownstream.unifiers(), derivation);
+            UnifiedConcludable nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.concludable()),
+                                                    nextPlannedDownstream.unify(conceptMap), fromDownstream.unifiers(), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }
@@ -87,7 +87,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                Answer answer = new Answer(conceptMap, conjunction.toString(), Answer.Derivation.EMPTY, self());
+                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
                 return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
             }
         }
