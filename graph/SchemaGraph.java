@@ -38,6 +38,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -50,6 +51,7 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
@@ -114,6 +116,7 @@ public class SchemaGraph implements Graph {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
         }
+
 
     }
 
@@ -189,6 +192,11 @@ public class SchemaGraph implements Graph {
 
     public ResourceIterator<TypeVertex> roleTypes() {
         return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
+    }
+
+    public ResourceIterator<TypeVertex> superTypes(TypeVertex vertex) {
+        return loop(vertex, Objects::nonNull,
+                    v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(vertex.encoding())).firstOrNull());
     }
 
     public ResourceIterator<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {

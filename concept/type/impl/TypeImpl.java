@@ -141,15 +141,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(Function<TypeVertex, TYPE> typeConstructor) {
-        return loop(
-                vertex,
-                v -> v != null && v.encoding().equals(this.vertex.encoding()),
-                v -> {
-                    final ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
-                    if (p.hasNext()) return p.next();
-                    else return null;
-                }
-        ).map(typeConstructor).stream();
+        return graphMgr.schema().superTypes(vertex).map(typeConstructor).stream();
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {

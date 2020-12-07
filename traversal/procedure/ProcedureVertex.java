@@ -216,27 +216,52 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             return iterator;
         }
 
-        private ResourceIterator<TypeVertex> iterateAndFilterRegex(GraphManager graphMgr,
-                                                                   ResourceIterator<TypeVertex> iterator) {
-            if (iterator == null) iterator = graphMgr.schema().attributeTypes(STRING);
-            return iterator.filter(at -> at.regex() != null && at.regex().pattern().equals(props().regex().get()));
+        ResourceIterator<TypeVertex> filter(ResourceIterator<TypeVertex> iterator) {
+            if (!props().labels().isEmpty()) iterator = filterLabels(iterator);
+            if (props().valueType().isPresent()) iterator = filterValueTypes(iterator);
+            if (props().isAbstract()) iterator = filterAbstract(iterator);
+            if (props().regex().isPresent()) iterator = filterRegex(iterator);
+            return iterator;
         }
 
         private ResourceIterator<TypeVertex> iterateLabels(GraphManager graphMgr) {
             return iterate(props().labels().iterator()).map(l -> graphMgr.schema().getType(l)).noNulls();
         }
 
+        private ResourceIterator<TypeVertex> filterLabels(ResourceIterator<TypeVertex> iterator) {
+            return iterator.filter(t -> props().labels().contains(t.properLabel()));
+        }
+
         private ResourceIterator<TypeVertex> iterateOrFilterValueTypes(GraphManager graphMgr,
                                                                        ResourceIterator<TypeVertex> iterator) {
             assert props().valueType().isPresent();
             if (iterator == null) return graphMgr.schema().attributeTypes(props().valueType().get());
-            else return iterator.filter(t -> Objects.equals(t.valueType(), props().valueType().get()));
+            else return filterValueTypes(iterator);
+        }
+
+        private ResourceIterator<TypeVertex> filterValueTypes(ResourceIterator<TypeVertex> iterator) {
+            assert props().valueType().isPresent();
+            return iterator.filter(t -> Objects.equals(t.valueType(), props().valueType().get()));
         }
 
         private ResourceIterator<TypeVertex> iterateOrFilterAbstract(GraphManager graphMgr,
                                                                      ResourceIterator<TypeVertex> iterator) {
             if (iterator == null) return graphMgr.schema().thingTypes().filter(TypeVertex::isAbstract);
-            else return iterator.filter(TypeVertex::isAbstract);
+            else return filterAbstract(iterator);
+        }
+
+        private ResourceIterator<TypeVertex> filterAbstract(ResourceIterator<TypeVertex> iterator) {
+            return iterator.filter(TypeVertex::isAbstract);
+        }
+
+        private ResourceIterator<TypeVertex> iterateAndFilterRegex(GraphManager graphMgr,
+                                                                   ResourceIterator<TypeVertex> iterator) {
+            if (iterator == null) iterator = graphMgr.schema().attributeTypes(STRING);
+            return filterRegex(iterator);
+        }
+
+        private ResourceIterator<TypeVertex> filterRegex(ResourceIterator<TypeVertex> iterator) {
+            return iterator.filter(at -> at.regex() != null && at.regex().pattern().equals(props().regex().get()));
         }
 
         @Override

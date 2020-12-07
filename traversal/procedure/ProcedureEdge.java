@@ -25,6 +25,7 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
+import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.graph.TraversalEdge;
@@ -32,8 +33,10 @@ import grakn.core.traversal.planner.PlannerEdge;
 
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
@@ -170,10 +173,10 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         static abstract class Isa<VERTEX_ISA_FROM extends ProcedureVertex<?, ?>, VERTEX_ISA_TO extends ProcedureVertex<?, ?>>
                 extends Native<VERTEX_ISA_FROM, VERTEX_ISA_TO> {
 
-            private final boolean isTransitive;
+            final boolean isTransitive;
 
-            private Isa(VERTEX_ISA_FROM vertex_isa_from, VERTEX_ISA_TO vertex_isa_to, int order, Encoding.Direction.Edge direction, boolean isTransitive) {
-                super(vertex_isa_from, vertex_isa_to, order, direction);
+            private Isa(VERTEX_ISA_FROM from, VERTEX_ISA_TO to, int order, Encoding.Direction.Edge direction, boolean isTransitive) {
+                super(from, to, order, direction);
                 this.isTransitive = isTransitive;
             }
 
@@ -184,13 +187,24 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 }
 
                 @Override
-                public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters parameters) {
-                    return iterate(emptyIterator()); // TODO
+                public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                           Traversal.Parameters parameters) {
+                    assert fromVertex.isThing();
+                    ResourceIterator<TypeVertex> iterator = isaTypes(graphMgr, fromVertex.asThing());
+                    return to.filter(iterator);
                 }
 
                 @Override
                 public boolean isClosure(Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex, Traversal.Parameters parameters) {
-                    return false; // TODO
+                    assert fromVertex.isType() && toVertex.isType();
+                    return isaTypes(fromVertex.asThing().graphs(), fromVertex.asThing()).filter(s -> s.equals(toVertex)).hasNext();
+                }
+
+                private ResourceIterator<TypeVertex> isaTypes(GraphManager graphMgr, ThingVertex fromVertex) {
+                    ResourceIterator<TypeVertex> iterator;
+                    iterator = single(fromVertex.asThing().type());
+                    if (isTransitive) iterator = link(list(iterator, graphMgr.schema().superTypes(fromVertex.asThing().type())));
+                    return iterator;
                 }
             }
 
