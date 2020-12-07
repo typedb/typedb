@@ -288,8 +288,6 @@ public class RocksDatabase implements Grakn.Database {
 
         StatisticsBackgroundCounter(RocksSession.Data session) {
             this.session = session;
-            // NOTE: We use a Semaphore instead of CountDownLatch here because semaphore is closer to our usage pattern here.
-            // We want to start counting as long as one transaction notifies, and be able to reset to waiting state.
             countJobNotifications = new Semaphore(1);
             thread = NamedThreadFactory.create(session.database.name + "::statistics-background-counter")
                     .newThread(this::countFn);

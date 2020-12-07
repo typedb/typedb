@@ -418,19 +418,16 @@ public class SchemaGraph implements Graph {
         return isModified;
     }
 
-    // TODO: verify
     public void incrementReference() {
         referenceCounter.incrementAndGet();
     }
 
-    // TODO: verify
     public void decrementReference() {
         if (referenceCounter.decrementAndGet() == 0 && mayClose) {
             storage.close();
         }
     }
 
-    // TODO: verify
     public void mayClose() {
         mayClose = true;
         if (referenceCounter.get() == 0) {
