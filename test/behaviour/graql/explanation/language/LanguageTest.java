@@ -18,21 +18,16 @@
 
 package grakn.core.test.behaviour.graql.explanation.language;
 
-import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.lang.reflect.InvocationTargetException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/explanation/language.feature",
+        features = "external/graknlabs_behaviour/graql/explanation/language.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class LanguageTest {
@@ -48,7 +43,7 @@ public class LanguageTest {
     //    a) Use '//<this>/<package>/<name>:test' to test against
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=grakn.core.*'
+    //    a) Remove the line that says: '--test_filter=grakn.client.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed
@@ -57,15 +52,4 @@ public class LanguageTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void beforeClass() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        SingletonTestServer.start();
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        SingletonTestServer.shutdown();
-    }
-
 }

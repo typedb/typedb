@@ -26,29 +26,25 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.graql.explanation.reasoner.ReasonerTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/server:server",
-
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/graql:steps",
+#        "//test/behaviour/graql:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/explanation:reasoner.feature",
+        "@graknlabs_behaviour//graql/explanation:reasoner.feature",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
+    classpath_resources = ["//test/conf:logback"],
     size = "medium",
     visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":test",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

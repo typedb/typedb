@@ -1,6 +1,6 @@
 @echo off
 REM
-REM Copyright (C) 2019 Grakn Labs
+REM Copyright (C) 2020 Grakn Labs
 REM
 REM This program is free software: you can redistribute it and/or modify
 REM it under the terms of the GNU Affero General Public License as
@@ -21,21 +21,7 @@ REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
 REM build grakn-core-all-windows archive
-bazel build //:assemble-windows-zip || GOTO :error
-
-REM unpack and start Grakn server
-unzip bazel-bin\grakn-core-all-windows.zip -d bazel-bin\dist\ || GOTO :error
-PUSHD bazel-bin\dist\grakn-core-all-windows\
-CALL grakn.bat server start || GOTO :error
-POPD
-
-REM run application test
-bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no || GOTO :error
-
-REM stop Grakn server
-PUSHD bazel-bin\dist\grakn-core-all-windows\
-CALL grakn.bat server stop
-POPD
+bazel build //test/assembly:assembly --test_output=errors
 
 :error
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%

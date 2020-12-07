@@ -15,18 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-java_library(
+host_compatible_java_library(
     name = "steps",
     srcs = [
         "TransactionSteps.java"
     ],
     deps = [
-        # Internal Package Dependencies
-        "//kb/server",
+        # Internal dependencies
+        "//common:common",
         "//test/behaviour/connection:steps",
         "//test/behaviour/util:util",
 
@@ -36,7 +36,10 @@ java_library(
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
-    ]
+    ],
+    native_libraries_deps = [
+        "//:grakn",
+    ],
 )
 
 java_test(
@@ -46,29 +49,23 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.connection.transaction.TransactionTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/server:server",
-
-        # External dependencies from Maven
+        # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
         ":steps",
         "//test/behaviour/config:parameters",
-        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/connection:transaction.feature",
+        "@graknlabs_behaviour//connection:transaction.feature",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size = "large",
+    size = "small",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":steps",
-        ":test",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

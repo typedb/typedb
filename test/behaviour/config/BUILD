@@ -15,21 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-java_library(
+host_compatible_java_library(
     name = "parameters",
     srcs = ["Parameters.java"],
     deps = [
-        "//kb/server",
+        # Internal dependencies
+        "//common:common",
+
+        # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java"
+    ],
+    native_libraries_deps = [
+        "//concept:concept",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [":parameters"],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

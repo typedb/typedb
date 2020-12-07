@@ -20,13 +20,9 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "util",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["*.java"]),
     deps = [
-        # Internal Package Dependencies
-        "//common",
-
-        # Internal Repository Dependencies
-        # "@graknlabs_common//:common",
+        # Internal dependencies
 
         # External Maven Dependencies
         "@maven//:junit_junit",
@@ -35,7 +31,6 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":util",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

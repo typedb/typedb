@@ -15,23 +15,41 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["@graknlabs_grakn_core//__subpackages__"])
-
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+package(default_visibility = ["//visibility:public"])
+
 
 java_library(
     name = "common",
-    srcs = glob(["**/*.java"], exclude=["test/**"]),
+    srcs = glob(["*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+
+        # External Maven Dependencies
+        "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
-        "@maven//:org_slf4j_slf4j_api",
     ],
-    visibility = ["//visibility:public"],
     tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],
+)
+
+java_test(
+    name = "test-permutation-iterator",
+    srcs = [
+        "iterator/PermutationIteratorTest.java",
+    ],
+    test_class = "grakn.core.common.iterator.PermutationIteratorTest",
+    deps = [
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [":common"],
+    include = glob(["*", "*/*"]),
+    license_type = "agpl",
 )

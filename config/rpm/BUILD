@@ -16,3 +16,10 @@
 #
 
 exports_files(["grakn-core-server.spec", "grakn-core-all.spec"])
+load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "agpl",
+)

@@ -15,87 +15,44 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_common//test/server:rules.bzl", "native_grakn_artifact")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_common//test/server:rules.bzl", "grakn_java_test")
 
-java_test(
-    name = "test-daemon",
-    srcs = [
-        "AssemblyConstants.java",
-        "DaemonTest.java",
-    ],
-    classpath_resources = ["//test/resources:logback-test"],
-    data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.test.assembly.DaemonTest",
-    deps = [
-        "//common",
-        "//server",
-        "@graknlabs_protocol//grpc/java:protocol",
-        "@maven//:io_grpc_grpc_api",
-        "@maven//:io_grpc_grpc_stub",
-        "@maven//:commons_io_commons_io",
-        "@maven//:org_hamcrest_hamcrest_library",
-        "@maven//:org_zeroturnaround_zt_exec",
-    ],
+
+native_grakn_artifact(
+    name = "native-grakn-artifact",
+    mac_artifact = "//server:assemble-mac-zip",
+    linux_artifact = "//server:assemble-linux-targz",
+    windows_artifact = "//server:assemble-windows-zip",
+    visibility = ["//test:__subpackages__"],
+)
+
+grakn_java_test(
+    name = "assembly",
+    test_class = "grakn.core.test.assembly.AssemblyTest",
+    srcs = ["AssemblyTest.java"],
+    native_grakn_artifact = ":native-grakn-artifact",
 )
 
 java_test(
-    name = "test-distribution",
-    srcs = [
-        "AssemblyConstants.java",
-        "DistributionTest.java",
-    ],
-    classpath_resources = ["//test/resources:logback-test"],
-    data = ["//:assemble-mac-zip"],
-    test_class = "grakn.core.test.assembly.DistributionTest",
+    name = "docker",
+    srcs = ["DockerTest.java"],
+    test_class = "grakn.core.test.assembly.DockerTest",
     deps = [
-        "//common",
-        "@maven//:commons_io_commons_io",
-        "@maven//:org_hamcrest_hamcrest_library",
+        "@maven//:org_slf4j_slf4j_api",
         "@maven//:org_zeroturnaround_zt_exec",
     ],
-)
-
-java_test(
-    name = "test-migration",
-    size = "enormous",
-    srcs = [
-        "AssemblyConstants.java",
-        "MigrationTest.java",
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
     data = [
-        "data/schema.gql",
-        "data/schema-pt2.gql",
-        "data/schema_export_truth.gql",
-        "data/simulation.grakn",
-        "//:assemble-mac-zip",
-    ],
-    test_class = "grakn.core.test.assembly.MigrationTest",
-    deps = [
-        "//common",
-        "@maven//:com_google_protobuf_protobuf_java",
-        "@maven//:commons_io_commons_io",
-        "@maven//:commons_lang_commons_lang",
-        "@maven//:org_hamcrest_hamcrest_library",
-        "@maven//:org_zeroturnaround_zt_exec",
-        "//server/migrate/proto:migrate-proto-java",
-    ],
-)
-
-test_suite(
-    name = "test-assembly",
-    tests = [
-        "//test/assembly:test-daemon",
-        "//test/assembly:test-distribution",
-        "//test/assembly:test-migration",
+        "//:assemble-docker.tar"
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":test-daemon",
-        ":test-distribution",
-        ":test-migration",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

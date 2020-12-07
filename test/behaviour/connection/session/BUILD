@@ -17,17 +17,17 @@
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-java_library(
+host_compatible_java_library(
     name = "steps",
     srcs = [
         "SessionSteps.java",
     ],
     deps = [
-        # Internal Package Dependencies
-        "//kb/server",
+        # Internal dependencies
+        "//common:common",
         "//test/behaviour/connection:steps",
-        "//test/behaviour/server",
 
         # Internal Repository Dependencies
         "@graknlabs_common//:common",
@@ -35,6 +35,9 @@ java_library(
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
+    ],
+    native_libraries_deps = [
+        "//:grakn",
     ],
 )
 
@@ -45,28 +48,22 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.connection.session.SessionTest",
     deps = [
-        # Internal Package Dependencies
-        "//test/behaviour/server:server",
-
-        # External dependencies from Maven
+        # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
         ":steps",
         "//test/behaviour/config:parameters",
-        "//test/behaviour/connection/keyspace:steps",
+        "//test/behaviour/connection/database:steps",
     ],
     data = [
-        "@graknlabs_verification//behaviour/connection:session.feature",
+        "@graknlabs_behaviour//connection:session.feature",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size = "medium",
+    size = "small",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":steps",
-        ":test",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

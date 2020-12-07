@@ -18,21 +18,16 @@
 
 package grakn.core.test.behaviour.graql.language.delete;
 
-import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.lang.reflect.InvocationTargetException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/language/delete.feature",
+        features = "external/graknlabs_behaviour/graql/language/delete.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class DeleteTest {
@@ -58,14 +53,4 @@ public class DeleteTest {
     //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        SingletonTestServer.start();
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        SingletonTestServer.shutdown();
-    }
 }

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
@@ -26,35 +25,36 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.debug.DebugTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/server:server",
+        # Internal dependencies
 
-        # TODO: Add your addition debugging dependencies here
-        # e.g. "//test/behaviour/connection/steps:connection-keyspace",
+        # Add your additional debugging dependencies here
+        # e.g. "//test/behaviour/connection/session:steps",
 
-        # External dependencies from Maven
+        # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_java",
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-#        "//test/behaviour/graql:steps",
-#        "//test/behaviour/connection:steps",
-#        "//test/behaviour/connection/session:steps",
-#        "//test/behaviour/connection/transaction:steps",
-#        "//test/behaviour/connection/keyspace:steps",
-#        "//test/behaviour/config:parameters",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/concept/thing/entity:steps",
+        "//test/behaviour/concept/thing/attribute:steps",
+        "//test/behaviour/concept/thing/relation:steps",
+        "//test/behaviour/concept/type/attributetype:steps",
+        "//test/behaviour/concept/type/relationtype:steps",
+        "//test/behaviour/concept/type/thingtype:steps",
+        "//test/behaviour/connection/database:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/connection/transaction:steps",
+        "//test/behaviour/graql:steps",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
     data = [
         ":debug.feature",
     ],
     size = "medium",
-    tags = ["manual"]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":test"
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

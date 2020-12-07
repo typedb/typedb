@@ -26,9 +26,6 @@ java_test(
     ],
     test_class = "grakn.core.test.behaviour.graql.language.delete.DeleteTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/server:server",
-
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
     ],
@@ -39,16 +36,15 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@graknlabs_verification//behaviour/graql/language:delete.feature",
+        "@graknlabs_behaviour//graql/language:delete.feature",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    size = "large",
+    classpath_resources = ["//test/conf:logback"],
+    size = "small",
     visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":test",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

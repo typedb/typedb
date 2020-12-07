@@ -18,22 +18,17 @@
 
 package grakn.core.test.behaviour.connection.transaction;
 
-import grakn.core.test.behaviour.server.SingletonTestServer;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-
-import java.lang.reflect.InvocationTargetException;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/connection/transaction.feature",
-        tags = "not @ignore and not @ignore-grakn-core"
+        features = "external/graknlabs_behaviour/connection/transaction.feature",
+        tags = "not @ignore and not @ignore-grakn-2.0"
 )
 public class TransactionTest {
     // ATTENTION:
@@ -44,9 +39,7 @@ public class TransactionTest {
     // 2) Select 'Edit Configurations...'
     // 3) Select 'Bazel test TransactionTest'
     //
-    // 4) Ensure 'Target Expression' is set correctly:
-    //    a) Use '//<this>/<package>/<name>:test-core' to test against grakn-core
-    //    b) Use '//<this>/<package>/<name>:test-kgms' to test against grakn-kgms
+    // 4) Ensure 'Target Expression' is set correctly: '//<this>/<package>/<name>:test'
     //
     // 5) Update 'Bazel Flags':
     //    a) Remove the line that says: '--test_filter=grakn.core.*'
@@ -55,17 +48,7 @@ public class TransactionTest {
     //       --test_output=streamed : to make sure all output is printed
     //       --subcommands : to print the low-level commands and execution paths
     //       --sandbox_debug : to keep the sandbox not deleted after test runs
-    //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run Grakn)
+    //       --spawn_strategy=standalone : if you're on Mac and the tests need permission to access filesystem
     //
     // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
-
-    @BeforeClass
-    public static void setup() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        SingletonTestServer.start();
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        SingletonTestServer.shutdown();
-    }
 }

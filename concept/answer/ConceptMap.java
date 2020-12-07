@@ -18,170 +18,54 @@
 
 package grakn.core.concept.answer;
 
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.GraknConceptException;
-import graql.lang.pattern.Pattern;
-import graql.lang.statement.Variable;
+import grakn.core.concept.Concept;
+import graql.lang.pattern.variable.Reference;
 
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
+public class ConceptMap implements Answer {
 
-/**
- * A type of Answer object that contains a Map of Concepts.
- */
-public class ConceptMap extends Answer {
-
-    private final Map<Variable, Concept> map;
-    private final Explanation explanation;
-    private final Pattern pattern;
+    private final Map<Reference, ? extends Concept> concepts;
 
     public ConceptMap() {
-        this.map = Collections.emptyMap();
-        this.explanation = new Explanation();
-        pattern = null;
+        this(new HashMap<>());
     }
 
-    public ConceptMap(ConceptMap map) {
-        this(map.map, map.explanation, map.pattern);
+    public ConceptMap(Map<Reference, ? extends Concept> concepts) {
+        this.concepts = concepts;
     }
 
-    public ConceptMap(Map<Variable, Concept> map, Explanation exp, Pattern pattern) {
-        this.map = Collections.unmodifiableMap(map);
-        this.explanation = exp;
-        this.pattern = pattern;
+    public boolean contains(Reference variable) {
+        return concepts.containsKey(variable);
     }
 
-    public ConceptMap(Map<Variable, Concept> m) {
-        this(m, new Explanation(), null);
+    public Concept get(String variable) {
+        return get(Reference.named(variable));
     }
 
-    /**
-     * @param pattern
-     * @return Copy of this concept map with a new pattern set
-     */
-    public ConceptMap withPattern(Pattern pattern) {
-        ConceptMap copy = new ConceptMap(map(), explanation(), pattern);
-        return copy;
+    public Concept get(Reference variable) {
+        return concepts.get(variable);
     }
 
-    /**
-     * @return query pattern associated this concept map
-     * In other words, return the pattern for which this concept map is a valid substitution
-     * Null if reasoner was not utilised
-     */
-    @CheckReturnValue
-    @Nullable
-    public Pattern getPattern() { return pattern;}
+    public Map<Reference, ? extends Concept> concepts() { return concepts; }
 
-    /**
-     * @return all explanations taking part in the derivation of this answer
-     */
-    @Nullable
-    @CheckReturnValue
-    public Set<Explanation> explanations() {
-        if (this.explanation() == null) return Collections.emptySet();
-        Set<Explanation> explanations = new HashSet<>();
-        explanations.add(this.explanation());
-        this.explanation().getAnswers().stream().forEach(conceptMap -> explanations.addAll(conceptMap.explanations()));
-        return explanations;
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final ConceptMap that = (ConceptMap) o;
+        return Objects.equals(concepts, that.concepts);
     }
 
-    public Explanation explanation() {
-        return explanation;
+    @Override
+    public int hashCode() {
+        return Objects.hash(concepts);
     }
-
-    @CheckReturnValue
-    public Map<Variable, Concept> map() {
-        return map;
-    }
-
-    @CheckReturnValue
-    public Set<Variable> vars() { return map.keySet();}
-
-    @CheckReturnValue
-    public Collection<Concept> concepts() { return map.values(); }
-
-    @CheckReturnValue
-    public Concept get(String var) {
-        return get(new Variable(var));
-    }
-
-    @CheckReturnValue
-    public Concept get(Variable var) {
-        Concept concept = map.get(var);
-        if (concept == null) throw GraknConceptException.variableDoesNotExist(var.toString());
-        return concept;
-    }
-
-    @CheckReturnValue
-    public boolean containsVar(Variable var) { return map.containsKey(var);}
-
-    @CheckReturnValue
-    public boolean containsAll(ConceptMap map) { return this.map.entrySet().containsAll(map.map().entrySet());}
-
-    @CheckReturnValue
-    public boolean isEmpty() { return map.isEmpty();}
-
-    @CheckReturnValue
-    public int size() { return map.size();}
 
     @Override
     public String toString() {
-        return map.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().name()))
-                .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
-    }
-
-    /*
-    NOTE: we do _not_ use the (potentially deeply nested) explanations as part of the equals()
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        ConceptMap a2 = (ConceptMap) obj;
-        return map.equals(a2.map);
-    }
-
-    @Override
-    public int hashCode() { return Objects.hash(map); }
-
-    public void forEach(BiConsumer<Variable, Concept> consumer) {
-        map.forEach(consumer);
-    }
-
-    /**
-     * explain this answer by providing explanation with preserving the structure of dependent answers
-     *
-     * @param exp explanation for this answer
-     * @return explained answer
-     */
-    public ConceptMap explain(Explanation exp) {
-        return new ConceptMap(this.map, exp, this.getPattern());
-    }
-
-    /**
-     * @param vars variables defining the projection
-     * @return project the answer retaining the requested variables
-     */
-    @CheckReturnValue
-    public ConceptMap project(Set<Variable> vars) {
-        return new ConceptMap(
-                this.map.entrySet().stream()
-                        .filter(e -> vars.contains(e.getKey()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                this.explanation,
-                this.pattern
-        );
+        return "ConceptMap{" + concepts + '}';
     }
 }

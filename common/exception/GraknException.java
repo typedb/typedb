@@ -13,33 +13,53 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.common.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
 
-/**
- * Root Grakn Exception
- * Encapsulates any exception which is thrown by the Grakn stack.
- * This includes failures server side, failed graph mutations, and failed querying attempts
- */
-public abstract class GraknException extends RuntimeException {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknException.class);
-    private static boolean logStackTraces = LOG.isDebugEnabled() || LOG.isTraceEnabled();
+public class GraknException extends RuntimeException {
 
-    protected GraknException(String error) {
+    // TODO replace usages with GraknException.of()
+    public GraknException(String error) {
         super(error);
     }
 
-    protected GraknException(String error, Exception e) {
-        super(error, e);
+    // TODO replace usages with GraknException.of()
+    public GraknException(ErrorMessage error) {
+        super(error.toString());
+        assert !getMessage().contains("%s");
     }
 
-    protected GraknException(String error, Exception e, boolean enableSuppression) {
-        super(error, e, enableSuppression, logStackTraces);
+    // TODO replace usages with GraknException.of()
+    public GraknException(Exception e) {
+        super(e);
     }
 
-    public abstract String getName();
+    // TODO replace usages with GraknException.of()
+    public GraknException(List<GraknException> exceptions) {
+        super(getMessages(exceptions));
+    }
+
+    public static GraknException of(Exception e) {
+        return new GraknException(e);
+    }
+
+    public static GraknException of(ErrorMessage errorMessage) {
+        return new GraknException(errorMessage.message());
+    }
+
+    public static GraknException of(String error) {
+        return new GraknException(error);
+    }
+
+    public static String getMessages(List<GraknException> exceptions) {
+        final StringBuilder messages = new StringBuilder();
+        for (GraknException exception : exceptions) {
+            messages.append(exception.getMessage()).append("\n");
+        }
+        return messages.toString();
+    }
 }

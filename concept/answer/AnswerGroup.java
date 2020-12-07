@@ -18,7 +18,7 @@
 
 package grakn.core.concept.answer;
 
-import grakn.core.kb.concept.api.Concept;
+import grakn.core.concept.Concept;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @param <T> the type of Answer being grouped
  */
-public class AnswerGroup<T extends Answer> extends Answer {
+public class AnswerGroup<T extends Answer> implements Answer {
 
     private final Concept owner;
     private final List<T> answers;
@@ -51,7 +51,7 @@ public class AnswerGroup<T extends Answer> extends Answer {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        AnswerGroup a2 = (AnswerGroup) obj;
+        final AnswerGroup<?> a2 = (AnswerGroup<?>) obj;
         return this.owner.equals(a2.owner) &&
                 this.answers.equals(a2.answers);
     }

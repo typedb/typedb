@@ -1,7 +1,24 @@
+#
+# Copyright (C) 2020 Grakn Labs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
 class GraknCore < Formula
   desc "Grakn Core: The Knowledge Graph"
   homepage "https://grakn.ai"
-  url "https://github.com/graknlabs/grakn/releases/download/{version}/grakn-core-all-mac-{version}.zip"
+  url "https://github.com/graknlabs/grakn-2.0/releases/download/{version}/grakn-core-all-mac-{version}.zip"  # TODO: revert repository from 'grakn-2.0' to 'grakn'
   sha256 "{sha256}"
 
   bottle :unneeded
@@ -19,13 +36,8 @@ class GraknCore < Formula
   def install
     libexec.install Dir["*"]
     setup_directory "db"
-    setup_directory "logs" 
+    setup_directory "logs"
     bin.install libexec/"grakn"
     bin.env_script_all_files(libexec, Language::Java.java_home_env("1.8"))
   end
-
-  test do
-    assert_match /RUNNING/i, shell_output("#{bin}/grakn server status")
-  end
 end
-

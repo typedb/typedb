@@ -1,9 +1,29 @@
-*                       @haikalpribadi @flyingsilverfin
+/.github                   @haikalpribadi
+/.grabl                    @haikalpribadi
+/bin                       @haikalpribadi
+/common                    @haikalpribadi
+/concept                   @haikalpribadi
+/config                    @haikalpribadi
+/dependencies              @haikalpribadi
+/docs                      @haikalpribadi
+/graph                     @haikalpribadi
+/pattern                   @haikalpribadi
+/query                     @haikalpribadi
+/reasoner                  @flyingsilverfin
+/rocks                     @haikalpribadi
+/server                    @haikalpribadi
+/test                      @haikalpribadi
+/test/integration/reasoner @flyingsilverfin
+/traversal                 @haikalpribadi
 
-/.circleci/             @haikalpribadi @lolski
-/.circleci/windows/     @vmax
-/.github/               @haikalpribadi
-/config/                @lolski @vmax
-/daemon/                @haikalpribadi @lolski
-/dependencies/          @haikalpribadi @flyingsilverfin
-/graql/reasoner/        @flyingsilverfin
+
+/*.java                    @haikalpribadi
+/.bazel*                   @haikalpribadi
+/.gitignore                @haikalpribadi
+/LICENSE                   @haikalpribadi
+/README.md                 @haikalpribadi
+/VERSION                   @haikalpribadi
+/WORKSPACE                 @haikalpribadi
+/deployment.bzl            @haikalpribadi
+
+**BUILD                    @haikalpribadi @lolski

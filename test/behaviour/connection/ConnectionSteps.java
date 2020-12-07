@@ -13,28 +13,33 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
-
 
 package grakn.core.test.behaviour.connection;
 
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.test.behaviour.server.SingletonTestServer;
+import grakn.core.Grakn;
+import grakn.core.rocks.RocksDatabase;
+import grakn.core.rocks.RocksGrakn;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.util.Objects.isNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -43,78 +48,67 @@ public class ConnectionSteps {
     public static int THREAD_POOL_SIZE = 32;
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-    public static List<Session> sessions = new ArrayList<>();
-    public static List<CompletableFuture<Session>> sessionsParallel = new ArrayList<>();
-    public static Map<Session, List<Transaction>> sessionsToTransactions = new HashMap<>();
-    public static Map<Session, List<CompletableFuture<Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
-    public static Map<CompletableFuture<Session>, List<CompletableFuture<Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
+    public static RocksGrakn grakn;
+    public static Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
+    public static List<Grakn.Session> sessions = new ArrayList<>();
+    public static List<CompletableFuture<Grakn.Session>> sessionsParallel = new ArrayList<>();
+    public static Map<Grakn.Session, List<Grakn.Transaction>> sessionsToTransactions = new HashMap<>();
+    public static Map<Grakn.Session, List<CompletableFuture<Grakn.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
+    public static Map<CompletableFuture<Grakn.Session>, List<CompletableFuture<Grakn.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
+
+    private static void resetDirectory() throws IOException {
+        if (Files.exists(directory)) {
+            System.out.println("Database directory exists!");
+            Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            System.out.println("Database directory deleted!");
+        }
+
+        Files.createDirectory(directory);
+        System.out.println("Database Directory created: " + directory.toString());
+    }
+
+    private static synchronized void connect_to_grakn() throws IOException {
+        if (!isNull(grakn)) return;
+
+        resetDirectory();
+        System.out.println("Connecting to Grakn ...");
+        grakn = RocksGrakn.open(directory);
+        assertNotNull(grakn);
+    }
+
+    public static Grakn.Transaction tx() {
+        assertFalse("There is no open session", sessions.isEmpty());
+        assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
+        return sessionsToTransactions.get(sessions.get(0)).get(0);
+    }
 
     @Given("connection has been opened")
-    public void connection_has_been_opened() {
-        if (isNull(SingletonTestServer.get())) {
-            throw new RuntimeException("GraknTestServer is null");
+    public void connection_has_been_opened() throws IOException {
+        if (isNull(grakn)) {
+            connect_to_grakn();
         }
-        assertNotNull(SingletonTestServer.get());
+
+        assertNotNull(grakn);
+        assertTrue(grakn.isOpen());
     }
 
-    @Given("connection delete all keyspaces")
-    public void connection_delete_all_keyspaces() {
-        // TODO re-enable after refactoring keyspace handler
-        for (Keyspace keyspace : SingletonTestServer.get().keyspaces()) {
-            SingletonTestServer.get().deleteKeyspace(keyspace.name());
-        }
+    @Given("connection delete all databases")
+    public void connection_delete_all_databases() {
+        grakn.databases().all().forEach(RocksDatabase::delete);
     }
 
-    @Given("connection does not have any keyspace")
-    public void connection_does_not_have_any_keyspace() {
-        assertTrue(SingletonTestServer.get().keyspaces().isEmpty());
+    @Given("connection does not have any database")
+    public void connection_does_not_have_any_database() {
+        assertTrue(grakn.databases().all().isEmpty());
     }
 
     @After
-    public void close_session_and_transactions() throws ExecutionException, InterruptedException {
+    public void connection_close() {
         System.out.println("ConnectionSteps.after");
-        if (sessions != null) {
-            for (Session session : sessions) {
-                if (sessionsToTransactions.containsKey(session)) {
-                    for (Transaction transaction : sessionsToTransactions.get(session)) {
-                        transaction.close();
-                    }
-                    sessionsToTransactions.remove(session);
-                }
-
-                if (sessionsToTransactionsParallel.containsKey(session)) {
-                    for (CompletableFuture<Transaction> futureTransaction : sessionsToTransactionsParallel.get(session)) {
-                        futureTransaction.thenAccept(tx -> {
-                            System.out.println("Closing tx: " + tx);
-                            tx.close();
-                        }).get();
-                    }
-                    sessionsToTransactionsParallel.remove(session);
-                }
-
-                session.close();
-            }
-            assertTrue(sessionsToTransactions.isEmpty());
-            assertTrue(sessionsToTransactionsParallel.isEmpty());
-            sessions = new ArrayList<>();
-            sessionsToTransactions = new HashMap<>();
-            sessionsToTransactionsParallel = new HashMap<>();
-        }
-
-        if (sessionsParallel != null) {
-            for (CompletableFuture<Session> futureSession : sessionsParallel) {
-                if (sessionsParallelToTransactionsParallel.containsKey(futureSession)) {
-                    for (CompletableFuture<Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
-                        futureTransaction.thenAccept(Transaction::close).get();
-                    }
-                    sessionsParallelToTransactionsParallel.remove(futureSession);
-                }
-                futureSession.thenAccept(Session::close).get();
-            }
-            assertTrue(sessionsParallelToTransactionsParallel.isEmpty());
-            sessionsParallel = new ArrayList<>();
-            sessionsParallelToTransactionsParallel = new HashMap<>();
-        }
-        Thread.sleep(100);
+        sessions.clear();
+        sessionsParallel.clear();
+        sessionsToTransactions.clear();
+        sessionsToTransactionsParallel.clear();
+        sessionsParallelToTransactionsParallel.clear();
     }
 }
