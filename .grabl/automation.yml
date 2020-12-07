@@ -45,7 +45,7 @@ build:
     build:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel build --config=rbe //...
+        bazel build //...
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
     build-dependency:
@@ -57,19 +57,19 @@ build:
     test-unit:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test --config=rbe //common/... --test_output=errors
-        bazel test --config=rbe //pattern/... --test_output=errors
-        bazel test --config=rbe //reasoner/... --test_output=errors
+        bazel test //common/... --test_output=errors
+        bazel test //pattern/... --test_output=errors
+        bazel test //reasoner/... --test_output=errors
     test-integration:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test --config=rbe //test/integration/... --test_output=errors
+        bazel test //test/integration/... --test_output=errors
     test-behaviour:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
-        bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
-        bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=errors
+        bazel test //test/behaviour/connection/... --test_output=errors
+        bazel test //test/behaviour/concept/... --test_output=errors
+        bazel test //test/behaviour/graql/language/define/... --test_output=errors
     test-assembly-linux-targz:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
@@ -77,7 +77,6 @@ build:
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
       script: |
-        bazel build --config=rbe //...
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel test //test/assembly:assembly --test_output=errors
@@ -88,7 +87,6 @@ build:
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
       script: |
-        bazel build --config=rbe //...
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       machine: graknlabs-ubuntu-20.04-java11
@@ -97,7 +95,6 @@ build:
         branch: master
       dependencies: [test-assembly-linux-targz]
       script: |
-        bazel build --config=rbe //...
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
@@ -110,7 +107,6 @@ build:
         branch: master
       dependencies: [test-assembly-linux-targz]
       script: |
-        bazel build --config=rbe //...
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         pyenv install 3.7.9
@@ -127,7 +123,6 @@ build:
         branch: master
       dependencies: [test-assembly-linux-targz]
       script: |
-        bazel build --config=rbe //...
         export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
@@ -139,7 +134,6 @@ build:
         branch: master
       dependencies: [deploy-apt-snapshot]
       script: |
-        bazel build --config=rbe //...
         bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
     test-deployment-rpm:
       machine: graknlabs-centos-8.2
@@ -148,7 +142,6 @@ build:
         branch: master
       dependencies: [deploy-rpm-snapshot]
       script: |
-        bazel build --config=rbe //...
         bazel test //test/deployment:rpm --action_env=GRABL_COMMIT --test_output=streamed
 release:
   filter:
