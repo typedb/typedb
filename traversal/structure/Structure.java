@@ -104,7 +104,7 @@ public class Structure {
                 Structure newStructure = new Structure();
                 splitGraph(vertices.values().iterator().next(), newStructure);
                 if (newStructure.vertices().size() == 1 &&
-                        !newStructure.vertices().iterator().next().identifier().isNamedReference()) {
+                        !newStructure.vertices().iterator().next().id().isNamedReference()) {
                     structures.add(newStructure);
                 }
             }
@@ -113,10 +113,10 @@ public class Structure {
     }
 
     private void splitGraph(StructureVertex<?> vertex, Structure newStructure) {
-        if (!vertices.containsKey(vertex.identifier())) return;
+        if (!vertices.containsKey(vertex.id())) return;
 
-        this.vertices.remove(vertex.identifier());
-        newStructure.vertices.put(vertex.identifier(), vertex);
+        this.vertices.remove(vertex.id());
+        newStructure.vertices.put(vertex.id(), vertex);
         List<StructureVertex<?>> adjacents = new ArrayList<>();
         vertex.outs().forEach(outgoing -> {
             if (this.edges.contains(outgoing)) {

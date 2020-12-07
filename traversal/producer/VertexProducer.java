@@ -39,9 +39,9 @@ public class VertexProducer implements Producer<VertexMap> {
 
     public VertexProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters) {
         ProcedureVertex<?, ?> vertex = procedure.startVertex();
-        assert vertex.identifier().isNamedReference();
+        assert vertex.id().isNamedReference();
         this.iterator = vertex.iterator(graphMgr, parameters).map(
-                v -> VertexMap.of(Collections.map(pair(vertex.identifier().asVariable().reference(), v)))
+                v -> VertexMap.of(Collections.map(pair(vertex.id().asVariable().reference(), v)))
         );
     }
 

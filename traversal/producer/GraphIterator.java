@@ -58,7 +58,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
         this.answer = new HashMap<>();
-        this.answer.put(procedure.startVertex().identifier(), start);
+        this.answer.put(procedure.startVertex().id(), start);
         this.computeFirstSeekStack = new SeekStack(edgeCount);
         this.state = State.INIT;
     }
@@ -81,15 +81,15 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
     }
 
     private boolean computeFirst(int pos) {
-        if (answer.containsKey(procedure.edge(pos).to().identifier())) return computeFirstClosure(pos);
+        if (answer.containsKey(procedure.edge(pos).to().id())) return computeFirstClosure(pos);
         else return computeFirstBranch(pos);
     }
 
     private boolean computeFirstBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Identifier toID = edge.to().identifier();
+        Identifier toID = edge.to().id();
         ResourceIterator<? extends Vertex<?, ?>> toIter =
-                edge.branchFrom(graphMgr, answer.get(edge.from().identifier()), parameters);
+                edge.branchFrom(graphMgr, answer.get(edge.from().id()), parameters);
         if (!toID.isNamedReference() && edge.to().outs().isEmpty() && edge.to().ins().size() == 1) {
             toIter = toIter.limit(1);
         }
@@ -122,7 +122,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
 
     private boolean computeFirstClosure(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        if (edge.isClosure(answer.get(edge.from().identifier()), answer.get(edge.to().identifier()), parameters)) {
+        if (edge.isClosure(graphMgr, answer.get(edge.from().id()), answer.get(edge.to().id()), parameters)) {
             if (pos == edgeCount) return true;
             else return computeFirst(pos + 1);
         } else {
@@ -134,7 +134,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
 
     private boolean computeNext(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Identifier toID = edge.to().identifier();
+        Identifier toID = edge.to().id();
 
         if (pos == computeNextSeekPos) {
             computeNextSeekPos = edgeCount;
@@ -142,12 +142,12 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             if (!edge.isClosureEdge()) iterators.get(toID).recycle();
             if (!computeNext(pos - 1)) return false;
             else if (edge.isClosureEdge()) {
-                Vertex<?, ?> fromVertex = answer.get(edge.from().identifier());
-                Vertex<?, ?> toVertex = answer.get(edge.to().identifier());
-                if (edge.isClosure(fromVertex, toVertex, parameters)) return true;
+                Vertex<?, ?> fromVertex = answer.get(edge.from().id());
+                Vertex<?, ?> toVertex = answer.get(edge.to().id());
+                if (edge.isClosure(graphMgr, fromVertex, toVertex, parameters)) return true;
                 else return computeNextClosure(pos);
             } else {
-                iterators.put(toID, edge.branchFrom(graphMgr, answer.get(edge.from().identifier()), parameters));
+                iterators.put(toID, edge.branchFrom(graphMgr, answer.get(edge.from().id()), parameters));
             }
         } else if (edge.isClosureEdge()) {
             return computeNextClosure(pos);
@@ -165,9 +165,9 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         do {
             if (computeNext(pos - 1)) {
-                Vertex<?, ?> fromVertex = answer.get(edge.from().identifier());
-                Vertex<?, ?> toVertex = answer.get(edge.to().identifier());
-                if (edge.isClosure(fromVertex, toVertex, parameters)) return true;
+                Vertex<?, ?> fromVertex = answer.get(edge.from().id());
+                Vertex<?, ?> toVertex = answer.get(edge.to().id());
+                if (edge.isClosure(graphMgr, fromVertex, toVertex, parameters)) return true;
             } else {
                 return false;
             }
@@ -179,7 +179,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         ResourceIterator<? extends Vertex<?, ?>> newIter;
         do {
             if (computeNext(pos - 1)) {
-                Vertex<?, ?> fromVertex = answer.get(edge.from().identifier());
+                Vertex<?, ?> fromVertex = answer.get(edge.from().id());
                 newIter = edge.branchFrom(graphMgr, fromVertex, parameters);
                 if (!newIter.hasNext()) {
                     assert !edge.from().ins().isEmpty();
@@ -189,8 +189,8 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
                 return false;
             }
         } while (!newIter.hasNext());
-        iterators.put(edge.to().identifier(), newIter);
-        answer.put(edge.to().identifier(), newIter.next());
+        iterators.put(edge.to().id(), newIter);
+        answer.put(edge.to().id(), newIter.next());
         return true;
     }
 
