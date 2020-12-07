@@ -46,7 +46,9 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
-import static grakn.core.common.exception.ErrorMessage.Internal.*;
+import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
