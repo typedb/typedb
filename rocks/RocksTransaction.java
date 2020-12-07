@@ -195,7 +195,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         @Override
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
-                long lock = 0;
                 try {
                     if (type.isRead()) throw new GraknException(ILLEGAL_COMMIT);
                     else if (graphMgr.data().isModified()) throw new GraknException(SESSION_SCHEMA_VIOLATION);
@@ -205,14 +204,17 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     schemaStorage.rocksTx.disableIndexing();
                     conceptMgr.validateTypes();
                     graphMgr.schema().commit();
-                    lock = session.database.dataReadSchemaLock().writeLock();
-                    schemaStorage.rocksTx.commit();
+                    long lock = session.database.dataReadSchemaLock().writeLock();
+                    try {
+                        schemaStorage.rocksTx.commit();
+                        session.database.invalidateCache();
+                    } finally {
+                        session.database.dataReadSchemaLock().unlockWrite(lock);
+                    }
                 } catch (RocksDBException e) {
                     rollback();
                     throw new GraknException(e);
                 } finally {
-                    session.database.invalidateCache();
-                    if (lock > 0) session.database.dataReadSchemaLock().unlockWrite(lock);
                     graphMgr.clear();
                     closeResources();
                 }
