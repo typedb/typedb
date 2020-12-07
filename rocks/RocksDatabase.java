@@ -42,7 +42,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -150,11 +149,19 @@ public class RocksDatabase implements Grakn.Database {
         return cache;
     }
 
+    synchronized void unborrowCache(Cache cache) {
+        cache.unborrow();
+    }
+
     synchronized void invalidateCache() {
         if (cache != null) {
             cache.invalidate();
             cache = null;
         }
+    }
+
+    private synchronized void closeCache() {
+        if (cache != null) cache.close();
     }
 
     private Path directory() {
@@ -219,7 +226,7 @@ public class RocksDatabase implements Grakn.Database {
             sessions.values().forEach(p -> p.first().close());
             statisticsBackgroundCounter.stop();
             statisticsBackgroundCounterSession.close();
-            if (cache != null) cache.schemaGraph().storage().close();
+            closeCache();
             rocksData.close();
             rocksSchema.close();
         }
@@ -263,7 +270,7 @@ public class RocksDatabase implements Grakn.Database {
         private final ReasonerCache reasonerCache;
         private final SchemaGraph schemaGraph;
         private final RocksStorage schemaStorage;
-        private final AtomicLong borrowerCount;
+        private long borrowerCount;
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
@@ -271,7 +278,7 @@ public class RocksDatabase implements Grakn.Database {
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             reasonerCache = new ReasonerCache();
-            borrowerCount = new AtomicLong();
+            borrowerCount = 0L;
             invalidated = false;
         }
 
@@ -287,24 +294,28 @@ public class RocksDatabase implements Grakn.Database {
             return schemaGraph;
         }
 
-        public void borrow() {
-            borrowerCount.incrementAndGet();
+        private void borrow() {
+            borrowerCount++;
         }
 
-        public synchronized void unborrow() {
-            borrowerCount.decrementAndGet();
+        private void unborrow() {
+            borrowerCount--;
             mayClose();
         }
 
-        public synchronized void invalidate() {
+        private void invalidate() {
             invalidated = true;
             mayClose();
         }
 
         private void mayClose() {
-            if (borrowerCount.get() == 0 && invalidated) {
+            if (borrowerCount == 0 && invalidated) {
                 schemaStorage.close();
             }
+        }
+
+        private void close() {
+            schemaStorage.close();
         }
     }
 
