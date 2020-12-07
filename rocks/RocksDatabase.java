@@ -144,8 +144,9 @@ public class RocksDatabase implements Grakn.Database {
         return session;
     }
 
-    synchronized Cache cache() {
+    synchronized Cache borrowCache() {
         if (cache == null) cache = new Cache(this);
+        cache.borrow();
         return cache;
     }
 
@@ -262,7 +263,7 @@ public class RocksDatabase implements Grakn.Database {
         private final ReasonerCache reasonerCache;
         private final SchemaGraph schemaGraph;
         private final RocksStorage schemaStorage;
-        private final AtomicLong referenceCount;
+        private final AtomicLong borrowerCount;
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
@@ -270,7 +271,7 @@ public class RocksDatabase implements Grakn.Database {
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             reasonerCache = new ReasonerCache();
-            referenceCount = new AtomicLong();
+            borrowerCount = new AtomicLong();
             invalidated = false;
         }
 
@@ -286,13 +287,12 @@ public class RocksDatabase implements Grakn.Database {
             return schemaGraph;
         }
 
-
-        public void incrementReference() {
-            referenceCount.incrementAndGet();
+        public void borrow() {
+            borrowerCount.incrementAndGet();
         }
 
-        public synchronized void decrementReference() {
-            referenceCount.decrementAndGet();
+        public synchronized void unborrow() {
+            borrowerCount.decrementAndGet();
             mayClose();
         }
 
@@ -302,7 +302,7 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         private void mayClose() {
-            if (referenceCount.get() == 0 && invalidated) {
+            if (borrowerCount.get() == 0 && invalidated) {
                 schemaStorage.close();
             }
         }
