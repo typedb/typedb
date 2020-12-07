@@ -304,20 +304,18 @@ public class RocksDatabase implements Grakn.Database {
                 if (isStopped) break;
 
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
-//                    tx.graphMgr.data().stats().processCountJobs();
-//                    tx.commit();
+                    tx.graphMgr.data().stats().processCountJobs();
+                    tx.commit();
+                } catch (GraknException e) {
+                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
+                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
+                    if (txConflicted) {
+                        countJobNotifications.release();
+                    } else {
+                        throw e;
+                    }
                 }
-
-//                catch (GraknException e) {
-//                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
-//                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
-//                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
-//                    if (txConflicted) {
-//                        countJobNotifications.release();
-//                    } else {
-//                        throw e;
-//                    }
-//                }
             }
         }
 
