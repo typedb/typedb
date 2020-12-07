@@ -18,29 +18,59 @@
 package grakn.core.reasoner.resolution;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.pattern.variable.Variable;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
-public class UnifiedConceptMap extends ConceptMap { // TODO Actually implement ConceptMap interface
-    private final ConceptMap conceptMap;
-    private final Map<Variable, Variable> variableMapping;
+public class UnifiedConceptMap { // TODO Actually implement ConceptMap interface
+    private final ConceptMap source;
+    private final Unifier unifier; // Needs to be a Set of Pairs, or a Map<Variable, Set<Variable>>
 
-    public static UnifiedConceptMap of(ConceptMap conceptMap, Map<Variable, Variable> variableMapping) {
-        return new UnifiedConceptMap(conceptMap, variableMapping);
+    public static UnifiedConceptMap of(ConceptMap conceptMap, Unifier unifier) {
+        return new UnifiedConceptMap(conceptMap, unifier);
     }
 
     public static UnifiedConceptMap empty() {
-        return new UnifiedConceptMap(new ConceptMap(), new HashMap<>());
+        return new UnifiedConceptMap(new ConceptMap(), Unifier.identity());
     }
 
-    UnifiedConceptMap(ConceptMap conceptMap, Map<Variable, Variable> variableMapping){
-        this.conceptMap = conceptMap;
-        this.variableMapping = variableMapping;
+    UnifiedConceptMap(ConceptMap source, Unifier unifier){
+        this.source = source;
+        this.unifier = unifier;
     }
 
-    public ConceptMap unUnify() {
+    public Merged merge(ConceptMap unified) {
+        return null; // TODO
+    }
+
+    public ConceptMap map() {
+        // return unifiedConceptMap; // TODO Map this conceptmap using the unifier to give only the subset of variables the unifier transforms to
         return null;
     }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final UnifiedConceptMap that = (UnifiedConceptMap) o;
+        return source.equals(that.source) && unifier.equals(that.unifier);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(source, unifier);
+    }
+
+    public class Merged {
+        private final ConceptMap unifiedToMerge;
+
+        Merged(ConceptMap unifiedToMerge) {
+            this.unifiedToMerge = unifiedToMerge;
+        }
+
+        public ConceptMap unUnify() {
+            return null; // TODO
+        }
+    }
+
 }

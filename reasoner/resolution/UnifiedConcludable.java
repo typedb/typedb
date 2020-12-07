@@ -19,30 +19,27 @@ package grakn.core.reasoner.resolution;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
-
-import java.util.Map;
 
 public class UnifiedConcludable {
     private final Actor<ConcludableResolver> concludable;
-    private final Map<Variable, Variable> variableMapping;
+    private final Unifier unifier;
 
-    UnifiedConcludable(Actor<ConcludableResolver> concludable, Map<Variable, Variable> variableMapping) {
+    UnifiedConcludable(Actor<ConcludableResolver> concludable, Unifier unifier) {
         this.concludable = concludable;
-        this.variableMapping = variableMapping;
+        this.unifier = unifier;
     }
 
     public Actor<ConcludableResolver> concludable() {
         return concludable;
     }
 
-    public Map<Variable, Variable> variableMapping() {
-        return variableMapping;
+    public Unifier variableMapping() {
+        return unifier;
     }
 
     public UnifiedConceptMap unify(ConceptMap conceptMap) {
-        return new UnifiedConceptMap(conceptMap, variableMapping);
+        return new UnifiedConceptMap(conceptMap, unifier);
     }
 
 }

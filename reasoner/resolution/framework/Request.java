@@ -19,7 +19,6 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.reasoner.resolution.UnifiedConceptMap;
 
 import javax.annotation.Nullable;
@@ -31,7 +30,7 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final ConceptMap partialConceptMap;
+    private final UnifiedConceptMap partialConceptMap;
     private final List<Object> unifiers;
     private final ResolutionAnswer.Derivation partialDerivation;
 
@@ -61,7 +60,7 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public ConceptMap partialConceptMap() {
+    public UnifiedConceptMap partialConceptMap() {
         return partialConceptMap;
     }
 

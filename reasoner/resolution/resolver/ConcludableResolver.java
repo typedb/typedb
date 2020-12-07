@@ -23,13 +23,13 @@ import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.logic.Rule;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.UnifiedConceptMap;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
@@ -73,20 +73,20 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream,
                                                    ResponseProducer responseProducer) {
-        // TODO may combine with partial concept maps from the fromUpstream message
+        final ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unUnify();
 
-        LOG.trace("{}: hasProduced: {}", name, fromDownstream.answer().conceptMap());
-        if (!responseProducer.hasProduced(fromDownstream.answer().conceptMap())) {
-            responseProducer.recordProduced(fromDownstream.answer().conceptMap());
+        LOG.trace("{}: hasProduced: {}", name, conceptMap);
+        if (!responseProducer.hasProduced(conceptMap)) {
+            responseProducer.recordProduced(conceptMap);
 
             // update partial derivation provided from upstream to carry derivations sideways
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            ResolutionAnswer answer = new ResolutionAnswer(fromDownstream.answer().conceptMap(), traversalPattern.toString(), derivation, self());
+            ResolutionAnswer answer = new ResolutionAnswer(conceptMap, traversalPattern.toString(), derivation, self());
 
             return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(fromDownstream.answer().conceptMap(), traversalPattern.toString(), derivation, self());
+            ResolutionAnswer deduplicated = new ResolutionAnswer(conceptMap, traversalPattern.toString(), derivation, self());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
@@ -102,12 +102,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(traversalPattern, request.partialConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(traversalPattern, request.partialConceptMap().map());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
-        if (!receivedConceptMaps.contains(request.partialConceptMap())) {
-            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap(), request.unifiers());
-            receivedConceptMaps.add(request.partialConceptMap());
+        if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
+            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map(), request.unifiers());
+            receivedConceptMaps.add(request.partialConceptMap().map());
         }
         return responseProducer;
     }
@@ -143,7 +143,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                                          List<Object> unifiers) {
         for (Actor<RuleResolver> ruleActor : ruleActorSources.keySet()) {
             // TODO Compute the unifiers for each rule, send one request per unifier found.
-            Map<Variable, Variable> unifier = new HashMap<>();
+            Unifier unifier = Unifier.identity();
             Request toDownstream = new Request(path.append(ruleActor), UnifiedConceptMap.of(partialConceptMap, unifier), unifiers, ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }

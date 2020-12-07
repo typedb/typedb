@@ -36,12 +36,9 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 public class ResolverRegistry {
 
     Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
@@ -65,30 +62,24 @@ public class ResolverRegistry {
                 .filter(p -> p.second().isValid()).findAny();
 
         final Actor<ConcludableResolver> concludableActor;
-        final Map<Variable, Variable> variableMapping;
+        final Unifier unifier;
         if (alphaEquivalencePair.isPresent()) {
             // Then we can use the same ConcludableActor, but with a different variable mapping
             concludableActor = concludableActorsMap.get(alphaEquivalencePair.get().first());
-            variableMapping = alphaEquivalencePair.get().second().asValid().map();
+            unifier = Unifier.fromVariableMapping(alphaEquivalencePair.get().second().asValid().map());
         } else {
             // Create a new ConcludableActor
             concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable.conjunction(), rules, traversalSize));
             final Set<Variable> vars = new HashSet<>(concludable.constraint().variables());
-            variableMapping = vars.stream().collect(Collectors.toMap(k -> k, k -> k)); // TODO Build the trivial variable mapping. Is this correct though?
+            unifier = Unifier.identity(vars);
         }
-        return new UnifiedConcludable(concludableActor, variableMapping);
+        return new UnifiedConcludable(concludableActor, unifier);
     }
 
     public Actor<RuleResolver> registerRule(Rule rule, long traversalSize) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
         return rules.computeIfAbsent(rule, (p) -> Actor.create(elg, self -> new RuleResolver(self, p.when(), traversalSize)));
     }
-
-//    public Actor<RootResolver> createRoot(final List<Long> pattern, final long traversalSize, final Consumer<ResolutionAnswer> onAnswer,
-//                                          Runnable onExhausted) {
-//        LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-//        return Actor.create(elg, self -> new RootResolver(self, pattern, traversalSize, onAnswer, onExhausted));
-//    }
 
     public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
