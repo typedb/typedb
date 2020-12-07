@@ -247,7 +247,12 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
 
-            cache = session.database.borrowCache();
+            long lock = session.database.dataReadSchemaLock().readLock();
+            try {
+                cache = session.database.borrowCache();
+            } finally {
+                session.database.dataReadSchemaLock().unlockRead(lock);
+            }
             dataStorage = new RocksStorage.Data(session.database, this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
