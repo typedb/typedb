@@ -148,11 +148,15 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             return iterator;
         }
 
+        ResourceIterator<? extends ThingVertex> filterIID(ResourceIterator<? extends ThingVertex> iterator, Traversal.Parameters parameters) {
+            return iterator.filter(v -> v.iid().equals(parameters.getIID(identifier().asVariable())));
+        }
+
         ResourceIterator<? extends ThingVertex> filterTypes(ResourceIterator<? extends ThingVertex> iterator) {
             return iterator.filter(v -> props().types().contains(v.type().properLabel()));
         }
 
-        ResourceIterator<AttributeVertex<?>> filterAttributes(ResourceIterator<? extends ThingVertex> iterator) {
+        static ResourceIterator<AttributeVertex<?>> filterAttributes(ResourceIterator<? extends ThingVertex> iterator) {
             // TODO: should we throw an exception if the user asserts a value predicate on a non-attribute?
             return iterator.filter(ThingVertex::isAttribute).map(ThingVertex::asAttribute);
         }

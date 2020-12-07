@@ -40,6 +40,7 @@ import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
+import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 import static java.util.Collections.emptyIterator;
 
 public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>>
@@ -180,6 +181,13 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 this.isTransitive = isTransitive;
             }
 
+            ResourceIterator<TypeVertex> isaTypes(GraphManager graphMgr, ThingVertex fromVertex) {
+                ResourceIterator<TypeVertex> iterator;
+                iterator = single(fromVertex.asThing().type());
+                if (isTransitive) iterator = link(list(iterator, graphMgr.schema().superTypes(fromVertex.asThing().type())));
+                return iterator;
+            }
+
             static class Forward extends Isa<ProcedureVertex.Thing, ProcedureVertex.Type> {
 
                 private Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, int order, boolean isTransitive) {
@@ -196,15 +204,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
                 @Override
                 public boolean isClosure(Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex, Traversal.Parameters parameters) {
-                    assert fromVertex.isType() && toVertex.isType();
+                    assert fromVertex.isThing() && toVertex.isType();
                     return isaTypes(fromVertex.asThing().graphs(), fromVertex.asThing()).filter(s -> s.equals(toVertex)).hasNext();
-                }
-
-                private ResourceIterator<TypeVertex> isaTypes(GraphManager graphMgr, ThingVertex fromVertex) {
-                    ResourceIterator<TypeVertex> iterator;
-                    iterator = single(fromVertex.asThing().type());
-                    if (isTransitive) iterator = link(list(iterator, graphMgr.schema().superTypes(fromVertex.asThing().type())));
-                    return iterator;
                 }
             }
 
@@ -215,13 +216,22 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 }
 
                 @Override
-                public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters parameters) {
-                    return iterate(emptyIterator()); // TODO
+                public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                           Traversal.Parameters parameters) {
+                    ResourceIterator<TypeVertex> typeIterator;
+                    typeIterator = single(fromVertex.asType());
+                    if (isTransitive) typeIterator = link(list(typeIterator, graphMgr.schema().subTypes(fromVertex.asType(), true)));
+                    if (!to.props().types().isEmpty()) typeIterator = typeIterator.filter(t -> to.props().types().contains(t));
+                    ResourceIterator<? extends ThingVertex> iterator = typeIterator.flatMap(t -> graphMgr.data().get(t));
+                    if (to.props().hasIID()) iterator = to.filterIID(iterator, parameters);
+                    if (!to.props().predicates().isEmpty()) iterator = to.filterPredicates(filterAttributes(iterator), parameters);
+                    return iterator;
                 }
 
                 @Override
                 public boolean isClosure(Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex, Traversal.Parameters parameters) {
-                    return false; // TODO
+                    assert fromVertex.isType() && toVertex.isThing();
+                    return isaTypes(toVertex.asThing().graphs(), toVertex.asThing()).filter(s -> s.equals(fromVertex)).hasNext();
                 }
             }
         }

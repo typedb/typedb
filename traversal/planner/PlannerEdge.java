@@ -474,20 +474,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 @Override
                 void updateObjective(GraphManager graphMgr) {
                     long cost;
-                    if (!to.props().types().isEmpty()) {
-                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(to.props().types());
-                        else
-                            cost = graphMgr.data().stats().thingVertexTransitiveMax(to.props().types(), to.props().types());
-                    } else if (!from.props().labels().isEmpty()) {
-                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(from.props().labels());
-                        else
-                            cost = graphMgr.data().stats().thingVertexTransitiveMax(from.props().labels(), to.props().types());
+                    Set<Label> fromLabels = from.props().labels(), toTypes = to.props().types();
+                    if (!toTypes.isEmpty()) {
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(toTypes);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(toTypes, toTypes);
+                    } else if (!fromLabels.isEmpty()) {
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(fromLabels);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(fromLabels, toTypes);
                     } else {
-                        if (!isTransitive) {
-                            cost = graphMgr.data().stats().thingVertexMax(graphMgr.schema().thingTypes().stream());
-                        } else {
-                            cost = graphMgr.data().stats().thingVertexTransitiveMax(graphMgr.schema().thingTypes().stream(), set());
-                        }
+                        Stream<TypeVertex> types = graphMgr.schema().thingTypes().stream();
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(types);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(types, set());
                     }
                     setObjectiveCoefficient(cost);
                 }
