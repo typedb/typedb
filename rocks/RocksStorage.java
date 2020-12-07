@@ -1,0 +1,270 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package grakn.core.rocks;
+
+import grakn.core.common.concurrent.ManagedReadWriteLock;
+import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.util.Storage;
+import org.rocksdb.AbstractImmutableNativeReference;
+import org.rocksdb.OptimisticTransactionDB;
+import org.rocksdb.OptimisticTransactionOptions;
+import org.rocksdb.ReadOptions;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.Snapshot;
+import org.rocksdb.Transaction;
+import org.rocksdb.WriteOptions;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
+
+import static grakn.core.common.collection.Bytes.bytesHavePrefix;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+
+class RocksStorage implements Storage {
+
+    private static final byte[] EMPTY_ARRAY = new byte[]{};
+
+    private final boolean isReadOnly;
+    private final Set<RocksIterator<?>> iterators;
+    private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
+    private final OptimisticTransactionOptions transactionOptions;
+    private final WriteOptions writeOptions;
+    private final ReadOptions readOptions;
+    private final Snapshot snapshot;
+    private final ManagedReadWriteLock readWriteLock;
+    private final AtomicBoolean isOpen;
+    final Transaction rocksTx;
+
+    RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
+        this.isReadOnly = isReadOnly;
+        iterators = ConcurrentHashMap.newKeySet();
+        recycled = new ConcurrentLinkedQueue<>();
+        readWriteLock = new ManagedReadWriteLock();
+        writeOptions = new WriteOptions();
+        transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
+        rocksTx = rocksDB.beginTransaction(writeOptions, transactionOptions);
+        snapshot = rocksTx.getSnapshot();
+        readOptions = new ReadOptions().setSnapshot(snapshot);
+
+        isOpen = new AtomicBoolean(true);
+    }
+
+    @Override
+    public boolean isOpen() {
+        return isOpen.get();
+    }
+
+    @Override
+    public byte[] get(byte[] key) {
+        validateTransactionIsOpen();
+        try {
+            // We don't need to check isOpen.get() as tx.commit() does not involve this method
+            if (!isReadOnly) readWriteLock.lockRead();
+            return rocksTx.get(readOptions, key);
+        } catch (RocksDBException | InterruptedException e) {
+            throw exception(e);
+        } finally {
+            if (!isReadOnly) readWriteLock.unlockRead();
+        }
+    }
+
+    @Override
+    public byte[] getLastKey(byte[] prefix) {
+        validateTransactionIsOpen();
+        final byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
+        upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
+        assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
+
+        try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
+            iterator.seekForPrev(upperBound);
+            if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
+            else return null;
+        }
+    }
+
+    @Override
+    public void delete(byte[] key) {
+        validateTransactionIsOpen();
+        try {
+            if (isOpen.get()) readWriteLock.lockWrite();
+            rocksTx.delete(key);
+        } catch (RocksDBException | InterruptedException e) {
+            throw exception(e);
+        } finally {
+            if (isOpen.get()) readWriteLock.unlockWrite();
+        }
+    }
+
+    @Override
+    public void put(byte[] key) {
+        put(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void put(byte[] key, byte[] value) {
+        validateTransactionIsOpen();
+        try {
+            if (isOpen.get()) readWriteLock.lockWrite();
+            rocksTx.put(key, value);
+        } catch (RocksDBException | InterruptedException e) {
+            throw exception(e);
+        } finally {
+            if (isOpen.get()) readWriteLock.unlockWrite();
+        }
+    }
+
+    @Override
+    public void putUntracked(byte[] key) {
+        putUntracked(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void putUntracked(byte[] key, byte[] value) {
+        validateTransactionIsOpen();
+        try {
+            readWriteLock.lockWrite();
+            rocksTx.putUntracked(key, value);
+        } catch (RocksDBException | InterruptedException e) {
+            throw exception(e);
+        } finally {
+            if (isOpen()) readWriteLock.unlockWrite();
+        }
+    }
+
+    @Override
+    public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+        validateTransactionIsOpen();
+        final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+        iterators.add(iterator);
+        return iterator;
+    }
+
+    @Override
+    public GraknException exception(String message) {
+        return new GraknException(message);
+    }
+
+    @Override
+    public GraknException exception(Exception exception) {
+        return new GraknException(exception);
+    }
+
+    @Override
+    public GraknException exception(GraknException exception) {
+        return exception;
+    }
+
+    @Override
+    public void close() {
+        if (isOpen.compareAndSet(true, false)) {
+            iterators.parallelStream().forEach(RocksIterator::close);
+            recycled.forEach(AbstractImmutableNativeReference::close);
+            snapshot.close();
+            rocksTx.close();
+            transactionOptions.close();
+            readOptions.close();
+            writeOptions.close();
+        }
+    }
+
+    void validateTransactionIsOpen() {
+        if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED);
+    }
+
+    org.rocksdb.RocksIterator getInternalRocksIterator() {
+        if (isReadOnly) {
+            final org.rocksdb.RocksIterator iterator = recycled.poll();
+            if (iterator != null) return iterator;
+        }
+        return rocksTx.getIterator(readOptions);
+    }
+
+    public void recycle(org.rocksdb.RocksIterator rocksIterator) {
+        recycled.add(rocksIterator);
+    }
+
+    void remove(RocksIterator<?> iterator) {
+        iterators.remove(iterator);
+    }
+
+    static abstract class TransactionBounded extends RocksStorage {
+
+        private final RocksTransaction transaction;
+
+        TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
+            super(rocksDB, transaction.type().isRead());
+            this.transaction = transaction;
+        }
+
+        @Override
+        public GraknException exception(String message) {
+            transaction.close();
+            return new GraknException(message);
+        }
+
+        @Override
+        public GraknException exception(Exception exception) {
+            transaction.close();
+            return new GraknException(exception);
+        }
+
+        @Override
+        public GraknException exception(GraknException exception) {
+            transaction.close();
+            return exception;
+        }
+
+    }
+
+    static class Schema extends TransactionBounded implements Storage.Schema {
+
+        private final KeyGenerator.Schema schemaKeyGenerator;
+
+        Schema(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksSchema(), transaction);
+            this.schemaKeyGenerator = database.schemaKeyGenerator();
+        }
+
+        @Override
+        public KeyGenerator.Schema schemaKeyGenerator() {
+            return schemaKeyGenerator;
+        }
+    }
+
+    static class Data extends TransactionBounded implements Storage.Data {
+
+        private final KeyGenerator.Data dataKeyGenerator;
+
+        Data(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksData(), transaction);
+            this.dataKeyGenerator = database.dataKeyGenerator();
+        }
+
+        @Override
+        public KeyGenerator.Data dataKeyGenerator() {
+            return dataKeyGenerator;
+        }
+    }
+}

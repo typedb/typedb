@@ -1,0 +1,29 @@
+/.github                   @haikalpribadi
+/.grabl                    @haikalpribadi
+/bin                       @haikalpribadi
+/common                    @haikalpribadi
+/concept                   @haikalpribadi
+/config                    @haikalpribadi
+/dependencies              @haikalpribadi
+/docs                      @haikalpribadi
+/graph                     @haikalpribadi
+/pattern                   @haikalpribadi
+/query                     @haikalpribadi
+/reasoner                  @flyingsilverfin
+/rocks                     @haikalpribadi
+/server                    @haikalpribadi
+/test                      @haikalpribadi
+/test/integration/reasoner @flyingsilverfin
+/traversal                 @haikalpribadi
+
+
+/*.java                    @haikalpribadi
+/.bazel*                   @haikalpribadi
+/.gitignore                @haikalpribadi
+/LICENSE                   @haikalpribadi
+/README.md                 @haikalpribadi
+/VERSION                   @haikalpribadi
+/WORKSPACE                 @haikalpribadi
+/deployment.bzl            @haikalpribadi
+
+**BUILD                    @haikalpribadi @lolski
