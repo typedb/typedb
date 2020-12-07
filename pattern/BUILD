@@ -22,9 +22,10 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 package(
     default_visibility = [
         "//concept:__pkg__",
+        "//logic:__subpackages__",
         "//query:__subpackages__",
         "//reasoner:__subpackages__",
-        "//test/integration/reasoner:__pkg__",
+        "//test/integration:__subpackages__",
     ]
 )
 

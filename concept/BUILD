@@ -26,6 +26,7 @@ package(
         "//query:__subpackages__",
         "//reasoner:__subpackages__",
         "//traversal:__pkg__",
+        "//logic:__pkg__"
     ]
 )
 
@@ -48,7 +49,6 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     native_libraries_deps = [
-        "//pattern:pattern",
         "//traversal:traversal",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],

@@ -16,8 +16,9 @@
  *
  */
 
-package grakn.core.reasoner.tool;
+package grakn.core.logic.tool;
 
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.Type;
@@ -32,7 +33,6 @@ import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.ReasonerCache;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
@@ -58,11 +58,16 @@ import static graql.lang.common.GraqlToken.Type.THING;
 public class TypeHinter {
 
     private final TraversalEngine traversalEng;
-    private final ReasonerCache cache;
+    private final HinterCache cache;
 
-    public TypeHinter(TraversalEngine traversalEng, ReasonerCache cache) {
+    public TypeHinter(TraversalEngine traversalEng, HinterCache cache) {
         this.traversalEng = traversalEng;
         this.cache = cache;
+    }
+
+    public Conjunction computeHintsExhaustive(Conjunction conjunction) {
+        assert ExecutorService.PARALLELISATION_FACTOR > 0;
+        return computeHintsExhaustive(conjunction, ExecutorService.PARALLELISATION_FACTOR);
     }
 
     public Conjunction computeHintsExhaustive(Conjunction conjunction, int parallelisation) {
@@ -85,6 +90,11 @@ public class TypeHinter {
             }
         }
         return conjunction;
+    }
+
+    public Conjunction computeHints(Conjunction conjunction) {
+        assert ExecutorService.PARALLELISATION_FACTOR > 0;
+        return computeHints(conjunction, ExecutorService.PARALLELISATION_FACTOR);
     }
 
     public Conjunction computeHints(Conjunction conjunction, int parallelisation) {
@@ -270,7 +280,7 @@ public class TypeHinter {
 
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints, int parallelisation) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
-        return cache.typeHinter().get(varHintsConjunction, conjunction -> {
+        return cache.get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             buffer(traversalEng.execute(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
@@ -438,8 +448,8 @@ public class TypeHinter {
 
     private class VariableHints {
 
-        private Map<Reference, TypeVariable> varHints;
-        private Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerHints;
+        private final Map<Reference, TypeVariable> varHints;
+        private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerHints;
 
         private Integer tempCounter;
 

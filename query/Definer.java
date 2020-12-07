@@ -28,6 +28,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
+import grakn.core.logic.LogicManager;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
@@ -36,6 +37,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.pattern.schema.Rule;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -57,23 +59,25 @@ public class Definer {
 
     private static final String TRACE_PREFIX = "definer.";
 
+    private final LogicManager logicMgr;
     private final ConceptManager conceptMgr;
     private final Set<TypeVariable> created;
     private final Set<TypeVariable> variables;
     private final List<graql.lang.pattern.schema.Rule> rules;
 
-    private Definer(ConceptManager conceptMgr, Set<TypeVariable> variables, List<graql.lang.pattern.schema.Rule> rules) {
+    private Definer(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables, List<Rule> rules) {
+        this.logicMgr = logicMgr;
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.rules = rules;
         this.created = new HashSet<>();
     }
 
-    public static Definer create(ConceptManager conceptMgr,
+    public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
                                  List<graql.lang.pattern.variable.TypeVariable> variables,
-                                 List<graql.lang.pattern.schema.Rule> rules) {
+                                 List<Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Definer(conceptMgr, VariableRegistry.createFromTypes(variables).types(), rules);
+            return new Definer(conceptMgr, logicMgr, VariableRegistry.createFromTypes(variables).types(), rules);
         }
     }
 
@@ -250,6 +254,6 @@ public class Definer {
     }
 
     private void define(graql.lang.pattern.schema.Rule rule) {
-        conceptMgr.putRule(rule.label(), rule.when(), rule.then());
+        logicMgr.putRule(rule.label(), rule.when(), rule.then());
     }
 }

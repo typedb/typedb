@@ -28,6 +28,8 @@ import java.util.Set;
 
 public class ReasonerCache {
 
+    // TODO not needed anymore
+
     private final CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinterCache;
 
     public ReasonerCache() {

@@ -27,6 +27,9 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.graph.DataGraph;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
+import grakn.core.logic.LogicManager;
+import grakn.core.logic.tool.HinterCache;
+import grakn.core.logic.tool.TypeHinter;
 import grakn.core.query.QueryManager;
 import grakn.core.reasoner.Reasoner;
 import grakn.core.reasoner.ReasonerCache;
@@ -50,6 +53,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     final Context.Transaction context;
     GraphManager graphMgr;
     ConceptManager conceptMgr;
+    LogicManager logicMgr;
     Reasoner reasoner;
     QueryManager queryMgr;
     AtomicBoolean isOpen;
@@ -60,10 +64,14 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         context = new Context.Transaction(session.context(), options).type(type);
     }
 
-    void initialise(GraphManager graphMgr, TraversalCache traversalCache, ReasonerCache reasonerCache) {
+    void initialise(GraphManager graphMgr, TraversalCache traversalCache,
+                    HinterCache hinterCache,
+                    ReasonerCache reasonerCache) {
+        TraversalEngine traversalEngine = new TraversalEngine(graphMgr, traversalCache);
         conceptMgr = new ConceptManager(graphMgr);
-        reasoner = new Reasoner(conceptMgr, new TraversalEngine(graphMgr, traversalCache), reasonerCache);
-        queryMgr = new QueryManager(conceptMgr, reasoner, context);
+        logicMgr = new LogicManager(graphMgr, conceptMgr, new TypeHinter(traversalEngine, hinterCache));
+        reasoner = new Reasoner(conceptMgr, logicMgr, traversalEngine, reasonerCache);
+        queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
     }
 
@@ -98,9 +106,10 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         return conceptMgr;
     }
 
-    public Reasoner reasoner() {
+    @Override
+    public LogicManager logics() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
-        return reasoner;
+        return logicMgr;
     }
 
     @Override
@@ -108,6 +117,11 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         if (isOpen.compareAndSet(true, false)) {
             closeResources();
         }
+    }
+
+    public Reasoner reasoner() {
+        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
+        return reasoner;
     }
 
     void closeResources() {
@@ -148,7 +162,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
-            initialise(graphMgr, new TraversalCache(), new ReasonerCache());
+            initialise(graphMgr, new TraversalCache(), new HinterCache(), new ReasonerCache());
         }
 
         @Override
@@ -255,7 +269,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
             graphMgr = new GraphManager(schemaGraph, dataGraph);
 
-            initialise(graphMgr, session.database.cache().traversal(), session.database.cache().reasoner());
+            initialise(graphMgr, session.database.cache().traversal(), new HinterCache(), session.database.cache().reasoner());
         }
 
         @Override

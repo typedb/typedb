@@ -27,6 +27,7 @@ import grakn.core.common.parameters.Options;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
+import grakn.core.logic.tool.HinterCache;
 import grakn.core.reasoner.ReasonerCache;
 import grakn.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
@@ -258,12 +259,14 @@ public class RocksDatabase implements Grakn.Database {
     static class Cache {
 
         private final TraversalCache traversalCache;
+        private final HinterCache hinterCache;
         private final ReasonerCache reasonerCache;
         private final SchemaGraph schemaGraph;
 
         private Cache(RocksDatabase database) {
             schemaGraph = new SchemaGraph(new RocksStorage(database.rocksSchema(), true), true);
             traversalCache = new TraversalCache();
+            hinterCache = new HinterCache();
             reasonerCache = new ReasonerCache();
         }
 

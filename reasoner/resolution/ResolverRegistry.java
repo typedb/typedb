@@ -37,7 +37,7 @@ public class ResolverRegistry {
     private final HashMap<Long, Actor<ConcludableResolver>> concludables;
     private final HashMap<List<Long>, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;
-    private EventLoopGroup elg;
+    private final EventLoopGroup elg;
 
     public ResolverRegistry(EventLoopGroup elg) {
         this.elg = elg;
