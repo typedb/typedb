@@ -21,8 +21,8 @@ package grakn.core.graph.util;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.graph.iid.LogicIID;
 import grakn.core.graph.iid.PrefixIID;
+import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.iid.VertexIID;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -115,10 +115,10 @@ public class KeyGenerator {
             }
 
             private void syncRuleKey(Storage storage) {
-                final byte[] prefix = Encoding.Logic.RULE.prefix().bytes();
+                final byte[] prefix = Encoding.Structure.RULE.prefix().bytes();
                 final byte[] lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, LogicIID.Rule.LENGTH)) + delta);
+                    ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }

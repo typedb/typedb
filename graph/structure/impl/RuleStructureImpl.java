@@ -15,13 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.logic.impl;
+package grakn.core.graph.structure.impl;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.LogicIID;
-import grakn.core.graph.logic.RuleLogic;
+import grakn.core.graph.iid.StructureIID;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -35,19 +35,19 @@ import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.THEN;
 import static grakn.core.graph.util.Encoding.Property.WHEN;
 
-public abstract class RuleLogicImpl implements RuleLogic {
+public abstract class RuleStructureImpl implements RuleStructure {
 
     final SchemaGraph graph;
     final AtomicBoolean isDeleted;
     final Conjunction<? extends Pattern> when;
     final ThingVariable<?> then;
-    LogicIID.Rule iid;
+    StructureIID.Rule iid;
     String label;
 
     private boolean isModified;
 
-    RuleLogicImpl(SchemaGraph graph, LogicIID.Rule iid, String label,
-                  Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+    RuleStructureImpl(SchemaGraph graph, StructureIID.Rule iid, String label,
+                      Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert when != null;
         assert then != null;
         this.graph = graph;
@@ -59,12 +59,12 @@ public abstract class RuleLogicImpl implements RuleLogic {
     }
 
     @Override
-    public LogicIID.Rule iid() {
+    public StructureIID.Rule iid() {
         return iid;
     }
 
     @Override
-    public void iid(LogicIID.Rule iid) {
+    public void iid(StructureIID.Rule iid) {
         this.iid = iid;
     }
 
@@ -91,7 +91,7 @@ public abstract class RuleLogicImpl implements RuleLogic {
         return isDeleted.get();
     }
 
-    public Encoding.Logic encoding() {
+    public Encoding.Structure encoding() {
         return iid.encoding();
     }
 
@@ -99,11 +99,11 @@ public abstract class RuleLogicImpl implements RuleLogic {
         graph.delete(this);
     }
 
-    public static class Buffered extends RuleLogicImpl {
+    public static class Buffered extends RuleStructureImpl {
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(SchemaGraph graph, LogicIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+        public Buffered(SchemaGraph graph, StructureIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
@@ -166,9 +166,9 @@ public abstract class RuleLogicImpl implements RuleLogic {
 
     }
 
-    public static class Persisted extends RuleLogicImpl {
+    public static class Persisted extends RuleStructureImpl {
 
-        public Persisted(SchemaGraph graph, LogicIID.Rule iid) {
+        public Persisted(SchemaGraph graph, StructureIID.Rule iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),

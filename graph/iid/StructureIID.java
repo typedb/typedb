@@ -24,20 +24,20 @@ import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static java.util.Arrays.copyOfRange;
 
-public abstract class LogicIID extends IID {
+public abstract class StructureIID extends IID {
 
-    LogicIID(byte[] bytes) {
+    StructureIID(byte[] bytes) {
         super(bytes);
     }
 
-    abstract Encoding.Logic encoding();
+    abstract Encoding.Structure encoding();
 
     @Override
     public String toString() {
         return null;
     }
 
-    public static class Rule extends LogicIID {
+    public static class Rule extends StructureIID {
 
         public static final int LENGTH = PrefixIID.LENGTH + 2;
 
@@ -51,18 +51,18 @@ public abstract class LogicIID extends IID {
         }
 
         /**
-         * Generate an IID for a {@code RuleLogic} for a given {@code Encoding}
+         * Generate an IID for a {@code RuleStructure} for a given {@code Encoding}
          *
-         * @param keyGenerator to generate the IID for a {@code RuleLogic}
-         * @return a byte array representing a new IID for a {@code RuleLogic}
+         * @param keyGenerator to generate the IID for a {@code RuleStructure}
+         * @return a byte array representing a new IID for a {@code RuleStructure}
          */
         public static Rule generate(KeyGenerator.Schema keyGenerator) {
-            return of(join(Encoding.Logic.RULE.prefix().bytes(), keyGenerator.forRule()));
+            return of(join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
         }
 
         @Override
-        public Encoding.Logic.Rule encoding() {
-            return Encoding.Logic.RULE;
+        public Encoding.Structure.Rule encoding() {
+            return Encoding.Structure.RULE;
         }
 
         @Override

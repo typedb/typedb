@@ -23,7 +23,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.logic.Rule;
 import grakn.core.concept.type.RelationType;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.logic.RuleLogic;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
@@ -44,11 +44,11 @@ import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND
 public class RuleImpl implements Rule {
 
     private final ConceptManager conceptMgr;
-    private final RuleLogic logic;
+    private final RuleStructure logic;
     private Conjunction when;
     private Set<Constraint> then;
 
-    private RuleImpl(ConceptManager conceptMgr, RuleLogic logic) {
+    private RuleImpl(ConceptManager conceptMgr, RuleStructure logic) {
         this.conceptMgr = conceptMgr;
         this.logic = logic;
         when = Conjunction.create(getWhenPreNormalised().normalise().patterns().get(0));
@@ -56,7 +56,7 @@ public class RuleImpl implements Rule {
                 variable -> variable.constraints().stream()).collect(Collectors.toSet());
     }
 
-    public static RuleImpl of(ConceptManager conceptMgr, RuleLogic logic) {
+    public static RuleImpl of(ConceptManager conceptMgr, RuleStructure logic) {
         return new RuleImpl(conceptMgr, logic);
     }
 
@@ -64,7 +64,7 @@ public class RuleImpl implements Rule {
                               graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> when,
                               graql.lang.pattern.variable.ThingVariable<?> then) {
         graql.lang.pattern.schema.Rule.validate(label, when, then);
-        RuleLogic logic = graphMgr.schema().create(label, when, then);
+        RuleStructure logic = graphMgr.schema().create(label, when, then);
         RuleImpl rule = new RuleImpl(conceptMgr, logic);
         rule.validateLabelsExist();
         return rule;

@@ -24,10 +24,10 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.LogicIID;
+import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.logic.RuleLogic;
-import grakn.core.graph.logic.impl.RuleLogicImpl;
+import grakn.core.graph.structure.RuleStructure;
+import grakn.core.graph.structure.impl.RuleStructureImpl;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
@@ -76,9 +76,9 @@ public class SchemaGraph implements Graph {
     private final Storage storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
-    private final ConcurrentMap<String, RuleLogic> rulesByLabel;
+    private final ConcurrentMap<String, RuleStructure> rulesByLabel;
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
-    private final ConcurrentMap<LogicIID.Rule, RuleLogic> rulesByIID;
+    private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
     private final AtomicLong referenceCounter;
@@ -229,11 +229,11 @@ public class SchemaGraph implements Graph {
         });
     }
 
-    public RuleLogic convert(LogicIID.Rule iid) {
+    public RuleStructure convert(StructureIID.Rule iid) {
         return rulesByIID.computeIfAbsent(iid, i -> {
-            final RuleLogic logic = new RuleLogicImpl.Persisted(this, i);
-            rulesByLabel.putIfAbsent(logic.label(), logic);
-            return logic;
+            final RuleStructure rule = new RuleStructureImpl.Persisted(this, i);
+            rulesByLabel.putIfAbsent(rule.label(), rule);
+            return rule;
         });
     }
 
@@ -273,20 +273,20 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleLogic getRule(String label) {
+    public RuleStructure getRule(String label) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
 
-            RuleLogic vertex = rulesByLabel.get(label);
+            RuleStructure vertex = rulesByLabel.get(label);
             if (vertex != null) return vertex;
 
             final IndexIID.Rule index = IndexIID.Rule.of(label);
             final byte[] iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = rulesByIID.computeIfAbsent(
-                        LogicIID.Rule.of(iid), i -> new RuleLogicImpl.Persisted(this, i)
+                        StructureIID.Rule.of(iid), i -> new RuleStructureImpl.Persisted(this, i)
                 );
                 rulesByLabel.putIfAbsent(label, vertex);
             }
@@ -324,17 +324,17 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleLogic create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+    public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
 
-            final RuleLogic ruleLogic = rulesByLabel.computeIfAbsent(label, i -> new RuleLogicImpl.Buffered(
-                    this, LogicIID.Rule.generate(keyGenerator), label, when, then
+            final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
+                    this, StructureIID.Rule.generate(keyGenerator), label, when, then
             ));
-            rulesByIID.put(ruleLogic.iid(), ruleLogic);
-            return ruleLogic;
+            rulesByIID.put(rule.iid(), rule);
+            return rule;
         } catch (InterruptedException e) {
             throw new GraknException(e);
         } finally {
@@ -361,11 +361,11 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleLogic update(RuleLogic vertex, String oldLabel, String newLabel) {
+    public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockWrite();
-            final RuleLogic rule = getRule(newLabel);
+            final RuleStructure rule = getRule(newLabel);
             if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE.message(newLabel));
             rulesByLabel.remove(oldLabel);
             rulesByLabel.put(newLabel, vertex);
@@ -393,7 +393,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public void delete(RuleLogic vertex) {
+    public void delete(RuleStructure vertex) {
         assert storage.isOpen();
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             // TODO do we need all these locks here? Are they applicable for this method?
@@ -454,10 +454,10 @@ public class SchemaGraph implements Graph {
                 typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                ruleLogic -> ruleLogic.iid(LogicIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
+                ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
-        rulesByIID.values().forEach(RuleLogic::commit);
+        rulesByIID.values().forEach(RuleStructure::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
     }
 

@@ -36,7 +36,7 @@ import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.logic.RuleLogic;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -162,13 +162,13 @@ public final class ConceptManager {
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        final RuleLogic vertex = graphMgr.schema().getRule(label);
+        final RuleStructure vertex = graphMgr.schema().getRule(label);
         if (vertex != null) vertex.delete();
         return RuleImpl.of(this, graphMgr, label, when, then);
     }
 
     public Rule getRule(String label) {
-        final RuleLogic ruleLogic = graphMgr.schema().getRule(label);
+        final RuleStructure ruleLogic = graphMgr.schema().getRule(label);
         if (ruleLogic != null) return RuleImpl.of(this, ruleLogic);
         return null;
     }

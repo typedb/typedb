@@ -146,7 +146,7 @@ public class Encoding {
         VERTEX_ATTRIBUTE(160, PrefixType.THING),
         VERTEX_RELATION(170, PrefixType.THING),
         VERTEX_ROLE(180, PrefixType.THING),
-        LOGIC_RULE(190, PrefixType.RULE);
+        STRUCTURE_RULE(190, PrefixType.RULE);
 
         private final byte key;
         private final PrefixType type;
@@ -501,18 +501,18 @@ public class Encoding {
         }
     }
 
-    public interface Logic {
+    public interface Structure {
         Prefix prefix();
 
-        interface Rule extends Logic {
+        interface Rule extends Structure {
 
             String label();
         }
 
-        Logic.Rule RULE = new Logic.Rule() {
+        Structure.Rule RULE = new Structure.Rule() {
             @Override
             public Prefix prefix() {
-                return Prefix.LOGIC_RULE;
+                return Prefix.STRUCTURE_RULE;
             }
 
             @Override

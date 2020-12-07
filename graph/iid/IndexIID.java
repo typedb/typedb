@@ -79,10 +79,10 @@ public abstract class IndexIID extends IID {
         Rule(byte[] bytes) { super(bytes); }
 
         /**
-         * Returns the index address of given {@code RuleLogic}
+         * Returns the index address of given {@code RuleStructure}
          *
-         * @param label of the {@code RuleLogic}
-         * @return a byte array representing the index address of a {@code RuleLogic}
+         * @param label of the {@code RuleStructure}
+         * @return a byte array representing the index address of a {@code RuleStructure}
          */
         public static Rule of(String label) {
             return new Rule(join(Encoding.Index.RULE.prefix().bytes(), label.getBytes(STRING_ENCODING)));
