@@ -46,7 +46,7 @@ native_java_libraries(
     deps = [
         # Internal dependencies
         "//common",
-        "//graph",
+        "//graph", # TODO: this is bad and needs to go
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
