@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -148,9 +149,9 @@ public class RocksDatabase implements Grakn.Database {
         return cache;
     }
 
-    synchronized void closeCachedSchemaGraph() {
+    synchronized void invalidateCache() {
         if (cache != null) {
-            cache.schemaGraph.mayClose();
+            cache.invalidate();
             cache = null;
         }
     }
@@ -260,11 +261,17 @@ public class RocksDatabase implements Grakn.Database {
         private final TraversalCache traversalCache;
         private final ReasonerCache reasonerCache;
         private final SchemaGraph schemaGraph;
+        private final RocksStorage schemaStorage;
+        private final AtomicLong referenceCount;
+        private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            schemaGraph = new SchemaGraph(new RocksStorage(database.rocksSchema(), true), true);
+            schemaStorage = new RocksStorage(database.rocksSchema(), true);
+            schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             reasonerCache = new ReasonerCache();
+            referenceCount = new AtomicLong();
+            invalidated = false;
         }
 
         public TraversalCache traversal() {
@@ -277,6 +284,27 @@ public class RocksDatabase implements Grakn.Database {
 
         public SchemaGraph schemaGraph() {
             return schemaGraph;
+        }
+
+
+        public void incrementReference() {
+            referenceCount.incrementAndGet();
+        }
+
+        public synchronized void decrementReference() {
+            referenceCount.decrementAndGet();
+            mayClose();
+        }
+
+        public synchronized void invalidate() {
+            invalidated = true;
+            mayClose();
+        }
+
+        private void mayClose() {
+            if (referenceCount.get() == 0 && invalidated) {
+                schemaStorage.close();
+            }
         }
     }
 
