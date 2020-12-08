@@ -18,6 +18,8 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RelationType;
@@ -54,7 +56,7 @@ public class Rule {
     private final Set<Constraint> then;
     private final Set<Label> positiveWhenTypeHints;
     private final Set<Label> negativeWhenTypeHints;
-    private final Set<Label> positiveThenTypeHints;
+    private final Set<Label> thenTypeHints;
     private final Set<HeadConcludable<?, ?>> head;
     private final Set<ConjunctionConcludable<?, ?>> body;
 
@@ -69,7 +71,7 @@ public class Rule {
         this.then = thenConstraints(structure.then());
         positiveWhenTypeHints = positiveTypeHints(this.when);
         negativeWhenTypeHints = negativeTypeHints(this.when);
-        positiveThenTypeHints = positiveTypeHints(this.then);
+        thenTypeHints = positiveTypeHints(this.then);
 
         this.head = createHead(this.then, this.when.variables());
         this.body = ConjunctionConcludable.of(this.when);
@@ -90,26 +92,11 @@ public class Rule {
 
         positiveWhenTypeHints = positiveTypeHints(this.when);
         negativeWhenTypeHints = negativeTypeHints(this.when);
-        positiveThenTypeHints = positiveTypeHints(this.then);
+        thenTypeHints = positiveTypeHints(this.then);
         validateRuleSatisfiable();
 
         this.head = createHead(this.then, this.when.variables());
         this.body = ConjunctionConcludable.of(this.when);
-    }
-
-    private Set<Label> positiveTypeHints(Conjunction conjunction) {
-        // TODO
-        return null;
-    }
-
-    private Set<Label> negativeTypeHints(Conjunction conjunction) {
-        // TODO
-        return null;
-    }
-
-    private Set<Label> positiveTypeHints(Set<Constraint> constraints) {
-        // TODO
-        return null;
     }
 
     public static Rule of(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
@@ -127,6 +114,14 @@ public class Rule {
 
     public Set<HeadConcludable<?, ?>> head() {
         return head;
+    }
+
+    public ResourceIterator<Rule> dependentRulesPositive() {
+        return Iterators.iterate(thenTypeHints).flatMap(label -> logicManager.rulesDependingPositively(label));
+    }
+
+    public ResourceIterator<Rule> dependentRulesNegative() {
+        return Iterators.iterate(thenTypeHints).flatMap(label -> logicManager.rulesDependingNegatively(label));
     }
 
     public String getLabel() {
@@ -167,6 +162,20 @@ public class Rule {
         return structure.hashCode(); // does not need caching
     }
 
+    private Set<Label> positiveTypeHints(Conjunction conjunction) {
+        // TODO
+        return null;
+    }
+
+    private Set<Label> negativeTypeHints(Conjunction conjunction) {
+        // TODO
+        return null;
+    }
+
+    private Set<Label> positiveTypeHints(Set<Constraint> constraints) {
+        // TODO
+        return null;
+    }
 
     private Set<HeadConcludable<?, ?>> createHead(Set<Constraint> thenConstraints, Set<Variable> constraintContext) {
         HashSet<HeadConcludable<?, ?>> thenConcludables = new HashSet<>();
@@ -219,5 +228,13 @@ public class Rule {
                 return conceptMgr.getType(label.name()) == null;
             }
         }).map(Label::scopedName).collect(Collectors.toSet());
+    }
+
+    boolean dependsPositively(Label label) {
+        return positiveWhenTypeHints.contains(label);
+    }
+
+    boolean dependsNegatively(Label label) {
+        return negativeWhenTypeHints.contains(label);
     }
 }

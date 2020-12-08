@@ -18,6 +18,8 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
@@ -26,8 +28,6 @@ import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
-
-import java.util.stream.Stream;
 
 public class LogicManager {
 
@@ -54,6 +54,7 @@ public class LogicManager {
         logicCache.rule().put(label, rule);
 
         // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
+        // TODO use the new rule as a starting point, there's likely to be a use of `dependentRulesPositive` and `dependentRulesNegative`
 
         return rule;
     }
@@ -62,15 +63,34 @@ public class LogicManager {
         Rule rule = logicCache.rule().getIfPresent(label);
         if (rule != null) return rule;
         RuleStructure structure = graphMgr.schema().getRule(label);
-        if (structure != null) return Rule.of(conceptMgr, this, structure);
+        if (structure != null) {
+            rule = Rule.of(conceptMgr, this, structure);
+            logicCache.rule().put(rule.getLabel(), rule);
+            return rule;
+        }
         return null;
     }
 
-    public Stream<Rule> rules() {
-
+    public ResourceIterator<Rule> rules() {
+        return graphMgr.schema().rules().map(structure -> {
+            Rule rule = logicCache.rule().getIfPresent(structure.label());
+            if (rule == null) {
+                rule = Rule.of(conceptMgr, this, structure);
+                logicCache.rule().put(rule.getLabel(), rule);
+            }
+            return rule;
+        });
     }
 
     public TypeHinter typeHinter() {
         return typeHinter;
+    }
+
+    ResourceIterator<Rule> rulesDependingPositively(Label label) {
+        return rules().filter(r -> r.dependsPositively(label));
+    }
+
+    ResourceIterator<Rule> rulesDependingNegatively(Label label) {
+        return rules().filter(r -> r.dependsNegatively(label));
     }
 }
