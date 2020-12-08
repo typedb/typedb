@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
@@ -25,7 +26,7 @@ import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.UnifiedConcludable;
+import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -48,7 +49,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final Conjunction conjunction;
     Actor<ResolutionRecorder> resolutionRecorder;
     private final Long traversalSize;
-    private final List<UnifiedConcludable> plannedConcludables;
+    private final List<Pair<Actor<ConcludableResolver>, Unifier>> plannedConcludables;
 
     public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Long traversalSize) {
         super(self, name);
@@ -62,7 +63,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected ResponseProducer createResponseProducer(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).concludable()), plannedConcludables.get(0).unify(request.partialConceptMap().map()),
+        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), plannedConcludables.get(0).second().unify(request.partialConceptMap().map()),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -83,22 +84,22 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         // Plan the order in which to execute the concludables
         List<ConjunctionConcludable<?, ?>> planned = list(conjunctionConcludables); // TODO Do some actual planning
         for (ConjunctionConcludable<?, ?> concludable : planned) {
-            UnifiedConcludable unifiedConcludable = registry.registerConcludable(concludable, Arrays.asList(), 5L); // TODO Traversal size?
+            Pair<Actor<ConcludableResolver>, Unifier> unifiedConcludable = registry.registerConcludable(concludable, Arrays.asList(), 5L); // TODO Traversal size?
             plannedConcludables.add(unifiedConcludable);
         }
     }
 
     boolean isLast(Actor<? extends Resolver<?>> actor) {
-        return plannedConcludables.get(plannedConcludables.size() - 1).concludable().equals(actor);
+        return plannedConcludables.get(plannedConcludables.size() - 1).first().equals(actor);
     }
 
-    UnifiedConcludable nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         boolean match = false;
-        for (UnifiedConcludable planned : plannedConcludables) {
+        for (Pair<Actor<ConcludableResolver>, Unifier> planned : plannedConcludables) {
             if (match) {
                 return planned; // TODO This logic seems a bit bizarre, but is the most efficient
             }
-            if (actor.equals(planned.concludable())) {
+            if (actor.equals(planned.first())) {
                 match = true;
             }
         }

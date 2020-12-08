@@ -19,10 +19,11 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Either;
+import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.UnifiedConcludable;
+import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -67,9 +68,9 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
                 return produceMessage(fromUpstream, responseProducer);
             }
         } else {
-            UnifiedConcludable nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.concludable()),
-                                                    nextPlannedDownstream.unify(conceptMap), derivation);
+            Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
+                                                    nextPlannedDownstream.second().unify(conceptMap), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }

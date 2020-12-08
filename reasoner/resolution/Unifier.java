@@ -1,5 +1,6 @@
 package grakn.core.reasoner.resolution;
 
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashMap;
@@ -17,5 +18,9 @@ public class Unifier {
 
     public static Unifier fromVariableMapping(HashMap<Variable, Variable> map) {
         return null; // TODO Create a unifier from a 1:1 variable mapping from an alpha equivalence. Perhaps unnecessary if Unifier and the Variable Mapping implement the same interface
+    }
+
+    public UnifiedConceptMap unify(ConceptMap conceptMap) {
+        return null; // TODO
     }
 }

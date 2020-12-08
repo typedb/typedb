@@ -54,7 +54,7 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public UnifiedConcludable registerConcludable(ConjunctionConcludable<?, ?> concludable, List<Rule> rules, long traversalSize) {
+    public Pair<Actor<ConcludableResolver>, Unifier> registerConcludable(ConjunctionConcludable<?, ?> concludable, List<Rule> rules, long traversalSize) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
 
         final Optional<Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>> alphaEquivalencePair = concludableActorsMap.keySet().stream()
@@ -74,7 +74,7 @@ public class ResolverRegistry {
             final Set<Variable> vars = new HashSet<>(concludable.constraint().variables());
             unifier = Unifier.identity(vars);
         }
-        return new UnifiedConcludable(concludableActor, unifier);
+        return new Pair<>(concludableActor, unifier);
     }
 
     public Actor<RuleResolver> registerRule(Rule rule, long traversalSize) {
