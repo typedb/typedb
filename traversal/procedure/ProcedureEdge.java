@@ -555,7 +555,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 ThingVertex relation = fromVertex.asThing();
                 Set<Label> toTypes = to.props().types();
                 if (!toTypes.isEmpty()) {
-                    iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l))
+                    iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
                             .flatMap(t -> relation.outs().edge(encoding, PrefixIID.of(VERTEX_ROLE), t.iid()).to());
                 } else {
                     iter = relation.outs().edge(encoding).to();
@@ -596,7 +596,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                                 iter = to.iteratorOfAttributes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
-                                iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                         .flatMap(t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to())
                                         .map(ThingVertex::asAttribute);
                             }
@@ -632,7 +632,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                         if (to.props().hasIID()) {
                             iter = backwardBranchToIID(graphMgr, att, HAS, params.getIID(to.id().asVariable()));
                         } else if (!to.props().types().isEmpty()) {
-                            iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                            iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                     .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
                         } else {
                             iter = att.ins().edge(HAS).from();
@@ -696,7 +696,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                             assert to.id().isVariable();
                             iter = backwardBranchToIID(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()));
                         } else if (!toTypes.isEmpty()) {
-                            iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l))
+                            iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
                                     .flatMap(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from());
                         } else {
                             iter = role.ins().edge(PLAYING).from();
@@ -760,7 +760,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                             assert to.id().isVariable();
                             iter = backwardBranchToIID(graphMgr, role, RELATING, params.getIID(to.id().asVariable()));
                         } else if (!toTypes.isEmpty()) {
-                            iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l))
+                            iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
                                     .flatMap(t -> role.ins().edge(RELATING, PrefixIID.of(RELATION), t.iid()).from());
                         } else {
                             iter = role.ins().edge(RELATING).from();
