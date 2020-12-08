@@ -41,4 +41,8 @@ public class CommonCache<KEY, VALUE> {
     public VALUE get(KEY key, Function<KEY, VALUE> function) {
         return cache.get(key, function);
     }
+
+    public VALUE getIfPresent(KEY key) {
+        return cache.getIfPresent(key);
+    }
 }

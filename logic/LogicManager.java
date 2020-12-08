@@ -31,11 +31,13 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final GraphManager graphMgr;
     private final TypeHinter typeHinter;
+    private RuleCache ruleCache;
 
-    public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter) {
+    public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter, RuleCache ruleCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.typeHinter = typeHinter;
+        this.ruleCache = ruleCache;
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
@@ -43,7 +45,15 @@ public class LogicManager {
         if (structure != null) structure.delete();
         Rule rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
 
-        // TODO detect negated cycles in the rule graph after inserting this rule and updating a rule graph
+        Rule rule = ruleCache.getIfPresent(label);
+        final RuleStructure vertex = graphMgr.schema().getRule(label);
+        if (graphMgr.schema().getRule(label) != null) {
+            return rule;
+        }
+
+        if (vertex != null) vertex.delete();
+        rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
+        // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
 
         return rule;
     }
