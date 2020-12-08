@@ -18,9 +18,9 @@
 package grakn.core.reasoner.resolution;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.logic.Rule;
-import grakn.core.reasoner.concludable.ConjunctionConcludable;
-import grakn.core.reasoner.concludable.HeadConcludable;
+import grakn.core.logic.Rule;
+import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.HeadConcludable;
 
 public class Unifier implements ConceptMapTransformer {
 

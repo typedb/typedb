@@ -18,8 +18,8 @@
 package grakn.core.reasoner.resolution;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.concludable.ConjunctionConcludable;
 
 import java.util.HashSet;
 import java.util.Map;
