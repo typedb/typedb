@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.TransformedConceptMap;
+import grakn.core.logic.transform.TransformedConceptMap;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

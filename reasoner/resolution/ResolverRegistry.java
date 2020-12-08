@@ -29,6 +29,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import grakn.core.logic.transform.VariableMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

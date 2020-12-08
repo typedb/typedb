@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution;
+package grakn.core.logic.transform;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;

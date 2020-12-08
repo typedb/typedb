@@ -25,8 +25,8 @@ import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.TransformedConceptMap;
-import grakn.core.reasoner.resolution.Unifier;
+import grakn.core.logic.transform.TransformedConceptMap;
+import grakn.core.logic.transform.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -109,10 +109,10 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
-        for (Unifier unifier : concludable.applicableRuleUnifiers()) {
+        concludable.applicableRuleUnifiers().forEach(unifier -> {
             Actor<RuleResolver> ruleActor = registry.registerRule(unifier.rule());
             ruleActorSources.put(unifier, ruleActor);
-        }
+        });
     }
 
     private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
