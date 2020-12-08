@@ -161,8 +161,8 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             return iterator.filter(ThingVertex::isAttribute).map(ThingVertex::asAttribute);
         }
 
-        ResourceIterator<? extends ThingVertex> filterPredicates(ResourceIterator<AttributeVertex<?>> iterator,
-                                                                 Traversal.Parameters parameters) {
+        ResourceIterator<AttributeVertex<?>> filterPredicates(ResourceIterator<AttributeVertex<?>> iterator,
+                                                              Traversal.Parameters parameters) {
             // TODO: should we throw an exception if the user assert a value non-comparable value types?
             assert id().isVariable();
             for (Predicate.Value<?> predicate : props().predicates()) {

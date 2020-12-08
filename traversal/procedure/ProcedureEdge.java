@@ -19,9 +19,12 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.iid.PrefixIID;
+import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
@@ -40,6 +43,9 @@ import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
+import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
@@ -142,7 +148,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                         .flatMap(vt -> graphMgr.schema().attributeTypes(vt))
                         .flatMap(at -> graphMgr.data().get(at)).map(ThingVertex::asAttribute);
                 if (!to.props().predicates().isEmpty()) {
-                    toIter = to.filterPredicates(toIter, params).map(ThingVertex::asAttribute);
+                    toIter = to.filterPredicates(toIter, params);
                 }
             }
 
@@ -357,23 +363,22 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                         super(from, to, order, FORWARD, isKey);
                     }
 
-                    private ResourceIterator<TypeVertex> ownedTypes(TypeVertex fromVertex) {
-                        if (isKey) return fromVertex.outs().edge(OWNS_KEY).to();
-                        else return link(list(fromVertex.outs().edge(OWNS).to(),
-                                              fromVertex.outs().edge(OWNS_KEY).to()));
-                    }
-
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        ResourceIterator<TypeVertex> iterator = ownedTypes(fromVertex.asType());
+                        final ResourceIterator<TypeVertex> iterator;
+                        if (isKey) iterator = fromVertex.asType().outs().edge(OWNS_KEY).to();
+                        else iterator = link(list(fromVertex.asType().outs().edge(OWNS).to(),
+                                                  fromVertex.asType().outs().edge(OWNS_KEY).to()));
                         return to.filter(iterator);
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return ownedTypes(fromVertex.asType()).filter(t -> t.equals(toVertex.asType())).hasNext();
+                        boolean ownsKey = fromVertex.asType().outs().edge(OWNS_KEY, toVertex.asType()) != null;
+                        if (isKey) return ownsKey;
+                        else return ownsKey || fromVertex.asType().outs().edge(OWNS, toVertex.asType()) != null;
                     }
                 }
 
@@ -383,24 +388,23 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                         super(from, to, order, BACKWARD, isKey);
                     }
 
-                    private ResourceIterator<TypeVertex> ownerTypes(TypeVertex fromVertex) {
-                        if (isKey) return fromVertex.ins().edge(OWNS_KEY).from();
-                        else return link(list(fromVertex.ins().edge(OWNS).from(),
-                                              fromVertex.ins().edge(OWNS_KEY).from()));
-                    }
-
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        ResourceIterator<TypeVertex> iterator = ownerTypes(fromVertex.asType());
+                        final ResourceIterator<TypeVertex> iterator;
+                        if (isKey) iterator = fromVertex.asType().ins().edge(OWNS_KEY).from();
+                        else iterator = link(list(fromVertex.asType().ins().edge(OWNS).from(),
+                                                  fromVertex.asType().ins().edge(OWNS_KEY).from()));
                         return to.filter(iterator);
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return ownerTypes(fromVertex.asType()).filter(t -> t.equals(toVertex.asType())).hasNext();
+                        boolean isOwnedKey = fromVertex.asType().ins().edge(OWNS_KEY, toVertex.asType()) != null;
+                        if (isKey) return isOwnedKey;
+                        else return isOwnedKey || fromVertex.asType().ins().edge(OWNS, toVertex.asType()) != null;
                     }
                 }
             }
@@ -428,7 +432,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return fromVertex.asType().outs().edge(PLAYS).to().filter(t -> t.equals(toVertex.asType())).hasNext();
+                        return fromVertex.asType().outs().edge(PLAYS, toVertex.asType()) != null;
                     }
                 }
 
@@ -448,7 +452,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return fromVertex.asType().ins().edge(PLAYS).from().filter(t -> t.equals(toVertex.asType())).hasNext();
+                        return fromVertex.asType().ins().edge(PLAYS, toVertex.asType()) != null;
                     }
                 }
             }
@@ -475,7 +479,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return fromVertex.asType().outs().edge(RELATES).to().filter(t -> t.equals(toVertex.asType())).hasNext();
+                        return fromVertex.asType().outs().edge(RELATES, toVertex.asType()) != null;
                     }
                 }
 
@@ -495,7 +499,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return fromVertex.asType().ins().edge(PLAYS).from().filter(t -> t.equals(toVertex.asType())).hasNext();
+                        return fromVertex.asType().ins().edge(PLAYS, toVertex.asType()) != null;
                     }
                 }
             }
@@ -548,13 +552,34 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        return iterate(emptyIterator()); // TODO
+                        ResourceIterator<AttributeVertex<?>> iterator;
+                        if (to.props().hasIID()) {
+                            assert to.id().isVariable();
+                            VertexIID.Thing iid = params.getIID(to.id().asVariable());
+                            assert iid.isAttribute();
+                            AttributeVertex<?> toVertex = graphMgr.data().get(iid.asAttribute());
+                            if (toVertex != null && fromVertex.asThing().outs().edge(HAS, toVertex) != null) {
+                                iterator = single(toVertex);
+                            } else {
+                                iterator = Iterators.empty();
+                            }
+                        } else if (!to.props().types().isEmpty()) {
+                            PrefixIID prefix = PrefixIID.of(Encoding.Prefix.VERTEX_ATTRIBUTE);
+                            iterator = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                    .flatMap(t -> fromVertex.asThing().outs().edge(HAS, prefix, t.iid()).to())
+                                    .map(ThingVertex::asAttribute);
+                        } else {
+                            iterator = fromVertex.asThing().outs().edge(HAS).to().map(ThingVertex::asAttribute);
+                        }
+
+                        if (!to.props().predicates().isEmpty()) iterator = to.filterPredicates(iterator, params);
+                        return iterator;
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        return fromVertex.asThing().outs().edge(HAS, toVertex.asThing()) != null;
                     }
                 }
 
@@ -574,7 +599,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        return fromVertex.asThing().ins().edge(HAS, toVertex.asThing()) != null;
                     }
                 }
             }
@@ -602,7 +627,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        return fromVertex.asThing().outs().edge(PLAYING, toVertex.asThing()) != null;
                     }
                 }
 
@@ -622,7 +647,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        return fromVertex.asThing().ins().edge(PLAYING, toVertex.asThing()) != null;
                     }
                 }
             }
@@ -650,7 +675,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        return fromVertex.asThing().outs().edge(RELATING, toVertex.asThing()) != null;
                     }
                 }
 
@@ -670,7 +695,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        return fromVertex.asThing().ins().edge(RELATING, toVertex.asThing()) != null;
                     }
                 }
             }

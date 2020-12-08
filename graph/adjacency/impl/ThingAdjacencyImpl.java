@@ -18,7 +18,6 @@
 
 package grakn.core.graph.adjacency.impl;
 
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.edge.Edge;
@@ -32,9 +31,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,6 +38,7 @@ import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
@@ -83,7 +80,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         final Set<ThingEdge> result;
         final InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
         if (lookAhead.length == encoding.lookAhead()) {
-            return Iterators.iterate((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
+            return iterate((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
         }
 
         assert lookAhead.length < encoding.lookAhead();
@@ -98,9 +95,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             iids = newIIDs;
         }
 
-        final List<Iterator<ThingEdge>> iterators = new LinkedList<>();
-        iids.forEach(iid -> iterators.add(edges.get(iid).iterator()));
-        return link(iterators);
+        return iterate(iids).flatMap(iid -> iterate(edges.get(iid)));
     }
 
     @Override
@@ -169,7 +164,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         final ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised);
-        final IID[] infixes = new IID[]{optimised.type().iid(), adjacent.iid().prefix(), adjacent.iid().type()};
+        final IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
         return put(encoding, edge, infixes, true, true);
     }
 

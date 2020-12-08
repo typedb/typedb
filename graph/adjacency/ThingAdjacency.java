@@ -38,16 +38,6 @@ public interface ThingAdjacency {
     ThingIteratorBuilder edge(Encoding.Edge.Thing encoding);
 
     /**
-     * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
-     * vertex.
-     *
-     * @param encoding type of the edge to filter by
-     * @param adjacent vertex that the edge connects to
-     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
-     */
-    ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent);
-
-    /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      *
      * This method allows us to traverse the graph, by going from one vertex to
@@ -59,6 +49,16 @@ public interface ThingAdjacency {
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
     ThingIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead);
+
+    /**
+     * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
+     * vertex.
+     *
+     * @param encoding type of the edge to filter by
+     * @param adjacent vertex that the edge connects to
+     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
+     */
+    ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}

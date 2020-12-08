@@ -43,7 +43,6 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
-import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 

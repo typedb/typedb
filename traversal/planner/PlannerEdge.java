@@ -475,7 +475,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 void updateObjective(GraphManager graphMgr) {
                     long cost;
                     Set<Label> fromLabels = from.props().labels(), toTypes = to.props().types();
-                    if (!toTypes.isEmpty()) {
+                    if (to().props().hasIID()) {
+                        cost = 1;
+                    } else if (!toTypes.isEmpty()) {
                         if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(toTypes);
                         else cost = graphMgr.data().stats().thingVertexTransitiveMax(toTypes, toTypes);
                     } else if (!fromLabels.isEmpty()) {
@@ -956,6 +958,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> ownerToAttributeTypes = new HashMap<>();
 
+                        if (to().props().hasIID()) {
+                            setObjectiveCoefficient(1);
+                            return;
+                        }
                         if (!from.props().types().isEmpty()) {
                             ownerTypes = from.props().types().stream()
                                     .map(l -> graphMgr.schema().getType(l)).collect(toSet());
@@ -1003,6 +1009,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
 
+                        if (to().props().hasIID()) {
+                            setObjectiveCoefficient(1);
+                            return;
+                        }
                         if (!from.props().types().isEmpty()) {
                             attTypes = from.props().types().stream()
                                     .map(l -> graphMgr.schema().getType(l)).collect(toSet());
@@ -1070,6 +1080,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     @Override
                     void updateObjective(GraphManager graphMgr) {
+                        assert !to.props().hasIID();
                         double cost;
                         if (!to.props().types().isEmpty() && !from.props().types().isEmpty()) {
                             cost = (double) graphMgr.data().stats().thingVertexSum(to.props().types()) /
@@ -1129,6 +1140,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     @Override
                     void updateObjective(GraphManager graphMgr) {
+                        assert !to.props().hasIID();
                         double cost;
                         if (!to.props().types().isEmpty()) {
                             cost = 0;
@@ -1200,7 +1212,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         double cost;
-                        if (!roleTypes.isEmpty()) {
+                        if (to.props().hasIID()) {
+                            cost = 1;
+                        } else if (!roleTypes.isEmpty()) {
                             cost = 0;
                             for (final Label roleType : roleTypes) {
                                 assert roleType.scope().isPresent();
@@ -1225,7 +1239,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         double cost;
-                        if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
+                        if (to.props().hasIID()) {
+                            cost = 1;
+                        } else if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
                             cost = (double) graphMgr.data().stats().thingVertexSum(roleTypes) /
                                     graphMgr.data().stats().thingVertexSum(from.props().types());
                         } else {

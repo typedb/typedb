@@ -26,7 +26,6 @@ import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
