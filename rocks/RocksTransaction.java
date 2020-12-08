@@ -58,8 +58,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     AtomicBoolean isOpen;
 
     private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
-        this.type = type;
         this.session = session;
+        this.type = type;
         context = new Context.Transaction(session.context(), options).type(type);
     }
 
@@ -70,10 +70,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         reasoner = new Reasoner(conceptMgr, traversalEngine, logicMgr);
         queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
-    }
-
-    public Context.Transaction context() {
-        return context;
     }
 
     @Override
@@ -92,12 +88,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public QueryManager query() {
-        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
-        return queryMgr;
-    }
-
-    @Override
     public ConceptManager concepts() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return conceptMgr;
@@ -107,6 +97,12 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     public LogicManager logics() {
         if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
         return logicMgr;
+    }
+
+    @Override
+    public QueryManager query() {
+        if (!isOpen.get()) throw new GraknException(TRANSACTION_CLOSED);
+        return queryMgr;
     }
 
     @Override
@@ -123,20 +119,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
     abstract void closeStorage();
 
-    boolean isSchema() {
-        return false;
-    }
-
-    boolean isData() {
-        return false;
-    }
-
     Schema asSchema() {
         throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Schema.class)));
-    }
-
-    Data asData() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Data.class)));
     }
 
     public static class Schema extends RocksTransaction {
@@ -155,16 +139,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
             initialise(graphMgr, new TraversalCache(), new TypeHinterCache());
-        }
-
-        @Override
-        boolean isSchema() {
-            return true;
-        }
-
-        @Override
-        Schema asSchema() {
-            return this;
         }
 
         SchemaGraph graph() {
@@ -239,6 +213,11 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             schemaStorage.close();
             dataStorage.close();
         }
+
+        @Override
+        Schema asSchema() {
+            return this;
+        }
     }
 
     public static class Data extends RocksTransaction {
@@ -254,16 +233,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
 
             initialise(graphMgr, cache.traversal(), cache.hinter());
-        }
-
-        @Override
-        boolean isData() {
-            return true;
-        }
-
-        @Override
-        Data asData() {
-            return this;
         }
 
         /**
