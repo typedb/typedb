@@ -90,19 +90,19 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    AlphaEquivalence alphaEquals(HeadConcludable.Relation that) {
+    AlphaEquivalence alphaEquals(ConjunctionConcludable.Relation that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(HeadConcludable.Has that) {
+    AlphaEquivalence alphaEquals(ConjunctionConcludable.Has that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(HeadConcludable.Isa that) {
+    AlphaEquivalence alphaEquals(ConjunctionConcludable.Isa that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(HeadConcludable.Value that) {
+    AlphaEquivalence alphaEquals(ConjunctionConcludable.Value that) {
         return null;
     }
 
@@ -170,7 +170,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(HeadConcludable.Relation that) {
+        AlphaEquivalence alphaEquals(ConjunctionConcludable.Relation that) {
             return constraint.alphaEquals(that.constraint());
         }
     }
@@ -197,7 +197,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(HeadConcludable.Has that) {
+        AlphaEquivalence alphaEquals(ConjunctionConcludable.Has that) {
             return constraint.alphaEquals(that.constraint());
         }
     }
@@ -227,7 +227,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(HeadConcludable.Isa that) {
+        AlphaEquivalence alphaEquals(ConjunctionConcludable.Isa that) {
             return constraint.alphaEquals(that.constraint());
         }
     }
@@ -254,7 +254,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(HeadConcludable.Value that) {
+        AlphaEquivalence alphaEquals(ConjunctionConcludable.Value that) {
             return constraint.alphaEquals(that.constraint());
         }
     }
