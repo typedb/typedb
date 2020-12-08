@@ -127,6 +127,7 @@ public class RocksDatabase implements Grakn.Database {
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+
         long lock = 0;
         final RocksSession session;
 
@@ -144,16 +145,22 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized Cache borrowCache() {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+
         if (cache == null) cache = new Cache(this);
         cache.borrow();
         return cache;
     }
 
     synchronized void unborrowCache(Cache cache) {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+
         cache.unborrow();
     }
 
     synchronized void invalidateCache() {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+
         if (cache != null) {
             cache.invalidate();
             cache = null;
