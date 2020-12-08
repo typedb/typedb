@@ -51,6 +51,8 @@ import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 import static java.util.Collections.emptyIterator;
 
@@ -201,9 +203,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
             }
 
             ResourceIterator<TypeVertex> isaTypes(GraphManager graphMgr, ThingVertex fromVertex) {
-                ResourceIterator<TypeVertex> iterator = single(fromVertex.asThing().type());
-                if (isTransitive)
-                    iterator = link(list(iterator, graphMgr.schema().superTypes(fromVertex.asThing().type())));
+                ResourceIterator<TypeVertex> iterator = single(fromVertex.type());
+                if (isTransitive) iterator = link(list(iterator, graphMgr.schema().superTypes(fromVertex.type())));
                 return iterator;
             }
 
@@ -217,8 +218,10 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                            Traversal.Parameters params) {
                     assert fromVertex.isThing();
-                    ResourceIterator<TypeVertex> iterator = isaTypes(graphMgr, fromVertex.asThing());
-                    return to.filter(iterator);
+                    Set<Label> fromTypes = from.props().types();
+                    ResourceIterator<TypeVertex> iter = isaTypes(graphMgr, fromVertex.asThing());
+                    if (!fromTypes.isEmpty()) iter = iter.filter(t -> fromTypes.contains(t.properLabel()));
+                    return to.filter(iter);
                 }
 
                 @Override
@@ -239,9 +242,10 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                            Traversal.Parameters params) {
                     TypeVertex v = fromVertex.asType();
+                    Set<Label> toTypes = to.props().types();
                     ResourceIterator<TypeVertex> typeIter = single(v);
                     if (isTransitive) typeIter = link(list(typeIter, graphMgr.schema().subTypes(v, true)));
-                    if (!to.props().types().isEmpty()) typeIter = typeIter.filter(t -> to.props().types().contains(t));
+                    if (!toTypes.isEmpty()) typeIter = typeIter.filter(t -> toTypes.contains(t.properLabel()));
 
                     ResourceIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t));
                     if (to.props().hasIID()) iter = to.filterIID(iter, params);
@@ -563,9 +567,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                             if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
                             else iter = empty();
                         } else if (!to.props().types().isEmpty()) {
-                            PrefixIID prefix = PrefixIID.of(Encoding.Prefix.VERTEX_ATTRIBUTE);
                             iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
-                                    .flatMap(t -> owner.outs().edge(HAS, prefix, t.iid()).to())
+                                    .flatMap(t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to())
                                     .map(ThingVertex::asAttribute);
                         } else {
                             iter = owner.outs().edge(HAS).to().map(ThingVertex::asAttribute);
@@ -638,7 +641,17 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        return iterate(emptyIterator()); // TODO
+                        assert !to.props().hasIID() && to.props().predicates().isEmpty();
+                        ResourceIterator<ThingVertex> iter;
+                        ThingVertex player = fromVertex.asThing();
+                        Set<Label> toTypes = to.props().types();
+                        if (!toTypes.isEmpty()) {
+                            iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l))
+                                    .flatMap(t -> player.outs().edge(PLAYING, PrefixIID.of(VERTEX_ROLE), t.iid()).to());
+                        } else {
+                            iter = player.outs().edge(PLAYING).to();
+                        }
+                        return iter;
                     }
 
                     @Override
