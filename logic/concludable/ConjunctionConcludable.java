@@ -19,8 +19,8 @@ package grakn.core.logic.concludable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.logic.Rule;
+import grakn.core.logic.transform.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -30,9 +30,10 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.logic.transform.Unifier;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,8 +45,11 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U extends ConjunctionConcludable<CONSTRAINT, U>>
         extends Concludable<CONSTRAINT, U> {
 
+    private final Map<Rule, Set<Unifier>> applicableRules;
+
     private ConjunctionConcludable(CONSTRAINT constraint) {
         super(constraint);
+        applicableRules = new HashMap<>(); // TODO Implement
     }
 
     public static Set<ConjunctionConcludable<?, ?>> create(grakn.core.pattern.Conjunction conjunction) {
@@ -59,8 +63,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         );
     }
 
-    public Stream<Unifier> applicableRuleUnifiers() {
-        return Stream.empty(); // TODO This is the signiature we really want for findUnifiableRules
+    public Stream<Unifier> getUnifiers(Rule rule) {
+        return applicableRules.get(rule).stream();
+    }
+
+    public Stream<Rule> getApplicableRules() {
+        return applicableRules.keySet().stream();
     }
 
     private Stream<Unifier> unify(ThenConcludable<?, ?> unifyWith) {
@@ -215,10 +223,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Unifier> unify(ThenConcludable.Isa headIsa) {
-            Set<Label> possibleLabels = constraint().getTypeHints();
-            Set<Label> otherLabels = headIsa.constraint().getTypeHints();
-            possibleLabels.retainAll(otherLabels);
-            return Stream.of(new Unifier(this, headIsa, null)); // TODO Add variable mapping
+            return null;
         }
 
         @Override

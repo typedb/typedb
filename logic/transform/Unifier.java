@@ -18,33 +18,8 @@
 package grakn.core.logic.transform;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.Rule;
-import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.logic.concludable.HeadConcludable;
 
 public class Unifier implements ConceptMapTransformer {
-
-    private final ConjunctionConcludable<?, ?> fromConcludable;
-    private final HeadConcludable<?, ?> toConcludable;
-    private Rule rule;
-
-    public Unifier(ConjunctionConcludable<?, ?> fromConcludable, HeadConcludable<?, ?> toConcludable, Rule rule) {
-        this.fromConcludable = fromConcludable;
-        this.toConcludable = toConcludable;
-        this.rule = rule;
-    }
-
-    public ConjunctionConcludable<?, ?> fromConcludable() {
-        return fromConcludable;
-    }
-
-    public HeadConcludable<?, ?> toConcludable() {
-        return toConcludable;
-    }
-
-    public Rule rule() {
-        return rule;
-    }
 
     public static Unifier identity() {
         return null; // TODO A unifier that performs trivial mapping - unneeded now, remove.

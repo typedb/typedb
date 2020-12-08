@@ -109,10 +109,10 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
-        concludable.applicableRuleUnifiers().forEach(unifier -> {
-            Actor<RuleResolver> ruleActor = registry.registerRule(unifier.rule());
+        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
+            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
             ruleActorSources.put(unifier, ruleActor);
-        });
+        }));
     }
 
     private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
