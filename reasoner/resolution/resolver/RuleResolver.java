@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
-    public RuleResolver(Actor<RuleResolver> self, Conjunction when, Long traversalSize) {
-        super(self, RuleResolver.class.getSimpleName() + "(pattern:" + when + ")", when, traversalSize);
+    public RuleResolver(Actor<RuleResolver> self, Conjunction when, Long traversalAnswerCount) {
+        super(self, RuleResolver.class.getSimpleName() + "(pattern:" + when + ")", when, traversalAnswerCount);
     }
 
     @Override

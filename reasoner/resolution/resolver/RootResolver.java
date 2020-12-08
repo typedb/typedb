@@ -41,8 +41,8 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     private final Runnable onExhausted;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction,
-                        Long traversalSize, Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, traversalSize);
+                        Long traversalAnswerCount, Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, traversalAnswerCount);
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
     }

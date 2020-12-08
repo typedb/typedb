@@ -50,16 +50,16 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final Conjunction traversalPattern;
-    private final long traversalSize;
+    private final long traversalAnswerCount;
     private final List<Rule> rules;
     private final Map<Actor<RuleResolver>, Rule> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, Conjunction traversalPattern, List<Rule> rules, long traversalSize) {
+    public ConcludableResolver(Actor<ConcludableResolver> self, Conjunction traversalPattern, List<Rule> rules, long traversalAnswerCount) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + traversalPattern + ")");
         this.traversalPattern = traversalPattern;
-        this.traversalSize = traversalSize;
+        this.traversalAnswerCount = traversalAnswerCount;
         this.rules = rules;
         ruleActorSources = new HashMap<>();
         receivedConceptMaps = new HashSet<>();
@@ -102,7 +102,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(traversalPattern, request.partialConceptMap().map());
+        Iterator<ConceptMap> traversal = (new MockTransaction(traversalAnswerCount)).query(traversalPattern, request.partialConceptMap().map());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
         if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {

@@ -54,7 +54,7 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public Pair<Actor<ConcludableResolver>, Unifier> registerConcludable(ConjunctionConcludable<?, ?> concludable, List<Rule> rules, long traversalSize) {
+    public Pair<Actor<ConcludableResolver>, Unifier> registerConcludable(ConjunctionConcludable<?, ?> concludable, List<Rule> rules, long traversalAnswerCount) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
 
         final Optional<Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>> alphaEquivalencePair = concludableActorsMap.keySet().stream()
@@ -69,7 +69,7 @@ public class ResolverRegistry {
             unifier = Unifier.fromVariableMapping(alphaEquivalencePair.get().second().asValid().map());
         } else {
             // Create a new ConcludableActor
-            concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable.conjunction(), rules, traversalSize));
+            concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable.conjunction(), rules, traversalAnswerCount));
             concludableActorsMap.put(concludable, concludableActor);
             final Set<Variable> vars = new HashSet<>(concludable.constraint().variables());
             unifier = Unifier.identity(vars);
@@ -77,9 +77,9 @@ public class ResolverRegistry {
         return new Pair<>(concludableActor, unifier);
     }
 
-    public Actor<RuleResolver> registerRule(Rule rule, long traversalSize) {
+    public Actor<RuleResolver> registerRule(Rule rule, long traversalAnswerCount) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (p) -> Actor.create(elg, self -> new RuleResolver(self, p.when(), traversalSize)));
+        return rules.computeIfAbsent(rule, (p) -> Actor.create(elg, self -> new RuleResolver(self, p.when(), traversalAnswerCount)));
     }
 
     public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {

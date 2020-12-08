@@ -51,20 +51,20 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     final Conjunction conjunction;
     Actor<ResolutionRecorder> resolutionRecorder;
-    private final Long traversalSize;
+    private final Long traversalAnswerCount;
     private final List<Pair<Actor<ConcludableResolver>, Unifier>> plannedConcludables;
 
-    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Long traversalSize) {
+    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Long traversalAnswerCount) {
         super(self, name);
 
         this.conjunction = conjunction;
-        this.traversalSize = traversalSize;
+        this.traversalAnswerCount = traversalAnswerCount;
         this.plannedConcludables = new ArrayList<>();
     }
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(conjunction, new ConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(traversalAnswerCount)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), UnifiedConceptMap.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
