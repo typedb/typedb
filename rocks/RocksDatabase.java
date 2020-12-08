@@ -152,6 +152,12 @@ public class RocksDatabase implements Grakn.Database {
         return cache;
     }
 
+    synchronized void unborrowCache(Cache cache) {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+
+        cache.unborrow();
+    }
+
     synchronized void invalidateCache() {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
 
@@ -295,21 +301,21 @@ public class RocksDatabase implements Grakn.Database {
             return schemaGraph;
         }
 
-        private synchronized void borrow() {
+        private void borrow() {
             borrowerCount++;
         }
 
-        synchronized void unborrow() {
+        private void unborrow() {
             borrowerCount--;
             mayClose();
         }
 
-        private synchronized void invalidate() {
+        private void invalidate() {
             invalidated = true;
             mayClose();
         }
 
-        private synchronized void mayClose() {
+        private void mayClose() {
             if (borrowerCount == 0 && invalidated) {
                 schemaStorage.close();
             }

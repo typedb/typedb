@@ -327,7 +327,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         void closeStorage() {
-            cache.unborrow();
+            session.database.unborrowCache(cache);
             dataStorage.close();
         }
     }
