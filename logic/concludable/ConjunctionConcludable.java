@@ -15,11 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.concludable;
+package grakn.core.logic.concludable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
+import grakn.core.logic.Rule;
+import grakn.core.logic.Unification;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -27,8 +29,6 @@ import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.Implication;
-import grakn.core.reasoner.Unification;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -50,11 +50,10 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public Stream<Pair<Implication, Unification>> findUnifiableImplications(Stream<Implication> allImplications) {
-        return allImplications.flatMap(implication -> implication.head().stream()
-                .flatMap(this::unify)
-                .map(unifiedBase -> new Pair<>(implication, unifiedBase)
-                ));
+    public Stream<Pair<Rule, Unification>> findUnifiableRules(Stream<Rule> allRules) {
+        return allRules.flatMap(rule -> rule.head().stream()
+                                               .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
+        );
     }
 
     private Stream<Unification> unify(HeadConcludable<?, ?> unifyWith) {

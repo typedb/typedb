@@ -20,7 +20,7 @@ load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_
 load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment_private", "deployment")
+load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 
@@ -72,6 +72,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//:grakn",
         "//concept:concept",
+        "//logic:logic",
         "//query:query",
         "//rocks:rocks",
     ],
@@ -212,8 +213,8 @@ deploy_artifact(
     target = ":assemble-linux-targz",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-linux-{version}.tar.gz",
-    release = deployment_private['artifact.release'],
-    snapshot = deployment_private['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
 )
 
 deploy_artifact(
@@ -221,8 +222,8 @@ deploy_artifact(
     target = ":assemble-mac-zip",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-mac-{version}.tar.gz",
-    release = deployment_private['artifact.release'],
-    snapshot = deployment_private['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
 )
 
 deploy_artifact(
@@ -230,8 +231,8 @@ deploy_artifact(
     target = ":assemble-windows-zip",
     artifact_group = "graknlabs_grakn_core",
     artifact_name = "grakn-core-server-windows-{version}.tar.gz",
-    release = deployment_private['artifact.release'],
-    snapshot = deployment_private['artifact.snapshot'],
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
 )
 
 assemble_apt(

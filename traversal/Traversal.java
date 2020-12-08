@@ -160,7 +160,7 @@ public class Traversal {
         structure.thingVertex(thing).props().hasIID(true);
     }
 
-    public void types(Identifier.Variable thing, Set<Label> labels) {
+    public void types(Identifier thing, Set<Label> labels) {
         structure.thingVertex(thing).props().types(labels);
     }
 
@@ -185,45 +185,45 @@ public class Traversal {
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
-        Predicate.Value.String predicate = new Predicate.Value.String(token);
+        Predicate.Value.SubString predicate = Predicate.Value.SubString.of(token);
         structure.thingVertex(attribute).props().predicate(predicate);
-        if (token == LIKE) parameters.pushValue(attribute, predicate, Pattern.compile(value));
-        else parameters.pushValue(attribute, predicate, value);
+        if (token == LIKE) parameters.pushValue(attribute, predicate, new Parameters.Value(Pattern.compile(value)));
+        else parameters.pushValue(attribute, predicate, new Parameters.Value(value));
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Boolean value) {
-        Predicate.Value.Boolean predicate = new Predicate.Value.Boolean(token);
-        parameters.pushValue(attribute, predicate, value);
+        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.BOOLEAN);
+        parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Long value) {
-        Predicate.Value.Long predicate = new Predicate.Value.Long(token);
-        parameters.pushValue(attribute, predicate, value);
+        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.LONG);
+        parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Double value) {
-        Predicate.Value.Double predicate = new Predicate.Value.Double(token);
-        parameters.pushValue(attribute, predicate, value);
+        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.DOUBLE);
+        parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
-        Predicate.Value.DateTime predicate = new Predicate.Value.DateTime(token);
-        parameters.pushValue(attribute, predicate, value);
+        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.DATETIME);
+        parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality token, Identifier.Variable att2) {
-        Predicate.Variable predicate = new Predicate.Variable(token);
+        Predicate.Variable predicate = Predicate.Variable.of(token);
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iid;
-        private final Map<Pair<Identifier, Predicate<?>>, Set<Value>> values;
+        private final Map<Pair<Identifier, Predicate.Value<?>>, Set<Value>> values;
 
         public Parameters() {
             iid = new HashMap<>();
@@ -234,35 +234,15 @@ public class Traversal {
             this.iid.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Value.Boolean predicate, boolean value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
-        }
-
-        public void pushValue(Identifier.Variable identifier, Predicate.Value.Long predicate, long value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
-        }
-
-        public void pushValue(Identifier.Variable identifier, Predicate.Value.Double predicate, double value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
-        }
-
-        public void pushValue(Identifier.Variable identifier, Predicate.Value.DateTime predicate, LocalDateTime value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
-        }
-
-        public void pushValue(Identifier.Variable identifier, Predicate.Value.String predicate, String value) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(value));
-        }
-
-        public void pushValue(Identifier.Variable identifier, Predicate.Value.String predicate, Pattern regex) {
-            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(new Value(regex));
+        public void pushValue(Identifier.Variable identifier, Predicate.Value<?> predicate, Value value) {
+            values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(value);
         }
 
         public VertexIID.Thing getIID(Identifier.Variable identifier) {
             return iid.get(identifier);
         }
 
-        public Set<Value> getValues(Identifier.Variable identifier, Predicate<?> predicate) {
+        public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {
             return values.get(pair(identifier, predicate));
         }
 

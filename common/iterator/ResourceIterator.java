@@ -74,6 +74,11 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return this.filter(Objects::nonNull);
     }
 
+    default T firstOrNull() {
+        if (hasNext()) return next();
+        else return null;
+    }
+
     default Stream<T> stream() {
         return StreamSupport.stream(
                 spliteratorUnknownSize(this, ORDERED | IMMUTABLE), false

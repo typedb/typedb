@@ -38,10 +38,10 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -51,6 +51,7 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
@@ -111,6 +112,7 @@ public class SchemaGraph implements Graph {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
         }
+
 
     }
 
@@ -186,6 +188,11 @@ public class SchemaGraph implements Graph {
 
     public ResourceIterator<TypeVertex> roleTypes() {
         return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
+    }
+
+    public ResourceIterator<TypeVertex> superTypes(TypeVertex vertex) {
+        return loop(vertex, Objects::nonNull,
+                    v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(vertex.encoding())).firstOrNull());
     }
 
     public ResourceIterator<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {
@@ -448,50 +455,71 @@ public class SchemaGraph implements Graph {
     public class Statistics {
 
         private static final int UNSET_COUNT = -1;
-        private final AtomicInteger abstractTypeCount;
-        private final AtomicInteger thingTypeCount;
-        private final AtomicInteger attributeTypeCount;
-        private final AtomicInteger relationTypeCount;
-        private final AtomicInteger roleTypeCount;
+        private volatile int abstractTypeCount;
+        private volatile int thingTypeCount;
+        private volatile int attributeTypeCount;
+        private volatile int relationTypeCount;
+        private volatile int roleTypeCount;
         private final ConcurrentMap<TypeVertex, Long> subTypesDepth;
         private final ConcurrentMap<Pair<TypeVertex, Boolean>, Long> subTypesCount;
         private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
 
         private Statistics() {
-            abstractTypeCount = new AtomicInteger(UNSET_COUNT);
-            thingTypeCount = new AtomicInteger(UNSET_COUNT);
-            attributeTypeCount = new AtomicInteger(UNSET_COUNT);
-            relationTypeCount = new AtomicInteger(UNSET_COUNT);
-            roleTypeCount = new AtomicInteger(UNSET_COUNT);
+            abstractTypeCount = UNSET_COUNT;
+            thingTypeCount = UNSET_COUNT;
+            attributeTypeCount = UNSET_COUNT;
+            relationTypeCount = UNSET_COUNT;
+            roleTypeCount = UNSET_COUNT;
             subTypesDepth = new ConcurrentHashMap<>();
             subTypesCount = new ConcurrentHashMap<>();
             attTypesWithValueType = new ConcurrentHashMap<>();
         }
 
         public long abstractTypeCount() {
-            return typeCount(abstractTypeCount, () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count()));
+            Supplier<Integer> function = () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count());
+            if (isReadOnly) {
+                if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = function.get();
+                return abstractTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long thingTypeCount() {
-            return typeCount(thingTypeCount, () -> toIntExact(thingTypes().stream().count()));
+            Supplier<Integer> function = () -> toIntExact(thingTypes().stream().count());
+            if (isReadOnly) {
+                if (thingTypeCount == UNSET_COUNT) thingTypeCount = function.get();
+                return thingTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long relationTypeCount() {
-            return typeCount(relationTypeCount, () -> toIntExact(relationTypes().stream().count()));
+            Supplier<Integer> function = () -> toIntExact(relationTypes().stream().count());
+            if (isReadOnly) {
+                if (relationTypeCount == UNSET_COUNT) relationTypeCount = function.get();
+                return relationTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long roleTypeCount() {
-            return typeCount(roleTypeCount, () -> toIntExact(roleTypes().stream().count()));
+            Supplier<Integer> function = () -> toIntExact(roleTypes().stream().count());
+            if (isReadOnly) {
+                if (roleTypeCount == UNSET_COUNT) roleTypeCount = function.get();
+                return roleTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long attributeTypeCount() {
-            return typeCount(attributeTypeCount, () -> toIntExact(attributeTypes().stream().count()));
-        }
-
-        private int typeCount(AtomicInteger cache, Supplier<Integer> function) {
+            Supplier<Integer> function = () -> toIntExact(attributeTypes().stream().count());
             if (isReadOnly) {
-                cache.compareAndSet(UNSET_COUNT, function.get());
-                return cache.get();
+                if (attributeTypeCount == UNSET_COUNT) attributeTypeCount = function.get();
+                return attributeTypeCount;
             } else {
                 return function.get();
             }

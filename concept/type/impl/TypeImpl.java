@@ -43,7 +43,6 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
-import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
@@ -141,15 +140,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(Function<TypeVertex, TYPE> typeConstructor) {
-        return loop(
-                vertex,
-                v -> v != null && v.encoding().equals(this.vertex.encoding()),
-                v -> {
-                    final ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
-                    if (p.hasNext()) return p.next();
-                    else return null;
-                }
-        ).map(typeConstructor).stream();
+        return graphMgr.schema().superTypes(vertex).map(typeConstructor).stream();
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {

@@ -192,9 +192,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final EdgeIID.Thing inIID;
         private final VertexIID.Thing fromIID;
         private final VertexIID.Thing toIID;
+        private final int hash;
         private ThingVertex from;
         private ThingVertex to;
-        private int hash;
 
         /**
          * Default constructor for {@code Edge.Persisted}.

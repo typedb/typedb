@@ -49,16 +49,28 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.util.Objects.className;
-import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.bytesToLong;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
+import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ENTITY_TYPE;
+import static grakn.core.graph.util.Encoding.Prefix.VERTEX_RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.StatisticsCountJobValue.CREATED;
+import static grakn.core.graph.util.Encoding.StatisticsCountJobValue.DELETED;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.util.StatisticsBytes.attributeCountJobKey;
+import static grakn.core.graph.util.StatisticsBytes.attributeCountedKey;
+import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountJobKey;
+import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountKey;
+import static grakn.core.graph.util.StatisticsBytes.hasEdgeTotalCountKey;
+import static grakn.core.graph.util.StatisticsBytes.vertexCountKey;
+import static grakn.core.graph.util.StatisticsBytes.vertexTransitiveCountKey;
 import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
@@ -560,22 +572,22 @@ public class DataGraph implements Graph {
         }
 
         public void attributeVertexCreated(VertexIID.Attribute<?> attIID) {
-            attributeVertexCountJobs.put(attIID, Encoding.StatisticsCountJobValue.CREATED);
+            attributeVertexCountJobs.put(attIID, CREATED);
             needsBackgroundCounting = true;
         }
 
         public void attributeVertexDeleted(VertexIID.Attribute<?> attIID) {
-            attributeVertexCountJobs.put(attIID, Encoding.StatisticsCountJobValue.DELETED);
+            attributeVertexCountJobs.put(attIID, DELETED);
             needsBackgroundCounting = true;
         }
 
         public void hasEdgeCreated(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            hasEdgeCountJobs.put(pair(thingIID, attIID), Encoding.StatisticsCountJobValue.CREATED);
+            hasEdgeCountJobs.put(pair(thingIID, attIID), CREATED);
             needsBackgroundCounting = true;
         }
 
         public void hasEdgeDeleted(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            hasEdgeCountJobs.put(pair(thingIID, attIID), Encoding.StatisticsCountJobValue.DELETED);
+            hasEdgeCountJobs.put(pair(thingIID, attIID), DELETED);
             needsBackgroundCounting = true;
         }
 
@@ -599,7 +611,7 @@ public class DataGraph implements Graph {
             if (isTransitive) {
                 return persistedVertexTransitiveCount.computeIfAbsent(typeIID, iid -> {
                     if (isRootTypeIID(typeIID)) {
-                        final byte[] val = storage.get(StatisticsBytes.vertexTransitiveCountKey(typeIID));
+                        final byte[] val = storage.get(vertexTransitiveCountKey(typeIID));
                         return val == null ? 0 : bytesToLong(val);
                     } else {
                         ResourceIterator<TypeVertex> subTypes = schemaGraph.subTypes(typeIID, false);
@@ -614,7 +626,7 @@ public class DataGraph implements Graph {
                 });
             } else {
                 return persistedVertexCount.computeIfAbsent(typeIID, iid -> {
-                    final byte[] val = storage.get(StatisticsBytes.vertexCountKey(typeIID));
+                    final byte[] val = storage.get(vertexCountKey(typeIID));
                     return val == null ? 0 : bytesToLong(val);
                 });
             }
@@ -622,7 +634,7 @@ public class DataGraph implements Graph {
 
         private long persistedHasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
             return persistedHasEdgeCount.computeIfAbsent(pair(thingTypeIID, attTypeIID), iid -> {
-                final byte[] val = storage.get(StatisticsBytes.hasEdgeCountKey(thingTypeIID, attTypeIID));
+                final byte[] val = storage.get(hasEdgeCountKey(thingTypeIID, attTypeIID));
                 return val == null ? 0 : bytesToLong(val);
             });
         }
@@ -630,7 +642,7 @@ public class DataGraph implements Graph {
         private long persistedHasEdgeTotalCount(VertexIID.Type rootTypeIID) {
             if (isRootTypeIID(rootTypeIID)) {
                 return persistedHasEdgeTotalCount.computeIfAbsent(rootTypeIID, iid -> {
-                    final byte[] val = storage.get(StatisticsBytes.hasEdgeTotalCountKey(rootTypeIID));
+                    final byte[] val = storage.get(hasEdgeTotalCountKey(rootTypeIID));
                     return val == null ? 0 : bytesToLong(val);
                 });
             } else if (rootTypeIID.equals(schemaGraph.rootThingType().iid())) {
@@ -652,19 +664,21 @@ public class DataGraph implements Graph {
 
         private void commit() {
             deltaVertexCount.forEach((typeIID, delta) -> {
-                storage.mergeUntracked(StatisticsBytes.vertexCountKey(typeIID), longToBytes(delta));
-                if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.vertexTransitiveCountKey(schemaGraph.rootEntityType().iid()), longToBytes(delta));
-                } else if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.vertexTransitiveCountKey(schemaGraph.rootRelationType().iid()), longToBytes(delta));
+                storage.mergeUntracked(vertexCountKey(typeIID), longToBytes(delta));
+                if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
+                    storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootEntityType().iid()), longToBytes(delta));
+                } else if (typeIID.encoding().prefix() == VERTEX_RELATION_TYPE) {
+                    storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootRelationType().iid()), longToBytes(delta));
                 } else if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_ROLE_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.vertexTransitiveCountKey(schemaGraph.rootRoleType().iid()), longToBytes(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootRoleType().iid()), longToBytes(delta));
                 }
             });
-            attributeVertexCountJobs.forEach((attIID, countWorkValue) ->
-                    storage.putUntracked(StatisticsBytes.attributeCountJobKey(attIID), countWorkValue.bytes()));
-            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) ->
-                    storage.putUntracked(StatisticsBytes.hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()));
+            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putUntracked(
+                    attributeCountJobKey(attIID), countWorkValue.bytes()
+            ));
+            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putUntracked(
+                    hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()
+            ));
         }
 
         private void clear() {
@@ -693,9 +707,9 @@ public class DataGraph implements Graph {
 
         private void processAttributeCountJob(CountJob countJob) {
             VertexIID.Attribute<?> attIID = countJob.asAttribute().attIID();
-            if (countJob.value() == Encoding.StatisticsCountJobValue.CREATED) {
+            if (countJob.value() == CREATED) {
                 processAttributeCreatedCountJob(attIID);
-            } else if (countJob.value() == Encoding.StatisticsCountJobValue.DELETED) {
+            } else if (countJob.value() == DELETED) {
                 processAttributeDeletedCountJob(attIID);
             } else {
                 assert false;
@@ -703,29 +717,29 @@ public class DataGraph implements Graph {
         }
 
         private void processAttributeCreatedCountJob(VertexIID.Attribute<?> attIID) {
-            byte[] counted = storage.get(StatisticsBytes.attributeCountedKey(attIID));
+            byte[] counted = storage.get(attributeCountedKey(attIID));
             if (counted == null) {
-                storage.mergeUntracked(StatisticsBytes.vertexCountKey(attIID.type()), longToBytes(1));
-                storage.mergeUntracked(StatisticsBytes.vertexTransitiveCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(1));
-                storage.put(StatisticsBytes.attributeCountedKey(attIID));
+                storage.mergeUntracked(vertexCountKey(attIID.type()), longToBytes(1));
+                storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(1));
+                storage.put(attributeCountedKey(attIID));
             }
         }
 
         private void processAttributeDeletedCountJob(VertexIID.Attribute<?> attIID) {
-            byte[] counted = storage.get(StatisticsBytes.attributeCountedKey(attIID));
+            byte[] counted = storage.get(attributeCountedKey(attIID));
             if (counted != null) {
-                storage.mergeUntracked(StatisticsBytes.vertexCountKey(attIID.type()), longToBytes(-1));
-                storage.mergeUntracked(StatisticsBytes.vertexTransitiveCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(-1));
-                storage.delete(StatisticsBytes.attributeCountedKey(attIID));
+                storage.mergeUntracked(vertexCountKey(attIID.type()), longToBytes(-1));
+                storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(-1));
+                storage.delete(attributeCountedKey(attIID));
             }
         }
 
         private void processHasEdgeCountJob(CountJob countJob) {
             VertexIID.Thing thingIID = countJob.asHasEdge().thingIID();
             VertexIID.Attribute<?> attIID = countJob.asHasEdge().attIID();
-            if (countJob.value() == Encoding.StatisticsCountJobValue.CREATED) {
+            if (countJob.value() == CREATED) {
                 processHasEdgeCreatedCountJob(thingIID, attIID);
-            } else if (countJob.value() == Encoding.StatisticsCountJobValue.DELETED) {
+            } else if (countJob.value() == DELETED) {
                 processHasEdgeDeletedCountJob(thingIID, attIID);
             } else {
                 assert false;
@@ -735,13 +749,13 @@ public class DataGraph implements Graph {
         private void processHasEdgeCreatedCountJob(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
             byte[] counted = storage.get(StatisticsBytes.hasEdgeCountedKey(thingIID, attIID));
             if (counted == null) {
-                storage.mergeUntracked(StatisticsBytes.hasEdgeCountKey(thingIID.type(), attIID.type()), longToBytes(1));
-                if (thingIID.type().encoding().prefix() == Encoding.Prefix.VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.hasEdgeTotalCountKey(schemaGraph.rootEntityType().iid()), longToBytes(1));
-                } else if (thingIID.type().encoding().prefix() == Encoding.Prefix.VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.hasEdgeTotalCountKey(schemaGraph.rootRelationType().iid()), longToBytes(1));
-                } else if (thingIID.type().encoding().prefix() == Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.hasEdgeTotalCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(1));
+                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()), longToBytes(1));
+                if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
+                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootEntityType().iid()), longToBytes(1));
+                } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
+                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootRelationType().iid()), longToBytes(1));
+                } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
+                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(1));
                 }
                 storage.put(StatisticsBytes.hasEdgeCountedKey(thingIID, attIID));
             }
@@ -750,13 +764,13 @@ public class DataGraph implements Graph {
         private void processHasEdgeDeletedCountJob(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
             byte[] counted = storage.get(StatisticsBytes.hasEdgeCountedKey(thingIID, attIID));
             if (counted != null) {
-                storage.mergeUntracked(StatisticsBytes.hasEdgeCountKey(thingIID.type(), attIID.type()), longToBytes(-1));
-                if (thingIID.type().encoding().prefix() == Encoding.Prefix.VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.hasEdgeTotalCountKey(schemaGraph.rootEntityType().iid()), longToBytes(-1));
-                } else if (thingIID.type().encoding().prefix() == Encoding.Prefix.VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.hasEdgeTotalCountKey(schemaGraph.rootRelationType().iid()), longToBytes(-1));
-                } else if (thingIID.type().encoding().prefix() == Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(StatisticsBytes.hasEdgeTotalCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(-1));
+                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()), longToBytes(-1));
+                if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
+                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootEntityType().iid()), longToBytes(-1));
+                } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
+                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootRelationType().iid()), longToBytes(-1));
+                } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
+                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(-1));
                 }
                 storage.delete(StatisticsBytes.hasEdgeCountedKey(thingIID, attIID));
             }
@@ -827,7 +841,8 @@ public class DataGraph implements Graph {
                 private final VertexIID.Thing thingIID;
                 private final VertexIID.Attribute<?> attIID;
 
-                private HasEdge(byte[] key, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID, Encoding.StatisticsCountJobValue value) {
+                private HasEdge(byte[] key, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID,
+                                Encoding.StatisticsCountJobValue value) {
                     super(key, value);
                     this.thingIID = thingIID;
                     this.attIID = attIID;

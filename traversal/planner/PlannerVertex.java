@@ -37,8 +37,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     final Planner planner;
 
-    private final String varPrefix = "vertex::var::" + identifier() + "::";
-    private final String conPrefix = "vertex::con::" + identifier() + "::";
+    private final String varPrefix = "vertex::var::" + id() + "::";
+    private final String conPrefix = "vertex::con::" + id() + "::";
     private int valueIsStartingVertex;
     private int valueIsEndingVertex;
     private int valueHasIncomingEdges;

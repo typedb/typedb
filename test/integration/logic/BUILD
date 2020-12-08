@@ -19,13 +19,14 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
-    name = "test-basic",
-    srcs = ["BasicTest.java"],
-    test_class = "grakn.core.test.integration.BasicTest",
+    name = "test-rule",
+    srcs = ["RuleTest.java"],
+    test_class = "grakn.core.logic.RuleTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
         "//concept:concept",
+        "//pattern:pattern",
         "//logic:logic",
     ],
     deps = [
@@ -34,24 +35,24 @@ host_compatible_java_test(
         "//common:common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
     ],
     resources = [
         "//common/test:logback"
     ],
     resource_strip_prefix = "common/test",
-    size = "large",
 )
 
 host_compatible_java_test(
-    name = "test-query",
-    srcs = ["QueryTest.java"],
-    test_class = "grakn.core.test.integration.QueryTest",
+    name = "test-type-hinter",
+    srcs = ["TypeHinterTest.java"],
+    test_class = "grakn.core.logic.TypeHinterTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
         "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
     ],
     deps = [
         # Internal dependencies
@@ -61,8 +62,9 @@ host_compatible_java_test(
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
     ],
-    data = [":schema.gql"],
+    data = [":basic-schema.gql"],
 )
 
 checkstyle_test(

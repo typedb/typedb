@@ -48,6 +48,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
+        "//logic:logic",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],

@@ -7,13 +7,14 @@
 /dependencies              @haikalpribadi
 /docs                      @haikalpribadi
 /graph                     @haikalpribadi
+/logic                     @flyingsilverfin
 /pattern                   @haikalpribadi
 /query                     @haikalpribadi
 /reasoner                  @flyingsilverfin
 /rocks                     @haikalpribadi
 /server                    @haikalpribadi
 /test                      @haikalpribadi
-/test/integration/reasoner @flyingsilverfin
+/test/integration/logic    @flyingsilverfin
 /traversal                 @haikalpribadi
 
 

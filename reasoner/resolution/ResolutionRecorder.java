@@ -32,8 +32,8 @@ import java.util.Objects;
 public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
 
-    Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
-    Map<AnswerIndex, Answer> answers;
+    private final Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
+    private final Map<AnswerIndex, Answer> answers;
 
     public ResolutionRecorder(final Actor<ResolutionRecorder> self) {
         super(self);

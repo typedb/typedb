@@ -41,6 +41,7 @@ java_test(
     ],
     data = ["@graknlabs_grakn_core_workspace_refs//:refs.json", "//:VERSION"],
     tags = ["no-sandbox"],
+    size = "large",
 )
 
 java_test(

@@ -31,7 +31,6 @@ import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -55,6 +54,8 @@ import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
 
+    private static final int UNSET_COUNT = -1;
+
     final SchemaGraph graph;
     final AtomicBoolean isDeleted;
     final TypeAdjacency outs;
@@ -65,11 +66,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     Encoding.ValueType valueType;
     Pattern regex;
 
-    private final AtomicInteger outOwnsCount;
-    private final AtomicInteger outPlaysCount;
-    private final AtomicInteger outRelatesCount;
-    private final AtomicInteger inOwnsCount;
-    private final AtomicInteger inPlaysCount;
+    private volatile int outOwnsCount;
+    private volatile int outPlaysCount;
+    private volatile int outRelatesCount;
+    private volatile int inOwnsCount;
+    private volatile int inPlaysCount;
 
     TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(iid);
@@ -80,11 +81,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         this.isDeleted = new AtomicBoolean(false);
         this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
         this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
-        outOwnsCount = new AtomicInteger(-1);
-        outPlaysCount = new AtomicInteger(-1);
-        outRelatesCount = new AtomicInteger(-1);
-        inOwnsCount = new AtomicInteger(-1);
-        inPlaysCount = new AtomicInteger(-1);
+        outOwnsCount = UNSET_COUNT;
+        outPlaysCount = UNSET_COUNT;
+        outRelatesCount = UNSET_COUNT;
+        inOwnsCount = UNSET_COUNT;
+        inPlaysCount = UNSET_COUNT;
     }
 
 
@@ -177,39 +178,60 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public int outOwnsCount(boolean isKey) {
-        return edgeCount(outOwnsCount, () -> {
+        Supplier<Integer> function = () -> {
             if (isKey) return toIntExact(outs.edge(OWNS_KEY).to().stream().count());
             else return toIntExact(link(list(outs.edge(OWNS).to(), outs.edge(OWNS_KEY).to())).stream().count());
-        });
+        };
+        if (graph.isReadOnly()) {
+            if (outOwnsCount == UNSET_COUNT) outOwnsCount = function.get();
+            return outOwnsCount;
+        } else {
+            return function.get();
+        }
     }
 
     @Override
     public int inOwnsCount(boolean isKey) {
-        return edgeCount(inOwnsCount, () -> {
+        Supplier<Integer> function = () -> {
             if (isKey) return toIntExact(ins.edge(OWNS_KEY).from().stream().count());
             else return toIntExact(link(list(ins.edge(OWNS).from(), ins.edge(OWNS_KEY).from())).stream().count());
-        });
+        };
+        if (graph.isReadOnly()) {
+            if (inOwnsCount == UNSET_COUNT) inOwnsCount = function.get();
+            return inOwnsCount;
+        } else {
+            return function.get();
+        }
     }
 
     @Override
     public int outPlaysCount() {
-        return edgeCount(outPlaysCount, () -> toIntExact(outs.edge(PLAYS).to().stream().count()));
+        Supplier<Integer> function = () -> toIntExact(outs.edge(PLAYS).to().stream().count());
+        if (graph.isReadOnly()) {
+            if (outPlaysCount == UNSET_COUNT) outPlaysCount = function.get();
+            return outPlaysCount;
+        } else {
+            return function.get();
+        }
     }
 
     @Override
     public int inPlaysCount() {
-        return edgeCount(inPlaysCount, () -> toIntExact(ins.edge(PLAYS).from().stream().count()));
+        Supplier<Integer> function = () -> toIntExact(ins.edge(PLAYS).from().stream().count());
+        if (graph.isReadOnly()) {
+            if (inPlaysCount == UNSET_COUNT) inPlaysCount = function.get();
+            return inPlaysCount;
+        } else {
+            return function.get();
+        }
     }
 
     @Override
     public int outRelatesCount() {
-        return edgeCount(outRelatesCount, () -> toIntExact(outs.edge(RELATES).to().stream().count()));
-    }
-
-    private int edgeCount(AtomicInteger cache, Supplier<Integer> function) {
+        Supplier<Integer> function = () -> toIntExact(outs.edge(RELATES).to().stream().count());
         if (graph.isReadOnly()) {
-            cache.compareAndSet(-1, function.get());
-            return cache.get();
+            if (outRelatesCount == UNSET_COUNT) outRelatesCount = function.get();
+            return outRelatesCount;
         } else {
             return function.get();
         }

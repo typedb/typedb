@@ -16,62 +16,67 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
-
-host_compatible_java_test(
-    name = "test-implication",
-    srcs = ["ImplicationTest.java"],
-    test_class = "grakn.core.reasoner.ImplicationTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//reasoner:reasoner",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-    ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
+package(
+    default_visibility = [
+        "//:__pkg__",
+        "//rocks:__pkg__",
+        "//reasoner:__pkg__",
+        "//test:__subpackages__",
+    ]
 )
 
-host_compatible_java_test(
-    name = "test-type-hinter",
-    srcs = ["TypeHinterTest.java"],
-    test_class = "grakn.core.reasoner.TypeHinterTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-        "//reasoner:reasoner",
-        "//pattern:pattern",
-    ],
+native_java_libraries(
+    name = "logic",
+    srcs = glob(["*.java", "**/*.java"], exclude = ["concludable/ConcludableTest.java"]),
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
         "//common:common",
+        "//graph:graph",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
+        # Internal Repository Dependencies
         "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common:common",
+        "@graknlabs_graql//java/pattern:pattern",
+
+        # External Maven Dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
-    data = [":basic-schema.gql"],
+    native_libraries_deps = [
+        "//concept:concept",
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-logic:{pom_version}"],
+    visibility = ["//visibility:public"],
 )
+
+
+host_compatible_java_test(
+    name = "test-concludable",
+    srcs = [
+        "concludable/ConcludableTest.java",
+    ],
+    test_class = "grakn.core.logic.concludable.ConcludableTest",
+    native_libraries_deps = [
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    deps = [
+        # Internal dependencies
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common",
+        "@graknlabs_graql//java/pattern",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob([
-        "*",
-        "reasoner/*",
-    ]),
+    include = glob(["*", "*/*"]),
     license_type = "agpl",
 )

@@ -427,6 +427,8 @@ public class Encoding {
         STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
         DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
 
+        public static final double DOUBLE_PRECISION = 0.0000000000000001;
+
         private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),

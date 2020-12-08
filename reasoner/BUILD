@@ -30,23 +30,22 @@ native_java_libraries(
     name = "reasoner",
     srcs = glob(
         ["*.java",
-         "concludable/*.java",
          "resolution/*.java",
          "resolution/framework/*.java",
          "resolution/resolver/*.java",
-         "tool/*.java",
          ],
         exclude = ["*Test.java", "*/*Test.java"],
     ),
     native_libraries_deps = [
         "//concept:concept",
+        "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
     deps = [
         # Internal dependencies
         "//common",
-        "//graph",
+        "//graph", # TODO: this is bad and needs to go
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
@@ -81,27 +80,6 @@ host_compatible_java_test(
         "//common/test:logback"
     ],
     resource_strip_prefix = "common/test",
-)
-
-host_compatible_java_test(
-    name = "test-concludable",
-    srcs = [
-        "concludable/ConcludableTest.java",
-    ],
-    test_class = "grakn.core.reasoner.concludable.ConcludableTest",
-    deps = [
-        # Internal dependencies
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_graql//java:graql",
-    ],
-    native_libraries_deps = [
-        "//pattern:pattern",
-        "//reasoner:reasoner",
-    ],
 )
 
 checkstyle_test(

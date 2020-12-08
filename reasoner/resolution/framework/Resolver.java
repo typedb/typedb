@@ -30,10 +30,10 @@ import java.util.Map;
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    protected String name;
-    private boolean isInitialised;
+    protected final String name;
     private final Map<Request, ResponseProducer> responseProducers;
     private final Map<Request, Request> requestRouter;
+    private boolean isInitialised;
 
     public Resolver(Actor<T> self, String name) {
         super(self);
