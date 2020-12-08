@@ -552,28 +552,27 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        ResourceIterator<AttributeVertex<?>> iterator;
+                        ResourceIterator<AttributeVertex<?>> iter;
+                        ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
                             VertexIID.Thing iid = params.getIID(to.id().asVariable());
-                            assert iid.isAttribute();
-                            AttributeVertex<?> toVertex = graphMgr.data().get(iid.asAttribute());
-                            if (toVertex != null && fromVertex.asThing().outs().edge(HAS, toVertex) != null) {
-                                iterator = single(toVertex);
-                            } else {
-                                iterator = Iterators.empty();
-                            }
+                            AttributeVertex<?> att;
+                            if (!iid.isAttribute()) att = null;
+                            else att = graphMgr.data().get(iid.asAttribute());
+                            if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
+                            else iter = Iterators.empty();
                         } else if (!to.props().types().isEmpty()) {
                             PrefixIID prefix = PrefixIID.of(Encoding.Prefix.VERTEX_ATTRIBUTE);
-                            iterator = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
-                                    .flatMap(t -> fromVertex.asThing().outs().edge(HAS, prefix, t.iid()).to())
+                            iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                    .flatMap(t -> owner.outs().edge(HAS, prefix, t.iid()).to())
                                     .map(ThingVertex::asAttribute);
                         } else {
-                            iterator = fromVertex.asThing().outs().edge(HAS).to().map(ThingVertex::asAttribute);
+                            iter = owner.outs().edge(HAS).to().map(ThingVertex::asAttribute);
                         }
 
-                        if (!to.props().predicates().isEmpty()) iterator = to.filterPredicates(iterator, params);
-                        return iterator;
+                        if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(iter, params);
+                        return iter;
                     }
 
                     @Override
