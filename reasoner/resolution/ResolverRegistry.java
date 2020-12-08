@@ -70,6 +70,7 @@ public class ResolverRegistry {
         } else {
             // Create a new ConcludableActor
             concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable.conjunction(), rules, traversalSize));
+            concludableActorsMap.put(concludable, concludableActor);
             final Set<Variable> vars = new HashSet<>(concludable.constraint().variables());
             unifier = Unifier.identity(vars);
         }
