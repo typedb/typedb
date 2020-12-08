@@ -66,7 +66,6 @@ public class TypeHinter {
     }
 
     public Conjunction computeHintsExhaustive(Conjunction conjunction) {
-        assert ExecutorService.PARALLELISATION_FACTOR > 0;
         return computeHintsExhaustive(conjunction, ExecutorService.PARALLELISATION_FACTOR);
     }
 
@@ -93,7 +92,6 @@ public class TypeHinter {
     }
 
     public Conjunction computeHints(Conjunction conjunction) {
-        assert ExecutorService.PARALLELISATION_FACTOR > 0;
         return computeHints(conjunction, ExecutorService.PARALLELISATION_FACTOR);
     }
 
