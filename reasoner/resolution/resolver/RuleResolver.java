@@ -46,43 +46,12 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     }
 
     @Override
-    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
-        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unUnify();
-
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-        }
-
-        if (isLast(sender)) {
-            LOG.trace("{}: hasProduced: {}", name, conceptMap);
-
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-
-                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), derivation, self());
-                Response.Answer response = new Response.Answer(fromUpstream, answer);
-                return Either.second(response);
-            } else {
-                return produceMessage(fromUpstream, responseProducer);
-            }
-        } else {
-            Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    nextPlannedDownstream.second().unify(conceptMap), derivation);
-            responseProducer.addDownstreamProducer(downstreamRequest);
-            return Either.first(downstreamRequest);
-        }
-    }
-
-    @Override
     public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         return produceMessage(fromUpstream, responseProducer);
     }
 
-    private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
+    Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
@@ -98,5 +67,10 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
         } else {
             return Either.second(new Response.Exhausted(fromUpstream));
         }
+    }
+
+    @Override
+    Response.Answer createResponse(Request fromUpstream, ResolutionAnswer answer) {
+        return new Response.Answer(fromUpstream, answer);
     }
 }

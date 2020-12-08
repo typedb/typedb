@@ -53,37 +53,6 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     }
 
     @Override
-    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
-        // TODO Refactor to remove duplication against RuleResolver
-        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unUnify();
-
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-        }
-
-        if (isLast(sender)) {
-            LOG.trace("{}: has answer: {}", name, conceptMap);
-
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-
-                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), derivation, self());
-                return Either.second(rootAnswerProduced(fromUpstream, answer));
-            } else {
-                return produceMessage(fromUpstream, responseProducer);
-            }
-        } else {
-            Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    nextPlannedDownstream.second().unify(conceptMap), derivation);
-            responseProducer.addDownstreamProducer(downstreamRequest);
-            return Either.first(downstreamRequest);
-        }
-    }
-
-    @Override
     public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         return produceMessage(fromUpstream, responseProducer);
@@ -96,7 +65,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
-                return Either.second(rootAnswerProduced(fromUpstream, answer));
+                return Either.second(createResponse(fromUpstream, answer));
             }
         }
 
@@ -108,7 +77,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
         }
     }
 
-    private Response.RootResponse rootAnswerProduced(Request fromUpstream, final ResolutionAnswer answer) {
+    Response.RootResponse createResponse(Request fromUpstream, final ResolutionAnswer answer) {
         LOG.debug("Responding RootResponse and Recording root answer execution tree for: {}", answer.conceptMap());
         resolutionRecorder.tell(state -> state.record(answer));
         onAnswer.accept(answer);

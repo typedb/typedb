@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
@@ -30,6 +31,7 @@ import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,6 +108,40 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         assert false; // Catch the case where we can't find the given actor in the plan
         return null;
     }
+
+    @Override
+    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
+        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+        ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unUnify();
+
+        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
+        if (fromDownstream.answer().isInferred()) {
+            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+        }
+
+        if (isLast(sender)) {
+            LOG.trace("{}: has produced: {}", name, conceptMap);
+
+            if (!responseProducer.hasProduced(conceptMap)) {
+                responseProducer.recordProduced(conceptMap);
+
+                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), derivation, self());
+                return Either.second(createResponse(fromUpstream, answer));
+            } else {
+                return produceMessage(fromUpstream, responseProducer);
+            }
+        } else {
+            Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
+                                                    nextPlannedDownstream.second().unify(conceptMap), derivation);
+            responseProducer.addDownstreamProducer(downstreamRequest);
+            return Either.first(downstreamRequest);
+        }
+    }
+
+    abstract Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer);
+
+    abstract Response createResponse(Request fromUpstream, final ResolutionAnswer answer);
 
     @Override
     protected void exception(Exception e) {
