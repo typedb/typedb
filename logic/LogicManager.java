@@ -39,18 +39,18 @@ public class LogicManager {
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        final RuleStructure vertex = graphMgr.schema().getRule(label);
-        if (vertex != null) vertex.delete();
+        final RuleStructure structure = graphMgr.schema().getRule(label);
+        if (structure != null) structure.delete();
         Rule rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
 
-        // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
+        // TODO detect negated cycles in the rule graph after inserting this rule and updating a rule graph
 
         return rule;
     }
 
     public Rule getRule(String label) {
-        final RuleStructure rule = graphMgr.schema().getRule(label);
-        if (rule != null) return Rule.of(conceptMgr, rule, typeHinter);
+        final RuleStructure structure = graphMgr.schema().getRule(label);
+        if (structure != null) return Rule.of(conceptMgr, structure, typeHinter);
         return null;
     }
 

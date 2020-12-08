@@ -21,13 +21,14 @@ package grakn.core.logic.tool;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.Type;
-import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
@@ -57,10 +58,12 @@ import static graql.lang.common.GraqlToken.Type.THING;
 
 public class TypeHinter {
 
+    private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final TypeHinterCache cache;
 
-    public TypeHinter(TraversalEngine traversalEng, TypeHinterCache cache) {
+    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng, TypeHinterCache cache) {
+        this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.cache = cache;
     }
@@ -186,17 +189,15 @@ public class TypeHinter {
 
         if (subLabels == null) return;
         if (subLabels.isEmpty()) {
-            Set<Label> subHintsOfSupLabels = supLabels.stream()
-                    .map(label -> TypeImpl.of(traversalEng.graph(), traversalEng.graph().schema().getType(label)))
-                    .flatMap(TypeImpl::getSubtypes).map(TypeImpl::getLabel).map(Label::of).collect(Collectors.toSet());
+            Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
+                    .map(Type::getLabel).map(Label::of).collect(Collectors.toSet());
             addHintLabels(subVar, subHintsOfSupLabels);
             return;
         }
 
-
         Set<Label> temp = new HashSet<>(subLabels);
         for (Label label : temp) {
-            Type hintType = TypeImpl.of(traversalEng.graph(), traversalEng.graph().schema().getType(label));
+            Type hintType = getType(label);
             //TODO use getProperLabel once that is available
             while (hintType != null && !supLabels.contains(Label.of(hintType.getLabel()))) {
                 hintType = hintType.getSupertype();
@@ -207,10 +208,8 @@ public class TypeHinter {
 
     private Map<Label, TypeVariable> labelVarsFromConjunction(Conjunction conjunction) {
         Map<Label, TypeVariable> labels = new HashMap<>();
-
-        conjunction.variables().stream().filter(Variable::isType).map(Variable::asType).forEach(variable ->
-                                                                                                        variable.label().ifPresent(labelConstraint -> labels.putIfAbsent(labelConstraint.properLabel(), variable)));
-
+        conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
+                .forEach(variable -> variable.label().ifPresent(labelConstraint -> labels.putIfAbsent(labelConstraint.properLabel(), variable)));
         return labels;
     }
 
@@ -229,9 +228,7 @@ public class TypeHinter {
     }
 
     private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {
-        Set<Type> types = labels.stream().map(
-                label -> TypeImpl.of(traversalEng.graph(), traversalEng.graph().schema().getType(label))
-        ).collect(Collectors.toSet());
+        Set<Type> types = labels.stream().map(this::getType).collect(Collectors.toSet());
 
         Type lowestCommonAncestor = null;
         for (Type type : types) {
@@ -275,7 +272,6 @@ public class TypeHinter {
         }
     }
 
-
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints, int parallelisation) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
         return cache.get(varHintsConjunction, conjunction -> {
@@ -290,7 +286,16 @@ public class TypeHinter {
         });
     }
 
-    private class ConstraintMapper {
+    private Type getType(Label label) {
+        if (label.scope().isPresent()) {
+            assert conceptMgr.getRelationType(label.scope().get()) != null;
+            return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name());
+        } else {
+            return conceptMgr.getType(label.name());
+        }
+    }
+
+    private static class ConstraintMapper {
         private final VariableHints varHints;
         private final HashMap<TypeVariable, Set<TypeVariable>> neighbours;
         private final TypeVariable metaThing;
@@ -417,7 +422,7 @@ public class TypeHinter {
             else if (isaConstraint.type().reference().isName()) owner.is(isaConstraint.type());
             else if (isaConstraint.type().label().isPresent())
                 owner.label(isaConstraint.type().label().get().properLabel());
-            else GraknException.of(ILLEGAL_STATE);
+            else throw GraknException.of(ILLEGAL_STATE);
             addNeighbour(isaVar, isaVar);
         }
 
@@ -444,7 +449,7 @@ public class TypeHinter {
 
     }
 
-    private class VariableHints {
+    private static class VariableHints {
 
         private final Map<Reference, TypeVariable> varHints;
         private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerHints;
@@ -502,6 +507,5 @@ public class TypeHinter {
             return rolePlayerHints.get(rolePlayer);
         }
     }
-
 
 }
