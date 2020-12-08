@@ -125,7 +125,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED);
 
         long lock = 0;
         final RocksSession session;
@@ -144,7 +144,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized Cache borrowCache() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED);
 
         if (cache == null) cache = new Cache(this);
         cache.borrow();
@@ -156,7 +156,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized void invalidateCache() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED);
 
         if (cache != null) {
             cache.invalidate();
@@ -329,10 +329,7 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         private void countFn() {
-            while (!isStopped) {
-                waitForCountJob();
-                if (!isStopped) break;
-
+            do {
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
                     tx.graphMgr.data().stats().processCountJobs();
                     tx.commit();
@@ -351,7 +348,8 @@ public class RocksDatabase implements Grakn.Database {
                         }
                     }
                 }
-            }
+                waitForCountJob();
+            } while (!isStopped);
         }
 
         private void waitForCountJob() {

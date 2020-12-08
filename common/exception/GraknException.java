@@ -56,7 +56,7 @@ public class GraknException extends RuntimeException {
     }
 
     public static GraknException of(ErrorMessage errorMessage) {
-        return new GraknException(errorMessage.message());
+        return new GraknException(errorMessage);
     }
 
     public static GraknException of(String error) {
