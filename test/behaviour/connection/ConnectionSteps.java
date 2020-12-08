@@ -23,6 +23,7 @@ import grakn.core.rocks.RocksDatabase;
 import grakn.core.rocks.RocksGrakn;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import io.cucumber.java.en.Given;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,15 +63,23 @@ public class ConnectionSteps {
         return sessionsToTransactions.get(sessions.get(0)).get(0);
     }
 
+    @Given("connection has been opened")
+    public void connection_has_been_opened() {
+        assertNotNull(grakn);
+        assertTrue(grakn.isOpen());
+    }
+
+    @Given("connection does not have any database")
+    public void connection_does_not_have_any_database() {
+        assertTrue(grakn.databases().all().isEmpty());
+    }
+
     @Before
     public synchronized void before() throws IOException {
         assertNull(grakn);
         resetDirectory();
         System.out.println("Connecting to Grakn ...");
         grakn = RocksGrakn.open(directory);
-        assertNotNull(grakn);
-        assertTrue(grakn.isOpen());
-        assertTrue(grakn.databases().all().isEmpty());
     }
 
     @After
