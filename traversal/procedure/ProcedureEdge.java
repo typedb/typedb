@@ -19,7 +19,6 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
@@ -38,6 +37,7 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.iterator.Iterators.empty;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
@@ -561,7 +561,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                             if (!iid.isAttribute()) att = null;
                             else att = graphMgr.data().get(iid.asAttribute());
                             if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
-                            else iter = Iterators.empty();
+                            else iter = empty();
                         } else if (!to.props().types().isEmpty()) {
                             PrefixIID prefix = PrefixIID.of(Encoding.Prefix.VERTEX_ATTRIBUTE);
                             iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
@@ -571,8 +571,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                             iter = owner.outs().edge(HAS).to().map(ThingVertex::asAttribute);
                         }
 
-                        if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(iter, params);
-                        return iter;
+                        if (to.props().predicates().isEmpty()) return iter;
+                        else return to.filterPredicates(iter, params);
                     }
 
                     @Override
@@ -592,7 +592,25 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        return iterate(emptyIterator()); // TODO
+                        assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
+                        ResourceIterator<? extends ThingVertex> iter;
+                        AttributeVertex<?> att = fromVertex.asThing().asAttribute();
+
+                        if (to.props().hasIID()) {
+                            assert to.id().isVariable();
+                            VertexIID.Thing iid = params.getIID(to.id().asVariable());
+                            ThingVertex owner = graphMgr.data().get(iid);
+                            if (owner != null && att.ins().edge(HAS, owner) != null) iter = single(owner);
+                            else iter = empty();
+                        } else if (!to.props().types().isEmpty()) {
+                            iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                    .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
+                        } else {
+                            iter = att.ins().edge(HAS).from();
+                        }
+
+                        if (to.props().predicates().isEmpty()) return iter;
+                        else return to.filterPredicates(filterAttributes(iter), params);
                     }
 
                     @Override
