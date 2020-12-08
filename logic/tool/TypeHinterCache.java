@@ -26,13 +26,13 @@ import graql.lang.pattern.variable.Reference;
 import java.util.Map;
 import java.util.Set;
 
-public class HinterCache extends CommonCache<Conjunction, Map<Reference, Set<Label>>> {
+public class TypeHinterCache extends CommonCache<Conjunction, Map<Reference, Set<Label>>> {
 
-    public HinterCache() {
+    public TypeHinterCache() {
         super();
     }
 
-    public HinterCache(int size, int timeOutMinutes) {
+    public TypeHinterCache(int size, int timeOutMinutes) {
         super(size, timeOutMinutes);
     }
 }

@@ -58,9 +58,9 @@ import static graql.lang.common.GraqlToken.Type.THING;
 public class TypeHinter {
 
     private final TraversalEngine traversalEng;
-    private final HinterCache cache;
+    private final TypeHinterCache cache;
 
-    public TypeHinter(TraversalEngine traversalEng, HinterCache cache) {
+    public TypeHinter(TraversalEngine traversalEng, TypeHinterCache cache) {
         this.traversalEng = traversalEng;
         this.cache = cache;
     }
