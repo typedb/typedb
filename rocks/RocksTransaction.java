@@ -66,7 +66,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     void initialise(GraphManager graphMgr, TraversalCache traversalCache, TypeHinterCache typeHinterCache) {
         TraversalEngine traversalEngine = new TraversalEngine(graphMgr, traversalCache);
         conceptMgr = new ConceptManager(graphMgr);
-        logicMgr = new LogicManager(graphMgr, conceptMgr, new TypeHinter(traversalEngine, typeHinterCache));
+        logicMgr = new LogicManager(graphMgr, conceptMgr, new TypeHinter(conceptMgr, traversalEngine, typeHinterCache));
         reasoner = new Reasoner(conceptMgr, traversalEngine, logicMgr);
         queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
