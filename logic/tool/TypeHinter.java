@@ -58,7 +58,7 @@ import static graql.lang.common.GraqlToken.Type.THING;
 
 public class TypeHinter {
 
-    private ConceptManager conceptMgr;
+    private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final TypeHinterCache cache;
 
