@@ -151,8 +151,6 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized void unborrowCache(Cache cache) {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
-
         cache.unborrow();
     }
 
