@@ -23,9 +23,10 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.server.rpc.concept.ConceptManagerHandler;
-import grakn.core.server.rpc.concept.RuleHandler;
 import grakn.core.server.rpc.concept.ThingHandler;
 import grakn.core.server.rpc.concept.TypeHandler;
+import grakn.core.server.rpc.logic.LogicManagerHandler;
+import grakn.core.server.rpc.logic.RuleHandler;
 import grakn.core.server.rpc.query.QueryHandler;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.protocol.TransactionProto;
@@ -97,6 +98,9 @@ public class TransactionRPC {
                     return;
                 case CONCEPT_MANAGER_REQ:
                     handlers.conceptManager.handleRequest(request);
+                    return;
+                case LOGIC_MANAGER_REQ:
+                    handlers.logicManager.handleRequest(request);
                     return;
                 case THING_REQ:
                     handlers.thing.handleRequest(request);
@@ -276,6 +280,7 @@ public class TransactionRPC {
 
     private class RequestHandlers {
         private final ConceptManagerHandler conceptManager;
+        private final LogicManagerHandler logicManager;
         private final QueryHandler query;
         private final ThingHandler thing;
         private final TypeHandler type;
@@ -283,10 +288,11 @@ public class TransactionRPC {
 
         private RequestHandlers() {
             conceptManager = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
+            logicManager = new LogicManagerHandler(TransactionRPC.this, transaction.logics());
             query = new QueryHandler(TransactionRPC.this, transaction.query());
             thing = new ThingHandler(TransactionRPC.this, transaction.concepts());
             type = new TypeHandler(TransactionRPC.this, transaction.concepts());
-            rule = new RuleHandler(TransactionRPC.this, transaction.concepts());
+            rule = new RuleHandler(TransactionRPC.this, transaction.logics());
         }
     }
 }

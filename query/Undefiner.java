@@ -21,13 +21,14 @@ package grakn.core.query;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.logic.Rule;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.ThingTypeImpl;
+import grakn.core.logic.LogicManager;
+import grakn.core.logic.Rule;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
@@ -60,14 +61,16 @@ public class Undefiner {
 
     private static final String TRACE_PREFIX = "undefiner.";
 
+    private final LogicManager logicMgr;
     private final ConceptManager conceptMgr;
     private final LinkedList<TypeVariable> variables;
     private final Set<TypeVariable> undefined;
     private final List<graql.lang.pattern.schema.Rule> rules;
 
-    private Undefiner(ConceptManager conceptMgr, Set<TypeVariable> variables,
+    private Undefiner(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables,
                       List<graql.lang.pattern.schema.Rule> rules) {
         this.conceptMgr = conceptMgr;
+        this.logicMgr = logicMgr;
         this.variables = new LinkedList<>();
         this.undefined = new HashSet<>();
         this.rules = rules;
@@ -78,11 +81,11 @@ public class Undefiner {
         });
     }
 
-    public static Undefiner create(ConceptManager conceptMgr,
+    public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
                                    List<graql.lang.pattern.variable.TypeVariable> variables,
                                    List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Undefiner(conceptMgr, VariableRegistry.createFromTypes(variables).types(), rules);
+            return new Undefiner(conceptMgr, logicMgr, VariableRegistry.createFromTypes(variables).types(), rules);
         }
     }
 
@@ -256,7 +259,7 @@ public class Undefiner {
             if (rule.when() != null || rule.then() != null) {
                 throw new GraknException(INVALID_UNDEFINE_RULE_BODY.message(rule.label()));
             }
-            Rule r = conceptMgr.getRule(rule.label());
+            Rule r = logicMgr.getRule(rule.label());
             if (r == null) throw new GraknException(RULE_NOT_FOUND.message(rule.label()));
             r.delete();
         }

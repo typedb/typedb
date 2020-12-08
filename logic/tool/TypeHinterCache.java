@@ -16,28 +16,23 @@
  *
  */
 
-package grakn.core.concept.logic;
+package grakn.core.logic.tool;
 
+import grakn.core.common.cache.CommonCache;
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.constraint.Constraint;
+import graql.lang.pattern.variable.Reference;
 
+import java.util.Map;
 import java.util.Set;
 
-public interface Rule {
+public class TypeHinterCache extends CommonCache<Conjunction, Map<Reference, Set<Label>>> {
 
-    String getLabel();
+    public TypeHinterCache() {
+        super();
+    }
 
-    void setLabel(String label);
-
-    graql.lang.pattern.Conjunction<? extends graql.lang.pattern.Pattern> getWhenPreNormalised();
-
-    graql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised();
-
-    Conjunction when();
-
-    Set<Constraint> then();
-
-    boolean isDeleted();
-
-    void delete();
+    public TypeHinterCache(int size, int timeOutMinutes) {
+        super(size, timeOutMinutes);
+    }
 }

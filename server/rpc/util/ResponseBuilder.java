@@ -22,7 +22,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.logic.Rule;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -33,8 +32,10 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
+import grakn.core.logic.Rule;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
+import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -124,14 +125,6 @@ public class ResponseBuilder {
             if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
             if (type instanceof RoleType) builder.setScope(type.asRoleType().getScope());
             if (type.isRoot()) builder.setRoot(true);
-            return builder.build();
-        }
-
-        public static ConceptProto.Rule rule(Rule rule) {
-            final ConceptProto.Rule.Builder builder = ConceptProto.Rule.newBuilder()
-                    .setLabel(rule.getLabel())
-                    .setWhen(rule.getWhenPreNormalised().toString())
-                    .setThen(rule.getThenPreNormalised().toString());
             return builder.build();
         }
 
@@ -249,6 +242,18 @@ public class ResponseBuilder {
                 throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
         }
+    }
+
+    public static class Logic {
+
+        public static LogicProto.Rule rule(Rule rule) {
+            final LogicProto.Rule.Builder builder = LogicProto.Rule.newBuilder()
+                    .setLabel(rule.getLabel())
+                    .setWhen(rule.getWhenPreNormalised().toString())
+                    .setThen(rule.getThenPreNormalised().toString());
+            return builder.build();
+        }
+
     }
 
     /**

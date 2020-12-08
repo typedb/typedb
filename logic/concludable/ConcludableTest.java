@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.concludable;
+package grakn.core.logic.concludable;
 
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;

@@ -15,17 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package grakn.core.logic;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.logic.Rule;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.reasoner.concludable.ConjunctionConcludable;
-import grakn.core.reasoner.concludable.HeadConcludable;
+import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.HeadConcludable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
@@ -38,9 +37,9 @@ import java.util.Set;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class ImplicationTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("implication-test");
-    private static String database = "implication-test";
+public class RuleTest {
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
+    private static String database = "rule-test";
 
     private long isaConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
         return concludables.stream().filter(ConjunctionConcludable::isIsa).count();
@@ -75,7 +74,7 @@ public class ImplicationTest {
     }
 
     @Test
-    public void implication_concludables_built_correctly_from_rule_concerning_relation() throws IOException {
+    public void rule_concludables_built_correctly_from_rule_concerning_relation() throws IOException {
         Util.resetDirectory(directory);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
@@ -83,6 +82,7 @@ public class ImplicationTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logics();
 
                     final EntityType person = conceptMgr.putEntityType("person");
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
@@ -91,25 +91,23 @@ public class ImplicationTest {
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
-                    conceptMgr.putRule(
+                    logicMgr.putRule(
                             "marriage-is-friendship",
                             Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final Rule rule = conceptMgr.getRule("marriage-is-friendship");
+                    final LogicManager logicMgr = txn.logics();
+                    final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
-                    Implication implication = new Implication(rule);
-
-                    Set<HeadConcludable<?, ?>> headConcludables = implication.head();
+                    Set<HeadConcludable<?, ?>> headConcludables = rule.head();
                     assertEquals(1, isaHeadConcludablesCount(headConcludables));
                     assertEquals(0, hasHeadConcludablesCount(headConcludables));
                     assertEquals(1, relationHeadConcludablesCount(headConcludables));
                     assertEquals(0, valueHeadConcludablesCount(headConcludables));
 
-                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = implication.body();
+                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.body();
                     assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(1, relationConjunctionConcludablesCount(bodyConcludables));
@@ -120,7 +118,7 @@ public class ImplicationTest {
     }
 
     @Test
-    public void implication_concludables_built_correctly_from_rule_concerning_has_isa_value() throws IOException {
+    public void rule_concludables_built_correctly_from_rule_concerning_has_isa_value() throws IOException {
         Util.resetDirectory(directory);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
@@ -128,13 +126,14 @@ public class ImplicationTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logics();
 
                     final EntityType milk = conceptMgr.putEntityType("milk");
                     final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
                     final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
                     milk.setOwns(ageInDays);
                     milk.setOwns(isStillGood);
-                    conceptMgr.putRule(
+                    logicMgr.putRule(
                             "old-milk-is-not-good",
                             Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
                             Graql.parseVariable("$x has is-still-good false").asThing());
@@ -142,17 +141,16 @@ public class ImplicationTest {
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final Rule rule = conceptMgr.getRule("old-milk-is-not-good");
+                    final LogicManager logicMgr = txn.logics();
+                    final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Implication implication = new Implication(rule);
-
-                    Set<HeadConcludable<?, ?>> headConcludables = implication.head();
+                    Set<HeadConcludable<?, ?>> headConcludables = rule.head();
                     assertEquals(1, isaHeadConcludablesCount(headConcludables));
                     assertEquals(1, hasHeadConcludablesCount(headConcludables));
                     assertEquals(0, relationHeadConcludablesCount(headConcludables));
                     assertEquals(1, valueHeadConcludablesCount(headConcludables));
 
-                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = implication.body();
+                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.body();
                     assertEquals(1, isaConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(1, hasConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
@@ -163,7 +161,7 @@ public class ImplicationTest {
     }
 
     @Test
-    public void implication_concludables_built_correctly_from_rule_concerning_has() throws IOException {
+    public void rule_concludables_built_correctly_from_rule_concerning_has() throws IOException {
         Util.resetDirectory(directory);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
@@ -171,31 +169,30 @@ public class ImplicationTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logics();
 
                     final EntityType milk = conceptMgr.putEntityType("milk");
                     final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
                     final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
                     milk.setOwns(ageInDays);
                     milk.setOwns(isStillGood);
-                    conceptMgr.putRule(
+                    logicMgr.putRule(
                             "old-milk-is-not-good",
                             Graql.parsePattern("{ $x isa milk; $a 10 isa age-in-days; }").asConjunction(),
                             Graql.parseVariable("$x has $a").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final Rule rule = conceptMgr.getRule("old-milk-is-not-good");
+                    final LogicManager logicMgr = txn.logics();
+                    final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Implication implication = new Implication(rule);
-
-                    Set<HeadConcludable<?, ?>> headConcludables = implication.head();
+                    Set<HeadConcludable<?, ?>> headConcludables = rule.head();
                     assertEquals(0, isaHeadConcludablesCount(headConcludables));
                     assertEquals(1, hasHeadConcludablesCount(headConcludables));
                     assertEquals(0, relationHeadConcludablesCount(headConcludables));
                     assertEquals(0, valueHeadConcludablesCount(headConcludables));
 
-                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = implication.body();
+                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.body();
                     assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
