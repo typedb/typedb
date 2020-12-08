@@ -64,7 +64,6 @@ public class RocksDatabase implements Grakn.Database {
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock dataWriteSchemaLock;
-    private final StampedLock dataReadSchemaLock;
     private final AtomicBoolean isOpen;
     private Cache cache;
     private final RocksSession.Data statisticsBackgroundCounterSession;
@@ -77,7 +76,6 @@ public class RocksDatabase implements Grakn.Database {
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
         dataWriteSchemaLock = new StampedLock();
-        dataReadSchemaLock = new StampedLock();
 
         try {
             rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
@@ -206,19 +204,6 @@ public class RocksDatabase implements Grakn.Database {
      */
     StampedLock dataWriteSchemaLock() {
         return dataWriteSchemaLock;
-    }
-
-    /**
-     * Get the lock that guarantees that the schema is not modified at the same
-     * time as a data read transaction tries to acquire the cache of the schema.
-     * A new data (read) transaction cannot retrieve a schema cache while a
-     * schema modification is being committed and the cache is refreshed, which
-     * this lock ensures.
-     *
-     * @return a {@code Stampedlock} to protect data reads from concurrent schema modification
-     */
-    StampedLock dataReadSchemaLock() {
-        return dataReadSchemaLock;
     }
 
     void remove(RocksSession session) {

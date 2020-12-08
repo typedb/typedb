@@ -204,13 +204,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     schemaStorage.rocksTx.disableIndexing();
                     conceptMgr.validateTypes();
                     graphMgr.schema().commit();
-                    long lock = session.database.dataReadSchemaLock().writeLock();
-                    try {
-                        schemaStorage.rocksTx.commit();
-                        session.database.invalidateCache();
-                    } finally {
-                        session.database.dataReadSchemaLock().unlockWrite(lock);
-                    }
+                    schemaStorage.rocksTx.commit();
+                    session.database.invalidateCache();
                 } catch (RocksDBException e) {
                     rollback();
                     throw new GraknException(e);
@@ -247,12 +242,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
             super(session, type, options);
 
-            long lock = session.database.dataReadSchemaLock().readLock();
-            try {
-                cache = session.database.borrowCache();
-            } finally {
-                session.database.dataReadSchemaLock().unlockRead(lock);
-            }
+            cache = session.database.borrowCache();
             dataStorage = new RocksStorage.Data(session.database, this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
