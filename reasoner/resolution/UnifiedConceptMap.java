@@ -17,12 +17,17 @@
 
 package grakn.core.reasoner.resolution;
 
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import graql.lang.pattern.variable.Reference;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
-public class UnifiedConceptMap { // TODO Actually implement ConceptMap interface
+public class UnifiedConceptMap {
     private final ConceptMap source;
+    private final ConceptMap unified;
     private final Unifier unifier; // Needs to be a Set of Pairs, or a Map<Variable, Set<Variable>>
 
     public static UnifiedConceptMap of(ConceptMap conceptMap, Unifier unifier) {
@@ -36,17 +41,18 @@ public class UnifiedConceptMap { // TODO Actually implement ConceptMap interface
     UnifiedConceptMap(ConceptMap source, Unifier unifier){
         this.source = source;
         this.unifier = unifier;
+        unified = unifier.unify(source);
     }
 
     public Merged merge(ConceptMap unified) {
-        return null; // TODO
+        Map<Reference, Concept> mergedMap = new HashMap<>(this.unified.concepts());
+        mergedMap.putAll(unified.concepts());
+        return new Merged(new ConceptMap(mergedMap));
     }
 
     public ConceptMap map() {
-        // return unifiedConceptMap; // TODO Map this conceptmap using the unifier to give only the subset of variables the unifier transforms to
-        return null;
+        return unified;
     }
-
 
     @Override
     public boolean equals(Object o) {
@@ -62,14 +68,14 @@ public class UnifiedConceptMap { // TODO Actually implement ConceptMap interface
     }
 
     public class Merged {
-        private final ConceptMap unifiedToMerge;
+        private final ConceptMap merged;
 
-        Merged(ConceptMap unifiedToMerge) {
-            this.unifiedToMerge = unifiedToMerge;
+        Merged(ConceptMap merged) {
+            this.merged = merged;
         }
 
         public ConceptMap unUnify() {
-            return null; // TODO
+            return unifier.unUnify(merged);
         }
     }
 

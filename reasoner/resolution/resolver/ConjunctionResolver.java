@@ -27,6 +27,7 @@ import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.UnifiedConceptMap;
 import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -65,7 +66,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected ResponseProducer createResponseProducer(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), plannedConcludables.get(0).second().unify(request.partialConceptMap().map()),
+        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), UnifiedConceptMap.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -133,7 +134,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         } else {
             Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    nextPlannedDownstream.second().unify(conceptMap), derivation);
+                                                    UnifiedConceptMap.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }
