@@ -71,7 +71,7 @@ public interface ResourceIterator<T> extends Iterator<T> {
     }
 
     default ResourceIterator<T> noNulls() {
-        return this.filter(Objects::nonNull);
+        return this.filter(obj -> obj != null);
     }
 
     default T firstOrNull() {

@@ -30,6 +30,7 @@ import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalVertex;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -141,11 +142,8 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
                         .flatMap(t -> graphMgr.data().get(t)).noNulls();
             }
 
-            if (!props().predicates().isEmpty()) {
-                iterator = filterPredicates(filterAttributes(iterator), parameters);
-            }
-
-            return iterator;
+            if (props().predicates().isEmpty()) return iterator;
+            else return filterPredicates(filterAttributes(iterator), parameters, eq.orElse(null));
         }
 
         ResourceIterator<? extends ThingVertex> filterIID(ResourceIterator<? extends ThingVertex> iterator, Traversal.Parameters parameters) {
@@ -161,11 +159,18 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             return iterator.filter(ThingVertex::isAttribute).map(ThingVertex::asAttribute);
         }
 
-        ResourceIterator<AttributeVertex<?>> filterPredicates(ResourceIterator<AttributeVertex<?>> iterator,
-                                                              Traversal.Parameters parameters) {
+        ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends AttributeVertex<?>> iterator,
+                                                                        Traversal.Parameters parameters) {
+            return filterPredicates(iterator, parameters, null);
+        }
+
+        ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends AttributeVertex<?>> iterator,
+                                                                        Traversal.Parameters parameters,
+                                                                        @Nullable Predicate.Value<?> exclude) {
             // TODO: should we throw an exception if the user assert a value non-comparable value types?
             assert id().isVariable();
             for (Predicate.Value<?> predicate : props().predicates()) {
+                if (Objects.equals(predicate, exclude)) break;
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(a -> predicate.apply(a, value));
                 }

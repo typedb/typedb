@@ -54,6 +54,7 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 import static java.util.Collections.emptyIterator;
 
@@ -137,7 +138,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
         public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                    Traversal.Parameters params) {
             assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
-            ResourceIterator<AttributeVertex<?>> toIter;
+            ResourceIterator<? extends AttributeVertex<?>> toIter;
 
             if (to.props().hasIID()) {
                 toIter = to.iterateAndFilterFromIID(graphMgr, params)
@@ -579,7 +580,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        ResourceIterator<AttributeVertex<?>> iter;
+                        ResourceIterator<? extends AttributeVertex<?>> iter;
+                        grakn.core.traversal.common.Predicate.Value<?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
@@ -590,15 +592,20 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                             if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
                             else iter = empty();
                         } else if (!to.props().types().isEmpty()) {
-                            iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
-                                    .flatMap(t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to())
-                                    .map(ThingVertex::asAttribute);
+                            if ((eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull()) != null) {
+                                iter = to.iteratorOfAttributes(graphMgr, params, eq)
+                                        .filter(a -> owner.outs().edge(HAS, a) != null);
+                            } else {
+                                iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                        .flatMap(t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to())
+                                        .map(ThingVertex::asAttribute);
+                            }
                         } else {
                             iter = owner.outs().edge(HAS).to().map(ThingVertex::asAttribute);
                         }
 
                         if (to.props().predicates().isEmpty()) return iter;
-                        else return to.filterPredicates(iter, params);
+                        else return to.filterPredicates(iter, params, eq);
                     }
 
                     @Override
