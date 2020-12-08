@@ -116,17 +116,6 @@ build:
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
-    deploy-rpm-snapshot:
-      machine: graknlabs-ubuntu-20.04-java11
-      filter:
-        owner: graknlabs
-        branch: master
-      dependencies: [test-assembly-linux-targz]
-      script: |
-        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
-        bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
     test-deployment-apt:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
@@ -136,6 +125,17 @@ build:
       script: |
         bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
     # TODO: comment out the job until the flakiness has been ironed out
+    #    deploy-rpm-snapshot:
+    #      machine: graknlabs-ubuntu-20.04-java11
+    #      filter:
+    #        owner: graknlabs
+    #        branch: master
+    #      dependencies: [test-assembly-linux-targz]
+    #      script: |
+    #        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
+    #        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
+    #        bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
+    #        bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
     # test-deployment-rpm:
     #   machine: graknlabs-centos-8.2
     #   filter:
@@ -189,17 +189,17 @@ release:
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
-    deploy-rpm-release:
-      machine: graknlabs-ubuntu-20.04-java11
-      filter:
-        owner: graknlabs
-        branch: master
-      dependencies: [deploy-github]
-      script: |
-        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
-        bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
+#    deploy-rpm-release:
+#      machine: graknlabs-ubuntu-20.04-java11
+#      filter:
+#        owner: graknlabs
+#        branch: master
+#      dependencies: [deploy-github]
+#      script: |
+#        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
+#        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
+#        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
+#        bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
     deploy-docker:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
