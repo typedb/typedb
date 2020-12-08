@@ -539,6 +539,13 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                 }
             }
 
+            static ResourceIterator<? extends ThingVertex> branchToIID(GraphManager graphMgr, ThingVertex fromVertex,
+                                                                       Encoding.Edge.Thing encoding, VertexIID.Thing iid) {
+                ThingVertex player = graphMgr.data().get(iid);
+                if (player != null && fromVertex.ins().edge(encoding, player) != null) return single(player);
+                else return empty();
+            }
+
             static abstract class Has extends Thing {
 
                 private Has(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
@@ -600,11 +607,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                         AttributeVertex<?> att = fromVertex.asThing().asAttribute();
 
                         if (to.props().hasIID()) {
-                            assert to.id().isVariable();
-                            VertexIID.Thing iid = params.getIID(to.id().asVariable());
-                            ThingVertex owner = graphMgr.data().get(iid);
-                            if (owner != null && att.ins().edge(HAS, owner) != null) iter = single(owner);
-                            else iter = empty();
+                            iter = branchToIID(graphMgr, att, HAS, params.getIID(to.id().asVariable()));
                         } else if (!to.props().types().isEmpty()) {
                             iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
                                     .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
@@ -671,7 +674,23 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        return iterate(emptyIterator()); // TODO
+                        assert fromVertex.isThing();
+                        ThingVertex role = fromVertex.asThing();
+                        Set<Label> toTypes = to.props().types();
+                        ResourceIterator<? extends ThingVertex> iter;
+
+                        if (to.props().hasIID()) {
+                            assert to.id().isVariable();
+                            iter = branchToIID(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()));
+                        } else if (!toTypes.isEmpty()) {
+                            iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l))
+                                    .flatMap(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from());
+                        } else {
+                            iter = role.ins().edge(PLAYING).from();
+                        }
+
+                        if (to.props().predicates().isEmpty()) return iter;
+                        else return to.filterPredicates(filterAttributes(iter), params);
                     }
 
                     @Override
