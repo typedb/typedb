@@ -43,6 +43,7 @@ import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 import static java.util.Collections.emptyIterator;
@@ -414,7 +415,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters parameters) {
-                        return fromVertex.asType().outs().edge(PLAYS).to();
+                        return to.filter(fromVertex.asType().outs().edge(PLAYS).to());
                     }
 
                     @Override
@@ -431,7 +432,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters parameters) {
-                        return fromVertex.asType().ins().edge(PLAYS).from();
+                        return to.filter(fromVertex.asType().ins().edge(PLAYS).from());
                     }
 
                     @Override
@@ -455,12 +456,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters parameters) {
-                        return iterate(emptyIterator()); // TODO
+                        return to.filter(fromVertex.asType().outs().edge(RELATES).to());
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex, Traversal.Parameters parameters) {
-                        return false; // TODO
+                        return fromVertex.asType().outs().edge(RELATES).to().filter(t -> t.equals(toVertex.asType())).hasNext();
                     }
                 }
 
@@ -472,12 +473,12 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters parameters) {
-                        return iterate(emptyIterator()); // TODO
+                        return to.filter(fromVertex.asType().ins().edge(RELATES).from());
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex, Traversal.Parameters parameters) {
-                        return false;
+                        return fromVertex.asType().ins().edge(RELATES).from().filter(t -> t.equals(toVertex.asType())).hasNext();
                     }
                 }
             }
