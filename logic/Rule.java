@@ -108,6 +108,10 @@ public class Rule {
         return null;
     }
 
+    public Conjunction when() {
+        return when;
+    }
+
     public String getLabel() {
         return structure.label();
     }

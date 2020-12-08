@@ -34,7 +34,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
     public RuleResolver(Actor<RuleResolver> self, Rule rule) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", rule.when());
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", rule.when(), rule.body());
     }
 
     @Override

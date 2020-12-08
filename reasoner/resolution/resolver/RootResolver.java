@@ -21,6 +21,7 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -39,7 +40,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                         Runnable onExhausted) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction);
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, ConjunctionConcludable.of(conjunction));
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
     }

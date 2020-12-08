@@ -49,13 +49,15 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
     final Conjunction conjunction;
+    private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
     Actor<ResolutionRecorder> resolutionRecorder;
     private final List<Pair<Actor<ConcludableResolver>, VariableMapper>> plannedConcludables;
 
-    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction) {
+    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Set<ConjunctionConcludable<?, ?>> conjunctionConcludables) {
         super(self, name);
 
         this.conjunction = conjunction;
+        this.conjunctionConcludables = conjunctionConcludables;
         this.plannedConcludables = new ArrayList<>();
     }
 
@@ -74,7 +76,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
         // Build the concludables for this conjunction
-        Set<ConjunctionConcludable<?, ?>> conjunctionConcludables = ConjunctionConcludable.of(conjunction);
 
         // TODO Find the applicable rules for each, which requires 1 or more valid unifications with a rule.
         // TODO Mark concludables with no applicable rules as inconcludable
