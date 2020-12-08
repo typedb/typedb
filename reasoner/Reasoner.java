@@ -43,14 +43,12 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
-    private final ReasonerCache cache;
 
-    public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr, TraversalEngine traversalEng, ReasonerCache cache) {
-        this.traversalEng = traversalEng;
+    public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicManager logicMgr) {
         this.conceptMgr = conceptMgr;
+        this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
         this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
-        this.cache = cache;
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {

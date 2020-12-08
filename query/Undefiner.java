@@ -69,8 +69,8 @@ public class Undefiner {
 
     private Undefiner(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables,
                       List<graql.lang.pattern.schema.Rule> rules) {
-        this.logicMgr = logicMgr;
         this.conceptMgr = conceptMgr;
+        this.logicMgr = logicMgr;
         this.variables = new LinkedList<>();
         this.undefined = new HashSet<>();
         this.rules = rules;

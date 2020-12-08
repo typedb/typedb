@@ -51,9 +51,9 @@ public class QueryManager {
     private final Context.Transaction transactionCtx;
 
     public QueryManager(ConceptManager conceptMgr, LogicManager logicMgr, Reasoner reasoner, Context.Transaction transactionCtx) {
+        this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.reasoner = reasoner;
-        this.conceptMgr = conceptMgr;
         this.transactionCtx = transactionCtx;
     }
 
