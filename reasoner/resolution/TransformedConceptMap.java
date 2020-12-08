@@ -25,46 +25,50 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class UnifiedConceptMap {
+public class TransformedConceptMap {
     private final ConceptMap source;
-    private final ConceptMap unified;
-    private final Unifier unifier; // Needs to be a Set of Pairs, or a Map<Variable, Set<Variable>>
+    private final ConceptMap transformed;
+    private final ConceptMapTransformer transformer;
 
-    public static UnifiedConceptMap of(ConceptMap conceptMap, Unifier unifier) {
-        return new UnifiedConceptMap(conceptMap, unifier);
+    public static TransformedConceptMap of(ConceptMap conceptMap, Unifier unifier) {
+        return new TransformedConceptMap(conceptMap, unifier);
     }
 
-    public static UnifiedConceptMap empty() {
-        return new UnifiedConceptMap(new ConceptMap(), Unifier.identity());
+    public static TransformedConceptMap of(ConceptMap conceptMap, VariableMapper variableMapper) {
+        return new TransformedConceptMap(conceptMap, variableMapper);
     }
 
-    UnifiedConceptMap(ConceptMap source, Unifier unifier){
+    public static TransformedConceptMap empty() {
+        return new TransformedConceptMap(new ConceptMap(), Unifier.identity());
+    }
+
+    TransformedConceptMap(ConceptMap source, ConceptMapTransformer transformer){
         this.source = source;
-        this.unifier = unifier;
-        unified = unifier.unify(source);
+        this.transformer = transformer;
+        transformed = transformer.transform(source);
     }
 
     public Merged merge(ConceptMap unified) {
-        Map<Reference, Concept> mergedMap = new HashMap<>(this.unified.concepts());
+        Map<Reference, Concept> mergedMap = new HashMap<>(this.transformed.concepts());
         mergedMap.putAll(unified.concepts());
         return new Merged(new ConceptMap(mergedMap));
     }
 
     public ConceptMap map() {
-        return unified;
+        return transformed;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final UnifiedConceptMap that = (UnifiedConceptMap) o;
-        return source.equals(that.source) && unifier.equals(that.unifier);
+        final TransformedConceptMap that = (TransformedConceptMap) o;
+        return source.equals(that.source) && transformer.equals(that.transformer);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(source, unifier);
+        return Objects.hash(source, transformer);
     }
 
     public class Merged {
@@ -74,8 +78,8 @@ public class UnifiedConceptMap {
             this.merged = merged;
         }
 
-        public ConceptMap unUnify() {
-            return unifier.unUnify(merged);
+        public ConceptMap unTransform() {
+            return transformer.unTransform(merged);
         }
     }
 

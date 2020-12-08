@@ -19,14 +19,11 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Either;
-import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import org.slf4j.Logger;
@@ -40,9 +37,9 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Runnable onExhausted;
 
-    public RootResolver(Actor<RootResolver> self, Conjunction conjunction,
-                        Long traversalAnswerCount, Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, traversalAnswerCount);
+    public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
+                        Runnable onExhausted) {
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction);
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
     }
@@ -53,7 +50,8 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     }
 
     @Override
-    public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
+    public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream,
+                                                      ResponseProducer responseProducer) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         return produceMessage(fromUpstream, responseProducer);
     }

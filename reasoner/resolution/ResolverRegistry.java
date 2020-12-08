@@ -24,7 +24,6 @@ import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.concept.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
@@ -34,10 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 public class ResolverRegistry {
 
@@ -54,7 +50,7 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public Pair<Actor<ConcludableResolver>, Unifier> registerConcludable(ConjunctionConcludable<?, ?> concludable, List<Rule> rules, long traversalAnswerCount) {
+    public Pair<Actor<ConcludableResolver>, VariableMapper> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
 
         final Optional<Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>> alphaEquivalencePair = concludableActorsMap.keySet().stream()
@@ -62,29 +58,28 @@ public class ResolverRegistry {
                 .filter(p -> p.second().isValid()).findAny();
 
         final Actor<ConcludableResolver> concludableActor;
-        final Unifier unifier;
+        final VariableMapper variableMapping;
         if (alphaEquivalencePair.isPresent()) {
             // Then we can use the same ConcludableActor, but with a different variable mapping
             concludableActor = concludableActorsMap.get(alphaEquivalencePair.get().first());
-            unifier = Unifier.fromVariableMapping(alphaEquivalencePair.get().second().asValid().map());
+            variableMapping = VariableMapper.fromVariableMapping(alphaEquivalencePair.get().second().asValid().map());
         } else {
             // Create a new ConcludableActor
-            concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable.conjunction(), rules, traversalAnswerCount));
+            concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
             concludableActorsMap.put(concludable, concludableActor);
-            final Set<Variable> vars = new HashSet<>(concludable.constraint().variables());
-            unifier = Unifier.identity(vars);
+            variableMapping = VariableMapper.identity(concludable);
         }
-        return new Pair<>(concludableActor, unifier);
+        return new Pair<>(concludableActor, variableMapping);
     }
 
-    public Actor<RuleResolver> registerRule(Rule rule, long traversalAnswerCount) {
+    public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (p) -> Actor.create(elg, self -> new RuleResolver(self, p.when(), traversalAnswerCount)));
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r)));
     }
 
     public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new RootResolver(self, pattern, null, onAnswer, onExhausted));
+        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted));
     }
 
     public Actor<ResolutionRecorder> resolutionRecorder() {

@@ -15,9 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic;
+package grakn.core.reasoner.resolution;
 
-public class Unification {
+import grakn.core.concept.answer.ConceptMap;
 
-    // TODO Remove in favour of Unifier
+public interface ConceptMapTransformer {
+
+    ConceptMap transform(ConceptMap conceptMap);
+
+    ConceptMap unTransform(ConceptMap conceptMap);
+
 }

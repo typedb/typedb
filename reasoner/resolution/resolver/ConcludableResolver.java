@@ -21,12 +21,11 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.logic.Rule;
-import grakn.core.pattern.Conjunction;
+import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.UnifiedConceptMap;
+import grakn.core.reasoner.resolution.TransformedConceptMap;
 import grakn.core.reasoner.resolution.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,18 +47,14 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final Conjunction traversalPattern;
-    private final long traversalAnswerCount;
-    private final List<Rule> rules;
-    private final Map<Actor<RuleResolver>, Rule> ruleActorSources;
+    private final ConjunctionConcludable<?, ?> concludable;
+    private final Map<Unifier, Actor<RuleResolver>> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, Conjunction traversalPattern, List<Rule> rules, long traversalAnswerCount) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + traversalPattern + ")");
-        this.traversalPattern = traversalPattern;
-        this.traversalAnswerCount = traversalAnswerCount;
-        this.rules = rules;
+    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable) {
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")");
+        this.concludable = concludable;
         ruleActorSources = new HashMap<>();
         receivedConceptMaps = new HashSet<>();
     }
@@ -73,7 +67,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream,
                                                    ResponseProducer responseProducer) {
-        final ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unUnify();
+        final ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unTransform();
 
         LOG.trace("{}: hasProduced: {}", name, conceptMap);
         if (!responseProducer.hasProduced(conceptMap)) {
@@ -81,12 +75,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
             // update partial derivation provided from upstream to carry derivations sideways
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            ResolutionAnswer answer = new ResolutionAnswer(conceptMap, traversalPattern.toString(), derivation, self());
+            ResolutionAnswer answer = new ResolutionAnswer(conceptMap, concludable.toString(), derivation, self());
 
             return Either.second(new Response.Answer(fromUpstream, answer));
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(conceptMap, traversalPattern.toString(), derivation, self());
+            ResolutionAnswer deduplicated = new ResolutionAnswer(conceptMap, concludable.toString(), derivation, self());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
@@ -102,7 +96,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(traversalAnswerCount)).query(traversalPattern, request.partialConceptMap().map());
+        Iterator<ConceptMap> traversal = (new MockTransaction(5L)).query(concludable.conjunction(), request.partialConceptMap().map());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
         if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
@@ -115,9 +109,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
-        for (Rule rule : rules) {
-            Actor<RuleResolver> ruleActor = registry.registerRule(rule, 1L);
-            ruleActorSources.put(ruleActor, rule);
+        for (Unifier unifier : concludable.applicableRuleUnifiers()) {
+            Actor<RuleResolver> ruleActor = registry.registerRule(unifier.rule());
+            ruleActorSources.put(unifier, ruleActor);
         }
     }
 
@@ -127,7 +121,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             LOG.trace("{}: hasProduced: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, traversalPattern.toString(), new ResolutionAnswer.Derivation(map()), self());
+                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
                 return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
@@ -140,10 +134,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
-        for (Actor<RuleResolver> ruleActor : ruleActorSources.keySet()) {
-            // TODO Compute the unifiers for each rule, send one request per unifier found.
-            Unifier unifier = Unifier.identity();
-            Request toDownstream = new Request(path.append(ruleActor), UnifiedConceptMap.of(partialConceptMap, unifier), ResolutionAnswer.Derivation.EMPTY);
+        for (Map.Entry<Unifier, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
+            Request toDownstream = new Request(path.append(entry.getValue()), TransformedConceptMap.of(partialConceptMap, entry.getKey()), ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }
     }

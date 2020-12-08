@@ -19,14 +19,11 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Either;
-import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.Unifier;
+import grakn.core.concept.logic.Rule;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import org.slf4j.Logger;
@@ -36,8 +33,8 @@ import org.slf4j.LoggerFactory;
 public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
-    public RuleResolver(Actor<RuleResolver> self, Conjunction when, Long traversalAnswerCount) {
-        super(self, RuleResolver.class.getSimpleName() + "(pattern:" + when + ")", when, traversalAnswerCount);
+    public RuleResolver(Actor<RuleResolver> self, Rule rule) {
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", rule.when());
     }
 
     @Override

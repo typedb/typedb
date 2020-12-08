@@ -23,12 +23,12 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
+import grakn.core.reasoner.resolution.VariableMapper;
 import grakn.core.reasoner.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.UnifiedConceptMap;
-import grakn.core.reasoner.resolution.Unifier;
+import grakn.core.reasoner.resolution.TransformedConceptMap;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -51,22 +50,20 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     final Conjunction conjunction;
     Actor<ResolutionRecorder> resolutionRecorder;
-    private final Long traversalAnswerCount;
-    private final List<Pair<Actor<ConcludableResolver>, Unifier>> plannedConcludables;
+    private final List<Pair<Actor<ConcludableResolver>, VariableMapper>> plannedConcludables;
 
-    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Long traversalAnswerCount) {
+    public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction) {
         super(self, name);
 
         this.conjunction = conjunction;
-        this.traversalAnswerCount = traversalAnswerCount;
         this.plannedConcludables = new ArrayList<>();
     }
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(traversalAnswerCount)).query(conjunction, new ConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(5L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), UnifiedConceptMap.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
+        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), TransformedConceptMap.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -87,8 +84,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         // Plan the order in which to execute the concludables
         List<ConjunctionConcludable<?, ?>> planned = list(conjunctionConcludables); // TODO Do some actual planning
         for (ConjunctionConcludable<?, ?> concludable : planned) {
-            Pair<Actor<ConcludableResolver>, Unifier> unifiedConcludable = registry.registerConcludable(concludable, Arrays.asList(), 5L); // TODO Traversal size?
-            plannedConcludables.add(unifiedConcludable);
+            Pair<Actor<ConcludableResolver>, VariableMapper> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
+            plannedConcludables.add(concludableUnifierPair);
         }
     }
 
@@ -96,9 +93,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return plannedConcludables.get(plannedConcludables.size() - 1).first().equals(actor);
     }
 
-    Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    Pair<Actor<ConcludableResolver>, VariableMapper> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         boolean match = false;
-        for (Pair<Actor<ConcludableResolver>, Unifier> planned : plannedConcludables) {
+        for (Pair<Actor<ConcludableResolver>, VariableMapper> planned : plannedConcludables) {
             if (match) {
                 return planned; // TODO This logic seems a bit bizarre, but is the most efficient
             }
@@ -113,7 +110,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unUnify();
+        ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unTransform();
 
         ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
         if (fromDownstream.answer().isInferred()) {
@@ -132,9 +129,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                 return produceMessage(fromUpstream, responseProducer);
             }
         } else {
-            Pair<Actor<ConcludableResolver>, Unifier> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Pair<Actor<ConcludableResolver>, VariableMapper> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    UnifiedConceptMap.of(conceptMap, nextPlannedDownstream.second()), derivation);
+                                                    TransformedConceptMap.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }

@@ -1,32 +1,62 @@
+/*
+ * Copyright (C) 2020 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.reasoner.resolution;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.pattern.variable.Variable;
+import grakn.core.concept.logic.Rule;
+import grakn.core.reasoner.concludable.ConjunctionConcludable;
+import grakn.core.reasoner.concludable.HeadConcludable;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+public class Unifier implements ConceptMapTransformer {
 
-public class Unifier {
+    private final ConjunctionConcludable<?, ?> fromConcludable;
+    private final HeadConcludable<?, ?> toConcludable;
+    private Rule rule;
+
+    public Unifier(ConjunctionConcludable<?, ?> fromConcludable, HeadConcludable<?, ?> toConcludable, Rule rule) {
+        this.fromConcludable = fromConcludable;
+        this.toConcludable = toConcludable;
+        this.rule = rule;
+    }
+
+    public ConjunctionConcludable<?, ?> fromConcludable() {
+        return fromConcludable;
+    }
+
+    public HeadConcludable<?, ?> toConcludable() {
+        return toConcludable;
+    }
+
+    public Rule rule() {
+        return rule;
+    }
 
     public static Unifier identity() {
-        return new Unifier(); // TODO A unifier that performs trivial mapping
+        return null; // TODO A unifier that performs trivial mapping - unneeded now, remove.
     }
 
-    public static Unifier identity(Set<Variable> vars) {
-        return fromVariableMapping(vars.stream().collect(Collectors.toMap(Function.identity(), Function.identity())));
-    }
-
-    public static Unifier fromVariableMapping(Map<Variable, Variable> map) {
-        return new Unifier(); // TODO Create a unifier from a 1:1 variable mapping from an alpha equivalence. Perhaps unnecessary if Unifier and the Variable Mapping implement the same interface
-    }
-
-    public ConceptMap unify(ConceptMap conceptMap) {
+    @Override
+    public ConceptMap transform(ConceptMap conceptMap) {
         return null; // TODO
     }
 
-    public ConceptMap unUnify(ConceptMap unified) {
+    @Override
+    public ConceptMap unTransform(ConceptMap unified) {
         return null; // TODO
     }
 }
