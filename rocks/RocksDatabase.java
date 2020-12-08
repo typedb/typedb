@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -309,7 +310,7 @@ public class RocksDatabase implements Grakn.Database {
         }
     }
 
-    class StatisticsBackgroundCounter {
+    static class StatisticsBackgroundCounter {
         private final RocksSession.Data session;
         private final Thread thread;
         private final Semaphore countJobNotifications;
@@ -328,21 +329,26 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         private void countFn() {
-            while (running()) {
+            while (!isStopped) {
                 waitForCountJob();
-                if (running()) break;
+                if (!isStopped) break;
 
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
                     tx.graphMgr.data().stats().processCountJobs();
                     tx.commit();
                 } catch (GraknException e) {
-                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
-                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
-                            ((RocksDBException)e.getCause()).getStatus().getCode() == Status.Code.Busy;
-                    if (txConflicted) {
-                        countJobNotifications.release();
-                    } else {
-                        throw e;
+                    if (e.errorMessage().isPresent() && e.errorMessage().get().code().equals(DATABASE_CLOSED.code())) {
+                        break;
+                    }
+                    else {
+                        // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+                        boolean txConflicted = e.getCause() instanceof RocksDBException &&
+                                ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
+                        if (txConflicted) {
+                            countJobNotifications.release();
+                        } else {
+                            throw e;
+                        }
                     }
                 }
             }
@@ -355,10 +361,6 @@ public class RocksDatabase implements Grakn.Database {
                 throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
             countJobNotifications.drainPermits();
-        }
-
-        private boolean running() {
-            return !isStopped && isOpen.get();
         }
 
         private void stop() {
