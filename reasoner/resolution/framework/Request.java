@@ -31,16 +31,13 @@ import static grakn.common.collection.Collections.list;
 public class Request {
     private final Path path;
     private final UnifiedConceptMap partialConceptMap;
-    private final List<Object> unifiers;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
                    UnifiedConceptMap partialConceptMap,
-                   List<Object> unifiers,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
-        this.unifiers = unifiers;
         this.partialDerivation = partialDerivation;
     }
 
@@ -64,23 +61,18 @@ public class Request {
         return partialConceptMap;
     }
 
-    public List<Object> unifiers() {
-        return unifiers;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialConceptMap, request.partialConceptMap()) &&
-                Objects.equals(unifiers, request.unifiers());
+                Objects.equals(partialConceptMap, request.partialConceptMap());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialConceptMap, unifiers);
+        return Objects.hash(path, partialConceptMap);
     }
 
     @Override

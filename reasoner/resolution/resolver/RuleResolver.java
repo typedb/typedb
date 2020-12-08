@@ -61,7 +61,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), derivation, self());
-                Response.Answer response = new Response.Answer(fromUpstream, answer, fromUpstream.unifiers());
+                Response.Answer response = new Response.Answer(fromUpstream, answer);
                 return Either.second(response);
             } else {
                 return produceMessage(fromUpstream, responseProducer);
@@ -69,7 +69,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
         } else {
             UnifiedConcludable nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.concludable()),
-                                                    nextPlannedDownstream.unify(conceptMap), fromDownstream.unifiers(), derivation);
+                                                    nextPlannedDownstream.unify(conceptMap), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }
@@ -88,7 +88,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
-                return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
+                return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
 

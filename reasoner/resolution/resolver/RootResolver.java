@@ -76,7 +76,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
         } else {
             UnifiedConcludable nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.concludable()),
-                                                    nextPlannedDownstream.unify(conceptMap), fromDownstream.unifiers(), derivation);
+                                                    nextPlannedDownstream.unify(conceptMap), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }

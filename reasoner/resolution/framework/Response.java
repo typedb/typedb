@@ -45,14 +45,11 @@ public interface Response {
     class Answer implements Response {
         private final Request sourceRequest;
         private final ResolutionAnswer answer;
-        private final List<Object> unifiers;
 
         public Answer(Request sourceRequest,
-                      ResolutionAnswer answer,
-                      List<Object> unifiers) {
+                      ResolutionAnswer answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
-            this.unifiers = unifiers;
         }
 
         @Override
@@ -62,10 +59,6 @@ public interface Response {
 
         public ResolutionAnswer answer() {
             return answer;
-        }
-
-        public List<Object> unifiers() {
-            return unifiers;
         }
 
         @Override
@@ -93,7 +86,6 @@ public interface Response {
             return "\nAnswer{" +
                     "\nsourceRequest=" + sourceRequest +
                     ",\nanswer=" + answer +
-                    ",\nunifiers=" + unifiers +
                     "\n}\n";
         }
     }

@@ -83,7 +83,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
             ResolutionAnswer answer = new ResolutionAnswer(conceptMap, traversalPattern.toString(), derivation, self());
 
-            return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
+            return Either.second(new Response.Answer(fromUpstream, answer));
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
             ResolutionAnswer deduplicated = new ResolutionAnswer(conceptMap, traversalPattern.toString(), derivation, self());
@@ -106,7 +106,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
         if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
-            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map(), request.unifiers());
+            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
             receivedConceptMaps.add(request.partialConceptMap().map());
         }
         return responseProducer;
@@ -128,7 +128,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(conceptMap, traversalPattern.toString(), new ResolutionAnswer.Derivation(map()), self());
-                return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
+                return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
 
@@ -139,12 +139,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
     }
 
-    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap,
-                                         List<Object> unifiers) {
+    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
         for (Actor<RuleResolver> ruleActor : ruleActorSources.keySet()) {
             // TODO Compute the unifiers for each rule, send one request per unifier found.
             Unifier unifier = Unifier.identity();
-            Request toDownstream = new Request(path.append(ruleActor), UnifiedConceptMap.of(partialConceptMap, unifier), unifiers, ResolutionAnswer.Derivation.EMPTY);
+            Request toDownstream = new Request(path.append(ruleActor), UnifiedConceptMap.of(partialConceptMap, unifier), ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }
     }

@@ -27,8 +27,6 @@ import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
-import java.util.Arrays;
-
 public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<RootResolver> rootResolver;
@@ -40,7 +38,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
-        this.resolveRequest = new Request(new Request.Path(rootResolver), UnifiedConceptMap.empty(), Arrays.asList(), ResolutionAnswer.Derivation.EMPTY);
+        this.resolveRequest = new Request(new Request.Path(rootResolver), UnifiedConceptMap.empty(), ResolutionAnswer.Derivation.EMPTY);
         this.registry = resolverRegistry;
     }
 
