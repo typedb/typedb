@@ -320,7 +320,7 @@ public class RocksDatabase implements Grakn.Database {
         }
     }
 
-    static class StatisticsBackgroundCounter {
+    class StatisticsBackgroundCounter {
         private final RocksSession.Data session;
         private final Thread thread;
         private final Semaphore countJobNotifications;
@@ -339,9 +339,9 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         private void countFn() {
-            while (!isStopped) {
+            while (running()) {
                 waitForCountJob();
-                if (isStopped) break;
+                if (running()) break;
 
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
                     tx.graphMgr.data().stats().processCountJobs();
@@ -366,6 +366,10 @@ public class RocksDatabase implements Grakn.Database {
                 throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
             countJobNotifications.drainPermits();
+        }
+
+        private boolean running() {
+            return !isStopped && isOpen.get();
         }
 
         private void stop() {
