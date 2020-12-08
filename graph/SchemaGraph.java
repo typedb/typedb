@@ -82,12 +82,10 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
-    private final AtomicLong referenceCounter;
     private final Statistics statistics;
     private final Cache cache;
     private final boolean isReadOnly;
     private boolean isModified;
-    private boolean mayClose;
 
     public SchemaGraph(Storage storage, boolean isReadOnly) {
         this.storage = storage;
@@ -99,11 +97,9 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
-        referenceCounter = new AtomicLong();
         statistics = new Statistics();
         cache = new Cache();
         isModified = false;
-        mayClose = false;
     }
 
     static class Cache {
@@ -423,26 +419,6 @@ public class SchemaGraph implements Graph {
 
     public boolean isModified() {
         return isModified;
-    }
-
-    // TODO: verify
-    public void incrementReference() {
-        referenceCounter.incrementAndGet();
-    }
-
-    // TODO: verify
-    public void decrementReference() {
-        if (referenceCounter.decrementAndGet() == 0 && mayClose) {
-            storage.close();
-        }
-    }
-
-    // TODO: verify
-    public void mayClose() {
-        mayClose = true;
-        if (referenceCounter.get() == 0) {
-            storage.close();
-        }
     }
 
     /**

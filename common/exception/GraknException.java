@@ -18,29 +18,37 @@
 
 package grakn.core.common.exception;
 
+import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 public class GraknException extends RuntimeException {
+    @Nullable
+    private final ErrorMessage errorMessage;
 
     // TODO replace usages with GraknException.of()
     public GraknException(String error) {
         super(error);
+        errorMessage = null;
     }
 
     // TODO replace usages with GraknException.of()
     public GraknException(ErrorMessage error) {
         super(error.toString());
         assert !getMessage().contains("%s");
+        this.errorMessage = error;
     }
 
     // TODO replace usages with GraknException.of()
     public GraknException(Exception e) {
         super(e);
+        errorMessage = null;
     }
 
     // TODO replace usages with GraknException.of()
     public GraknException(List<GraknException> exceptions) {
         super(getMessages(exceptions));
+        errorMessage = null;
     }
 
     public static GraknException of(Exception e) {
@@ -48,11 +56,15 @@ public class GraknException extends RuntimeException {
     }
 
     public static GraknException of(ErrorMessage errorMessage) {
-        return new GraknException(errorMessage.message());
+        return new GraknException(errorMessage);
     }
 
     public static GraknException of(String error) {
         return new GraknException(error);
+    }
+
+    public Optional<ErrorMessage> errorMessage() {
+        return Optional.ofNullable(errorMessage);
     }
 
     public static String getMessages(List<GraknException> exceptions) {

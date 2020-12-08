@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -64,7 +65,6 @@ public class RocksDatabase implements Grakn.Database {
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock dataWriteSchemaLock;
-    private final StampedLock dataReadSchemaLock;
     private final AtomicBoolean isOpen;
     private Cache cache;
     private final RocksSession.Data statisticsBackgroundCounterSession;
@@ -77,7 +77,6 @@ public class RocksDatabase implements Grakn.Database {
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
         dataWriteSchemaLock = new StampedLock();
-        dataReadSchemaLock = new StampedLock();
 
         try {
             rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
@@ -126,7 +125,8 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.message(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+
         long lock = 0;
         final RocksSession session;
 
@@ -143,16 +143,29 @@ public class RocksDatabase implements Grakn.Database {
         return session;
     }
 
-    synchronized Cache cache() {
+    synchronized Cache borrowCache() {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+
         if (cache == null) cache = new Cache(this);
+        cache.borrow();
         return cache;
     }
 
-    synchronized void closeCachedSchemaGraph() {
+    synchronized void unborrowCache(Cache cache) {
+        cache.unborrow();
+    }
+
+    synchronized void invalidateCache() {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+
         if (cache != null) {
-            cache.schemaGraph.mayClose();
+            cache.invalidate();
             cache = null;
         }
+    }
+
+    private synchronized void closeCache() {
+        if (cache != null) cache.close();
     }
 
     private Path directory() {
@@ -192,19 +205,6 @@ public class RocksDatabase implements Grakn.Database {
         return dataWriteSchemaLock;
     }
 
-    /**
-     * Get the lock that guarantees that the schema is not modified at the same
-     * time as a data read transaction tries to acquire the cache of the schema.
-     * A new data (read) transaction cannot retrieve a schema cache while a
-     * schema modification is being committed and the cache is refreshed, which
-     * this lock ensures.
-     *
-     * @return a {@code Stampedlock} to protect data reads from concurrent schema modification
-     */
-    StampedLock dataReadSchemaLock() {
-        return dataReadSchemaLock;
-    }
-
     void remove(RocksSession session) {
         if (statisticsBackgroundCounterSession != session) {
             final long lock = sessions.remove(session.uuid()).second();
@@ -217,7 +217,7 @@ public class RocksDatabase implements Grakn.Database {
             sessions.values().forEach(p -> p.first().close());
             statisticsBackgroundCounter.stop();
             statisticsBackgroundCounterSession.close();
-            if (cache != null) cache.schemaGraph().storage().close();
+            closeCache();
             rocksData.close();
             rocksSchema.close();
         }
@@ -260,11 +260,17 @@ public class RocksDatabase implements Grakn.Database {
         private final TraversalCache traversalCache;
         private final TypeHinterCache typeHinterCache;
         private final SchemaGraph schemaGraph;
+        private final RocksStorage schemaStorage;
+        private long borrowerCount;
+        private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            schemaGraph = new SchemaGraph(new RocksStorage(database.rocksSchema(), true), true);
+            schemaStorage = new RocksStorage(database.rocksSchema(), true);
+            schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             typeHinterCache = new TypeHinterCache();
+            borrowerCount = 0L;
+            invalidated = false;
         }
 
         public TraversalCache traversal() {
@@ -278,6 +284,30 @@ public class RocksDatabase implements Grakn.Database {
         public SchemaGraph schemaGraph() {
             return schemaGraph;
         }
+
+        private void borrow() {
+            borrowerCount++;
+        }
+
+        private void unborrow() {
+            borrowerCount--;
+            mayClose();
+        }
+
+        private void invalidate() {
+            invalidated = true;
+            mayClose();
+        }
+
+        private void mayClose() {
+            if (borrowerCount == 0 && invalidated) {
+                schemaStorage.close();
+            }
+        }
+
+        private void close() {
+            schemaStorage.close();
+        }
     }
 
     static class StatisticsBackgroundCounter {
@@ -288,8 +318,6 @@ public class RocksDatabase implements Grakn.Database {
 
         StatisticsBackgroundCounter(RocksSession.Data session) {
             this.session = session;
-            // NOTE: We use a Semaphore instead of CountDownLatch here because semaphore is closer to our usage pattern here.
-            // We want to start counting as long as one transaction notifies, and be able to reset to waiting state.
             countJobNotifications = new Semaphore(1);
             thread = NamedThreadFactory.create(session.database.name + "::statistics-background-counter")
                     .newThread(this::countFn);
@@ -301,24 +329,27 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         private void countFn() {
-            while (!isStopped) {
-                waitForCountJob();
-                if (isStopped) break;
-
+            do {
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
                     tx.graphMgr.data().stats().processCountJobs();
                     tx.commit();
                 } catch (GraknException e) {
-                    // TODO: Add specific code indicating rocksdb conflict to GraknException status code
-                    boolean txConflicted = e.getCause() instanceof RocksDBException &&
-                            ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
-                    if (txConflicted) {
-                        countJobNotifications.release();
-                    } else {
-                        throw e;
+                    if (e.errorMessage().isPresent() && e.errorMessage().get().code().equals(DATABASE_CLOSED.code())) {
+                        break;
+                    }
+                    else {
+                        // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+                        boolean txConflicted = e.getCause() instanceof RocksDBException &&
+                                ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
+                        if (txConflicted) {
+                            countJobNotifications.release();
+                        } else {
+                            throw e;
+                        }
                     }
                 }
-            }
+                waitForCountJob();
+            } while (!isStopped);
         }
 
         private void waitForCountJob() {
