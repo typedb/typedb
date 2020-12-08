@@ -21,7 +21,6 @@ package grakn.core.rocks;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -61,35 +60,34 @@ public class RocksDatabase implements Grakn.Database {
     private final RocksGrakn rocksGrakn;
     private final OptimisticTransactionDB rocksData;
     private final OptimisticTransactionDB rocksSchema;
-    private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
+    private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock dataWriteSchemaLock;
-    private final AtomicBoolean isOpen;
-    private Cache cache;
     private final RocksSession.Data statisticsBackgroundCounterSession;
-    final StatisticsBackgroundCounter statisticsBackgroundCounter;
+    private final StatisticsBackgroundCounter statisticsBackgroundCounter;
+    private Cache cache;
+    private final AtomicBoolean isOpen;
 
     private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
         this.name = name;
         this.rocksGrakn = rocksGrakn;
-        schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
-        dataKeyGenerator = new KeyGenerator.Data.Persisted();
-        sessions = new ConcurrentHashMap<>();
-        dataWriteSchemaLock = new StampedLock();
-
         try {
             rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
             rocksData = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
         } catch (RocksDBException e) {
             throw new GraknException(e);
         }
-
-        isOpen = new AtomicBoolean(true);
+        schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
+        dataKeyGenerator = new KeyGenerator.Data.Persisted();
+        sessions = new ConcurrentHashMap<>();
+        dataWriteSchemaLock = new StampedLock();
         if (isNew) initialise();
         else load();
         statisticsBackgroundCounterSession = new RocksSession.Data(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
+        cache = null;
+        isOpen = new AtomicBoolean(true);
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
@@ -143,29 +141,9 @@ public class RocksDatabase implements Grakn.Database {
         return session;
     }
 
-    synchronized Cache borrowCache() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
-
-        if (cache == null) cache = new Cache(this);
-        cache.borrow();
-        return cache;
-    }
-
-    synchronized void unborrowCache(Cache cache) {
-        cache.unborrow();
-    }
-
-    synchronized void invalidateCache() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
-
-        if (cache != null) {
-            cache.invalidate();
-            cache = null;
-        }
-    }
-
-    private synchronized void closeCache() {
-        if (cache != null) cache.close();
+    @Override
+    public String name() {
+        return name;
     }
 
     private Path directory() {
@@ -192,40 +170,9 @@ public class RocksDatabase implements Grakn.Database {
         return dataKeyGenerator;
     }
 
-    /**
-     * Get the lock that guarantees that the schema is not modified at the same
-     * time as data being written to the database. When a schema session is
-     * opened (to modify the schema), all write transaction need to wait until
-     * the schema session is completed. If there is a write transaction opened,
-     * a schema session needs to wait until those transactions are completed.
-     *
-     * @return a {@code StampedLock} to protect data writes from concurrent schema modification
-     */
-    StampedLock dataWriteSchemaLock() {
-        return dataWriteSchemaLock;
-    }
-
-    void remove(RocksSession session) {
-        if (statisticsBackgroundCounterSession != session) {
-            final long lock = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
-        }
-    }
-
-    void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            sessions.values().forEach(p -> p.first().close());
-            statisticsBackgroundCounter.stop();
-            statisticsBackgroundCounterSession.close();
-            closeCache();
-            rocksData.close();
-            rocksSchema.close();
-        }
-    }
-
     @Override
-    public String name() {
-        return name;
+    public Stream<Grakn.Session> sessions() {
+        return sessions.values().stream().map(Pair::first);
     }
 
     @Override
@@ -239,9 +186,64 @@ public class RocksDatabase implements Grakn.Database {
         else return null;
     }
 
-    @Override
-    public Stream<Grakn.Session> sessions() {
-        return sessions.values().stream().map(Pair::first);
+    void remove(RocksSession session) {
+        if (statisticsBackgroundCounterSession != session) {
+            final long lock = sessions.remove(session.uuid()).second();
+            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
+        }
+    }
+
+    /**
+     * Get the lock that guarantees that the schema is not modified at the same
+     * time as data being written to the database. When a schema session is
+     * opened (to modify the schema), all write transaction need to wait until
+     * the schema session is completed. If there is a write transaction opened,
+     * a schema session needs to wait until those transactions are completed.
+     *
+     * @return a {@code StampedLock} to protect data writes from concurrent schema modification
+     */
+    StampedLock dataWriteSchemaLock() {
+        return dataWriteSchemaLock;
+    }
+
+    StatisticsBackgroundCounter statisticsBackgroundCounter() {
+        return statisticsBackgroundCounter;
+    }
+
+    synchronized Cache borrowCache() {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+
+        if (cache == null) cache = new Cache(this);
+        cache.borrow();
+        return cache;
+    }
+
+    synchronized void unborrowCache(Cache cache) {
+        cache.unborrow();
+    }
+
+    synchronized void invalidateCache() {
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+
+        if (cache != null) {
+            cache.invalidate();
+            cache = null;
+        }
+    }
+
+    private synchronized void closeCache() {
+        if (cache != null) cache.close();
+    }
+
+    void close() {
+        if (isOpen.compareAndSet(true, false)) {
+            sessions.values().forEach(p -> p.first().close());
+            statisticsBackgroundCounter.stop();
+            statisticsBackgroundCounterSession.close();
+            closeCache();
+            rocksData.close();
+            rocksSchema.close();
+        }
     }
 
     @Override
@@ -324,7 +326,7 @@ public class RocksDatabase implements Grakn.Database {
             thread.start();
         }
 
-        public void needsBackgroundCounting() {
+        void needsBackgroundCounting() {
             countJobNotifications.release();
         }
 

@@ -297,7 +297,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     graphMgr.data().commit();
                     dataStorage.rocksTx.commit();
                     if (graphMgr.data().stats().needsBackgroundCounting()) {
-                        session.database.statisticsBackgroundCounter.needsBackgroundCounting();
+                        session.database.statisticsBackgroundCounter().needsBackgroundCounting();
                     }
                 } catch (RocksDBException e) {
                     rollback();
