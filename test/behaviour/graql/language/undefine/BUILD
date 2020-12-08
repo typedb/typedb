@@ -39,7 +39,7 @@ java_test(
         "@graknlabs_behaviour//graql/language:undefine.feature",
     ],
     classpath_resources = ["//test/conf:logback"],
-    size = "small",
+    size = "medium",
     visibility = ["//visibility:public"]
 )
 

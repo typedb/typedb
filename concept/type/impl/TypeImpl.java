@@ -156,6 +156,9 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     public TypeImpl asType() { return this; }
 
     @Override
+    public boolean isType() { return true; }
+
+    @Override
     public ThingTypeImpl asThingType() {
         throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(ThingType.class)));
     }

@@ -32,6 +32,7 @@ host_compatible_java_library(
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java/query",
 
         # External dependencies from Maven
