@@ -117,7 +117,6 @@ public class SchemaGraph implements Graph {
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
         }
 
-
     }
 
     @Override
@@ -168,6 +167,13 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex rootRoleType() {
         return getType(ROLE.label(), ROLE.scope());
+    }
+
+    public ResourceIterator<RuleStructure> rules() {
+        Encoding.Prefix index = IndexIID.Rule.prefix();
+        ResourceIterator<RuleStructure> ruleStructures = storage.iterate(index.bytes(), (key, value) ->
+                new RuleStructureImpl.Persisted(this, StructureIID.Rule.of(value)));
+        return ruleStructures;
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -233,14 +239,6 @@ public class SchemaGraph implements Graph {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
-        });
-    }
-
-    public RuleStructure convert(StructureIID.Rule iid) {
-        return rulesByIID.computeIfAbsent(iid, i -> {
-            final RuleStructure rule = new RuleStructureImpl.Persisted(this, i);
-            rulesByLabel.putIfAbsent(rule.label(), rule);
-            return rule;
         });
     }
 

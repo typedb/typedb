@@ -25,7 +25,6 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.logic.concludable.HeadConcludable;
-import grakn.core.logic.tool.TypeHinter;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
@@ -49,6 +48,7 @@ import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND
 public class Rule {
 
     private final ConceptManager conceptMgr;
+    private LogicManager logicManager;
     private final RuleStructure structure;
     private final Conjunction when;
     private final Set<Constraint> then;
@@ -58,14 +58,15 @@ public class Rule {
     private final Set<HeadConcludable<?, ?>> head;
     private final Set<ConjunctionConcludable<?, ?>> body;
 
-    private Rule(ConceptManager conceptMgr, RuleStructure structure, TypeHinter typeHinter) {
+    private Rule(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
         this.conceptMgr = conceptMgr;
+        this.logicManager = logicManager;
         this.structure = structure;
         // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
         // TODO re-enable type hints once traversal engine is completed
-//        this.when = typeHinter.computeHintsExhaustive(whenPattern(structure.when()));
+//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
         this.when = whenPattern(structure.when());
-        this.then = thenConstraints(getThenPreNormalised());
+        this.then = thenConstraints(structure.then());
         positiveWhenTypeHints = positiveTypeHints(this.when);
         negativeWhenTypeHints = negativeTypeHints(this.when);
         positiveThenTypeHints = positiveTypeHints(this.then);
@@ -74,14 +75,15 @@ public class Rule {
         this.body = ConjunctionConcludable.of(this.when);
     }
 
-    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter, String label,
+    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         graql.lang.pattern.schema.Rule.validate(label, when, then);
         this.conceptMgr = conceptMgr;
+        this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
         // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
         // TODO re-enable type hints once traversal engine is completed
-//        this.when = typeHinter.computeHintsExhaustive(whenPattern(structure.when()));
+//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
         this.when = whenPattern(structure.when());
         this.then = thenConstraints(structure.then());
         validateLabelsExist();
@@ -110,13 +112,13 @@ public class Rule {
         return null;
     }
 
-    public static Rule of(ConceptManager conceptMgr, RuleStructure structure, TypeHinter typeHinter) {
-        return new Rule(conceptMgr, structure, typeHinter);
+    public static Rule of(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
+        return new Rule(conceptMgr, logicManager, structure);
     }
 
-    public static Rule of(ConceptManager conceptMgr, GraphManager graphMgr, TypeHinter typeHinter, String label,
+    public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
                           graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        return new Rule(graphMgr, conceptMgr, typeHinter, label, when, then);
+        return new Rule(graphMgr, conceptMgr, logicManager, label, when, then);
     }
 
     public Set<ConjunctionConcludable<?, ?>> body() {

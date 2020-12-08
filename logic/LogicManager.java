@@ -27,6 +27,8 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
+import java.util.stream.Stream;
+
 public class LogicManager {
 
     private final ConceptManager conceptMgr;
@@ -48,7 +50,7 @@ public class LogicManager {
             logicCache.rule().invalidate(label);
         }
 
-        Rule rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
+        Rule rule = Rule.of(graphMgr, conceptMgr, this, label, when, then);
         logicCache.rule().put(label, rule);
 
         // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
@@ -60,8 +62,12 @@ public class LogicManager {
         Rule rule = logicCache.rule().getIfPresent(label);
         if (rule != null) return rule;
         RuleStructure structure = graphMgr.schema().getRule(label);
-        if (structure != null) return Rule.of(conceptMgr, structure, typeHinter);
+        if (structure != null) return Rule.of(conceptMgr, this, structure);
         return null;
+    }
+
+    public Stream<Rule> rules() {
+
     }
 
     public TypeHinter typeHinter() {
