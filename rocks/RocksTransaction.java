@@ -27,8 +27,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.graph.DataGraph;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
+import grakn.core.logic.LogicCache;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.tool.TypeHinterCache;
 import grakn.core.logic.tool.TypeHinter;
 import grakn.core.query.QueryManager;
 import grakn.core.reasoner.Reasoner;
@@ -63,10 +63,10 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         context = new Context.Transaction(session.context(), options).type(type);
     }
 
-    void initialise(GraphManager graphMgr, TraversalCache traversalCache, TypeHinterCache typeHinterCache) {
+    void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {
         TraversalEngine traversalEngine = new TraversalEngine(graphMgr, traversalCache);
         conceptMgr = new ConceptManager(graphMgr);
-        logicMgr = new LogicManager(graphMgr, conceptMgr, new TypeHinter(conceptMgr, traversalEngine, typeHinterCache));
+        logicMgr = new LogicManager(graphMgr, conceptMgr, traversalEngine, logicCache);
         reasoner = new Reasoner(conceptMgr, traversalEngine, logicMgr);
         queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
@@ -154,7 +154,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
-            initialise(graphMgr, new TraversalCache(), new TypeHinterCache());
+            initialise(graphMgr, new TraversalCache(), new LogicCache());
         }
 
         @Override
@@ -261,7 +261,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
             graphMgr = new GraphManager(schemaGraph, dataGraph);
 
-            initialise(graphMgr, session.database.cache().traversal(), new TypeHinterCache());
+            initialise(graphMgr, session.database.cache().traversal(), session.database.cache().logic());
         }
 
         @Override

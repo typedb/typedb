@@ -18,17 +18,18 @@
 
 package grakn.core.logic.tool;
 
+import grakn.core.common.cache.CommonCache;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.Type;
+import grakn.core.graph.GraphManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
@@ -60,9 +61,10 @@ public class TypeHinter {
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
-    private final TypeHinterCache cache;
+    private final CommonCache<Conjunction, Map<Reference, Set<Label>>> cache;
 
-    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng, TypeHinterCache cache) {
+    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng,
+                      CommonCache<Conjunction, Map<Reference, Set<Label>>> cache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.cache = cache;

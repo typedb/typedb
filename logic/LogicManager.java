@@ -22,6 +22,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.tool.TypeHinter;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
@@ -31,35 +32,34 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final GraphManager graphMgr;
     private final TypeHinter typeHinter;
-    private RuleCache ruleCache;
+    private LogicCache logicCache;
 
-    public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter, RuleCache ruleCache) {
+    public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
-        this.typeHinter = typeHinter;
-        this.ruleCache = ruleCache;
+        this.typeHinter = new TypeHinter(conceptMgr, traversalEng, logicCache.hinter());
+        this.logicCache = logicCache;
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        final RuleStructure structure = graphMgr.schema().getRule(label);
-        if (structure != null) structure.delete();
-        Rule rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
-
-        Rule rule = ruleCache.getIfPresent(label);
-        final RuleStructure vertex = graphMgr.schema().getRule(label);
-        if (graphMgr.schema().getRule(label) != null) {
-            return rule;
+        RuleStructure structure = graphMgr.schema().getRule(label);
+        if (structure != null) {
+            structure.delete();
+            logicCache.rule().invalidate(label);
         }
 
-        if (vertex != null) vertex.delete();
-        rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
+        Rule rule = Rule.of(conceptMgr, graphMgr, typeHinter, label, when, then);
+        logicCache.rule().put(label, rule);
+
         // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
 
         return rule;
     }
 
     public Rule getRule(String label) {
-        final RuleStructure structure = graphMgr.schema().getRule(label);
+        Rule rule = logicCache.rule().getIfPresent(label);
+        if (rule != null) return rule;
+        RuleStructure structure = graphMgr.schema().getRule(label);
         if (structure != null) return Rule.of(conceptMgr, structure, typeHinter);
         return null;
     }
