@@ -61,12 +61,35 @@ public class Rule {
     private Rule(ConceptManager conceptMgr, RuleStructure structure, TypeHinter typeHinter) {
         this.conceptMgr = conceptMgr;
         this.structure = structure;
-        this.when = typeHinter.computeHintsExhaustive(whenPattern(structure.when()));
         // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
+        // TODO re-enable type hints once traversal engine is completed
+//        this.when = typeHinter.computeHintsExhaustive(whenPattern(structure.when()));
+        this.when = whenPattern(structure.when());
         this.then = thenConstraints(getThenPreNormalised());
         positiveWhenTypeHints = positiveTypeHints(this.when);
         negativeWhenTypeHints = negativeTypeHints(this.when);
         positiveThenTypeHints = positiveTypeHints(this.then);
+
+        this.head = createHead(this.then, this.when.variables());
+        this.body = ConjunctionConcludable.of(this.when);
+    }
+
+    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter, String label,
+                 graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+        graql.lang.pattern.schema.Rule.validate(label, when, then);
+        this.conceptMgr = conceptMgr;
+        this.structure = graphMgr.schema().create(label, when, then);
+        // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
+        // TODO re-enable type hints once traversal engine is completed
+//        this.when = typeHinter.computeHintsExhaustive(whenPattern(structure.when()));
+        this.when = whenPattern(structure.when());
+        this.then = thenConstraints(structure.then());
+        validateLabelsExist();
+
+        positiveWhenTypeHints = positiveTypeHints(this.when);
+        negativeWhenTypeHints = negativeTypeHints(this.when);
+        positiveThenTypeHints = positiveTypeHints(this.then);
+        validateRuleSatisfiable();
 
         this.head = createHead(this.then, this.when.variables());
         this.body = ConjunctionConcludable.of(this.when);
@@ -85,25 +108,6 @@ public class Rule {
     private Set<Label> positiveTypeHints(Set<Constraint> constraints) {
         // TODO
         return null;
-    }
-
-    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter, String label,
-                 graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        graql.lang.pattern.schema.Rule.validate(label, when, then);
-        this.conceptMgr = conceptMgr;
-        this.structure = graphMgr.schema().create(label, when, then);
-        this.when = typeHinter.computeHintsExhaustive(whenPattern(structure.when()));
-        // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
-        this.then = thenConstraints(structure.then());
-        validateLabelsExist();
-
-        positiveWhenTypeHints = positiveTypeHints(this.when);
-        negativeWhenTypeHints = negativeTypeHints(this.when);
-        positiveThenTypeHints = positiveTypeHints(this.then);
-        validateRuleSatisfiable();
-
-        this.head = createHead(this.then, this.when.variables());
-        this.body = ConjunctionConcludable.of(this.when);
     }
 
     public static Rule of(ConceptManager conceptMgr, RuleStructure structure, TypeHinter typeHinter) {
