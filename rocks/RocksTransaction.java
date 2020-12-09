@@ -29,8 +29,6 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.logic.LogicCache;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.tool.TypeHinter;
-import grakn.core.logic.tool.TypeHinterCache;
 import grakn.core.query.QueryManager;
 import grakn.core.reasoner.Reasoner;
 import grakn.core.traversal.TraversalCache;
