@@ -138,7 +138,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     return Stream.empty();
                 }
             }
-            matchRolesAndUnify(this.constraint().players(), unifyWith.constraint().players(), new HashSet<>()
+            matchRolesAndUnify(this.constraint().players(), unifyWith.constraint().players(), new HashSet<>(),
                     startingUnifier, allUnifiers);
 
             return allUnifiers.stream();
