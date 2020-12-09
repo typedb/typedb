@@ -114,7 +114,7 @@ public interface Grakn extends AutoCloseable {
 
         ConceptManager concepts();
 
-        LogicManager logics();
+        LogicManager logic();
 
         QueryManager query();
 

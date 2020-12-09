@@ -82,7 +82,7 @@ public class RuleTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
 
                     final EntityType person = conceptMgr.putEntityType("person");
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
@@ -98,7 +98,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
                     Set<ThenConcludable<?, ?>> thenConcludables = rule.head();
@@ -126,7 +126,7 @@ public class RuleTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
 
                     final EntityType milk = conceptMgr.putEntityType("milk");
                     final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
@@ -141,7 +141,7 @@ public class RuleTest {
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
                     Set<ThenConcludable<?, ?>> thenConcludables = rule.head();
@@ -169,7 +169,7 @@ public class RuleTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
 
                     final EntityType milk = conceptMgr.putEntityType("milk");
                     final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
@@ -183,7 +183,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
                     Set<ThenConcludable<?, ?>> thenConcludables = rule.head();

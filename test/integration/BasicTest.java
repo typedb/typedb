@@ -320,7 +320,7 @@ public class BasicTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
                     final AttributeType name = conceptMgr.putAttributeType("name", STRING);
                     final EntityType person = conceptMgr.putEntityType("person");
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
@@ -334,7 +334,7 @@ public class BasicTest {
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
                     final EntityType person = conceptMgr.getEntityType("person");
                     final AttributeType.String name = conceptMgr.getAttributeType("name").asString();
                     final RelationType friendship = conceptMgr.getRelationType("friendship");
@@ -359,7 +359,7 @@ public class BasicTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
 
                     final EntityType person = conceptMgr.putEntityType("person");
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
@@ -376,7 +376,7 @@ public class BasicTest {
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logics();
+                    final LogicManager logicMgr = txn.logic();
                     final EntityType person = conceptMgr.getEntityType("person");
                     final RelationType friendship = conceptMgr.getRelationType("friendship");
                     final RoleType friend = friendship.getRelates("friend");
