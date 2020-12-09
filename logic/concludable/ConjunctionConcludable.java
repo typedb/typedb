@@ -138,7 +138,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     return Stream.empty();
                 }
             }
-            matchRolesAndUnify(this.constraint().players(), unifyWith.constraint().players(),
+            matchRolesAndUnify(this.constraint().players(), unifyWith.constraint().players(), new HashSet<>();
                     startingUnifier, allUnifiers);
 
             return allUnifiers.stream();
@@ -147,6 +147,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         private void matchRolesAndUnify(
                 List<RelationConstraint.RolePlayer> conjunctionRolePlayers,
                 List<RelationConstraint.RolePlayer> headRolePlayers,
+                Set<RelationConstraint.RolePlayer> visitedHeadRolePlayers,
                 Map<Reference, Set<Reference>> currentUnifier,
                 Set<Map<Reference, Set<Reference>>> allUnifiers
         ) {
@@ -157,10 +158,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             }
             RelationConstraint.RolePlayer conj = conjunctionRolePlayers.remove(0);
             for (RelationConstraint.RolePlayer head : headRolePlayers) {
-                if (updateUnifier(conj, head, copyOfCurrentUnifier)) {
-                    headRolePlayers.remove(head);
-                    matchRolesAndUnify(conjunctionRolePlayers, headRolePlayers, copyOfCurrentUnifier, allUnifiers);
-                    headRolePlayers.add(head);
+                if (!visitedHeadRolePlayers.contains(head) && updateUnifier(conj, head, copyOfCurrentUnifier)) {
+                    visitedHeadRolePlayers.add(head);
+                    matchRolesAndUnify(conjunctionRolePlayers, headRolePlayers,
+                            visitedHeadRolePlayers, copyOfCurrentUnifier, allUnifiers);
+                    visitedHeadRolePlayers.remove(head);
                 }
             }
         }
