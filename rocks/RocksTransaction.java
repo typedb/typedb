@@ -209,6 +209,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     // TODO: We should benchmark this
                     schemaStorage.rocksTx.disableIndexing();
                     conceptMgr.validateTypes();
+                    logicMgr.validateRules();
                     graphMgr.schema().commit();
                     schemaStorage.rocksTx.commit();
                     session.database.invalidateCache();

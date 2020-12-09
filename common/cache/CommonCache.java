@@ -49,4 +49,8 @@ public class CommonCache<KEY, VALUE> {
     }
 
     public VALUE getIfPresent(KEY key) { return cache.getIfPresent(key); }
+
+    public void clear() {
+        cache.invalidateAll();
+    }
 }

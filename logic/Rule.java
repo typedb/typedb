@@ -19,33 +19,25 @@
 package grakn.core.logic;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.type.RelationType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.util.Encoding;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
-import graql.lang.common.exception.GraqlException;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND;
+import static grakn.core.logic.LogicManager.validateLabelsExist;
 
 
 public class Rule {
@@ -62,8 +54,11 @@ public class Rule {
         this.conceptMgr = conceptMgr;
         this.logicManager = logicManager;
         this.structure = structure;
-        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
+        // TODO enable when we have type hinting
+//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
+//        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
+        this.when = whenPattern(structure.when());
+        this.then = thenPattern(structure.then());
         pruneThenTypeHints();
         this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
         this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
@@ -71,22 +66,21 @@ public class Rule {
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        graql.lang.pattern.schema.Rule.validate(label, when, then);
         this.conceptMgr = conceptMgr;
         this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
-
-        Conjunction whenConjunction = whenPattern(structure.when());
-        Conjunction thenConjunction = thenPattern(structure.then());
-        validateLabelsExist(whenConjunction, thenConjunction);
-
-        this.when = logicManager.typeHinter().computeHintsExhaustive(whenConjunction);
-        this.then = logicManager.typeHinter().computeHintsExhaustive(thenConjunction);
-        validateRuleSatisfiable();
+        validateLabelsExist(conceptMgr, this.structure);
+        // TODO enable when we have type hinting
+//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
+//        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
+        this.when = whenPattern(structure.when());
+        this.then = thenPattern(structure.then());
+        validateSatisfiable();
         pruneThenTypeHints();
 
         this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
         this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
+        validateCycles();
     }
 
     public static Rule of(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
@@ -154,8 +148,16 @@ public class Rule {
         return structure.hashCode(); // does not need caching
     }
 
-    boolean isCommitted() {
-        return structure.status().equals(Encoding.Status.COMMITTED);
+    void validateSatisfiable() {
+        // TODO check that the rule has a set of satisfiable type hints. We may want to use the stream of combinations of types
+        // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
+    }
+
+    void validateCycles() {
+        // TODO detect negated cycles in the rule graph
+        // TODO use the new rule as a starting point
+        // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
+
     }
 
     /**
@@ -192,40 +194,6 @@ public class Rule {
         return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
 
-    private void validateRuleSatisfiable() {
-        // TODO check that the rule has a set of satisfiable type hints. We may want to use the stream of combinations of types
-        // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
-    }
 
-    private void validateLabelsExist(Conjunction whenConjunction, Conjunction thenConjunction) {
-        Stream<Label> whenPositiveLabels = getTypeLabels(whenConjunction.variables().stream());
-        Stream<Label> whenNegativeLabels = getTypeLabels(whenConjunction.negations().stream().flatMap(this::negationVariables));
-        Stream<Label> thenLabels = getTypeLabels(thenConjunction.variables().stream());
-        Set<String> invalidLabels = invalidLabels(Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
-        if (!invalidLabels.isEmpty()) {
-            throw GraqlException.of(TYPES_NOT_FOUND.message(getLabel(), String.join(", ", invalidLabels)));
-        }
-    }
 
-    private Stream<Label> getTypeLabels(Stream<Variable> variables) {
-        return variables.filter(Variable::isType).map(variable -> variable.asType().label())
-                .filter(Optional::isPresent).map(labelConstraint -> labelConstraint.get().properLabel());
-    }
-
-    private Stream<Variable> negationVariables(Negation ruleNegation) {
-        assert ruleNegation.disjunction().conjunctions().size() == 1;
-        return ruleNegation.disjunction().conjunctions().iterator().next().variables().stream();
-    }
-
-    private Set<String> invalidLabels(Stream<Label> labels) {
-        return labels.filter(label -> {
-            if (label.scope().isPresent()) {
-                RelationType scope = conceptMgr.getRelationType(label.scope().get());
-                if (scope == null) return false;
-                return scope.getRelates(label.name()) == null;
-            } else {
-                return conceptMgr.getType(label.name()) == null;
-            }
-        }).map(Label::scopedName).collect(Collectors.toSet());
-    }
 }

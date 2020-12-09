@@ -42,7 +42,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -229,6 +228,11 @@ public class SchemaGraph implements Graph {
     public Stream<TypeVertex> bufferedTypes() {
         return typesByIID.values().stream();
     }
+
+    public Stream<RuleStructure> bufferedRules() {
+        return rulesByIID.values().stream();
+    }
+
 
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {

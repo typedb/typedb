@@ -167,6 +167,12 @@ public class QueryTest {
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
+                    // undefine `performance-tracker-rule` because it depends on an undefined role performance-tracker:tracker
+                    // else the commit would throw
+                    queryString = "undefine rule performance-tracker-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+
                     transaction.commit();
                 }
 
@@ -193,7 +199,7 @@ public class QueryTest {
                     assertNull(tx.logics().getRule("repo-collaborator-org-rule"));
 
                     // check total count
-                    assertEquals(20 - 4, tx.logics().rules().toList().size());
+                    assertEquals(20 - 5, tx.logics().rules().toList().size());
                 }
             }
         }

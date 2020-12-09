@@ -417,9 +417,9 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final RuleWrite TYPES_NOT_FOUND =
                 new RuleWrite(2, "The rule '%s' uses type(s) %s which are not defined in the schema.");
         public static final RuleWrite RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE =
-                new RuleWrite(2, "The rules '%s' cause inference cycles with negations");
+                new RuleWrite(3, "The rules '%s' causes inference cycles with negations");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(3, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(4, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

@@ -18,20 +18,31 @@
 
 package grakn.core.logic;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.type.RelationType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
+import grakn.core.graph.util.Encoding;
 import grakn.core.logic.tool.TypeHinter;
 import grakn.core.traversal.TraversalEngine;
+import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.constraint.TypeConstraint;
+import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
 
-import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND;
 
 public class LogicManager {
 
@@ -43,8 +54,8 @@ public class LogicManager {
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
-        this.typeHinter = new TypeHinter(conceptMgr, traversalEng, logicCache.hinter());
         this.logicCache = logicCache;
+        this.typeHinter = new TypeHinter(conceptMgr, traversalEng, logicCache.hinter());
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
@@ -57,24 +68,7 @@ public class LogicManager {
         Rule rule = Rule.of(graphMgr, conceptMgr, this, label, when, then);
         logicCache.rule().put(label, rule);
 
-        validateRuleCycles();
-
         return rule;
-    }
-
-    public void validateRuleCycles() {
-        List<Rule> uncommittedRulesInCycles = rules().filter(rule -> !rule.isCommitted())
-                .filter(this::inNegatedRuleCycle)
-                .toList();
-        if (!uncommittedRulesInCycles.isEmpty()) {
-            throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(uncommittedRulesInCycles));
-        }
-    }
-
-    private boolean inNegatedRuleCycle(Rule rule) {
-        // TODO detect negated cycles in the rule graph
-        // TODO use the new rule as a starting point
-        return false;
     }
 
     public Rule getRule(String label) {
@@ -82,26 +76,79 @@ public class LogicManager {
         if (rule != null) return rule;
         RuleStructure structure = graphMgr.schema().getRule(label);
         if (structure != null) {
-            rule = Rule.of(conceptMgr, this, structure);
-            logicCache.rule().put(rule.getLabel(), rule);
+            rule = logicCache.rule().get(structure.label(), l -> Rule.of(conceptMgr, this, structure));
             return rule;
         }
         return null;
     }
 
     public ResourceIterator<Rule> rules() {
-        return graphMgr.schema().rules().map(structure -> {
-            Rule rule = logicCache.rule().getIfPresent(structure.label());
-            if (rule == null) {
-                rule = Rule.of(conceptMgr, this, structure);
-                logicCache.rule().put(rule.getLabel(), rule);
-            }
+        return graphMgr.schema().rules().map(struct -> {
+            Rule rule = logicCache.rule().getIfPresent(struct.label());
+            if (rule == null) rule = logicCache.rule().get(struct.label(), l -> Rule.of(conceptMgr, this, struct));
             return rule;
         });
     }
 
-    public TypeHinter typeHinter() {
+    /**
+     * On commit we must clear the rule cache and revalidate rules
+     * Rule indexes should also be deleted and regenerated at approximate the same time
+     * Note: does not need to by synchronized as only called by one schema transaction at a time
+     */
+    public void validateRules() {
+        logicCache.rule().clear();
+        // validate all schema structures contain valid types
+        graphMgr.schema().rules().forEachRemaining(structure -> validateLabelsExist(conceptMgr, structure));
+        // validate all rules are satisfiable
+        rules().forEachRemaining(Rule::validateSatisfiable);
+        // validate new rules are stratifiable (eg. do not cause cycles through a negation)
+        graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
+                .forEach(structure -> getRule(structure.label()).validateCycles());
+    }
+
+    TypeHinter typeHinter() {
         return typeHinter;
     }
 
+    static void validateLabelsExist(ConceptManager conceptMgr, RuleStructure ruleStructure) {
+        graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = ruleStructure.when().normalise().patterns().get(0);
+        Stream<BoundVariable> positiveVariables = whenNormalised.patterns().stream().filter(Conjunctable::isVariable)
+                .map(Conjunctable::asVariable);
+        Stream<BoundVariable> negativeVariables = whenNormalised.patterns().stream().filter(Conjunctable::isNegation)
+                .flatMap(p -> negationVariables(p.asNegation()));
+        Stream<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
+        Stream<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
+        Stream<Label> thenLabels = getTypeLabels(ruleStructure.then().variables());
+        Set<String> invalidLabels = invalidLabels(conceptMgr, Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
+        if (!invalidLabels.isEmpty()) {
+            throw GraknException.of(TYPES_NOT_FOUND.message(ruleStructure.label(), String.join(", ", invalidLabels)));
+        }
+    }
+
+    private static Stream<Label> getTypeLabels(Stream<BoundVariable> variables) {
+        return variables.filter(BoundVariable::isType).map(variable -> variable.asType().label())
+                .filter(Optional::isPresent).map(labelConstraint -> {
+                    TypeConstraint.Label label = labelConstraint.get();
+                    if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
+                    else return Label.of(label.label());
+                });
+    }
+
+    private static Stream<BoundVariable> negationVariables(Negation<?> ruleNegation) {
+        assert ruleNegation.patterns().size() == 1 && ruleNegation.patterns().get(0).isDisjunction();
+        return ruleNegation.patterns().get(0).asDisjunction().patterns().stream()
+                .flatMap(pattern -> pattern.asConjunction().patterns().stream()).map(Pattern::asVariable);
+    }
+
+    private static Set<String> invalidLabels(ConceptManager conceptMgr, Stream<Label> labels) {
+        return labels.filter(label -> {
+            if (label.scope().isPresent()) {
+                RelationType scope = conceptMgr.getRelationType(label.scope().get());
+                if (scope == null) return false;
+                return scope.getRelates(label.name()) == null;
+            } else {
+                return conceptMgr.getType(label.name()) == null;
+            }
+        }).map(Label::scopedName).collect(Collectors.toSet());
+    }
 }
