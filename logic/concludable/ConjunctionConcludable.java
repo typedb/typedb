@@ -59,7 +59,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         );
     }
 
-    private Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable<?, ?> unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable<?, ?> unifyWith) {
         if (unifyWith instanceof HeadConcludable.Relation) return unify((HeadConcludable.Relation) unifyWith);
         else if (unifyWith instanceof HeadConcludable.Has) return unify((HeadConcludable.Has) unifyWith);
         else if (unifyWith instanceof HeadConcludable.Isa) return unify((HeadConcludable.Isa) unifyWith);
