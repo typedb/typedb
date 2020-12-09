@@ -18,7 +18,6 @@
 
 package grakn.core.logic;
 
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
@@ -44,37 +43,29 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND;
 
 
 public class Rule {
 
     private final ConceptManager conceptMgr;
-    private LogicManager logicManager;
+    private final LogicManager logicManager;
     private final RuleStructure structure;
     private final Conjunction when;
-    private final Set<Constraint> then;
-    private final Set<Label> positiveWhenTypeHints;
-    private final Set<Label> negativeWhenTypeHints;
-    private final Set<Label> thenTypeHints;
-    private final Set<HeadConcludable<?, ?>> head;
-    private final Set<ConjunctionConcludable<?, ?>> body;
+    private final Conjunction then;
+    private final Set<HeadConcludable<?, ?>> thenConcludables;
+    private final Set<ConjunctionConcludable<?, ?>> whenConcludables;
 
     private Rule(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
         this.conceptMgr = conceptMgr;
         this.logicManager = logicManager;
         this.structure = structure;
-        // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
-        // TODO re-enable type hints once traversal engine is completed
-//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-        this.when = whenPattern(structure.when());
-        this.then = thenConstraints(structure.then());
-        positiveWhenTypeHints = positiveTypeHints(this.when);
-        negativeWhenTypeHints = negativeTypeHints(this.when);
-        thenTypeHints = positiveTypeHints(this.then);
-
-        this.head = createHead(this.then, this.when.variables());
-        this.body = ConjunctionConcludable.of(this.when);
+        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
+        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
+        pruneThenTypeHints();
+        this.thenConcludables = createHead(this.then, this.when.variables());
+        this.whenConcludables = ConjunctionConcludable.of(this.when);
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
@@ -83,20 +74,18 @@ public class Rule {
         this.conceptMgr = conceptMgr;
         this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
-        // TODO we should merge `when` and `then`, then compute type hints, then copy them into the `then`
-        // TODO re-enable type hints once traversal engine is completed
-//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-        this.when = whenPattern(structure.when());
-        this.then = thenConstraints(structure.then());
-        validateLabelsExist();
 
-        positiveWhenTypeHints = positiveTypeHints(this.when);
-        negativeWhenTypeHints = negativeTypeHints(this.when);
-        thenTypeHints = positiveTypeHints(this.then);
+        Conjunction whenConjunction = whenPattern(structure.when());
+        Conjunction thenConjunction = thenPattern(structure.then());
+        validateLabelsExist(whenConjunction, thenConjunction);
+
+        this.when = logicManager.typeHinter().computeHintsExhaustive(whenConjunction);
+        this.then = logicManager.typeHinter().computeHintsExhaustive(thenConjunction);
         validateRuleSatisfiable();
+        pruneThenTypeHints();
 
-        this.head = createHead(this.then, this.when.variables());
-        this.body = ConjunctionConcludable.of(this.when);
+        this.thenConcludables = createHead(this.then, this.when.variables());
+        this.whenConcludables = ConjunctionConcludable.of(this.when);
     }
 
     public static Rule of(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
@@ -109,19 +98,21 @@ public class Rule {
     }
 
     public Set<ConjunctionConcludable<?, ?>> body() {
-        return body;
+        return whenConcludables;
     }
 
     public Set<HeadConcludable<?, ?>> head() {
-        return head;
+        return thenConcludables;
     }
 
-    public ResourceIterator<Rule> dependentRulesPositive() {
-        return Iterators.iterate(thenTypeHints).flatMap(label -> logicManager.rulesDependingPositively(label));
+    public ResourceIterator<Rule> findApplicableRulesPositive() {
+        // TODO find applicable rules from each non-negated ConjunctionConcludables
+        return null;
     }
 
-    public ResourceIterator<Rule> dependentRulesNegative() {
-        return Iterators.iterate(thenTypeHints).flatMap(label -> logicManager.rulesDependingNegatively(label));
+    public ResourceIterator<Rule> findApplicableRulesNegative() {
+        // TODO find applicable rules from negated ConjunctionConcludables
+        return null;
     }
 
     public String getLabel() {
@@ -162,24 +153,28 @@ public class Rule {
         return structure.hashCode(); // does not need caching
     }
 
-    private Set<Label> positiveTypeHints(Conjunction conjunction) {
-        // TODO
-        return null;
+    /**
+     * Remove type hints in the `then` pattern that are not valid in the `when` pattern
+     */
+    private void pruneThenTypeHints() {
+        then.variables().stream().filter(var -> var.identifier().isNamedReference())
+                .forEach(thenVar -> {
+                    Optional<Variable> whenVar = when.variables().stream().filter(var -> var.identifier().equals(thenVar.identifier())).findFirst();
+                    if (whenVar.isPresent() && whenVar.get().isThing()) {
+                        assert thenVar.isThing();
+                        whenVar.get().asThing().isa().ifPresent(whenIsa -> thenVar.asThing().isa().ifPresent(
+                                thenIsa -> thenIsa.retainHints(whenIsa.getTypeHints())));
+                    } else if (whenVar.isPresent() && whenVar.get().isType()) {
+                        assert thenVar.isType();
+                        whenVar.get().asType().sub().ifPresent(whenSub -> thenVar.asType().sub().ifPresent(
+                                thenSub -> thenSub.retainHints(whenSub.getTypeHints())));
+                    }
+                });
     }
 
-    private Set<Label> negativeTypeHints(Conjunction conjunction) {
-        // TODO
-        return null;
-    }
-
-    private Set<Label> positiveTypeHints(Set<Constraint> constraints) {
-        // TODO
-        return null;
-    }
-
-    private Set<HeadConcludable<?, ?>> createHead(Set<Constraint> thenConstraints, Set<Variable> constraintContext) {
+    private Set<HeadConcludable<?, ?>> createHead(Conjunction then, Set<Variable> constraintContext) {
         HashSet<HeadConcludable<?, ?>> thenConcludables = new HashSet<>();
-        thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing)
+        then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
                 .flatMap(constraint -> HeadConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
         return thenConcludables;
     }
@@ -188,9 +183,8 @@ public class Rule {
         return Conjunction.create(conjunction.normalise().patterns().get(0));
     }
 
-    private Set<Constraint> thenConstraints(ThingVariable<?> thenVariable) {
-        return VariableRegistry.createFromThings(list(thenVariable)).variables().stream().flatMap(
-                variable -> variable.constraints().stream()).collect(Collectors.toSet());
+    private Conjunction thenPattern(ThingVariable<?> thenVariable) {
+        return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
 
     private void validateRuleSatisfiable() {
@@ -198,10 +192,10 @@ public class Rule {
         // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
     }
 
-    private void validateLabelsExist() {
-        Stream<Label> whenPositiveLabels = getTypeLabels(when.variables().stream());
-        Stream<Label> whenNegativeLabels = getTypeLabels(when.negations().stream().flatMap(this::negationVariables));
-        Stream<Label> thenLabels = getTypeLabels(then.stream().flatMap(constraint -> constraint.variables().stream()));
+    private void validateLabelsExist(Conjunction whenConjunction, Conjunction thenConjunction) {
+        Stream<Label> whenPositiveLabels = getTypeLabels(whenConjunction.variables().stream());
+        Stream<Label> whenNegativeLabels = getTypeLabels(whenConjunction.negations().stream().flatMap(this::negationVariables));
+        Stream<Label> thenLabels = getTypeLabels(thenConjunction.variables().stream());
         Set<String> invalidLabels = invalidLabels(Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
         if (!invalidLabels.isEmpty()) {
             throw GraqlException.of(TYPES_NOT_FOUND.message(getLabel(), String.join(", ", invalidLabels)));
@@ -228,13 +222,5 @@ public class Rule {
                 return conceptMgr.getType(label.name()) == null;
             }
         }).map(Label::scopedName).collect(Collectors.toSet());
-    }
-
-    boolean dependsPositively(Label label) {
-        return positiveWhenTypeHints.contains(label);
-    }
-
-    boolean dependsNegatively(Label label) {
-        return negativeWhenTypeHints.contains(label);
     }
 }

@@ -52,11 +52,14 @@ public class LogicManager {
 
         Rule rule = Rule.of(graphMgr, conceptMgr, this, label, when, then);
         logicCache.rule().put(label, rule);
-
-        // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
-        // TODO use the new rule as a starting point, there's likely to be a use of `dependentRulesPositive` and `dependentRulesNegative`
+        validateRuleCycles(rule);
 
         return rule;
+    }
+
+    private void validateRuleCycles(Rule rule) {
+        // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
+        // TODO use the new rule as a starting point, there's likely to be a use of `dependentRulesPositive` and `dependentRulesNegative`
     }
 
     public Rule getRule(String label) {
