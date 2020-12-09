@@ -28,8 +28,6 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -79,6 +77,7 @@ public class TypeHinter {
         Map<Reference, Set<Label>> referenceHintsMapping =
                 retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()), parallelisation);
         long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
+
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
@@ -114,7 +113,7 @@ public class TypeHinter {
             Set<Label> hintLabels = localTypeHints.get(variable.reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfThings) {
-                    addInferredIsaLabels(variable.asThing(), localTypeHints.get(variable.reference()), labelMap);
+                    addInferredIsaLabels(variable.asThing(), hintLabels, labelMap);
                 }
                 addInferredRoleLabels(variable.asThing(), localTypeHints, variableHints);
             } else if (variable.isType() && hintLabels.size() != numOfThings) {
@@ -139,12 +138,6 @@ public class TypeHinter {
             if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().type();
             return null;
         } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private void clearHintLabels(Variable variable) {
-        if (variable.isType()) variable.asType().sub().ifPresent(SubConstraint::clearHintLabels);
-        else if (variable.isThing()) variable.asThing().isa().ifPresent(IsaConstraint::clearHintLabels);
-        else throw GraknException.of(ILLEGAL_STATE);
     }
 
     private void removeHintLabel(Variable variable, Label label) {
@@ -221,6 +214,8 @@ public class TypeHinter {
     }
 
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
+        //TODO: use .getType(label) once ConceptManager can handle labels
+        hints.removeIf(label -> conceptMgr.getType(label.scopedName()).isAbstract());
         if (!variable.isa().isPresent()) {
             variable.isa(lowestCommonSuperType(hints, labelMap), false);
         }
