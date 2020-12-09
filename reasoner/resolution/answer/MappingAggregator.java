@@ -17,18 +17,22 @@
 
 package grakn.core.reasoner.resolution.answer;
 
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class MappingAggregator extends Aggregator {
 
-    private Map<Reference.Name, Reference.Name> mapping;
+    private final Map<Reference.Name, Reference.Name> mapping;
+    private final Map<Reference.Name, Reference.Name> reverseMapping;
 
     public static MappingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
         return new MappingAggregator(conceptMap, variableMap);
@@ -44,20 +48,38 @@ public class MappingAggregator extends Aggregator {
     MappingAggregator(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
         super(conceptMap);
         this.mapping = mapping;
+        this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
     @Override
     ConceptMap transform(ConceptMap original) {
-        return null; // TODO
+        return convert(original, mapping);
     }
 
     @Override
     ConceptMap unTransform(ConceptMap conceptMap) {
-        return null; // TODO
+        return convert(conceptMap, reverseMapping);
+    }
+
+    private ConceptMap convert(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
+        Map<Reference, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
+            transformed.put(e.getValue(), conceptMap.get(e.getKey()));
+        }
+        return new ConceptMap(transformed);
     }
 
     @Override
     public boolean equals(Object o) {
-        return false; // TODO implement
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final MappingAggregator that = (MappingAggregator) o;
+        return mapping.equals(that.mapping) &&
+                Objects.equals(reverseMapping, that.reverseMapping);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mapping, reverseMapping);
     }
 }
