@@ -76,7 +76,7 @@ public class LogicManager {
         if (rule != null) return rule;
         RuleStructure structure = graphMgr.schema().getRule(label);
         if (structure != null) {
-            rule = logicCache.rule().get(structure.label(), l -> Rule.of(conceptMgr, this, structure));
+            rule = logicCache.rule().get(structure.label(), l -> Rule.of(this, structure));
             return rule;
         }
         return null;
@@ -85,7 +85,7 @@ public class LogicManager {
     public ResourceIterator<Rule> rules() {
         return graphMgr.schema().rules().map(struct -> {
             Rule rule = logicCache.rule().getIfPresent(struct.label());
-            if (rule == null) rule = logicCache.rule().get(struct.label(), l -> Rule.of(conceptMgr, this, struct));
+            if (rule == null) rule = logicCache.rule().get(struct.label(), l -> Rule.of(this, struct));
             return rule;
         });
     }

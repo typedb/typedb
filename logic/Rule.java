@@ -42,7 +42,6 @@ import static grakn.core.logic.LogicManager.validateLabelsExist;
 
 public class Rule {
 
-    private final ConceptManager conceptMgr;
     private final LogicManager logicManager;
     private final RuleStructure structure;
     private final Conjunction when;
@@ -50,8 +49,7 @@ public class Rule {
     private final Set<ThenConcludable<?, ?>> possibleThenConcludables;
     private final Set<ConjunctionConcludable<?, ?>> requiredWhenConcludables;
 
-    private Rule(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
-        this.conceptMgr = conceptMgr;
+    private Rule(LogicManager logicManager, RuleStructure structure) {
         this.logicManager = logicManager;
         this.structure = structure;
         // TODO enable when we have type hinting
@@ -66,7 +64,6 @@ public class Rule {
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        this.conceptMgr = conceptMgr;
         this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
         validateLabelsExist(conceptMgr, this.structure);
@@ -83,8 +80,8 @@ public class Rule {
         validateCycles();
     }
 
-    public static Rule of(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
-        return new Rule(conceptMgr, logicManager, structure);
+    public static Rule of(LogicManager logicManager, RuleStructure structure) {
+        return new Rule(logicManager, structure);
     }
 
     public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
