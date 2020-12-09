@@ -58,7 +58,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     @Override
     public RocksDatabase create(String name) {
-        if (databases.containsKey(name)) throw new GraknException(DATABASE_EXISTS.message(name));
+        if (databases.containsKey(name)) throw GraknException.of(DATABASE_EXISTS, name);
 
         final RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name);
         databases.put(name, database);

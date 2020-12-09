@@ -19,6 +19,7 @@
 package grakn.core.logic;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
@@ -190,7 +191,5 @@ public class Rule {
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
         return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
-
-
 
 }

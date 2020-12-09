@@ -48,10 +48,6 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
         this.typeHints = new HashSet<>();
-        if (this.type.reference().isLabel()) {
-            assert this.type.label().isPresent();
-            typeHints.add(this.type.label().get().properLabel());
-        }
     }
 
     public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
@@ -87,7 +83,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
 
     @Override
     public void addTo(Traversal traversal) {
-        assert !(type.reference().isLabel() && typeHints.isEmpty());
+        // TODO: assert !(type.reference().isLabel() && typeHints.isEmpty());
         if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
         if (type.reference().isName()) traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
     }

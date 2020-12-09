@@ -69,7 +69,7 @@ public class QueryHandler {
                 return;
             case REQ_NOT_SET:
             default:
-                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 

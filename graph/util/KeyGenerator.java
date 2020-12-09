@@ -71,7 +71,7 @@ public class KeyGenerator {
             if ((key = typeKeys.computeIfAbsent(rootIID, k -> new AtomicInteger(initialValue)).getAndAdd(delta)) >= SHORT_MAX_VALUE
                     || key <= SHORT_MIN_VALUE) {
                 typeKeys.get(rootIID).addAndGet(-1 * delta);
-                throw GraknException.of(MAX_SUBTYPE_REACHED.message(rootLabel, SHORT_MAX_VALUE));
+                throw GraknException.of(MAX_SUBTYPE_REACHED, rootLabel, SHORT_MAX_VALUE);
             }
             return shortToSortedBytes(key);
         }
@@ -80,7 +80,7 @@ public class KeyGenerator {
             int key;
             if ((key = ruleKey.getAndAdd(delta)) >= SHORT_MAX_VALUE || key <= SHORT_MIN_VALUE) {
                 ruleKey.addAndGet(-1 * delta);
-                throw GraknException.of(MAX_RULE_REACHED.message(SHORT_MAX_VALUE));
+                throw GraknException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
             }
             return shortToSortedBytes(key);
         }
@@ -148,7 +148,7 @@ public class KeyGenerator {
             if ((key = thingKeys.computeIfAbsent(typeIID, k -> new AtomicLong(initialValue)).getAndAdd(delta)) >= LONG_MAX_VALUE
                     || key <= LONG_MIN_VALUE) {
                 thingKeys.get(typeIID).addAndGet(-1 * delta);
-                throw GraknException.of(MAX_INSTANCE_REACHED.message(typeLabel, LONG_MAX_VALUE));
+                throw GraknException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
             return longToSortedBytes(key);
         }

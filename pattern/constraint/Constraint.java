@@ -46,11 +46,11 @@ public abstract class Constraint {
     }
 
     public TypeConstraint asType() {
-        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(TypeConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(TypeConstraint.class));
     }
 
     public ThingConstraint asThing() {
-        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(ThingConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingConstraint.class));
     }
 
     @Override

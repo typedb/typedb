@@ -86,11 +86,11 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
     }
 
     public ProcedureVertex.Thing asThing() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(ProcedureVertex.Thing.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Thing.class));
     }
 
     public ProcedureVertex.Type asType() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(ProcedureVertex.Type.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
     }
 
     static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {

@@ -117,7 +117,7 @@ public class LogicManager {
         Stream<Label> thenLabels = getTypeLabels(ruleStructure.then().variables());
         Set<String> invalidLabels = invalidLabels(conceptMgr, Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
         if (!invalidLabels.isEmpty()) {
-            throw GraknException.of(TYPES_NOT_FOUND.message(ruleStructure.label(), String.join(", ", invalidLabels)));
+            throw GraknException.of(TYPES_NOT_FOUND, ruleStructure.label(), String.join(", ", invalidLabels));
         }
     }
 

@@ -17,7 +17,6 @@
 
 package grakn.core.server.rpc.concept;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Thing;
@@ -31,6 +30,7 @@ import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
 
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
 
@@ -64,7 +64,7 @@ public class ConceptManagerHandler {
                 return;
             default:
             case REQ_NOT_SET:
-                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -115,7 +115,7 @@ public class ConceptManagerHandler {
             case OBJECT:
             case UNRECOGNIZED:
             default:
-                throw new GraknException(BAD_VALUE_TYPE.message(valueTypeProto));
+                throw GraknException.of(BAD_VALUE_TYPE, valueTypeProto);
         }
         final AttributeType attributeType = conceptManager.putAttributeType(attributeTypeReq.getLabel(), valueType);
         final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()

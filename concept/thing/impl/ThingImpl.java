@@ -72,7 +72,7 @@ public abstract class ThingImpl implements Thing {
             case RELATION:
                 return RelationImpl.of(vertex);
             default:
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
         }
     }
 
@@ -94,12 +94,12 @@ public abstract class ThingImpl implements Thing {
     @Override
     public void setHas(Attribute attribute) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
-            throw exception(THING_CANNOT_OWN_ATTRIBUTE.message(attribute.getType().getLabel(), vertex.type().label()));
+            throw exception(GraknException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).findAny().isPresent()) {
-                throw exception(THING_KEY_OVER.message(attribute.getType().getLabel(), getType().getLabel()));
+                throw exception(GraknException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else if (attribute.getOwners(getType()).findAny().isPresent()) {
-                throw exception(THING_KEY_TAKEN.message(attribute.getType().getLabel(), getType().getLabel()));
+                throw exception(GraknException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
         }
         vertex.outs().put(HAS, ((AttributeImpl<?>) attribute).vertex);
@@ -170,7 +170,7 @@ public abstract class ThingImpl implements Thing {
     public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
         return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
             if (!scopedLabel.contains(":")) {
-                throw exception(INVALID_ROLE_TYPE_LABEL.message(scopedLabel));
+                throw exception(GraknException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             final String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
@@ -198,7 +198,7 @@ public abstract class ThingImpl implements Thing {
         if (getHas(true).map(Attribute::getType).count() < getType().getOwns(true).count()) {
             final Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
-            throw exception(THING_KEY_MISSING.message(getType().getLabel(), printTypeSet(missing)));
+            throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
     }
 
@@ -207,17 +207,17 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public EntityImpl asEntity() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Entity.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Entity.class)));
     }
 
     @Override
     public AttributeImpl<?> asAttribute() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.class)));
     }
 
     @Override
     public RelationImpl asRelation() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Relation.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Relation.class)));
     }
 
     private String printTypeSet(Set<? extends Type> types) {
@@ -231,8 +231,8 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
-    public GraknException exception(String message) {
-        return vertex.graphs().exception(message);
+    public GraknException exception(GraknException exception) {
+        return vertex.graphs().exception(exception);
     }
 
     @Override

@@ -65,11 +65,11 @@ abstract class RocksSession implements Grakn.Session {
     }
 
     RocksSession.Schema asSchema() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksSession.Schema.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(RocksSession.Schema.class));
     }
 
     RocksSession.Data asData() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(RocksSession.Data.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(RocksSession.Data.class));
     }
 
     abstract void remove(RocksTransaction transaction);

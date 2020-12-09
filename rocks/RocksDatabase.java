@@ -21,7 +21,6 @@ package grakn.core.rocks;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -82,7 +81,7 @@ public class RocksDatabase implements Grakn.Database {
             rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
             rocksData = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
         } catch (RocksDBException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         }
 
         isOpen = new AtomicBoolean(true);
@@ -96,7 +95,7 @@ public class RocksDatabase implements Grakn.Database {
         try {
             Files.createDirectory(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         }
         return new RocksDatabase(rocksGrakn, name, true);
     }
@@ -108,7 +107,7 @@ public class RocksDatabase implements Grakn.Database {
     private void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(WRITE)) {
-                if (txn.asSchema().graph().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
+                if (txn.asSchema().graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.asSchema().graph().initialise();
                 txn.commit();
             }
@@ -125,7 +124,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
         long lock = 0;
         final RocksSession session;
@@ -144,7 +143,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized Cache borrowCache() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
         if (cache == null) cache = new Cache(this);
         cache.borrow();
@@ -156,7 +155,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized void invalidateCache() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED.args(name));
+        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
         if (cache != null) {
             cache.invalidate();
@@ -251,7 +250,7 @@ public class RocksDatabase implements Grakn.Database {
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         }
     }
 
@@ -334,7 +333,7 @@ public class RocksDatabase implements Grakn.Database {
                     tx.graphMgr.data().stats().processCountJobs();
                     tx.commit();
                 } catch (GraknException e) {
-                    if (e.errorMessage().isPresent() && e.errorMessage().get().code().equals(DATABASE_CLOSED.code())) {
+                    if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
                         break;
                     }
                     else {

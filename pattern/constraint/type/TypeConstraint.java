@@ -52,7 +52,7 @@ public abstract class TypeConstraint extends Constraint {
         else if (constraint.isOwns()) return OwnsConstraint.of(owner, constraint.asOwns(), registry);
         else if (constraint.isPlays()) return PlaysConstraint.of(owner, constraint.asPlays(), registry);
         else if (constraint.isRelates()) return RelatesConstraint.of(owner, constraint.asRelates(), registry);
-        else throw new GraknException(ILLEGAL_STATE);
+        else throw GraknException.of(ILLEGAL_STATE);
     }
 
     public static TypeConstraint of(TypeVariable owner,
@@ -119,38 +119,38 @@ public abstract class TypeConstraint extends Constraint {
     }
 
     public LabelConstraint asLabel() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(LabelConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(LabelConstraint.class));
     }
 
     public SubConstraint asSub() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(SubConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(SubConstraint.class));
     }
 
     public AbstractConstraint asAbstract() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(AbstractConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AbstractConstraint.class));
     }
 
     public ValueTypeConstraint asValueType() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(ValueTypeConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ValueTypeConstraint.class));
     }
 
     public RegexConstraint asRegex() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(RegexConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(RegexConstraint.class));
     }
 
     public OwnsConstraint asOwns() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(OwnsConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(OwnsConstraint.class));
     }
 
     public PlaysConstraint asPlays() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(PlaysConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(PlaysConstraint.class));
     }
 
     public RelatesConstraint asRelates() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(RelatesConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(RelatesConstraint.class));
     }
 
     public IsConstraint asIs() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IsConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IsConstraint.class));
     }
 }

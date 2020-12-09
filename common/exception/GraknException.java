@@ -23,31 +23,23 @@ import java.util.List;
 import java.util.Optional;
 
 public class GraknException extends RuntimeException {
+
     @Nullable
     private final ErrorMessage errorMessage;
 
-    // TODO replace usages with GraknException.of()
-    public GraknException(String error) {
+    private GraknException(String error) {
         super(error);
         errorMessage = null;
     }
 
-    // TODO replace usages with GraknException.of()
-    public GraknException(ErrorMessage error) {
-        super(error.toString());
+    private GraknException(ErrorMessage error, Object... parameters) {
+        super(error.message(parameters));
         assert !getMessage().contains("%s");
         this.errorMessage = error;
     }
 
-    // TODO replace usages with GraknException.of()
-    public GraknException(Exception e) {
+    private GraknException(Exception e) {
         super(e);
-        errorMessage = null;
-    }
-
-    // TODO replace usages with GraknException.of()
-    public GraknException(List<GraknException> exceptions) {
-        super(getMessages(exceptions));
         errorMessage = null;
     }
 
@@ -55,23 +47,19 @@ public class GraknException extends RuntimeException {
         return new GraknException(e);
     }
 
-    public static GraknException of(ErrorMessage errorMessage) {
-        return new GraknException(errorMessage);
+    public static GraknException of(ErrorMessage errorMessage, Object... parameters) {
+        return new GraknException(errorMessage, parameters);
     }
 
-    public static GraknException of(String error) {
-        return new GraknException(error);
+    public Optional<String> code() {
+        return Optional.ofNullable(errorMessage).map(grakn.common.exception.ErrorMessage::code);
     }
 
-    public Optional<ErrorMessage> errorMessage() {
-        return Optional.ofNullable(errorMessage);
-    }
-
-    public static String getMessages(List<GraknException> exceptions) {
+    public static GraknException of(List<GraknException> exceptions) {
         final StringBuilder messages = new StringBuilder();
         for (GraknException exception : exceptions) {
             messages.append(exception.getMessage()).append("\n");
         }
-        return messages.toString();
+        return new GraknException(messages.toString());
     }
 }

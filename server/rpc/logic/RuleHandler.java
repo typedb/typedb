@@ -52,7 +52,7 @@ public class RuleHandler {
                 return;
             case REQ_NOT_SET:
             default:
-                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -61,7 +61,7 @@ public class RuleHandler {
     }
 
     private static Rule notNull(@Nullable Rule rule) {
-        if (rule == null) throw new GraknException(MISSING_CONCEPT);
+        if (rule == null) throw GraknException.of(MISSING_CONCEPT);
         return rule;
     }
 

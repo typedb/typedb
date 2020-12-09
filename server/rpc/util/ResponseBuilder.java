@@ -44,6 +44,7 @@ import java.time.ZoneOffset;
 import java.util.stream.Collectors;
 
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYPE;
 
@@ -161,7 +162,7 @@ public class ResponseBuilder {
             } else if (thing instanceof Attribute) {
                 return ConceptProto.Thing.ENCODING.ATTRIBUTE;
             } else {
-                throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
@@ -177,7 +178,7 @@ public class ResponseBuilder {
             } else if (type instanceof RoleType) {
                 return ConceptProto.Type.ENCODING.ROLE_TYPE;
             } else {
-                throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
@@ -195,7 +196,7 @@ public class ResponseBuilder {
             } else if (attribute instanceof Attribute.Double) {
                 builder.setDouble(attribute.asDouble().getValue());
             } else {
-                throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
+                throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
 
             return builder.build();
@@ -217,7 +218,7 @@ public class ResponseBuilder {
                     return AttributeType.ValueType.DATETIME;
                 case UNRECOGNIZED:
                 default:
-                    throw new GraknException(BAD_VALUE_TYPE.message(valueType));
+                    throw GraknException.of(BAD_VALUE_TYPE, valueType);
             }
         }
 
@@ -239,7 +240,7 @@ public class ResponseBuilder {
             } else if (attributeType.isRoot()) {
                 return ConceptProto.AttributeType.VALUE_TYPE.OBJECT;
             } else {
-                throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
+                throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
         }
     }
@@ -271,7 +272,7 @@ public class ResponseBuilder {
             } else if (object instanceof Number) {
                 answer.setNumber(number((Number) object));
             } else {
-                throw new GraknException(UNKNOWN_ANSWER_TYPE.message(className(object.getClass())));
+                throw GraknException.of(UNKNOWN_ANSWER_TYPE, className(object.getClass()));
             }
 
             return answer.build();

@@ -163,7 +163,7 @@ public class TypeHandler {
                 return;
             case REQ_NOT_SET:
             default:
-                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -172,7 +172,7 @@ public class TypeHandler {
     }
 
     private static <T extends Type> T notNull(@Nullable T type) {
-        if (type == null) throw new GraknException(MISSING_CONCEPT);
+        if (type == null) throw GraknException.of(MISSING_CONCEPT);
         return type;
     }
 
@@ -223,7 +223,7 @@ public class TypeHandler {
         } else if (type instanceof AttributeType) {
             type.asAttributeType().setSupertype(sup.asAttributeType());
         } else {
-            throw new GraknException(ILLEGAL_SUPERTYPE_ENCODING.message(className(type.getClass())));
+            throw GraknException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));
         }
 
         transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setTypeSetSupertypeRes(
@@ -378,9 +378,9 @@ public class TypeHandler {
                 attribute = attributeType.asBoolean().put(protoValue.getBoolean());
                 break;
             case VALUE_NOT_SET:
-                throw new GraknException(MISSING_FIELD.message("value"));
+                throw GraknException.of(MISSING_FIELD, "value");
             default:
-                throw new GraknException(BAD_VALUE_TYPE.message(protoValue.getValueCase()));
+                throw GraknException.of(BAD_VALUE_TYPE, protoValue.getValueCase());
         }
 
         final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
@@ -411,7 +411,7 @@ public class TypeHandler {
             case VALUE_NOT_SET:
             default:
                 // TODO: Unify our exceptions - they should either all be GraknException or all be StatusRuntimeException
-                throw new GraknException(BAD_VALUE_TYPE);
+                throw GraknException.of(BAD_VALUE_TYPE);
         }
 
         final ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();

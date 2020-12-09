@@ -23,7 +23,7 @@ import grakn.core.common.exception.GraknException;
 import java.util.List;
 
 import static grakn.common.util.Objects.className;
-import static graql.lang.common.exception.ErrorMessage.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public interface Response {
     Request sourceRequest();
@@ -35,11 +35,11 @@ public interface Response {
     boolean isRootResponse();
 
     default Answer asAnswer() {
-        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(Answer.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
     }
 
     default Exhausted asExhausted() {
-        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(Exhausted.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Exhausted.class));
     }
 
     class Answer implements Response {

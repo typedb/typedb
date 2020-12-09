@@ -75,7 +75,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                 traversal.isa(role, rp.roleType().get().identifier());
                 if (!rp.roleTypeHints.isEmpty()) traversal.types(role, rp.roleTypeHints);
             } else if (rp.roleType().isPresent()) {
-                assert rp.roleType().get().reference().isLabel() && !rp.roleTypeHints.isEmpty();
+                // TODO: assert rp.roleType().get().reference().isLabel() && !rp.roleTypeHints.isEmpty();
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.roleTypeHints);
             } else {
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier());
@@ -146,10 +146,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             this.player = player;
             this.hash = Objects.hash(this.roleType, this.player);
             this.roleTypeHints = new HashSet<>();
-            if (this.roleType != null && this.roleType.reference().isLabel()) {
-                assert this.roleType.label().isPresent();
-                roleTypeHints.add(this.roleType.label().get().properLabel());
-            }
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,

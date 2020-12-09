@@ -120,27 +120,27 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
     }
 
     public Long asLong() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Long.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Long.class));
     }
 
     public Double asDouble() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Double.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Double.class));
     }
 
     public Boolean asBoolean() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Boolean.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Boolean.class));
     }
 
     public String asString() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(String.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(String.class));
     }
 
     public DateTime asDateTime() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(DateTime.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(DateTime.class));
     }
 
     public Variable asVariable() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Variable.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Variable.class));
     }
 
     @Override

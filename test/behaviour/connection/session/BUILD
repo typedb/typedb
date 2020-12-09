@@ -59,7 +59,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//connection:session.feature",
     ],
-    size = "small",
+    size = "medium",
 )
 
 checkstyle_test(

@@ -17,8 +17,9 @@
 
 package grakn.core.common.parameters;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
@@ -106,7 +107,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         public Database parent(Options<?, ?> parent) {
-            throw new GraknException(ErrorMessage.Internal.ILLEGAL_ARGUMENT);
+            throw GraknException.of(ILLEGAL_ARGUMENT);
         }
     }
 

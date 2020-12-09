@@ -110,7 +110,7 @@ public class VariableRegistry {
                 return types.get(ref).constrainConcept(graqlVar.constraints(), this);
             }
         } else {
-            throw GraknException.of(UNBOUNDED_CONCEPT_VARIABLE.message(graqlVar.reference()));
+            throw GraknException.of(UNBOUNDED_CONCEPT_VARIABLE, graqlVar.reference());
         }
     }
 
@@ -159,12 +159,12 @@ public class VariableRegistry {
 
     public TypeVariable computeTypeIfAbsent(Reference reference, Function<Reference, TypeVariable> constructor) {
         if (things.containsKey(reference)) {
-            throw GraknException.of(VARIABLE_CONTRADICTION.message(reference));
+            throw GraknException.of(VARIABLE_CONTRADICTION, reference);
         } else return types.computeIfAbsent(reference, constructor);
     }
 
     public ThingVariable computeThingIfAbsent(Reference reference, Function<Reference, ThingVariable> constructor) {
-        if (types.containsKey(reference)) throw GraknException.of(VARIABLE_CONTRADICTION.message(reference));
+        if (types.containsKey(reference)) throw GraknException.of(VARIABLE_CONTRADICTION, reference);
         else return things.computeIfAbsent(reference, constructor);
     }
 }
