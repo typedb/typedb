@@ -73,8 +73,8 @@ build:
     test-assembly-linux-targz:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
       script: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -83,16 +83,16 @@ build:
     test-assembly-docker:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
       script: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [test-assembly-linux-targz]
       script: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
@@ -103,8 +103,8 @@ build:
     deploy-apt-snapshot:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [test-assembly-linux-targz]
       script: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
@@ -119,8 +119,8 @@ build:
     deploy-rpm-snapshot:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [test-assembly-linux-targz]
       script: |
         export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
@@ -130,16 +130,16 @@ build:
     test-deployment-apt:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [deploy-apt-snapshot]
       script: |
         bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
     test-deployment-rpm:
       machine: graknlabs-centos-8.2
       filter:
-        owner: vmax
-        branch: rbe-ubuntu20
+        owner: graknlabs
+        branch: master
       dependencies: [deploy-rpm-snapshot]
       script: |
         bazel test //test/deployment:rpm --action_env=GRABL_COMMIT --test_output=streamed
