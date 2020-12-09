@@ -18,13 +18,9 @@
 
 package grakn.core.common.exception;
 
-import grakn.common.collection.Pair;
-
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
-
-import static grakn.common.collection.Collections.pair;
 
 public class GraknException extends RuntimeException {
     @Nullable
