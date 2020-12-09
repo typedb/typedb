@@ -17,3 +17,4 @@
 #
 
 echo "DOCKER_VERSION $(cat VERSION)"
+

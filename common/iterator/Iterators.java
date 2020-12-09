@@ -37,12 +37,8 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 
 public class Iterators {
 
-    public static <T> TreeIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
-        return new TreeIterator<>(root, childrenFn);
-    }
-
-    public static <T> LoopIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
-        return new LoopIterator<>(seed, predicate, function);
+    public static <T> ResourceIterator<T> empty() {
+        return iterate(set());
     }
 
     public static <T> BaseIterator<T> single(T item) {
@@ -67,6 +63,14 @@ public class Iterators {
             }
         });
         return new LinkedIterators<>(converted);
+    }
+
+    public static <T> LoopIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
+        return new LoopIterator<>(seed, predicate, function);
+    }
+
+    public static <T> TreeIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
+        return new TreeIterator<>(root, childrenFn);
     }
 
     public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators) {

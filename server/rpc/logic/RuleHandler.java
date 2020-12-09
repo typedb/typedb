@@ -15,13 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.rpc.concept;
+package grakn.core.server.rpc.logic;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.logic.Rule;
+import grakn.core.logic.LogicManager;
+import grakn.core.logic.Rule;
 import grakn.core.server.rpc.TransactionRPC;
-import grakn.protocol.ConceptProto;
+import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
 
@@ -33,16 +33,16 @@ import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TY
 public class RuleHandler {
 
     private final TransactionRPC transactionRPC;
-    private final ConceptManager conceptManager;
+    private final LogicManager logicMgr;
 
-    public RuleHandler(TransactionRPC transactionRPC, ConceptManager conceptManager) {
+    public RuleHandler(TransactionRPC transactionRPC, LogicManager logicMgr) {
         this.transactionRPC = transactionRPC;
-        this.conceptManager = conceptManager;
+        this.logicMgr = logicMgr;
     }
 
     public void handleRequest(Transaction.Req request) {
-        final ConceptProto.Rule.Req ruleReq = request.getRuleReq();
-        final Rule rule = notNull(conceptManager.getRule(ruleReq.getLabel()));
+        final LogicProto.Rule.Req ruleReq = request.getRuleReq();
+        final Rule rule = notNull(logicMgr.getRule(ruleReq.getLabel()));
         switch (ruleReq.getReqCase()) {
             case RULE_DELETE_REQ:
                 delete(request, rule);
@@ -52,26 +52,26 @@ public class RuleHandler {
                 return;
             case REQ_NOT_SET:
             default:
-                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
-    private static TransactionProto.Transaction.Res response(Transaction.Req request, ConceptProto.Rule.Res.Builder response) {
+    private static TransactionProto.Transaction.Res response(Transaction.Req request, LogicProto.Rule.Res.Builder response) {
         return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setRuleRes(response).build();
     }
 
     private static Rule notNull(@Nullable Rule rule) {
-        if (rule == null) throw new GraknException(MISSING_CONCEPT);
+        if (rule == null) throw GraknException.of(MISSING_CONCEPT);
         return rule;
     }
 
     private void delete(Transaction.Req request, Rule rule) {
         rule.delete();
-        transactionRPC.respond(response(request, ConceptProto.Rule.Res.newBuilder().setRuleDeleteRes(ConceptProto.Rule.Delete.Res.getDefaultInstance())));
+        transactionRPC.respond(response(request, LogicProto.Rule.Res.newBuilder().setRuleDeleteRes(LogicProto.Rule.Delete.Res.getDefaultInstance())));
     }
 
     private void setLabel(Transaction.Req request, Rule rule, String label) {
         rule.setLabel(label);
-        transactionRPC.respond(response(request, ConceptProto.Rule.Res.newBuilder().setRuleSetLabelRes(ConceptProto.Rule.SetLabel.Res.getDefaultInstance())));
+        transactionRPC.respond(response(request, LogicProto.Rule.Res.newBuilder().setRuleSetLabelRes(LogicProto.Rule.SetLabel.Res.getDefaultInstance())));
     }
 }

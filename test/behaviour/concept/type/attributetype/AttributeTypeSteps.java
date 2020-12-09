@@ -75,7 +75,7 @@ public class AttributeTypeSteps {
             case DATETIME:
                 return attributeType.asDateTime();
             default:
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
         }
     }
 

@@ -26,6 +26,7 @@ host_compatible_java_test(
         "//rocks:rocks",
         "//:grakn",
         "//concept:concept",
+        "//logic:logic",
     ],
     deps = [
         # Internal dependencies

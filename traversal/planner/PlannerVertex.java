@@ -37,8 +37,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     final Planner planner;
 
-    private final String varPrefix = "vertex::var::" + identifier() + "::";
-    private final String conPrefix = "vertex::con::" + identifier() + "::";
+    private final String varPrefix = "vertex::var::" + id() + "::";
+    private final String conPrefix = "vertex::con::" + id() + "::";
     private int valueIsStartingVertex;
     private int valueIsEndingVertex;
     private int valueHasIncomingEdges;
@@ -185,11 +185,11 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     public PlannerVertex.Thing asThing() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
     }
 
     public PlannerVertex.Type asType() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
     }
 
     public static class Thing extends PlannerVertex<Properties.Thing> {

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.concludable;
+package grakn.core.logic.concludable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
@@ -83,19 +83,19 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
     }
 
     public Relation asRelation() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Relation.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
     }
 
     public Has asHas() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Has.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
     }
 
     public Isa asIsa() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Isa.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
     }
 
     public Value asValue() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Value.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
 
@@ -111,7 +111,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
                             copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
                         } else if (copyTo.isType() && copyFrom.isType()) {
                             copyLabelAndValueType(copyFrom.asType(), copyTo.asType());
-                        } else throw new GraknException(ILLEGAL_STATE);
+                        } else throw GraknException.of(ILLEGAL_STATE);
                     }
                 });
     }

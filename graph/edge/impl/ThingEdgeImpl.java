@@ -134,6 +134,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                     graph.storage().delete(outIID().bytes());
                     graph.storage().delete(inIID().bytes());
                 }
+                if (encoding == Encoding.Edge.Thing.HAS) {
+                    graph.stats().hasEdgeDeleted(from.iid(), to.iid().asAttribute());
+                }
             }
         }
 
@@ -189,9 +192,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final EdgeIID.Thing inIID;
         private final VertexIID.Thing fromIID;
         private final VertexIID.Thing toIID;
+        private final int hash;
         private ThingVertex from;
         private ThingVertex to;
-        private int hash;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
@@ -273,6 +276,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 to().ins().remove(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
+                if (encoding == Encoding.Edge.Thing.HAS) {
+                    graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());
+                }
             }
         }
 

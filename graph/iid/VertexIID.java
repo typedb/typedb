@@ -44,6 +44,8 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_I
 import static grakn.core.graph.util.Encoding.STRING_ENCODING;
 import static grakn.core.graph.util.Encoding.STRING_MAX_LENGTH;
 import static grakn.core.graph.util.Encoding.TIME_ZONE_ID;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class VertexIID extends IID {
@@ -126,7 +128,7 @@ public abstract class VertexIID extends IID {
         public static final int PREFIX_W_TYPE_LENGTH = PrefixIID.LENGTH + VertexIID.Type.LENGTH;
         public static final int DEFAULT_LENGTH = PREFIX_W_TYPE_LENGTH + LONG_SIZE;
 
-        public Thing(byte[] bytes) {
+        private Thing(byte[] bytes) {
             super(bytes);
         }
 
@@ -144,15 +146,15 @@ public abstract class VertexIID extends IID {
         }
 
         public static VertexIID.Thing of(byte[] bytes) {
-            if (Encoding.Vertex.Type.of(bytes[PrefixIID.LENGTH]).equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE)) {
+            if (Encoding.Vertex.Type.of(bytes[PrefixIID.LENGTH]).equals(ATTRIBUTE_TYPE)) {
                 return VertexIID.Attribute.of(bytes);
             } else {
                 return new VertexIID.Thing(bytes);
             }
         }
 
-        static VertexIID.Thing extract(byte[] bytes, int from) {
-            if (Encoding.Vertex.Thing.of(bytes[from]).equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
+        public static VertexIID.Thing extract(byte[] bytes, int from) {
+            if (Encoding.Vertex.Thing.of(bytes[from]).equals(ATTRIBUTE)) {
                 return VertexIID.Attribute.extract(bytes, from);
             } else {
                 return new VertexIID.Thing(copyOfRange(bytes, from, from + DEFAULT_LENGTH));
@@ -171,12 +173,12 @@ public abstract class VertexIID extends IID {
             return copyOfRange(bytes, PREFIX_W_TYPE_LENGTH, bytes.length);
         }
 
-        public VertexIID.Attribute<?> asAttribute() {
-            if (!encoding().equals(Encoding.Vertex.Thing.ATTRIBUTE)) {
-                throw GraknException.of(INVALID_THING_IID_CASTING.message(className(VertexIID.Attribute.class)));
-            }
+        public boolean isAttribute() {
+            return false;
+        }
 
-            return VertexIID.Attribute.of(bytes);
+        public VertexIID.Attribute<?> asAttribute() {
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(VertexIID.Attribute.class));
         }
 
         @Override
@@ -205,7 +207,7 @@ public abstract class VertexIID extends IID {
 
         Attribute(Encoding.ValueType valueType, VertexIID.Type typeIID, byte[] valueBytes) {
             super(join(
-                    Encoding.Vertex.Thing.ATTRIBUTE.prefix().bytes(),
+                    ATTRIBUTE.prefix().bytes(),
                     typeIID.bytes(),
                     valueType.bytes(),
                     valueBytes
@@ -231,7 +233,7 @@ public abstract class VertexIID extends IID {
             }
         }
 
-        public static VertexIID.Thing extract(byte[] bytes, int from) {
+        public static VertexIID.Attribute<?> extract(byte[] bytes, int from) {
             switch (Encoding.ValueType.of(bytes[from + VALUE_TYPE_INDEX])) {
                 case BOOLEAN:
                     return VertexIID.Attribute.Boolean.extract(bytes, from);
@@ -256,29 +258,38 @@ public abstract class VertexIID extends IID {
         }
 
         public VertexIID.Attribute.Boolean asBoolean() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(Boolean.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(Boolean.class));
         }
 
         public VertexIID.Attribute.Long asLong() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(Long.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(Long.class));
         }
 
         public VertexIID.Attribute.Double asDouble() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(Double.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(Double.class));
         }
 
         public VertexIID.Attribute.String asString() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(String.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(String.class));
         }
 
         public VertexIID.Attribute.DateTime asDateTime() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(DateTime.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(DateTime.class));
+        }
+
+        @Override
+        public boolean isAttribute() {
+            return true;
+        }
+
+        public VertexIID.Attribute<?> asAttribute() {
+            return this;
         }
 
         @Override
         public java.lang.String toString() {
             if (readableString == null) {
-                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Vertex.Thing.ATTRIBUTE.toString() + "]" +
+                readableString = "[" + PrefixIID.LENGTH + ": " + ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                         "[" + VALUE_TYPE_LENGTH + ": " + valueType().toString() + "]" +
                         "[" + (bytes.length - VALUE_INDEX) + ": " + value().toString() + "]";
@@ -297,7 +308,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.Boolean extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.Boolean(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + 1));
+                return new VertexIID.Attribute.Boolean(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + 1));
             }
 
             @Override
@@ -322,7 +333,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.Long extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.Long(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + LONG_SIZE));
+                return new VertexIID.Attribute.Long(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + LONG_SIZE));
             }
 
             @Override
@@ -347,7 +358,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.Double extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.Double(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + DOUBLE_SIZE));
+                return new VertexIID.Attribute.Double(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + DOUBLE_SIZE));
             }
 
             @Override
@@ -399,7 +410,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.DateTime extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.DateTime(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + DATETIME_SIZE));
+                return new VertexIID.Attribute.DateTime(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + DATETIME_SIZE));
             }
 
             @Override

@@ -26,7 +26,6 @@ import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
@@ -64,7 +63,7 @@ public class RpmTest {
         execute("sudo", "yum", "install", "-y", "grakn-core-server-0.0.0_" + commit);
     }
 
-    private void start() throws InterruptedException, IOException {
+    private void start() throws InterruptedException, IOException, TimeoutException {
         graknProcess = executor.command("grakn", "server").start();
 
         waitUntilReady();
@@ -73,7 +72,7 @@ public class RpmTest {
         System.out.println("Grakn Core database server started");
     }
 
-    private void waitUntilReady() throws InterruptedException {
+    private void waitUntilReady() throws InterruptedException, TimeoutException, IOException {
         int attempt = 0;
         while (!isGraknServerReady() && attempt < 25) {
             Thread.sleep(1000);
@@ -105,13 +104,9 @@ public class RpmTest {
         } else return result;
     }
 
-    private static boolean isGraknServerReady() {
-        try {
-            Socket s = new Socket("localhost", graknPort);
-            s.close();
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
+    private boolean isGraknServerReady() throws TimeoutException, InterruptedException, IOException {
+        int curlPortClosedExitCode = 7;
+        ProcessResult result = executor.command("curl", "localhost:" + graknPort).execute();
+        return result.getExitValue() != curlPortClosedExitCode;
     }
 }

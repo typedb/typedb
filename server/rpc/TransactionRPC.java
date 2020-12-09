@@ -23,9 +23,10 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.server.rpc.concept.ConceptManagerHandler;
-import grakn.core.server.rpc.concept.RuleHandler;
 import grakn.core.server.rpc.concept.ThingHandler;
 import grakn.core.server.rpc.concept.TypeHandler;
+import grakn.core.server.rpc.logic.LogicManagerHandler;
+import grakn.core.server.rpc.logic.RuleHandler;
 import grakn.core.server.rpc.query.QueryHandler;
 import grakn.core.server.rpc.util.RequestReader;
 import grakn.protocol.TransactionProto;
@@ -63,7 +64,7 @@ public class TransactionRPC {
         this.stream = stream;
 
         final Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
-        if (transactionType == null) throw new GraknException(BAD_TRANSACTION_TYPE.message(request.getType()));
+        if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
         final Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
 
         transaction = sessionRPC.session().transaction(transactionType, transactionOptions);
@@ -83,7 +84,7 @@ public class TransactionRPC {
                     iterators.continueIteration(request.getId());
                     return;
                 case OPEN_REQ:
-                    throw new GraknException(TRANSACTION_ALREADY_OPENED);
+                    throw GraknException.of(TRANSACTION_ALREADY_OPENED);
                 case COMMIT_REQ:
                     commit(request.getId());
                     return;
@@ -97,6 +98,9 @@ public class TransactionRPC {
                     return;
                 case CONCEPT_MANAGER_REQ:
                     handlers.conceptManager.handleRequest(request);
+                    return;
+                case LOGIC_MANAGER_REQ:
+                    handlers.logicManager.handleRequest(request);
                     return;
                 case THING_REQ:
                     handlers.thing.handleRequest(request);
@@ -112,7 +116,7 @@ public class TransactionRPC {
 //                return;
                 default:
                 case REQ_NOT_SET:
-                    throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                    throw GraknException.of(UNKNOWN_REQUEST_TYPE);
             }
         } catch (Exception ex) {
             closeWithError(ex);
@@ -193,7 +197,7 @@ public class TransactionRPC {
             final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
                 if (oldValue == null) return batchingIterator;
-                else throw new GraknException(DUPLICATE_REQUEST.message(requestId));
+                else throw GraknException.of(DUPLICATE_REQUEST, requestId);
             });
             batchingIterator.iterateBatch();
         }
@@ -203,7 +207,7 @@ public class TransactionRPC {
          */
         void continueIteration(String requestId) {
             final BatchingIterator<?> iterator = iterators.get(requestId);
-            if (iterator == null) throw new GraknException(ITERATION_WITH_UNKNOWN_ID.message(requestId));
+            if (iterator == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
             iterator.iterateBatch();
         }
 
@@ -276,6 +280,7 @@ public class TransactionRPC {
 
     private class RequestHandlers {
         private final ConceptManagerHandler conceptManager;
+        private final LogicManagerHandler logicManager;
         private final QueryHandler query;
         private final ThingHandler thing;
         private final TypeHandler type;
@@ -283,10 +288,11 @@ public class TransactionRPC {
 
         private RequestHandlers() {
             conceptManager = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
+            logicManager = new LogicManagerHandler(TransactionRPC.this, transaction.logics());
             query = new QueryHandler(TransactionRPC.this, transaction.query());
             thing = new ThingHandler(TransactionRPC.this, transaction.concepts());
             type = new TypeHandler(TransactionRPC.this, transaction.concepts());
-            rule = new RuleHandler(TransactionRPC.this, transaction.concepts());
+            rule = new RuleHandler(TransactionRPC.this, transaction.logics());
         }
     }
 }

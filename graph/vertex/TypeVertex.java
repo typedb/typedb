@@ -61,6 +61,14 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
 
     TypeVertex regex(Pattern regex);
 
+    boolean isEntityType();
+
+    boolean isAttributeType();
+
+    boolean isRelationType();
+
+    boolean isRoleType();
+
     int outOwnsCount(boolean isKey);
 
     int inOwnsCount(boolean isKey);

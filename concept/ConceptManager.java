@@ -18,10 +18,9 @@
 
 package grakn.core.concept;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.logic.Rule;
-import grakn.core.concept.logic.impl.RuleImpl;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
@@ -36,16 +35,12 @@ import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.logic.RuleLogic;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.VertexMap;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,25 +73,25 @@ public final class ConceptManager {
     public ThingType getRootThingType() {
         final TypeVertex vertex = graphMgr.schema().rootThingType();
         if (vertex != null) return new ThingTypeImpl.Root(graphMgr, vertex);
-        else throw graphMgr.exception(ILLEGAL_STATE.message());
+        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public EntityType getRootEntityType() {
         final TypeVertex vertex = graphMgr.schema().rootEntityType();
         if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
-        else throw graphMgr.exception(ILLEGAL_STATE.message());
+        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public RelationType getRootRelationType() {
         final TypeVertex vertex = graphMgr.schema().rootRelationType();
         if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
-        else throw graphMgr.exception(ILLEGAL_STATE.message());
+        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public AttributeType getRootAttributeType() {
         final TypeVertex vertex = graphMgr.schema().rootAttributeType();
         if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
-        else throw graphMgr.exception(ILLEGAL_STATE.message());
+        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public EntityType putEntityType(String label) {
@@ -124,8 +119,8 @@ public final class ConceptManager {
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
-        if (valueType == null) throw graphMgr.exception(ATTRIBUTE_VALUE_TYPE_MISSING.message(label));
-        if (!valueType.isWritable()) throw graphMgr.exception(UNSUPPORTED_OPERATION.message());
+        if (valueType == null) throw graphMgr.exception(GraknException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
+        if (!valueType.isWritable()) throw graphMgr.exception(GraknException.of(UNSUPPORTED_OPERATION));
 
         final TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
@@ -145,7 +140,7 @@ public final class ConceptManager {
                 if (vertex != null) return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
                 else return new AttributeTypeImpl.DateTime(graphMgr, label);
             default:
-                throw graphMgr.exception(UNSUPPORTED_OPERATION.message("putAttributeType", valueType.name()));
+                throw graphMgr.exception(GraknException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
         }
     }
 
@@ -161,18 +156,6 @@ public final class ConceptManager {
         else return null;
     }
 
-    public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        final RuleLogic vertex = graphMgr.schema().getRule(label);
-        if (vertex != null) vertex.delete();
-        return RuleImpl.of(this, graphMgr, label, when, then);
-    }
-
-    public Rule getRule(String label) {
-        final RuleLogic ruleLogic = graphMgr.schema().getRule(label);
-        if (ruleLogic != null) return RuleImpl.of(this, ruleLogic);
-        return null;
-    }
-
     public Thing getThing(byte[] iid) {
         final ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
@@ -184,7 +167,7 @@ public final class ConceptManager {
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(graphMgr, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        if (!exceptions.isEmpty()) throw graphMgr.exception(GraknException.getMessages(exceptions));
+        if (!exceptions.isEmpty()) throw graphMgr.exception(GraknException.of(exceptions));
     }
 
     public void validateThings() {
@@ -193,8 +176,8 @@ public final class ConceptManager {
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 
-    public GraknException exception(String errorMessage) {
-        return graphMgr.exception(errorMessage);
+    public GraknException exception(ErrorMessage error) {
+        return graphMgr.exception(error);
     }
 
     public GraknException exception(Exception exception) {

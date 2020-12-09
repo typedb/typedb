@@ -23,10 +23,10 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.tool.TypeHinter;
 import grakn.core.traversal.TraversalEngine;
 
 import java.util.List;
@@ -41,16 +41,14 @@ public class Reasoner {
 
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
-    private final TypeHinter typeHinter;
+    private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
-    private final ReasonerCache cache;
 
-    public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, ReasonerCache cache) {
-        this.traversalEng = traversalEng;
+    public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicManager logicMgr) {
         this.conceptMgr = conceptMgr;
+        this.traversalEng = traversalEng;
+        this.logicMgr = logicMgr;
         this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
-        this.typeHinter = new TypeHinter(traversalEng, cache);
-        this.cache = cache;
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
@@ -64,9 +62,9 @@ public class Reasoner {
     }
 
     public List<Producer<ConceptMap>> execute(Conjunction conjunction) {
-        Conjunction conjunctionHinted = typeHinter.computeHints(conjunction, PARALLELISATION_FACTOR);
+        // TODO conjunction = logicMgr.typeHinter().computeHints(conjunction, PARALLELISATION_FACTOR);
         Producer<ConceptMap> answers = traversalEng
-                .execute(conjunctionHinted.traversal(), PARALLELISATION_FACTOR)
+                .execute(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
 
         // TODO enable reasoner here
@@ -75,18 +73,14 @@ public class Reasoner {
         //          resolve(conjunctionResolvedTypes)
         //      ));
 
-        if (conjunctionHinted.negations().isEmpty()) {
+        if (conjunction.negations().isEmpty()) {
             return list(answers);
         } else {
-            Predicate<ConceptMap> predicate = answer -> !buffer(conjunctionHinted.negations().stream().flatMap(
+            Predicate<ConceptMap> predicate = answer -> !buffer(conjunction.negations().stream().flatMap(
                     negation -> execute(negation.disjunction(), answer).stream()
             ).collect(toList())).iterator().hasNext();
             return list(answers.filter(predicate));
         }
-    }
-
-    TypeHinter typeHinter() {
-        return typeHinter;
     }
 
     public List<Producer<ConceptMap>> execute(Conjunction conjunction, ConceptMap bounds) {

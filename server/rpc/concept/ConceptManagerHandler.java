@@ -17,10 +17,8 @@
 
 package grakn.core.server.rpc.concept;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.logic.Rule;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -30,13 +28,9 @@ import grakn.core.server.rpc.TransactionRPC;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.ThingVariable;
 
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.rule;
+import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
 import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
 
@@ -59,9 +53,6 @@ public class ConceptManagerHandler {
             case GET_THING_REQ:
                 getThing(request, conceptManagerReq.getGetThingReq().getIid().toByteArray());
                 return;
-            case GET_RULE_REQ:
-                getRule(request, conceptManagerReq.getGetRuleReq().getLabel());
-                return;
             case PUT_ENTITY_TYPE_REQ:
                 putEntityType(request, conceptManagerReq.getPutEntityTypeReq().getLabel());
                 return;
@@ -71,12 +62,9 @@ public class ConceptManagerHandler {
             case PUT_RELATION_TYPE_REQ:
                 putRelationType(request, conceptManagerReq.getPutRelationTypeReq().getLabel());
                 return;
-            case PUT_RULE_REQ:
-                putRule(request, conceptManagerReq.getPutRuleReq());
-                return;
             default:
             case REQ_NOT_SET:
-                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -96,13 +84,6 @@ public class ConceptManagerHandler {
         final ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes = ConceptProto.ConceptManager.GetThing.Res.newBuilder();
         if (thing != null) getThingRes.setThing(thing(thing));
         transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes)));
-    }
-
-    private void getRule(Transaction.Req request, String label) {
-        final Rule rule = conceptManager.getRule(label);
-        final ConceptProto.ConceptManager.GetRule.Res.Builder getRuleRes = ConceptProto.ConceptManager.GetRule.Res.newBuilder();
-        if (rule != null) getRuleRes.setRule(rule(rule));
-        transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetRuleRes(getRuleRes)));
     }
 
     private void putEntityType(Transaction.Req request, String label) {
@@ -134,7 +115,7 @@ public class ConceptManagerHandler {
             case OBJECT:
             case UNRECOGNIZED:
             default:
-                throw new GraknException(BAD_VALUE_TYPE.message(valueTypeProto));
+                throw GraknException.of(BAD_VALUE_TYPE, valueTypeProto);
         }
         final AttributeType attributeType = conceptManager.putAttributeType(attributeTypeReq.getLabel(), valueType);
         final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
@@ -149,12 +130,4 @@ public class ConceptManagerHandler {
         transactionRPC.respond(response(request, res));
     }
 
-    private void putRule(Transaction.Req request, ConceptProto.ConceptManager.PutRule.Req req) {
-        final Conjunction<? extends Pattern> when = Graql.parsePattern(req.getWhen()).asConjunction();
-        final ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
-        final Rule rule = conceptManager.putRule(req.getLabel(), when, then);
-        final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
-                .setPutRuleRes(ConceptProto.ConceptManager.PutRule.Res.newBuilder().setRule(rule(rule)));
-        transactionRPC.respond(response(request, res));
-    }
 }

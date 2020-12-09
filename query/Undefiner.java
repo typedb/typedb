@@ -21,13 +21,14 @@ package grakn.core.query;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.logic.Rule;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.ThingTypeImpl;
+import grakn.core.logic.LogicManager;
+import grakn.core.logic.Rule;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
@@ -60,14 +61,16 @@ public class Undefiner {
 
     private static final String TRACE_PREFIX = "undefiner.";
 
+    private final LogicManager logicMgr;
     private final ConceptManager conceptMgr;
     private final LinkedList<TypeVariable> variables;
     private final Set<TypeVariable> undefined;
     private final List<graql.lang.pattern.schema.Rule> rules;
 
-    private Undefiner(ConceptManager conceptMgr, Set<TypeVariable> variables,
+    private Undefiner(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables,
                       List<graql.lang.pattern.schema.Rule> rules) {
         this.conceptMgr = conceptMgr;
+        this.logicMgr = logicMgr;
         this.variables = new LinkedList<>();
         this.undefined = new HashSet<>();
         this.rules = rules;
@@ -78,11 +81,11 @@ public class Undefiner {
         });
     }
 
-    public static Undefiner create(ConceptManager conceptMgr,
+    public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
                                    List<graql.lang.pattern.variable.TypeVariable> variables,
                                    List<graql.lang.pattern.schema.Rule> rules) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Undefiner(conceptMgr, VariableRegistry.createFromTypes(variables).types(), rules);
+            return new Undefiner(conceptMgr, logicMgr, VariableRegistry.createFromTypes(variables).types(), rules);
         }
     }
 
@@ -110,14 +113,14 @@ public class Undefiner {
             final LabelConstraint labelConstraint = variable.label().get();
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
-                throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelConstraint.scopedLabel()));
+                throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
             } else if (!variable.is().isEmpty()) {
-                throw new GraknException(TYPE_CONSTRAINT_UNACCEPTED.message(IS));
+                throw GraknException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
             } else if (labelConstraint.scope().isPresent()) return; // do nothing
             else if (undefined.contains(variable)) return; // do nothing
 
             final ThingType type = getType(labelConstraint);
-            if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(labelConstraint.label()));
+            if (type == null) throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
 
             if (!variable.plays().isEmpty()) undefinePlays(type, variable.plays());
             if (!variable.owns().isEmpty()) undefineOwns(type, variable.owns());
@@ -130,10 +133,9 @@ public class Undefiner {
 
             if (variable.sub().isPresent()) undefineSub(type, variable.sub().get());
             else if (variable.valueType().isPresent()) {
-                throw new GraknException(ATTRIBUTE_VALUE_TYPE_UNDEFINED.message(
-                        variable.valueType().get().valueType().name(),
-                        variable.label().get().label()
-                ));
+                throw GraknException.of(ATTRIBUTE_VALUE_TYPE_UNDEFINED,
+                                        variable.valueType().get().valueType().name(),
+                                        variable.label().get().label());
             }
 
             undefined.add(variable);
@@ -160,14 +162,14 @@ public class Undefiner {
     private void undefineSub(ThingType thingType, SubConstraint subConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefinesub")) {
             if (thingType instanceof RoleType) {
-                throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(thingType.getLabel()));
+                throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, thingType.getLabel());
             }
             final ThingType supertype = getType(subConstraint.type().label().get());
             if (supertype == null) {
-                throw new GraknException(TYPE_NOT_FOUND.message(subConstraint.type().label().get()));
+                throw GraknException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))
                     && !(supertype instanceof ThingTypeImpl.Root)) {
-                throw new GraknException(INVALID_UNDEFINE_SUB.message(thingType.getLabel(), supertype.getLabel()));
+                throw GraknException.of(INVALID_UNDEFINE_SUB, thingType.getLabel(), supertype.getLabel());
             }
             if (thingType instanceof RelationType) {
                 variables.stream().filter(
@@ -198,12 +200,11 @@ public class Undefiner {
             relatesConstraints.forEach(relates -> {
                 final String roleTypeLabel = relates.role().label().get().label();
                 if (roleTypeLabel == null) {
-                    throw new GraknException(TYPE_NOT_FOUND.message(relates.role().label().get().label()));
+                    throw GraknException.of(TYPE_NOT_FOUND, relates.role().label().get().label());
                 } else if (relates.overridden().isPresent()) {
-                    throw new GraknException(INVALID_UNDEFINE_RELATES_OVERRIDE.message(
-                            relates.overridden().get().label().get().label(),
-                            relates.role().label().get()
-                    ));
+                    throw GraknException.of(INVALID_UNDEFINE_RELATES_OVERRIDE,
+                                            relates.overridden().get().label().get().label(),
+                                            relates.role().label().get());
                 } else {
                     relationType.unsetRelates(roleTypeLabel);
                     undefined.add(relates.role());
@@ -217,15 +218,15 @@ public class Undefiner {
             ownsConstraints.forEach(owns -> {
                 final Type attributeType = getType(owns.attribute().label().get());
                 if (attributeType == null && !undefined.contains(owns.attribute())) {
-                    throw new GraknException(TYPE_NOT_FOUND.message(owns.attribute().label().get().label()));
+                    throw GraknException.of(TYPE_NOT_FOUND, owns.attribute().label().get().label());
                 } else if (owns.overridden().isPresent()) {
-                    throw new GraknException(INVALID_UNDEFINE_OWNS_OVERRIDE.message(
-                            owns.overridden().get().label().get().label(),
-                            owns.attribute().label().get()
-                    ));
+                    throw GraknException.of(INVALID_UNDEFINE_OWNS_OVERRIDE,
+                                            owns.overridden().get().label().get().label(),
+                                            owns.attribute().label().get());
                 } else if (owns.isKey()) {
-                    throw new GraknException(INVALID_UNDEFINE_OWNS_KEY.message(owns.attribute().label().get(),
-                                                                               owns.attribute().label().get()));
+                    throw GraknException.of(INVALID_UNDEFINE_OWNS_KEY,
+                                            owns.attribute().label().get(),
+                                            owns.attribute().label().get());
                 } else if (attributeType != null) {
                     thingType.unsetOwns(attributeType.asAttributeType());
                 }
@@ -238,12 +239,11 @@ public class Undefiner {
             playsConstraints.forEach(plays -> {
                 final Type roleType = getRoleType(plays.role().label().get());
                 if (roleType == null && !undefined.contains(plays.role())) {
-                    throw new GraknException(TYPE_NOT_FOUND.message(plays.role().label().get().label()));
+                    throw GraknException.of(TYPE_NOT_FOUND, plays.role().label().get().label());
                 } else if (plays.overridden().isPresent()) {
-                    throw new GraknException(INVALID_UNDEFINE_PLAYS_OVERRIDE.message(
-                            plays.overridden().get().label().get().label(),
-                            plays.role().label().get()
-                    ));
+                    throw GraknException.of(INVALID_UNDEFINE_PLAYS_OVERRIDE,
+                                            plays.overridden().get().label().get().label(),
+                                            plays.role().label().get());
                 } else if (roleType != null) {
                     thingType.unsetPlays(roleType.asRoleType());
                 }
@@ -254,10 +254,10 @@ public class Undefiner {
     private void undefine(graql.lang.pattern.schema.Rule rule) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineplays")) {
             if (rule.when() != null || rule.then() != null) {
-                throw new GraknException(INVALID_UNDEFINE_RULE_BODY.message(rule.label()));
+                throw GraknException.of(INVALID_UNDEFINE_RULE_BODY, rule.label());
             }
-            Rule r = conceptMgr.getRule(rule.label());
-            if (r == null) throw new GraknException(RULE_NOT_FOUND.message(rule.label()));
+            Rule r = logicMgr.getRule(rule.label());
+            if (r == null) throw GraknException.of(RULE_NOT_FOUND, rule.label());
             r.delete();
         }
     }

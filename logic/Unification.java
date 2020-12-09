@@ -15,20 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package grakn.core.logic;
 
 import grakn.common.collection.Pair;
+import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.HeadConcludable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.concludable.ConjunctionConcludable;
-import grakn.core.reasoner.concludable.HeadConcludable;
 
 import java.util.Set;
 
 public class Unification {
 
     private final ConjunctionConcludable<?, ?> fromConcludable;
-    private HeadConcludable<?, ?> toConcludable;
-    Set<Pair<Variable, Variable>> variableMapping;
+    private final HeadConcludable<?, ?> toConcludable;
+    private final Set<Pair<Variable, Variable>>  variableMapping;
 
     public Unification(ConjunctionConcludable<?, ?> fromConcludable, HeadConcludable<?, ?> toConcludable,
                        Set<Pair<Variable, Variable>> variableMapping) {

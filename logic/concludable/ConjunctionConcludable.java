@@ -15,9 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.concludable;
+package grakn.core.logic.concludable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
+import grakn.core.logic.Rule;
+import grakn.core.logic.Unification;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -50,12 +53,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return new Extractor(conjunction.variables()).concludables();
     }
 
-//    public Stream<Pair<Implication, Unification>> findUnifiableImplications(Stream<Implication> allImplications) {
-//        return allImplications.flatMap(implication -> implication.head().stream()
-//                .flatMap(this::unify)
-//                .map(unifiedBase -> new Pair<>(implication, unifiedBase)
-//                ));
-//    }
+    public Stream<Pair<Rule, Unification>> findUnifiableRules(Stream<Rule> allRules) {
+        return allRules.flatMap(rule -> rule.head().stream()
+                                               .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
+        );
+    }
 
     private Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable<?, ?> unifyWith) {
         if (unifyWith instanceof HeadConcludable.Relation) return unify((HeadConcludable.Relation) unifyWith);
@@ -99,19 +101,19 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     }
 
     public Relation asRelation() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Relation.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
     }
 
     public Has asHas() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Has.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
     }
 
     public Isa asIsa() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Isa.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
     }
 
     public Value asValue() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Value.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
     public static class Relation extends ConjunctionConcludable<RelationConstraint, ConjunctionConcludable.Relation> {

@@ -125,8 +125,8 @@ public class MockTransaction {
         }
 
         @Override
-        public GraknException exception(final String errorMessage) {
-            return null;
+        public GraknException exception(GraknException exception) {
+            return exception;
         }
 
         @Override

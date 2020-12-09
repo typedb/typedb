@@ -18,6 +18,7 @@
 
 package grakn.core.concept.thing.impl;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
@@ -95,27 +96,27 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeImpl.Boolean asBoolean() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.Boolean.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Boolean.class)));
     }
 
     @Override
     public AttributeImpl.Long asLong() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.Long.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Long.class)));
     }
 
     @Override
     public AttributeImpl.Double asDouble() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.Double.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Double.class)));
     }
 
     @Override
     public AttributeImpl.String asString() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.String.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.String.class)));
     }
 
     @Override
     public AttributeImpl.DateTime asDateTime() {
-        throw exception(INVALID_THING_CASTING.message(className(this.getClass()), className(Attribute.DateTime.class)));
+        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.DateTime.class)));
     }
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {

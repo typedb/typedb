@@ -22,7 +22,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.logic.Rule;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -33,8 +32,10 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
+import grakn.core.logic.Rule;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
+import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -43,6 +44,7 @@ import java.time.ZoneOffset;
 import java.util.stream.Collectors;
 
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYPE;
 
@@ -127,14 +129,6 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.Rule rule(Rule rule) {
-            final ConceptProto.Rule.Builder builder = ConceptProto.Rule.newBuilder()
-                    .setLabel(rule.getLabel())
-                    .setWhen(rule.getWhenPreNormalised().toString())
-                    .setThen(rule.getThenPreNormalised().toString());
-            return builder.build();
-        }
-
         /* public static ConceptProto.Concept conceptPrefilled(grakn.core.concept.Concept concept) {
             ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
                     .setIid(ByteString.copyFrom(concept.getIID()))
@@ -168,7 +162,7 @@ public class ResponseBuilder {
             } else if (thing instanceof Attribute) {
                 return ConceptProto.Thing.ENCODING.ATTRIBUTE;
             } else {
-                throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
@@ -184,7 +178,7 @@ public class ResponseBuilder {
             } else if (type instanceof RoleType) {
                 return ConceptProto.Type.ENCODING.ROLE_TYPE;
             } else {
-                throw new GraknException(ErrorMessage.Internal.ILLEGAL_STATE);
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
@@ -202,7 +196,7 @@ public class ResponseBuilder {
             } else if (attribute instanceof Attribute.Double) {
                 builder.setDouble(attribute.asDouble().getValue());
             } else {
-                throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
+                throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
 
             return builder.build();
@@ -224,7 +218,7 @@ public class ResponseBuilder {
                     return AttributeType.ValueType.DATETIME;
                 case UNRECOGNIZED:
                 default:
-                    throw new GraknException(BAD_VALUE_TYPE.message(valueType));
+                    throw GraknException.of(BAD_VALUE_TYPE, valueType);
             }
         }
 
@@ -246,9 +240,21 @@ public class ResponseBuilder {
             } else if (attributeType.isRoot()) {
                 return ConceptProto.AttributeType.VALUE_TYPE.OBJECT;
             } else {
-                throw new GraknException(ErrorMessage.Server.BAD_VALUE_TYPE);
+                throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
         }
+    }
+
+    public static class Logic {
+
+        public static LogicProto.Rule rule(Rule rule) {
+            final LogicProto.Rule.Builder builder = LogicProto.Rule.newBuilder()
+                    .setLabel(rule.getLabel())
+                    .setWhen(rule.getWhenPreNormalised().toString())
+                    .setThen(rule.getThenPreNormalised().toString());
+            return builder.build();
+        }
+
     }
 
     /**
@@ -266,7 +272,7 @@ public class ResponseBuilder {
             } else if (object instanceof Number) {
                 answer.setNumber(number((Number) object));
             } else {
-                throw new GraknException(UNKNOWN_ANSWER_TYPE.message(className(object.getClass())));
+                throw GraknException.of(UNKNOWN_ANSWER_TYPE, className(object.getClass()));
             }
 
             return answer.build();

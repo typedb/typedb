@@ -41,8 +41,9 @@ native_java_libraries(
         "//common:common",
     ],
     native_libraries_deps = [
-        "//query:query",
         "//concept:concept",
+        "//logic:logic",
+        "//query:query",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
     visibility = ["//visibility:public"],
@@ -218,3 +219,4 @@ filegroup(
         "@graknlabs_dependencies//tool/unuseddeps:unused-deps",
     ],
 )
+

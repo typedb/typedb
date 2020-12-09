@@ -43,7 +43,6 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
-import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
@@ -128,7 +127,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
             assert type.getSupertype() != null;
             type = (TypeImpl) type.getSupertype();
             if (!hierarchy.add(type.vertex.scopedLabel())) {
-                throw new GraknException(CYCLIC_TYPE_HIERARCHY.message(hierarchy));
+                throw GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy);
             }
         }
     }
@@ -141,15 +140,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(Function<TypeVertex, TYPE> typeConstructor) {
-        return loop(
-                vertex,
-                v -> v != null && v.encoding().equals(this.vertex.encoding()),
-                v -> {
-                    final ResourceIterator<TypeVertex> p = v.outs().edge(SUB).to();
-                    if (p.hasNext()) return p.next();
-                    else return null;
-                }
-        ).map(typeConstructor).stream();
+        return graphMgr.schema().superTypes(vertex).map(typeConstructor).stream();
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
@@ -166,40 +157,40 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public ThingTypeImpl asThingType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(ThingType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(ThingType.class)));
     }
 
     @Override
     public EntityTypeImpl asEntityType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(EntityType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(EntityType.class)));
     }
 
     @Override
     public AttributeTypeImpl asAttributeType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(AttributeType.class)));
     }
 
     @Override
     public RelationTypeImpl asRelationType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RelationType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(RelationType.class)));
     }
 
     @Override
     public RoleTypeImpl asRoleType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RoleType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(RoleType.class)));
     }
 
     void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
-            throw exception(SESSION_SCHEMA_VIOLATION.message());
+            throw exception(GraknException.of(SESSION_SCHEMA_VIOLATION));
         } else if (isAbstract()) {
-            throw exception(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));
+            throw exception(GraknException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));
         }
     }
 
     @Override
-    public GraknException exception(String message) {
-        return graphMgr.exception(message);
+    public GraknException exception(GraknException exception) {
+        return graphMgr.exception(exception);
     }
 
     @Override

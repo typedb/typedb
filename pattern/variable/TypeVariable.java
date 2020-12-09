@@ -95,23 +95,23 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraints.add(constraint);
         if (constraint.isLabel()) {
             if (labelConstraint != null && !labelConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL.message(identifier()));
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL, identifier());
             }
             labelConstraint = constraint.asLabel();
         } else if (constraint.isValueType()) {
             if (valueTypeConstraint != null && !valueTypeConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE.message(identifier()));
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE, identifier());
             }
             valueTypeConstraint = constraint.asValueType();
         } else if (constraint.isRegex()) {
             if (regexConstraint != null && !regexConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX.message(identifier()));
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX, identifier());
             }
             regexConstraint = constraint.asRegex();
         } else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
         else if (constraint.isSub()) {
             if (subConstraint != null && !subConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB.message(identifier()));
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, identifier());
             }
             subConstraint = constraint.asSub();
         } else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());

@@ -24,10 +24,10 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.LogicIID;
+import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.logic.RuleLogic;
-import grakn.core.graph.logic.impl.RuleLogicImpl;
+import grakn.core.graph.structure.RuleStructure;
+import grakn.core.graph.structure.impl.RuleStructureImpl;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.util.KeyGenerator;
 import grakn.core.graph.util.Storage;
@@ -38,11 +38,10 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -51,6 +50,7 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
@@ -76,17 +76,15 @@ public class SchemaGraph implements Graph {
     private final Storage storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
-    private final ConcurrentMap<String, RuleLogic> rulesByLabel;
+    private final ConcurrentMap<String, RuleStructure> rulesByLabel;
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
-    private final ConcurrentMap<LogicIID.Rule, RuleLogic> rulesByIID;
+    private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
-    private final AtomicLong referenceCounter;
     private final Statistics statistics;
     private final Cache cache;
     private final boolean isReadOnly;
     private boolean isModified;
-    private boolean mayClose;
 
     public SchemaGraph(Storage storage, boolean isReadOnly) {
         this.storage = storage;
@@ -98,11 +96,9 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
-        referenceCounter = new AtomicLong();
         statistics = new Statistics();
         cache = new Cache();
         isModified = false;
-        mayClose = false;
     }
 
     static class Cache {
@@ -115,6 +111,7 @@ public class SchemaGraph implements Graph {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
         }
+
 
     }
 
@@ -192,9 +189,18 @@ public class SchemaGraph implements Graph {
         return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
     }
 
+    public ResourceIterator<TypeVertex> superTypes(TypeVertex vertex) {
+        return loop(vertex, Objects::nonNull,
+                    v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(vertex.encoding())).firstOrNull());
+    }
+
     public ResourceIterator<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {
         if (!isTransitive) return type.ins().edge(SUB).from();
         else return tree(rootThingType(), v -> v.ins().edge(SUB).from());
+    }
+
+    public ResourceIterator<TypeVertex> subTypes(VertexIID.Type typeIID, boolean isTransitive) {
+        return subTypes(convert(typeIID), isTransitive);
     }
 
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex ownerType) {
@@ -225,11 +231,11 @@ public class SchemaGraph implements Graph {
         });
     }
 
-    public RuleLogic convert(LogicIID.Rule iid) {
+    public RuleStructure convert(StructureIID.Rule iid) {
         return rulesByIID.computeIfAbsent(iid, i -> {
-            final RuleLogic logic = new RuleLogicImpl.Persisted(this, i);
-            rulesByLabel.putIfAbsent(logic.label(), logic);
-            return logic;
+            final RuleStructure rule = new RuleStructureImpl.Persisted(this, i);
+            rulesByLabel.putIfAbsent(rule.label(), rule);
+            return rule;
         });
     }
 
@@ -262,34 +268,34 @@ public class SchemaGraph implements Graph {
 
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(scopedLabel).unlockRead();
             multiLabelLock.unlockRead();
         }
     }
 
-    public RuleLogic getRule(String label) {
+    public RuleStructure getRule(String label) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
 
-            RuleLogic vertex = rulesByLabel.get(label);
+            RuleStructure vertex = rulesByLabel.get(label);
             if (vertex != null) return vertex;
 
             final IndexIID.Rule index = IndexIID.Rule.of(label);
             final byte[] iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = rulesByIID.computeIfAbsent(
-                        LogicIID.Rule.of(iid), i -> new RuleLogicImpl.Persisted(this, i)
+                        StructureIID.Rule.of(iid), i -> new RuleStructureImpl.Persisted(this, i)
                 );
                 rulesByLabel.putIfAbsent(label, vertex);
             }
 
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(label).unlockRead();
             multiLabelLock.unlockRead();
@@ -313,26 +319,26 @@ public class SchemaGraph implements Graph {
             typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
         }
     }
 
-    public RuleLogic create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+    public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
 
-            final RuleLogic ruleLogic = rulesByLabel.computeIfAbsent(label, i -> new RuleLogicImpl.Buffered(
-                    this, LogicIID.Rule.generate(keyGenerator), label, when, then
+            final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
+                    this, StructureIID.Rule.generate(keyGenerator), label, when, then
             ));
-            rulesByIID.put(ruleLogic.iid(), ruleLogic);
-            return ruleLogic;
+            rulesByIID.put(rule.iid(), rule);
+            return rule;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(label).unlockWrite();
             multiLabelLock.unlockRead();
@@ -346,28 +352,28 @@ public class SchemaGraph implements Graph {
         try {
             multiLabelLock.lockWrite();
             final TypeVertex type = getType(newLabel, newScope);
-            if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE.message(newScopedLabel));
+            if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             multiLabelLock.unlockWrite();
         }
     }
 
-    public RuleLogic update(RuleLogic vertex, String oldLabel, String newLabel) {
+    public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
         assert storage.isOpen();
         try {
             multiLabelLock.lockWrite();
-            final RuleLogic rule = getRule(newLabel);
-            if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE.message(newLabel));
+            final RuleStructure rule = getRule(newLabel);
+            if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
             rulesByLabel.remove(oldLabel);
             rulesByLabel.put(newLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             multiLabelLock.unlockWrite();
         }
@@ -382,14 +388,14 @@ public class SchemaGraph implements Graph {
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
             multiLabelLock.unlockRead();
         }
     }
 
-    public void delete(RuleLogic vertex) {
+    public void delete(RuleStructure vertex) {
         assert storage.isOpen();
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             // TODO do we need all these locks here? Are they applicable for this method?
@@ -399,7 +405,7 @@ public class SchemaGraph implements Graph {
             rulesByLabel.remove(vertex.label());
             rulesByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(vertex.label()).unlockWrite();
             multiLabelLock.unlockRead();
@@ -412,23 +418,6 @@ public class SchemaGraph implements Graph {
 
     public boolean isModified() {
         return isModified;
-    }
-
-    public void incrementReference() {
-        referenceCounter.incrementAndGet();
-    }
-
-    public void decrementReference() {
-        if (referenceCounter.decrementAndGet() == 0 && mayClose) {
-            storage.close();
-        }
-    }
-
-    public void mayClose() {
-        mayClose = true;
-        if (referenceCounter.get() == 0) {
-            storage.close();
-        }
     }
 
     /**
@@ -447,10 +436,10 @@ public class SchemaGraph implements Graph {
                 typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
         rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                ruleLogic -> ruleLogic.iid(LogicIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
+                ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
-        rulesByIID.values().forEach(RuleLogic::commit);
+        rulesByIID.values().forEach(RuleStructure::commit);
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
     }
 
@@ -465,50 +454,71 @@ public class SchemaGraph implements Graph {
     public class Statistics {
 
         private static final int UNSET_COUNT = -1;
-        private final AtomicInteger abstractTypeCount;
-        private final AtomicInteger thingTypeCount;
-        private final AtomicInteger attributeTypeCount;
-        private final AtomicInteger relationTypeCount;
-        private final AtomicInteger roleTypeCount;
+        private volatile int abstractTypeCount;
+        private volatile int thingTypeCount;
+        private volatile int attributeTypeCount;
+        private volatile int relationTypeCount;
+        private volatile int roleTypeCount;
         private final ConcurrentMap<TypeVertex, Long> subTypesDepth;
         private final ConcurrentMap<Pair<TypeVertex, Boolean>, Long> subTypesCount;
         private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
 
         private Statistics() {
-            abstractTypeCount = new AtomicInteger(UNSET_COUNT);
-            thingTypeCount = new AtomicInteger(UNSET_COUNT);
-            attributeTypeCount = new AtomicInteger(UNSET_COUNT);
-            relationTypeCount = new AtomicInteger(UNSET_COUNT);
-            roleTypeCount = new AtomicInteger(UNSET_COUNT);
+            abstractTypeCount = UNSET_COUNT;
+            thingTypeCount = UNSET_COUNT;
+            attributeTypeCount = UNSET_COUNT;
+            relationTypeCount = UNSET_COUNT;
+            roleTypeCount = UNSET_COUNT;
             subTypesDepth = new ConcurrentHashMap<>();
             subTypesCount = new ConcurrentHashMap<>();
             attTypesWithValueType = new ConcurrentHashMap<>();
         }
 
         public long abstractTypeCount() {
-            return typeCount(abstractTypeCount, () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count()));
+            Supplier<Integer> function = () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count());
+            if (isReadOnly) {
+                if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = function.get();
+                return abstractTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long thingTypeCount() {
-            return typeCount(thingTypeCount, () -> toIntExact(thingTypes().stream().count()));
+            Supplier<Integer> function = () -> toIntExact(thingTypes().stream().count());
+            if (isReadOnly) {
+                if (thingTypeCount == UNSET_COUNT) thingTypeCount = function.get();
+                return thingTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long relationTypeCount() {
-            return typeCount(relationTypeCount, () -> toIntExact(relationTypes().stream().count()));
+            Supplier<Integer> function = () -> toIntExact(relationTypes().stream().count());
+            if (isReadOnly) {
+                if (relationTypeCount == UNSET_COUNT) relationTypeCount = function.get();
+                return relationTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long roleTypeCount() {
-            return typeCount(roleTypeCount, () -> toIntExact(roleTypes().stream().count()));
+            Supplier<Integer> function = () -> toIntExact(roleTypes().stream().count());
+            if (isReadOnly) {
+                if (roleTypeCount == UNSET_COUNT) roleTypeCount = function.get();
+                return roleTypeCount;
+            } else {
+                return function.get();
+            }
         }
 
         public long attributeTypeCount() {
-            return typeCount(attributeTypeCount, () -> toIntExact(attributeTypes().stream().count()));
-        }
-
-        private int typeCount(AtomicInteger cache, Supplier<Integer> function) {
+            Supplier<Integer> function = () -> toIntExact(attributeTypes().stream().count());
             if (isReadOnly) {
-                cache.compareAndSet(UNSET_COUNT, function.get());
-                return cache.get();
+                if (attributeTypeCount == UNSET_COUNT) attributeTypeCount = function.get();
+                return attributeTypeCount;
             } else {
                 return function.get();
             }

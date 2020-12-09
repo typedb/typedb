@@ -18,6 +18,7 @@
 
 package grakn.core.graph;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 
 import java.util.Objects;
@@ -46,8 +47,8 @@ public class GraphManager {
         dataGraph.clear();
     }
 
-    public GraknException exception(String message) {
-        return dataGraph.storage().exception(message);
+    public GraknException exception(ErrorMessage error) {
+        return dataGraph.storage().exception(error);
     }
 
     public GraknException exception(Exception exception) {

@@ -18,6 +18,7 @@
 
 package grakn.core.graph.util;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 
@@ -44,20 +45,22 @@ public interface Storage {
 
     void putUntracked(byte[] key, byte[] value);
 
+    void mergeUntracked(byte[] key, byte[] value);
+
     <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
-    GraknException exception(String message);
+    GraknException exception(ErrorMessage error);
 
-    GraknException exception(Exception message);
+    GraknException exception(Exception exception);
 
-    GraknException exception(GraknException message);
+    GraknException exception(GraknException exception);
 
     void close();
 
     default boolean isSchema() { return false; }
 
     default Schema asSchema() {
-        throw exception(ILLEGAL_CAST.message(className(this.getClass()), className(Schema.class)));
+        throw exception(GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class)));
     }
 
     interface Schema extends Storage {

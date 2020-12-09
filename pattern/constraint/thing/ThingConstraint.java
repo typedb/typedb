@@ -103,26 +103,26 @@ public abstract class ThingConstraint extends Constraint {
     }
 
     public IIDConstraint asIID() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IIDConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IIDConstraint.class));
     }
 
     public IsaConstraint asIsa() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IsaConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IsaConstraint.class));
     }
 
     public IsConstraint asIs() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(IsConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IsConstraint.class));
     }
 
     public ValueConstraint<?> asValue() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(ValueConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ValueConstraint.class));
     }
 
     public RelationConstraint asRelation() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(RelationConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(RelationConstraint.class));
     }
 
     public HasConstraint asHas() {
-        throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(HasConstraint.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(HasConstraint.class));
     }
 }

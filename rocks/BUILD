@@ -45,6 +45,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//:grakn",
         "//concept:concept",
+        "//logic:logic",
         "//query:query",
         "//reasoner:reasoner",
         "//traversal:traversal",

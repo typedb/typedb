@@ -19,6 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.core.common.concurrent.ManagedReadWriteLock;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.util.KeyGenerator;
@@ -154,6 +155,19 @@ class RocksStorage implements Storage {
     }
 
     @Override
+    public void mergeUntracked(byte[] key, byte[] value) {
+        validateTransactionIsOpen();
+        try {
+            readWriteLock.lockWrite();
+            rocksTx.mergeUntracked(key, value);
+        } catch (RocksDBException | InterruptedException e) {
+            throw exception(e);
+        } finally {
+            if (isOpen()) readWriteLock.unlockWrite();
+        }
+    }
+
+    @Override
     public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
         validateTransactionIsOpen();
         final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
@@ -162,13 +176,13 @@ class RocksStorage implements Storage {
     }
 
     @Override
-    public GraknException exception(String message) {
-        return new GraknException(message);
+    public GraknException exception(ErrorMessage error) {
+        return GraknException.of(error);
     }
 
     @Override
     public GraknException exception(Exception exception) {
-        return new GraknException(exception);
+        return GraknException.of(exception);
     }
 
     @Override
@@ -219,15 +233,15 @@ class RocksStorage implements Storage {
         }
 
         @Override
-        public GraknException exception(String message) {
+        public GraknException exception(ErrorMessage error) {
             transaction.close();
-            return new GraknException(message);
+            return GraknException.of(error);
         }
 
         @Override
         public GraknException exception(Exception exception) {
             transaction.close();
-            return new GraknException(exception);
+            return GraknException.of(exception);
         }
 
         @Override

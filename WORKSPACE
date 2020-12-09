@@ -158,3 +158,4 @@ maven(
 
 load("@graknlabs_bazel_distribution//common:rules.bzl", "workspace_refs")
 workspace_refs(name = "graknlabs_grakn_core_workspace_refs")
+

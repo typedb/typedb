@@ -33,11 +33,11 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
     }
 
     public StructureVertex.Thing asThing() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(StructureVertex.Thing.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Thing.class));
     }
 
     public StructureVertex.Type asType() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(StructureVertex.Type.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Type.class));
     }
 
     public static class Thing extends StructureVertex<TraversalVertex.Properties.Thing> {

@@ -18,7 +18,6 @@
 
 package grakn.core.graph.adjacency.impl;
 
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.edge.Edge;
@@ -32,9 +31,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,6 +38,7 @@ import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
@@ -62,7 +59,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID... lookAhead) {
-        final Encoding.Infix infix = direction.isOut() ? encoding.out() : encoding.in();
+        Encoding.Infix infix = direction.isOut() ? encoding.out() : encoding.in();
         return InfixIID.Thing.of(infix, lookAhead);
     }
 
@@ -80,36 +77,34 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     ResourceIterator<ThingEdge> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
-        final Set<ThingEdge> result;
-        final InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
+        Set<ThingEdge> result;
+        InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
         if (lookAhead.length == encoding.lookAhead()) {
-            return Iterators.iterate((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
+            return iterate((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
         }
 
         assert lookAhead.length < encoding.lookAhead();
         Set<InfixIID.Thing> iids = new HashSet<>();
         iids.add(infixIID);
         for (int i = lookAhead.length; i < encoding.lookAhead() && !iids.isEmpty(); i++) {
-            final Set<InfixIID.Thing> newIIDs = new HashSet<>();
+            Set<InfixIID.Thing> newIIDs = new HashSet<>();
             for (InfixIID.Thing iid : iids) {
-                final Set<InfixIID.Thing> someNewIIDs = infixes.get(iid);
+                Set<InfixIID.Thing> someNewIIDs = infixes.get(iid);
                 if (someNewIIDs != null) newIIDs.addAll(someNewIIDs);
             }
             iids = newIIDs;
         }
 
-        final List<Iterator<ThingEdge>> iterators = new LinkedList<>();
-        iids.forEach(iid -> iterators.add(edges.get(iid).iterator()));
-        return link(iterators);
+        return iterate(iids).flatMap(iid -> iterate(edges.get(iid)));
     }
 
     @Override
     public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         assert encoding.isOptimisation();
-        final Predicate<ThingEdge> predicate = direction.isOut()
+        Predicate<ThingEdge> predicate = direction.isOut()
                 ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
                 : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
-        final ResourceIterator<ThingEdge> iterator = bufferedEdgeIterator(
+        ResourceIterator<ThingEdge> iterator = bufferedEdgeIterator(
                 encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
         );
         ThingEdge edge = null;
@@ -124,8 +119,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     @Override
     public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         assert !encoding.isOptimisation();
-        final Predicate<ThingEdge> predicate = direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-        final ResourceIterator<ThingEdge> iterator = bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
+        Predicate<ThingEdge> predicate = direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
+        ResourceIterator<ThingEdge> iterator = bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
         ThingEdge edge = null;
         while (iterator.hasNext()) {
             if (predicate.test(edge = iterator.next())) break;
@@ -139,7 +134,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         assert encoding.lookAhead() == infixes.length;
         InfixIID.Thing infixIID = infixIID(encoding);
         for (int i = 0; i < encoding.lookAhead(); i++) {
-            this.infixes.computeIfAbsent(infixIID, x -> newKeySet()).add(infixIID = infixIID(encoding, copyOfRange(infixes, 0, i + 1)));
+            this.infixes.computeIfAbsent(infixIID, x -> newKeySet()).add(
+                    infixIID = infixIID(encoding, copyOfRange(infixes, 0, i + 1))
+            );
         }
         edges.computeIfAbsent(infixIID, iid -> newKeySet()).add(edge);
         if (isModified) owner.isModified();
@@ -153,20 +150,23 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     @Override
     public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         assert !encoding.isOptimisation();
-        final ThingEdgeImpl edge = direction.isOut()
+        if (encoding == Encoding.Edge.Thing.HAS && direction.isOut()) {
+            owner.graph().stats().hasEdgeCreated(owner.iid(), adjacent.iid().asAttribute());
+        }
+        ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner);
-        final IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
+        IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
         return put(encoding, edge, infixes, true, true);
     }
 
     @Override
     public ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         assert encoding.isOptimisation();
-        final ThingEdgeImpl edge = direction.isOut()
+        ThingEdgeImpl edge = direction.isOut()
                 ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised)
                 : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised);
-        final IID[] infixes = new IID[]{optimised.type().iid(), adjacent.iid().prefix(), adjacent.iid().type()};
+        IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
         return put(encoding, edge, infixes, true, true);
     }
 
@@ -181,7 +181,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     @Override
     public void remove(ThingEdge edge) {
-        final InfixIID.Thing infixIID = infixIID(edge.encoding(), infixTails(edge));
+        InfixIID.Thing infixIID = infixIID(edge.encoding(), infixTails(edge));
         if (edges.containsKey(infixIID)) {
             edges.get(infixIID).remove(edge);
             owner.setModified();
@@ -246,24 +246,16 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     public static class Persisted extends ThingAdjacencyImpl implements ThingAdjacency {
 
-        private final ConcurrentHashMap<byte[], ResourceIterator<ThingEdge>> storageIterators;
-
         public Persisted(ThingVertex owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
-            storageIterators = new ConcurrentHashMap<>();
         }
 
         private ResourceIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
-            final ResourceIterator<ThingEdge> storageIterator = storageIterators.computeIfAbsent(
-                    join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes()),
-                    iid -> owner.graph().storage().iterate(iid, (key, value) ->
-                            cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))))
-            );
-
-            final ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
-            if (!bufferedIterator.hasNext()) return storageIterator;
-            else if (!storageIterator.hasNext()) return bufferedIterator;
-            else return link(list(bufferedIterator, storageIterator)).distinct();
+            byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
+            ResourceIterator<ThingEdge> storageIterator =
+                    owner.graph().storage().iterate(iid, (key, value) -> cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))));
+            ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
+            return link(list(bufferedIterator, storageIterator)).distinct();
         }
 
         @Override
@@ -279,10 +271,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         @Override
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
             assert !encoding.isOptimisation();
-            final ThingEdge edge = super.edge(encoding, adjacent);
+            ThingEdge edge = super.edge(encoding, adjacent);
             if (edge != null) return edge;
 
-            final EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding), adjacent.iid());
+            EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding), adjacent.iid());
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
             else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
         }
@@ -290,10 +282,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         @Override
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
             assert encoding.isOptimisation();
-            final ThingEdge edge = super.edge(encoding, adjacent, optimised);
+            ThingEdge edge = super.edge(encoding, adjacent, optimised);
             if (edge != null) return edge;
 
-            final EdgeIID.Thing edgeIID = EdgeIID.Thing.of(
+            EdgeIID.Thing edgeIID = EdgeIID.Thing.of(
                     owner.iid(), infixIID(encoding, optimised.iid().type()),
                     adjacent.iid(), SuffixIID.of(optimised.iid().key())
             );

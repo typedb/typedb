@@ -120,7 +120,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
      */
     @Override
     public void commit() {
-        if (isInferred) throw new GraknException(ILLEGAL_OPERATION);
+        if (isInferred) throw GraknException.of(ILLEGAL_OPERATION);
         commitVertex();
         commitEdges();
     }
@@ -154,27 +154,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {
-        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(Boolean.class)));
+        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
     }
 
     @Override
     public AttributeVertexImpl.Long asLong() {
-        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(Long.class)));
+        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
     }
 
     @Override
     public AttributeVertexImpl.Double asDouble() {
-        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(Double.class)));
+        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
     }
 
     @Override
     public AttributeVertexImpl.String asString() {
-        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(String.class)));
+        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
     }
 
     @Override
     public AttributeVertexImpl.DateTime asDateTime() {
-        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(DateTime.class)));
+        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {

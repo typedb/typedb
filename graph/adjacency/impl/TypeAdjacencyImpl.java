@@ -127,11 +127,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     public static class Persisted extends TypeAdjacencyImpl implements TypeAdjacency {
 
-        private final ConcurrentHashMap<byte[], ResourceIterator<TypeEdge>> storageIterators;
-
         public Persisted(TypeVertex owner, Encoding.Direction.Adjacency direction) {
             super(owner, direction);
-            storageIterators = new ConcurrentHashMap<>();
         }
 
         private byte[] edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
@@ -146,13 +143,9 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         }
 
         private ResourceIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
-            final ResourceIterator<TypeEdge> storageIterator = storageIterators.computeIfAbsent(
-                    join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes()),
-                    iid -> owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)))
-            );
-
+            byte[] iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
+            final ResourceIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
             if (edges.get(encoding) == null) return storageIterator;
-            else if (!storageIterator.hasNext()) return Iterators.iterate(edges.get(encoding).iterator());
             else return link(list(edges.get(encoding).iterator(), storageIterator)).distinct();
         }
 

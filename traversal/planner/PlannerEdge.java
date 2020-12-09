@@ -25,7 +25,6 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.structure.StructureEdge;
 
@@ -79,7 +78,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> structureEdge) {
         if (structureEdge.isEqual()) return new PlannerEdge.Equal(from, to);
         else if (structureEdge.isPredicate())
-            return new PlannerEdge.Predicate(from.asThing(), to.asThing(), structureEdge.asPredicate().predicate());
+            return new Predicate(from.asThing(), to.asThing(), structureEdge.asPredicate().predicate());
         else if (structureEdge.isNative()) return PlannerEdge.Native.of(from, to, structureEdge.asNative());
         else throw GraknException.of(ILLEGAL_STATE);
     }
@@ -107,9 +106,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.initialiseConstraints();
     }
 
-    void updateObjective(GraphManager graph) {
-        forward.updateObjective(graph);
-        backward.updateObjective(graph);
+    void updateObjective(GraphManager graphMgr) {
+        forward.updateObjective(graphMgr);
+        backward.updateObjective(graphMgr);
     }
 
     void recordCost() {
@@ -152,7 +151,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             this.conPrefix = "edge::con::" + from + "::" + to + "::";
         }
 
-        abstract void updateObjective(GraphManager graph);
+        abstract void updateObjective(GraphManager graphMgr);
 
         public boolean isSelected() {
             return valueIsSelected == 1;
@@ -256,15 +255,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public boolean isNative() { return false; }
 
         public Equal.Directional asEqual() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Equal.Directional.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.Directional.class));
         }
 
         public Predicate.Directional asPredicate() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Predicate.Directional.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.Directional.class));
         }
 
         public Native.Directional<?, ?> asNative() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Native.Directional.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.Directional.class));
         }
     }
 
@@ -287,7 +286,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
 
             @Override
-            void updateObjective(GraphManager graph) {
+            void updateObjective(GraphManager graphMgr) {
                 setObjectiveCoefficient(0);
             }
 
@@ -303,7 +302,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private final grakn.core.traversal.common.Predicate.Variable predicate;
 
-        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to, grakn.core.traversal.common.Predicate.Variable predicate) {
+        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to,
+                  grakn.core.traversal.common.Predicate.Variable predicate) {
             super(from, to);
             this.predicate = predicate;
         }
@@ -331,26 +331,29 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public Predicate.Directional asPredicate() { return this; }
 
             @Override
-            void updateObjective(GraphManager graph) {
+            void updateObjective(GraphManager graphMgr) {
                 long cost;
-                if (predicate.operator().equals(EQ)) {
+                if (to().props().hasIID()) {
+                    cost = 1;
+                } else if (predicate.operator().equals(EQ)) {
                     if (!to.props().types().isEmpty()) {
                         cost = to.props().types().size();
                     } else if (!from.props().types().isEmpty()) {
-                        cost = graph.schema().stats().attTypesWithValTypeComparableTo(from.props().types());
+                        cost = graphMgr.schema().stats().attTypesWithValTypeComparableTo(from.props().types());
                     } else {
-                        cost = graph.schema().stats().attributeTypeCount();
+                        cost = graphMgr.schema().stats().attributeTypeCount();
                     }
                 } else {
                     if (!to.props().types().isEmpty()) {
-                        cost = graph.data().stats().thingVertexSum(to.props().types());
+                        cost = graphMgr.data().stats().thingVertexSum(to.props().types());
                     } else if (!from.props().types().isEmpty()) {
                         Stream<TypeVertex> types = iterate(from.props().types())
-                                .flatMap(l -> iterate(graph.schema().getType(l).valueType().comparables()))
-                                .flatMap(vt -> graph.schema().attributeTypes(vt)).stream();
-                        cost = graph.data().stats().thingVertexSum(types);
+                                .map(l -> graphMgr.schema().getType(l)).filter(TypeVertex::isAttributeType)
+                                .flatMap(at -> iterate(at.valueType().comparables()))
+                                .flatMap(vt -> graphMgr.schema().attributeTypes(vt)).stream();
+                        cost = graphMgr.data().stats().thingVertexSum(types);
                     } else {
-                        cost = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootAttributeType());
+                        cost = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootAttributeType());
                     }
                 }
                 setObjectiveCoefficient(cost);
@@ -397,15 +400,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public boolean isThing() { return false; }
 
             public Isa.Directional<?, ?> asIsa() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Isa.Directional.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Isa.Directional.class));
             }
 
             public Type.Directional asType() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Directional.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Directional.class));
             }
 
             public Thing.Directional asThing() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Directional.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Directional.class));
             }
         }
 
@@ -449,14 +452,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                void updateObjective(GraphManager graph) {
+                void updateObjective(GraphManager graphMgr) {
                     long cost;
                     if (!isTransitive) {
                         cost = 1;
                     } else if (!to.props().labels().isEmpty()) {
-                        cost = graph.schema().stats().subTypesDepth(to.props().labels());
+                        cost = graphMgr.schema().stats().subTypesDepth(to.props().labels());
                     } else {
-                        cost = graph.schema().stats().subTypesDepth(graph.schema().rootThingType());
+                        cost = graphMgr.schema().stats().subTypesDepth(graphMgr.schema().rootThingType());
                     }
                     setObjectiveCoefficient(cost);
                 }
@@ -469,22 +472,21 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                void updateObjective(GraphManager graph) {
+                void updateObjective(GraphManager graphMgr) {
                     long cost;
-                    if (!to.props().types().isEmpty()) {
-                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(to.props().types());
-                        else
-                            cost = graph.data().stats().thingVertexTransitiveMax(to.props().types(), to.props().types());
-                    } else if (!from.props().labels().isEmpty()) {
-                        if (!isTransitive) cost = graph.data().stats().thingVertexMax(from.props().labels());
-                        else
-                            cost = graph.data().stats().thingVertexTransitiveMax(from.props().labels(), to.props().types());
+                    Set<Label> fromLabels = from.props().labels(), toTypes = to.props().types();
+                    if (to().props().hasIID()) {
+                        cost = 1;
+                    } else if (!toTypes.isEmpty()) {
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(toTypes);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(toTypes, toTypes);
+                    } else if (!fromLabels.isEmpty()) {
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(fromLabels);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(fromLabels, toTypes);
                     } else {
-                        if (!isTransitive) {
-                            cost = graph.data().stats().thingVertexMax(graph.schema().thingTypes().stream());
-                        } else {
-                            cost = graph.data().stats().thingVertexTransitiveMax(graph.schema().thingTypes().stream(), set());
-                        }
+                        Stream<TypeVertex> types = graphMgr.schema().thingTypes().stream();
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(types);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(types, set());
                     }
                     setObjectiveCoefficient(cost);
                 }
@@ -549,19 +551,19 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public boolean isRelates() { return false; }
 
                 public Type.Sub.Directional asSub() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Sub.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Sub.Directional.class));
                 }
 
                 public Type.Owns.Directional asOwns() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Owns.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Owns.Directional.class));
                 }
 
                 public Type.Plays.Directional asPlays() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Plays.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Plays.Directional.class));
                 }
 
                 public Type.Relates.Directional asRelates() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Relates.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Relates.Directional.class));
                 }
             }
 
@@ -597,14 +599,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         long cost;
                         if (!isTransitive) {
                             cost = 1;
                         } else if (!to.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesDepth(to.props().labels());
+                            cost = graphMgr.schema().stats().subTypesDepth(to.props().labels());
                         } else {
-                            cost = graph.schema().stats().subTypesDepth(graph.schema().rootThingType());
+                            cost = graphMgr.schema().stats().subTypesDepth(graphMgr.schema().rootThingType());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -617,14 +619,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
                         if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesMean(from.props().labels(), isTransitive);
+                            cost = graphMgr.schema().stats().subTypesMean(from.props().labels(), isTransitive);
                         } else {
-                            cost = graph.schema().stats().subTypesMean(graph.schema().thingTypes().stream(), isTransitive);
+                            cost = graphMgr.schema().stats().subTypesMean(graphMgr.schema().thingTypes().stream(), isTransitive);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -674,15 +676,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
                         if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().outOwnsMean(from.props().labels(), isKey);
+                            cost = graphMgr.schema().stats().outOwnsMean(from.props().labels(), isKey);
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
-                            cost = graph.schema().stats().outOwnsMean(graph.schema().entityTypes().stream(), isKey);
+                            cost = graphMgr.schema().stats().outOwnsMean(graphMgr.schema().entityTypes().stream(), isKey);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -695,17 +697,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
                         double cost;
                         if (!to.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesSum(to.props().labels(), true);
+                            cost = graphMgr.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().inOwnsMean(from.props().labels(), isKey) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
+                            cost = graphMgr.schema().stats().inOwnsMean(from.props().labels(), isKey) *
+                                    graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         } else {
-                            cost = graph.schema().stats().inOwnsMean(graph.schema().attributeTypes().stream(), isKey) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
+                            cost = graphMgr.schema().stats().inOwnsMean(graphMgr.schema().attributeTypes().stream(), isKey) *
+                                    graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -744,15 +746,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
                         if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().outPlaysMean(from.props().labels());
+                            cost = graphMgr.schema().stats().outPlaysMean(from.props().labels());
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
-                            cost = graph.schema().stats().outPlaysMean(graph.schema().entityTypes().stream());
+                            cost = graphMgr.schema().stats().outPlaysMean(graphMgr.schema().entityTypes().stream());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -765,17 +767,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
                         double cost;
                         if (!to.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesSum(to.props().labels(), true);
+                            cost = graphMgr.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().inPlaysMean(from.props().labels()) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
+                            cost = graphMgr.schema().stats().inPlaysMean(from.props().labels()) *
+                                    graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         } else {
-                            cost = graph.schema().stats().inPlaysMean(graph.schema().attributeTypes().stream()) *
-                                    graph.schema().stats().subTypesMean(graph.schema().entityTypes().stream(), true);
+                            cost = graphMgr.schema().stats().inPlaysMean(graphMgr.schema().attributeTypes().stream()) *
+                                    graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -814,14 +816,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
                         if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().outRelates(from.props().labels());
+                            cost = graphMgr.schema().stats().outRelates(from.props().labels());
                         } else {
-                            cost = graph.schema().stats().outRelates(graph.schema().relationTypes().stream());
+                            cost = graphMgr.schema().stats().outRelates(graphMgr.schema().relationTypes().stream());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -834,18 +836,18 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
                         if (!to.props().labels().isEmpty()) {
-                            cost = graph.schema().stats().subTypesMean(to.props().labels(), true);
+                            cost = graphMgr.schema().stats().subTypesMean(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
                             Stream<TypeVertex> relationTypes = from.props().labels().stream().map(l -> {
                                 assert l.scope().isPresent();
                                 return Label.of(l.scope().get());
-                            }).map(l -> graph.schema().getType(l));
-                            cost = graph.schema().stats().subTypesMean(relationTypes, true);
+                            }).map(l -> graphMgr.schema().getType(l));
+                            cost = graphMgr.schema().stats().subTypesMean(relationTypes, true);
                         } else {
-                            cost = graph.schema().stats().subTypesMean(graph.schema().relationTypes().stream(), true);
+                            cost = graphMgr.schema().stats().subTypesMean(graphMgr.schema().relationTypes().stream(), true);
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -903,19 +905,19 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public boolean isRolePlayer() { return false; }
 
                 public Thing.Has.Directional asHas() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Has.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Has.Directional.class));
                 }
 
                 public Thing.Playing.Directional asPlaying() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Playing.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Playing.Directional.class));
                 }
 
                 public Thing.Relating.Directional asRelating() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Relating.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Relating.Directional.class));
                 }
 
                 public Thing.RolePlayer.Directional asRolePlayer() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.RolePlayer.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.RolePlayer.Directional.class));
                 }
             }
 
@@ -951,40 +953,44 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         Set<TypeVertex> ownerTypes = null;
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> ownerToAttributeTypes = new HashMap<>();
 
+                        if (to().props().hasIID()) {
+                            setObjectiveCoefficient(1);
+                            return;
+                        }
                         if (!from.props().types().isEmpty()) {
                             ownerTypes = from.props().types().stream()
-                                    .map(l -> graph.schema().getType(l)).collect(toSet());
+                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
                         }
                         if (!to.props().types().isEmpty()) {
                             attTypes = to.props().types().stream()
-                                    .map(l -> graph.schema().getType(l)).collect(toSet());
+                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
                         }
 
                         if (ownerTypes != null && attTypes != null) {
                             for (final TypeVertex ownerType : ownerTypes)
                                 ownerToAttributeTypes.put(ownerType, attTypes);
                         } else if (ownerTypes != null) {
-                            ownerTypes.stream().map(o -> pair(o, graph.schema().ownedAttributeTypes(o))).forEach(
+                            ownerTypes.stream().map(o -> pair(o, graphMgr.schema().ownedAttributeTypes(o))).forEach(
                                     pair -> ownerToAttributeTypes.put(pair.first(), pair.second())
                             );
                         } else if (attTypes != null) {
-                            attTypes.stream().flatMap(a -> graph.schema().ownersOfAttributeType(a).stream().map(o -> pair(o, a)))
+                            attTypes.stream().flatMap(a -> graphMgr.schema().ownersOfAttributeType(a).stream().map(o -> pair(o, a)))
                                     .forEach(pair -> ownerToAttributeTypes.computeIfAbsent(pair.first(), o -> new HashSet<>())
                                             .add(pair.second()));
-                        } else { // fromTypes == null && toTypes == null;
+                        } else { // ownerTypes == null && attTypes == null;
                             // TODO: We can refine this by not strictly considering entities being the only divisor
-                            ownerToAttributeTypes.put(graph.schema().rootEntityType(), set(graph.schema().rootAttributeType()));
+                            ownerToAttributeTypes.put(graphMgr.schema().rootEntityType(), set(graphMgr.schema().rootAttributeType()));
                         }
 
                         double cost = 0.0;
                         for (TypeVertex owner : ownerToAttributeTypes.keySet()) {
-                            cost += (double) graph.data().stats().hasEdgeSum(owner, ownerToAttributeTypes.get(owner)) /
-                                    graph.data().stats().thingVertexCount(owner);
+                            cost += (double) graphMgr.data().stats().hasEdgeSum(owner, ownerToAttributeTypes.get(owner)) /
+                                    graphMgr.data().stats().thingVertexCount(owner);
                         }
                         cost /= ownerToAttributeTypes.size();
                         setObjectiveCoefficient(cost);
@@ -998,38 +1004,42 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         Set<TypeVertex> ownerTypes = null;
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
 
+                        if (to().props().hasIID()) {
+                            setObjectiveCoefficient(1);
+                            return;
+                        }
                         if (!from.props().types().isEmpty()) {
                             attTypes = from.props().types().stream()
-                                    .map(l -> graph.schema().getType(l)).collect(toSet());
+                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
                         }
                         if (!to.props().types().isEmpty()) {
                             ownerTypes = to.props().types().stream()
-                                    .map(l -> graph.schema().getType(l)).collect(toSet());
+                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
                         }
 
                         if (ownerTypes != null && attTypes != null) {
                             for (final TypeVertex attType : attTypes) attributeTypesToOwners.put(attType, ownerTypes);
                         } else if (attTypes != null) {
-                            attTypes.stream().map(a -> pair(a, graph.schema().ownersOfAttributeType(a))).forEach(
+                            attTypes.stream().map(a -> pair(a, graphMgr.schema().ownersOfAttributeType(a))).forEach(
                                     pair -> attributeTypesToOwners.put(pair.first(), pair.second())
                             );
                         } else if (ownerTypes != null) {
-                            ownerTypes.stream().flatMap(o -> graph.schema().ownedAttributeTypes(o).stream().map(a -> pair(a, o)))
+                            ownerTypes.stream().flatMap(o -> graphMgr.schema().ownedAttributeTypes(o).stream().map(a -> pair(a, o)))
                                     .forEach(pair -> attributeTypesToOwners.computeIfAbsent(pair.first(), a -> new HashSet<>())
                                             .add(pair.second()));
-                        } else { // fromTypes == null && toTypes == null;
-                            attributeTypesToOwners.put(graph.schema().rootAttributeType(), set(graph.schema().rootThingType()));
+                        } else { // ownerTypes == null && attTypes == null;
+                            attributeTypesToOwners.put(graphMgr.schema().rootAttributeType(), set(graphMgr.schema().rootThingType()));
                         }
 
                         double cost = 0.0;
                         for (TypeVertex owner : attributeTypesToOwners.keySet()) {
-                            cost += (double) graph.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner) /
-                                    graph.data().stats().thingVertexCount(owner);
+                            cost += (double) graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner) /
+                                    graphMgr.data().stats().thingVertexCount(owner);
                         }
                         cost /= attributeTypesToOwners.size();
                         setObjectiveCoefficient(cost);
@@ -1069,15 +1079,16 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
+                        assert !to.props().hasIID();
                         double cost;
                         if (!to.props().types().isEmpty() && !from.props().types().isEmpty()) {
-                            cost = (double) graph.data().stats().thingVertexSum(to.props().types()) /
-                                    graph.data().stats().thingVertexSum(from.props().types());
+                            cost = (double) graphMgr.data().stats().thingVertexSum(to.props().types()) /
+                                    graphMgr.data().stats().thingVertexSum(from.props().types());
                         } else {
                             // TODO: We can refine this by not strictly considering entities being the only divisor
-                            cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
-                                    graph.data().stats().thingVertexTransitiveCount(graph.schema().rootEntityType());
+                            cost = (double) graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) /
+                                    graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootEntityType());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -1090,7 +1101,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         setObjectiveCoefficient(1);
                     }
                 }
@@ -1128,19 +1139,20 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
+                        assert !to.props().hasIID();
                         double cost;
                         if (!to.props().types().isEmpty()) {
                             cost = 0;
                             for (final Label roleType : to.props().types()) {
                                 assert roleType.scope().isPresent();
-                                cost += (double) graph.data().stats().thingVertexCount(roleType) /
-                                        graph.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
+                                cost += (double) graphMgr.data().stats().thingVertexCount(roleType) /
+                                        graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
                             }
                             cost = cost / to.props().types().size();
                         } else {
-                            cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
-                                    graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRelationType());
+                            cost = (double) graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) /
+                                    graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRelationType());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -1153,7 +1165,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         setObjectiveCoefficient(1);
                     }
                 }
@@ -1198,19 +1210,21 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
-                        if (!roleTypes.isEmpty()) {
+                        if (to.props().hasIID()) {
+                            cost = 1;
+                        } else if (!roleTypes.isEmpty()) {
                             cost = 0;
                             for (final Label roleType : roleTypes) {
                                 assert roleType.scope().isPresent();
-                                cost += (double) graph.data().stats().thingVertexCount(roleType) /
-                                        graph.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
+                                cost += (double) graphMgr.data().stats().thingVertexCount(roleType) /
+                                        graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
                             }
                             cost = cost / roleTypes.size();
                         } else {
-                            cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
-                                    graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRelationType());
+                            cost = (double) graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) /
+                                    graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRelationType());
                         }
                         setObjectiveCoefficient(cost);
                     }
@@ -1223,15 +1237,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graph) {
+                    void updateObjective(GraphManager graphMgr) {
                         double cost;
-                        if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
-                            cost = (double) graph.data().stats().thingVertexSum(roleTypes) /
-                                    graph.data().stats().thingVertexSum(from.props().types());
+                        if (to.props().hasIID()) {
+                            cost = 1;
+                        } else if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
+                            cost = (double) graphMgr.data().stats().thingVertexSum(roleTypes) /
+                                    graphMgr.data().stats().thingVertexSum(from.props().types());
                         } else {
                             // TODO: We can refine this by not strictly considering entities being the only divisor
-                            cost = (double) graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType()) /
-                                    graph.data().stats().thingVertexTransitiveCount(graph.schema().rootEntityType());
+                            cost = (double) graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) /
+                                    graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootEntityType());
                         }
                         setObjectiveCoefficient(cost);
                     }

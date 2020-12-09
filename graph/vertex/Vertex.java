@@ -48,11 +48,11 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
     default boolean isType() { return false; }
 
     default ThingVertex asThing() {
-        throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(ThingVertex.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ThingVertex.class));
     }
 
     default TypeVertex asType() {
-        throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(TypeVertex.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(TypeVertex.class));
     }
 
     /**

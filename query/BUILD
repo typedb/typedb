@@ -48,6 +48,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
+        "//logic:logic",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
@@ -60,3 +61,4 @@ checkstyle_test(
     include = glob(["*", "*/*"]),
     license_type = "agpl",
 )
+

@@ -13,28 +13,43 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package grakn.core.reasoner;
+package grakn.core.graph.structure;
 
-import grakn.core.common.cache.CommonCache;
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.Conjunction;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.graph.iid.StructureIID;
+import grakn.core.graph.util.Encoding;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 
-import java.util.Map;
-import java.util.Set;
+public interface RuleStructure {
 
-public class ReasonerCache {
+    StructureIID.Rule iid();
 
-    private final CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinterCache;
+    void iid(StructureIID.Rule iid);
 
-    public ReasonerCache() {
-        typeHinterCache = new CommonCache<>();
-    }
+    String label();
 
-    public CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinter() {
-        return typeHinterCache;
-    }
+    void label(String label);
+
+    Encoding.Status status();
+
+    void setModified();
+
+    boolean isModified();
+
+    void delete();
+
+    boolean isDeleted();
+
+    Conjunction<? extends Pattern> when();
+
+    ThingVariable<?> then();
+
+    /**
+     * Commits this {@code RuleStructure} to be persisted onto storage.
+     */
+    void commit();
 }
+

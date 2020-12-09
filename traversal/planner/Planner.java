@@ -194,13 +194,13 @@ public class Planner {
 
     private PlannerVertex.Thing thingVertex(StructureVertex.Thing structureVertex) {
         return vertices.computeIfAbsent(
-                structureVertex.identifier(), i -> new PlannerVertex.Thing(i, this)
+                structureVertex.id(), i -> new PlannerVertex.Thing(i, this)
         ).asThing();
     }
 
     private PlannerVertex.Type typeVertex(StructureVertex.Type structureVertex) {
         return vertices.computeIfAbsent(
-                structureVertex.identifier(), i -> new PlannerVertex.Type(i, this)
+                structureVertex.id(), i -> new PlannerVertex.Type(i, this)
         ).asType();
     }
 

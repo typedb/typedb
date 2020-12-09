@@ -49,15 +49,15 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
     }
 
     public Equal asEqual() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Equal.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.class));
     }
 
     public Predicate asPredicate() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Predicate.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.class));
     }
 
     public Native<?, ?> asNative() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Native.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.class));
     }
 
     @Override
@@ -168,7 +168,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         }
 
         public Native.Optimised asOptimised() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Native.Optimised.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.Optimised.class));
         }
 
         @Override

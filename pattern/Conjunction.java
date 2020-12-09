@@ -29,6 +29,7 @@ import graql.lang.pattern.variable.BoundVariable;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
 
 public class Conjunction implements Pattern {
@@ -46,10 +48,12 @@ public class Conjunction implements Pattern {
     private static final String TRACE_PREFIX = "conjunction.";
     private final Set<Variable> variables;
     private final Set<Negation> negations;
+    private final int hash;
 
     public Conjunction(Set<Variable> variables, Set<Negation> negations) {
-        this.variables = variables;
-        this.negations = negations;
+        this.variables = unmodifiableSet(variables);
+        this.negations = unmodifiableSet(negations);
+        this.hash = Objects.hash(variables, negations);
     }
 
     public static Conjunction create(graql.lang.pattern.Conjunction<Conjunctable> graql) {
@@ -84,23 +88,10 @@ public class Conjunction implements Pattern {
         return negations;
     }
 
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || obj.getClass() != getClass()) return false;
-        final Conjunction that = (Conjunction) obj;
-        return that.variables().equals(variables) && that.negations().equals(negations);
-    }
-
     public Traversal traversal() {
         Traversal traversal = new Traversal();
         variables.forEach(variable -> variable.addTo(traversal));
         return traversal;
-    }
-
-    @Override
-    public String toString() {
-        return Stream.concat(variables.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
-                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
     }
 
     private boolean printable(Variable variable) {
@@ -110,4 +101,23 @@ public class Conjunction implements Pattern {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
+    @Override
+    public String toString() {
+        return Stream.concat(variables.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
+                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || obj.getClass() != getClass()) return false;
+        final Conjunction that = (Conjunction) obj;
+        return (this.variables.equals(that.variables()) &&
+                this.negations.equals(that.negations()));
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
+    }
 }

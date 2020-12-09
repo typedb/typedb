@@ -113,7 +113,8 @@ public class Encoding {
         INDEX(0),
         TYPE(1),
         THING(2),
-        RULE(3);
+        RULE(3),
+        STATISTICS(4);
 
         private final int key;
 
@@ -133,6 +134,9 @@ public class Encoding {
         INDEX_TYPE(0, PrefixType.INDEX),
         INDEX_RULE(10, PrefixType.INDEX),
         INDEX_ATTRIBUTE(20, PrefixType.INDEX),
+        STATISTICS_THINGS(50, PrefixType.STATISTICS),
+        STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
+        STATISTICS_COUNTED(52, PrefixType.STATISTICS),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
@@ -142,7 +146,7 @@ public class Encoding {
         VERTEX_ATTRIBUTE(160, PrefixType.THING),
         VERTEX_RELATION(170, PrefixType.THING),
         VERTEX_ROLE(180, PrefixType.THING),
-        LOGIC_RULE(190, PrefixType.RULE);
+        STRUCTURE_RULE(190, PrefixType.RULE);
 
         private final byte key;
         private final PrefixType type;
@@ -156,7 +160,7 @@ public class Encoding {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -185,6 +189,83 @@ public class Encoding {
 
         public boolean isRule() {
             return type.equals(PrefixType.RULE);
+        }
+    }
+
+    public enum StatisticsCountJobType {
+        ATTRIBUTE_VERTEX(0),
+        HAS_EDGE(1);
+
+        private final byte key;
+
+        StatisticsCountJobType(int key) {
+            this.key = (byte) key;
+        }
+
+        public static StatisticsCountJobType of(byte[] key) {
+            if (key.length == 1) {
+                for (StatisticsCountJobType i : StatisticsCountJobType.values()) {
+                    if (i.key == key[0]) return i;
+                }
+            }
+            throw GraknException.of(UNRECOGNISED_VALUE);
+        }
+
+        public byte key() {
+            return key;
+        }
+
+        public byte[] bytes() {
+            return new byte[]{key};
+        }
+    }
+
+    public enum StatisticsCountJobValue {
+        CREATED(0),
+        DELETED(1);
+
+        private final byte key;
+
+        StatisticsCountJobValue(int key) {
+            this.key = (byte) key;
+        }
+
+        public static StatisticsCountJobValue of(byte[] key) {
+            if (key.length == 1) {
+                for (StatisticsCountJobValue i : StatisticsCountJobValue.values()) {
+                    if (i.key == key[0]) return i;
+                }
+            }
+            throw GraknException.of(UNRECOGNISED_VALUE);
+        }
+
+        public byte key() {
+            return key;
+        }
+
+        public byte[] bytes() {
+            return new byte[]{key};
+        }
+    }
+
+    public enum StatisticsInfix {
+        VERTEX_COUNT(0),
+        VERTEX_TRANSITIVE_COUNT(1),
+        HAS_EDGE_COUNT(2),
+        HAS_EDGE_TOTAL_COUNT(3);
+
+        private final byte key;
+
+        StatisticsInfix(int key) {
+            this.key = (byte) key;
+        }
+
+        public byte key() {
+            return key;
+        }
+
+        public byte[] bytes() {
+            return new byte[]{key};
         }
     }
 
@@ -255,7 +336,7 @@ public class Encoding {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -346,6 +427,8 @@ public class Encoding {
         STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
         DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
 
+        public static final double DOUBLE_PRECISION = 0.0000000000000001;
+
         private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
@@ -374,21 +457,21 @@ public class Encoding {
             for (ValueType vt : ValueType.values()) {
                 if (vt.key == value) return vt;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.valueClass == valueClass) return vt;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(GraqlArg.ValueType graqlValueType) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.graqlValueType == graqlValueType) return vt;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -420,18 +503,18 @@ public class Encoding {
         }
     }
 
-    public interface Logic {
+    public interface Structure {
         Prefix prefix();
 
-        interface Rule extends Logic {
+        interface Rule extends Structure {
 
             String label();
         }
 
-        Logic.Rule RULE = new Logic.Rule() {
+        Structure.Rule RULE = new Structure.Rule() {
             @Override
             public Prefix prefix() {
-                return Prefix.LOGIC_RULE;
+                return Prefix.STRUCTURE_RULE;
             }
 
             @Override
@@ -466,14 +549,14 @@ public class Encoding {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             public static Type of(Thing thing) {
                 for (Type t : Type.values()) {
                     if (Objects.equals(t.instance, thing)) return t;
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             /**
@@ -550,7 +633,7 @@ public class Encoding {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -586,11 +669,11 @@ public class Encoding {
         }
 
         default Type asType() {
-            throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Type.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
         }
 
         default Thing asThing() {
-            throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
         }
 
         Edge ISA = new Edge() {
@@ -637,7 +720,7 @@ public class Encoding {
                         return t;
                     }
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -695,7 +778,7 @@ public class Encoding {
                         return t;
                     }
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override

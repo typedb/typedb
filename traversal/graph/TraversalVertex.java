@@ -50,7 +50,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
     public boolean isType() { return false; }
 
-    public Identifier identifier() {
+    public Identifier id() {
         return identifier;
     }
 

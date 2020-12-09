@@ -34,24 +34,22 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     private RoleTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
-        assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
-        if (vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE) {
-            throw exception(TYPE_ROOT_MISMATCH.message(
-                    vertex.label(),
-                    Encoding.Vertex.Type.ROLE_TYPE.root().label(),
-                    vertex.encoding().root().label()
-            ));
+        assert vertex.encoding() == ROLE_TYPE;
+        if (vertex.encoding() != ROLE_TYPE) {
+            throw exception(GraknException.of(TYPE_ROOT_MISMATCH, vertex.label(),
+                                              ROLE_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
     private RoleTypeImpl(GraphManager graphMgr, String label, String relation) {
-        super(graphMgr, label, Encoding.Vertex.Type.ROLE_TYPE, relation);
+        super(graphMgr, label, ROLE_TYPE, relation);
     }
 
     public static RoleTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
@@ -119,7 +117,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public void delete() {
         if (getInstances().findAny().isPresent()) {
-            throw new GraknException(INVALID_UNDEFINE_RELATES_HAS_INSTANCES.message(getScopedLabel()));
+            throw GraknException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getScopedLabel());
         }
         vertex.delete();
     }
@@ -157,12 +155,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(String label) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        public void setLabel(String label) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        void unsetAbstract() { throw exception(ROOT_TYPE_MUTATION.message()); }
+        void unsetAbstract() { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        void sup(RoleType superType) { throw exception(ROOT_TYPE_MUTATION.message()); }
+        void sup(RoleType superType) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
     }
 }

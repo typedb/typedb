@@ -100,7 +100,7 @@ public class ThingHandler {
                 return;
             case REQ_NOT_SET:
             default:
-                throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -109,7 +109,7 @@ public class ThingHandler {
     }
 
     private static <T extends Concept> T notNull(@Nullable T concept) {
-        if (concept == null) throw new GraknException(MISSING_CONCEPT);
+        if (concept == null) throw GraknException.of(MISSING_CONCEPT);
         return concept;
     }
 

@@ -55,7 +55,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//connection:database.feature",
     ],
-    size = "small",
+    size = "medium",
 )
 
 checkstyle_test(
