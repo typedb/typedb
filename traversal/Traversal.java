@@ -160,7 +160,7 @@ public class Traversal {
         structure.thingVertex(thing).props().hasIID(true);
     }
 
-    public void types(Identifier.Variable thing, Set<Label> labels) {
+    public void types(Identifier thing, Set<Label> labels) {
         structure.thingVertex(thing).props().types(labels);
     }
 
