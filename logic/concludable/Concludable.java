@@ -25,12 +25,9 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
-import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.Collections;
 import java.util.List;
