@@ -51,7 +51,6 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return constraint;
     }
 
-    //TODO: ask why everything here is static
     static RelationConstraint copyConstraint(RelationConstraint relationConstraint) {
         ThingVariable ownerCopy = copyIsaAndValues(relationConstraint.owner());
         List<RelationConstraint.RolePlayer> rolePlayersCopy = copyRolePlayers(relationConstraint.players());
@@ -115,19 +114,8 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         else if (toCopy.isVariable()) {
             ThingVariable copyOfVar = copyIsaAndValues(toCopy.asVariable().value());
             value = toConstrain.valueVariable(toCopy.asValue().predicate().asEquality(), copyOfVar);
-        }
-        else throw GraknException.of(ILLEGAL_STATE);
+        } else throw GraknException.of(ILLEGAL_STATE);
         return value;
-    }
-
-    static void copyValueOntoVariable(ThingVariable oldOwner, ThingVariable newOwner) {
-        copyValueOntoVariable(oldOwner.value().iterator().next(), newOwner);
-    }
-
-    static ThingVariable copyIsa(ThingVariable copyFrom) {
-        ThingVariable copy = ThingVariable.of(copyFrom.identifier());
-        if (copyFrom.isa().isPresent()) copyIsaOntoVariable(copyFrom.isa().get(), copy);
-        return copy;
     }
 
     static ThingVariable copyIsaAndValues(ThingVariable copyFrom) {
@@ -141,13 +129,9 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         copyValuesOntoVariable(oldOwner.value(), newOwner);
     }
 
-    static void copyIsa(ThingVariable oldOwner, ThingVariable newOwner) {
-        if (oldOwner.isa().isPresent()) copyIsaOntoVariable(oldOwner.isa().get(), newOwner);
-    }
-
     static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
         if (copyFrom.label().isPresent()) copyTo.label(Label.of(copyFrom.label().get().label()));
-        if (copyFrom.sub().isPresent()){
+        if (copyFrom.sub().isPresent()) {
             SubConstraint subCopy = copyFrom.sub().get();
             copyTo.sub(subCopy.type(), subCopy.isExplicit());
             copyTo.sub().get().addHints(subCopy.typeHints());
@@ -161,100 +145,35 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return copy;
     }
 
-
-
-    //====________+++++++++++++++++++++++++_________========\\
-
-
-
-    static ThingVariable deAnonymizeValue(ThingVariable thingVariable) {
-        ValueConstraint<?> valueConstraint = deAnonymize(thingVariable.value().iterator().next());
-        ThingVariable newOwner = valueConstraint.owner();
-        return newOwner;
-    }
-
-    static ThingVariable removeValue(ThingVariable thingVariable) {
-        return copyIsa(thingVariable);
-    }
-
-    static ThingVariable deAnonymizeIsa(ThingVariable thingVariable) {
-        assert thingVariable.isa().isPresent();
-        IsaConstraint isaConstraint = deAnonymize(thingVariable.isa().get());
-        ThingVariable newOwner = isaConstraint.owner();
-//        copyValuesOntoVariable(thingVariable.value(), newOwner);
-        return newOwner;
-    }
-
-    static IsaConstraint deAnonymize(IsaConstraint isaConstraint) {
-        ThingVariable newOwner = ThingVariable.of(isaConstraint.owner().identifier());
-        copyValuesOntoVariable(isaConstraint.owner().value(), newOwner);
-        TypeVariable typeVariable = new TypeVariable(Identifier.Variable.of(new SystemReference("temp")));
-
-        IsaConstraint newIsaConstraint = newOwner.isa(typeVariable, isaConstraint.isExplicit());
-        newIsaConstraint.addHints(isaConstraint.typeHints());
-        return newIsaConstraint;
-    }
-
-    static IsaConstraint anonymize(IsaConstraint isaConstraint) {
-        ThingVariable newOwner = ThingVariable.of(isaConstraint.owner().identifier());
-        copyValuesOntoVariable(isaConstraint.owner().value(), newOwner);
-        TypeVariable typeVariable = new TypeVariable(Identifier.Variable.of(Reference.anonymous(true), 1));
-
-        IsaConstraint newIsaConstraint = newOwner.isa(typeVariable, isaConstraint.isExplicit());
-        newIsaConstraint.addHints(isaConstraint.typeHints());
-        return newIsaConstraint;
-    }
-
-    static ValueConstraint<?> deAnonymize(ValueConstraint<?> valueConstraint) {
-//        ThingVariable newOwner = ThingVariable.of(valueConstraint.owner().identifier());
-        ThingVariable newOwner =  copyIsa(valueConstraint.owner());
-        ThingVariable tempVariable = new ThingVariable(Identifier.Variable.of(new SystemReference("temp")));
-        return newOwner.valueVariable(valueConstraint.asValue().predicate().asEquality(), tempVariable);
-    }
-
-    static ValueConstraint<?> anonymize(ValueConstraint<?> valueConstraint) {
-        ThingVariable newOwner =  copyIsa(valueConstraint.owner());
-        ThingVariable tempVariable = new ThingVariable(Identifier.Variable.of(Reference.anonymous(false), 1));
-        return newOwner.valueVariable(valueConstraint.asValue().predicate().asEquality(), tempVariable);
-    }
-
-    static IsaConstraint removeValue(IsaConstraint isaConstraint) {
-        ThingVariable newOwner = ThingVariable.of(isaConstraint.owner().identifier());
-        return copyIsaOntoVariable(isaConstraint, newOwner);
-    }
-
-    static boolean hasHints(Variable variable) {
+    static boolean hasNoHints(Variable variable) {
+        //TODO: refactor once new 'all things' symbol is introduced
         if (variable.isThing()) {
-            return variable.asThing().isa().isPresent() && !variable.asThing().isa().get().typeHints().isEmpty();
+            return !variable.asThing().isa().isPresent() || variable.asThing().isa().get().typeHints().isEmpty();
         } else if (variable.isType()) {
-            return variable.asType().sub().isPresent() && !variable.asType().sub().get().typeHints().isEmpty();
+            return !variable.asType().sub().isPresent() || variable.asType().sub().get().typeHints().isEmpty();
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
     }
 
-    static Set<Label> hintIntersection(ThingVariable first, ThingVariable second) {
-        //TODO:
-        if (hasHints(first) && hasHints(second)) {
-//            Set<Label>
-        } else if (hasHints(first)) {
-
-        } else if (hasHints(second)) {
-
-        } else {
-            return Collections.emptySet();
-        }
-        return null;
-    }
-
     static boolean hintsIntersect(Variable first, Variable second) {
-        //TODO:
-        return true;
+        if (hasNoHints(first) || hasNoHints(second)) return true;
+        Set<Label> firstHints;
+        Set<Label> secondHints;
+        if (first.isThing() && second.isThing()) {
+            firstHints = first.asThing().isa().get().typeHints();
+            secondHints = second.asThing().isa().get().typeHints();
+        } else if (first.isType() && second.isType()) {
+            firstHints = first.asType().sub().get().typeHints();
+            secondHints = second.asType().sub().get().typeHints();
+        } else {
+            return false;
+        }
+        return !Collections.disjoint(firstHints, secondHints);
     }
 
     static boolean hintsIntersect(RelationConstraint.RolePlayer first, RelationConstraint.RolePlayer second) {
-        //TODO:
-        return true;
+        return !Collections.disjoint(first.roleTypeHints(), second.roleTypeHints());
     }
 
 }

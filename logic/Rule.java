@@ -169,7 +169,7 @@ public class Rule {
     private Set<HeadConcludable<?, ?>> createHead(Set<Constraint> thenConstraints, Set<Variable> constraintContext) {
         HashSet<HeadConcludable<?, ?>> thenConcludables = new HashSet<>();
         thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing)
-                .flatMap(constraint -> HeadConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
+                .map(constraint -> HeadConcludable.of(constraint, constraintContext)).forEach(thenConcludables::add);
         return thenConcludables;
     }
 

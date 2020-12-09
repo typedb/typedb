@@ -17,10 +17,9 @@
 
 package grakn.core.logic.concludable;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.logic.Rule;
-import grakn.core.logic.Unification;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -53,9 +52,9 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public Stream<Pair<Rule, Unification>> findUnifiableRules(Stream<Rule> allRules) {
+    public Stream<Pair<Rule, Map<Reference, Set<Reference>>>> findUnifiableRules(Stream<Rule> allRules) {
         return allRules.flatMap(rule -> rule.head().stream()
-                                               .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
+                .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
         );
     }
 
@@ -116,6 +115,13 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
+    boolean updateMapping(Variable conj, Variable head, Map<Reference, Set<Reference>> mapping) {
+        if (!hintsIntersect(head, conj)) return false;
+        mapping.putIfAbsent(conj.reference(), new HashSet<>());
+        mapping.get(conj.reference()).add(head.reference());
+        return true;
+    }
+
     public static class Relation extends ConjunctionConcludable<RelationConstraint, ConjunctionConcludable.Relation> {
 
         public Relation(final RelationConstraint constraint) {
@@ -135,15 +141,6 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     startingMap, potentialMatches);
 
             return potentialMatches.stream();
-
-            // Check the relation variables' isa constraint labels and prune if there is no intersection
-
-            // Find all roleplayer mapping combinations, which should have the form:
-            // Set<List<Pair<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>>> rolePlayerMappings
-            // For each, prune if there is no label intersection (or any other pruning, e.g. by value)
-            // Then build a Unification for each valid combination
-
-//            return Stream.empty(); // TODO
         }
 
         private void findMatches(
@@ -239,20 +236,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     return Stream.empty();
                 }
             }
-
             return Stream.of(mapping);
-        }
-
-        boolean isConcrete() {
-            return constraint.type().reference().isLabel();
-        }
-
-        boolean isAnonymous() {
-            return constraint.type().reference().isAnonymous();
-        }
-
-        boolean isName() {
-            return constraint.type().reference().isName();
         }
 
         @Override
@@ -264,13 +248,6 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         public Isa asIsa() {
             return this;
         }
-    }
-
-    boolean updateMapping(Variable conj, Variable head, Map<Reference, Set<Reference>> mapping) {
-        if (!hintsIntersect(head, conj)) return false;
-        mapping.putIfAbsent(conj.reference(), new HashSet<>());
-        mapping.get(conj.reference()).add(head.reference());
-        return true;
     }
 
     public static class Value extends ConjunctionConcludable<ValueConstraint<?>, ConjunctionConcludable.Value> {
