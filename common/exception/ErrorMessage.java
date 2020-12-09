@@ -106,15 +106,9 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operations";
-        private int number;
 
         Database(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
-            this.number = number;
-        }
-
-        public Database args(Object... parameters) {
-            return new Database(number, message(parameters));
         }
     }
 
