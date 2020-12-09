@@ -46,6 +46,10 @@ public class SubConstraint extends TypeConstraint {
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(SubConstraint.class, this.owner, this.type, this.isExplicit);
         this.typeHints = new HashSet<>();
+        if (this.type.reference().isLabel()) {
+            assert this.type.label().isPresent();
+            typeHints.add(this.type.label().get().properLabel());
+        }
     }
 
     static SubConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Sub constraint,

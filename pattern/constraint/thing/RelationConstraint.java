@@ -146,6 +146,10 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             this.player = player;
             this.hash = Objects.hash(this.roleType, this.player);
             this.roleTypeHints = new HashSet<>();
+            if (this.roleType != null && this.roleType.reference().isLabel()) {
+                assert this.roleType.label().isPresent();
+                roleTypeHints.add(this.roleType.label().get().properLabel());
+            }
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
