@@ -222,6 +222,7 @@ public class TypeHinter {
     }
 
     private void removeAbstractHints(Set<Label> hints) {
+        //TODO: use .getType(label) once ConceptManager can handle labels
         hints.removeIf(label -> {
             Type type = conceptMgr.getType(label.scopedName());
             assert type != null;
