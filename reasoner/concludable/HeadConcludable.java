@@ -46,7 +46,6 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends HeadConcludable<CONSTRAINT, U>>
         extends Concludable<CONSTRAINT, U> {
-    private Form generalisedForms;
 
     private HeadConcludable(CONSTRAINT constraint, Set<Variable> constraintContext) {
         super(constraint);
@@ -118,13 +117,6 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
     }
 
     public static class Relation extends HeadConcludable<RelationConstraint, Relation> {
-        private ThingVariable labelIsaOwner;
-        private ThingVariable namedIsaOwner;
-        private ThingVariable anonIsaOwner;
-        private ThingVariable labelValOwner;
-        private ThingVariable namedValOwner;
-        private List<RelationConstraint.RolePlayer> rpNoList;
-
 
         public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);
@@ -132,10 +124,6 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
 
         public static Relation copyOf(RelationConstraint constraint, Set<Variable> constraintContext) {
             return new Relation(copyConstraint(constraint), constraintContext);
-        }
-
-        Relation getGeneralisationOf() {
-            return null;
         }
 
         @Override
@@ -362,34 +350,6 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             return new Isa(copyConstraint(constraint), constraintContext);
         }
 
-        public TypeVariable match(ConjunctionConcludable.Isa concludable) {
-            if (!concludable.isIsa()) return null;
-
-            if (ownerHints.stream().noneMatch(concludable.constraint.typeHints()::contains)) {
-                return null;
-            }
-
-            if (concludable.constraint.type().sub().isPresent() &&
-                    constraintHints.stream().noneMatch(concludable.constraint.type().sub().get().typeHints()::contains)) {
-                return null;
-            }
-            if (concludable.isConcrete()) return concreteForm;
-            else if (concludable.isName()) return namedForm;
-            else if (concludable.isAnonymous()) return anonForm;
-        }
-
-        public boolean isConcrete() {
-            return constraint.type().reference().isLabel();
-        }
-
-        public boolean isAnonymous() {
-            return constraint.type().reference().isAnonymous();
-        }
-
-        public boolean isName() {
-            return constraint.type().reference().isName();
-        }
-
         private Isa anonymizeVariable() {
 //            ThingVariable newOwner = ThingVariable.of(constraint.owner().identifier());
 //            copyValuesOntoVariable(constraint.owner().value(), newOwner);
@@ -498,112 +458,5 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         }
     }
 
-    //TODO: better name.
-    private static class Form {
-
-        //Value
-            //named
-            //anon
-        //Isa
-            //named
-            //anon
-        //Has
-            //named
-            //anon
-        //Relation
-            //RolePlayer
-                //Role
-                    //named
-                    //anon
-                    //empty
-
-        public Form matchForm(ConjunctionConcludable concludable) {
-
-            if (concludable.isValue()) {
-                if (concludable.asValue().constraint().isVariable() &&
-                        concludable.asValue().constraint().asVariable().value().reference().isName()) {
-                    //value named
-                } else {
-                    //value anon
-                }
-            } else if (concludable.isIsa()) {
-                if (concludable.asIsa().isName()) {
-                    //isa named
-                } else {
-                    //isa anon
-                }
-            } else if (concludable.isHas()) {
-                if (concludable.asHas().constraint().attribute().reference().isName()) {
-                    //has named
-                } else {
-                    //has anon
-                }
-            } else if (concludable.isRelation()) {
-
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
-            }
-        }
-
-        public Value asValue() {
-            throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Value.class)));
-        }
-
-        public Isa asIsa() {
-            throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Isa.class)));
-        }
-
-        private static class Value extends Form {
-            private final ThingVariable var;
-
-            private Value(ThingVariable var) {
-                this.var = var;
-            }
-        }
-
-
-
-        private static class Isa extends Form {
-            private final TypeVariable concrete;
-            private final TypeVariable anon;
-            private final TypeVariable named;
-
-
-            private Isa(TypeVariable concrete, TypeVariable anon, TypeVariable named) {
-                this.concrete = concrete;
-                this.anon = anon;
-                this.named = named;
-            }
-
-            public TypeVariable getConcrete() {
-                return concrete;
-            }
-
-            public TypeVariable getAnon() {
-                return anon;
-            }
-
-            public TypeVariable getNamed() {
-                return named;
-            }
-
-            @Override
-            public Isa asIsa() {
-                return this;
-            }
-
-
-
-
-        }
-
-        private static class Has {
-
-        }
-
-        private static class Relation {
-
-        }
-    }
 }
 

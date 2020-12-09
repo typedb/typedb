@@ -17,9 +17,7 @@
 
 package grakn.core.reasoner.concludable;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -27,11 +25,9 @@ import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.Implication;
-import grakn.core.reasoner.Unification;
+import graql.lang.pattern.variable.Reference;
 
-import java.lang.ref.Reference;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,14 +50,14 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public Stream<Pair<Implication, Unification>> findUnifiableImplications(Stream<Implication> allImplications) {
-        return allImplications.flatMap(implication -> implication.head().stream()
-                .flatMap(this::unify)
-                .map(unifiedBase -> new Pair<>(implication, unifiedBase)
-                ));
-    }
+//    public Stream<Pair<Implication, Unification>> findUnifiableImplications(Stream<Implication> allImplications) {
+//        return allImplications.flatMap(implication -> implication.head().stream()
+//                .flatMap(this::unify)
+//                .map(unifiedBase -> new Pair<>(implication, unifiedBase)
+//                ));
+//    }
 
-    private Stream<Unification> unify(HeadConcludable<?, ?> unifyWith) {
+    private Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable<?, ?> unifyWith) {
         if (unifyWith instanceof HeadConcludable.Relation) return unify((HeadConcludable.Relation) unifyWith);
         else if (unifyWith instanceof HeadConcludable.Has) return unify((HeadConcludable.Has) unifyWith);
         else if (unifyWith instanceof HeadConcludable.Isa) return unify((HeadConcludable.Isa) unifyWith);
@@ -69,21 +65,22 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unification> unify(HeadConcludable.Relation unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unification> unify(HeadConcludable.Has unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unification> unify(HeadConcludable.Isa unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unification> unify(HeadConcludable.Value unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Value unifyWith) {
         return Stream.empty();
     }
+
 
     public boolean isRelation() {
         return false;
@@ -125,9 +122,17 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
-            List<RelationConstraint.RolePlayer> rolePlayers = constraint.players();
-            unifyWith.constraint().players();
+            Set<Map<Reference, Set<Reference>>> potentialMatches = new HashSet<>();
+            Map<Reference, Set<Reference>> startingMap = new HashMap<>();
+            if (constraint.owner().reference().isName()) {
+                if (!updateMapping(this.constraint().owner(), unifyWith.constraint().owner(), startingMap)) {
+                    return Stream.empty();
+                }
+            }
+            findMatches(this.constraint().players(), unifyWith.constraint().players(),
+                    startingMap, potentialMatches);
 
+            return potentialMatches.stream();
 
             // Check the relation variables' isa constraint labels and prune if there is no intersection
 
@@ -136,25 +141,39 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             // For each, prune if there is no label intersection (or any other pruning, e.g. by value)
             // Then build a Unification for each valid combination
 
-            return Stream.empty(); // TODO
+//            return Stream.empty(); // TODO
         }
 
-        private Set<Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>>  findMatches(
-                 List<RelationConstraint.RolePlayer> conjunctionRolePlayers,
-                 List<RelationConstraint.RolePlayer> headRolePlayers,
-                 Set<Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>> mapping) {
-            if (headRolePlayers.isEmpty()) return Collections.emptySet();
-            RelationConstraint.RolePlayer head = headRolePlayers.remove(0);
-            for (RelationConstraint.RolePlayer conj : conjunctionRolePlayers) {
-                if (hintsIntersect(head, conj)) {
-                    conjunctionRolePlayers.remove(conj);
-                    Set<Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>> maps =
-                            findMatches(headRolePlayers, conjunctionRolePlayers, mapping);
-                    maps.forEach(map -> map.put(head, conj));
-                    mapping.addAll(maps);
-                    conjunctionRolePlayers.add(conj);
+        private void findMatches(
+                List<RelationConstraint.RolePlayer> conjunctionRolePlayers,
+                List<RelationConstraint.RolePlayer> headRolePlayers,
+                Map<Reference, Set<Reference>> currMap,
+                Set<Map<Reference, Set<Reference>>> maps
+        ) {
+            Map<Reference, Set<Reference>> copyOfMap = new HashMap<>(currMap);
+            if (conjunctionRolePlayers.isEmpty()) {
+                maps.add(copyOfMap);
+                return;
+            }
+            RelationConstraint.RolePlayer conj = conjunctionRolePlayers.remove(0);
+            for (RelationConstraint.RolePlayer head : headRolePlayers) {
+                if (updateRoleMapping(conj, head, copyOfMap)) {
+                    headRolePlayers.remove(head);
+                    findMatches(conjunctionRolePlayers, headRolePlayers, copyOfMap, maps);
+                    headRolePlayers.add(head);
                 }
             }
+        }
+
+        boolean updateRoleMapping(RelationConstraint.RolePlayer conj, RelationConstraint.RolePlayer head,
+                                  Map<Reference, Set<Reference>> mapping) {
+            if (!hintsIntersect(head, conj)) return false;
+
+            if (conj.roleType().isPresent()) {
+                assert head.roleType().isPresent();
+                if (!updateMapping(conj.roleType().get(), head.roleType().get(), mapping)) return false;
+            }
+            return updateMapping(conj.player(), head.player(), mapping);
         }
 
         @Override
@@ -175,16 +194,18 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unification> unify(HeadConcludable.Has unifyWith) {
-            //check owners hints interact
-            //map owners
-
+        public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Has unifyWith) {
+            Map<Reference, Set<Reference>> mapping = new HashMap<>();
+            if (!updateMapping(this.constraint().owner(), unifyWith.constraint().owner(), mapping)) {
+                return Stream.empty();
+            }
             if (constraint.attribute().reference().isName()) {
-                //check attribute hints interact
-                //map owners
+                if (!updateMapping(this.constraint().attribute(), unifyWith.constraint().attribute(), mapping)) {
+                    return Stream.empty();
+                }
             }
 
-            return null;
+            return Stream.of(mapping);
         }
 
         @Override
@@ -204,16 +225,20 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             super(copyConstraint(constraint));
         }
 
+
         @Override
-        public Stream<Unification> unify(HeadConcludable.Isa unifyWith) {
-            if (!hintsIntersect(this.constraint().owner(), unifyWith.constraint.owner())) return Stream.empty();
-            Set<Pair<Variable, Variable>> mapping = new HashSet<>();
-            mapping.add(new Pair<>(this.constraint().owner(), unifyWith.constraint().owner()));
-            if (constraint().type().reference().isName()) {
-                if (!hintsIntersect(this.constraint().type(), unifyWith.constraint().type())) return Stream.empty();
-                mapping.add(new Pair<>(this.constraint().type(), unifyWith.constraint().type()));
+        Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Isa unifyWith) {
+            Map<Reference, Set<Reference>> mapping = new HashMap<>();
+            if (!updateMapping(this.constraint().owner(), unifyWith.constraint().owner(), mapping)) {
+                return Stream.empty();
             }
-            return Stream.of(new Unification(this, unifyWith, mapping));
+            if (constraint.type().reference().isName()) {
+                if (!updateMapping(this.constraint().type(), unifyWith.constraint().type(), mapping)) {
+                    return Stream.empty();
+                }
+            }
+
+            return Stream.of(mapping);
         }
 
         boolean isConcrete() {
@@ -239,6 +264,13 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
     }
 
+    boolean updateMapping(Variable conj, Variable head, Map<Reference, Set<Reference>> mapping) {
+        if (!hintsIntersect(head, conj)) return false;
+        mapping.putIfAbsent(conj.reference(), new HashSet<>());
+        mapping.get(conj.reference()).add(head.reference());
+        return true;
+    }
+
     public static class Value extends ConjunctionConcludable<ValueConstraint<?>, ConjunctionConcludable.Value> {
 
         public Value(final ValueConstraint<?> constraint) {
@@ -246,21 +278,20 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unification> unify(HeadConcludable.Value unifyWith) {
-            if (!hintsIntersect(this.constraint().owner(), unifyWith.constraint().owner())) return Stream.empty();
-            Set<Pair<Variable, Variable>> mapping = new HashSet<>();
-            mapping.add(new Pair<>(this.constraint().owner(), unifyWith.constraint().owner()));
+        Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Value unifyWith) {
+            Map<Reference, Set<Reference>> mapping = new HashMap<>();
+            if (!updateMapping(this.constraint().owner(), unifyWith.constraint().owner(), mapping)) {
+                return Stream.empty();
+            }
+
             if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {
-                if (!hintsIntersect(this.constraint().asVariable().value(),
-                        unifyWith.constraint().asVariable().value())) {
+                if (!updateMapping(this.constraint().asVariable().value(),
+                        unifyWith.constraint().asVariable().value(), mapping)) {
                     return Stream.empty();
                 }
-                mapping.add(new Pair<>(this.constraint().asVariable().value(),
-                        unifyWith.constraint().asVariable().value()
-                ));
             }
-            Unification unification = new Unification(this, unifyWith, mapping);
-            return Stream.of(unification);
+
+            return Stream.of(mapping);
         }
 
         @Override
