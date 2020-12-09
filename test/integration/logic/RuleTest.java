@@ -24,7 +24,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.logic.concludable.HeadConcludable;
+import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
@@ -57,20 +57,20 @@ public class RuleTest {
         return concludables.stream().filter(ConjunctionConcludable::isValue).count();
     }
 
-    private long isaHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(HeadConcludable::isIsa).count();
+    private long isaHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ThenConcludable::isIsa).count();
     }
 
-    private long hasHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(HeadConcludable::isHas).count();
+    private long hasHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ThenConcludable::isHas).count();
     }
 
-    private long relationHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(HeadConcludable::isRelation).count();
+    private long relationHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ThenConcludable::isRelation).count();
     }
 
-    private long valueHeadConcludablesCount(Set<HeadConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(HeadConcludable::isValue).count();
+    private long valueHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
+        return concludables.stream().filter(ThenConcludable::isValue).count();
     }
 
     @Test
@@ -101,11 +101,11 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logics();
                     final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
-                    Set<HeadConcludable<?, ?>> headConcludables = rule.head();
-                    assertEquals(1, isaHeadConcludablesCount(headConcludables));
-                    assertEquals(0, hasHeadConcludablesCount(headConcludables));
-                    assertEquals(1, relationHeadConcludablesCount(headConcludables));
-                    assertEquals(0, valueHeadConcludablesCount(headConcludables));
+                    Set<ThenConcludable<?, ?>> thenConcludables = rule.head();
+                    assertEquals(1, isaHeadConcludablesCount(thenConcludables));
+                    assertEquals(0, hasHeadConcludablesCount(thenConcludables));
+                    assertEquals(1, relationHeadConcludablesCount(thenConcludables));
+                    assertEquals(0, valueHeadConcludablesCount(thenConcludables));
 
                     Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.body();
                     assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
@@ -144,11 +144,11 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logics();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<HeadConcludable<?, ?>> headConcludables = rule.head();
-                    assertEquals(1, isaHeadConcludablesCount(headConcludables));
-                    assertEquals(1, hasHeadConcludablesCount(headConcludables));
-                    assertEquals(0, relationHeadConcludablesCount(headConcludables));
-                    assertEquals(1, valueHeadConcludablesCount(headConcludables));
+                    Set<ThenConcludable<?, ?>> thenConcludables = rule.head();
+                    assertEquals(1, isaHeadConcludablesCount(thenConcludables));
+                    assertEquals(1, hasHeadConcludablesCount(thenConcludables));
+                    assertEquals(0, relationHeadConcludablesCount(thenConcludables));
+                    assertEquals(1, valueHeadConcludablesCount(thenConcludables));
 
                     Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.body();
                     assertEquals(1, isaConjunctionConcludablesCount(bodyConcludables));
@@ -186,11 +186,11 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logics();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<HeadConcludable<?, ?>> headConcludables = rule.head();
-                    assertEquals(0, isaHeadConcludablesCount(headConcludables));
-                    assertEquals(1, hasHeadConcludablesCount(headConcludables));
-                    assertEquals(0, relationHeadConcludablesCount(headConcludables));
-                    assertEquals(0, valueHeadConcludablesCount(headConcludables));
+                    Set<ThenConcludable<?, ?>> thenConcludables = rule.head();
+                    assertEquals(0, isaHeadConcludablesCount(thenConcludables));
+                    assertEquals(1, hasHeadConcludablesCount(thenConcludables));
+                    assertEquals(0, relationHeadConcludablesCount(thenConcludables));
+                    assertEquals(0, valueHeadConcludablesCount(thenConcludables));
 
                     Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.body();
                     assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));

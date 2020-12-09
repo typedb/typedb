@@ -18,6 +18,8 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
@@ -28,6 +30,8 @@ import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
+
+import java.util.List;
 
 public class LogicManager {
 
@@ -52,14 +56,25 @@ public class LogicManager {
 
         Rule rule = Rule.of(graphMgr, conceptMgr, this, label, when, then);
         logicCache.rule().put(label, rule);
-        validateRuleCycles(rule);
+
+        validateRuleCycles();
 
         return rule;
     }
 
-    private void validateRuleCycles(Rule rule) {
-        // TODO detect negated cycles in the rule graph after inserting this rule, requiring type hints
-        // TODO use the new rule as a starting point, there's likely to be a use of `dependentRulesPositive` and `dependentRulesNegative`
+    public void validateRuleCycles() {
+        List<Rule> uncommittedRulesInCycles = rules().filter(rule -> !rule.isCommitted())
+                .filter(this::inNegatedRuleCycle)
+                .toList();
+        if (!uncommittedRulesInCycles.isEmpty()) {
+            throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(uncommittedRulesInCycles));
+        }
+    }
+
+    private boolean inNegatedRuleCycle(Rule rule) {
+        // TODO detect negated cycles in the rule graph
+        // TODO use the new rule as a starting point
+        return false;
     }
 
     public Rule getRule(String label) {
@@ -89,11 +104,4 @@ public class LogicManager {
         return typeHinter;
     }
 
-    ResourceIterator<Rule> rulesDependingPositively(Label label) {
-        return rules().filter(r -> r.dependsPositively(label));
-    }
-
-    ResourceIterator<Rule> rulesDependingNegatively(Label label) {
-        return rules().filter(r -> r.dependsNegatively(label));
-    }
 }

@@ -416,6 +416,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new RuleWrite(1, "The rule body of '%s' ('when' or 'then') cannot be undefined. The rule must be undefined entirely by referring to its label.");
         public static final RuleWrite TYPES_NOT_FOUND =
                 new RuleWrite(2, "The rule '%s' uses type(s) %s which are not defined in the schema.");
+        public static final RuleWrite RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE =
+                new RuleWrite(2, "The rules '%s' cause inference cycles with negations");
         public static final RuleWrite MAX_RULE_REACHED =
                 new RuleWrite(3, "The maximum number of rules has been reached: '%s'");
 

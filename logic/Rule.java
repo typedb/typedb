@@ -24,8 +24,9 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RelationType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
+import grakn.core.graph.util.Encoding;
 import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.logic.concludable.HeadConcludable;
+import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
@@ -54,8 +55,8 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<HeadConcludable<?, ?>> thenConcludables;
-    private final Set<ConjunctionConcludable<?, ?>> whenConcludables;
+    private final Set<ThenConcludable<?, ?>> possibleThenConcludables;
+    private final Set<ConjunctionConcludable<?, ?>> requiredWhenConcludables;
 
     private Rule(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
         this.conceptMgr = conceptMgr;
@@ -64,8 +65,8 @@ public class Rule {
         this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
         this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
         pruneThenTypeHints();
-        this.thenConcludables = createHead(this.then, this.when.variables());
-        this.whenConcludables = ConjunctionConcludable.of(this.when);
+        this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
+        this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
@@ -84,8 +85,8 @@ public class Rule {
         validateRuleSatisfiable();
         pruneThenTypeHints();
 
-        this.thenConcludables = createHead(this.then, this.when.variables());
-        this.whenConcludables = ConjunctionConcludable.of(this.when);
+        this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
+        this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
     }
 
     public static Rule of(ConceptManager conceptMgr, LogicManager logicManager, RuleStructure structure) {
@@ -98,11 +99,11 @@ public class Rule {
     }
 
     public Set<ConjunctionConcludable<?, ?>> body() {
-        return whenConcludables;
+        return requiredWhenConcludables;
     }
 
-    public Set<HeadConcludable<?, ?>> head() {
-        return thenConcludables;
+    public Set<ThenConcludable<?, ?>> head() {
+        return possibleThenConcludables;
     }
 
     public ResourceIterator<Rule> findApplicableRulesPositive() {
@@ -153,6 +154,10 @@ public class Rule {
         return structure.hashCode(); // does not need caching
     }
 
+    boolean isCommitted() {
+        return structure.status().equals(Encoding.Status.COMMITTED);
+    }
+
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
@@ -172,10 +177,10 @@ public class Rule {
                 });
     }
 
-    private Set<HeadConcludable<?, ?>> createHead(Conjunction then, Set<Variable> constraintContext) {
-        HashSet<HeadConcludable<?, ?>> thenConcludables = new HashSet<>();
+    private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
+        HashSet<ThenConcludable<?, ?>> thenConcludables = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .flatMap(constraint -> HeadConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
+                .flatMap(constraint -> ThenConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
         return thenConcludables;
     }
 
