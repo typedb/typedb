@@ -97,9 +97,9 @@ public class Definer {
             final LabelConstraint labelConstraint = variable.label().get();
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
-                throw new GraknException(ROLE_DEFINED_OUTSIDE_OF_RELATION.message(labelConstraint.scopedLabel()));
+                throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
             } else if (!variable.is().isEmpty()) {
-                throw new GraknException(TYPE_CONSTRAINT_UNACCEPTED.message(IS));
+                throw GraknException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
             else if (created.contains(variable)) return conceptMgr.getType(labelConstraint.scopedLabel());
 
@@ -107,15 +107,15 @@ public class Definer {
             if (variable.sub().isPresent()) {
                 type = defineSub(type, variable.sub().get(), variable);
             } else if (variable.valueType().isPresent()) { // && variable.sub().size() == 0
-                throw new GraknException(ATTRIBUTE_VALUE_TYPE_MODIFIED.message(
-                        variable.valueType().get().valueType().name(), labelConstraint.label()
-                ));
+                throw GraknException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED,
+                                        variable.valueType().get().valueType().name(),
+                                        labelConstraint.label());
             } else if (type == null) {
-                throw new GraknException(TYPE_NOT_FOUND.message(labelConstraint.label()));
+                throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
             }
 
             if (variable.valueType().isPresent() && !(type instanceof AttributeType)) {
-                throw new GraknException(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE.message(labelConstraint.label()));
+                throw GraknException.of(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE, labelConstraint.label());
             }
 
             created.add(variable);
@@ -143,7 +143,7 @@ public class Definer {
                 variable = variable.sub().get().type();
                 assert variable.label().isPresent();
                 if (!hierarchy.add(variable.label().get().scopedLabel())) {
-                    throw new GraknException(CYCLIC_TYPE_HIERARCHY.message(hierarchy));
+                    throw GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy);
                 }
             }
         }
@@ -166,7 +166,7 @@ public class Definer {
             final RoleType roleType;
             if ((type = conceptMgr.getType(label.scope().get())) == null ||
                     (roleType = type.asRelationType().getRelates(label.label())) == null) {
-                throw new GraknException(TYPE_NOT_FOUND.message(label.scopedLabel()));
+                throw GraknException.of(TYPE_NOT_FOUND, label.scopedLabel());
             }
             return roleType;
         }
@@ -186,11 +186,11 @@ public class Definer {
                 final ValueType valueType;
                 if (var.valueType().isPresent()) valueType = ValueType.of(var.valueType().get().valueType());
                 else if (!supertype.isRoot()) valueType = supertype.asAttributeType().getValueType();
-                else throw new GraknException(ATTRIBUTE_VALUE_TYPE_MISSING.message(labelConstraint.label()));
+                else throw GraknException.of(ATTRIBUTE_VALUE_TYPE_MISSING, labelConstraint.label());
                 if (thingType == null) thingType = conceptMgr.putAttributeType(labelConstraint.label(), valueType);
                 thingType.asAttributeType().setSupertype(supertype.asAttributeType());
             } else {
-                throw new GraknException(INVALID_DEFINE_SUB.message(labelConstraint.scopedLabel(), supertype.getLabel()));
+                throw GraknException.of(INVALID_DEFINE_SUB, labelConstraint.scopedLabel(), supertype.getLabel());
             }
             return thingType;
         }

@@ -126,7 +126,7 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
             open(request);
         } else {
             TransactionRPC t;
-            if ((t = transactionRPC.get()) == null) throw new GraknException(TRANSACTION_NOT_OPENED);
+            if ((t = transactionRPC.get()) == null) throw GraknException.of(TRANSACTION_NOT_OPENED);
             t.handleRequest(request);
         }
     }
@@ -142,10 +142,10 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         final Transaction.Open.Req openReq = request.getOpenReq();
         final UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
         final SessionRPC sessionRPC = graknRPCService.getSession(sessionID);
-        if (sessionRPC == null) throw new GraknException(SESSION_NOT_FOUND.message(sessionID));
+        if (sessionRPC == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
 
         if (!transactionRPC.compareAndSet(null, sessionRPC.transaction(this, openReq))) {
-            throw new GraknException(TRANSACTION_ALREADY_OPENED);
+            throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         }
 
         final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();

@@ -38,11 +38,11 @@ public abstract class Identifier {
     public boolean isVariable() { return false; }
 
     public Generated asGenerated() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Generated.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Generated.class));
     }
 
     public Variable asVariable() {
-        throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Variable.class)));
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.class));
     }
 
     @Override

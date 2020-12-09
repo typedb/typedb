@@ -54,7 +54,7 @@ public class LogicManagerHandler {
                 return;
             default:
             case REQ_NOT_SET:
-                throw new GraknException(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
+                throw GraknException.of(ErrorMessage.Server.UNKNOWN_REQUEST_TYPE);
         }
     }
 

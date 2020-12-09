@@ -42,9 +42,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     private EntityTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
-            throw exception(TYPE_ROOT_MISMATCH.message(
-                    vertex.label(), ENTITY_TYPE.root().label(), vertex.encoding().root().label()
-            ));
+            throw exception(GraknException.of(TYPE_ROOT_MISMATCH, vertex.label(),
+                                              ENTITY_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
@@ -121,42 +120,42 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         @Override
         public void setLabel(String label) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void unsetAbstract() {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setSupertype(EntityType superType) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void unsetPlays(RoleType roleType) {
-            throw exception(ROOT_TYPE_MUTATION.message());
+            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
         }
     }
 }

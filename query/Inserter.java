@@ -121,7 +121,7 @@ public class Inserter {
             if (existing.contains(variable.reference())) thing = existing.get(variable.reference()).asThing();
             else if (variable.iid().isPresent()) thing = getThing(variable.iid().get());
             else if (variable.isa().isPresent()) thing = insertIsa(variable.isa().get(), variable);
-            else throw new GraknException(THING_ISA_MISSING.message(variable.reference()));
+            else throw GraknException.of(THING_ISA_MISSING, variable.reference());
 
             if (!variable.has().isEmpty()) insertHas(thing, variable.has());
 
@@ -134,18 +134,16 @@ public class Inserter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             if (existing.contains(variable.reference()) && (variable.iid().isPresent() || variable.isa().isPresent())) {
                 if (variable.iid().isPresent()) {
-                    throw new GraknException(THING_IID_REASSERTION.message(variable.reference(), variable.iid().get().iid()));
+                    throw GraknException.of(THING_IID_REASSERTION, variable.reference(), variable.iid().get().iid());
                 } else {
-                    throw new GraknException(THING_ISA_REASSERTION.message(
-                            variable.reference(), variable.isa().get().type().label().get().label())
-                    );
+                    throw GraknException.of(THING_ISA_REASSERTION, variable.reference(),
+                                            variable.isa().get().type().label().get().label());
                 }
             } else if (variable.iid().isPresent() && variable.isa().isPresent()) {
-                throw new GraknException(THING_ISA_IID_CONFLICT.message(
-                        variable.iid().get(), variable.isa().get().type().label().get().label())
-                );
+                throw GraknException.of(THING_ISA_IID_CONFLICT, variable.iid().get(),
+                                        variable.isa().get().type().label().get().label());
             } else if (!variable.is().isEmpty()) {
-                throw new GraknException(THING_CONSTRAINT_UNACCEPTED.message(IS));
+                throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
             }
         }
     }
@@ -153,7 +151,7 @@ public class Inserter {
     private Thing getThing(IIDConstraint iidConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthing")) {
             final Thing thing = conceptMgr.getThing(iidConstraint.iid());
-            if (thing == null) throw new GraknException(THING_NOT_FOUND.message(bytesToHexString(iidConstraint.iid())));
+            if (thing == null) throw GraknException.of(THING_NOT_FOUND, bytesToHexString(iidConstraint.iid()));
             else return thing;
         }
     }
@@ -163,10 +161,10 @@ public class Inserter {
             if (variable.reference().isLabel()) {
                 assert variable.label().isPresent();
                 final Type type = conceptMgr.getType(variable.label().get().label());
-                if (type == null) throw new GraknException(TYPE_NOT_FOUND.message(variable.label().get().label()));
+                if (type == null) throw GraknException.of(TYPE_NOT_FOUND, variable.label().get().label());
                 else return type.asThingType();
             } else {
-                throw new GraknException(THING_CONSTRAINT_TYPE_VARIABLE.message(variable.reference()));
+                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, variable.reference());
             }
         }
     }
@@ -181,10 +179,10 @@ public class Inserter {
                         (roleType = relationType.getRelates(variable.label().get().label())) != null) {
                     return roleType;
                 } else {
-                    throw new GraknException(TYPE_NOT_FOUND.message(variable.label().get().scopedLabel()));
+                    throw GraknException.of(TYPE_NOT_FOUND, variable.label().get().scopedLabel());
                 }
             } else {
-                throw new GraknException(THING_CONSTRAINT_TYPE_VARIABLE.message(variable.reference()));
+                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, variable.reference());
             }
         }
     }
@@ -200,7 +198,7 @@ public class Inserter {
             } else if (thingType instanceof RelationType) {
                 return insertRelation(thingType.asRelationType(), variable);
             } else if (thingType instanceof ThingTypeImpl.Root) {
-                throw new GraknException(ILLEGAL_ABSTRACT_WRITE.message(Thing.class.getSimpleName(), thingType.getLabel()));
+                throw GraknException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
             } else {
                 assert false;
                 return null;
@@ -218,7 +216,7 @@ public class Inserter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertattribute")) {
             final ValueConstraint<?> valueConstraint;
             if (variable.value().size() > 1) {
-                throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY.message(variable.reference(), attributeType.getLabel()));
+                throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY, variable.reference(), attributeType.getLabel());
             } else if (!variable.value().isEmpty() &&
                     (valueConstraint = variable.value().iterator().next()).isValueIdentity()) {
                 switch (attributeType.getValueType()) {
@@ -237,7 +235,7 @@ public class Inserter {
                         return null;
                 }
             } else {
-                throw new GraknException(ATTRIBUTE_VALUE_MISSING.message(variable.reference(), attributeType.getLabel()));
+                throw GraknException.of(ATTRIBUTE_VALUE_MISSING, variable.reference(), attributeType.getLabel());
             }
         }
     }
@@ -257,18 +255,18 @@ public class Inserter {
                             .collect(toSet())).size() == 1) {
                         roleType = inferred.iterator().next();
                     } else if (inferred.size() > 1) {
-                        throw new GraknException(ROLE_TYPE_AMBIGUOUS.message(rolePlayer.player().reference()));
+                        throw GraknException.of(ROLE_TYPE_AMBIGUOUS, rolePlayer.player().reference());
                     } else {
-                        throw new GraknException(ROLE_TYPE_MISSING.message(rolePlayer.player().reference()));
+                        throw GraknException.of(ROLE_TYPE_MISSING, rolePlayer.player().reference());
                     }
 
                     relation.addPlayer(roleType, player);
                 });
                 return relation;
             } else if (variable.relation().size() > 1) {
-                throw new GraknException(RELATION_CONSTRAINT_TOO_MANY.message(variable.reference()));
+                throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, variable.reference());
             } else { // variable.relation().isEmpty()
-                throw new GraknException(RELATION_CONSTRAINT_MISSING.message(variable.reference()));
+                throw GraknException.of(RELATION_CONSTRAINT_MISSING, variable.reference());
             }
         }
     }

@@ -91,12 +91,12 @@ public class GraknServer implements AutoCloseable {
             if (this.options.dataDir().equals(ServerDefaults.DATA_DIR)) {
                 Files.createDirectory(this.options.dataDir());
             } else {
-                throw new GraknException(DATA_DIRECTORY_NOT_FOUND.message(this.options.dataDir()));
+                throw GraknException.of(DATA_DIRECTORY_NOT_FOUND, this.options.dataDir());
             }
         }
 
         if (!Files.isWritable(this.options.dataDir())) {
-            throw new GraknException(DATA_DIRECTORY_NOT_WRITABLE.message(this.options.dataDir()));
+            throw GraknException.of(DATA_DIRECTORY_NOT_WRITABLE, this.options.dataDir());
         }
     }
 
@@ -143,7 +143,7 @@ public class GraknServer implements AutoCloseable {
             }
         }
 
-        if (error) throw new GraknException(FAILED_PARSE_PROPERTIES);
+        if (error) throw GraknException.of(FAILED_PARSE_PROPERTIES);
         else return properties;
     }
 

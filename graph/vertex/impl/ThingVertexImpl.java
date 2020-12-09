@@ -138,7 +138,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl<?> asAttribute() {
-        throw new GraknException(INVALID_THING_VERTEX_CASTING.message(className(AttributeVertex.class)));
+        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
     }
 
     void deleteEdges() {
@@ -179,7 +179,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void commit() {
-            if (isInferred) throw new GraknException(ILLEGAL_OPERATION);
+            if (isInferred) throw GraknException.of(ILLEGAL_OPERATION);
             commitVertex();
             commitEdges();
         }
@@ -211,7 +211,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void isInferred(boolean isInferred) {
-            throw new GraknException(ILLEGAL_OPERATION);
+            throw GraknException.of(ILLEGAL_OPERATION);
         }
 
         @Override

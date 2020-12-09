@@ -255,15 +255,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public boolean isNative() { return false; }
 
         public Equal.Directional asEqual() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Equal.Directional.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.Directional.class));
         }
 
         public Predicate.Directional asPredicate() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Predicate.Directional.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.Directional.class));
         }
 
         public Native.Directional<?, ?> asNative() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Native.Directional.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.Directional.class));
         }
     }
 
@@ -400,15 +400,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public boolean isThing() { return false; }
 
             public Isa.Directional<?, ?> asIsa() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Isa.Directional.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Isa.Directional.class));
             }
 
             public Type.Directional asType() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Directional.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Directional.class));
             }
 
             public Thing.Directional asThing() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Directional.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Directional.class));
             }
         }
 
@@ -551,19 +551,19 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public boolean isRelates() { return false; }
 
                 public Type.Sub.Directional asSub() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Sub.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Sub.Directional.class));
                 }
 
                 public Type.Owns.Directional asOwns() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Owns.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Owns.Directional.class));
                 }
 
                 public Type.Plays.Directional asPlays() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Plays.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Plays.Directional.class));
                 }
 
                 public Type.Relates.Directional asRelates() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Type.Relates.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Relates.Directional.class));
                 }
             }
 
@@ -905,19 +905,19 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public boolean isRolePlayer() { return false; }
 
                 public Thing.Has.Directional asHas() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Has.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Has.Directional.class));
                 }
 
                 public Thing.Playing.Directional asPlaying() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Playing.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Playing.Directional.class));
                 }
 
                 public Thing.Relating.Directional asRelating() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.Relating.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Relating.Directional.class));
                 }
 
                 public Thing.RolePlayer.Directional asRolePlayer() {
-                    throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.RolePlayer.Directional.class)));
+                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.RolePlayer.Directional.class));
                 }
             }
 

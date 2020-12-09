@@ -64,7 +64,7 @@ public class TransactionRPC {
         this.stream = stream;
 
         final Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
-        if (transactionType == null) throw new GraknException(BAD_TRANSACTION_TYPE.message(request.getType()));
+        if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
         final Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
 
         transaction = sessionRPC.session().transaction(transactionType, transactionOptions);
@@ -84,7 +84,7 @@ public class TransactionRPC {
                     iterators.continueIteration(request.getId());
                     return;
                 case OPEN_REQ:
-                    throw new GraknException(TRANSACTION_ALREADY_OPENED);
+                    throw GraknException.of(TRANSACTION_ALREADY_OPENED);
                 case COMMIT_REQ:
                     commit(request.getId());
                     return;
@@ -116,7 +116,7 @@ public class TransactionRPC {
 //                return;
                 default:
                 case REQ_NOT_SET:
-                    throw new GraknException(UNKNOWN_REQUEST_TYPE);
+                    throw GraknException.of(UNKNOWN_REQUEST_TYPE);
             }
         } catch (Exception ex) {
             closeWithError(ex);
@@ -197,7 +197,7 @@ public class TransactionRPC {
             final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
                 if (oldValue == null) return batchingIterator;
-                else throw new GraknException(DUPLICATE_REQUEST.message(requestId));
+                else throw GraknException.of(DUPLICATE_REQUEST, requestId);
             });
             batchingIterator.iterateBatch();
         }
@@ -207,7 +207,7 @@ public class TransactionRPC {
          */
         void continueIteration(String requestId) {
             final BatchingIterator<?> iterator = iterators.get(requestId);
-            if (iterator == null) throw new GraknException(ITERATION_WITH_UNKNOWN_ID.message(requestId));
+            if (iterator == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
             iterator.iterateBatch();
         }
 

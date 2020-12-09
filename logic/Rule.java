@@ -18,6 +18,7 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RelationType;
@@ -31,7 +32,6 @@ import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
-import graql.lang.common.exception.GraqlException;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
@@ -193,7 +193,7 @@ public class Rule {
         Stream<Label> thenLabels = getTypeLabels(then.stream().flatMap(constraint -> constraint.variables().stream()));
         Set<String> invalidLabels = invalidLabels(Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
         if (!invalidLabels.isEmpty()) {
-            throw GraqlException.of(TYPES_NOT_FOUND.message(getLabel(), String.join(", ", invalidLabels)));
+            throw GraknException.of(TYPES_NOT_FOUND, getLabel(), String.join(", ", invalidLabels));
         }
     }
 

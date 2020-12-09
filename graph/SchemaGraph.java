@@ -42,7 +42,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -269,7 +268,7 @@ public class SchemaGraph implements Graph {
 
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(scopedLabel).unlockRead();
             multiLabelLock.unlockRead();
@@ -296,7 +295,7 @@ public class SchemaGraph implements Graph {
 
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(label).unlockRead();
             multiLabelLock.unlockRead();
@@ -320,7 +319,7 @@ public class SchemaGraph implements Graph {
             typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
@@ -339,7 +338,7 @@ public class SchemaGraph implements Graph {
             rulesByIID.put(rule.iid(), rule);
             return rule;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(label).unlockWrite();
             multiLabelLock.unlockRead();
@@ -353,12 +352,12 @@ public class SchemaGraph implements Graph {
         try {
             multiLabelLock.lockWrite();
             final TypeVertex type = getType(newLabel, newScope);
-            if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE.message(newScopedLabel));
+            if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             multiLabelLock.unlockWrite();
         }
@@ -369,12 +368,12 @@ public class SchemaGraph implements Graph {
         try {
             multiLabelLock.lockWrite();
             final RuleStructure rule = getRule(newLabel);
-            if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE.message(newLabel));
+            if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
             rulesByLabel.remove(oldLabel);
             rulesByLabel.put(newLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             multiLabelLock.unlockWrite();
         }
@@ -389,7 +388,7 @@ public class SchemaGraph implements Graph {
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
             multiLabelLock.unlockRead();
@@ -406,7 +405,7 @@ public class SchemaGraph implements Graph {
             rulesByLabel.remove(vertex.label());
             rulesByIID.remove(vertex.iid());
         } catch (InterruptedException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         } finally {
             singleLabelLocks.get(vertex.label()).unlockWrite();
             multiLabelLock.unlockRead();

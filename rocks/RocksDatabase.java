@@ -21,7 +21,6 @@ package grakn.core.rocks;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -82,7 +81,7 @@ public class RocksDatabase implements Grakn.Database {
             rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
             rocksData = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
         } catch (RocksDBException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         }
 
         isOpen = new AtomicBoolean(true);
@@ -96,7 +95,7 @@ public class RocksDatabase implements Grakn.Database {
         try {
             Files.createDirectory(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         }
         return new RocksDatabase(rocksGrakn, name, true);
     }
@@ -108,7 +107,7 @@ public class RocksDatabase implements Grakn.Database {
     private void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction txn = session.transaction(WRITE)) {
-                if (txn.asSchema().graph().isInitialised()) throw new GraknException(DIRTY_INITIALISATION);
+                if (txn.asSchema().graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.asSchema().graph().initialise();
                 txn.commit();
             }
@@ -251,7 +250,7 @@ public class RocksDatabase implements Grakn.Database {
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
-            throw new GraknException(e);
+            throw GraknException.of(e);
         }
     }
 

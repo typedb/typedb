@@ -56,7 +56,7 @@ public class ThingTypeSteps {
             case RELATION:
                 return tx().concepts().getRelationType(typeLabel);
             default:
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
         }
     }
 
@@ -98,7 +98,7 @@ public class ThingTypeSteps {
                 tx().concepts().putRelationType(typeLabel);
                 break;
             default:
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
         }
     }
 

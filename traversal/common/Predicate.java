@@ -131,11 +131,11 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
         boolean isSubString() { return false; }
 
         Operator.Equality asEquality() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Equality.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equality.class));
         }
 
         Operator.SubString asSubString() {
-            throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(SubString.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(SubString.class));
         }
 
         public static abstract class Equality extends Operator {

@@ -812,11 +812,11 @@ public class DataGraph implements Graph {
             }
 
             public Attribute asAttribute() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(Attribute.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Attribute.class));
             }
 
             public HasEdge asHasEdge() {
-                throw GraknException.of(ILLEGAL_CAST.message(className(this.getClass()), className(HasEdge.class)));
+                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(HasEdge.class));
             }
 
             public static class Attribute extends CountJob {

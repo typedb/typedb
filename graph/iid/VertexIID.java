@@ -178,7 +178,7 @@ public abstract class VertexIID extends IID {
         }
 
         public VertexIID.Attribute<?> asAttribute() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(VertexIID.Attribute.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(VertexIID.Attribute.class));
         }
 
         @Override
@@ -258,23 +258,23 @@ public abstract class VertexIID extends IID {
         }
 
         public VertexIID.Attribute.Boolean asBoolean() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(Boolean.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(Boolean.class));
         }
 
         public VertexIID.Attribute.Long asLong() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(Long.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(Long.class));
         }
 
         public VertexIID.Attribute.Double asDouble() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(Double.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(Double.class));
         }
 
         public VertexIID.Attribute.String asString() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(String.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(String.class));
         }
 
         public VertexIID.Attribute.DateTime asDateTime() {
-            throw GraknException.of(INVALID_THING_IID_CASTING.message(className(DateTime.class)));
+            throw GraknException.of(INVALID_THING_IID_CASTING, className(DateTime.class));
         }
 
         @Override

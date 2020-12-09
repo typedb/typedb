@@ -84,12 +84,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         constraints.add(constraint);
         if (constraint.isIID()) {
             if (iidConstraint != null && !iidConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID.message(identifier()));
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID, identifier());
             }
             iidConstraint = constraint.asIID();
         } else if (constraint.isIsa()) {
             if (isaConstraint != null && !isaConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA.message(identifier()));
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, identifier());
             }
             isaConstraint = constraint.asIsa();
         } else if (constraint.isIs()) isConstraints.add(constraint.asIs());

@@ -127,7 +127,7 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
             assert type.getSupertype() != null;
             type = (TypeImpl) type.getSupertype();
             if (!hierarchy.add(type.vertex.scopedLabel())) {
-                throw new GraknException(CYCLIC_TYPE_HIERARCHY.message(hierarchy));
+                throw GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy);
             }
         }
     }
@@ -157,40 +157,40 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public ThingTypeImpl asThingType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(ThingType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(ThingType.class)));
     }
 
     @Override
     public EntityTypeImpl asEntityType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(EntityType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(EntityType.class)));
     }
 
     @Override
     public AttributeTypeImpl asAttributeType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(AttributeType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(AttributeType.class)));
     }
 
     @Override
     public RelationTypeImpl asRelationType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RelationType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(RelationType.class)));
     }
 
     @Override
     public RoleTypeImpl asRoleType() {
-        throw exception(INVALID_TYPE_CASTING.message(className(this.getClass()), className(RoleType.class)));
+        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(RoleType.class)));
     }
 
     void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
-            throw exception(SESSION_SCHEMA_VIOLATION.message());
+            throw exception(GraknException.of(SESSION_SCHEMA_VIOLATION));
         } else if (isAbstract()) {
-            throw exception(ILLEGAL_ABSTRACT_WRITE.message(instanceClass.getSimpleName(), getLabel()));
+            throw exception(GraknException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));
         }
     }
 
     @Override
-    public GraknException exception(String message) {
-        return graphMgr.exception(message);
+    public GraknException exception(GraknException exception) {
+        return graphMgr.exception(exception);
     }
 
     @Override

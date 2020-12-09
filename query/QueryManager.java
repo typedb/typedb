@@ -78,7 +78,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> insert(GraqlInsert query, Options.Query options) {
-        if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
+        if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             if (query.match().isPresent()) {
@@ -99,7 +99,7 @@ public class QueryManager {
     }
 
     public void delete(GraqlDelete query, Options.Query options) {
-        if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION.message());
+        if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             final List<ConceptMap> matched = match(query.match()).toList();
@@ -112,7 +112,7 @@ public class QueryManager {
     }
 
     public void define(GraqlDefine query) {
-        if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
+        if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             Definer.create(conceptMgr, logicMgr, query.variables(), query.rules()).execute();
         } catch (GraknException exception) {
@@ -123,7 +123,7 @@ public class QueryManager {
     }
 
     public void undefine(GraqlUndefine query) {
-        if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION.message());
+        if (transactionCtx.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             Undefiner.create(conceptMgr, logicMgr, query.variables(), query.rules()).execute();
         } catch (GraknException exception) {

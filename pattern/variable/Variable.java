@@ -64,11 +64,11 @@ public abstract class Variable implements Pattern {
     }
 
     public TypeVariable asType() {
-        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(TypeVariable.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(TypeVariable.class));
     }
 
     public ThingVariable asThing() {
-        throw new GraknException(INVALID_CASTING.message(className(this.getClass()), className(ThingVariable.class)));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
 
     @Override

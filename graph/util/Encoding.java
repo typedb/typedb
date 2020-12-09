@@ -160,7 +160,7 @@ public class Encoding {
             for (Prefix i : Prefix.values()) {
                 if (i.key == key) return i;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -208,7 +208,7 @@ public class Encoding {
                     if (i.key == key[0]) return i;
                 }
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -236,7 +236,7 @@ public class Encoding {
                     if (i.key == key[0]) return i;
                 }
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -336,7 +336,7 @@ public class Encoding {
             for (Infix i : Infix.values()) {
                 if (i.key == key) return i;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -457,21 +457,21 @@ public class Encoding {
             for (ValueType vt : ValueType.values()) {
                 if (vt.key == value) return vt;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(Class<?> valueClass) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.valueClass == valueClass) return vt;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(GraqlArg.ValueType graqlValueType) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.graqlValueType == graqlValueType) return vt;
             }
-            throw new GraknException(UNRECOGNISED_VALUE);
+            throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -549,14 +549,14 @@ public class Encoding {
                 for (Type t : Type.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             public static Type of(Thing thing) {
                 for (Type t : Type.values()) {
                     if (Objects.equals(t.instance, thing)) return t;
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             /**
@@ -633,7 +633,7 @@ public class Encoding {
                 for (Thing t : Thing.values()) {
                     if (t.prefix.key == prefix) return t;
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -669,11 +669,11 @@ public class Encoding {
         }
 
         default Type asType() {
-            throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Type.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
         }
 
         default Thing asThing() {
-            throw new GraknException(ILLEGAL_CAST.message(className(this.getClass()), className(Thing.class)));
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
         }
 
         Edge ISA = new Edge() {
@@ -720,7 +720,7 @@ public class Encoding {
                         return t;
                     }
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -778,7 +778,7 @@ public class Encoding {
                         return t;
                     }
                 }
-                throw new GraknException(UNRECOGNISED_VALUE);
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
