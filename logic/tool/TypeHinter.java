@@ -214,20 +214,12 @@ public class TypeHinter {
     }
 
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
-        removeAbstractHints(hints);
+        //TODO: use .getType(label) once ConceptManager can handle labels
+        hints.removeIf(label -> conceptMgr.getType(label.scopedName()).isAbstract());
         if (!variable.isa().isPresent()) {
             variable.isa(lowestCommonSuperType(hints, labelMap), false);
         }
         variable.isa().get().addHints(hints);
-    }
-
-    private void removeAbstractHints(Set<Label> hints) {
-        //TODO: use .getType(label) once ConceptManager can handle labels
-        hints.removeIf(label -> {
-            Type type = conceptMgr.getType(label.scopedName());
-            assert type != null;
-            return type.isAbstract();
-        });
     }
 
     private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {
