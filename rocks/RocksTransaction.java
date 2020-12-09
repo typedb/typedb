@@ -104,7 +104,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public LogicManager logics() {
+    public LogicManager logic() {
         if (!isOpen.get()) throw GraknException.of(TRANSACTION_CLOSED);
         return logicMgr;
     }
