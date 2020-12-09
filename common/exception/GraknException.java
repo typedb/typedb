@@ -18,53 +18,63 @@
 
 package grakn.core.common.exception;
 
+import grakn.common.collection.Pair;
+
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
+import static grakn.common.collection.Collections.pair;
+
 public class GraknException extends RuntimeException {
     @Nullable
     private final ErrorMessage errorMessage;
+    @Nullable
+    private final Object[] parameters;
 
     // TODO replace usages with GraknException.of()
     public GraknException(String error) {
         super(error);
         errorMessage = null;
+        parameters = null;
     }
 
     // TODO replace usages with GraknException.of()
-    public GraknException(ErrorMessage error) {
-        super(error.toString());
+    public GraknException(ErrorMessage error, Object... parameters) {
+        super(error.message(parameters));
         assert !getMessage().contains("%s");
         this.errorMessage = error;
+        this.parameters = parameters;
     }
 
     // TODO replace usages with GraknException.of()
     public GraknException(Exception e) {
         super(e);
         errorMessage = null;
+        parameters = null;
     }
 
     // TODO replace usages with GraknException.of()
     public GraknException(List<GraknException> exceptions) {
         super(getMessages(exceptions));
         errorMessage = null;
+        parameters = null;
     }
 
     public static GraknException of(Exception e) {
         return new GraknException(e);
     }
 
-    public static GraknException of(ErrorMessage errorMessage) {
-        return new GraknException(errorMessage);
+    public static GraknException of(ErrorMessage errorMessage, Object... parameters) {
+        return new GraknException(errorMessage, parameters);
     }
 
     public static GraknException of(String error) {
         return new GraknException(error);
     }
 
-    public Optional<ErrorMessage> errorMessage() {
-        return Optional.ofNullable(errorMessage);
+    public Optional<String> code() {
+        return Optional.ofNullable(errorMessage).map(e -> e.code());
     }
 
     public static String getMessages(List<GraknException> exceptions) {
