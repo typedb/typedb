@@ -41,7 +41,7 @@ public class LogicCache  {
         ruleCache = new CommonCache<>(size, timeOutMinutes);
     }
 
-    public CommonCache<Conjunction, Map<Reference, Set<Label>>> hinter() { return typeHinterCache; }
+    CommonCache<Conjunction, Map<Reference, Set<Label>>> hinter() { return typeHinterCache; }
 
-    public CommonCache<String, Rule> rule() { return ruleCache; }
+    CommonCache<String, Rule> rule() { return ruleCache; }
 }

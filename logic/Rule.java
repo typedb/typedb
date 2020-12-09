@@ -37,7 +37,7 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.logic.LogicManager.validateLabelsExist;
+import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
 public class Rule {
@@ -66,7 +66,7 @@ public class Rule {
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
-        validateLabelsExist(conceptMgr, this.structure);
+        validateRuleStructureLabels(conceptMgr, this.structure);
         // TODO enable when we have type hinting
 //        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
 //        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
@@ -89,11 +89,11 @@ public class Rule {
         return new Rule(graphMgr, conceptMgr, logicManager, label, when, then);
     }
 
-    public Set<ConjunctionConcludable<?, ?>> body() {
+    public Set<ConjunctionConcludable<?, ?>> whenConcludables() {
         return requiredWhenConcludables;
     }
 
-    public Set<ThenConcludable<?, ?>> head() {
+    public Set<ThenConcludable<?, ?>> possibleThenConcludables() {
         return possibleThenConcludables;
     }
 

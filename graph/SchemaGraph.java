@@ -233,7 +233,6 @@ public class SchemaGraph implements Graph {
         return rulesByIID.values().stream();
     }
 
-
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);

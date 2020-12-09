@@ -105,7 +105,6 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         public Buffered(SchemaGraph graph, StructureIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
             super(graph, iid, label, when, then);
-            graql.lang.pattern.schema.Rule.validate(label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
         }

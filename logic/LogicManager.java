@@ -61,14 +61,11 @@ public class LogicManager {
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         RuleStructure structure = graphMgr.schema().getRule(label);
         if (structure != null) {
+            // overwriting a rule means we purge it and re-create the rule
             structure.delete();
             logicCache.rule().invalidate(label);
         }
-
-        Rule rule = Rule.of(graphMgr, conceptMgr, this, label, when, then);
-        logicCache.rule().put(label, rule);
-
-        return rule;
+        return logicCache.rule().get(label, l -> Rule.of(graphMgr, conceptMgr, this, label, when, then));
     }
 
     public Rule getRule(String label) {
@@ -76,8 +73,7 @@ public class LogicManager {
         if (rule != null) return rule;
         RuleStructure structure = graphMgr.schema().getRule(label);
         if (structure != null) {
-            rule = logicCache.rule().get(structure.label(), l -> Rule.of(this, structure));
-            return rule;
+            return logicCache.rule().get(structure.label(), l -> Rule.of(this, structure));
         }
         return null;
     }
@@ -98,7 +94,7 @@ public class LogicManager {
     public void validateRules() {
         logicCache.rule().clear();
         // validate all schema structures contain valid types
-        graphMgr.schema().rules().forEachRemaining(structure -> validateLabelsExist(conceptMgr, structure));
+        graphMgr.schema().rules().forEachRemaining(structure -> validateRuleStructureLabels(conceptMgr, structure));
         // validate all rules are satisfiable
         rules().forEachRemaining(Rule::validateSatisfiable);
         // validate new rules are stratifiable (eg. do not cause cycles through a negation)
@@ -110,7 +106,7 @@ public class LogicManager {
         return typeHinter;
     }
 
-    static void validateLabelsExist(ConceptManager conceptMgr, RuleStructure ruleStructure) {
+    static void validateRuleStructureLabels(ConceptManager conceptMgr, RuleStructure ruleStructure) {
         graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = ruleStructure.when().normalise().patterns().get(0);
         Stream<BoundVariable> positiveVariables = whenNormalised.patterns().stream().filter(Conjunctable::isVariable)
                 .map(Conjunctable::asVariable);
