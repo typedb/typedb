@@ -157,13 +157,6 @@ public class TypeHinter {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private void addHintLabels(Variable variable, Set<Label> labels) {
-        if (variable.isType()) variable.asType().sub().ifPresent(subConstraint -> subConstraint.addHints(labels));
-        else if (variable.isThing())
-            variable.asThing().isa().ifPresent(isaConstraint -> isaConstraint.addHints(labels));
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
     private void ensureHintsConformToTheirSuper(Variable variable, Set<Variable> visited) {
         if (variable == null || visited.contains(variable) || variable.reference().isLabel()) return;
         visited.add(variable);
@@ -184,7 +177,7 @@ public class TypeHinter {
         if (subLabels.isEmpty()) {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).map(Label::of).collect(Collectors.toSet());
-            addHintLabels(subVar, subHintsOfSupLabels);
+            subVar.addHints(subHintsOfSupLabels);
             return;
         }
 
@@ -219,7 +212,7 @@ public class TypeHinter {
         if (!variable.isa().isPresent()) {
             variable.isa(lowestCommonSuperType(hints, labelMap), false);
         }
-        variable.isa().get().addHints(hints);
+        variable.addHints(hints);
     }
 
     private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {

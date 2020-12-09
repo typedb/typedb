@@ -19,6 +19,7 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
@@ -57,6 +58,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
 
+    private final Set<Label> typeHints;
+
     ThingVariable(Identifier.Variable identifier) {
         super(identifier);
         this.isConstraints = new HashSet<>();
@@ -64,6 +67,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
+        this.typeHints = new HashSet<>();
     }
 
     ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {

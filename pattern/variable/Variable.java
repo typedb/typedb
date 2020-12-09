@@ -19,12 +19,14 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,10 +37,14 @@ public abstract class Variable implements Pattern {
 
     private final Identifier.Variable identifier;
     private final int hash;
+    private final Set<Label> typeHints;
+    private boolean isSatisfiable;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
         this.hash = Objects.hash(identifier);
+        this.typeHints = new HashSet<>();
+        this.isSatisfiable = true;
     }
 
     public abstract Set<? extends Constraint> constraints();
@@ -70,6 +76,23 @@ public abstract class Variable implements Pattern {
     public ThingVariable asThing() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
+
+    public void addHints(Set<Label> labels) {
+        typeHints.addAll(labels);
+    }
+
+    public void removeHint(Label label) {
+        typeHints.remove(label);
+    }
+
+    public void clearHintLabels() {
+        typeHints.clear();
+    }
+
+    public Set<Label> getTypeHints() {
+        return typeHints;
+    }
+
 
     @Override
     public boolean equals(Object o) {

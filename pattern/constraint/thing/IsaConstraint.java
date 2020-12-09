@@ -40,14 +40,12 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private final Set<Label> typeHints;
 
     public IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner, set(type));
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
-        this.typeHints = new HashSet<>();
     }
 
     public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
