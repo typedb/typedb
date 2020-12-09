@@ -47,23 +47,25 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
 
     @Override
     public Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer) {
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
     }
 
     @Override
     public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream,
                                                       ResponseProducer responseProducer) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
     }
 
-    Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
+    @Override
+    Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
                 return Either.second(createResponse(fromUpstream, answer));
             }
         }
@@ -77,7 +79,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     }
 
     Response.RootResponse createResponse(Request fromUpstream, final ResolutionAnswer answer) {
-        LOG.debug("Responding RootResponse and Recording root answer execution tree for: {}", answer.conceptMap());
+        LOG.debug("Responding RootResponse and Recording root answer execution tree for: {}", answer.aggregated());
         resolutionRecorder.tell(state -> state.record(answer));
         onAnswer.accept(answer);
         return new Response.RootResponse(fromUpstream);

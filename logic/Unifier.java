@@ -15,14 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.transform;
+package grakn.core.logic;
 
 import grakn.core.concept.answer.ConceptMap;
 
-public interface ConceptMapTransformer {
+public class Unifier {
 
-    ConceptMap transform(ConceptMap conceptMap);
+    public ConceptMap transform(ConceptMap conceptMap) {
+        return null; // TODO
+    }
 
-    ConceptMap unTransform(ConceptMap conceptMap);
+    public ConceptMap unTransform(ConceptMap unified) {
+        return null; // TODO
+    }
 
 }

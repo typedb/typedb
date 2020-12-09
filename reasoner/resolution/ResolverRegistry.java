@@ -25,15 +25,17 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
+import grakn.core.pattern.variable.Variable;
+import grakn.core.reasoner.resolution.answer.MappingAggregator;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
-import grakn.core.logic.transform.VariableMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 public class ResolverRegistry {
@@ -51,7 +53,7 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public Pair<Actor<ConcludableResolver>, VariableMapper> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
+    public Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
 
         final Optional<Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>> alphaEquivalencePair = concludableActorsMap.keySet().stream()
@@ -59,16 +61,16 @@ public class ResolverRegistry {
                 .filter(p -> p.second().isValid()).findAny();
 
         final Actor<ConcludableResolver> concludableActor;
-        final VariableMapper variableMapping;
+        final Map<Variable, Variable> variableMapping;
         if (alphaEquivalencePair.isPresent()) {
             // Then we can use the same ConcludableActor, but with a different variable mapping
             concludableActor = concludableActorsMap.get(alphaEquivalencePair.get().first());
-            variableMapping = VariableMapper.fromVariableMapping(alphaEquivalencePair.get().second().asValid().map());
+            variableMapping = alphaEquivalencePair.get().second().asValid().map();
         } else {
             // Create a new ConcludableActor
             concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
             concludableActorsMap.put(concludable, concludableActor);
-            variableMapping = VariableMapper.identity(concludable);
+            variableMapping = MappingAggregator.identityMapping(concludable);
         }
         return new Pair<>(concludableActor, variableMapping);
     }

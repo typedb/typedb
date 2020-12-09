@@ -24,11 +24,11 @@ import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.logic.transform.TransformedConceptMap;
-import grakn.core.logic.transform.VariableMapper;
+import grakn.core.reasoner.resolution.answer.MappingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
@@ -51,7 +52,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final Conjunction conjunction;
     private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
     Actor<ResolutionRecorder> resolutionRecorder;
-    private final List<Pair<Actor<ConcludableResolver>, VariableMapper>> plannedConcludables;
+    private final List<Pair<Actor<ConcludableResolver>, Map<Variable, Variable>>> plannedConcludables;
 
     public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Set<ConjunctionConcludable<?, ?>> conjunctionConcludables) {
         super(self, name);
@@ -62,10 +63,42 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     @Override
+    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
+        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+
+        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
+        if (fromDownstream.answer().isInferred()) {
+            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+        }
+
+        if (isLast(sender)) {
+            LOG.trace("{}: has produced: {}", name, conceptMap);
+
+            if (!responseProducer.hasProduced(conceptMap)) {
+                responseProducer.recordProduced(conceptMap);
+
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                               conjunction.toString(), derivation, self());
+                return Either.second(createResponse(fromUpstream, answer));
+            } else {
+                return messageToSend(fromUpstream, responseProducer);
+            }
+        } else {
+            Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
+                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
+            responseProducer.addDownstreamProducer(downstreamRequest);
+            return Either.first(downstreamRequest);
+        }
+    }
+
+    @Override
     protected ResponseProducer createResponseProducer(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(5L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()), TransformedConceptMap.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
+        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
+                                           MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -85,7 +118,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         // Plan the order in which to execute the concludables
         List<ConjunctionConcludable<?, ?>> planned = list(conjunctionConcludables); // TODO Do some actual planning
         for (ConjunctionConcludable<?, ?> concludable : planned) {
-            Pair<Actor<ConcludableResolver>, VariableMapper> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
+            Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
             plannedConcludables.add(concludableUnifierPair);
         }
     }
@@ -94,9 +127,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return plannedConcludables.get(plannedConcludables.size() - 1).first().equals(actor);
     }
 
-    Pair<Actor<ConcludableResolver>, VariableMapper> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         boolean match = false;
-        for (Pair<Actor<ConcludableResolver>, VariableMapper> planned : plannedConcludables) {
+        for (Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> planned : plannedConcludables) {
             if (match) {
                 return planned; // TODO This logic seems a bit bizarre, but is the most efficient
             }
@@ -108,37 +141,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return null;
     }
 
-    @Override
-    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
-        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unTransform();
-
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-        }
-
-        if (isLast(sender)) {
-            LOG.trace("{}: has produced: {}", name, conceptMap);
-
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-
-                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, conjunction.toString(), derivation, self());
-                return Either.second(createResponse(fromUpstream, answer));
-            } else {
-                return produceMessage(fromUpstream, responseProducer);
-            }
-        } else {
-            Pair<Actor<ConcludableResolver>, VariableMapper> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    TransformedConceptMap.of(conceptMap, nextPlannedDownstream.second()), derivation);
-            responseProducer.addDownstreamProducer(downstreamRequest);
-            return Either.first(downstreamRequest);
-        }
-    }
-
-    abstract Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer);
+    abstract Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer);
 
     abstract Response createResponse(Request fromUpstream, final ResolutionAnswer answer);
 

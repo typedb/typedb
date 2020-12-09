@@ -25,8 +25,9 @@ import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.logic.transform.TransformedConceptMap;
-import grakn.core.logic.transform.Unifier;
+import grakn.core.logic.Unifier;
+import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -61,37 +62,41 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     public Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer) {
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
     }
 
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream,
                                                    ResponseProducer responseProducer) {
-        final ConceptMap conceptMap = fromDownstream.sourceRequest().partialConceptMap().merge(fromDownstream.answer().conceptMap()).unTransform();
+        final ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
 
         LOG.trace("{}: hasProduced: {}", name, conceptMap);
         if (!responseProducer.hasProduced(conceptMap)) {
             responseProducer.recordProduced(conceptMap);
 
             // update partial derivation provided from upstream to carry derivations sideways
-            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            ResolutionAnswer answer = new ResolutionAnswer(conceptMap, concludable.toString(), derivation, self());
+            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
+                                                                                              fromDownstream.answer())));
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                           concludable.toString(), derivation, self());
 
             return Either.second(new Response.Answer(fromUpstream, answer));
         } else {
-            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(conceptMap, concludable.toString(), derivation, self());
+            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
+                                                                                              fromDownstream.answer())));
+            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                                 concludable.toString(), derivation, self());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
-            return produceMessage(fromUpstream, responseProducer);
+            return messageToSend(fromUpstream, responseProducer);
         }
     }
 
     @Override
     public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
     }
 
     @Override
@@ -115,13 +120,19 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }));
     }
 
-    private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
+    private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
+            Aggregator.Aggregated aggregated = fromUpstream.partialConceptMap().aggregateWith(conceptMap);
+            if (aggregated == null) {
+                // TODO this should be the only place that aggregation can fail, but can we make this explicit?
+                continue;
+            }
+
             LOG.trace("{}: hasProduced: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(conceptMap, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
+                ResolutionAnswer answer = new ResolutionAnswer(aggregated, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
                 return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
@@ -135,7 +146,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
         for (Map.Entry<Unifier, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
-            Request toDownstream = new Request(path.append(entry.getValue()), TransformedConceptMap.of(partialConceptMap, entry.getKey()), ResolutionAnswer.Derivation.EMPTY);
+            Request toDownstream = new Request(path.append(entry.getValue()), UnifyingAggregator.of(partialConceptMap, entry.getKey()), ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }
     }

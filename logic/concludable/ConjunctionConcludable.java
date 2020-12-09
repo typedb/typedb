@@ -20,7 +20,7 @@ package grakn.core.logic.concludable;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.Rule;
-import grakn.core.logic.transform.Unifier;
+import grakn.core.logic.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;

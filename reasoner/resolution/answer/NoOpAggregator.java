@@ -15,23 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.transform;
+package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
 
-public class Unifier implements ConceptMapTransformer {
+public class NoOpAggregator extends Aggregator {
 
-    public static Unifier identity() {
-        return null; // TODO A unifier that performs trivial mapping - unneeded now, remove.
+    public static Aggregator create() {
+        return new NoOpAggregator();
+    }
+
+    NoOpAggregator() {
+        super(new ConceptMap());
     }
 
     @Override
-    public ConceptMap transform(ConceptMap conceptMap) {
-        return null; // TODO
+    ConceptMap transform(ConceptMap original) {
+        return original;
     }
 
     @Override
-    public ConceptMap unTransform(ConceptMap unified) {
-        return null; // TODO
+    ConceptMap unTransform(ConceptMap conceptMap) {
+        return conceptMap;
     }
 }
