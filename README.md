@@ -1,6 +1,4 @@
-![GRAKN.AI](https://grakn.ai/assets/img/grakn-logo-name.png)
-
----
+[![Grabl](https://grabl.io/api/status/graknlabs/grakn/badge.svg)](https://grabl.io/graknlabs/grakn)
 [![CircleCI](https://circleci.com/gh/graknlabs/grakn/tree/master.svg?style=shield)](https://circleci.com/gh/graknlabs/grakn/tree/master)
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://grakn.ai/discord)
