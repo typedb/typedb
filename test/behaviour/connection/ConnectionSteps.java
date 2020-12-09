@@ -22,6 +22,7 @@ import grakn.core.Grakn;
 import grakn.core.rocks.RocksDatabase;
 import grakn.core.rocks.RocksGrakn;
 import io.cucumber.java.After;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 
 import java.io.File;
@@ -38,9 +39,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static java.util.Objects.isNull;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ConnectionSteps {
@@ -56,6 +57,45 @@ public class ConnectionSteps {
     public static Map<Grakn.Session, List<CompletableFuture<Grakn.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
     public static Map<CompletableFuture<Grakn.Session>, List<CompletableFuture<Grakn.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
 
+    public static Grakn.Transaction tx() {
+        assertFalse("There is no open session", sessions.isEmpty());
+        assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
+        return sessionsToTransactions.get(sessions.get(0)).get(0);
+    }
+
+    @Given("connection has been opened")
+    public void connection_has_been_opened() {
+        assertNotNull(grakn);
+        assertTrue(grakn.isOpen());
+    }
+
+    @Given("connection does not have any database")
+    public void connection_does_not_have_any_database() {
+        assertTrue(grakn.databases().all().isEmpty());
+    }
+
+    @Before
+    public synchronized void before() throws IOException {
+        assertNull(grakn);
+        resetDirectory();
+        System.out.println("Connecting to Grakn ...");
+        grakn = RocksGrakn.open(directory);
+    }
+
+    @After
+    public synchronized void after() {
+        System.out.println("ConnectionSteps.after");
+        sessions.clear();
+        sessionsParallel.clear();
+        sessionsToTransactions.clear();
+        sessionsToTransactionsParallel.clear();
+        sessionsParallelToTransactionsParallel.clear();
+        grakn.databases().all().forEach(RocksDatabase::delete);
+        grakn.close();
+        assertFalse(grakn.isOpen());
+        grakn = null;
+    }
+
     private static void resetDirectory() throws IOException {
         if (Files.exists(directory)) {
             System.out.println("Database directory exists!");
@@ -65,50 +105,5 @@ public class ConnectionSteps {
 
         Files.createDirectory(directory);
         System.out.println("Database Directory created: " + directory.toString());
-    }
-
-    private static synchronized void connect_to_grakn() throws IOException {
-        if (!isNull(grakn)) return;
-
-        resetDirectory();
-        System.out.println("Connecting to Grakn ...");
-        grakn = RocksGrakn.open(directory);
-        assertNotNull(grakn);
-    }
-
-    public static Grakn.Transaction tx() {
-        assertFalse("There is no open session", sessions.isEmpty());
-        assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
-        return sessionsToTransactions.get(sessions.get(0)).get(0);
-    }
-
-    @Given("connection has been opened")
-    public void connection_has_been_opened() throws IOException {
-        if (isNull(grakn)) {
-            connect_to_grakn();
-        }
-
-        assertNotNull(grakn);
-        assertTrue(grakn.isOpen());
-    }
-
-    @Given("connection delete all databases")
-    public void connection_delete_all_databases() {
-        grakn.databases().all().forEach(RocksDatabase::delete);
-    }
-
-    @Given("connection does not have any database")
-    public void connection_does_not_have_any_database() {
-        assertTrue(grakn.databases().all().isEmpty());
-    }
-
-    @After
-    public void connection_close() {
-        System.out.println("ConnectionSteps.after");
-        sessions.clear();
-        sessionsParallel.clear();
-        sessionsToTransactions.clear();
-        sessionsToTransactionsParallel.clear();
-        sessionsParallelToTransactionsParallel.clear();
     }
 }
