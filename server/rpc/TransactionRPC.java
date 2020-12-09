@@ -288,11 +288,11 @@ public class TransactionRPC {
 
         private RequestHandlers() {
             conceptManager = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
-            logicManager = new LogicManagerHandler(TransactionRPC.this, transaction.logics());
+            logicManager = new LogicManagerHandler(TransactionRPC.this, transaction.logic());
             query = new QueryHandler(TransactionRPC.this, transaction.query());
             thing = new ThingHandler(TransactionRPC.this, transaction.concepts());
             type = new TypeHandler(TransactionRPC.this, transaction.concepts());
-            rule = new RuleHandler(TransactionRPC.this, transaction.logics());
+            rule = new RuleHandler(TransactionRPC.this, transaction.logic());
         }
     }
 }
