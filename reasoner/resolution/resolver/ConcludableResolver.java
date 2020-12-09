@@ -101,7 +101,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(5L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
         if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
