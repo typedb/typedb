@@ -308,7 +308,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.Boolean extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.Boolean(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + 1));
+                return new VertexIID.Attribute.Boolean(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + 1));
             }
 
             @Override
@@ -333,7 +333,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.Long extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.Long(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + LONG_SIZE));
+                return new VertexIID.Attribute.Long(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + LONG_SIZE));
             }
 
             @Override
@@ -358,7 +358,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.Double extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.Double(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + DOUBLE_SIZE));
+                return new VertexIID.Attribute.Double(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + DOUBLE_SIZE));
             }
 
             @Override
@@ -410,7 +410,7 @@ public abstract class VertexIID extends IID {
             }
 
             public static VertexIID.Attribute.DateTime extract(byte[] bytes, int from) {
-                return new VertexIID.Attribute.DateTime(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + DATETIME_SIZE));
+                return new VertexIID.Attribute.DateTime(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + DATETIME_SIZE));
             }
 
             @Override
