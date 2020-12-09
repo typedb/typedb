@@ -56,7 +56,6 @@ import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
-import static java.util.Collections.emptyIterator;
 
 public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -542,9 +541,9 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
             }
 
             ResourceIterator<? extends ThingVertex> backwardBranchToIID(GraphManager graphMgr, ThingVertex fromVertex,
-                                                                        Encoding.Edge.Thing encoding, VertexIID.Thing iid) {
-                ThingVertex startV = graphMgr.data().get(iid);
-                if (startV != null && fromVertex.ins().edge(encoding, startV) != null) return single(startV);
+                                                                        Encoding.Edge.Thing encoding, VertexIID.Thing toIID) {
+                ThingVertex toVertex = graphMgr.data().get(toIID);
+                if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null) return single(toVertex);
                 else return empty();
             }
 
@@ -799,11 +798,8 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                                                                                Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         ThingVertex rel = fromVertex.asThing();
-                        Set<Label> toTypes = to.props().types();
                         ResourceIterator<? extends ThingVertex> iter;
-
                         boolean filteredIID = false, filteredTypes = false;
-
 
                         if (!roleTypes.isEmpty()) {
                             if (to.props().hasIID()) {
@@ -816,10 +812,10 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                                                 .to().anyMatch(p -> p.equals(player)))) {
                                     iter = single(player);
                                 } else return empty();
-                            } else if (!toTypes.isEmpty()) {
+                            } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
                                 iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                        .flatMap(rt -> iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                        .flatMap(rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                                 .flatMap(t -> rel.outs().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).to()));
                             } else {
                                 iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
@@ -830,7 +826,7 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                         }
 
                         if (!filteredIID && to.props().hasIID()) iter = to.filterIID(iter, params);
-                        if (!filteredTypes && !toTypes.isEmpty()) iter = to.filterTypes(iter);
+                        if (!filteredTypes && !to.props().types().isEmpty()) iter = to.filterTypes(iter);
                         if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(iter, params);
                         return iter;
                     }
@@ -861,13 +857,52 @@ public abstract class ProcedureEdge<VERTEX_FROM extends ProcedureVertex<?, ?>, V
                     public ResourceIterator<? extends Vertex<?, ?>> branchFrom(GraphManager graphMgr,
                                                                                Vertex<?, ?> fromVertex,
                                                                                Traversal.Parameters params) {
-                        return iterate(emptyIterator()); // TODO
+                        assert fromVertex.isThing() && to.props().predicates().isEmpty();
+                        ThingVertex player = fromVertex.asThing();
+                        ResourceIterator<? extends ThingVertex> iter;
+                        boolean filteredIID = false, filteredTypes = false;
+
+                        if (!roleTypes.isEmpty()) {
+                            if (to.props().hasIID()) {
+                                assert to.id().isVariable();
+                                filteredIID = true;
+                                ThingVertex relation = graphMgr.data().get(params.getIID(to.id().asVariable()));
+                                if (relation == null) return empty();
+                                else if (iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls().anyMatch(
+                                        rt -> player.ins().edge(ROLEPLAYER, rt.iid(), relation.iid().prefix(), relation.iid().type())
+                                                .from().anyMatch(r -> r.equals(relation)))) {
+                                    iter = single(relation);
+                                } else return empty();
+                            } else if (!to.props().types().isEmpty()) {
+                                filteredTypes = true;
+                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                        .flatMap(rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                                .flatMap(t -> player.ins().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).from()));
+                            } else {
+                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                        .flatMap(rt -> player.ins().edge(ROLEPLAYER, rt.iid()).from());
+                            }
+                        } else {
+                            iter = player.ins().edge(ROLEPLAYER).from();
+                        }
+
+                        if (!filteredIID && to.props().hasIID()) iter = to.filterIID(iter, params);
+                        if (!filteredTypes && !to.props().types().isEmpty()) iter = to.filterTypes(iter);
+                        return iter;
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return false; // TODO
+                        ThingVertex player = fromVertex.asThing();
+                        ThingVertex rel = toVertex.asThing();
+                        if (!roleTypes.isEmpty()) {
+                            return iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).anyMatch(
+                                    rt -> player.ins().edge(ROLEPLAYER, rt.iid(), rel.iid().prefix(), rel.iid().type()).from()
+                                            .anyMatch(p -> p.equals(rel)));
+                        } else {
+                            return player.ins().edge(ROLEPLAYER).from().anyMatch(r -> r.equals(rel));
+                        }
                     }
                 }
             }
