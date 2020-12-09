@@ -60,6 +60,7 @@ native_java_libraries(
         "@maven//:ch_qos_logback_logback_classic",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
+    visibility = ["//visibility:public"]
 )
 
 host_compatible_java_test(

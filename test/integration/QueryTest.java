@@ -245,7 +245,6 @@ public class QueryTest {
         }
     }
 
-    @Ignore
     @Test
     public void test_query_match() throws IOException {
         Util.resetDirectory(directory);
