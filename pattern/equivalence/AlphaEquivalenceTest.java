@@ -59,8 +59,8 @@ public class AlphaEquivalenceTest {
                 .collect(Collectors.toSet());
     }
 
-    private Map<String, String> alphaMapToStringMap(AlphaEquivalence.Valid alphaMap) {
-        return alphaMap.map().entrySet().stream()
+    private Map<String, String> alphaMapToStringMap(AlphaEquivalence.Valid alphaEq) {
+        return alphaEq.variableMapping().entrySet().stream()
                 .map(e -> new AbstractMap.SimpleEntry<>(
                         e.getKey().identifier().reference().toString(),
                         e.getValue().identifier().reference().toString()
@@ -74,9 +74,9 @@ public class AlphaEquivalenceTest {
     public void test_isa_equivalent() {
         ThingVariable a = parseVariable("a", "$a isa age").asThing();
         ThingVariable b = parseVariable("b", "$b isa age").asThing();
-        AlphaEquivalence alphaMap = a.alphaEquals(b);
-        assertTrue(alphaMap.isValid());
-        assertEquals(map(new Pair<>("$a", "$b"), new Pair<>("$_age", "$_age")), alphaMapToStringMap(alphaMap.asValid()));
+        AlphaEquivalence alphaEq = a.alphaEquals(b);
+        assertTrue(alphaEq.isValid());
+        assertEquals(map(new Pair<>("$a", "$b"), new Pair<>("$_age", "$_age")), alphaMapToStringMap(alphaEq.asValid()));
     }
 
     @Test
@@ -90,9 +90,9 @@ public class AlphaEquivalenceTest {
     public void test_value_and_has_label_equivalent() {
         ThingVariable p = parseVariables("p", "$p has age 30", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q has age 30", "$q isa person").asThing();
-        AlphaEquivalence alphaMap = p.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = p.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$p"), "$q");
         assertEquals(varNameMap.get("$_age"), "$_age");
         assertEquals(varNameMap.get("$_person"), "$_person");
@@ -102,9 +102,9 @@ public class AlphaEquivalenceTest {
     public void test_multiple_value_and_has_label_equivalent() {
         ThingVariable p = parseVariables("p", "$p has $a", "$a 30 isa age", "$p has $n", "$n \"Alice\" isa name", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q has $b", "$b 30 isa age", "$q has $m", "$m \"Alice\" isa name", "$q isa person").asThing();
-        AlphaEquivalence alphaMap = p.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = p.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$p"), "$q");
         assertEquals(varNameMap.get("$a"), "$b");
         assertEquals(varNameMap.get("$_age"), "$_age");
@@ -132,9 +132,9 @@ public class AlphaEquivalenceTest {
         ThingVariable r = parseVariables("r", "$r(parent: $p, child: $c) isa parentship").asThing();
         ThingVariable q = parseVariables("q", "$q(parent: $s, child: $t) isa parentship").asThing();
         assertTrue(r.alphaEquals(q).isValid());
-        AlphaEquivalence alphaMap = r.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = r.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$q");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$t");
@@ -148,9 +148,9 @@ public class AlphaEquivalenceTest {
         ThingVariable r = parseVariables("r", "$r(parent: $p, child: $c) isa parentship").asThing();
         ThingVariable q = parseVariables("r", "$r(parent: $s, child: $p) isa parentship").asThing();
         assertTrue(r.alphaEquals(q).isValid());
-        AlphaEquivalence alphaMap = r.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = r.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$r");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$p");
@@ -164,9 +164,9 @@ public class AlphaEquivalenceTest {
         ThingVariable r = parseVariables("r", "$r(sibling: $p, sibling: $c) isa siblingship", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q(sibling: $s, sibling: $t) isa siblingship", "$s isa person").asThing();
         assertTrue(r.alphaEquals(q).isValid());
-        AlphaEquivalence alphaMap = r.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = r.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$q");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$t");
@@ -180,9 +180,9 @@ public class AlphaEquivalenceTest {
         ThingVariable r = parseVariables("r", "$r(friend: $p, friend: $p) isa friendship").asThing();
         ThingVariable q = parseVariables("q", "$q(friend: $s, friend: $s) isa friendship").asThing();
         assertTrue(r.alphaEquals(q).isValid());
-        AlphaEquivalence alphaMap = r.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = r.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$q");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$_friendship:friend"), "$_friendship:friend");
@@ -195,9 +195,9 @@ public class AlphaEquivalenceTest {
         ThingVariable r = parseVariables("r", "$r(buyer: $p, seller: $c, produce: $u) isa transaction").asThing();
         ThingVariable q = parseVariables("q", "$q(buyer: $s, seller: $t, produce: $v) isa transaction").asThing();
         assertTrue(r.alphaEquals(q).isValid());
-        AlphaEquivalence alphaMap = r.alphaEquals(q);
-        assertTrue(alphaMap.isValid());
-        Map<String, String> varNameMap = alphaMapToStringMap(alphaMap.asValid());
+        AlphaEquivalence alphaEq = r.alphaEquals(q);
+        assertTrue(alphaEq.isValid());
+        Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$q");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$t");

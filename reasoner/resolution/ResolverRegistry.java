@@ -25,12 +25,12 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.answer.MappingAggregator;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
+    public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
 
         final Optional<Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>> alphaEquivalencePair = concludableActorsMap.keySet().stream()
@@ -61,11 +61,11 @@ public class ResolverRegistry {
                 .filter(p -> p.second().isValid()).findAny();
 
         final Actor<ConcludableResolver> concludableActor;
-        final Map<Variable, Variable> variableMapping;
+        final Map<Reference.Name, Reference.Name> variableMapping;
         if (alphaEquivalencePair.isPresent()) {
             // Then we can use the same ConcludableActor, but with a different variable mapping
             concludableActor = concludableActorsMap.get(alphaEquivalencePair.get().first());
-            variableMapping = alphaEquivalencePair.get().second().asValid().map();
+            variableMapping = alphaEquivalencePair.get().second().asValid().namedVariableMapping();
         } else {
             // Create a new ConcludableActor
             concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));

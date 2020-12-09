@@ -18,12 +18,16 @@
 package grakn.core.pattern.equivalence;
 
 import grakn.core.pattern.variable.Variable;
+import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public abstract class AlphaEquivalence {
 
@@ -70,7 +74,7 @@ public abstract class AlphaEquivalence {
         @Override
         public AlphaEquivalence addOrInvalidate(AlphaEquivalence alphaMap) {
             if (!alphaMap.isValid()) return AlphaEquivalence.invalid();
-            map.putAll(alphaMap.asValid().map());
+            map.putAll(alphaMap.asValid().variableMapping());
             return this;
         }
 
@@ -94,6 +98,7 @@ public abstract class AlphaEquivalence {
         @Override
         public Valid addMapping(Variable from, Variable to) {
             map.put(from, to);
+            assert from.reference().isName() == to.reference().isName();
             return this;
         }
 
@@ -113,8 +118,23 @@ public abstract class AlphaEquivalence {
             return this;
         }
 
-        public HashMap<Variable, Variable> map() {
+        public HashMap<Variable, Variable> variableMapping() {
             return new HashMap<>(map);
+        }
+
+        public Map<Reference.Name, Reference.Name> namedVariableMapping() {
+            return variableMapping().entrySet().stream()
+                    .map(e -> new AbstractMap.SimpleEntry<>(
+                            e.getKey().identifier().reference(),
+                            e.getValue().identifier().reference()))
+                    .filter(e -> e.getKey().isName() && e.getValue().isName())
+                    .map(e -> new AbstractMap.SimpleEntry<>(
+                            e.getKey().asName(),
+                            e.getValue().asName()))
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue
+                    ));
         }
     }
 
@@ -211,7 +231,7 @@ public abstract class AlphaEquivalence {
                 while (it.hasNext()) {
                     AlphaEquivalence alphaMap = it.next().alphaEquals(o);
                     if (alphaMap.isValid())
-                        return Valid.create(alphaMap.asValid().map());
+                        return Valid.create(alphaMap.asValid().variableMapping());
                 }
             }
             return AlphaEquivalence.invalid();

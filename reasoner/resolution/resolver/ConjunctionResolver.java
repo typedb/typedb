@@ -34,6 +34,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final Conjunction conjunction;
     private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
     Actor<ResolutionRecorder> resolutionRecorder;
-    private final List<Pair<Actor<ConcludableResolver>, Map<Variable, Variable>>> plannedConcludables;
+    private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
 
     public ConjunctionResolver(Actor<T> self, String name, Conjunction conjunction, Set<ConjunctionConcludable<?, ?>> conjunctionConcludables) {
         super(self, name);
@@ -85,7 +86,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                 return messageToSend(fromUpstream, responseProducer);
             }
         } else {
-            Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
                                                     MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
@@ -118,7 +119,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         // Plan the order in which to execute the concludables
         List<ConjunctionConcludable<?, ?>> planned = list(conjunctionConcludables); // TODO Do some actual planning
         for (ConjunctionConcludable<?, ?> concludable : planned) {
-            Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
+            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
             plannedConcludables.add(concludableUnifierPair);
         }
     }
@@ -127,9 +128,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return plannedConcludables.get(plannedConcludables.size() - 1).first().equals(actor);
     }
 
-    Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         boolean match = false;
-        for (Pair<Actor<ConcludableResolver>, Map<Variable, Variable>> planned : plannedConcludables) {
+        for (Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> planned : plannedConcludables) {
             if (match) {
                 return planned; // TODO This logic seems a bit bizarre, but is the most efficient
             }

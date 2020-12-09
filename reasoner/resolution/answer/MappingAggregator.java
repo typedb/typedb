@@ -19,7 +19,7 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.pattern.variable.Variable;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -28,18 +28,20 @@ import java.util.stream.Collectors;
 
 public class MappingAggregator extends Aggregator {
 
-    private Map<Variable, Variable> mapping;
+    private Map<Reference.Name, Reference.Name> mapping;
 
-    public static MappingAggregator of(ConceptMap conceptMap, Map<Variable, Variable> variableMap) {
+    public static MappingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
         return new MappingAggregator(conceptMap, variableMap);
     }
 
-    public static Map<Variable, Variable> identityMapping(ConjunctionConcludable<?, ?> concludable) {
-        // TODO Should this helper live in AlphaEquivalence?
-        return new HashSet<>(concludable.constraint().variables()).stream().collect(Collectors.toMap(Function.identity(), Function.identity()));
+    public static Map<Reference.Name, Reference.Name> identityMapping(ConjunctionConcludable<?, ?> concludable) {
+        return new HashSet<>(concludable.constraint().variables()).stream()
+                .filter(variable -> variable.reference().isName())
+                .map(variable -> variable.reference().asName())
+                .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
-    MappingAggregator(ConceptMap conceptMap, Map<Variable, Variable> mapping) {
+    MappingAggregator(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
         super(conceptMap);
         this.mapping = mapping;
     }
