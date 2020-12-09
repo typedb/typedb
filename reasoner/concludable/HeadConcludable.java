@@ -25,11 +25,14 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.reasoner.Unification;
+import grakn.core.traversal.common.Identifier;
+import graql.lang.pattern.variable.Reference;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +46,7 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends HeadConcludable<CONSTRAINT, U>>
         extends Concludable<CONSTRAINT, U> {
+    private Form generalisedForms;
 
     private HeadConcludable(CONSTRAINT constraint, Set<Variable> constraintContext) {
         super(constraint);
@@ -196,14 +200,16 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         }
 
         private Has name_owner_value() {
-            ThingVariable newOwner = deAnonymizeValue(constraint.owner());;
+            ThingVariable newOwner = deAnonymizeValue(constraint.owner());
+            ;
             ThingVariable attributeCopy = copyIsaAndValues(constraint.attribute());
             HasConstraint hasConstraint = newOwner.has(attributeCopy);
             return Has.of(hasConstraint);
         }
 
         private Has name_attribute_value() {
-            ThingVariable newOwner = copyIsaAndValues(constraint.owner());;
+            ThingVariable newOwner = copyIsaAndValues(constraint.owner());
+            ;
             ThingVariable attributeCopy = deAnonymizeValue(constraint.attribute());
             HasConstraint hasConstraint = newOwner.has(attributeCopy);
             return Has.of(hasConstraint);
@@ -227,7 +233,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
                 copyIsa(anonIsaOwner, newOwner);
             } else if (concludableOwner.isa().get().type().reference().isName()) {
                 copyIsa(namedIsaOwner, newOwner);
-            }else if (concludableOwner.isa().get().type().reference().isLabel()) {
+            } else if (concludableOwner.isa().get().type().reference().isLabel()) {
                 copyIsa(labelIsaOwner, newOwner);
             } else if (concludableOwner.isa().get().type().reference().isAnonymous()) {
                 copyIsa(anonIsaOwner, newOwner);
@@ -248,7 +254,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
                 copyIsa(anonIsaAttr, newAttr);
             } else if (concludableAttr.isa().get().type().reference().isName()) {
                 copyIsa(namedIsaAttr, newAttr);
-            }else if (concludableAttr.isa().get().type().reference().isLabel()) {
+            } else if (concludableAttr.isa().get().type().reference().isLabel()) {
                 copyIsa(labelIsaAttr, newAttr);
             } else if (concludableAttr.isa().get().type().reference().isAnonymous()) {
                 copyIsa(anonIsaAttr, newOwner);
@@ -268,6 +274,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         }
 
         //will want to cache...
+        //actually we don't want the generlisations of the isa...
         public Has getGeneralisationOf(String ownerIsa, String ownerValue, String attrIsa, String attrValue) {
             ThingVariable newOwner = ThingVariable.of(constraint.owner().identifier());
             if (ownerIsa.equals("label")) copyIsa(labelIsaOwner, newOwner);
@@ -326,15 +333,62 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
     }
 
     public static class Isa extends HeadConcludable<IsaConstraint, HeadConcludable.Isa> {
+        //optional?
+        private TypeVariable concreteForm;
+        private TypeVariable anonForm;
+        private TypeVariable namedForm;
+        private final Set<Label> ownerHints;
+        private final Set<Label> constraintHints;
+
 
         public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);
+            this.ownerHints = constraint.typeHints();
+            if (constraint.type().sub().isPresent()) this.constraintHints = constraint.type().sub().get().typeHints();
+            else this.constraintHints = null;
+            setForms();
+        }
+
+        private void setForms() {
+            if (constraint.type().reference().isLabel()) this.concreteForm = constraint.type();
+            else this.concreteForm = null;
+            if (constraint.type().reference().isName()) this.namedForm = constraint.type();
+            else this.namedForm = new TypeVariable(Identifier.Variable.of(new SystemReference("temp")));
+            if (constraint.type().reference().isAnonymous()) this.anonForm = constraint.type();
+            else this.anonForm = new TypeVariable(Identifier.Variable.of(Reference.anonymous(true), 1));
         }
 
         public static Isa copyOf(IsaConstraint constraint, Set<Variable> constraintContext) {
             return new Isa(copyConstraint(constraint), constraintContext);
         }
 
+        public TypeVariable match(ConjunctionConcludable.Isa concludable) {
+            if (!concludable.isIsa()) return null;
+
+            if (ownerHints.stream().noneMatch(concludable.constraint.typeHints()::contains)) {
+                return null;
+            }
+
+            if (concludable.constraint.type().sub().isPresent() &&
+                    constraintHints.stream().noneMatch(concludable.constraint.type().sub().get().typeHints()::contains)) {
+                return null;
+            }
+            if (concludable.isConcrete()) return concreteForm;
+            else if (concludable.isName()) return namedForm;
+            else if (concludable.isAnonymous()) return anonForm;
+        }
+
+        public boolean isConcrete() {
+            return constraint.type().reference().isLabel();
+        }
+
+        public boolean isAnonymous() {
+            return constraint.type().reference().isAnonymous();
+        }
+
+        public boolean isName() {
+            return constraint.type().reference().isName();
+        }
 
         private Isa anonymizeVariable() {
 //            ThingVariable newOwner = ThingVariable.of(constraint.owner().identifier());
@@ -411,6 +465,10 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             return new Value(copyConstraint(constraint), constraintContext);
         }
 
+        Value anonymousVersion() {
+            return new Value(anonymize(constraint()), constraint.variables());
+        }
+
         private Value deAnonymise() {
 //            ThingVariable newOwner = ThingVariable.of(constraint.owner().identifier());
 //            ThingVariable tempVariable = new ThingVariable(Identifier.Variable.of(new SystemReference("temp")));
@@ -427,6 +485,8 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             return generalisations;
         }
 
+
+
         @Override
         public boolean isValue() {
             return true;
@@ -435,6 +495,114 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         @Override
         public Value asValue() {
             return this;
+        }
+    }
+
+    //TODO: better name.
+    private static class Form {
+
+        //Value
+            //named
+            //anon
+        //Isa
+            //named
+            //anon
+        //Has
+            //named
+            //anon
+        //Relation
+            //RolePlayer
+                //Role
+                    //named
+                    //anon
+                    //empty
+
+        public Form matchForm(ConjunctionConcludable concludable) {
+
+            if (concludable.isValue()) {
+                if (concludable.asValue().constraint().isVariable() &&
+                        concludable.asValue().constraint().asVariable().value().reference().isName()) {
+                    //value named
+                } else {
+                    //value anon
+                }
+            } else if (concludable.isIsa()) {
+                if (concludable.asIsa().isName()) {
+                    //isa named
+                } else {
+                    //isa anon
+                }
+            } else if (concludable.isHas()) {
+                if (concludable.asHas().constraint().attribute().reference().isName()) {
+                    //has named
+                } else {
+                    //has anon
+                }
+            } else if (concludable.isRelation()) {
+
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+        }
+
+        public Value asValue() {
+            throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Value.class)));
+        }
+
+        public Isa asIsa() {
+            throw GraknException.of(INVALID_CASTING.message(className(this.getClass()), className(Isa.class)));
+        }
+
+        private static class Value extends Form {
+            private final ThingVariable var;
+
+            private Value(ThingVariable var) {
+                this.var = var;
+            }
+        }
+
+
+
+        private static class Isa extends Form {
+            private final TypeVariable concrete;
+            private final TypeVariable anon;
+            private final TypeVariable named;
+
+
+            private Isa(TypeVariable concrete, TypeVariable anon, TypeVariable named) {
+                this.concrete = concrete;
+                this.anon = anon;
+                this.named = named;
+            }
+
+            public TypeVariable getConcrete() {
+                return concrete;
+            }
+
+            public TypeVariable getAnon() {
+                return anon;
+            }
+
+            public TypeVariable getNamed() {
+                return named;
+            }
+
+            @Override
+            public Isa asIsa() {
+                return this;
+            }
+
+
+
+
+        }
+
+        private static class Has {
+
+        }
+
+        private static class Relation {
+
         }
     }
 }

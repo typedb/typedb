@@ -24,6 +24,7 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -80,13 +81,13 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
+        //NOTE: isa can never exist on a Value Concludable (or else it would be a Isa Concludable).
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream().filter(value1 -> value != value1)
                 .collect(Collectors.toSet());
         copyValuesOntoVariable(otherValues, newOwner);
         return copyValueOntoVariable(value, newOwner);
     }
-
 
     static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
@@ -111,6 +112,10 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
             value = toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
         else if (toCopy.isDateTime())
             value = toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
+        else if (toCopy.isVariable()) {
+            ThingVariable copyOfVar = copyIsaAndValues(toCopy.asVariable().value());
+            value = toConstrain.valueVariable(toCopy.asValue().predicate().asEquality(), copyOfVar);
+        }
         else throw GraknException.of(ILLEGAL_STATE);
         return value;
     }
@@ -142,6 +147,11 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
 
     static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
         if (copyFrom.label().isPresent()) copyTo.label(Label.of(copyFrom.label().get().label()));
+        if (copyFrom.sub().isPresent()){
+            SubConstraint subCopy = copyFrom.sub().get();
+            copyTo.sub(subCopy.type(), subCopy.isExplicit());
+            copyTo.sub().get().addHints(subCopy.typeHints());
+        }
         if (copyFrom.valueType().isPresent()) copyTo.valueType(copyFrom.valueType().get().valueType());
     }
 
@@ -202,6 +212,12 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return newOwner.valueVariable(valueConstraint.asValue().predicate().asEquality(), tempVariable);
     }
 
+    static ValueConstraint<?> anonymize(ValueConstraint<?> valueConstraint) {
+        ThingVariable newOwner =  copyIsa(valueConstraint.owner());
+        ThingVariable tempVariable = new ThingVariable(Identifier.Variable.of(Reference.anonymous(false), 1));
+        return newOwner.valueVariable(valueConstraint.asValue().predicate().asEquality(), tempVariable);
+    }
+
     static IsaConstraint removeValue(IsaConstraint isaConstraint) {
         ThingVariable newOwner = ThingVariable.of(isaConstraint.owner().identifier());
         return copyIsaOntoVariable(isaConstraint, newOwner);
@@ -229,6 +245,16 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
             return Collections.emptySet();
         }
         return null;
+    }
+
+    static boolean hintsIntersect(Variable first, Variable second) {
+        //TODO:
+        return true;
+    }
+
+    static boolean hintsIntersect(RelationConstraint.RolePlayer first, RelationConstraint.RolePlayer second) {
+        //TODO:
+        return true;
     }
 
 }
