@@ -169,8 +169,4 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return !Collections.disjoint(firstHints, secondHints);
     }
 
-    static boolean hintsIntersect(RelationConstraint.RolePlayer first, RelationConstraint.RolePlayer second) {
-        return !Collections.disjoint(first.roleTypeHints(), second.roleTypeHints());
-    }
-
 }

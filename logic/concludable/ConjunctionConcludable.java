@@ -29,6 +29,7 @@ import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -166,7 +167,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         boolean updateRoleMapping(RelationConstraint.RolePlayer conj, RelationConstraint.RolePlayer head,
                                   Map<Reference, Set<Reference>> mapping) {
-            if (!hintsIntersect(head, conj)) return false;
+            if (Collections.disjoint(head.roleTypeHints(), conj.roleTypeHints())) return false;
 
             if (conj.roleType().isPresent()) {
                 assert head.roleType().isPresent();
