@@ -142,13 +142,16 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         private Set<Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>>  findMatches(
                  List<RelationConstraint.RolePlayer> conjunctionRolePlayers,
                  List<RelationConstraint.RolePlayer> headRolePlayers,
-                 Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer> mapping) {
+                 Set<Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>> mapping) {
             if (headRolePlayers.isEmpty()) return Collections.emptySet();
             RelationConstraint.RolePlayer head = headRolePlayers.remove(0);
             for (RelationConstraint.RolePlayer conj : conjunctionRolePlayers) {
                 if (hintsIntersect(head, conj)) {
                     conjunctionRolePlayers.remove(conj);
-                    findMatches(headRolePlayers, conjunctionRolePlayers, mapping);
+                    Set<Map<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>> maps =
+                            findMatches(headRolePlayers, conjunctionRolePlayers, mapping);
+                    maps.forEach(map -> map.put(head, conj));
+                    mapping.addAll(maps);
                     conjunctionRolePlayers.add(conj);
                 }
             }
