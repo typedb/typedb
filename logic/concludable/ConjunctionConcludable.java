@@ -118,13 +118,6 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
-    boolean updateUnifier(Variable conj, Variable head, Map<Reference, Set<Reference>> variableMapping) {
-        if (!hintsIntersect(head, conj)) return false;
-        variableMapping.putIfAbsent(conj.reference(), new HashSet<>());
-        variableMapping.get(conj.reference()).add(head.reference());
-        return true;
-    }
-
     Optional<Map<Reference, Set<Reference>>> updatedUnifier(Variable conj, Variable head, Map<Reference,
             Set<Reference>> variableMapping) {
         if (!hintsIntersect(head, conj)) return Optional.empty();
@@ -148,12 +141,18 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
-
-            Map<Reference, Set<Reference>> startingUnifier = new HashMap<>();
             Map<Reference, Set<Reference>> unifier = new HashMap<>();
             Optional<Map<Reference, Set<Reference>>> unifierOpt;
             if (constraint.owner().reference().isName()) {
                 unifierOpt = updatedUnifier(this.constraint().owner(), unifyWith.constraint().owner(), unifier);
+                if (unifierOpt.isPresent()) unifier = unifierOpt.get();
+                else return Stream.empty();
+            }
+
+            if (constraint.owner().isa().isPresent() && constraint.owner().isa().get().type().reference().isName()) {
+                assert unifyWith.constraint().owner().isa().isPresent();
+                unifierOpt = updatedUnifier(this.constraint().owner().isa().get().type(),
+                        unifyWith.constraint().owner().isa().get().type(), unifier);
                 if (unifierOpt.isPresent()) unifier = unifierOpt.get();
                 else return Stream.empty();
             }
@@ -185,28 +184,6 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 visitedHeadRolePlayers.remove(head);
             }
             conjunctionRolePlayers.add(conj);
-
-//                Map<Reference, Set<Reference>> copyOfCurrentUnifier = new HashMap<>(unifier);
-//                if (!visitedHeadRolePlayers.contains(head) && updateUnifier(conj, head, copyOfCurrentUnifier)) {
-//                    visitedHeadRolePlayers.add(head);
-//                    matchRolesAndUnify(conjunctionRolePlayers, headRolePlayers,
-//                            visitedHeadRolePlayers, copyOfCurrentUnifier, allUnifiers);
-//                    visitedHeadRolePlayers.remove(head);
-//                }
-//            }
-//            conjunctionRolePlayers.add(conj);
-        }
-
-        boolean updateUnifier(RelationConstraint.RolePlayer conj, RelationConstraint.RolePlayer head,
-                              Map<Reference, Set<Reference>> mapping) {
-            if (!head.roleTypeHints().isEmpty() && !conj.roleTypeHints().isEmpty() &&
-                    Collections.disjoint(head.roleTypeHints(), conj.roleTypeHints())) return false;
-
-            if (conj.roleType().isPresent() && conj.roleType().get().reference().isName()) {
-                assert head.roleType().isPresent();
-                if (!updateUnifier(conj.roleType().get(), head.roleType().get(), mapping)) return false;
-            }
-            return updateUnifier(conj.player(), head.player(), mapping);
         }
 
         Optional<Map<Reference, Set<Reference>>> updatedUnifier(
