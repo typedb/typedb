@@ -63,26 +63,6 @@ native_java_libraries(
     tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
 )
 
-host_compatible_java_test(
-    name = "test-resolution",
-    srcs = ["resolution/ResolutionTest.java"],
-    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
-    deps = [
-        "@graknlabs_common//:common",
-    ],
-    native_libraries_deps = [
-        "//concept:concept",
-        "//reasoner:reasoner",
-    ],
-    runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
-    ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
