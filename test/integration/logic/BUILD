@@ -69,9 +69,10 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-unify",
-    srcs = ["concludable/UnifiyTest.java"],
-    test_class = "grakn.core.logic.UnifiyTest",
+    srcs = ["concludable/UnifyTest.java"],
+    test_class = "grakn.core.logic.concludable.UnifyTest",
     native_libraries_deps = [
+        "//rocks:rocks",
         "//:grakn",
         "//concept:concept",
         "//logic:logic",
@@ -85,9 +86,10 @@ host_compatible_java_test(
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java/query:query",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_common//:common",
     ],
-    data = [":rule-schema.gql"],
+    data = ["rule-schema.gql"],
 )
 
 checkstyle_test(

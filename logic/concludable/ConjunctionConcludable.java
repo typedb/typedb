@@ -29,6 +29,7 @@ import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -138,8 +139,9 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     return Stream.empty();
                 }
             }
-            matchRolesAndUnify(this.constraint().players(), unifyWith.constraint().players(), new HashSet<>(),
-                    startingUnifier, allUnifiers);
+
+            matchRolesAndUnify(new ArrayList<>(this.constraint().players()), unifyWith.constraint().players(),
+                    new HashSet<>(), startingUnifier, allUnifiers);
 
             return allUnifiers.stream();
         }
@@ -151,13 +153,13 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 Map<Reference, Set<Reference>> currentUnifier,
                 Set<Map<Reference, Set<Reference>>> allUnifiers
         ) {
-            Map<Reference, Set<Reference>> copyOfCurrentUnifier = new HashMap<>(currentUnifier);
             if (conjunctionRolePlayers.isEmpty()) {
-                allUnifiers.add(copyOfCurrentUnifier);
+                allUnifiers.add(currentUnifier);
                 return;
             }
             RelationConstraint.RolePlayer conj = conjunctionRolePlayers.remove(0);
             for (RelationConstraint.RolePlayer head : headRolePlayers) {
+                Map<Reference, Set<Reference>> copyOfCurrentUnifier = new HashMap<>(currentUnifier);
                 if (!visitedHeadRolePlayers.contains(head) && updateUnifier(conj, head, copyOfCurrentUnifier)) {
                     visitedHeadRolePlayers.add(head);
                     matchRolesAndUnify(conjunctionRolePlayers, headRolePlayers,
@@ -165,13 +167,15 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     visitedHeadRolePlayers.remove(head);
                 }
             }
+            conjunctionRolePlayers.add(conj);
         }
 
         boolean updateUnifier(RelationConstraint.RolePlayer conj, RelationConstraint.RolePlayer head,
                               Map<Reference, Set<Reference>> mapping) {
-            if (Collections.disjoint(head.roleTypeHints(), conj.roleTypeHints())) return false;
+            if (!head.roleTypeHints().isEmpty() && !conj.roleTypeHints().isEmpty() &&
+                    Collections.disjoint(head.roleTypeHints(), conj.roleTypeHints())) return false;
 
-            if (conj.roleType().isPresent()) {
+            if (conj.roleType().isPresent() && conj.roleType().get().reference().isName()) {
                 assert head.roleType().isPresent();
                 if (!updateUnifier(conj.roleType().get(), head.roleType().get(), mapping)) return false;
             }

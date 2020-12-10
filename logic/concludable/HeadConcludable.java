@@ -169,7 +169,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
 
     public static class Value extends HeadConcludable<ValueConstraint<?>, Value> {
 
-        private Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
+        Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);
         }
 
