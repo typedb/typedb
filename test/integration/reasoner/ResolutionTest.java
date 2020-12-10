@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
+@Ignore // TODO Un-ignore
 public class ResolutionTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
@@ -144,7 +145,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-    @Ignore // TODO Un-ignore
+    @Ignore // TODO Un-ignore, ignored until rules are ready to use
     @Test
     public void simpleRule() throws InterruptedException {
         // TODO This is what the initial test described, but since atomic2 is the conjunction the conjuntion traversal must return the same number of results as the atomic2 traversal.
@@ -183,7 +184,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-    @Ignore // TODO Un-ignore
+    @Ignore // TODO Un-ignore, ignored until rules are ready to use
     @Test
     public void concludableChainWithRule() throws InterruptedException {
         String atomic1 = "$p1 isa person, has name \"Bob\";";
@@ -311,7 +312,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-    @Ignore // TODO Un-ignore
+    @Ignore // TODO Un-ignore, ignored until rules are ready to use
     @Test
     public void recursiveTerminationAndDeduplication() throws InterruptedException {
         String atomic1 = "$p1 isa person, has name \"Alice\";";
@@ -342,7 +343,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-    @Ignore // TODO Un-ignore
+    @Ignore // TODO Un-ignore, ignored until rules are ready to use
     @Test
     public void answerRecorderTest() throws InterruptedException {
 
