@@ -33,7 +33,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 
-abstract class RocksSession implements Grakn.Session {
+public abstract class RocksSession implements Grakn.Session {
 
     private final Arguments.Session.Type type;
     private final Context.Session context;

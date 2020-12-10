@@ -44,7 +44,7 @@ public class ResolverRegistry {
     private final HashMap<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> concludableActorsMap;
     private final HashMap<Rule, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;
-    private final EventLoopGroup elg;
+    private EventLoopGroup elg;
 
     public ResolverRegistry(EventLoopGroup elg) {
         this.elg = elg;
@@ -87,5 +87,9 @@ public class ResolverRegistry {
 
     public Actor<ResolutionRecorder> resolutionRecorder() {
         return resolutionRecorder;
+    }
+
+    public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
+        this.elg = eventLoopGroup;
     }
 }

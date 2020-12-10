@@ -19,7 +19,6 @@ package grakn.core.reasoner;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
-import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -29,6 +28,8 @@ import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.rocks.RocksSession;
+import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import org.junit.After;
@@ -49,7 +50,7 @@ public class ResolutionTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
     private static String database = "resolution-test";
-    private static Grakn grakn;
+    private static RocksGrakn grakn;
 
     @Before
     public void setUp() throws IOException {
@@ -65,16 +66,16 @@ public class ResolutionTest {
 
     @Test
     public void singleConcludable() throws InterruptedException {
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age;" +
                                 "age sub attribute, value long;"));
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
@@ -85,14 +86,14 @@ public class ResolutionTest {
         long conjunctionTraversalAnswerCount = 3L;
         long answerCount = atomicTraversalAnswerCount + conjunctionTraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ $p1 has age 24; }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
 
     @Test
     public void twoConcludables() throws InterruptedException {
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -100,8 +101,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
@@ -113,13 +114,13 @@ public class ResolutionTest {
         long atomic2TraversalAnswerCount = 3L;
         long answerCount = conjunctionTraversalAnswerCount + (atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
         Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Test
     public void filteringConcludable() throws InterruptedException {
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -127,8 +128,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
@@ -140,7 +141,7 @@ public class ResolutionTest {
         long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + (atomic1TraversalAnswerCount * atomic2TraversalAnswerCount);
         Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Ignore // TODO Un-ignore
@@ -151,8 +152,8 @@ public class ResolutionTest {
         String atomic2 = "$p1 isa person, has age 42;";
         String rulePattern = "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 isa person, has age 42; };";
 
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -161,8 +162,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
@@ -179,7 +180,7 @@ public class ResolutionTest {
         long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + " }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Ignore // TODO Un-ignore
@@ -189,8 +190,8 @@ public class ResolutionTest {
         String atomic2 = "$p1 isa person, has age 42;";
         String atomic3 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
         String rule = "rule bobs-are-42: when { $p1 has name \"Bob\" } then { $p1 has age 42; };";
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -200,8 +201,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
@@ -221,7 +222,7 @@ public class ResolutionTest {
         long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + (atomic3TraversalAnswerCount * (atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount));
         Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + atomic3 + " }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Test
@@ -229,8 +230,8 @@ public class ResolutionTest {
         String atomic1 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
         String atomic2 = "$p1 isa person; $p1 has name \"Alice\"";
         String atomic3 = "$p1 isa person; $p1 has age 24;";
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -239,8 +240,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
@@ -259,7 +260,7 @@ public class ResolutionTest {
         long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + (atomic3TraversalAnswerCount * atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
         Conjunction conjunctionPattern = parseConjunction("{ " + atomic1 + " " + atomic2 + " " + atomic3 + " }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Test
@@ -269,8 +270,8 @@ public class ResolutionTest {
         String atomic3 = "$p1 isa person; $p1 has age 24;";
         String atomic4 = "$p1 isa person; $p1 has name \"Bob\";";
         String atomic5 = "$p1 isa person; $p1 has age 72;";
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -279,8 +280,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
@@ -307,7 +308,7 @@ public class ResolutionTest {
         long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + (atomic5TraversalAnswerCount * atomic4TraversalAnswerCount * atomic3TraversalAnswerCount * atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
         Conjunction conjunctionPattern = parseConjunction("{ " + atomic5 + " " + atomic4 + " " + atomic3 + " " + atomic2 + " " + atomic1 + " }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Ignore // TODO Un-ignore
@@ -315,8 +316,8 @@ public class ResolutionTest {
     public void recursiveTerminationAndDeduplication() throws InterruptedException {
         String atomic1 = "$p1 isa person, has name \"Alice\";";
         String rule = "rule bobs-are-42: when { $p1 has name \"Alice\"; } then { $p1 has name \"Alice\"; };";
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity owns name;" +
                                 "name sub attribute, value string;" +
@@ -324,8 +325,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
@@ -338,7 +339,7 @@ public class ResolutionTest {
         // the recursively produced answers will be identical, so will be deduplicated
         long answerCount = conjunctionTraversalAnswerCount + atomic1TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount - atomic1TraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ " + atomic1 + " }");
-        setUpAndAssertResponses(conjunctionPattern, answerCount);
+        createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Ignore // TODO Un-ignore
@@ -348,8 +349,8 @@ public class ResolutionTest {
         String atomic1 = "$p1 isa person, has name \"Bob\";";
         String atomic2 = "$p1 isa person, has age 42;";
         String rule = "rule bobs-are-42: when { $p1 has name \"Bob\" } then { $p1 has age 42; };";
-        try (Grakn.Session session = schemaSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, owns name;" +
                                 "age sub attribute, value long;" +
@@ -358,8 +359,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (Grakn.Session session = dataSession()) {
-            try (Grakn.Transaction transaction = writeTransaction(session)) {
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
                 transaction.query().insert(Graql.parseQuery("insert " + atomic1));
@@ -394,29 +395,34 @@ public class ResolutionTest {
         }
     }
 
-    private Grakn.Session schemaSession() {
-        return grakn.session(database, Arguments.Session.Type.SCHEMA);
-    }
-
-    private Grakn.Session dataSession() {
-        return grakn.session(database, Arguments.Session.Type.DATA);
-    }
-
-    private Grakn.Transaction writeTransaction(Grakn.Session session) {
-        return session.transaction(Arguments.Transaction.Type.WRITE);
-    }
-
     private Conjunction parseConjunction(String query) {
         return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
     }
 
-    private void setUpAndAssertResponses(Conjunction conjunctionPattern, long answerCount) throws InterruptedException {
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-        Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
-        assertResponses(root, responses, doneReceived, answerCount, registry);
+    private RocksSession schemaSession() {
+        return grakn.session(database, Arguments.Session.Type.SCHEMA);
+    }
+
+    private RocksSession dataSession() {
+        return grakn.session(database, Arguments.Session.Type.DATA);
+    }
+
+    private RocksTransaction singleThreadElgTransaction(RocksSession session) {
+        RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
+        return transaction;
+    }
+
+    private void createRootAndAssertResponses(Conjunction conjunctionPattern, long answerCount) throws InterruptedException {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+                AtomicLong doneReceived = new AtomicLong(0L);
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+                assertResponses(root, responses, doneReceived, answerCount, registry);
+            }
+        }
     }
 
     private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,

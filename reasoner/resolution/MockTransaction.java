@@ -47,30 +47,12 @@ public class MockTransaction {
     public Iterator<ConceptMap> query(Conjunction conjunction, ConceptMap partialConceptMap) {
         Map<String, Long> variableSeeds = new HashMap<>();
         for (Variable variable : conjunction.variables()) {
-            String name = variable.identifier().toString();
-            Long seed = new Random(variable.hashCode()).nextLong();
-            variableSeeds.put(name, seed);
+            if (variable.reference().isName()) {
+                String name = variable.identifier().reference().asName().toString().substring(1);
+                Long seed = new Random(variable.hashCode()).nextLong();
+                variableSeeds.put(name, seed);
+            }
         }
-        return iterator(variableSeeds, partialConceptMap);
-    }
-
-    // mock conjunctions
-    public Iterator<ConceptMap> query(List<Long> traversalPattern, ConceptMap partialConceptMap) {
-        Map<String, Long> variableSeeds = new HashMap<>();
-        for (Long pattern : traversalPattern) {
-            String name = "var_" + pattern.toString();
-            Long seed = new Random(pattern.hashCode() + traversalPattern.hashCode()).nextLong();
-            variableSeeds.put(name, seed);
-        }
-        return iterator(variableSeeds, partialConceptMap);
-    }
-
-    // mock concludables
-    public Iterator<ConceptMap> query(Long traversalPattern, ConceptMap partialConceptMap) {
-        Map<String, Long> variableSeeds = new HashMap<>();
-        String name = "var_" + traversalPattern.toString();
-        Long seed = new Random(Objects.hash(traversalPattern, partialConceptMap)).nextLong();
-        variableSeeds.put(name, seed);
         return iterator(variableSeeds, partialConceptMap);
     }
 
