@@ -227,8 +227,8 @@ public class ResolutionTest {
     @Test
     public void shallowRerequestChain() throws InterruptedException {
         String atomic1 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
-        String atomic2 = "$p1 has name \"Alice\"";
-        String atomic3 = "$p1 has age 24;";
+        String atomic2 = "$p1 isa person; $p1 has name \"Alice\"";
+        String atomic3 = "$p1 isa person; $p1 has age 24;";
         try (Grakn.Session session = schemaSession()) {
             try (Grakn.Transaction transaction = writeTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -262,41 +262,54 @@ public class ResolutionTest {
         setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-//    @Test
-//    public void deepRerequestChain() throws InterruptedException {
-//        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-//        AtomicLong doneReceived = new AtomicLong(0L);
-//        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-//        ResolverRegistry registry = new ResolverRegistry(elg);
-//
-//        long atomic1Pattern = 2L;
-//        long atomic1TraversalAnswerCount = 10L;
-//        registerConcludable(atomic1Pattern, list(), atomic1TraversalAnswerCount, registry);
-//
-//        long atomic2Pattern = 20L;
-//        long atomic2TraversalAnswerCount = 10L;
-//        registerConcludable(atomic2Pattern, list(), atomic2TraversalAnswerCount, registry);
-//
-//        long atomic3Pattern = 200L;
-//        long atomic3TraversalAnswerCount = 10L;
-//        registerConcludable(atomic3Pattern, list(), atomic3TraversalAnswerCount, registry);
-//
-//        long atomic4Pattern = 2000L;
-//        long atomic4TraversalAnswerCount = 10L;
-//        registerConcludable(atomic4Pattern, list(), atomic4TraversalAnswerCount, registry);
-//
-//        long atomic5Pattern = 20000L;
-//        long atomic5TraversalAnswerCount = 10L;
-//        registerConcludable(atomic5Pattern, list(), atomic5TraversalAnswerCount, registry);
-//
-//        List<Long> conjunctionPattern = list(atomic5Pattern, atomic4Pattern, atomic3Pattern, atomic2Pattern, atomic1Pattern);
-//        long conjunctionTraversalAnswerCount = 0L;
-//        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-//
-//        long answerCount = conjunctionTraversalAnswerCount + (atomic5TraversalAnswerCount * atomic4TraversalAnswerCount * atomic3TraversalAnswerCount * atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
-//        assertResponses(root, responses, doneReceived, answerCount, registry);
-//    }
-//
+    @Test
+    public void deepRerequestChain() throws InterruptedException {
+        String atomic1 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
+        String atomic2 = "$p1 isa person; $p1 has name \"Alice\"";
+        String atomic3 = "$p1 isa person; $p1 has age 24;";
+        String atomic4 = "$p1 isa person; $p1 has name \"Bob\";";
+        String atomic5 = "$p1 isa person; $p1 has age 72;";
+        try (Grakn.Session session = schemaSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
+                                "age sub attribute, value long;" +
+                                "name sub attribute, value string;" +
+                                "twins sub relation, relates twin1, relates twin2;"));
+                transaction.commit();
+            }
+        }
+        try (Grakn.Session session = dataSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic3));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic3));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic3));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic4));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic4));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic4));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic5));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic5));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic5));
+                transaction.commit();
+            }
+        }
+        long atomic1TraversalAnswerCount = 3L;
+        long atomic2TraversalAnswerCount = 3L;
+        long atomic3TraversalAnswerCount = 3L;
+        long atomic4TraversalAnswerCount = 3L;
+        long atomic5TraversalAnswerCount = 3L;
+        long conjunctionTraversalAnswerCount = 0L;
+        long answerCount = conjunctionTraversalAnswerCount + (atomic5TraversalAnswerCount * atomic4TraversalAnswerCount * atomic3TraversalAnswerCount * atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic5 + " " + atomic4 + " " + atomic3 + " " + atomic2 + " " + atomic1 + " }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
+    }
+
 //    @Test
 //    public void bulkActorCreation() throws InterruptedException {
 //        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
