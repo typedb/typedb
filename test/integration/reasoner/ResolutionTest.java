@@ -310,7 +310,7 @@ public class ResolutionTest {
         setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-
+    @Ignore // TODO Un-ignore
     @Test
     public void recursiveTerminationAndDeduplication() throws InterruptedException {
         String atomic1 = "$p1 isa person, has name \"Alice\";";
@@ -318,10 +318,8 @@ public class ResolutionTest {
         try (Grakn.Session session = schemaSession()) {
             try (Grakn.Transaction transaction = writeTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
-                        "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
-                                "age sub attribute, value long;" +
+                        "define person sub entity owns name;" +
                                 "name sub attribute, value string;" +
-                                "twins sub relation, relates twin1, relates twin2;" +
                                 rule));
                 transaction.commit();
             }
@@ -334,8 +332,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        long ruleTraversalAnswerCount = 1L;
-        long atomic1TraversalAnswerCount = 1L;
+        long ruleTraversalAnswerCount = 3L;
+        long atomic1TraversalAnswerCount = 3L;
         long conjunctionTraversalAnswerCount = 0L;
         // the recursively produced answers will be identical, so will be deduplicated
         long answerCount = conjunctionTraversalAnswerCount + atomic1TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount - atomic1TraversalAnswerCount;
@@ -343,44 +341,58 @@ public class ResolutionTest {
         setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-//    @Test
-//    public void answerRecorderTest() throws InterruptedException {
-//        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-//        AtomicLong doneReceived = new AtomicLong(0L);
-//        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-//        ResolverRegistry registry = new ResolverRegistry(elg);
-//
-//        long atomic1Pattern = 10L;
-//        long atomic1TraversalAnswerCount = 1L;
-//        registerConcludable(atomic1Pattern, list(), atomic1TraversalAnswerCount, registry);
-//
-//        List<Long> rulePattern = list(10L);
-//        long ruleTraversalAnswerCount = 0L;
-//        registerRule(rulePattern, ruleTraversalAnswerCount, registry);
-//
-//        long atomic2Pattern = 2010L;
-//        long atomic2TraversalAnswerCount = 0L;
-//        registerConcludable(atomic2Pattern, Arrays.asList(rulePattern), atomic2TraversalAnswerCount, registry);
-//
-//        List<Long> conjunctionPattern = list(atomic2Pattern);
-//        long conjunctionTraversalAnswerCount = 1L;
-//        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-//
-//        long answerCount = conjunctionTraversalAnswerCount + atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount;
-//
-//        for (int i = 0; i < answerCount; i++) {
-//            root.tell(actor ->
-//                              actor.executeReceiveRequest(
-//                                      new Request(new Request.Path(root), new ConceptMap(), null),
-//                                      registry
-//                              )
-//            );
-//            ResolutionAnswer answer = responses.take();
-//
-//            // TODO write more meaningful explanation tests
-//            System.out.println(answer);
-//        }
-//    }
+    @Ignore // TODO Un-ignore
+    @Test
+    public void answerRecorderTest() throws InterruptedException {
+
+        String atomic1 = "$p1 isa person, has name \"Bob\";";
+        String atomic2 = "$p1 isa person, has age 42;";
+        String rule = "rule bobs-are-42: when { $p1 has name \"Bob\" } then { $p1 has age 42; };";
+        try (Grakn.Session session = schemaSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define person sub entity, owns age, owns name;" +
+                                "age sub attribute, value long;" +
+                                "name sub attribute, value string;" +
+                                rule));
+                transaction.commit();
+            }
+        }
+        try (Grakn.Session session = dataSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.commit();
+            }
+        }
+
+        long atomic1TraversalAnswerCount = 3L;
+        long ruleTraversalAnswerCount = 0L;
+        long atomic2TraversalAnswerCount = 0L;
+        long conjunctionTraversalAnswerCount = 3L;
+        long answerCount = conjunctionTraversalAnswerCount + atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount;
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + " }");
+
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+        AtomicLong doneReceived = new AtomicLong(0L);
+        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
+        ResolverRegistry registry = new ResolverRegistry(elg);
+        Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+
+        for (int i = 0; i < answerCount; i++) {
+            root.tell(actor ->
+                              actor.executeReceiveRequest(
+                                      new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                      registry
+                              )
+            );
+            ResolutionAnswer answer = responses.take();
+
+            // TODO write more meaningful explanation tests
+            System.out.println(answer);
+        }
+    }
 
     private Grakn.Session schemaSession() {
         return grakn.session(database, Arguments.Session.Type.SCHEMA);
@@ -406,14 +418,6 @@ public class ResolutionTest {
         Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
         assertResponses(root, responses, doneReceived, answerCount, registry);
     }
-
-    //    private void registerConcludable(long pattern, List<List<Long>> rules, long traversalAnswerCount, ResolverRegistry registry) {
-//        registry.registerConcludable(pattern, rules, traversalAnswerCount);
-//    }
-//
-//    private void registerRule(List<Long> pattern, long traversalAnswerCount, ResolverRegistry registry) {
-//        registry.registerRule(pattern, traversalAnswerCount);
-//    }
 
     private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
                                  final AtomicLong doneReceived, final long answerCount, ResolverRegistry registry)
