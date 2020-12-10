@@ -46,22 +46,17 @@ public class MappingAggregator extends Aggregator {
     }
 
     MappingAggregator(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
-        super(conceptMap);
+        super(conceptMap, transform(conceptMap, mapping));
         this.mapping = mapping;
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
     @Override
-    ConceptMap transform(ConceptMap original) {
-        return convert(original, mapping);
-    }
-
-    @Override
     ConceptMap unTransform(ConceptMap conceptMap) {
-        return convert(conceptMap, reverseMapping);
+        return transform(conceptMap, reverseMapping);
     }
 
-    private ConceptMap convert(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
+    private static ConceptMap transform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
         Map<Reference, Concept> transformed = new HashMap<>();
         for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
             transformed.put(e.getValue(), conceptMap.get(e.getKey()));

@@ -27,8 +27,7 @@ public class UnifyingAggregator extends Aggregator {
     }
 
     UnifyingAggregator(ConceptMap conceptMap, Unifier unifier) {
-        super(conceptMap);
-
+        super(conceptMap, transform(conceptMap, unifier));
     }
 
     @Override
@@ -36,8 +35,7 @@ public class UnifyingAggregator extends Aggregator {
         return false; // TODO implement
     }
 
-    @Override
-    ConceptMap transform(ConceptMap original) {
+    private static ConceptMap transform(ConceptMap original, Unifier unifier) {
         return null;
     }
 

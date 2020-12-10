@@ -26,12 +26,7 @@ public class NoOpAggregator extends Aggregator {
     }
 
     NoOpAggregator() {
-        super(new ConceptMap());
-    }
-
-    @Override
-    ConceptMap transform(ConceptMap original) {
-        return original;
+        super(new ConceptMap(), new ConceptMap());
     }
 
     @Override

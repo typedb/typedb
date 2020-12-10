@@ -28,12 +28,10 @@ public abstract class Aggregator {
     private final ConceptMap original;
     private final ConceptMap transformed;
 
-    Aggregator(ConceptMap original){
+    Aggregator(ConceptMap original, ConceptMap transformed){
         this.original = original;
-        transformed = transform(original);
+        this.transformed = transformed;
     }
-
-    abstract ConceptMap transform(ConceptMap original);
 
     abstract ConceptMap unTransform(ConceptMap conceptMap);
 
