@@ -121,11 +121,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     }
 
     Optional<Map<Reference, Set<Reference>>> updatedUnifier(
-            Variable conj, Variable head, Map<Reference, Set<Reference>> variableMapping) {
-        if (!hintsIntersect(head, conj)) return Optional.empty();
+            Variable conjVar, Variable headVar, Map<Reference, Set<Reference>> variableMapping) {
+        if (!hintsIntersect(headVar, conjVar)) return Optional.empty();
         Map<Reference, Set<Reference>> cloneOfMapping = cloneMapping(variableMapping);
-        cloneOfMapping.putIfAbsent(conj.reference(), new HashSet<>());
-        cloneOfMapping.get(conj.reference()).add(head.reference());
+        cloneOfMapping.putIfAbsent(conjVar.reference(), new HashSet<>());
+        cloneOfMapping.get(conjVar.reference()).add(headVar.reference());
         return Optional.of(cloneOfMapping);
     }
 
@@ -147,8 +147,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             Map<Reference, Set<Reference>> startingUnifier = new HashMap<>();
             Optional<Map<Reference, Set<Reference>>> newUnifier;
             if (constraint.owner().reference().isName()) {
-                newUnifier = updatedUnifier(this.constraint().owner(),
-                        unifyWith.constraint().owner(), startingUnifier);
+                newUnifier = updatedUnifier(this.constraint().owner(), unifyWith.constraint().owner(), startingUnifier);
                 if (newUnifier.isPresent()) startingUnifier = newUnifier.get();
                 else return Stream.empty();
             }
@@ -186,19 +185,21 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         Optional<Map<Reference, Set<Reference>>> updatedUnifier(
-                RolePlayer conj, RolePlayer head, Map<Reference, Set<Reference>> originalUnifier) {
-            if (!head.roleTypeHints().isEmpty() && !conj.roleTypeHints().isEmpty() &&
-                    Collections.disjoint(head.roleTypeHints(), conj.roleTypeHints())) return Optional.empty();
+                RolePlayer conjPlayer, RolePlayer headPlayer, Map<Reference, Set<Reference>> originalUnifier) {
+            if (!headPlayer.roleTypeHints().isEmpty() && !conjPlayer.roleTypeHints().isEmpty() &&
+                    Collections.disjoint(headPlayer.roleTypeHints(), conjPlayer.roleTypeHints())) {
+                return Optional.empty();
+            }
 
             Optional<Map<Reference, Set<Reference>>> newUnifier;
             Map<Reference, Set<Reference>> unifier = cloneMapping(originalUnifier);
-            if (conj.roleType().isPresent() && conj.roleType().get().reference().isName()) {
-                assert head.roleType().isPresent();
-                newUnifier = updatedUnifier(conj.roleType().get(), head.roleType().get(), unifier);
+            if (conjPlayer.roleType().isPresent() && conjPlayer.roleType().get().reference().isName()) {
+                assert headPlayer.roleType().isPresent();
+                newUnifier = updatedUnifier(conjPlayer.roleType().get(), headPlayer.roleType().get(), unifier);
                 if (newUnifier.isPresent()) unifier = newUnifier.get();
                 else return Optional.empty();
             }
-            return updatedUnifier(conj.player(), head.player(), unifier);
+            return updatedUnifier(conjPlayer.player(), headPlayer.player(), unifier);
         }
 
         @Override
