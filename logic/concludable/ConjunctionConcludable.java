@@ -87,7 +87,6 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return Stream.empty();
     }
 
-
     public boolean isRelation() {
         return false;
     }
@@ -161,12 +160,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             }
 
             return matchRolesAndUnify(new ArrayList<>(this.constraint().players()), unifyWith.constraint().players(),
-                    new HashSet<>(), startingUnifier).stream();
+                    startingUnifier, new HashSet<>()).stream();
         }
 
         private Set<Map<Reference, Set<Reference>>> matchRolesAndUnify(
                 List<RolePlayer> conjunctionRolePlayers, List<RolePlayer> headRolePlayers,
-                Set<RolePlayer> visitedHeadRolePlayers, Map<Reference, Set<Reference>> unifier) {
+                Map<Reference, Set<Reference>> unifier, Set<RolePlayer> visitedHeadRolePlayers) {
             Set<Map<Reference, Set<Reference>>> allUnifiers = new HashSet<>();
             if (conjunctionRolePlayers.isEmpty()) {
                 return set(unifier);
@@ -177,7 +176,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 visitedHeadRolePlayers.add(head);
                 updatedUnifier(conj, head, unifier).ifPresent(newUnifier ->
                         allUnifiers.addAll(matchRolesAndUnify(conjunctionRolePlayers,
-                                headRolePlayers, visitedHeadRolePlayers, newUnifier)));
+                                headRolePlayers, newUnifier, visitedHeadRolePlayers)));
                 visitedHeadRolePlayers.remove(head);
             }
             conjunctionRolePlayers.add(conj);

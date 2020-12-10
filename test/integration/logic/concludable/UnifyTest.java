@@ -59,7 +59,7 @@ public class UnifyTest {
         return createFromThings(list(Graql.parseVariable(graqlVariable).asThing())).get(Reference.named(variableName)).asThing();
     }
 
-    //TODO: create more tests when type inference is working.
+    //TODO: create more tests when type inference is working. (That is why this is an integration test).
     @Test
     public void unify_isa_variable() {
         String conjunction = "{ $x isa $y; }";
