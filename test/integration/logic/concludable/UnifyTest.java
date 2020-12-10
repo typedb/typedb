@@ -468,7 +468,7 @@ public class UnifyTest {
     }
 
     @Test
-    public void relation_repated_players() {
+    public void relation_repeated_players() {
         String conjunction = "{ (employee: $x, boss: $x) isa employment; }";
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
@@ -493,7 +493,7 @@ public class UnifyTest {
     }
 
     @Test
-    public void relation_repated_players_many_to_many() {
+    public void relation_repeated_players_many_to_many() {
         String conjunction = "{ (employee: $x, boss: $x, employee: $y) isa employment; }";
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
@@ -513,6 +513,40 @@ public class UnifyTest {
                 new HashMap<String, Set<String>>() {{
                     put("$x", set("$a"));
                     put("$y", set("$b"));
+                }},
+                new HashMap<String, Set<String>>() {{
+                    put("$x", set("$a", "$b"));
+                    put("$y", set("$a"));
+                }}
+        );
+        assertEquals(expected, result);
+    }
+
+    @Test
+    public void relation_repeated_players_many_to_many2() {
+        String conjunction = "{ ($role1: $x, $role2: $y, $role1: $x) isa employment; }";
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+
+        Conjunction headConjunction = parseConjunction(
+                "{$temp ($employee: $a, $boss: $a, $company: $b) isa $employment; }");
+        ThingVariable variable =
+                parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
+        RelationConstraint relationConstraint = variable.relation().iterator().next();
+        HeadConcludable.Relation relationConcludable = new HeadConcludable.Relation(relationConstraint,
+                headConjunction.variables());
+
+        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
+
+        Set<Map<String, Set<String>>> expected = set(
+                new HashMap<String, Set<String>>() {{
+                    put("$x", set("$a"));
+                    put("$y", set("$b"));
+                }},
+                new HashMap<String, Set<String>>() {{
+                    put("$x", set("$a", "$b"));
+                    put("$y", set("$a"));
                 }}
         );
         assertEquals(expected, result);
