@@ -39,12 +39,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
-import static grakn.common.collection.Collections.list;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -84,15 +81,11 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        Conjunction conjunctionPattern = parseConjunction("{ $p1 has age $a; }");
         long atomicTraversalAnswerCount = 3L;
         long conjunctionTraversalAnswerCount = 3L;
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-        assertResponses(root, responses, doneReceived, atomicTraversalAnswerCount + conjunctionTraversalAnswerCount, registry);
+        long answerCount = atomicTraversalAnswerCount + conjunctionTraversalAnswerCount;
+        Conjunction conjunctionPattern = parseConjunction("{ $p1 has age 24; }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
 
@@ -115,17 +108,12 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-
-        Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
         long conjunctionTraversalAnswerCount = 3L;
         long atomic1TraversalAnswerCount = 3L;
         long atomic2TraversalAnswerCount = 3L;
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-        assertResponses(root, responses, doneReceived, conjunctionTraversalAnswerCount + (atomic2TraversalAnswerCount * atomic1TraversalAnswerCount), registry);
+        long answerCount = conjunctionTraversalAnswerCount + (atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
+        Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Test
@@ -147,17 +135,12 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-
-        Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
         long atomic1TraversalAnswerCount = 3L;
         long atomic2TraversalAnswerCount = 0L;
         long conjunctionTraversalAnswerCount = 0L;
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-        assertResponses(root, responses, doneReceived, conjunctionTraversalAnswerCount + (atomic1TraversalAnswerCount * atomic2TraversalAnswerCount), registry);
+        long answerCount = conjunctionTraversalAnswerCount + (atomic1TraversalAnswerCount * atomic2TraversalAnswerCount);
+        Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Ignore // TODO Un-ignore
@@ -167,11 +150,6 @@ public class ResolutionTest {
         String atomic1 = "$p1 isa person, has name \"Bob\";";
         String atomic2 = "$p1 isa person, has age 42;";
         String rulePattern = "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 isa person, has age 42; };";
-
-        long atomic1TraversalAnswerCount = 3L;
-        long ruleTraversalAnswerCount = 0L;
-        long atomic2TraversalAnswerCount = 3L;
-        long conjunctionTraversalAnswerCount = 0L;
 
         try (Grakn.Session session = schemaSession()) {
             try (Grakn.Transaction transaction = writeTransaction(session)) {
@@ -194,35 +172,23 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + " }");
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
+
+        long atomic1TraversalAnswerCount = 3L;
+        long ruleTraversalAnswerCount = 0L;
+        long atomic2TraversalAnswerCount = 3L;
+        long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount;
-        assertResponses(root, responses, doneReceived, answerCount, registry);
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + " }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
     @Ignore // TODO Un-ignore
     @Test
     public void concludableChainWithRule() throws InterruptedException {
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-
-        long atomic1TraversalAnswerCount = 3L;
         String atomic1 = "$p1 isa person, has name \"Bob\";";
-        long atomic2TraversalAnswerCount = 3L;
         String atomic2 = "$p1 isa person, has age 42;";
-        long atomic3TraversalAnswerCount = 3L;
         String atomic3 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
-        long ruleTraversalAnswerCount = 3L;
         String rule = "rule bobs-are-42: when { $p1 has name \"Bob\" } then { $p1 has age 42; };";
-
-        long conjunctionTraversalAnswerCount = 0L;
-
         try (Grakn.Session session = schemaSession()) {
             try (Grakn.Transaction transaction = writeTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -248,40 +214,54 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + atomic3 + " }");
-
-        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
+        long atomic1TraversalAnswerCount = 3L;
+        long atomic2TraversalAnswerCount = 3L;
+        long atomic3TraversalAnswerCount = 3L;
+        long ruleTraversalAnswerCount = 3L;
+        long conjunctionTraversalAnswerCount = 0L;
         long answerCount = conjunctionTraversalAnswerCount + (atomic3TraversalAnswerCount * (atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount));
-        assertResponses(root, responses, doneReceived, answerCount, registry);
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + atomic3 + " }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-//    @Test
-//    public void shallowRerequestChain() throws InterruptedException {
-//        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-//        AtomicLong doneReceived = new AtomicLong(0L);
-//        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-//        ResolverRegistry registry = new ResolverRegistry(elg);
-//
-//        long atomic1Pattern = 2L;
-//        long atomic1TraversalAnswerCount = 2L;
-//        registerConcludable(atomic1Pattern, list(), atomic1TraversalAnswerCount, registry);
-//
-//        long atomic2Pattern = 20L;
-//        long atomic2TraversalAnswerCount = 2L;
-//        registerConcludable(atomic2Pattern, list(), atomic2TraversalAnswerCount, registry);
-//
-//        long atomic3Pattern = 200L;
-//        long atomic3TraversalAnswerCount = 2L;
-//        registerConcludable(atomic3Pattern, list(), atomic3TraversalAnswerCount, registry);
-//
-//        List<Long> conjunctionPattern = list(atomic3Pattern, atomic2Pattern, atomic1Pattern);
-//        long conjunctionTraversalAnswerCount = 0L;
-//        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-//
-//        long answerCount = conjunctionTraversalAnswerCount + (atomic3TraversalAnswerCount * atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
-//        assertResponses(root, responses, doneReceived, answerCount, registry);
-//    }
-//
+    @Test
+    public void shallowRerequestChain() throws InterruptedException {
+        String atomic1 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
+        String atomic2 = "$p1 has name \"Alice\"";
+        String atomic3 = "$p1 has age 24;";
+        try (Grakn.Session session = schemaSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
+                                "age sub attribute, value long;" +
+                                "name sub attribute, value string;" +
+                                "twins sub relation, relates twin1, relates twin2;"));
+                transaction.commit();
+            }
+        }
+        try (Grakn.Session session = dataSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic3));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic3));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic3));
+                transaction.commit();
+            }
+        }
+        long atomic1TraversalAnswerCount = 3L;
+        long atomic2TraversalAnswerCount = 3L;
+        long atomic3TraversalAnswerCount = 3L;
+        long conjunctionTraversalAnswerCount = 0L;
+        long answerCount = conjunctionTraversalAnswerCount + (atomic3TraversalAnswerCount * atomic2TraversalAnswerCount * atomic1TraversalAnswerCount);
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic1 + " " + atomic2 + " " + atomic3 + " }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
+    }
+
 //    @Test
 //    public void deepRerequestChain() throws InterruptedException {
 //        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
@@ -432,11 +412,16 @@ public class ResolutionTest {
         return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
     }
 
-    private Actor<RootResolver> registerRoot(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted, ResolverRegistry resolverRegistry) {
-        return resolverRegistry.createRoot(pattern, onAnswer, onExhausted);
+    private void setUpAndAssertResponses(Conjunction conjunctionPattern, long answerCount) throws InterruptedException {
+        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+        AtomicLong doneReceived = new AtomicLong(0L);
+        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
+        ResolverRegistry registry = new ResolverRegistry(elg);
+        Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+        assertResponses(root, responses, doneReceived, answerCount, registry);
     }
 
-//    private void registerConcludable(long pattern, List<List<Long>> rules, long traversalAnswerCount, ResolverRegistry registry) {
+    //    private void registerConcludable(long pattern, List<List<Long>> rules, long traversalAnswerCount, ResolverRegistry registry) {
 //        registry.registerConcludable(pattern, rules, traversalAnswerCount);
 //    }
 //
