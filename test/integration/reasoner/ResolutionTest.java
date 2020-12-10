@@ -163,34 +163,38 @@ public class ResolutionTest {
     @Ignore // TODO Un-ignore
     @Test
     public void simpleRule() throws InterruptedException {
-        // TODO Not possible to keep this test true to the original
+        // TODO This is what the initial test described, but since atomic2 is the conjunction the conjuntion traversal must return the same number of results as the atomic2 traversal.
+        String atomic1 = "$p1 isa person, has name \"Bob\";";
+        String atomic2 = "$p1 isa person, has age 42;";
+        String rulePattern = "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 isa person, has age 42; };";
+
+        long atomic1TraversalAnswerCount = 3L;
+        long ruleTraversalAnswerCount = 0L;
+        long atomic2TraversalAnswerCount = 3L;
+        long conjunctionTraversalAnswerCount = 0L;
+
         try (Grakn.Session session = schemaSession()) {
             try (Grakn.Transaction transaction = writeTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
                                 "twins sub relation, relates twin1, relates twin2;" +
-                                "rule twins-have-same-age: when { $p1 isa person, has age $a; $t(twin1: $p1, twin2: $p2) isa twins; } then { $p2 has age $a; };")); // TODO What rule to use?
+                                rulePattern));
                 transaction.commit();
             }
         }
         try (Grakn.Session session = dataSession()) {
             try (Grakn.Transaction transaction = writeTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $p2 isa person; $t(twin1: $p1, twin2: $p2) isa twins;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $p2 isa person; $t(twin1: $p1, twin2: $p2) isa twins;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $p2 isa person; $t(twin1: $p1, twin2: $p2) isa twins;"));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic2));
                 transaction.commit();
             }
         }
-
-        Conjunction conjunctionPattern = parseConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p2 has age $a; }");
-
-        // TODO This combination of answers isn't possible
-        long atomic1TraversalAnswerCount = 3L;
-        long ruleTraversalAnswerCount = 0L;
-        long atomic2TraversalAnswerCount = 3L;
-        long conjunctionTraversalAnswerCount = 0L;
-
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + " }");
         LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
@@ -215,7 +219,7 @@ public class ResolutionTest {
         long atomic3TraversalAnswerCount = 3L;
         String atomic3 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
         long ruleTraversalAnswerCount = 3L;
-        String rule = "rule twins-have-same-age: when { $p1 has name \"Bob\" } then { $p1 has age 42; };";
+        String rule = "rule bobs-are-42: when { $p1 has name \"Bob\" } then { $p1 has age 42; };";
 
         long conjunctionTraversalAnswerCount = 0L;
 
