@@ -24,6 +24,7 @@ import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
+import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
@@ -165,17 +166,14 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         private Set<Map<Reference, Set<Reference>>> matchRolesAndUnify(
-                List<RelationConstraint.RolePlayer> conjunctionRolePlayers,
-                List<RelationConstraint.RolePlayer> headRolePlayers,
-                Set<RelationConstraint.RolePlayer> visitedHeadRolePlayers,
-                Map<Reference, Set<Reference>> unifier
-        ) {
+                List<RolePlayer> conjunctionRolePlayers, List<RolePlayer> headRolePlayers,
+                Set<RolePlayer> visitedHeadRolePlayers, Map<Reference, Set<Reference>> unifier) {
             Set<Map<Reference, Set<Reference>>> allUnifiers = new HashSet<>();
             if (conjunctionRolePlayers.isEmpty()) {
                 return set(unifier);
             }
-            RelationConstraint.RolePlayer conj = conjunctionRolePlayers.remove(0);
-            for (RelationConstraint.RolePlayer head : headRolePlayers) {
+            RolePlayer conj = conjunctionRolePlayers.remove(0);
+            for (RolePlayer head : headRolePlayers) {
                 if (visitedHeadRolePlayers.contains(head)) continue;
                 visitedHeadRolePlayers.add(head);
                 updatedUnifier(conj, head, unifier).ifPresent(newUnifier ->
@@ -188,8 +186,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         Optional<Map<Reference, Set<Reference>>> updatedUnifier(
-                RelationConstraint.RolePlayer conj, RelationConstraint.RolePlayer head,
-                Map<Reference, Set<Reference>> originalUnifier) {
+                RolePlayer conj, RolePlayer head, Map<Reference, Set<Reference>> originalUnifier) {
             if (!head.roleTypeHints().isEmpty() && !conj.roleTypeHints().isEmpty() &&
                     Collections.disjoint(head.roleTypeHints(), conj.roleTypeHints())) return Optional.empty();
 
@@ -253,7 +250,6 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         public Isa(final IsaConstraint constraint) {
             super(copyConstraint(constraint));
         }
-
 
         @Override
         Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Isa unifyWith) {
