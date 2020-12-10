@@ -310,40 +310,6 @@ public class ResolutionTest {
         setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-//    @Test
-//    public void bulkActorCreation() throws InterruptedException {
-//        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-//        AtomicLong doneReceived = new AtomicLong(0L);
-//        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-//        ResolverRegistry registry = new ResolverRegistry(elg);
-//
-//        long start = System.currentTimeMillis();
-//
-//        long atomicPattern = 1L;
-//        List<List<Long>> atomicRulePatterns = new ArrayList<>();
-//        for (long i = 2L; i < 1000_000L; i++) {
-//            List<Long> pattern = list(i);
-//            atomicRulePatterns.add(pattern);
-//        }
-//        long atomicTraversalAnswerCount = 1L;
-//        registerConcludable(atomicPattern, atomicRulePatterns, atomicTraversalAnswerCount, registry);
-//
-//        List<Long> conjunctionPattern = list(atomicPattern);
-//        long conjunctionTraversalAnswerCount = 0L;
-//        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-//
-//        root.tell(actor ->
-//                          actor.executeReceiveRequest(
-//                                  new Request(new Request.Path(root), new ConceptMap(), null),
-//                                  registry
-//                          )
-//        );
-//        responses.take();
-//
-//        long elapsed = System.currentTimeMillis() - start;
-//
-//        System.out.println("elapsed = " + elapsed);
-//    }
 //
 //    @Test
 //    public void recursiveTerminationAndDeduplication() throws InterruptedException {
