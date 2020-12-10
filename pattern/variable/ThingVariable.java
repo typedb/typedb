@@ -57,6 +57,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<HasConstraint> hasConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
+    private final Set<Label> typeHints;
 
     private final Set<Label> typeHints;
 

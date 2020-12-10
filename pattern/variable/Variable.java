@@ -77,19 +77,19 @@ public abstract class Variable implements Pattern {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
 
-    public void addHints(Set<Label> labels) {
-        typeHints.addAll(labels);
+    public boolean addHints(Set<Label> labels) {
+        return typeHints.addAll(labels);
     }
 
-    public void removeHint(Label label) {
-        typeHints.remove(label);
+    public boolean removeHint(Label label) {
+        return typeHints.remove(label);
     }
 
     public void clearHintLabels() {
         typeHints.clear();
     }
 
-    public Set<Label> getTypeHints() {
+    public Set<Label> typeHints() {
         return typeHints;
     }
 
