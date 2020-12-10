@@ -89,7 +89,6 @@ host_compatible_java_test(
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_common//:common",
     ],
-    data = ["rule-schema.gql"],
 )
 
 checkstyle_test(

@@ -131,10 +131,6 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             return new Has(copyConstraint(constraint), constraintContext);
         }
 
-        private static Has of(HasConstraint constraint) {
-            return new Has(constraint, constraint.variables());
-        }
-
         @Override
         public boolean isHas() {
             return true;

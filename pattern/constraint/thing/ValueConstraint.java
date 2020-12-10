@@ -182,11 +182,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
-        }
-
-        @Override
         public boolean isLong() {
             return true;
         }
@@ -214,11 +209,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
-        }
-
-        @Override
         public boolean isDouble() {
             return true;
         }
@@ -238,11 +228,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         public Boolean(ThingVariable owner, GraqlToken.Predicate.Equality predicate, boolean value) {
             super(owner, predicate, value, set());
-        }
-
-        @Override
-        public GraqlToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
         }
 
         @Override
@@ -295,11 +280,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
-        }
-
-        @Override
         public boolean isDateTime() {
             return true;
         }
@@ -319,11 +299,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         public Variable(ThingVariable owner, GraqlToken.Predicate.Equality predicate, ThingVariable variable) {
             super(owner, predicate, variable, set(variable));
-        }
-
-        @Override
-        public GraqlToken.Predicate.Equality predicate() {
-            return predicate.asEquality();
         }
 
         @Override

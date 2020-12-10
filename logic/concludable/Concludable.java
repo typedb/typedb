@@ -98,15 +98,15 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
 
     static ValueConstraint<?> copyValueOntoVariable(ValueConstraint<?> toCopy, ThingVariable toConstrain) {
         if (toCopy.isLong())
-            return toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
+            return toConstrain.valueLong(toCopy.asLong().predicate(), toCopy.asLong().value());
         else if (toCopy.isDouble())
-            return toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
+            return toConstrain.valueDouble(toCopy.asDouble().predicate(), toCopy.asDouble().value());
         else if (toCopy.isBoolean())
-            return toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
+            return toConstrain.valueBoolean(toCopy.asBoolean().predicate(), toCopy.asBoolean().value());
         else if (toCopy.isString())
             return toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
         else if (toCopy.isDateTime())
-            return toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
+            return toConstrain.valueDateTime(toCopy.asDateTime().predicate(), toCopy.asDateTime().value());
         else if (toCopy.isVariable()) {
             ThingVariable copyOfVar = copyIsaAndValues(toCopy.asVariable().value());
             return toConstrain.valueVariable(toCopy.asValue().predicate().asEquality(), copyOfVar);
