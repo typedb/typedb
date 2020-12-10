@@ -56,9 +56,9 @@ public class RocksStorage implements Storage {
     private final Snapshot snapshot;
     private final ManagedReadWriteLock readWriteLock;
     private final AtomicBoolean isOpen;
-    final Transaction rocksTx;
+    public final Transaction rocksTx;
 
-    RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
+    public RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
         iterators = ConcurrentHashMap.newKeySet();
         recycled = new ConcurrentLinkedQueue<>();

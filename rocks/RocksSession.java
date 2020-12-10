@@ -38,7 +38,7 @@ abstract class RocksSession implements Grakn.Session {
     private final Arguments.Session.Type type;
     private final Context.Session context;
     private final UUID uuid;
-    final RocksDatabase database;
+    public final RocksDatabase database;
     final ConcurrentMap<RocksTransaction, Long> transactions;
     final AtomicBoolean isOpen;
 
