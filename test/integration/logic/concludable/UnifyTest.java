@@ -46,10 +46,8 @@ import static org.junit.Assert.assertTrue;
 public class UnifyTest {
 
     private Map<String, Set<String>> getStringMapping(Map<Reference, Set<Reference>> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(
-                v -> v.getKey().syntax(),
-                e -> e.getValue().stream().map(Reference::syntax).collect(Collectors.toSet())
-                )
+        return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().syntax(),
+                e -> e.getValue().stream().map(Reference::syntax).collect(Collectors.toSet()))
         );
     }
 
