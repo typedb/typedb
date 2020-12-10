@@ -94,7 +94,7 @@ public class ConceptManagerHandler {
     }
 
     private void putAttributeType(Transaction.Req request, ConceptProto.ConceptManager.PutAttributeType.Req attributeTypeReq) {
-        final ConceptProto.AttributeType.VALUE_TYPE valueTypeProto = attributeTypeReq.getValueType();
+        final ConceptProto.AttributeType.ValueType valueTypeProto = attributeTypeReq.getValueType();
         final AttributeType.ValueType valueType;
         switch (valueTypeProto) {
             case STRING:
