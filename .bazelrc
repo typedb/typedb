@@ -21,30 +21,13 @@ test --incompatible_strict_action_env
 
 # what is defined in this section will be applied when bazel is invoked like this: bazel ... --config=rbe ...
 build:rbe --project_id=grakn-dev
-build:rbe --remote_instance_name=projects/grakn-dev/instances/default_instance
 build:rbe --remote_cache=cloud.buildbuddy.io
 build:rbe --remote_executor=cloud.buildbuddy.io
 build:rbe --bes_backend=cloud.buildbuddy.io
 build:rbe --bes_results_url=https://app.buildbuddy.io/invocation/
 build:rbe --tls_client_certificate=/opt/credentials/buildbuddy-cert.pem
 build:rbe --tls_client_key=/opt/credentials/buildbuddy-key.pem
-build:rbe --host_platform=@graknlabs_dependencies//image/rbe:ubuntu-1604
-build:rbe --platforms=@graknlabs_dependencies//image/rbe:ubuntu-1604
-build:rbe --extra_execution_platforms=@graknlabs_dependencies//image/rbe:ubuntu-1604
-build:rbe --host_javabase=@bazel_toolchains//configs/ubuntu16_04_clang/11.0.0/bazel_3.0.0/java:jdk
-build:rbe --javabase=@bazel_toolchains//configs/ubuntu16_04_clang/11.0.0/bazel_3.0.0/java:jdk
-build:rbe --host_java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8
-build:rbe --java_toolchain=@bazel_tools//tools/jdk:toolchain_hostjdk8
-build:rbe --extra_toolchains=@bazel_toolchains//configs/ubuntu16_04_clang/11.0.0/bazel_3.0.0/config:cc-toolchain
-build:rbe --crosstool_top=@bazel_toolchains//configs/ubuntu16_04_clang/11.0.0/bazel_3.0.0/cc:toolchain
+build:rbe --host_platform=@graknlabs_dependencies//image/buildbuddy:ubuntu-2004
 build:rbe --jobs=50
 build:rbe --remote_timeout=3600
-build:rbe --bes_timeout=600s
-build:rbe --spawn_strategy=remote
-build:rbe --strategy=Javac=remote
-build:rbe --strategy=Closure=remote
-build:rbe --genrule_strategy=remote
-build:rbe --define=EXECUTOR=remote
-build:rbe --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-build:rbe --experimental_strict_action_env=true
 
