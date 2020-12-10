@@ -310,32 +310,39 @@ public class ResolutionTest {
         setUpAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-//
-//    @Test
-//    public void recursiveTerminationAndDeduplication() throws InterruptedException {
-//        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-//        AtomicLong doneReceived = new AtomicLong(0L);
-//        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-//        ResolverRegistry registry = new ResolverRegistry(elg);
-//
-//        long atomicPattern = 1L;
-//
-//        List<Long> rulePattern = list(atomicPattern);
-//        long ruleTraversalAnswerCount = 1L;
-//        registerRule(rulePattern, ruleTraversalAnswerCount, registry);
-//
-//        long atomic1TraversalAnswerCount = 1L;
-//        registerConcludable(atomicPattern, Arrays.asList(rulePattern), atomic1TraversalAnswerCount, registry);
-//
-//        List<Long> conjunctionPattern = list(atomicPattern);
-//        long conjunctionTraversalAnswerCount = 0L;
-//        Actor<RootResolver> root = registerRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet, registry);
-//
-//        // the recursively produced answers will be identical, so will be deduplicated
-//        long answerCount = conjunctionTraversalAnswerCount + atomic1TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount - atomic1TraversalAnswerCount;
-//        assertResponses(root, responses, doneReceived, answerCount, registry);
-//    }
-//
+
+    @Test
+    public void recursiveTerminationAndDeduplication() throws InterruptedException {
+        String atomic1 = "$p1 isa person, has name \"Alice\";";
+        String rule = "rule bobs-are-42: when { $p1 has name \"Alice\"; } then { $p1 has name \"Alice\"; };";
+        try (Grakn.Session session = schemaSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
+                                "age sub attribute, value long;" +
+                                "name sub attribute, value string;" +
+                                "twins sub relation, relates twin1, relates twin2;" +
+                                rule));
+                transaction.commit();
+            }
+        }
+        try (Grakn.Session session = dataSession()) {
+            try (Grakn.Transaction transaction = writeTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
+                transaction.commit();
+            }
+        }
+        long ruleTraversalAnswerCount = 1L;
+        long atomic1TraversalAnswerCount = 1L;
+        long conjunctionTraversalAnswerCount = 0L;
+        // the recursively produced answers will be identical, so will be deduplicated
+        long answerCount = conjunctionTraversalAnswerCount + atomic1TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount - atomic1TraversalAnswerCount;
+        Conjunction conjunctionPattern = parseConjunction("{ " + atomic1 + " }");
+        setUpAndAssertResponses(conjunctionPattern, answerCount);
+    }
+
 //    @Test
 //    public void answerRecorderTest() throws InterruptedException {
 //        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
