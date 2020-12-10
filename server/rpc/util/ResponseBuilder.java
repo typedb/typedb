@@ -154,29 +154,29 @@ public class ResponseBuilder {
             return builder.build();
         } */
 
-        private static ConceptProto.Thing.ENCODING getEncoding(Thing thing) {
+        private static ConceptProto.Thing.Encoding getEncoding(Thing thing) {
             if (thing instanceof Entity) {
-                return ConceptProto.Thing.ENCODING.ENTITY;
+                return ConceptProto.Thing.Encoding.ENTITY;
             } else if (thing instanceof Relation) {
-                return ConceptProto.Thing.ENCODING.RELATION;
+                return ConceptProto.Thing.Encoding.RELATION;
             } else if (thing instanceof Attribute) {
-                return ConceptProto.Thing.ENCODING.ATTRIBUTE;
+                return ConceptProto.Thing.Encoding.ATTRIBUTE;
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
-        private static ConceptProto.Type.ENCODING getEncoding(Type type) {
+        private static ConceptProto.Type.Encoding getEncoding(Type type) {
             if (type instanceof EntityType) {
-                return ConceptProto.Type.ENCODING.ENTITY_TYPE;
+                return ConceptProto.Type.Encoding.ENTITY_TYPE;
             } else if (type instanceof RelationType) {
-                return ConceptProto.Type.ENCODING.RELATION_TYPE;
+                return ConceptProto.Type.Encoding.RELATION_TYPE;
             } else if (type instanceof AttributeType) {
-                return ConceptProto.Type.ENCODING.ATTRIBUTE_TYPE;
+                return ConceptProto.Type.Encoding.ATTRIBUTE_TYPE;
             } else if (type instanceof ThingType) {
-                return ConceptProto.Type.ENCODING.THING_TYPE;
+                return ConceptProto.Type.Encoding.THING_TYPE;
             } else if (type instanceof RoleType) {
-                return ConceptProto.Type.ENCODING.ROLE_TYPE;
+                return ConceptProto.Type.Encoding.ROLE_TYPE;
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
             }
@@ -202,7 +202,7 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static AttributeType.ValueType valueType(ConceptProto.AttributeType.VALUE_TYPE valueType) {
+        public static AttributeType.ValueType valueType(ConceptProto.AttributeType.ValueType valueType) {
             switch (valueType) {
                 case OBJECT:
                     return AttributeType.ValueType.OBJECT;
@@ -222,23 +222,23 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE valueType(Attribute attribute) {
+        public static ConceptProto.AttributeType.ValueType valueType(Attribute attribute) {
             return valueType(attribute.getType());
         }
 
-        public static ConceptProto.AttributeType.VALUE_TYPE valueType(AttributeType attributeType) {
+        public static ConceptProto.AttributeType.ValueType valueType(AttributeType attributeType) {
             if (attributeType instanceof AttributeType.String) {
-                return ConceptProto.AttributeType.VALUE_TYPE.STRING;
+                return ConceptProto.AttributeType.ValueType.STRING;
             } else if (attributeType instanceof AttributeType.Boolean) {
-                return ConceptProto.AttributeType.VALUE_TYPE.BOOLEAN;
+                return ConceptProto.AttributeType.ValueType.BOOLEAN;
             } else if (attributeType instanceof AttributeType.Long) {
-                return ConceptProto.AttributeType.VALUE_TYPE.LONG;
+                return ConceptProto.AttributeType.ValueType.LONG;
             } else if (attributeType instanceof AttributeType.Double) {
-                return ConceptProto.AttributeType.VALUE_TYPE.DOUBLE;
+                return ConceptProto.AttributeType.ValueType.DOUBLE;
             } else if (attributeType instanceof AttributeType.DateTime) {
-                return ConceptProto.AttributeType.VALUE_TYPE.DATETIME;
+                return ConceptProto.AttributeType.ValueType.DATETIME;
             } else if (attributeType.isRoot()) {
-                return ConceptProto.AttributeType.VALUE_TYPE.OBJECT;
+                return ConceptProto.AttributeType.ValueType.OBJECT;
             } else {
                 throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
