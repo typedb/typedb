@@ -63,6 +63,7 @@ native_java_libraries(
         "@maven//:com_google_ortools_ortools_win32_x86_64_java"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-rocks:{pom_version}"],
+    visibility = ["//visibility:public"]
 )
 
 checkstyle_test(
