@@ -20,7 +20,6 @@ package grakn.core.logic.concludable;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.Rule;
-import grakn.core.logic.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -30,6 +29,7 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.Variable;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +45,7 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U extends ConjunctionConcludable<CONSTRAINT, U>>
         extends Concludable<CONSTRAINT, U> {
 
-    private final Map<Rule, Set<Unifier>> applicableRules;
+    private final Map<Rule, Set<Map<Reference.Name, Set<Reference.Name>>>> applicableRules;
 
     private ConjunctionConcludable(CONSTRAINT constraint) {
         super(constraint);
@@ -56,14 +56,14 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public Stream<Pair<Rule, Unifier>> findUnifiableRules(Stream<Rule> allRules) {
+    public Stream<Pair<Rule, Map<Reference.Name, Set<Reference.Name>>>> findUnifiableRules(Stream<Rule> allRules) {
         // TODO Get rules internally
         return allRules.flatMap(rule -> rule.possibleThenConcludables().stream()
                                                .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
         );
     }
 
-    public Stream<Unifier> getUnifiers(Rule rule) {
+    public Stream<Map<Reference.Name, Set<Reference.Name>>> getUnifiers(Rule rule) {
         return applicableRules.get(rule).stream();
     }
 
@@ -71,7 +71,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(ThenConcludable<?, ?> unifyWith) {
+    private Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable<?, ?> unifyWith) {
         if (unifyWith instanceof ThenConcludable.Relation) return unify((ThenConcludable.Relation) unifyWith);
         else if (unifyWith instanceof ThenConcludable.Has) return unify((ThenConcludable.Has) unifyWith);
         else if (unifyWith instanceof ThenConcludable.Isa) return unify((ThenConcludable.Isa) unifyWith);
@@ -79,19 +79,19 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(ThenConcludable.Relation unifyWith) {
+    Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Has unifyWith) {
+    Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Isa unifyWith) {
+    Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
+    Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Value unifyWith) {
         return Stream.empty();
     }
 
@@ -162,13 +162,13 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Relation unifyWith) {
+        public Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Relation unifyWith) {
             // Check the relation variables' isa constraint labels and prune if there is no intersection
 
             // Find all roleplayer mapping combinations, which should have the form:
             // Set<List<Pair<RelationConstraint.RolePlayer, RelationConstraint.RolePlayer>>> rolePlayerMappings
             // For each, prune if there is no label intersection (or any other pruning, e.g. by value)
-            // Then build a Unifier for each valid combination
+            // Then build a unifier for each valid combination
             return Stream.empty(); // TODO
         }
 
@@ -195,7 +195,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Has unifyWith) {
+        public Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Has unifyWith) {
             return null;
         }
 
@@ -222,7 +222,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Isa headIsa) {
+        public Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Isa headIsa) {
             return null;
         }
 
@@ -249,7 +249,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
+        public Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Value unifyWith) {
             return null;
         }
 

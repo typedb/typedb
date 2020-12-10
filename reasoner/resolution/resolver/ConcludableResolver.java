@@ -25,7 +25,6 @@ import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.logic.Unifier;
 import grakn.core.reasoner.resolution.answer.Aggregator;
 import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -33,6 +32,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final ConjunctionConcludable<?, ?> concludable;
-    private final Map<Unifier, Actor<RuleResolver>> ruleActorSources;
+    private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
@@ -145,7 +145,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
-        for (Map.Entry<Unifier, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
+        for (Map.Entry<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
             Request toDownstream = new Request(path.append(entry.getValue()), UnifyingAggregator.of(partialConceptMap, entry.getKey()), ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }
