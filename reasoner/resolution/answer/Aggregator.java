@@ -22,6 +22,8 @@ import grakn.core.concept.answer.ConceptMap;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
 import graql.lang.pattern.variable.Reference;
 
 public abstract class Aggregator {
@@ -66,5 +68,19 @@ public abstract class Aggregator {
         public ConceptMap original() {
             return original;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Aggregator that = (Aggregator) o;
+        return original.equals(that.original) &&
+                transformed.equals(that.transformed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(original, transformed);
     }
 }
