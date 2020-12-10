@@ -29,6 +29,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.variable.Reference;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -60,7 +61,6 @@ public class UnifyTest {
         return createFromThings(list(Graql.parseVariable(graqlVariable).asThing())).get(Reference.named(variableName)).asThing();
     }
 
-    //TESTS START
     //TODO: create more tests when type inference is working.
     @Test
     public void unify_isa_variable() {
@@ -611,6 +611,27 @@ public class UnifyTest {
                     put("$rel", set("$employment"));
                 }}
         );
+        assertEquals(expected, result);
+    }
+
+    @Test
+    public void cannot_unify_more_specific_relation() {
+        String conjunction = "{ (employee: $x, company: $y, contract: $z) isa employment; }";
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+
+        Conjunction headConjunction = parseConjunction(
+                "{$temp ($employee: $a, $company: $b) isa $employment; }");
+        ThingVariable variable =
+                parseThingVariable("$temp ($employee: $a, $company: $b) isa $employment", "temp");
+        RelationConstraint relationConstraint = variable.relation().iterator().next();
+        HeadConcludable.Relation relationConcludable = new HeadConcludable.Relation(relationConstraint,
+                headConjunction.variables());
+
+        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
+
+        Set<Map<String, Set<String>>> expected = Collections.emptySet();
         assertEquals(expected, result);
     }
 

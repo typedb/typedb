@@ -141,6 +141,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
+            if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
             Map<Reference, Set<Reference>> unifier = new HashMap<>();
             Optional<Map<Reference, Set<Reference>>> unifierOpt;
             if (constraint.owner().reference().isName()) {
@@ -149,10 +150,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 else return Stream.empty();
             }
 
-            if (constraint.owner().isa().isPresent() && constraint.owner().isa().get().type().reference().isName()) {
+            if (constraint().owner().isa().isPresent() && constraint.owner().isa().get().type().reference().isName()) {
                 assert unifyWith.constraint().owner().isa().isPresent();
-                unifierOpt = updatedUnifier(this.constraint().owner().isa().get().type(),
-                        unifyWith.constraint().owner().isa().get().type(), unifier);
+                unifierOpt = updatedUnifier(
+                        this.constraint().owner().isa().get().type(),
+                        unifyWith.constraint().owner().isa().get().type(),
+                        unifier);
                 if (unifierOpt.isPresent()) unifier = unifierOpt.get();
                 else return Stream.empty();
             }
