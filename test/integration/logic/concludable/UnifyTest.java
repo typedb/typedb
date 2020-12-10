@@ -65,7 +65,7 @@ public class UnifyTest {
     @Test
     public void unify_isa_variable() {
         String conjunction = "{ $x isa $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Isa conjConcludable = concludables.iterator().next().asIsa();
 
         Conjunction headConjunction = parseConjunction("{ $a 7; $a isa $age; }");
@@ -89,7 +89,7 @@ public class UnifyTest {
     @Test
     public void unify_isa_concrete() {
         String conjunction = "{ $x isa person; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Isa conjConcludable = concludables.iterator().next().asIsa();
 
         Conjunction headConjunction = parseConjunction("{ $a 7; $a isa $person; }");
@@ -111,7 +111,7 @@ public class UnifyTest {
     @Test
     public void unify_value_concrete() {
         String conjunction = "{ $x = 7; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
 
         Conjunction headConjunction = parseConjunction("{ $a = $b; $a isa $person; $num = 7; }");
@@ -132,7 +132,7 @@ public class UnifyTest {
     @Test
     public void unify_value_predicate() {
         String conjunction = "{ $x > 7; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
 
         Conjunction headConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
@@ -153,7 +153,7 @@ public class UnifyTest {
     @Test
     public void unify_value_variable() {
         String conjunction = "{ $x > $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
 
         Conjunction headConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
@@ -175,7 +175,7 @@ public class UnifyTest {
     @Test
     public void unify_has_concrete() {
         String conjunction = "{ $x has name 'bob'; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction headConjunction = parseConjunction(
@@ -197,7 +197,7 @@ public class UnifyTest {
     @Test
     public void unify_has_variable() {
         String conjunction = "{ $x has $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction headConjunction = parseConjunction(
@@ -220,7 +220,7 @@ public class UnifyTest {
     @Test
     public void unify_has_syntax_sugar() {
         String conjunction = "{ $x has name $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction headConjunction = parseConjunction(
@@ -243,7 +243,7 @@ public class UnifyTest {
     @Test
     public void unify_relation_one_to_one_player() {
         String conjunction = "{ (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -268,7 +268,7 @@ public class UnifyTest {
     @Test
     public void unify_relation_one_to_many() {
         String conjunction = "{ (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -301,7 +301,7 @@ public class UnifyTest {
     @Test
     public void unify_relation_many_to_many() {
         String conjunction = "{ (employee: $x, employee: $y) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -349,7 +349,7 @@ public class UnifyTest {
     @Test
     public void has_duplicate_vars_conj() {
         String conjunction = "{ $x has name $x; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction headConjunction = parseConjunction(
@@ -371,7 +371,7 @@ public class UnifyTest {
     @Test
     public void has_duplicate_vars_head() {
         String conjunction = "{ $x has name $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction headConjunction = parseConjunction("{ $a has $a;}");
@@ -393,7 +393,7 @@ public class UnifyTest {
     @Test
     public void has_duplicate_vars_both() {
         String conjunction = "{ $x has name $x; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction headConjunction = parseConjunction("{ $a has $a;}");
@@ -414,7 +414,7 @@ public class UnifyTest {
     @Test
     public void relation_named_role() {
         String conjunction = "{ ($role: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -440,7 +440,7 @@ public class UnifyTest {
     @Test
     public void relation_named_role_duplication() {
         String conjunction = "{ ($role: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -470,7 +470,7 @@ public class UnifyTest {
     @Test
     public void relation_repeated_players() {
         String conjunction = "{ (employee: $x, boss: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -495,7 +495,7 @@ public class UnifyTest {
     @Test
     public void relation_repeated_players_many_to_many() {
         String conjunction = "{ (employee: $x, boss: $x, employee: $y) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -525,7 +525,7 @@ public class UnifyTest {
     @Test
     public void relation_repeated_players_many_to_many_roles() {
         String conjunction = "{ ($role1: $x, $role2: $y, $role1: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -565,7 +565,7 @@ public class UnifyTest {
     @Test
     public void relation_match_owner() {
         String conjunction = "{ $r (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -591,7 +591,7 @@ public class UnifyTest {
     @Test
     public void relation_match_relation() {
         String conjunction = "{ (employee: $x) isa $rel; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(
@@ -617,7 +617,7 @@ public class UnifyTest {
     @Test
     public void cannot_unify_more_specific_relation() {
         String conjunction = "{ (employee: $x, company: $y, contract: $z) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.of(parseConjunction(conjunction));
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction headConjunction = parseConjunction(

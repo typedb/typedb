@@ -51,7 +51,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         super(constraint);
     }
 
-    public static Set<ConjunctionConcludable<?, ?>> of(grakn.core.pattern.Conjunction conjunction) {
+    public static Set<ConjunctionConcludable<?, ?>> create(grakn.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction.variables()).concludables();
     }
 

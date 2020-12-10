@@ -43,7 +43,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
     }
 
-    public static HeadConcludable<?, ?> of(ThingConstraint constraint, Set<Variable> constraintContext) {
+    public static HeadConcludable<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
         if (constraint.isRelation()) return Relation.copyOf(constraint.asRelation(), constraintContext);
         else if (constraint.isHas()) return Has.copyOf(constraint.asHas(), constraintContext);
         else if (constraint.isIsa()) return Isa.copyOf(constraint.asIsa(), constraintContext);

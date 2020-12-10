@@ -71,7 +71,7 @@ public class Rule {
         positiveThenTypeHints = positiveTypeHints(this.then);
 
         this.head = createHead(this.then, this.when.variables());
-        this.body = ConjunctionConcludable.of(this.when);
+        this.body = ConjunctionConcludable.create(this.when);
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, TypeHinter typeHinter, String label,
@@ -92,7 +92,7 @@ public class Rule {
         validateRuleSatisfiable();
 
         this.head = createHead(this.then, this.when.variables());
-        this.body = ConjunctionConcludable.of(this.when);
+        this.body = ConjunctionConcludable.create(this.when);
     }
 
     private Set<Label> positiveTypeHints(Conjunction conjunction) {
@@ -169,7 +169,7 @@ public class Rule {
     private Set<HeadConcludable<?, ?>> createHead(Set<Constraint> thenConstraints, Set<Variable> constraintContext) {
         HashSet<HeadConcludable<?, ?>> thenConcludables = new HashSet<>();
         thenConstraints.stream().filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> HeadConcludable.of(constraint, constraintContext)).forEach(thenConcludables::add);
+                .map(constraint -> HeadConcludable.create(constraint, constraintContext)).forEach(thenConcludables::add);
         return thenConcludables;
     }
 
