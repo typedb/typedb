@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_READABLE;
 import static grakn.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
@@ -144,15 +145,16 @@ public class Importer {
     private void insertRelation(Grakn.Transaction tx, DataProto.Item.Relation relationMsg) {
         RelationType relationType = tx.concepts().getRelationType(relabel(relationMsg.getLabel()));
         if (relationType != null) {
+            Map<String, RoleType> roles = getScopedRoleTypes(relationType);
             Relation relation = relationType.create();
             idMap.put(relationMsg.getId(), relation.getIID());
             insertOwnedAttributesThatExist(tx, relation, relationMsg.getAttributeList());
 
             List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
             for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
-                RoleType role = relationType.getRelates(relabel(roleMsg.getLabel()));
-                List<String> missingPlayers = new ArrayList<>();
+                RoleType role = roles.get(relabel(roleMsg.getLabel()));
                 if (role != null) {
+                    List<String> missingPlayers = new ArrayList<>();
                     for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
                         Thing player = getThing(tx, playerMessage.getId());
                         if (player != null) {
@@ -183,7 +185,7 @@ public class Importer {
             Attribute attribute;
             switch (valueMsg.getValueCase()) {
                 case STRING:
-                    attribute = attributeType.asString().put(valueMsg.getString());
+                    attribute = attributeType.asString().put(valueMsg.getString().substring(0, Math.min(valueMsg.getString().length(), 250)));
                     break;
                 case BOOLEAN:
                     attribute = attributeType.asBoolean().put(valueMsg.getBoolean());
@@ -245,7 +247,9 @@ public class Importer {
             assert thing != null;
             Relation relation = thing.asRelation();
             for (Pair<String, List<String>> pair : rolePlayers.second()) {
-                RoleType role = relation.getType().getRelates(pair.first());
+                Map<String, RoleType> roles = getScopedRoleTypes(relation.getType());
+                RoleType role = roles.get(pair.first());
+                assert role != null;
                 for (String originalPlayerId : pair.second()) {
                     Thing player = getThing(tx, originalPlayerId);
                     relation.addPlayer(role, player);
@@ -260,6 +264,11 @@ public class Importer {
     private Thing getThing(Grakn.Transaction tx, String originalId) {
         byte[] newId = idMap.get(originalId);
         return newId != null ? tx.concepts().getThing(newId) : null;
+    }
+
+    private Map<String, RoleType> getScopedRoleTypes(RelationType relationType) {
+        return relationType.getRelates().collect(
+                Collectors.toMap(x -> relationType.getLabel() + ":" + x.getLabel(), x -> x));
     }
 
     private String relabel(String label) {
