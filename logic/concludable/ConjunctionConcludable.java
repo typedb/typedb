@@ -121,7 +121,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
     Optional<Map<Reference, Set<Reference>>> extendUnifier(
             Variable conjVar, Variable headVar, Map<Reference, Set<Reference>> variableMapping) {
-        if (!hintsIntersect(headVar, conjVar)) return Optional.empty();
+        if (varHintsDisjoint(headVar, conjVar)) return Optional.empty();
         Map<Reference, Set<Reference>> cloneOfMapping = cloneMapping(variableMapping);
         cloneOfMapping.putIfAbsent(conjVar.reference(), new HashSet<>());
         cloneOfMapping.get(conjVar.reference()).add(headVar.reference());
@@ -201,18 +201,29 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         Map<Reference, Set<Reference>> convertRolePlayerUnifier(Map<RolePlayer, RolePlayer> rolePlayerUnifier) {
-            //TODO
-            Map<Reference, Set<Reference>> res = new HashMap<>();
+            Map<Reference, Set<Reference>> variableUnifier = new HashMap<>();
             rolePlayerUnifier.forEach( (conjRP, thenRP) -> {
-                if
+                if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
+                    assert thenRP.roleType().isPresent();
+                    variableUnifier.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
+                    variableUnifier.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
+                }
+                variableUnifier.putIfAbsent(conjRP.player().reference(), new HashSet<>());
+                variableUnifier.get(conjRP.player().reference()).add(thenRP.player().reference());
             } );
 
-            return Collections.emptyMap();
+            return variableUnifier;
         }
 
-        private boolean roleHinstDisjoint(RolePlayer first, RolePlayer second) {
-            return !first.roleTypeHints().isEmpty() && !second.roleTypeHints().isEmpty() &&
-                    Collections.disjoint(first.roleTypeHints(), second.roleTypeHints())
+        private boolean roleHinstDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
+            if (!conjRP.roleTypeHints().isEmpty() && !thenRP.roleTypeHints().isEmpty()
+            && Collections.disjoint(conjRP.roleTypeHints(), thenRP.roleTypeHints())) return true;
+            if (varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
+            if (conjRP.roleType().isPresent() ) {
+                assert thenRP.roleType().isPresent();
+                return varHintsDisjoint(conjRP.roleType().get(), thenRP.roleType().get());
+            }
+            return false;
         }
 
         Optional<Map<RolePlayer, RolePlayer>> extendRolePlayerUnifier(

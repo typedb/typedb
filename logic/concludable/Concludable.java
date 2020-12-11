@@ -151,20 +151,20 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         }
     }
 
-    static boolean hintsIntersect(Variable first, Variable second) {
-        if (hasNoHints(first) || hasNoHints(second)) return true;
+    static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
+        if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
         Set<Label> firstHints;
         Set<Label> secondHints;
-        if (first.isThing() && second.isThing()) {
-            firstHints = first.asThing().isa().get().typeHints();
-            secondHints = second.asThing().isa().get().typeHints();
-        } else if (first.isType() && second.isType()) {
-            firstHints = first.asType().sub().get().typeHints();
-            secondHints = second.asType().sub().get().typeHints();
+        if (conjVar.isThing() && thenVar.isThing()) {
+            firstHints = conjVar.asThing().isa().get().typeHints();
+            secondHints = thenVar.asThing().isa().get().typeHints();
+        } else if (conjVar.isType() && thenVar.isType()) {
+            firstHints = conjVar.asType().sub().get().typeHints();
+            secondHints = thenVar.asType().sub().get().typeHints();
         } else {
-            return false;
+            return true;
         }
-        return !Collections.disjoint(firstHints, secondHints);
+        return Collections.disjoint(firstHints, secondHints);
     }
 
 }
