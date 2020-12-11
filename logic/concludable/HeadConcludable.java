@@ -44,10 +44,10 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
     }
 
     public static HeadConcludable<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
-        if (constraint.isRelation()) return Relation.copyOf(constraint.asRelation(), constraintContext);
-        else if (constraint.isHas()) return Has.copyOf(constraint.asHas(), constraintContext);
-        else if (constraint.isIsa()) return Isa.copyOf(constraint.asIsa(), constraintContext);
-        else if (constraint.isValue()) return Value.copyOf(constraint.asValue(), constraintContext);
+        if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
+        else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
+        else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
+        else if (constraint.isValue()) return Value.create(constraint.asValue(), constraintContext);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -106,7 +106,8 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             super(constraint, constraintContext);
         }
 
-        public static Relation copyOf(RelationConstraint constraint, Set<Variable> constraintContext) {
+
+        public static Relation create(RelationConstraint constraint, Set<Variable> constraintContext) {
             return new Relation(copyConstraint(constraint), constraintContext);
         }
 
@@ -127,7 +128,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             super(constraint, constraintContext);
         }
 
-        public static Has copyOf(HasConstraint constraint, Set<Variable> constraintContext) {
+        public static Has create(HasConstraint constraint, Set<Variable> constraintContext) {
             return new Has(copyConstraint(constraint), constraintContext);
         }
 
@@ -148,7 +149,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             super(constraint, constraintContext);
         }
 
-        public static Isa copyOf(IsaConstraint constraint, Set<Variable> constraintContext) {
+        public static Isa create(IsaConstraint constraint, Set<Variable> constraintContext) {
             return new Isa(copyConstraint(constraint), constraintContext);
         }
 
@@ -169,7 +170,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
             super(constraint, constraintContext);
         }
 
-        public static Value copyOf(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
+        public static Value create(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
             return new Value(copyConstraint(constraint), constraintContext);
         }
 

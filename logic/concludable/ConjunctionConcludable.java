@@ -119,7 +119,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
-    Optional<Map<Reference, Set<Reference>>> updatedUnifier(
+    Optional<Map<Reference, Set<Reference>>> extendUnifier(
             Variable conjVar, Variable headVar, Map<Reference, Set<Reference>> variableMapping) {
         if (!hintsIntersect(headVar, conjVar)) return Optional.empty();
         Map<Reference, Set<Reference>> cloneOfMapping = cloneMapping(variableMapping);
@@ -146,14 +146,14 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             Map<Reference, Set<Reference>> startingUnifier = new HashMap<>();
             Optional<Map<Reference, Set<Reference>>> newUnifier;
             if (constraint.owner().reference().isName()) {
-                newUnifier = updatedUnifier(this.constraint().owner(), unifyWith.constraint().owner(), startingUnifier);
+                newUnifier = extendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), startingUnifier);
                 if (newUnifier.isPresent()) startingUnifier = newUnifier.get();
                 else return Stream.empty();
             }
 
             if (constraint.owner().isa().isPresent() && constraint.owner().isa().get().type().reference().isName()) {
                 assert unifyWith.constraint().owner().isa().isPresent();
-                newUnifier = updatedUnifier(this.constraint().owner().isa().get().type(),
+                newUnifier = extendUnifier(this.constraint().owner().isa().get().type(),
                         unifyWith.constraint().owner().isa().get().type(), startingUnifier);
                 if (newUnifier.isPresent()) startingUnifier = newUnifier.get();
                 else return Stream.empty();
@@ -174,7 +174,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             for (RolePlayer head : headRolePlayers) {
                 if (visitedHeadRolePlayers.contains(head)) continue;
                 visitedHeadRolePlayers.add(head);
-                updatedUnifier(conj, head, unifier).ifPresent(newUnifier ->
+                extendUnifier(conj, head, unifier).ifPresent(newUnifier ->
                         allUnifiers.addAll(matchRolesAndUnify(conjunctionRolePlayers,
                                 headRolePlayers, newUnifier, visitedHeadRolePlayers)));
                 visitedHeadRolePlayers.remove(head);
@@ -183,7 +183,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             return allUnifiers;
         }
 
-        Optional<Map<Reference, Set<Reference>>> updatedUnifier(
+        Optional<Map<Reference, Set<Reference>>> extendUnifier(
                 RolePlayer conjPlayer, RolePlayer headPlayer, Map<Reference, Set<Reference>> originalUnifier) {
             if (!headPlayer.roleTypeHints().isEmpty() && !conjPlayer.roleTypeHints().isEmpty() &&
                     Collections.disjoint(headPlayer.roleTypeHints(), conjPlayer.roleTypeHints())) {
@@ -194,11 +194,11 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             Map<Reference, Set<Reference>> unifier = cloneMapping(originalUnifier);
             if (conjPlayer.roleType().isPresent() && conjPlayer.roleType().get().reference().isName()) {
                 assert headPlayer.roleType().isPresent();
-                newUnifier = updatedUnifier(conjPlayer.roleType().get(), headPlayer.roleType().get(), unifier);
+                newUnifier = extendUnifier(conjPlayer.roleType().get(), headPlayer.roleType().get(), unifier);
                 if (newUnifier.isPresent()) unifier = newUnifier.get();
                 else return Optional.empty();
             }
-            return updatedUnifier(conjPlayer.player(), headPlayer.player(), unifier);
+            return extendUnifier(conjPlayer.player(), headPlayer.player(), unifier);
         }
 
         @Override
@@ -220,18 +220,14 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Has unifyWith) {
-            Map<Reference, Set<Reference>> unifier = new HashMap<>();
-            Optional<Map<Reference, Set<Reference>>> newUnifier;
-            newUnifier = updatedUnifier(this.constraint().owner(), unifyWith.constraint().owner(), unifier);
-            if (newUnifier.isPresent()) unifier = newUnifier.get();
-            else return Stream.empty();
-
+            Optional<Map<Reference, Set<Reference>>> unifier = extendUnifier(constraint.owner(),
+                    unifyWith.constraint().owner(), new HashMap<>());
+            if (!unifier.isPresent()) return Stream.empty();
             if (constraint.attribute().reference().isName()) {
-                newUnifier = updatedUnifier(this.constraint().attribute(), unifyWith.constraint().attribute(), unifier);
-                if (newUnifier.isPresent()) unifier = newUnifier.get();
-                else return Stream.empty();
+                unifier = extendUnifier(constraint.attribute(), unifyWith.constraint().attribute(), unifier.get());
+                if (!unifier.isPresent()) return Stream.empty();
             }
-            return Stream.of(unifier);
+            return Stream.of(unifier.get());
         }
 
         @Override
@@ -253,18 +249,14 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Isa unifyWith) {
-            Map<Reference, Set<Reference>> unifier = new HashMap<>();
-            Optional<Map<Reference, Set<Reference>>> newUnifier;
-            newUnifier = updatedUnifier(this.constraint().owner(), unifyWith.constraint().owner(), unifier);
-            if (newUnifier.isPresent()) unifier = newUnifier.get();
-            else return Stream.empty();
-
+            Optional<Map<Reference, Set<Reference>>> unifier = extendUnifier(constraint.owner(),
+                    unifyWith.constraint().owner(), new HashMap<>());
+            if (!unifier.isPresent()) return Stream.empty();
             if (constraint.type().reference().isName()) {
-                newUnifier = updatedUnifier(this.constraint().type(), unifyWith.constraint().type(), unifier);
-                if (newUnifier.isPresent()) unifier = newUnifier.get();
-                else return Stream.empty();
+                unifier = extendUnifier(constraint.type(), unifyWith.constraint().type(), unifier.get());
+                if (!unifier.isPresent()) return Stream.empty();
             }
-            return Stream.of(unifier);
+            return Stream.of(unifier.get());
         }
 
         @Override
@@ -286,20 +278,15 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Value unifyWith) {
-            Map<Reference, Set<Reference>> unifier = new HashMap<>();
-            Optional<Map<Reference, Set<Reference>>> newUnifier;
-            newUnifier = updatedUnifier(this.constraint().owner(), unifyWith.constraint().owner(), unifier);
-            if (newUnifier.isPresent()) unifier = newUnifier.get();
-            else return Stream.empty();
-
-            if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {
-                newUnifier = updatedUnifier(this.constraint().asVariable().value(),
-                        unifyWith.constraint().asVariable().value(), unifier);
-                if (newUnifier.isPresent()) unifier = newUnifier.get();
-                else return Stream.empty();
+            Optional<Map<Reference, Set<Reference>>> unifier = extendUnifier(constraint.owner(),
+                    unifyWith.constraint().owner(), new HashMap<>());
+            if (!unifier.isPresent()) return Stream.empty();
+            if (constraint.isVariable() && constraint.asVariable().value().reference().isName()) {
+                unifier = extendUnifier(constraint.asVariable().value(),
+                        unifyWith.constraint().asVariable().value(), unifier.get());
+                if (!unifier.isPresent()) return Stream.empty();
             }
-
-            return Stream.of(unifier);
+            return Stream.of(unifier.get());
         }
 
         @Override
