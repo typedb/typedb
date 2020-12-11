@@ -21,6 +21,7 @@ package grakn.core.graph;
 import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
@@ -166,9 +167,9 @@ public class SchemaGraph implements Graph {
 
     public ResourceIterator<RuleStructure> rules() {
         Encoding.Prefix index = IndexIID.Rule.prefix();
-        ResourceIterator<RuleStructure> ruleStructures = storage.iterate(index.bytes(), (key, value) ->
-                new RuleStructureImpl.Persisted(this, StructureIID.Rule.of(value)));
-        return ruleStructures;
+        ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
+                convert(StructureIID.Rule.of(value)));
+        return link(list(persistedRules, Iterators.iterate(rulesByIID.values()))).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -238,6 +239,14 @@ public class SchemaGraph implements Graph {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
+        });
+    }
+
+    public RuleStructure convert(StructureIID.Rule iid) {
+        return rulesByIID.computeIfAbsent(iid, i -> {
+            final RuleStructure structure = new RuleStructureImpl.Persisted(this, i);
+            rulesByLabel.putIfAbsent(structure.label(), structure);
+            return structure;
         });
     }
 
