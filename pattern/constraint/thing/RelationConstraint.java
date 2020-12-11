@@ -177,7 +177,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final RolePlayer that = (RolePlayer) o;
-            return (Objects.equals(this.roleType, that.roleType)) && (this.player.equals(that.player));
+            return (Objects.equals(this.roleType, that.roleType)) && (this.player.equals(that.player)) &&
+                    this.roleTypeHints.equals(that.roleTypeHints);
         }
 
         @Override
