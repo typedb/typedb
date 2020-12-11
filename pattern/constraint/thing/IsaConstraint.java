@@ -61,8 +61,6 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     @Override
     public void addTo(Traversal traversal) {
         // TODO: assert !(type.reference().isLabel());
-        //TODO: should typeHints still be added. If so, where?
-//        if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
         if (type.reference().isName()) traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
     }
 

@@ -141,23 +141,6 @@ public class TypeHinter {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-//    private void removeHintLabel(Variable variable, Label label) {
-////        if (variable.isType()) variable.asType().sub().ifPresent(subConstraint -> subConstraint.removeHint(label));
-////        if variable.isType()
-//        else if (variable.isThing()) variable.removeHint(label);
-//        else throw GraknException.of(ILLEGAL_STATE);
-//    }
-
-//    private Set<Label> getHintLabels(Variable variable) {
-//        if (variable.isType()) {
-//            if (variable.asType().sub().isPresent()) return variable.asType().sub().get().getTypeHints();
-//            return null;
-//        } else if (variable.isThing()) {
-//            return variable.typeHints();
-//            return null;
-//        } else throw GraknException.of(ILLEGAL_STATE);
-//    }
-
     private void ensureHintsConformToTheirSuper(Variable variable, Set<Variable> visited) {
         if (variable == null || visited.contains(variable) || variable.reference().isLabel()) return;
         visited.add(variable);

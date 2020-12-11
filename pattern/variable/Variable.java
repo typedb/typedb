@@ -58,6 +58,7 @@ public abstract class Variable implements Pattern {
     }
 
     public void addTo(Traversal traversal) {
+        if (!typeHints.isEmpty()) traversal.types(identifier, typeHints);
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
@@ -92,7 +93,6 @@ public abstract class Variable implements Pattern {
     public Set<Label> typeHints() {
         return typeHints;
     }
-
 
     @Override
     public boolean equals(Object o) {
