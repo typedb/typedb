@@ -40,7 +40,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                         Runnable onExhausted) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, ConjunctionConcludable.of(conjunction));
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, ConjunctionConcludable.create(conjunction));
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
     }
