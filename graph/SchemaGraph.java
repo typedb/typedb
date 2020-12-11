@@ -169,7 +169,7 @@ public class SchemaGraph implements Graph {
         Encoding.Prefix index = IndexIID.Rule.prefix();
         ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                 convert(StructureIID.Rule.of(value)));
-        return link(list(persistedRules, Iterators.iterate(rulesByIID.values()))).distinct();
+        return link(list(Iterators.iterate(rulesByIID.values()), persistedRules)).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
