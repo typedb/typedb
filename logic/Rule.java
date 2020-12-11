@@ -163,7 +163,7 @@ public class Rule {
         then.variables().stream().filter(variable -> variable.identifier().isNamedReference())
                 .forEach(thenVar ->
                         when.variables().stream()
-                                .filter(variable -> variable.identifier().equals(thenVar.identifier()))
+                                .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
                                 .findFirst().ifPresent(whenVar -> thenVar.retainHints(whenVar.typeHints()))
                 );
     }
