@@ -19,7 +19,6 @@ package grakn.core.logic.concludable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.logic.Rule;
 import grakn.core.logic.Unification;
 import grakn.core.pattern.constraint.Constraint;

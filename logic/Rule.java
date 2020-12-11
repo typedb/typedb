@@ -32,7 +32,6 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
