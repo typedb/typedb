@@ -85,7 +85,11 @@ public abstract class IndexIID extends IID {
          * @return a byte array representing the index address of a {@code RuleStructure}
          */
         public static Rule of(String label) {
-            return new Rule(join(Encoding.Index.RULE.prefix().bytes(), label.getBytes(STRING_ENCODING)));
+            return new Rule(join(prefix().bytes(), label.getBytes(STRING_ENCODING)));
+        }
+
+        public static Encoding.Prefix prefix() {
+            return Encoding.Index.RULE.prefix();
         }
 
         @Override

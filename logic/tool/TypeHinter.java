@@ -23,6 +23,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.Type;
+import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -58,12 +59,12 @@ public class TypeHinter {
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
-    private final TypeHinterCache cache;
+    private final LogicCache logicCache;
 
-    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng, TypeHinterCache cache) {
+    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
-        this.cache = cache;
+        this.logicCache = logicCache;
     }
 
     public Conjunction computeHintsExhaustive(Conjunction conjunction) {
@@ -262,7 +263,7 @@ public class TypeHinter {
 
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints, int parallelisation) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
-        return cache.get(varHintsConjunction, conjunction -> {
+        return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             buffer(traversalEng.execute(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {

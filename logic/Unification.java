@@ -19,7 +19,7 @@ package grakn.core.logic;
 
 import grakn.common.collection.Pair;
 import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.logic.concludable.HeadConcludable;
+import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.Set;
@@ -27,10 +27,10 @@ import java.util.Set;
 public class Unification {
 
     private final ConjunctionConcludable<?, ?> fromConcludable;
-    private final HeadConcludable<?, ?> toConcludable;
+    private final ThenConcludable<?, ?> toConcludable;
     private final Set<Pair<Variable, Variable>>  variableMapping;
 
-    public Unification(ConjunctionConcludable<?, ?> fromConcludable, HeadConcludable<?, ?> toConcludable,
+    public Unification(ConjunctionConcludable<?, ?> fromConcludable, ThenConcludable<?, ?> toConcludable,
                        Set<Pair<Variable, Variable>> variableMapping) {
         this.fromConcludable = fromConcludable;
         this.toConcludable = toConcludable;
@@ -41,7 +41,7 @@ public class Unification {
         return fromConcludable;
     }
 
-    public HeadConcludable<?, ?> toConcludable() {
+    public ThenConcludable<?, ?> toConcludable() {
         return toConcludable;
     }
 

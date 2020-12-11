@@ -97,10 +97,10 @@ public class TransactionRPC {
                     }
                     return;
                 case CONCEPT_MANAGER_REQ:
-                    handlers.conceptManager.handleRequest(request);
+                    handlers.conceptMgr.handleRequest(request);
                     return;
                 case LOGIC_MANAGER_REQ:
-                    handlers.logicManager.handleRequest(request);
+                    handlers.logicMgr.handleRequest(request);
                     return;
                 case THING_REQ:
                     handlers.thing.handleRequest(request);
@@ -279,20 +279,20 @@ public class TransactionRPC {
     }
 
     private class RequestHandlers {
-        private final ConceptManagerHandler conceptManager;
-        private final LogicManagerHandler logicManager;
+        private final ConceptManagerHandler conceptMgr;
+        private final LogicManagerHandler logicMgr;
         private final QueryHandler query;
         private final ThingHandler thing;
         private final TypeHandler type;
         private final RuleHandler rule;
 
         private RequestHandlers() {
-            conceptManager = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
-            logicManager = new LogicManagerHandler(TransactionRPC.this, transaction.logics());
+            conceptMgr = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
+            logicMgr = new LogicManagerHandler(TransactionRPC.this, transaction.logic());
             query = new QueryHandler(TransactionRPC.this, transaction.query());
             thing = new ThingHandler(TransactionRPC.this, transaction.concepts());
             type = new TypeHandler(TransactionRPC.this, transaction.concepts());
-            rule = new RuleHandler(TransactionRPC.this, transaction.logics());
+            rule = new RuleHandler(TransactionRPC.this, transaction.logic());
         }
     }
 }
