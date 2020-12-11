@@ -21,14 +21,14 @@
 
 syntax = "proto3";
 
-option java_package = "grakn.core.server.migrate.proto";
-option java_outer_classname = "MigrateProto";
+option java_package = "grakn.core.server.migrator.proto";
+option java_outer_classname = "MigratorProto";
 
-import "server/migrate/proto/data.proto";
+import "server/migrator/proto/data.proto";
 
-package migrate;
+package migrator;
 
-service MigrateService {
+service Migrator {
   rpc exportData (ExportData.Req) returns (stream Job.Res);
   rpc importData (ImportData.Req) returns (stream Job.Res);
   rpc exportSchema (ExportSchema.Req) returns (ExportSchema.Res);
@@ -43,19 +43,12 @@ message ExportData {
 
 message Job {
   message Res {
-    oneof res {
-      Progress progress = 1;
-      Completion completion = 2;
-    }
+    Progress progress = 1;
   }
 
   message Progress {
-    uint64 total_count = 1;
-    uint64 current_progress = 2;
-  }
-
-  message Completion {
-    uint64 total_count = 1;
+    uint64 total = 1;
+    uint64 current = 2;
   }
 }
 

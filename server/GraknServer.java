@@ -25,9 +25,11 @@ import grakn.core.Grakn;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.server.migrator.MigratorClient;
+import grakn.core.server.rpc.MigratorRPCService;
 import grakn.core.server.rpc.GraknRPCService;
+import grakn.core.server.util.ServerCommand;
 import grakn.core.server.util.ServerDefaults;
-import grakn.core.server.util.ServerOptions;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -66,10 +68,11 @@ public class GraknServer implements AutoCloseable {
 
     private final Grakn grakn;
     private final Server server;
-    private final ServerOptions options;
+    private final ServerCommand.Start options;
     private final GraknRPCService graknRPCService;
+    private final MigratorRPCService migratorRPCService;
 
-    private GraknServer(ServerOptions options) throws IOException {
+    private GraknServer(ServerCommand.Start options) throws IOException {
         this.options = options;
         configureAndVerifyDataDir();
         configureTracing();
@@ -80,6 +83,7 @@ public class GraknServer implements AutoCloseable {
 
         grakn = RocksGrakn.open(options.dataDir());
         graknRPCService = new GraknRPCService(grakn);
+        migratorRPCService = new MigratorRPCService(grakn);
 
         server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
@@ -147,33 +151,36 @@ public class GraknServer implements AutoCloseable {
         else return properties;
     }
 
-    private static ServerOptions parseCommandLine(Properties properties, String[] args) {
-        final ServerOptions options = new ServerOptions();
-        boolean proceed;
-        final CommandLine command = new CommandLine(options);
-        command.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
+    private static ServerCommand parseCommandLine(Properties properties, String[] args) {
+        final ServerCommand.Start startCommand = new ServerCommand.Start();
+        final ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
+        final CommandLine commandLine = new CommandLine(startCommand).addSubcommand(importDataCommand);
+        commandLine.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
 
         try {
-            command.parseArgs(args);
-            if (command.isUsageHelpRequested()) {
-                command.usage(command.getOut());
-                proceed = false;
-            } else if (command.isVersionHelpRequested()) {
-                command.printVersionHelp(command.getOut());
-                proceed = false;
+            CommandLine.ParseResult parseResult = commandLine.parseArgs(args);
+            if (commandLine.isUsageHelpRequested()) {
+                commandLine.usage(commandLine.getOut());
+                return null;
+            } else if (commandLine.isVersionHelpRequested()) {
+                commandLine.printVersionHelp(commandLine.getOut());
+                return null;
             } else {
-                proceed = true;
+                if (parseResult.hasSubcommand()) {
+                    assert parseResult.subcommand().asCommandLineList().size() == 1;
+                    return parseResult.subcommand().asCommandLineList().get(0).getCommand();
+                } else {
+                    assert parseResult.asCommandLineList().size() == 1;
+                    return parseResult.asCommandLineList().get(0).getCommand();
+                }
             }
         } catch (ParameterException ex) {
-            command.getErr().println(ex.getMessage());
-            if (!UnmatchedArgumentException.printSuggestions(ex, command.getErr())) {
-                ex.getCommandLine().usage(command.getErr());
+            commandLine.getErr().println(ex.getMessage());
+            if (!UnmatchedArgumentException.printSuggestions(ex, commandLine.getErr())) {
+                ex.getCommandLine().usage(commandLine.getErr());
             }
-            proceed = false;
+            return null;
         }
-
-        if (proceed) return options;
-        else return null;
     }
 
     public static void main(String[] args) {
@@ -181,18 +188,27 @@ public class GraknServer implements AutoCloseable {
             final long start = System.nanoTime();
 
             printASCIILogo();
-            final ServerOptions options = parseCommandLine(parseProperties(), args);
-            if (options == null) System.exit(0);
+            final ServerCommand command = parseCommandLine(parseProperties(), args);
+            if (command == null) System.exit(0);
 
-            final GraknServer server = new GraknServer(options);
-            server.start();
+            if (command instanceof ServerCommand.Start) {
+                final GraknServer server = new GraknServer(command.asStart());
+                server.start();
 
-            final long end = System.nanoTime();
-            LOG.info("Grakn Core version: {}", Version.VERSION);
-            LOG.info("Grakn Core Server has been started (in {} ms)",
-                     String.format("%.3f", (end - start) / 1_000_000.00));
+                final long end = System.nanoTime();
+                LOG.info("Grakn Core version: {}", Version.VERSION);
+                LOG.info("Grakn Core Server has been started (in {} ms)",
+                        String.format("%.3f", (end - start) / 1_000_000.00));
 
-            server.serve();
+                server.serve();
+            } else if (command instanceof ServerCommand.ImportData) {
+                ServerCommand.ImportData importDataCommand = command.asImport();
+                MigratorClient migrator = new MigratorClient(importDataCommand.port());
+                boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
+                System.exit(success ? 0 : 1);
+            } else {
+                assert false;
+            }
         } catch (Exception e) {
             LOG.error(e.getMessage());
             LOG.error(EXITED_WITH_ERROR.message());
@@ -213,6 +229,7 @@ public class GraknServer implements AutoCloseable {
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
                 .addService(graknRPCService)
+                .addService(migratorRPCService)
                 .build();
     }
 

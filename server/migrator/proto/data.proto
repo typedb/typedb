@@ -53,7 +53,7 @@
 
 syntax = "proto3";
 
-option java_package = "grakn.core.server.migrate.proto";
+option java_package = "grakn.core.server.migrator.proto";
 option java_outer_classname = "DataProto";
 
 package data;
