@@ -95,7 +95,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "reasoner/*",
+        "concludable/*",
     ]),
     license_type = "agpl",
 )
