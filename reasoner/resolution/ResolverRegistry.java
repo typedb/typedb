@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 public class ResolverRegistry {
@@ -56,24 +55,15 @@ public class ResolverRegistry {
 
     public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-
-        final Optional<Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>> alphaEquivalencePair = concludableActorsMap.keySet().stream()
-                .map(k -> new Pair<ConjunctionConcludable<?, ?>, AlphaEquivalence>(k, k.alphaEquals(concludable)))
-                .filter(p -> p.second().isValid()).findAny();
-
-        final Actor<ConcludableResolver> concludableActor;
-        final Map<Reference.Name, Reference.Name> variableMapping;
-        if (alphaEquivalencePair.isPresent()) {
-            // Then we can use the same ConcludableActor, but with a different variable mapping
-            concludableActor = concludableActorsMap.get(alphaEquivalencePair.get().first());
-            variableMapping = alphaEquivalencePair.get().second().asValid().namedVariableMapping();
-        } else {
-            // Create a new ConcludableActor
-            concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
-            concludableActorsMap.put(concludable, concludableActor);
-            variableMapping = MappingAggregator.identity(concludable);
+        for (Map.Entry<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> c: concludableActorsMap.entrySet()) {
+            AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
+            if (alphaEquality.isValid()) {
+                return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+            }
         }
-        return new Pair<>(concludableActor, variableMapping);
+        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
+        concludableActorsMap.put(concludable, concludableActor);
+        return new Pair<>(concludableActor, MappingAggregator.identity(concludable));
     }
 
     public Actor<RuleResolver> registerRule(Rule rule) {
