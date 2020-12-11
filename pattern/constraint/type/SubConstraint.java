@@ -57,28 +57,10 @@ public class SubConstraint extends TypeConstraint {
         return type;
     }
 
-    public void addHints(Set<Label> labels) {
-        typeHints.addAll(labels);
-    }
-
-    public void removeHint(Label label) {
-        typeHints.remove(label);
-    }
-
-    public void clearHintLabels() {
-        typeHints.clear();
-    }
-
-    public Set<Label> getTypeHints() {
-        return typeHints;
-    }
-
     @Override
     public void addTo(Traversal traversal) {
-        if (!typeHints.isEmpty()) traversal.labels(owner.identifier(), typeHints);
-        if (type.reference().isName() || typeHints.isEmpty()) {
-            traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
-        }
+//        if (!typeHints.isEmpty()) traversal.labels(owner.identifier(), typeHints);
+        if (type.reference().isName()) traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
     }
 
     @Override

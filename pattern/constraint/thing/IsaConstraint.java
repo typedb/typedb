@@ -61,26 +61,11 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
         return isExplicit;
     }
 
-    public void addHints(Set<Label> labels) {
-        typeHints.addAll(labels);
-    }
-
-    public void removeHint(Label label) {
-        typeHints.remove(label);
-    }
-
-    public void clearHintLabels() {
-        typeHints.clear();
-    }
-
-    public Set<Label> getTypeHints() {
-        return typeHints;
-    }
-
     @Override
     public void addTo(Traversal traversal) {
-        // TODO: assert !(type.reference().isLabel() && typeHints.isEmpty());
-        if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
+        // TODO: assert !(type.reference().isLabel());
+        //TODO: should typeHints still be added. If so, where?
+//        if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
         if (type.reference().isName()) traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
     }
 
@@ -118,7 +103,6 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     public AlphaEquivalence alphaEquals(IsaConstraint that) {
         return AlphaEquivalence.valid()
                 .validIf(isExplicit() == that.isExplicit())
-                .validIf(typeHints.equals(that.typeHints))
                 .validIfAlphaEqual(type, that.type);
     }
 }
