@@ -169,8 +169,12 @@ public class Bytes {
     }
 
     public static String bytesToString(byte[] bytes, Charset encoding) {
-        final byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
+        final byte[] x = Arrays.copyOfRange(bytes, 1, 1 + unsignedByteToInt(bytes[0]));
         return new String(x, encoding);
+    }
+
+    public static int unsignedByteToInt(byte x) {
+        return x & 0xff;
     }
 
     public static byte booleanToByte(boolean value) {
