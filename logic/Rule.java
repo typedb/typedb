@@ -19,7 +19,6 @@
 package grakn.core.logic;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
@@ -162,19 +161,12 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenTypeHints() {
-        then.variables().stream().filter(var -> var.identifier().isNamedReference())
-                .forEach(thenVar -> {
-                    Optional<Variable> whenVar = when.variables().stream().filter(var -> var.identifier().equals(thenVar.identifier())).findFirst();
-                    if (whenVar.isPresent() && whenVar.get().isThing()) {
-                        assert thenVar.isThing();
-                        whenVar.get().asThing().isa().ifPresent(whenIsa -> thenVar.asThing().isa().ifPresent(
-                                thenIsa -> thenIsa.retainHints(whenIsa.getTypeHints())));
-                    } else if (whenVar.isPresent() && whenVar.get().isType()) {
-                        assert thenVar.isType();
-                        whenVar.get().asType().sub().ifPresent(whenSub -> thenVar.asType().sub().ifPresent(
-                                thenSub -> thenSub.retainHints(whenSub.getTypeHints())));
-                    }
-                });
+        then.variables().stream().filter(variable -> variable.identifier().isNamedReference())
+                .forEach(thenVar ->
+                        when.variables().stream()
+                                .filter(variable -> variable.identifier().equals(thenVar.identifier()))
+                                .findFirst().ifPresent(whenVar -> thenVar.retainHints(whenVar.typeHints()))
+                );
     }
 
     private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {

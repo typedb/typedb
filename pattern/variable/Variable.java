@@ -81,6 +81,10 @@ public abstract class Variable implements Pattern {
         typeHints.addAll(labels);
     }
 
+    public void retainHints(Set<Label> labels) {
+        typeHints.retainAll(labels);
+    }
+
     public void removeHint(Label label) {
         typeHints.remove(label);
     }
