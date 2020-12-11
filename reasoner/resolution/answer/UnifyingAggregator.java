@@ -25,12 +25,12 @@ import java.util.Set;
 
 public class UnifyingAggregator extends Aggregator {
 
-    public static UnifyingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Set<Reference.Name>> unifier) {
-        return new UnifyingAggregator(conceptMap, unifier);
-    }
-
     UnifyingAggregator(ConceptMap conceptMap, Map<Reference.Name, Set<Reference.Name>> unifier) {
         super(conceptMap, transform(conceptMap, unifier));
+    }
+
+    public static UnifyingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Set<Reference.Name>> unifier) {
+        return new UnifyingAggregator(conceptMap, unifier);
     }
 
     @Override
@@ -38,12 +38,12 @@ public class UnifyingAggregator extends Aggregator {
         return false; // TODO implement
     }
 
-    private static ConceptMap transform(ConceptMap original, Map<Reference.Name, Set<Reference.Name>> unifier) {
+    @Override
+    ConceptMap unTransform(ConceptMap conceptMap) {
         return null;
     }
 
-    @Override
-    ConceptMap unTransform(ConceptMap conceptMap) {
+    private static ConceptMap transform(ConceptMap original, Map<Reference.Name, Set<Reference.Name>> unifier) {
         return null;
     }
 }

@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+
 public class ResolverRegistry {
 
     Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
@@ -70,7 +71,7 @@ public class ResolverRegistry {
             // Create a new ConcludableActor
             concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
             concludableActorsMap.put(concludable, concludableActor);
-            variableMapping = MappingAggregator.identityMapping(concludable);
+            variableMapping = MappingAggregator.identity(concludable);
         }
         return new Pair<>(concludableActor, variableMapping);
     }

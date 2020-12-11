@@ -30,17 +30,15 @@ public abstract class Aggregator {
     private final ConceptMap original;
     private final ConceptMap transformed;
 
-    Aggregator(ConceptMap original, ConceptMap transformed){
+    Aggregator(ConceptMap original, ConceptMap transformed) {
         this.original = original;
         this.transformed = transformed;
     }
 
-    abstract ConceptMap unTransform(ConceptMap conceptMap);
-
     public Aggregated aggregateWith(ConceptMap toAggregate) {
         ConceptMap unTransformed = unTransform(toAggregate);
         if (unTransformed == null) return null;
-        if (unTransformed.concepts().isEmpty()); // TODO What do we do in this case?
+        if (unTransformed.concepts().isEmpty()) ; // TODO What do we do in this case?
         Map<Reference, Concept> aggregatedMap = new HashMap<>(original.concepts());
         aggregatedMap.putAll(unTransformed.concepts());
         ConceptMap aggregatedConceptMap = new ConceptMap(aggregatedMap);
@@ -50,6 +48,22 @@ public abstract class Aggregator {
     public ConceptMap map() {
         return transformed;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Aggregator that = (Aggregator) o;
+        return original.equals(that.original) &&
+                transformed.equals(that.transformed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(original, transformed);
+    }
+
+    abstract ConceptMap unTransform(ConceptMap conceptMap);
 
     public static class Aggregated {
 
@@ -68,19 +82,5 @@ public abstract class Aggregator {
         public ConceptMap original() {
             return original;
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final Aggregator that = (Aggregator) o;
-        return original.equals(that.original) &&
-                transformed.equals(that.transformed);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(original, transformed);
     }
 }

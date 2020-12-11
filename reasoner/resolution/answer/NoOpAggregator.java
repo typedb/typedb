@@ -21,12 +21,12 @@ import grakn.core.concept.answer.ConceptMap;
 
 public class NoOpAggregator extends Aggregator {
 
-    public static Aggregator create() {
-        return new NoOpAggregator();
-    }
-
     NoOpAggregator() {
         super(new ConceptMap(), new ConceptMap());
+    }
+
+    public static Aggregator create() {
+        return new NoOpAggregator();
     }
 
     @Override

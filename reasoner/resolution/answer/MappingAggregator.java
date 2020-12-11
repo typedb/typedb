@@ -34,34 +34,21 @@ public class MappingAggregator extends Aggregator {
     private final Map<Reference.Name, Reference.Name> mapping;
     private final Map<Reference.Name, Reference.Name> reverseMapping;
 
-    public static MappingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
-        return new MappingAggregator(conceptMap, variableMap);
-    }
-
-    public static Map<Reference.Name, Reference.Name> identityMapping(ConjunctionConcludable<?, ?> concludable) {
-        return new HashSet<>(concludable.constraint().variables()).stream()
-                .filter(variable -> variable.reference().isName())
-                .map(variable -> variable.reference().asName())
-                .collect(Collectors.toMap(Function.identity(), Function.identity()));
-    }
-
     MappingAggregator(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
         super(conceptMap, transform(conceptMap, mapping));
         this.mapping = mapping;
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
-    @Override
-    ConceptMap unTransform(ConceptMap conceptMap) {
-        return transform(conceptMap, reverseMapping);
+    public static MappingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
+        return new MappingAggregator(conceptMap, variableMap);
     }
 
-    private static ConceptMap transform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
-        Map<Reference, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
-            transformed.put(e.getValue(), conceptMap.get(e.getKey()));
-        }
-        return new ConceptMap(transformed);
+    public static Map<Reference.Name, Reference.Name> identity(ConjunctionConcludable<?, ?> concludable) {
+        return new HashSet<>(concludable.constraint().variables()).stream()
+                .filter(variable -> variable.reference().isName())
+                .map(variable -> variable.reference().asName())
+                .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
     @Override
@@ -76,5 +63,18 @@ public class MappingAggregator extends Aggregator {
     @Override
     public int hashCode() {
         return Objects.hash(mapping, reverseMapping);
+    }
+
+    @Override
+    ConceptMap unTransform(ConceptMap conceptMap) {
+        return transform(conceptMap, reverseMapping);
+    }
+
+    private static ConceptMap transform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
+        Map<Reference, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
+            transformed.put(e.getValue(), conceptMap.get(e.getKey()));
+        }
+        return new ConceptMap(transformed);
     }
 }
