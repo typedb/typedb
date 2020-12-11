@@ -55,7 +55,7 @@ public class LogicManager {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
-        this.typeHinter = new TypeHinter(conceptMgr, traversalEng, logicCache.hinter());
+        this.typeHinter = new TypeHinter(conceptMgr, traversalEng, logicCache);
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
