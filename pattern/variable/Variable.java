@@ -79,19 +79,31 @@ public abstract class Variable implements Pattern {
     }
 
     public void addHints(Set<Label> labels) {
+        if (typeHints.isEmpty() && isSatisfiable) return;
         typeHints.addAll(labels);
+        if (!isSatisfiable && !typeHints.isEmpty()) isSatisfiable = true;
     }
 
     public void retainHints(Set<Label> labels) {
+        if (typeHints.isEmpty() && isSatisfiable) {
+            typeHints.addAll(labels);
+            return;
+        }
         typeHints.retainAll(labels);
+        if (typeHints.isEmpty()) isSatisfiable = false;
     }
 
     public void removeHint(Label label) {
+        assert !(typeHints.isEmpty() && isSatisfiable);
         typeHints.remove(label);
     }
 
     public Set<Label> typeHints() {
         return typeHints;
+    }
+
+    public boolean isSatisfiable() {
+        return isSatisfiable;
     }
 
     @Override

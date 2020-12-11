@@ -155,13 +155,12 @@ public class TypeHinter {
 
         Set<Label> supLabels = supVar.typeHints();
         Set<Label> subLabels = subVar.typeHints();
-        if (supLabels == null || supLabels.isEmpty()) return;
+        if (supLabels.isEmpty()) return;
 
-        if (subLabels == null) return;
         if (subLabels.isEmpty()) {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).map(Label::of).collect(Collectors.toSet());
-            subVar.addHints(subHintsOfSupLabels);
+            subVar.retainHints(subHintsOfSupLabels);
             return;
         }
 
