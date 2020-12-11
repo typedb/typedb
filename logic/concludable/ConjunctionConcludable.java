@@ -142,29 +142,29 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         @Override
         public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
-            Map<Reference, Set<Reference>> startingUnifier = new HashMap<>();
+            Map<Reference, Set<Reference>> variableUnifier = new HashMap<>();
             Optional<Map<Reference, Set<Reference>>> newUnifier;
             if (constraint.owner().reference().isName()) {
-                newUnifier = extendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), startingUnifier);
-                if (newUnifier.isPresent()) startingUnifier = newUnifier.get();
+                newUnifier = extendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), variableUnifier);
+                if (newUnifier.isPresent()) variableUnifier = newUnifier.get();
                 else return Stream.empty();
             }
 
             if (constraint.owner().isa().isPresent() && constraint.owner().isa().get().type().reference().isName()) {
                 assert unifyWith.constraint().owner().isa().isPresent();
                 newUnifier = extendUnifier(this.constraint().owner().isa().get().type(),
-                        unifyWith.constraint().owner().isa().get().type(), startingUnifier);
-                if (newUnifier.isPresent()) startingUnifier = newUnifier.get();
+                        unifyWith.constraint().owner().isa().get().type(), variableUnifier);
+                if (newUnifier.isPresent()) variableUnifier = newUnifier.get();
                 else return Stream.empty();
             }
 
-            Map<Reference, Set<Reference>> finalStartingUnifier = startingUnifier;
-            return unifyRolePlayers2(this.constraint().players(), unifyWith.constraint().players(),
-                    new HashMap<>()).map(unifier -> convertRolePlayerUnifier(unifier, finalStartingUnifier));
+            Map<Reference, Set<Reference>> finalVariableUnifier = variableUnifier;
+            return unifyRolePlayers(this.constraint().players(), unifyWith.constraint().players(),
+                    new HashMap<>()).map(unifier -> convertRolePlayerUnifier(unifier, finalVariableUnifier));
         }
 
         //TODO: edge case when role players are identical.
-        private Stream<Map<RolePlayer, RolePlayer>> unifyRolePlayers2(
+        private Stream<Map<RolePlayer, RolePlayer>> unifyRolePlayers(
                 List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, RolePlayer> unifier) {
 
@@ -176,30 +176,10 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                                     .map(thenRP -> extendRolePlayerUnifier(conjRP, thenRP, unifier))
                                     .filter(Optional::isPresent).map(Optional::get)
                                     .flatMap(newUnifier ->
-                                            unifyRolePlayers2(conjRolePlayers, thenRolePlayers, newUnifier)
+                                            unifyRolePlayers(conjRolePlayers, thenRolePlayers, newUnifier)
                                     ))
             ).orElseGet(() -> Stream.of(unifier));
 
-        }
-
-        private Set<Map<Reference, Set<Reference>>> unifyRolePlayers(
-                List<RolePlayer> conjunctionRolePlayers, List<RolePlayer> thenRolePlayers,
-                Map<Reference, Set<Reference>> unifier, Set<RolePlayer> visitedThenRolePlayers) {
-            Set<Map<Reference, Set<Reference>>> allUnifiers = new HashSet<>();
-            if (conjunctionRolePlayers.isEmpty()) {
-                return set(unifier);
-            }
-            RolePlayer conjRP = conjunctionRolePlayers.remove(0);
-            for (RolePlayer thenRP : thenRolePlayers) {
-                if (visitedThenRolePlayers.contains(thenRP)) continue;
-                visitedThenRolePlayers.add(thenRP);
-                extendUnifier(conjRP, thenRP, unifier).ifPresent(newUnifier ->
-                        allUnifiers.addAll(unifyRolePlayers(conjunctionRolePlayers,
-                                thenRolePlayers, newUnifier, visitedThenRolePlayers)));
-                visitedThenRolePlayers.remove(thenRP);
-            }
-            conjunctionRolePlayers.add(conjRP);
-            return allUnifiers;
         }
 
         Map<Reference, Set<Reference>> convertRolePlayerUnifier(
