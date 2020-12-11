@@ -159,46 +159,46 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 else return Stream.empty();
             }
 
-            return matchRolesAndUnify(new ArrayList<>(this.constraint().players()), unifyWith.constraint().players(),
+            return unifyRolePlayers(new ArrayList<>(this.constraint().players()), unifyWith.constraint().players(),
                     startingUnifier, new HashSet<>()).stream();
         }
 
-        private Set<Map<Reference, Set<Reference>>> matchRolesAndUnify(
-                List<RolePlayer> conjunctionRolePlayers, List<RolePlayer> headRolePlayers,
-                Map<Reference, Set<Reference>> unifier, Set<RolePlayer> visitedHeadRolePlayers) {
+        private Set<Map<Reference, Set<Reference>>> unifyRolePlayers(
+                List<RolePlayer> conjunctionRolePlayers, List<RolePlayer> thenRolePlayers,
+                Map<Reference, Set<Reference>> unifier, Set<RolePlayer> visitedThenRolePlayers) {
             Set<Map<Reference, Set<Reference>>> allUnifiers = new HashSet<>();
             if (conjunctionRolePlayers.isEmpty()) {
                 return set(unifier);
             }
-            RolePlayer conj = conjunctionRolePlayers.remove(0);
-            for (RolePlayer head : headRolePlayers) {
-                if (visitedHeadRolePlayers.contains(head)) continue;
-                visitedHeadRolePlayers.add(head);
-                extendUnifier(conj, head, unifier).ifPresent(newUnifier ->
-                        allUnifiers.addAll(matchRolesAndUnify(conjunctionRolePlayers,
-                                headRolePlayers, newUnifier, visitedHeadRolePlayers)));
-                visitedHeadRolePlayers.remove(head);
+            RolePlayer conjRP = conjunctionRolePlayers.remove(0);
+            for (RolePlayer thenRP : thenRolePlayers) {
+                if (visitedThenRolePlayers.contains(thenRP)) continue;
+                visitedThenRolePlayers.add(thenRP);
+                extendUnifier(conjRP, thenRP, unifier).ifPresent(newUnifier ->
+                        allUnifiers.addAll(unifyRolePlayers(conjunctionRolePlayers,
+                                thenRolePlayers, newUnifier, visitedThenRolePlayers)));
+                visitedThenRolePlayers.remove(thenRP);
             }
-            conjunctionRolePlayers.add(conj);
+            conjunctionRolePlayers.add(conjRP);
             return allUnifiers;
         }
 
         Optional<Map<Reference, Set<Reference>>> extendUnifier(
-                RolePlayer conjPlayer, RolePlayer headPlayer, Map<Reference, Set<Reference>> originalUnifier) {
-            if (!headPlayer.roleTypeHints().isEmpty() && !conjPlayer.roleTypeHints().isEmpty() &&
-                    Collections.disjoint(headPlayer.roleTypeHints(), conjPlayer.roleTypeHints())) {
+                RolePlayer conjRP, RolePlayer thenRP, Map<Reference, Set<Reference>> originalUnifier) {
+            if (!thenRP.roleTypeHints().isEmpty() && !conjRP.roleTypeHints().isEmpty() &&
+                    Collections.disjoint(thenRP.roleTypeHints(), conjRP.roleTypeHints())) {
                 return Optional.empty();
             }
 
             Optional<Map<Reference, Set<Reference>>> newUnifier;
             Map<Reference, Set<Reference>> unifier = cloneMapping(originalUnifier);
-            if (conjPlayer.roleType().isPresent() && conjPlayer.roleType().get().reference().isName()) {
-                assert headPlayer.roleType().isPresent();
-                newUnifier = extendUnifier(conjPlayer.roleType().get(), headPlayer.roleType().get(), unifier);
+            if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
+                assert thenRP.roleType().isPresent();
+                newUnifier = extendUnifier(conjRP.roleType().get(), thenRP.roleType().get(), unifier);
                 if (newUnifier.isPresent()) unifier = newUnifier.get();
                 else return Optional.empty();
             }
-            return extendUnifier(conjPlayer.player(), headPlayer.player(), unifier);
+            return extendUnifier(conjRP.player(), thenRP.player(), unifier);
         }
 
         @Override
