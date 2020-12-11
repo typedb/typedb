@@ -48,7 +48,6 @@ public class Importer {
     private final Map<String, byte[]> idMap = new HashMap<>();
     private final List<Pair<byte[], List<String>>> missingOwnerships = new ArrayList<>();
     private final List<Pair<byte[], List<Pair<String, List<String>>>>> missingRolePlayers = new ArrayList<>();
-    private final Map<String, Thing> thingCache = new HashMap<>();
     private long totalThingCount = 0;
     private long entityCount = 0;
     private long relationCount = 0;
@@ -133,7 +132,7 @@ public class Importer {
         EntityType entityType = tx.concepts().getEntityType(relabel(entityMsg.getLabel()));
         if (entityType != null) {
             Entity entity = entityType.create();
-            cacheThing(entityMsg.getId(), entity);
+            idMap.put(entityMsg.getId(), entity.getIID());
             insertOwnedAttributesThatExist(tx, entity, entityMsg.getAttributeList());
             entityCount++;
             mayCommit();
@@ -146,7 +145,7 @@ public class Importer {
         RelationType relationType = tx.concepts().getRelationType(relabel(relationMsg.getLabel()));
         if (relationType != null) {
             Relation relation = relationType.create();
-            cacheThing(relationMsg.getId(), relation);
+            idMap.put(relationMsg.getId(), relation.getIID());
             insertOwnedAttributesThatExist(tx, relation, relationMsg.getAttributeList());
 
             List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
@@ -155,7 +154,7 @@ public class Importer {
                 List<String> missingPlayers = new ArrayList<>();
                 if (role != null) {
                     for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                        Thing player = getCachedThing(tx, playerMessage.getId());
+                        Thing player = getThing(tx, playerMessage.getId());
                         if (player != null) {
                             relation.addPlayer(role, player);
                             playerCount++;
@@ -202,7 +201,7 @@ public class Importer {
                 default:
                     throw GraknException.of(INVALID_DATA);
             }
-            cacheThing(attributeMsg.getId(), attribute);
+            idMap.put(attributeMsg.getId(), attribute.getIID());
             insertOwnedAttributesThatExist(tx, attribute, attributeMsg.getAttributeList());
             attributeCount++;
             mayCommit();
@@ -214,9 +213,9 @@ public class Importer {
     private void insertOwnedAttributesThatExist(Grakn.Transaction tx, Thing thing, List<DataProto.Item.OwnedAttribute> ownedMsgs) {
         List<String> missingOwnerships = new ArrayList<>();
         for (DataProto.Item.OwnedAttribute ownedMsg : ownedMsgs) {
-            Attribute attribute = getCachedThing(tx, ownedMsg.getId()).asAttribute();
-            if (attribute != null) {
-                thing.setHas(attribute);
+            Thing attrThing = getThing(tx, ownedMsg.getId());
+            if (attrThing != null) {
+                thing.setHas(attrThing.asAttribute());
                 ownershipCount++;
             } else {
                 missingOwnerships.add(ownedMsg.getId());
@@ -230,9 +229,9 @@ public class Importer {
         for (Pair<byte[], List<String>> ownership : missingOwnerships) {
             Thing thing = tx.concepts().getThing(ownership.first());
             for (String originalAttributeId : ownership.second()) {
-                Attribute attribute =  getCachedThing(tx, originalAttributeId).asAttribute();
-                assert thing != null;
-                thing.setHas(attribute);
+                Thing attrThing = getThing(tx, originalAttributeId);
+                assert thing != null && attrThing != null;
+                thing.setHas(attrThing.asAttribute());
                 ownershipCount++;
             }
             mayCommit();
@@ -248,7 +247,7 @@ public class Importer {
             for (Pair<String, List<String>> pair : rolePlayers.second()) {
                 RoleType role = relation.getType().getRelates(pair.first());
                 for (String originalPlayerId : pair.second()) {
-                    Thing player = getCachedThing(tx, originalPlayerId);
+                    Thing player = getThing(tx, originalPlayerId);
                     relation.addPlayer(role, player);
                     playerCount++;
                 }
@@ -258,20 +257,9 @@ public class Importer {
         missingRolePlayers.clear();
     }
 
-    private void cacheThing(String originalId, Thing thing) {
-        idMap.put(originalId, thing.getIID());
-    }
-
-    private Thing getCachedThing(Grakn.Transaction tx, String originalId) {
-        Thing thing = thingCache.get(originalId);
-        if (thing == null) {
-            byte[] newId = idMap.get(originalId);
-            if (newId != null) {
-                thing = tx.concepts().getThing(newId);
-                thingCache.put(originalId, thing);
-            }
-        }
-        return thing;
+    private Thing getThing(Grakn.Transaction tx, String originalId) {
+        byte[] newId = idMap.get(originalId);
+        return newId != null ? tx.concepts().getThing(newId) : null;
     }
 
     private String relabel(String label) {
@@ -292,6 +280,5 @@ public class Importer {
         LOG.debug("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
         commitWriteCount = 0;
-        thingCache.clear();
     }
 }
