@@ -18,9 +18,20 @@
 package grakn.core.server.rpc;
 
 import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
+import grakn.core.server.migrator.Importer;
 import grakn.core.server.migrator.proto.MigratorGrpc;
 import grakn.core.server.migrator.proto.MigratorProto;
 import io.grpc.stub.StreamObserver;
+
+import java.nio.file.Paths;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static grakn.core.server.rpc.util.ResponseBuilder.exception;
 
 public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
 
@@ -37,30 +48,30 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        for (int i = 0; i < 100; i++) {
-            MigratorProto.Job.Res res = MigratorProto.Job.Res.newBuilder().setProgress(
-                    MigratorProto.Job.Progress.newBuilder().setCurrent(i + 1).setTotal(100).build()
-            ).build();
-            responseObserver.onNext(res);
+            Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()), request.getRemapLabelsMap());
+            CompletableFuture<Void> importerJob = CompletableFuture.runAsync(importer::run);
             try {
-                Thread.sleep(100);
+                while (true) {
+                    try {
+                        importerJob.get(1, TimeUnit.SECONDS);
+                        break;
+                    } catch (TimeoutException e) {
+                        responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(importer.getProgress()).build());
+                    }
+                }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+            } catch (ExecutionException e) {
+                throw e.getCause();
             }
+            responseObserver.onCompleted();
+        } catch (Throwable e) {
+            responseObserver.onError(exception(e));
         }
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        responseObserver.onCompleted();
     }
 
     @Override
     public void exportSchema(MigratorProto.ExportSchema.Req request, StreamObserver<MigratorProto.ExportSchema.Res> responseObserver) {
     }
+
 }

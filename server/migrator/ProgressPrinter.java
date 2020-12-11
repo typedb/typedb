@@ -74,7 +74,7 @@ public class ProgressPrinter {
             if (total > 0) {
                 percent = String.format("%.1f", (double)current / (double)total * 100.0);
             } else {
-                percent = "100";
+                percent = "?";
             }
             builder.append(String.format(",\n    has progress (%s%%),\n    has count (%,d / %,d)",
                     percent, current, total));
