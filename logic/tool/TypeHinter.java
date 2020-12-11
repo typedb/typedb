@@ -18,6 +18,7 @@
 
 package grakn.core.logic.tool;
 
+import grakn.core.common.cache.CommonCache;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
@@ -58,9 +59,10 @@ public class TypeHinter {
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
-    private final TypeHinterCache cache;
+    private final CommonCache<Conjunction, Map<Reference, Set<Label>>> cache;
 
-    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng, TypeHinterCache cache) {
+    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng,
+                      CommonCache<Conjunction, Map<Reference, Set<Label>>> cache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.cache = cache;

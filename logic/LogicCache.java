@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.logic.tool;
+package grakn.core.logic;
 
 import grakn.core.common.cache.CommonCache;
 import grakn.core.common.parameters.Label;
@@ -26,13 +26,22 @@ import graql.lang.pattern.variable.Reference;
 import java.util.Map;
 import java.util.Set;
 
-public class TypeHinterCache extends CommonCache<Conjunction, Map<Reference, Set<Label>>> {
+public class LogicCache  {
 
-    public TypeHinterCache() {
-        super();
+    private CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinterCache;
+    private CommonCache<String, Rule> ruleCache;
+
+    public LogicCache() {
+        typeHinterCache = new CommonCache<>();
+        ruleCache = new CommonCache<>();
     }
 
-    public TypeHinterCache(int size, int timeOutMinutes) {
-        super(size, timeOutMinutes);
+    public LogicCache(int size, int timeOutMinutes) {
+        typeHinterCache = new CommonCache<>(size, timeOutMinutes);
+        ruleCache = new CommonCache<>(size, timeOutMinutes);
     }
+
+    CommonCache<Conjunction, Map<Reference, Set<Label>>> hinter() { return typeHinterCache; }
+
+    CommonCache<String, Rule> rule() { return ruleCache; }
 }

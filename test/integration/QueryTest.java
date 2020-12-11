@@ -110,10 +110,12 @@ public class QueryTest {
                     assertTrue(user.getPlays().anyMatch(r -> r.equals(teamMember_member)));
 
                     // check first 4 rules
-                    assertNotNull(tx.logics().getRule("repo-fork-rule"));
-                    assertNotNull(tx.logics().getRule("repo-dependency-transitive-rule"));
-                    assertNotNull(tx.logics().getRule("repo-dependency-transitive-type-rule"));
-                    assertNotNull(tx.logics().getRule("repo-collaborator-org-rule"));
+                    assertNotNull(tx.logic().getRule("repo-fork-rule"));
+                    assertNotNull(tx.logic().getRule("repo-dependency-transitive-rule"));
+                    assertNotNull(tx.logic().getRule("repo-dependency-transitive-type-rule"));
+                    assertNotNull(tx.logic().getRule("repo-collaborator-org-rule"));
+                    // check total count
+                    assertEquals(20, tx.logic().rules().toList().size());
                 }
             }
         }
@@ -165,6 +167,12 @@ public class QueryTest {
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
+                    // undefine `performance-tracker-rule` because it depends on an undefined role performance-tracker:tracker
+                    // else the commit would throw
+                    queryString = "undefine rule performance-tracker-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+
                     transaction.commit();
                 }
 
@@ -185,10 +193,13 @@ public class QueryTest {
                     final AttributeType index = tx.concepts().getAttributeType("index");
                     assertNull(index);
 
-                    assertNull(tx.logics().getRule("repo-fork-rule"));
-                    assertNull(tx.logics().getRule("repo-dependency-transitive-rule"));
-                    assertNull(tx.logics().getRule("repo-dependency-transitive-type-rule"));
-                    assertNull(tx.logics().getRule("repo-collaborator-org-rule"));
+                    assertNull(tx.logic().getRule("repo-fork-rule"));
+                    assertNull(tx.logic().getRule("repo-dependency-transitive-rule"));
+                    assertNull(tx.logic().getRule("repo-dependency-transitive-type-rule"));
+                    assertNull(tx.logic().getRule("repo-collaborator-org-rule"));
+
+                    // check total count
+                    assertEquals(20 - 5, tx.logic().rules().toList().size());
                 }
             }
         }

@@ -46,37 +46,37 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         super(constraint);
     }
 
-    public static Set<ConjunctionConcludable<?, ?>> of(grakn.core.pattern.Conjunction conjunction) {
+    public static Set<ConjunctionConcludable<?, ?>> create(grakn.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction.variables()).concludables();
     }
 
     public Stream<Pair<Rule, Unification>> findUnifiableRules(Stream<Rule> allRules) {
-        return allRules.flatMap(rule -> rule.head().stream()
+        return allRules.flatMap(rule -> rule.possibleThenConcludables().stream()
                                                .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
         );
     }
 
-    private Stream<Unification> unify(HeadConcludable<?, ?> unifyWith) {
-        if (unifyWith instanceof HeadConcludable.Relation) return unify((HeadConcludable.Relation) unifyWith);
-        else if (unifyWith instanceof HeadConcludable.Has) return unify((HeadConcludable.Has) unifyWith);
-        else if (unifyWith instanceof HeadConcludable.Isa) return unify((HeadConcludable.Isa) unifyWith);
-        else if (unifyWith instanceof HeadConcludable.Value) return unify((HeadConcludable.Value) unifyWith);
+    private Stream<Unification> unify(ThenConcludable<?, ?> unifyWith) {
+        if (unifyWith instanceof ThenConcludable.Relation) return unify((ThenConcludable.Relation) unifyWith);
+        else if (unifyWith instanceof ThenConcludable.Has) return unify((ThenConcludable.Has) unifyWith);
+        else if (unifyWith instanceof ThenConcludable.Isa) return unify((ThenConcludable.Isa) unifyWith);
+        else if (unifyWith instanceof ThenConcludable.Value) return unify((ThenConcludable.Value) unifyWith);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unification> unify(HeadConcludable.Relation unifyWith) {
+    Stream<Unification> unify(ThenConcludable.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unification> unify(HeadConcludable.Has unifyWith) {
+    Stream<Unification> unify(ThenConcludable.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unification> unify(HeadConcludable.Isa unifyWith) {
+    Stream<Unification> unify(ThenConcludable.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unification> unify(HeadConcludable.Value unifyWith) {
+    Stream<Unification> unify(ThenConcludable.Value unifyWith) {
         return Stream.empty();
     }
 
@@ -119,7 +119,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unification> unify(HeadConcludable.Relation unifyWith) {
+        public Stream<Unification> unify(ThenConcludable.Relation unifyWith) {
             // Check the relation variables' isa constraint labels and prune if there is no intersection
 
             // Find all roleplayer mapping combinations, which should have the form:
@@ -147,7 +147,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unification> unify(HeadConcludable.Has unifyWith) {
+        public Stream<Unification> unify(ThenConcludable.Has unifyWith) {
             return null;
         }
 
@@ -169,7 +169,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unification> unify(HeadConcludable.Isa headIsa) {
+        public Stream<Unification> unify(ThenConcludable.Isa headIsa) {
             Set<Label> possibleLabels = constraint().getTypeHints();
             Set<Label> otherLabels = headIsa.constraint().getTypeHints();
             possibleLabels.retainAll(otherLabels);
@@ -194,7 +194,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unification> unify(HeadConcludable.Value unifyWith) {
+        public Stream<Unification> unify(ThenConcludable.Value unifyWith) {
             return null;
         }
 
