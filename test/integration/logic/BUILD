@@ -21,7 +21,6 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 host_compatible_java_test(
     name = "test-rule",
     srcs = ["RuleTest.java"],
-    test_class = "grakn.core.logic.RuleTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -29,24 +28,25 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
     ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
+    ],
+    test_class = "grakn.core.logic.RuleTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
+        "//test/integration/util",
+        "//common",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
     ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
     name = "test-type-hinter",
     srcs = ["TypeHinterTest.java"],
-    test_class = "grakn.core.logic.TypeHinterTest",
+    data = [":basic-schema.gql"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -54,23 +54,22 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.TypeHinterTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
+        "//test/integration/util",
+        "//common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
+        "@graknlabs_graql//java/query",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
     ],
-    data = [":basic-schema.gql"],
 )
 
 host_compatible_java_test(
     name = "test-unify",
     srcs = ["concludable/UnifyTest.java"],
-    test_class = "grakn.core.logic.concludable.UnifyTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -78,16 +77,11 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.concludable.UnifyTest",
     deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
     ],
 )
 
