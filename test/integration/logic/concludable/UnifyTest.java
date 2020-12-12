@@ -568,9 +568,7 @@ public class UnifyTest {
     }
 
     @Test
-    @Ignore
     public void relation_repeated_role_players() {
-        //TODO: reanble when same roleplayer edge case is taken account of.
         String conjunction = "{ ($role1: $x, $role2: $y, $role1: $x) isa employment; }";
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
