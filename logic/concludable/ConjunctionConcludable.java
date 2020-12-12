@@ -33,7 +33,6 @@ import graql.lang.pattern.variable.Reference;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -160,7 +159,8 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             }
 
             Map<Reference, Set<Reference>> finalVariableUnifier = variableUnifier;
-            return unifyRolePlayers(this.constraint().players(), unifyWith.constraint().players(),
+            return unifyRolePlayers(Collections.unmodifiableList(constraint.players()),
+                    Collections.unmodifiableList(unifyWith.constraint().players()),
                     new HashMap<>()).map(unifier -> convertRolePlayerUnifier(unifier, finalVariableUnifier));
         }
 
@@ -183,7 +183,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         }
 
-        Map<Reference, Set<Reference>> convertRolePlayerUnifier(
+        private Map<Reference, Set<Reference>> convertRolePlayerUnifier(
                 Map<RolePlayer, Set<RolePlayer>> rolePlayerUnifier, Map<Reference, Set<Reference>> variableUnifier) {
             Map<Reference, Set<Reference>> newMapping = cloneMapping(variableUnifier);
             rolePlayerUnifier.forEach((conjRP, thenRPSet) -> {
@@ -202,7 +202,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             return newMapping;
         }
 
-        private boolean roleHinstDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
+        private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
             if (!conjRP.roleTypeHints().isEmpty() && !thenRP.roleTypeHints().isEmpty()
                     && Collections.disjoint(conjRP.roleTypeHints(), thenRP.roleTypeHints())) return true;
             if (varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
@@ -213,9 +213,9 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             return false;
         }
 
-        Optional<Map<RolePlayer, Set<RolePlayer>>> extendRolePlayerUnifier(
+        private Optional<Map<RolePlayer, Set<RolePlayer>>> extendRolePlayerUnifier(
                 RolePlayer conjRP, RolePlayer thenRP, Map<RolePlayer, Set<RolePlayer>> originalUnifier) {
-            if (roleHinstDisjoint(conjRP, thenRP)) return Optional.empty();
+            if (roleHintsDisjoint(conjRP, thenRP)) return Optional.empty();
             Map<RolePlayer, Set<RolePlayer>> newUnifier = cloneMapping(originalUnifier);
             newUnifier.putIfAbsent(conjRP, new HashSet<>());
             newUnifier.get(conjRP).add(thenRP);

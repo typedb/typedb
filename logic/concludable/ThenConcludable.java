@@ -94,7 +94,7 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, U extends T
                         if (copyTo.isThing() && copyFrom.isThing()) {
                             copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
                         } else if (copyTo.isType() && copyFrom.isType()) {
-                            copyLabelAndValueType(copyFrom.asType(), copyTo.asType());
+                            copyLabelSubAndValueType(copyFrom.asType(), copyTo.asType());
                         } else throw GraknException.of(ILLEGAL_STATE);
                     }
                 });

@@ -124,7 +124,7 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         copyValuesOntoVariable(oldOwner.value(), newOwner);
     }
 
-    static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
+    static void copyLabelSubAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
         if (copyFrom.label().isPresent()) copyTo.label(Label.of(copyFrom.label().get().label()));
         if (copyFrom.sub().isPresent()) {
             SubConstraint subCopy = copyFrom.sub().get();
@@ -136,7 +136,7 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
 
     static TypeVariable copyVariableWithLabelAndValueType(TypeVariable copyFrom) {
         TypeVariable copy = TypeVariable.of(copyFrom.identifier());
-        copyLabelAndValueType(copyFrom, copy);
+        copyLabelSubAndValueType(copyFrom, copy);
         return copy;
     }
 
