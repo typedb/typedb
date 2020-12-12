@@ -21,6 +21,7 @@ package grakn.core.graph;
 import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
@@ -112,7 +113,6 @@ public class SchemaGraph implements Graph {
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
         }
 
-
     }
 
     @Override
@@ -163,6 +163,13 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex rootRoleType() {
         return getType(ROLE.label(), ROLE.scope());
+    }
+
+    public ResourceIterator<RuleStructure> rules() {
+        Encoding.Prefix index = IndexIID.Rule.prefix();
+        ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
+                convert(StructureIID.Rule.of(value)));
+        return link(list(Iterators.iterate(rulesByIID.values()), persistedRules)).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -223,6 +230,10 @@ public class SchemaGraph implements Graph {
         return typesByIID.values().stream();
     }
 
+    public Stream<RuleStructure> bufferedRules() {
+        return rulesByIID.values().stream();
+    }
+
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
@@ -233,9 +244,9 @@ public class SchemaGraph implements Graph {
 
     public RuleStructure convert(StructureIID.Rule iid) {
         return rulesByIID.computeIfAbsent(iid, i -> {
-            final RuleStructure rule = new RuleStructureImpl.Persisted(this, i);
-            rulesByLabel.putIfAbsent(rule.label(), rule);
-            return rule;
+            final RuleStructure structure = new RuleStructureImpl.Persisted(this, i);
+            rulesByLabel.putIfAbsent(structure.label(), structure);
+            return structure;
         });
     }
 

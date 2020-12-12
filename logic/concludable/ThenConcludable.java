@@ -35,15 +35,15 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends HeadConcludable<CONSTRAINT, U>>
+public abstract class ThenConcludable<CONSTRAINT extends Constraint, U extends ThenConcludable<CONSTRAINT, U>>
         extends Concludable<CONSTRAINT, U> {
 
-    private HeadConcludable(CONSTRAINT constraint, Set<Variable> constraintContext) {
+    private ThenConcludable(CONSTRAINT constraint, Set<Variable> constraintContext) {
         super(constraint);
         copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
     }
 
-    public static HeadConcludable<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
+    public static ThenConcludable<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
         if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
         else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
         else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
@@ -100,7 +100,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
                 });
     }
 
-    public static class Relation extends HeadConcludable<RelationConstraint, Relation> {
+    public static class Relation extends ThenConcludable<RelationConstraint, Relation> {
 
         public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);
@@ -122,7 +122,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         }
     }
 
-    public static class Has extends HeadConcludable<HasConstraint, Has> {
+    public static class Has extends ThenConcludable<HasConstraint, Has> {
 
         public Has(HasConstraint constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);
@@ -143,7 +143,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         }
     }
 
-    public static class Isa extends HeadConcludable<IsaConstraint, HeadConcludable.Isa> {
+    public static class Isa extends ThenConcludable<IsaConstraint, ThenConcludable.Isa> {
 
         public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);
@@ -164,7 +164,7 @@ public abstract class HeadConcludable<CONSTRAINT extends Constraint, U extends H
         }
     }
 
-    public static class Value extends HeadConcludable<ValueConstraint<?>, Value> {
+    public static class Value extends ThenConcludable<ValueConstraint<?>, Value> {
 
         Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
             super(constraint, constraintContext);

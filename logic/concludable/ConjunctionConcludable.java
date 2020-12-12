@@ -57,32 +57,32 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     }
 
     public Stream<Pair<Rule, Map<Reference, Set<Reference>>>> findUnifiableRules(Stream<Rule> allRules) {
-        return allRules.flatMap(rule -> rule.head().stream()
+        return allRules.flatMap(rule -> rule.possibleThenConcludables().stream()
                 .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
         );
     }
 
-    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable<?, ?> unifyWith) {
-        if (unifyWith instanceof HeadConcludable.Relation) return unify((HeadConcludable.Relation) unifyWith);
-        else if (unifyWith instanceof HeadConcludable.Has) return unify((HeadConcludable.Has) unifyWith);
-        else if (unifyWith instanceof HeadConcludable.Isa) return unify((HeadConcludable.Isa) unifyWith);
-        else if (unifyWith instanceof HeadConcludable.Value) return unify((HeadConcludable.Value) unifyWith);
+    Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable<?, ?> unifyWith) {
+        if (unifyWith instanceof ThenConcludable.Relation) return unify((ThenConcludable.Relation) unifyWith);
+        else if (unifyWith instanceof ThenConcludable.Has) return unify((ThenConcludable.Has) unifyWith);
+        else if (unifyWith instanceof ThenConcludable.Isa) return unify((ThenConcludable.Isa) unifyWith);
+        else if (unifyWith instanceof ThenConcludable.Value) return unify((ThenConcludable.Value) unifyWith);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Has unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Isa unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Value unifyWith) {
+    Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Value unifyWith) {
         return Stream.empty();
     }
 
@@ -140,7 +140,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Relation unifyWith) {
+        public Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Relation unifyWith) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
             Map<Reference, Set<Reference>> variableUnifier = new HashMap<>();
             Optional<Map<Reference, Set<Reference>>> newUnifier;
@@ -254,7 +254,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Has unifyWith) {
+        public Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Has unifyWith) {
             Optional<Map<Reference, Set<Reference>>> unifier = extendUnifier(constraint.owner(),
                     unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
@@ -283,7 +283,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Isa unifyWith) {
+        Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Isa unifyWith) {
             Optional<Map<Reference, Set<Reference>>> unifier = extendUnifier(constraint.owner(),
                     unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
@@ -312,7 +312,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        Stream<Map<Reference, Set<Reference>>> unify(HeadConcludable.Value unifyWith) {
+        Stream<Map<Reference, Set<Reference>>> unify(ThenConcludable.Value unifyWith) {
             Optional<Map<Reference, Set<Reference>>> unifier = extendUnifier(constraint.owner(),
                     unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();

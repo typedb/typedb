@@ -23,7 +23,7 @@ class GraknCore < Formula
 
   bottle :unneeded
 
-  depends_on :java => "1.8"
+  depends_on "openjdk@11"
 
   def setup_directory(dir)
     grakn_dir = var/name/dir
@@ -35,9 +35,9 @@ class GraknCore < Formula
 
   def install
     libexec.install Dir["*"]
-    setup_directory "db"
+    setup_directory "data"
     setup_directory "logs"
     bin.install libexec/"grakn"
-    bin.env_script_all_files(libexec, Language::Java.java_home_env("1.8"))
+    bin.env_script_all_files(libexec, Language::Java.java_home_env("1.11"))
   end
 end

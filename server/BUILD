@@ -221,7 +221,7 @@ deploy_artifact(
     name = "deploy-mac-zip",
     target = ":assemble-mac-zip",
     artifact_group = "graknlabs_grakn_core",
-    artifact_name = "grakn-core-server-mac-{version}.tar.gz",
+    artifact_name = "grakn-core-server-mac-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
@@ -230,7 +230,7 @@ deploy_artifact(
     name = "deploy-windows-zip",
     target = ":assemble-windows-zip",
     artifact_group = "graknlabs_grakn_core",
-    artifact_name = "grakn-core-server-windows-{version}.tar.gz",
+    artifact_name = "grakn-core-server-windows-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
