@@ -37,10 +37,11 @@ build:
           bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
           --project-key=graknlabs_grakn_core \
           --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
-    dependency-analysis:
-      machine: graknlabs-ubuntu-20.04-java11
-      script: |
-        bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
+#    TODO:
+#    dependency-analysis:
+#      machine: graknlabs-ubuntu-20.04-java11
+#      script: |
+#        bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
   correctness:
     build:
       machine: graknlabs-ubuntu-20.04-java11
