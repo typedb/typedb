@@ -18,6 +18,7 @@
 
 package grakn.core.graph.iid;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
@@ -39,12 +40,13 @@ import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static grakn.core.common.collection.Bytes.stringToBytes;
-import static grakn.core.common.collection.Bytes.unsignedByteToInt;
+import static grakn.core.common.collection.Bytes.unsignedBytesToShort;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_IID_CASTING;
-import static grakn.core.graph.util.Encoding.STRING_ENCODING;
-import static grakn.core.graph.util.Encoding.STRING_MAX_LENGTH;
-import static grakn.core.graph.util.Encoding.TIME_ZONE_ID;
+import static grakn.core.graph.util.Encoding.ValueType.STRING_ENCODING;
+import static grakn.core.graph.util.Encoding.ValueType.STRING_MAX_SIZE;
+import static grakn.core.graph.util.Encoding.ValueType.STRING_SIZE_ENCODING;
+import static grakn.core.graph.util.Encoding.ValueType.TIME_ZONE_ID;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static java.util.Arrays.copyOfRange;
@@ -379,14 +381,16 @@ public abstract class VertexIID extends IID {
                 super(bytes);
             }
 
-            public String(VertexIID.Type typeIID, java.lang.String value) {
+            public String(VertexIID.Type typeIID, java.lang.String value) throws GraknCheckedException {
                 super(Encoding.ValueType.STRING, typeIID, stringToBytes(value, STRING_ENCODING));
-                assert bytes.length <= STRING_MAX_LENGTH + 1;
+                assert bytes.length <= STRING_MAX_SIZE + STRING_SIZE_ENCODING;
             }
 
             public static VertexIID.Attribute.String extract(byte[] bytes, int from) {
-                final int valueLength = unsignedByteToInt(bytes[from + VALUE_INDEX]) + 1;
-                return new VertexIID.Attribute.String(copyOfRange(bytes, from, from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + valueLength));
+                int attValIndex = from + VALUE_INDEX;
+                int strValLen = unsignedBytesToShort(copyOfRange(bytes, attValIndex, attValIndex + STRING_SIZE_ENCODING));
+                int stringEnd = from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + STRING_SIZE_ENCODING + strValLen;
+                return new VertexIID.Attribute.String(copyOfRange(bytes, from, stringEnd));
             }
 
             @Override

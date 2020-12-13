@@ -217,7 +217,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
-                new ThingWrite(2, "Attempted to insert a string larger than the maximum size.");
+                new ThingWrite(2, "Attempted to insert a string larger than the maximum possible size: %s bytes.");
         public static final ThingWrite CONCURRENT_ATTRIBUTE_WRITE_DELETE =
                 new ThingWrite(3, "Attempted concurrent modification of attributes (writes and deletes).");
         public static final ThingWrite THING_CANNOT_OWN_ATTRIBUTE =

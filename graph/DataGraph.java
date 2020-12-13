@@ -19,6 +19,7 @@
 package grakn.core.graph;
 
 import grakn.common.collection.Pair;
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
@@ -54,6 +55,7 @@ import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
@@ -63,6 +65,7 @@ import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ENTITY_TYPE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_RELATION_TYPE;
 import static grakn.core.graph.util.Encoding.StatisticsCountJobValue.CREATED;
 import static grakn.core.graph.util.Encoding.StatisticsCountJobValue.DELETED;
+import static grakn.core.graph.util.Encoding.ValueType.STRING_MAX_SIZE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
 import static grakn.core.graph.util.StatisticsBytes.attributeCountJobKey;
 import static grakn.core.graph.util.StatisticsBytes.attributeCountedKey;
@@ -231,9 +234,16 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(String.class);
 
+        VertexIID.Attribute.String attIID;
+        try {
+            attIID = new VertexIID.Attribute.String(type.iid(), value);
+        } catch (GraknCheckedException e) {
+            if (e.code().isPresent() && e.code().get().equals(ILLEGAL_STRING_SIZE.code())) return null;
+            else throw storage().exception(GraknException.of(e));
+        }
+
         return getOrReadFromStorage(
-                attributesByIID.strings,
-                new VertexIID.Attribute.String(type.iid(), value),
+                attributesByIID.strings, attIID,
                 iid -> new AttributeVertexImpl.String(this, iid)
         );
     }
@@ -308,11 +318,21 @@ public class DataGraph implements Graph {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(String.class);
-        assert value.length() <= Encoding.STRING_MAX_LENGTH;
+        assert value.length() <= STRING_MAX_SIZE;
+
+        VertexIID.Attribute.String attIID;
+        try {
+            attIID = new VertexIID.Attribute.String(type.iid(), value);
+        } catch (GraknCheckedException e) {
+            if (e.code().isPresent() && e.code().get().equals(ILLEGAL_STRING_SIZE.code())) {
+                throw storage().exception(GraknException.of(ILLEGAL_STRING_SIZE, STRING_MAX_SIZE));
+            } else {
+                throw storage().exception(GraknException.of(e));
+            }
+        }
 
         final AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
-                new VertexIID.Attribute.String(type.iid(), value),
-                iid -> {
+                attIID, iid -> {
                     final AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
                     return v;
