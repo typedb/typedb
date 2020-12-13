@@ -43,30 +43,6 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-traversal-2",
-    srcs = ["TraversalTest2.java"],
-    test_class = "grakn.core.traversal.TraversalTest2",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query:query",
-    ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-)
-
-host_compatible_java_test(
     name = "test-traversal-3",
     srcs = ["TraversalTest3.java"],
     test_class = "grakn.core.traversal.TraversalTest3",
