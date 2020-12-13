@@ -65,7 +65,7 @@ public class Parameters {
     @ParameterType("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")
     public ScopedLabel scoped_label(String roleLabel) {
         final String[] labels = roleLabel.split(":");
-        return new ScopedLabel(Label.of(labels[0], labels[1]));
+        return new ScopedLabel(Label.of(labels[1], labels[0]));
     }
 
     @DataTableType
@@ -75,7 +75,7 @@ public class Parameters {
         final List<ScopedLabel> scopedLabels = new ArrayList<>();
         while (valuesIter.hasNext() && (next = valuesIter.next()).matches("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")) {
             final String[] labels = next.split(":");
-            scopedLabels.add(new ScopedLabel(Label.of(labels[0], labels[1])));
+            scopedLabels.add(new ScopedLabel(Label.of(labels[1], labels[0])));
         }
 
         if (valuesIter.hasNext()) fail("Values do not match Scoped Labels regular expression");
@@ -152,6 +152,7 @@ public class Parameters {
         }
     }
 
+    // TODO: remove this class, as we now have grakn.core.common.Label class natively
     public static class ScopedLabel {
 
         private final Label label;

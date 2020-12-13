@@ -125,7 +125,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get label: {type_label}")
     public void thing_type_get_label(RootLabel rootLabel, String typeLabel, String getLabel) {
-        assertEquals(getLabel, get_thing_type(rootLabel, typeLabel).getLabel());
+        assertEquals(getLabel, get_thing_type(rootLabel, typeLabel).getLabel().toString());
     }
 
     @When("{root_label}\\( ?{type_label} ?) set abstract: {bool}")
