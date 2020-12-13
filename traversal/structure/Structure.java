@@ -22,6 +22,7 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.graph.TraversalVertex;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +35,10 @@ import java.util.Set;
 
 public class Structure {
 
+    // TODO: create vertex properties first, then the vertex itself, then edges
+    //       that way, we can make properties to be 'final' objects that are
+    //       included in equality and hashCode of vertices
+    final Map<Identifier.Variable, TraversalVertex.Properties> properties;
     private final Map<Identifier, StructureVertex<?>> vertices;
     private final Set<StructureEdge<?, ?>> edges;
     private int generatedIdentifierCount;
@@ -41,24 +46,39 @@ public class Structure {
 
     public Structure() {
         vertices = new HashMap<>();
+        properties = new HashMap<>();
         edges = new HashSet<>();
         generatedIdentifierCount = 0;
     }
 
     public StructureVertex.Thing thingVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, StructureVertex.Thing::new).asThing();
+        return vertices.computeIfAbsent(identifier, id -> {
+            StructureVertex.Thing v = new StructureVertex.Thing(this, id);
+            // TODO: remove this with this.properties
+            if (id.isVariable()) properties.put(id.asVariable(), v.props());
+            return v;
+        }).asThing();
     }
 
     public StructureVertex.Type typeVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, StructureVertex.Type::new).asType();
+        return vertices.computeIfAbsent(identifier, id -> {
+            StructureVertex.Type v = new StructureVertex.Type(this, id);
+            // TODO: remove this with this.properties
+            if (id.isVariable()) properties.put(id.asVariable(), v.props());
+            return v;
+        }).asType();
     }
 
-    public Identifier.Generated newIdentifier() {
-        return Identifier.Generated.of(generatedIdentifierCount++);
+    public Identifier.Scoped newIdentifier(Identifier.Variable scope) {
+        return Identifier.Scoped.of(scope, generatedIdentifierCount++);
     }
 
     public Collection<StructureVertex<?>> vertices() {
         return vertices.values();
+    }
+
+    public Set<StructureEdge<?, ?>> edges() {
+        return edges;
     }
 
     public void equalEdge(StructureVertex<?> from, StructureVertex<?> to) {
@@ -103,8 +123,8 @@ public class Structure {
             while (!vertices.isEmpty()) {
                 Structure newStructure = new Structure();
                 splitGraph(vertices.values().iterator().next(), newStructure);
-                if (newStructure.vertices().size() == 1 &&
-                        !newStructure.vertices().iterator().next().id().isNamedReference()) {
+                if (newStructure.vertices().size() > 1 ||
+                        newStructure.vertices().iterator().next().id().isNamedReference()) {
                     structures.add(newStructure);
                 }
             }
@@ -117,6 +137,11 @@ public class Structure {
 
         this.vertices.remove(vertex.id());
         newStructure.vertices.put(vertex.id(), vertex);
+        // TODO: remove this with this.properties
+        if (vertex.id().isVariable() && this.properties.containsKey(vertex.id().asVariable())) {
+            TraversalVertex.Properties props = this.properties.remove(vertex.id().asVariable());
+            newStructure.properties.put(vertex.id().asVariable(), props);
+        }
         List<StructureVertex<?>> adjacents = new ArrayList<>();
         vertex.outs().forEach(outgoing -> {
             if (this.edges.contains(outgoing)) {
@@ -141,11 +166,13 @@ public class Structure {
         else if (o == null || getClass() != o.getClass()) return false;
 
         Structure that = (Structure) o;
-        return (this.vertices.equals(that.vertices) && this.edges.equals(that.edges));
+        return (this.vertices.equals(that.vertices) &&
+                this.properties.equals(that.properties) &&
+                this.edges.equals(that.edges));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.vertices, this.edges);
+        return Objects.hash(this.vertices, this.properties, this.edges);
     }
 }

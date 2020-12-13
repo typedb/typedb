@@ -18,6 +18,7 @@
 
 package grakn.core.test.behaviour.concept.type.relationtype;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.test.behaviour.config.Parameters;
@@ -92,7 +93,7 @@ public class RelationTypeSteps {
 
     private Set<Parameters.ScopedLabel> relation_type_get_related_roles_actuals(String relationLabel) {
         return tx().concepts().getRelationType(relationLabel).getRelates()
-                .map(role -> new Parameters.ScopedLabel(role.getScope(), role.getLabel())).collect(toSet());
+                .map(role -> new Parameters.ScopedLabel(role.getLabel())).collect(toSet());
     }
 
     @Then("relation\\( ?{type_label} ?) get related roles contain:")
@@ -111,13 +112,13 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertype: {scoped_label}")
     public void relation_type_get_role_type_get_supertype(String relationLabel, String roleLabel, Parameters.ScopedLabel superLabel) {
-        final RoleType superType = tx().concepts().getRelationType(superLabel.scope()).getRelates(superLabel.role());
+        final RoleType superType = tx().concepts().getRelationType(superLabel.scope()).getRelates(superLabel.label());
         assertEquals(superType, tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSupertype());
     }
 
     private Set<Parameters.ScopedLabel> relation_type_get_role_type_supertypes_actuals(String relationLabel, String roleLabel) {
         return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSupertypes()
-                .map(role -> new Parameters.ScopedLabel(role.getScope(), role.getLabel())).collect(toSet());
+                .map(role -> new Parameters.ScopedLabel(role.getLabel())).collect(toSet());
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertypes contain:")
@@ -135,7 +136,7 @@ public class RelationTypeSteps {
     }
 
     private Set<String> relation_type_get_role_type_players_actuals(String relationLabel, String roleLabel) {
-        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getPlayers().map(Type::getLabel).collect(toSet());
+        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getPlayers().map(Type::getLabel).map(Label::toString).collect(toSet());
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get players contain:")
@@ -154,7 +155,7 @@ public class RelationTypeSteps {
 
     private Set<Parameters.ScopedLabel> relation_type_get_role_type_subtypes_actuals(String relationLabel, String roleLabel) {
         return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSubtypes()
-                .map(role -> new Parameters.ScopedLabel(role.getScope(), role.getLabel())).collect(toSet());
+                .map(role -> new Parameters.ScopedLabel(role.getLabel())).collect(toSet());
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get subtypes contain:")

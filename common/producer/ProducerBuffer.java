@@ -44,8 +44,6 @@ public class ProducerBuffer<T> {
     private final int bufferMinSize;
     private final int bufferMaxSize;
 
-    static class Done {}
-
     public ProducerBuffer(List<Producer<T>> producers) {
         this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
     }
@@ -75,6 +73,7 @@ public class ProducerBuffer<T> {
         }
     }
 
+    private static class Done {}
     private enum State {EMPTY, FETCHED, COMPLETED}
 
     public class Iterator implements ResourceIterator<T> {
@@ -112,7 +111,6 @@ public class ProducerBuffer<T> {
 
         @Override
         public T next() {
-
             if (!hasNext()) throw new NoSuchElementException();
             state = State.EMPTY;
             return next;

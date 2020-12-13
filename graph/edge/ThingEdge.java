@@ -22,9 +22,14 @@ import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
+import java.util.Optional;
+
 /**
  * An edge between two {@code ThingVertex}.
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {}
+public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
+
+    Optional<ThingVertex> optimised();
+}

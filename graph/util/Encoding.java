@@ -41,8 +41,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
 
-    public static final String ROCKS_SCHEMA = "schema";
     public static final String ROCKS_DATA = "data";
+    public static final String ROCKS_SCHEMA = "schema";
 
     public enum Key {
         PERSISTED(0, true),

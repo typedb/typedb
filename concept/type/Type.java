@@ -19,6 +19,7 @@
 package grakn.core.concept.type;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public interface Type extends Concept {
 
     void setLabel(String label);
 
-    String getLabel();
+    Label getLabel();
 
     boolean isAbstract();
 

@@ -105,7 +105,9 @@ public class ManagedBlockingQueue<E> {
         }
 
         public E getItem() {
-            return item;
+            E newItem = item;
+            item = null;
+            return newItem;
         }
     }
 

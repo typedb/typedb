@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.config;
 
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.AttributeType;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
@@ -64,7 +65,7 @@ public class Parameters {
     @ParameterType("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")
     public ScopedLabel scoped_label(String roleLabel) {
         final String[] labels = roleLabel.split(":");
-        return new ScopedLabel(labels[0], labels[1]);
+        return new ScopedLabel(Label.of(labels[0], labels[1]));
     }
 
     @DataTableType
@@ -74,7 +75,7 @@ public class Parameters {
         final List<ScopedLabel> scopedLabels = new ArrayList<>();
         while (valuesIter.hasNext() && (next = valuesIter.next()).matches("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")) {
             final String[] labels = next.split(":");
-            scopedLabels.add(new ScopedLabel(labels[0], labels[1]));
+            scopedLabels.add(new ScopedLabel(Label.of(labels[0], labels[1])));
         }
 
         if (valuesIter.hasNext()) fail("Values do not match Scoped Labels regular expression");
@@ -152,25 +153,25 @@ public class Parameters {
     }
 
     public static class ScopedLabel {
-        private final String scope;
-        private final String role;
 
-        public ScopedLabel(String scope, String role) {
-            this.scope = scope;
-            this.role = role;
+        private final Label label;
+
+        public ScopedLabel(Label label) {
+            this.label = label;
         }
 
         public String scope() {
-            return scope;
+            assert label.scope().isPresent();
+            return label.scope().get();
         }
 
-        public String role() {
-            return role;
+        public String label() {
+            return label.name();
         }
 
         @Override
         public String toString() {
-            return scope + ":" + role;
+            return label.toString();
         }
 
         @Override
@@ -178,13 +179,12 @@ public class Parameters {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
             final ScopedLabel that = (ScopedLabel) object;
-            return (this.scope.equals(that.scope) &&
-                    this.role.equals(that.role));
+            return this.label.equals(that.label);
         }
 
         @Override
         public final int hashCode() {
-            return hash(scope, role);
+            return hash(label);
         }
     }
 }

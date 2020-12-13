@@ -49,12 +49,11 @@ public class DatabaseSteps {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @When("connection create databases in parallel:")
     public void connection_create_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
-        final CompletableFuture[] creations = new CompletableFuture[names.size()];
+        final CompletableFuture<?>[] creations = new CompletableFuture<?>[names.size()];
         int i = 0;
         for (String name : names) {
             creations[i++] = CompletableFuture.supplyAsync(() -> grakn.databases().create(name), threadPool);
@@ -82,12 +81,11 @@ public class DatabaseSteps {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @When("connection delete databases in parallel:")
     public void connection_delete_databases_in_parallel(List<String> names) {
         assertTrue(THREAD_POOL_SIZE >= names.size());
 
-        final CompletableFuture[] deletions = new CompletableFuture[names.size()];
+        final CompletableFuture<?>[] deletions = new CompletableFuture<?>[names.size()];
         int i = 0;
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(

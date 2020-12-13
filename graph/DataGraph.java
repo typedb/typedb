@@ -634,7 +634,7 @@ public class DataGraph implements Graph {
                         final byte[] val = storage.get(vertexTransitiveCountKey(typeIID));
                         return val == null ? 0 : bytesToLong(val);
                     } else {
-                        ResourceIterator<TypeVertex> subTypes = schemaGraph.subTypes(typeIID, false);
+                        ResourceIterator<TypeVertex> subTypes = schemaGraph.convert(typeIID).ins().edge(SUB).from();
                         long childrenPersistedCount = 0;
                         while (subTypes.hasNext()) {
                             TypeVertex subType = subTypes.next();

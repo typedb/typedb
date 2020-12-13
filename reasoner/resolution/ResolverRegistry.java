@@ -33,7 +33,8 @@ import java.util.function.Consumer;
 
 public class ResolverRegistry {
 
-    Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
+
     private final HashMap<Long, Actor<ConcludableResolver>> concludables;
     private final HashMap<List<Long>, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;

@@ -68,15 +68,17 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     @Override
     public void addTo(Traversal traversal) {
         rolePlayers.forEach(rp -> {
-            if (rp.roleType().isPresent() && rp.roleType().get().reference().isName()) {
-                Identifier.Generated role = traversal.newIdentifier();
-                traversal.relating(owner.identifier(), role);
-                traversal.playing(rp.player().identifier(), role);
-                traversal.isa(role, rp.roleType().get().identifier());
-                if (!rp.roleTypeHints.isEmpty()) traversal.types(role, rp.roleTypeHints);
-            } else if (rp.roleType().isPresent()) {
-                // TODO: assert rp.roleType().get().reference().isLabel() && !rp.roleTypeHints.isEmpty();
-                traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.roleTypeHints);
+            if (rp.roleType().isPresent()) {
+                if (rp.roleType().get().reference().isName() || rp.roleTypeHints().isEmpty()) {
+                    Identifier.Scoped role = traversal.newIdentifier(owner.identifier());
+                    traversal.relating(owner.identifier(), role);
+                    traversal.playing(rp.player().identifier(), role);
+                    traversal.isa(role, rp.roleType().get().identifier());
+                    if (!rp.roleTypeHints.isEmpty()) traversal.types(role, rp.roleTypeHints);
+                } else {
+                    assert rp.roleType().get().reference().isLabel() && !rp.roleTypeHints.isEmpty();
+                    traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.roleTypeHints);
+                }
             } else {
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier());
             }

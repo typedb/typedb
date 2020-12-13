@@ -23,7 +23,6 @@ import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.procedure.Procedure;
 import grakn.core.traversal.procedure.ProcedureVertex;
 
 import java.util.concurrent.CompletableFuture;
@@ -37,8 +36,7 @@ public class VertexProducer implements Producer<VertexMap> {
     private final ResourceIterator<VertexMap> iterator;
     private CompletableFuture<Void> future;
 
-    public VertexProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters) {
-        ProcedureVertex<?, ?> vertex = procedure.startVertex();
+    public VertexProducer(GraphManager graphMgr, ProcedureVertex<?, ?> vertex, Traversal.Parameters parameters) {
         assert vertex.id().isNamedReference();
         this.iterator = vertex.iterator(graphMgr, parameters).map(
                 v -> VertexMap.of(Collections.map(pair(vertex.id().asVariable().reference(), v)))

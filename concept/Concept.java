@@ -43,5 +43,9 @@ public interface Concept {
         throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Thing.class)));
     }
 
+    default boolean isType() { return false; }
+
+    default boolean isThing() { return false; }
+
     GraknException exception(GraknException exception);
 }

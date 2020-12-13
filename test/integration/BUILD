@@ -69,7 +69,6 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "reasoner/*",
     ]),
     license_type = "agpl",
 )

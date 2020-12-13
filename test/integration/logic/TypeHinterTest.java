@@ -19,7 +19,6 @@
 package grakn.core.logic;
 
 import grakn.common.collection.Pair;
-import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeHinter;
@@ -27,6 +26,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
@@ -54,16 +54,16 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class TypeHinterTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-inference-test");
-    private static String database = "type-inference-test";
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-test");
+    private static String database = "type-hinter-test";
+    private static RocksGrakn grakn;
+    private static RocksSession session;
     private static RocksTransaction transaction;
-    private static Grakn.Session session;
 
     @BeforeClass
     public static void open_session() throws IOException {
         Util.resetDirectory(directory);
-
-        RocksGrakn grakn = RocksGrakn.open(directory);
+        grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
     }
@@ -71,17 +71,18 @@ public class TypeHinterTest {
     @AfterClass
     public static void close_session() {
         session.close();
+        grakn.close();
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
-        transaction = (RocksTransaction) session.transaction(Arguments.Transaction.Type.WRITE);
+        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         final GraqlDefine query = Graql.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/reasoner/" + fileName + ".gql")), UTF_8));
         transaction.query().define(query);
     }
 
     private static void define_custom_schema(String schema) {
-        transaction = (RocksTransaction) session.transaction(Arguments.Transaction.Type.WRITE);
+        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         final GraqlDefine query = Graql.parseQuery(schema);
         transaction.query().define(query);
     }
