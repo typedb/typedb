@@ -141,7 +141,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         Identifier toId = edge.to().id();
         if (roles.containsKey(toId)) {
             if (edge.isRolePlayer()) scoped.get(edge.asRolePlayer().scope()).remove(roles.get(toId));
-            else scoped.get(toId.asVariable()).remove(roles.get(toId));
+            else scoped.get(toId.asScoped().scope()).remove(roles.get(toId));
         }
         return computeNext(pos - 1);
     }
