@@ -21,7 +21,7 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.Concludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -48,12 +48,12 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final ConjunctionConcludable<?, ?> concludable;
+    private final Concludable<?> concludable;
     private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable) {
+    public ConcludableResolver(Actor<ConcludableResolver> self, Concludable<?> concludable) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.concludable = concludable;
         ruleActorSources = new HashMap<>();

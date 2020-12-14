@@ -23,8 +23,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.logic.concludable.ThenConcludable;
+import grakn.core.logic.concludable.Concludable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
@@ -41,36 +40,36 @@ public class RuleTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
     private static String database = "rule-test";
 
-    private long isaConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ConjunctionConcludable::isIsa).count();
+    private long isaConjunctionConcludablesCount(Set<Concludable<?>> concludables) {
+        return concludables.stream().filter(Concludable::isIsa).count();
     }
 
-    private long hasConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ConjunctionConcludable::isHas).count();
+    private long hasConjunctionConcludablesCount(Set<Concludable<?>> concludables) {
+        return concludables.stream().filter(Concludable::isHas).count();
     }
 
-    private long relationConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ConjunctionConcludable::isRelation).count();
+    private long relationConjunctionConcludablesCount(Set<Concludable<?>> concludables) {
+        return concludables.stream().filter(Concludable::isRelation).count();
     }
 
-    private long valueConjunctionConcludablesCount(Set<ConjunctionConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ConjunctionConcludable::isValue).count();
+    private long valueConjunctionConcludablesCount(Set<Concludable<?>> concludables) {
+        return concludables.stream().filter(Concludable::isValue).count();
     }
 
-    private long isaHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ThenConcludable::isIsa).count();
+    private long isaHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isIsa).count();
     }
 
-    private long hasHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ThenConcludable::isHas).count();
+    private long hasHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isHas).count();
     }
 
-    private long relationHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ThenConcludable::isRelation).count();
+    private long relationHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isRelation).count();
     }
 
-    private long valueHeadConcludablesCount(Set<ThenConcludable<?, ?>> concludables) {
-        return concludables.stream().filter(ThenConcludable::isValue).count();
+    private long valueHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isValue).count();
     }
 
     @Test
@@ -101,13 +100,13 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
-                    Set<ThenConcludable<?, ?>> thenConcludables = rule.possibleThenConcludables();
+                    Set<Rule.Conclusion<?>> thenConcludables = rule.possibleThenConcludables();
                     assertEquals(1, isaHeadConcludablesCount(thenConcludables));
                     assertEquals(0, hasHeadConcludablesCount(thenConcludables));
                     assertEquals(1, relationHeadConcludablesCount(thenConcludables));
                     assertEquals(0, valueHeadConcludablesCount(thenConcludables));
 
-                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.whenConcludables();
+                    Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
                     assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(1, relationConjunctionConcludablesCount(bodyConcludables));
@@ -144,13 +143,13 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<ThenConcludable<?, ?>> thenConcludables = rule.possibleThenConcludables();
+                    Set<Rule.Conclusion<?>> thenConcludables = rule.possibleThenConcludables();
                     assertEquals(1, isaHeadConcludablesCount(thenConcludables));
                     assertEquals(1, hasHeadConcludablesCount(thenConcludables));
                     assertEquals(0, relationHeadConcludablesCount(thenConcludables));
                     assertEquals(1, valueHeadConcludablesCount(thenConcludables));
 
-                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.whenConcludables();
+                    Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
                     assertEquals(1, isaConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(1, hasConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
@@ -186,13 +185,13 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<ThenConcludable<?, ?>> thenConcludables = rule.possibleThenConcludables();
+                    Set<Rule.Conclusion<?>> thenConcludables = rule.possibleThenConcludables();
                     assertEquals(0, isaHeadConcludablesCount(thenConcludables));
                     assertEquals(1, hasHeadConcludablesCount(thenConcludables));
                     assertEquals(0, relationHeadConcludablesCount(thenConcludables));
                     assertEquals(0, valueHeadConcludablesCount(thenConcludables));
 
-                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.whenConcludables();
+                    Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
                     assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
