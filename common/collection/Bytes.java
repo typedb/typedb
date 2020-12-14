@@ -18,18 +18,23 @@
 
 package grakn.core.common.collection;
 
+import grakn.core.common.exception.GraknCheckedException;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.UUID;
+
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static java.util.Arrays.copyOfRange;
 
 public class Bytes {
 
     public static final int SHORT_SIZE = 2;
+    public static final int SHORT_UNSIGNED_MAX_VALUE = 65_535; // (2 ^ SHORT_SIZE x 8) - 1
     public static final int INTEGER_SIZE = 4;
     public static final int LONG_SIZE = 8;
     public static final int DOUBLE_SIZE = 8;
@@ -52,7 +57,7 @@ public class Bytes {
     }
 
     public static byte[] stripPrefix(byte[] bytes, int prefixLength) {
-        return Arrays.copyOfRange(bytes, prefixLength, bytes.length);
+        return copyOfRange(bytes, prefixLength, bytes.length);
     }
 
     public static boolean bytesHavePrefix(byte[] bytes, byte[] prefix) {
@@ -63,6 +68,18 @@ public class Bytes {
         return true;
     }
 
+    public static byte[] unsignedShortToBytes(int num) {
+        final byte[] bytes = new byte[SHORT_SIZE];
+        bytes[1] = (byte) (num);
+        bytes[0] = (byte) (num >> 8);
+        return bytes;
+    }
+
+    public static int unsignedBytesToShort(byte[] bytes) {
+        assert bytes.length == SHORT_SIZE;
+        return ((bytes[0] << 8) | bytes[1]) & 0xffff;
+    }
+
     public static byte[] shortToSortedBytes(int num) {
         final byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
@@ -70,7 +87,7 @@ public class Bytes {
         return bytes;
     }
 
-    public static Short sortedBytesToShort(byte[] bytes) {
+    public static short sortedBytesToShort(byte[] bytes) {
         assert bytes.length == SHORT_SIZE;
         bytes[0] = (byte) (bytes[0] ^ 0x80);
         return ByteBuffer.wrap(bytes).getShort();
@@ -163,13 +180,17 @@ public class Bytes {
         return ByteBuffer.wrap(bytes).getDouble();
     }
 
-    public static byte[] stringToBytes(String value, Charset encoding) {
+    public static byte[] stringToBytes(String value, Charset encoding) throws GraknCheckedException {
         final byte[] bytes = value.getBytes(encoding);
-        return join(new byte[]{(byte) bytes.length}, bytes);
+        if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
+            throw GraknCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
+        }
+        return join(unsignedShortToBytes(bytes.length), bytes);
     }
 
     public static String bytesToString(byte[] bytes, Charset encoding) {
-        final byte[] x = Arrays.copyOfRange(bytes, 1, 1 + bytes[0]);
+        int stringLength = unsignedBytesToShort(new byte[]{bytes[0], bytes[1]});
+        final byte[] x = copyOfRange(bytes, SHORT_SIZE, SHORT_SIZE + stringLength);
         return new String(x, encoding);
     }
 

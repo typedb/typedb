@@ -124,7 +124,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setRelates(String roleLabel) {
         final TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
-            if (getSupertypes().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().equals(roleLabel))) {
+            if (getSupertypes().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().name().equals(roleLabel))) {
                 throw exception(GraknException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleLabel));
             } else {
                 final RoleTypeImpl roleType = RoleTypeImpl.of(graphMgr, roleLabel, vertex.label());
@@ -141,8 +141,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         final RoleTypeImpl roleType = this.getRelates(roleLabel);
 
         final Optional<RoleTypeImpl> inherited;
-        if (declaredRoles().anyMatch(r -> r.getLabel().equals(overriddenLabel)) ||
-                !(inherited = getSupertype().getRelates().filter(role -> role.getLabel().equals(overriddenLabel)).findFirst()).isPresent()) {
+        if (declaredRoles().anyMatch(r -> r.getLabel().name().equals(overriddenLabel)) ||
+                !(inherited = getSupertype().getRelates().filter(role -> role.getLabel().name().equals(overriddenLabel)).findFirst()).isPresent()) {
             throw exception(GraknException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
         }
 
@@ -193,7 +193,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         final TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             return RoleTypeImpl.of(graphMgr, roleTypeVertex);
-        } else if ((roleType = getRelates().filter(role -> role.getLabel().equals(roleLabel)).findFirst()).isPresent()) {
+        } else if ((roleType = getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).findFirst()).isPresent()) {
             return roleType.get();
         } else return null;
     }
@@ -212,7 +212,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public List<GraknException> validate() {
         final List<GraknException> exceptions = super.validate();
-        if (!isRoot() && !isAbstract() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().equals(ROLE.label())), 1) < 0) {
+        if (!isRoot() && !isAbstract() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().name().equals(ROLE.label())), 1) < 0) {
             exceptions.add(GraknException.of(RELATION_NO_ROLE, this.getLabel()));
         } else if (!isAbstract()) {
             getRelates().filter(TypeImpl::isAbstract).forEach(roleType -> {

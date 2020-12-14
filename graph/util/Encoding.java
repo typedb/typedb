@@ -18,6 +18,7 @@
 
 package grakn.core.graph.util;
 
+import grakn.core.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import graql.lang.common.GraqlArg;
@@ -40,11 +41,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
 
-    public static final String ROCKS_SCHEMA = "schema";
     public static final String ROCKS_DATA = "data";
-    public static final int STRING_MAX_LENGTH = 255;
-    public static final Charset STRING_ENCODING = UTF_8;
-    public static final ZoneId TIME_ZONE_ID = ZoneId.of("Z");
+    public static final String ROCKS_SCHEMA = "schema";
 
     public enum Key {
         PERSISTED(0, true),
@@ -427,6 +425,10 @@ public class Encoding {
         STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
         DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
 
+        public static final ZoneId TIME_ZONE_ID = ZoneId.of("Z");
+        public static final Charset STRING_ENCODING = UTF_8;
+        public static final int STRING_SIZE_ENCODING = Bytes.SHORT_SIZE;
+        public static final int STRING_MAX_SIZE = Bytes.SHORT_UNSIGNED_MAX_VALUE;
         public static final double DOUBLE_PRECISION = 0.0000000000000001;
 
         private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(

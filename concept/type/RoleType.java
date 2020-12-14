@@ -31,10 +31,6 @@ public interface RoleType extends Type {
     @Override
     Stream<? extends RoleType> getSubtypes();
 
-    String getScope();
-
-    String getScopedLabel();
-
     RelationType getRelationType();
 
     Stream<? extends RelationType> getRelationTypes();

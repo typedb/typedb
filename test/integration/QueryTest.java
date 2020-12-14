@@ -19,9 +19,7 @@
 package grakn.core.test.integration;
 
 import grakn.core.Grakn;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -33,9 +31,7 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -187,7 +183,7 @@ public class QueryTest {
                     assertFalse(analysis.isAbstract());
                     assertTrue(analysis.getOwns().noneMatch(att -> att.equals(created)));
                     assertTrue(analysis.getPlays().noneMatch(rol -> rol.equals(commitAnalysisAnalysis)));
-                    assertTrue(performanceTracker.getRelates().noneMatch(rol -> rol.getLabel().equals("tracker")));
+                    assertTrue(performanceTracker.getRelates().noneMatch(rol -> rol.getLabel().name().equals("tracker")));
                     assertNull(email.getRegex());
 
                     final AttributeType index = tx.concepts().getAttributeType("index");
@@ -251,60 +247,6 @@ public class QueryTest {
                     assertEquals(organisation_graknlabs.getRelations("org-team:org").findAny().get().getPlayers("team").findAny().get(), team_engineers);
                     assertEquals(organisation_graknlabs.getRelations("org-member:org").findAny().get().getPlayers("member").findAny().get(), user_grabl);
                     assertEquals(team_engineers.getRelations("team-member:team").findAny().get().getPlayers("member").findAny().get(), user_grabl);
-                }
-            }
-        }
-    }
-
-    @Ignore
-    @Test
-    public void test_query_match() throws IOException {
-        Util.resetDirectory(directory);
-
-        try (Grakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create(database);
-
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final String queryString = "define " +
-                            "name sub attribute, value string; " +
-                            "age sub attribute, value long; " +
-                            "person sub entity, owns name, owns age, plays friendship:friend; " +
-                            "friendship sub relation, relates friend; ";
-                    final GraqlDefine query = Graql.parseQuery(queryString);
-                    transaction.query().define(query);
-                    transaction.commit();
-                }
-            }
-
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final String queryString = "insert " +
-                            "$a isa person, has name 'alice', has age 25; " +
-                            "$b isa person, has name 'bob', has age 25; " +
-                            "$c isa person, has name 'charlie', has age 20; " +
-                            "($a, $b) isa friendship; " +
-                            "($b, $c) isa friendship; " +
-                            "($a, $c) isa friendship;";
-
-                    final GraqlInsert query = Graql.parseQuery(queryString);
-                    transaction.query().insert(query);
-                    transaction.commit();
-                }
-
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final String queryString = "match $x isa person, has name 'alice'; " +
-                            "$y isa person, has age >= 21;" +
-                            "(friend: $x, friend: $y) isa friendship; ";
-                    final GraqlMatch query = Graql.parseQuery(queryString);
-                    ResourceIterator<ConceptMap> answers = transaction.query().match(query);
-                    assertNotNulls(answers);
-                    assertTrue(answers.hasNext());
-                    ConceptMap answer = answers.next();
-
-                    AttributeType.String name = transaction.concepts().getAttributeType("name").asString();
-                    assertTrue(answer.get("a").asThing().getHas(name).anyMatch(n -> n.getValue().equals("alice")));
-                    assertTrue(answer.get("b").asThing().getHas(name).anyMatch(n -> n.getValue().equals("bob")));
                 }
             }
         }

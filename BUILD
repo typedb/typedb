@@ -57,6 +57,12 @@ assemble_files = {
     "//:LICENSE": "LICENSE",
 }
 
+permissions = {
+    "server/conf/grakn.properties": "0755",
+    "server/conf/logback.xml": "0755",
+    "server/conf/logback-debug.xml": "0755",
+}
+
 assemble_deps_common = [
     "//server:server-deps-dev",
 #    "//server:server-deps-prod",
@@ -68,6 +74,7 @@ assemble_targz(
     name = "assemble-linux-targz",
     targets = assemble_deps_common + ["//server:server-deps-linux"],
     additional_files = assemble_files,
+    permissions = permissions,
     output_filename = "grakn-core-all-linux",
 )
 
@@ -75,6 +82,7 @@ assemble_zip(
     name = "assemble-mac-zip",
     targets = assemble_deps_common + ["//server:server-deps-mac"],
     additional_files = assemble_files,
+    permissions = permissions,
     output_filename = "grakn-core-all-mac",
 )
 
@@ -82,6 +90,7 @@ assemble_zip(
     name = "assemble-windows-zip",
     targets = assemble_deps_common + ["//server:server-deps-windows"],
     additional_files = assemble_files,
+    permissions = permissions,
     output_filename = "grakn-core-all-windows",
 )
 

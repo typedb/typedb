@@ -129,12 +129,11 @@ public class SessionSteps {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     @Then("sessions in parallel have databases:")
     public void sessions_in_parallel_have_databases(List<String> names) {
         assertEquals(names.size(), sessionsParallel.size());
         final Iterator<CompletableFuture<Grakn.Session>> futureSessionIter = sessionsParallel.iterator();
-        final CompletableFuture[] assertions = new CompletableFuture[names.size()];
+        final CompletableFuture<?>[] assertions = new CompletableFuture<?>[names.size()];
 
         int i = 0;
         for (String name : names) {

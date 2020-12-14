@@ -18,39 +18,49 @@
 
 package grakn.core.test.behaviour.graql;
 
+import grakn.common.collection.Bytes;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import graql.lang.Graql;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlMatch;
+import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraqlSteps {
 
-    private static Iterator<ConceptMap> answers;
-    private static Number numericAnswer;
+    private static List<ConceptMap> answers;
+    private static Numeric numericAnswer;
     private static List<AnswerGroup<ConceptMap>> answerGroups;
-    private static List<AnswerGroup<?>> numericAnswerGroups;
+    private static List<AnswerGroup<Numeric>> numericAnswerGroups;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     HashMap<String, String> groupOwnerIdentifiers = new HashMap<>();
     private Map<String, Map<String, String>> rules;
@@ -115,45 +125,41 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
 
-        answers = tx().query().insert(graqlQuery);
+        answers = tx().query().insert(graqlQuery).toList();
     }
 
     @When("get answers of graql query")
     public void graql_query(String graqlQueryStatements) {
-        // TODO: re-enable when match is implemented
-        /*final GraqlQuery graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements));
+        final GraqlQuery graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements));
         // Erase answers from previous steps to avoid polluting the result space
         answers = null;
         numericAnswer = null;
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlMatch) {
-            answers = tx().query().match(graqlQuery.asMatch());
+            answers = tx().query().match(graqlQuery.asMatch()).toList();
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
-            numericAnswers = tx.execute(graqlQuery.asMatchAggregate()).get();
+            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate());
         } else if (graqlQuery instanceof GraqlMatch.Group) {
-            answerGroups = tx.execute(graqlQuery.asMatchGroup()).get();
+            answerGroups = tx().query().match(graqlQuery.asMatchGroup()).toList();
         } else if (graqlQuery instanceof GraqlMatch.Group.Aggregate) {
-            numericAnswerGroups = tx.execute(graqlQuery.asMatchGroupAggregate()).get();
+            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate()).toList();
         } else {
             throw new ScenarioDefinitionException("Only match and insert supported for now");
-        }*/
+        }
     }
 
     @When("graql match; throws exception")
     public void graql_match_throws_exception(String graqlQueryStatements) {
-        // TODO: re-enable when match is implemented
-        //assertThrows(() -> graql_query(graqlQueryStatements));
+        assertThrows(() -> graql_query(graqlQueryStatements));
     }
 
     @Then("answer size is: {number}")
     public void answer_quantity_assertion(int expectedAnswers) {
-        // TODO: re-enable when match is implemented
-//        assertEquals(
-//                String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.count()),
-//                expectedAnswers, answers.count());
+        assertEquals(String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.size()),
+                     expectedAnswers, answers.size());
     }
 
     @Then("concept identifiers are")
@@ -181,63 +187,56 @@ public class GraqlSteps {
 
     @Then("uniquely identify answer concepts")
     public void uniquely_identify_answer_concepts(List<Map<String, String>> answersIdentifiers) {
-        // TODO: re-enable when match is implemented
-//        assertEquals(
-//                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-//                        answersIdentifiers.size(), answers.count()),
-//                answersIdentifiers.size(), answers.count()
-//        );
-//
-//        for (ConceptMap answer : answers.collect(Collectors.toList())) {
-//            List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
-//
-//            for (Map<String, String> answerIdentifiers : answersIdentifiers) {
-//
-//                if (matchAnswer(answerIdentifiers, answer)) {
-//                    matchingIdentifiers.add(answerIdentifiers);
-//                }
-//            }
-//            assertEquals(
-//                    String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s",
-//                            matchingIdentifiers.size(), answer.concepts().keySet().toString()),
-//                    1, matchingIdentifiers.size()
-//            );
-//        }
+        assertEquals(
+                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
+                              answersIdentifiers.size(), answers.size()),
+                answersIdentifiers.size(), answers.size()
+        );
+
+        for (ConceptMap answer : answers) {
+            List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
+
+            for (Map<String, String> answerIdentifier : answersIdentifiers) {
+
+                if (matchAnswer(answerIdentifier, answer)) {
+                    matchingIdentifiers.add(answerIdentifier);
+                }
+            }
+            assertEquals(
+                    String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s",
+                                  matchingIdentifiers.size(), answer.concepts().keySet().toString()),
+                    1, matchingIdentifiers.size()
+            );
+        }
     }
 
     @Then("order of answer concepts is")
     public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
-        // TODO
-//        final List<ConceptMap> answerList = answers.collect(Collectors.toList());
-//        assertEquals(
-//                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-//                        answersIdentifiers.size(), answerList.size()),
-//                answersIdentifiers.size(), answerList.size()
-//        );
-//        for (int i = 0; i < answerList.size(); i++) {
-//            final ConceptMap answer = answerList.get(i);
-//            final Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
-//            assertTrue(
-//                    String.format("The answer at index %d does not match the identifier entry (row) at index %d", i, i),
-//                    matchAnswer(answerIdentifiers, answer)
-//            );
-//        }
+        assertEquals(
+                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
+                              answersIdentifiers.size(), answers.size()),
+                answersIdentifiers.size(), answers.size()
+        );
+        for (int i = 0; i < answers.size(); i++) {
+            final ConceptMap answer = answers.get(i);
+            final Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
+            assertTrue(
+                    String.format("The answer at index %d does not match the identifier entry (row) at index %d", i, i),
+                    matchAnswer(answerIdentifiers, answer)
+            );
+        }
     }
 
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
-        // TODO
-        /*assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, numericAnswers.get(0).number().doubleValue()),
-                     expectedAnswer,
-                     numericAnswers.get(0).number().doubleValue(),
-                     0.01);*/
+        assertNotNull("The last executed query was not an aggregate query", numericAnswer);
+        assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, numericAnswer.number().doubleValue()),
+                     expectedAnswer, numericAnswer.number().doubleValue(), 0.01);
     }
 
     @Then("aggregate answer is empty")
     public void aggregate_answer_is_empty() {
-        // TODO
-//        assertNull(numericAnswer);
+        assertNull(numericAnswer);
     }
 
     @Then("group identifiers are")
@@ -251,50 +250,48 @@ public class GraqlSteps {
 
     @Then("answer groups are")
     public void answer_groups_are(List<Map<String, String>> answerIdentifierTable) {
-        // TODO
-//        Set<AnswerIdentifierGroup> answerIdentifierGroups = answerIdentifierTable.stream()
-//                .collect(Collectors.groupingBy(x -> x.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME)))
-//                .values()
-//                .stream()
-//                .map(answerIdentifiers -> new AnswerIdentifierGroup(answerIdentifiers, groupOwnerIdentifiers))
-//                .collect(Collectors.toSet());
-//
-//        assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
-//                answerIdentifierGroups.size(), answerGroups.size()),
-//                answerIdentifierGroups.size(), answerGroups.size()
-//        );
-//
-//        for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
-//            String groupOwnerIdentifier = answerIdentifierGroup.groupOwnerIdentifier;
-//            AnswerGroup<ConceptMap> answerGroup = answerGroups.stream()
-//                    .filter(ag -> identifierChecks.get(groupOwnerIdentifier).check(ag.owner()))
-//                    .findAny()
-//                    .orElse(null);
-//            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", groupOwnerIdentifier), answerGroup);
-//
-//            List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.answersIdentifiers;
-//            for (ConceptMap answer : answerGroup.answers()) {
-//                List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
-//
-//                for (Map<String, String> answerIdentifiers : answersIdentifiers) {
-//
-//                    if (matchAnswer(answerIdentifiers, answer)) {
-//                        matchingIdentifiers.add(answerIdentifiers);
-//                    }
-//                }
-//                assertEquals(
-//                        String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were [%d] matching identifier entries for answer with variables %s",
-//                                matchingIdentifiers.size(), answer.concepts().keySet().toString()),
-//                        1, matchingIdentifiers.size()
-//                );
-//            }
-//        }
+        Set<AnswerIdentifierGroup> answerIdentifierGroups = answerIdentifierTable.stream()
+                .collect(Collectors.groupingBy(x -> x.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME)))
+                .values()
+                .stream()
+                .map(answerIdentifiers -> new AnswerIdentifierGroup(answerIdentifiers, groupOwnerIdentifiers))
+                .collect(Collectors.toSet());
+
+        assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
+                                   answerIdentifierGroups.size(), answerGroups.size()),
+                     answerIdentifierGroups.size(), answerGroups.size()
+        );
+
+        for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
+            String groupOwnerIdentifier = answerIdentifierGroup.groupOwnerIdentifier;
+            AnswerGroup<ConceptMap> answerGroup = answerGroups.stream()
+                    .filter(ag -> identifierChecks.get(groupOwnerIdentifier).check(ag.owner()))
+                    .findAny()
+                    .orElse(null);
+            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", groupOwnerIdentifier), answerGroup);
+
+            List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.answersIdentifiers;
+            for (ConceptMap answer : answerGroup.answers()) {
+                List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
+
+                for (Map<String, String> answerIdentifiers : answersIdentifiers) {
+
+                    if (matchAnswer(answerIdentifiers, answer)) {
+                        matchingIdentifiers.add(answerIdentifiers);
+                    }
+                }
+                assertEquals(
+                        String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were [%d] matching identifier entries for answer with variables %s",
+                                      matchingIdentifiers.size(), answer.concepts().keySet().toString()),
+                        1, matchingIdentifiers.size()
+                );
+            }
+        }
     }
 
     @Then("group aggregate values are")
     public void group_aggregate_values_are(List<Map<String, String>> answerIdentifierTable) {
-        // TODO
-        /*Map<String, Double> expectations = new HashMap<>();
+        Map<String, Double> expectations = new HashMap<>();
         for (Map<String, String> answerIdentifierRow : answerIdentifierTable) {
             String groupIdentifier = answerIdentifierRow.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME);
             String groupOwnerIdentifier = groupOwnerIdentifiers.get(groupIdentifier);
@@ -302,9 +299,8 @@ public class GraqlSteps {
             expectations.put(groupOwnerIdentifier, expectedAnswer);
         }
 
-        assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
-                expectations.size(), numericAnswerGroups.size()),
-                expectations.size(), numericAnswerGroups.size()
+        assertEquals(String.format("Expected [%d] answer groups, but found [%d]", expectations.size(), numericAnswerGroups.size()),
+                     expectations.size(), numericAnswerGroups.size()
         );
 
         for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
@@ -322,13 +318,12 @@ public class GraqlSteps {
                                   expectedAnswer, groupIdentifier, actualAnswer),
                     expectedAnswer, actualAnswer, 0.01
             );
-        }*/
+        }
     }
 
     @Then("number of groups is: {int}")
     public void number_of_groups_is(int expectedGroupCount) {
-        // TODO
-//        assertEquals(expectedGroupCount, answerGroups.size());
+        assertEquals(expectedGroupCount, answerGroups.size());
     }
 
     public static class AnswerIdentifierGroup {
@@ -351,23 +346,17 @@ public class GraqlSteps {
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
 
-        // TODO: the below code compares two sets of different types
-//        if (!(answerIdentifiers).keySet().equals(answer.concepts().keySet())) {
-//            return false;
-//        }
-
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            final String varName = entry.getKey();
+            final Reference var = Reference.named(entry.getKey());
             final String identifier = entry.getValue();
 
             if (!identifierChecks.containsKey(identifier)) {
                 throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
             }
 
-            // TODO
-            //if (!identifierChecks.get(identifier).check(answer.get(varName))) {
-            return false;
-            //}
+            if (!identifierChecks.get(identifier).check(answer.get(var))) {
+                return false;
+            }
         }
         return true;
     }
@@ -381,7 +370,7 @@ public class GraqlSteps {
     public void answers_contain_explanation_tree(Map<Integer, Map<String, String>> explanationTree) {
         // TODO
         throw new UnsupportedOperationException();
-        //checkExplanationEntry(answers, explanationTree, 0);
+//        checkExplanationEntry(answers, explanationTree, 0);
     }
 
     /* private void checkExplanationEntry(List<ConceptMap> answers, Map<Integer, Map<String, String>> explanationTree, Integer entryId) {
@@ -448,19 +437,17 @@ public class GraqlSteps {
 
     @Then("each answer satisfies")
     public void each_answer_satisfies(String templatedGraqlQuery) {
-        // TODO
-        /*final String templatedQuery = String.join("\n", templatedGraqlQuery);
-        for (ConceptMap answer : answers.collect(Collectors.toList())) {
+        final String templatedQuery = String.join("\n", templatedGraqlQuery);
+        for (ConceptMap answer : answers) {
             final String query = applyQueryTemplate(templatedQuery, answer);
             final GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
-            final long answerSize = tx().query().match(graqlQuery).count();
+            final long answerSize = tx().query().match(graqlQuery).toList().size();
             assertEquals(1, answerSize);
-        }*/
+        }
     }
 
     private String applyQueryTemplate(String template, ConceptMap templateFiller) {
-        throw new UnsupportedOperationException(); // TODO fix
-        /* // find shortest matching strings between <>
+        // find shortest matching strings between <>
         Pattern pattern = Pattern.compile("<.+?>");
         Matcher matcher = pattern.matcher(template);
 
@@ -471,24 +458,26 @@ public class GraqlSteps {
             String requiredVariable = variableFromTemplatePlaceholder(matched.substring(1, matched.length() - 1));
 
             builder.append(template, i, matcher.start());
-            if (templateFiller.map().containsKey(requiredVariable)) {
+            if (templateFiller.contains(Reference.named(requiredVariable))) {
 
                 Concept concept = templateFiller.get(requiredVariable);
-                String conceptId = concept.getIID().toString();
+                if (!concept.isThing())
+                    throw new ScenarioDefinitionException("Cannot apply IID templating to Type concepts");
+                String conceptId = Bytes.bytesToHexString(concept.asThing().getIID());
                 builder.append(conceptId);
 
             } else {
-                throw new ScenarioDefinitionException(String.format("No ID available for template placeholder: %s", matched));
+                throw new ScenarioDefinitionException(String.format("No IID available for template placeholder: %s", matched));
             }
             i = matcher.end();
         }
         builder.append(template.substring(i));
-        return builder.toString(); */
+        return builder.toString();
     }
 
     private String variableFromTemplatePlaceholder(String placeholder) {
-        if (placeholder.endsWith(".id")) {
-            final String stripped = placeholder.replace(".id", "");
+        if (placeholder.endsWith(".iid")) {
+            final String stripped = placeholder.replace(".iid", "");
             final String withoutPrefix = stripped.replace("answer.", "");
             return withoutPrefix;
         } else {
@@ -517,7 +506,7 @@ public class GraqlSteps {
         @Override
         public boolean check(Concept concept) {
             if (concept instanceof Type) {
-                return label.equals(concept.asType().getLabel());
+                return label.equals(concept.asType().getLabel().toString());
             }
 
             throw new ScenarioDefinitionException("Concept was checked for label uniqueness, but it is not a Type.");
@@ -552,7 +541,7 @@ public class GraqlSteps {
 
             final Attribute attribute = concept.asThing().asAttribute();
 
-            if (!type.equals(attribute.getType().getLabel())) {
+            if (!type.equals(attribute.getType().getLabel().toString())) {
                 return false;
             }
 
@@ -610,7 +599,7 @@ public class GraqlSteps {
                         throw new GraqlSteps.ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
                 }
 
-                keyMap.put(key.getType().getLabel(), keyValue);
+                keyMap.put(key.getType().getLabel().toString(), keyValue);
             }
             return value.equals(keyMap.get(type));
         }

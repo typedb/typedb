@@ -39,11 +39,9 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -51,7 +49,6 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
@@ -196,34 +193,20 @@ public class SchemaGraph implements Graph {
         return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
     }
 
-    public ResourceIterator<TypeVertex> superTypes(TypeVertex vertex) {
-        return loop(vertex, Objects::nonNull,
-                    v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(vertex.encoding())).firstOrNull());
-    }
-
-    public ResourceIterator<TypeVertex> subTypes(TypeVertex type, boolean isTransitive) {
-        if (!isTransitive) return type.ins().edge(SUB).from();
-        else return tree(rootThingType(), v -> v.ins().edge(SUB).from());
-    }
-
-    public ResourceIterator<TypeVertex> subTypes(VertexIID.Type typeIID, boolean isTransitive) {
-        return subTypes(convert(typeIID), isTransitive);
-    }
-
-    public Set<TypeVertex> ownedAttributeTypes(TypeVertex ownerType) {
-        Function<TypeVertex, Set<TypeVertex>> function = t -> link(
-                list(t.outs().edge(OWNS).to(), t.outs().edge(OWNS_KEY).to())
+    public Set<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
+        Supplier<Set<TypeVertex>> fn = () -> link(
+                list(owner.outs().edge(OWNS).to(), owner.outs().edge(OWNS_KEY).to())
         ).stream().collect(toSet());
-        if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(ownerType, function);
-        else return function.apply(ownerType);
+        if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fn.get());
+        else return fn.get();
     }
 
     public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        final Function<TypeVertex, Set<TypeVertex>> function = a -> link(list(
-                a.ins().edge(OWNS).from(), a.ins().edge(OWNS_KEY).from()
+        final Supplier<Set<TypeVertex>> fn = () -> link(list(
+                attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
         )).stream().collect(toSet());
-        if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, function);
-        else return function.apply(attType);
+        if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
+        else return fn.get();
     }
 
     public Stream<TypeVertex> bufferedTypes() {
@@ -486,59 +469,59 @@ public class SchemaGraph implements Graph {
         }
 
         public long abstractTypeCount() {
-            Supplier<Integer> function = () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count());
+            Supplier<Integer> fn = () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count());
             if (isReadOnly) {
-                if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = function.get();
+                if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = fn.get();
                 return abstractTypeCount;
             } else {
-                return function.get();
+                return fn.get();
             }
         }
 
         public long thingTypeCount() {
-            Supplier<Integer> function = () -> toIntExact(thingTypes().stream().count());
+            Supplier<Integer> fn = () -> toIntExact(thingTypes().stream().count());
             if (isReadOnly) {
-                if (thingTypeCount == UNSET_COUNT) thingTypeCount = function.get();
+                if (thingTypeCount == UNSET_COUNT) thingTypeCount = fn.get();
                 return thingTypeCount;
             } else {
-                return function.get();
+                return fn.get();
             }
         }
 
         public long relationTypeCount() {
-            Supplier<Integer> function = () -> toIntExact(relationTypes().stream().count());
+            Supplier<Integer> fn = () -> toIntExact(relationTypes().stream().count());
             if (isReadOnly) {
-                if (relationTypeCount == UNSET_COUNT) relationTypeCount = function.get();
+                if (relationTypeCount == UNSET_COUNT) relationTypeCount = fn.get();
                 return relationTypeCount;
             } else {
-                return function.get();
+                return fn.get();
             }
         }
 
         public long roleTypeCount() {
-            Supplier<Integer> function = () -> toIntExact(roleTypes().stream().count());
+            Supplier<Integer> fn = () -> toIntExact(roleTypes().stream().count());
             if (isReadOnly) {
-                if (roleTypeCount == UNSET_COUNT) roleTypeCount = function.get();
+                if (roleTypeCount == UNSET_COUNT) roleTypeCount = fn.get();
                 return roleTypeCount;
             } else {
-                return function.get();
+                return fn.get();
             }
         }
 
         public long attributeTypeCount() {
-            Supplier<Integer> function = () -> toIntExact(attributeTypes().stream().count());
+            Supplier<Integer> fn = () -> toIntExact(attributeTypes().stream().count());
             if (isReadOnly) {
-                if (attributeTypeCount == UNSET_COUNT) attributeTypeCount = function.get();
+                if (attributeTypeCount == UNSET_COUNT) attributeTypeCount = fn.get();
                 return attributeTypeCount;
             } else {
-                return function.get();
+                return fn.get();
             }
         }
 
         public long attTypesWithValueType(Encoding.ValueType valueType) {
-            Function<Encoding.ValueType, Long> fn = vt -> attributeTypes(vt).stream().count();
-            if (isReadOnly) return attTypesWithValueType.computeIfAbsent(valueType, fn);
-            else return fn.apply(valueType);
+            Supplier<Long> fn = () -> attributeTypes(valueType).stream().count();
+            if (isReadOnly) return attTypesWithValueType.computeIfAbsent(valueType, vt -> fn.get());
+            else return fn.get();
         }
 
         public long attTypesWithValTypeComparableTo(Set<Label> labels) {
@@ -600,11 +583,12 @@ public class SchemaGraph implements Graph {
         }
 
         public long subTypesCount(TypeVertex type, boolean isTransitive) {
-            if (isReadOnly) {
-                return subTypesCount.computeIfAbsent(pair(type, isTransitive), p -> subTypes(type, isTransitive).stream().count());
-            } else {
-                return subTypes(type, isTransitive).stream().count();
-            }
+            Supplier<Long> countFn = () -> {
+                if (!isTransitive) return type.ins().edge(SUB).from().stream().count();
+                else return tree(type, v -> v.ins().edge(SUB).from()).stream().count() - 1;
+            };
+            if (isReadOnly) return subTypesCount.computeIfAbsent(pair(type, isTransitive), p -> countFn.get());
+            else return countFn.get();
         }
 
         public long subTypesDepth(Set<Label> labels) {
@@ -612,9 +596,10 @@ public class SchemaGraph implements Graph {
         }
 
         public long subTypesDepth(TypeVertex type) {
-            Function<TypeVertex, Long> maxDepthFn = t -> 1 + subTypes(t, false).stream().mapToLong(this::subTypesDepth).max().orElse(0);
-            if (isReadOnly) return subTypesDepth.computeIfAbsent(type, maxDepthFn);
-            else return maxDepthFn.apply(type);
+            Supplier<Long> maxDepthFn =
+                    () -> 1 + type.ins().edge(SUB).from().stream().mapToLong(this::subTypesDepth).max().orElse(0);
+            if (isReadOnly) return subTypesDepth.computeIfAbsent(type, t -> maxDepthFn.get());
+            else return maxDepthFn.get();
         }
     }
 }

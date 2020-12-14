@@ -129,6 +129,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         graph.storage().putUntracked(attributeIID.bytes());
         graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
+        // TODO: we should make use of attribute indexes to look up attributes by value (without type) quickly
     }
 
     @Override

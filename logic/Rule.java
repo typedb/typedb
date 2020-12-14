@@ -151,6 +151,7 @@ public class Rule {
     }
 
     void validateCycles() {
+        // TODO implement this when we have negation
         // TODO detect negated cycles in the rule graph
         // TODO use the new rule as a starting point
         // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));

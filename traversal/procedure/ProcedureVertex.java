@@ -21,6 +21,7 @@ package grakn.core.traversal.procedure;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -35,12 +36,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
@@ -150,8 +154,19 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
 
+        ResourceIterator<ThingEdge> filterIIDOnEdge(ResourceIterator<ThingEdge> iterator,
+                                                    Traversal.Parameters parameters, boolean isForward) {
+            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
+            return iterator.filter(e -> fn.apply(e).iid().equals(parameters.getIID(id().asVariable())));
+        }
+
         ResourceIterator<? extends ThingVertex> filterTypes(ResourceIterator<? extends ThingVertex> iterator) {
             return iterator.filter(v -> props().types().contains(v.type().properLabel()));
+        }
+
+        ResourceIterator<ThingEdge> filterTypesOnEdge(ResourceIterator<ThingEdge> iterator, boolean isForward) {
+            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
+            return iterator.filter(e -> props().types().contains(fn.apply(e).type().properLabel()));
         }
 
         ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends ThingVertex> iterator,
@@ -174,6 +189,19 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
                 }
             }
             return attributes;
+        }
+
+        ResourceIterator<ThingEdge> filterPredicatesOnEdge(ResourceIterator<ThingEdge> iterator,
+                                                           Traversal.Parameters parameters, boolean isForward) {
+            assert id().isVariable();
+            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
+            iterator = iterator.filter(e -> fn.apply(e).isAttribute());
+            for (Predicate.Value<?> predicate : props().predicates()) {
+                for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
+                    iterator = iterator.filter(e -> predicate.apply(fn.apply(e).asAttribute(), value));
+                }
+            }
+            return iterator;
         }
 
         ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(GraphManager graphMgr,
@@ -220,6 +248,9 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
             if (props().valueType().isPresent()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
             if (props().isAbstract()) iterator = iterateOrFilterAbstract(graphMgr, iterator);
             if (props().regex().isPresent()) iterator = iterateAndFilterRegex(graphMgr, iterator);
+            if (iterator == null)
+                iterator = link(list(graphMgr.schema().entityTypes(), graphMgr.schema().relationTypes(),
+                                     graphMgr.schema().attributeTypes()));// graphMgr.schema().roleTypes())); // TODO discuss ramifications
             return iterator;
         }
 
