@@ -27,17 +27,23 @@ import java.util.Objects;
 
 public class ConceptMap implements Answer {
 
-    private final Map<Reference, ? extends Concept> concepts;
+    private final Map<Reference.Name, ? extends Concept> concepts;
+    private final int hash;
 
     public ConceptMap() {
         this(new HashMap<>());
     }
 
-    public ConceptMap(Map<Reference, ? extends Concept> concepts) {
+    public ConceptMap(Map<Reference.Name, ? extends Concept> concepts) {
         this.concepts = concepts;
+        this.hash = Objects.hash(this.concepts);
     }
 
-    public boolean contains(Reference variable) {
+    public boolean contains(String variable) {
+        return contains(Reference.named(variable));
+    }
+
+    public boolean contains(Reference.Name variable) {
         return concepts.containsKey(variable);
     }
 
@@ -45,23 +51,23 @@ public class ConceptMap implements Answer {
         return get(Reference.named(variable));
     }
 
-    public Concept get(Reference variable) {
+    public Concept get(Reference.Name variable) {
         return concepts.get(variable);
     }
 
-    public Map<Reference, ? extends Concept> concepts() { return concepts; }
+    public Map<Reference.Name, ? extends Concept> concepts() { return concepts; }
 
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final ConceptMap that = (ConceptMap) o;
-        return Objects.equals(concepts, that.concepts);
+        return concepts.equals(that.concepts);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(concepts);
+        return hash;
     }
 
     @Override

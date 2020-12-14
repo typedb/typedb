@@ -60,11 +60,11 @@ public final class ConceptManager {
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
-        Map<Reference, Concept> map = new HashMap<>();
+        Map<Reference.Name, Concept> map = new HashMap<>();
         vertexMap.forEach((reference, vertex) -> {
             if (!reference.isName()) throw GraknException.of(ILLEGAL_STATE);
-            if (vertex.isThing()) map.put(reference, ThingImpl.of(vertex.asThing()));
-            else if (vertex.isType()) map.put(reference, TypeImpl.of(graphMgr, vertex.asType()));
+            if (vertex.isThing()) map.put(reference.asName(), ThingImpl.of(vertex.asThing()));
+            else if (vertex.isType()) map.put(reference.asName(), TypeImpl.of(graphMgr, vertex.asType()));
             else throw GraknException.of(ILLEGAL_STATE);
         });
         return new ConceptMap(map);
