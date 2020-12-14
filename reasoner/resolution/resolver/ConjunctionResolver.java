@@ -63,37 +63,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     @Override
-    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
-        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
-
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-        }
-
-        if (isLast(sender)) {
-            LOG.trace("{}: has produced: {}", name, conceptMap);
-
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), derivation, self());
-                return Either.second(createResponse(fromUpstream, answer));
-            } else {
-                return messageToSend(fromUpstream, responseProducer);
-            }
-        } else {
-            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
-            responseProducer.addDownstreamProducer(downstreamRequest);
-            return Either.first(downstreamRequest);
-        }
-    }
-
-    @Override
     protected ResponseProducer createResponseProducer(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
