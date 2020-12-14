@@ -57,7 +57,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<HasConstraint> hasConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
-    private final Set<Label> typeHints;
 
     ThingVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -66,7 +65,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
-        this.typeHints = new HashSet<>();
     }
 
     ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
