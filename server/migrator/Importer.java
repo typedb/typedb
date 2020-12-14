@@ -121,13 +121,13 @@ public class Importer {
                                 Version.VERSION);
                         break;
                     case ENTITY:
-                        insertEntity(tx, item.getEntity());
+                        insertEntity(item.getEntity());
                         break;
                     case RELATION:
-                        insertRelation(tx, item.getRelation());
+                        insertRelation(item.getRelation());
                         break;
                     case ATTRIBUTE:
-                        insertAttribute(tx, item.getAttribute());
+                        insertAttribute(item.getAttribute());
                         break;
                 }
             }
@@ -135,8 +135,8 @@ public class Importer {
             throw GraknException.of(FILE_NOT_READABLE, filename.toString());
         }
 
-        insertMissingOwnerships(tx);
-        insertMissingRolePlayers(tx);
+        insertMissingOwnerships();
+        insertMissingRolePlayers();
         commit();
 
         LOG.info("Imported {} entities, {} attributes, {} relations ({} players), {} ownerships",
@@ -147,12 +147,12 @@ public class Importer {
                 ownershipCount);
     }
 
-    private void insertEntity(Grakn.Transaction tx, DataProto.Item.Entity entityMsg) {
+    private void insertEntity(DataProto.Item.Entity entityMsg) {
         EntityType entityType = tx.concepts().getEntityType(relabel(entityMsg.getLabel()));
         if (entityType != null) {
             Entity entity = entityType.create();
             idMap.put(entityMsg.getId(), entity.getIID());
-            insertOwnedAttributesThatExist(tx, entity, entityMsg.getAttributeList());
+            insertOwnedAttributesThatExist(entity, entityMsg.getAttributeList());
             entityCount++;
             mayCommit();
         } else {
@@ -160,13 +160,13 @@ public class Importer {
         }
     }
 
-    private void insertRelation(Grakn.Transaction tx, DataProto.Item.Relation relationMsg) {
+    private void insertRelation(DataProto.Item.Relation relationMsg) {
         RelationType relationType = tx.concepts().getRelationType(relabel(relationMsg.getLabel()));
         if (relationType != null) {
             Map<String, RoleType> roles = getScopedRoleTypes(relationType);
             Relation relation = relationType.create();
             idMap.put(relationMsg.getId(), relation.getIID());
-            insertOwnedAttributesThatExist(tx, relation, relationMsg.getAttributeList());
+            insertOwnedAttributesThatExist(relation, relationMsg.getAttributeList());
 
             List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
             for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
@@ -174,7 +174,7 @@ public class Importer {
                 if (role != null) {
                     List<String> missingPlayers = new ArrayList<>();
                     for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                        Thing player = getThing(tx, playerMessage.getId());
+                        Thing player = getThing(playerMessage.getId());
                         if (player != null) {
                             relation.addPlayer(role, player);
                             playerCount++;
@@ -196,7 +196,7 @@ public class Importer {
         }
     }
 
-    private void insertAttribute(Grakn.Transaction tx, DataProto.Item.Attribute attributeMsg) {
+    private void insertAttribute(DataProto.Item.Attribute attributeMsg) {
         AttributeType attributeType = tx.concepts().getAttributeType(relabel(attributeMsg.getLabel()));
         if (attributeType != null) {
             DataProto.ValueObject valueMsg = attributeMsg.getValue();
@@ -222,7 +222,7 @@ public class Importer {
                     throw GraknException.of(INVALID_DATA);
             }
             idMap.put(attributeMsg.getId(), attribute.getIID());
-            insertOwnedAttributesThatExist(tx, attribute, attributeMsg.getAttributeList());
+            insertOwnedAttributesThatExist(attribute, attributeMsg.getAttributeList());
             attributeCount++;
             mayCommit();
         } else {
@@ -230,10 +230,10 @@ public class Importer {
         }
     }
 
-    private void insertOwnedAttributesThatExist(Grakn.Transaction tx, Thing thing, List<DataProto.Item.OwnedAttribute> ownedMsgs) {
+    private void insertOwnedAttributesThatExist(Thing thing, List<DataProto.Item.OwnedAttribute> ownedMsgs) {
         List<String> missingOwnerships = new ArrayList<>();
         for (DataProto.Item.OwnedAttribute ownedMsg : ownedMsgs) {
-            Thing attrThing = getThing(tx, ownedMsg.getId());
+            Thing attrThing = getThing(ownedMsg.getId());
             if (attrThing != null) {
                 thing.setHas(attrThing.asAttribute());
                 ownershipCount++;
@@ -245,11 +245,11 @@ public class Importer {
         this.missingOwnerships.add(new Pair<>(thing.getIID(), missingOwnerships));
     }
 
-    private void insertMissingOwnerships(Grakn.Transaction tx) {
+    private void insertMissingOwnerships() {
         for (Pair<byte[], List<String>> ownership : missingOwnerships) {
             Thing thing = tx.concepts().getThing(ownership.first());
             for (String originalAttributeId : ownership.second()) {
-                Thing attrThing = getThing(tx, originalAttributeId);
+                Thing attrThing = getThing(originalAttributeId);
                 assert thing != null && attrThing != null;
                 thing.setHas(attrThing.asAttribute());
                 ownershipCount++;
@@ -259,7 +259,7 @@ public class Importer {
         missingOwnerships.clear();
     }
 
-    private void insertMissingRolePlayers(Grakn.Transaction tx) {
+    private void insertMissingRolePlayers() {
         for (Pair<byte[], List<Pair<String, List<String>>>> rolePlayers : missingRolePlayers) {
             Thing thing = tx.concepts().getThing(rolePlayers.first());
             assert thing != null;
@@ -269,7 +269,7 @@ public class Importer {
                 RoleType role = roles.get(pair.first());
                 assert role != null;
                 for (String originalPlayerId : pair.second()) {
-                    Thing player = getThing(tx, originalPlayerId);
+                    Thing player = getThing(originalPlayerId);
                     relation.addPlayer(role, player);
                     playerCount++;
                 }
@@ -279,14 +279,14 @@ public class Importer {
         missingRolePlayers.clear();
     }
 
-    private Thing getThing(Grakn.Transaction tx, String originalId) {
+    private Thing getThing(String originalId) {
         byte[] newId = idMap.get(originalId);
         return newId != null ? tx.concepts().getThing(newId) : null;
     }
 
     private Map<String, RoleType> getScopedRoleTypes(RelationType relationType) {
         return relationType.getRelates().collect(
-                Collectors.toMap(x -> relationType.getLabel() + ":" + x.getLabel(), x -> x));
+                Collectors.toMap(x -> x.getLabel().scopedName(), x -> x));
     }
 
     private String relabel(String label) {
@@ -304,7 +304,7 @@ public class Importer {
         LOG.debug("Commit start, inserted {} things", commitWriteCount);
         long time = System.nanoTime();
         tx.commit();
-        LOG.debug("Commit end, took {}s", (double)(System.nanoTime() - time) / 1_000_000_000.0);
+        LOG.debug("Commit end, took {}s", (double) (System.nanoTime() - time) / 1_000_000_000.0);
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
         commitWriteCount = 0;
     }

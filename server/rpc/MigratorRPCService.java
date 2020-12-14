@@ -23,6 +23,8 @@ import grakn.core.server.migrator.Importer;
 import grakn.core.server.migrator.proto.MigratorGrpc;
 import grakn.core.server.migrator.proto.MigratorProto;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -35,6 +37,7 @@ import static grakn.core.server.rpc.util.ResponseBuilder.exception;
 
 public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MigratorRPCService.class);
     private final Grakn grakn;
 
     public MigratorRPCService(Grakn grakn) {
@@ -66,6 +69,7 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
             }
             responseObserver.onCompleted();
         } catch (Throwable e) {
+            LOG.error(e.getMessage(), e);
             responseObserver.onError(exception(e));
         }
     }
