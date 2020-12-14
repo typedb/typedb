@@ -67,11 +67,11 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Isa conjConcludable = concludables.iterator().next().asIsa();
 
-        Conjunction headConjunction = parseConjunction("{ $a 7; $a isa $age; }");
+        Conjunction thenConjunction = parseConjunction("{ $a 7; $a isa $age; }");
         ThingVariable variable = parseThingVariable("$a isa $age", "a");
         assertTrue(variable.isa().isPresent());
         IsaConstraint isaConstraint = variable.isa().get();
-        ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, headConjunction.variables());
+        ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(isaConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -91,11 +91,11 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Isa conjConcludable = concludables.iterator().next().asIsa();
 
-        Conjunction headConjunction = parseConjunction("{ $a 7; $a isa $person; }");
+        Conjunction thenConjunction = parseConjunction("{ $a 7; $a isa $person; }");
         ThingVariable variable = parseThingVariable("$a isa $person", "a");
         assertTrue(variable.isa().isPresent());
         IsaConstraint isaConstraint = variable.isa().get();
-        ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, headConjunction.variables());
+        ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(isaConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -113,10 +113,10 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
 
-        Conjunction headConjunction = parseConjunction("{ $a = $b; $a isa $person; $num = 7; }");
+        Conjunction thenConjunction = parseConjunction("{ $a = $b; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a = 7", "a");
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-        ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, headConjunction.variables());
+        ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -134,10 +134,10 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
 
-        Conjunction headConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
+        Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a > $num", "a");
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-        ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, headConjunction.variables());
+        ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -155,10 +155,10 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
 
-        Conjunction headConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
+        Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a > $num", "a");
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-        ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, headConjunction.variables());
+        ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -177,11 +177,11 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, headConjunction.variables());
+        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -199,11 +199,11 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, headConjunction.variables());
+        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -222,11 +222,11 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, headConjunction.variables());
+        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -245,13 +245,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -270,7 +270,7 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $employee: $b, $employee: $c) isa $employment; }");
         ThingVariable variable = parseThingVariable(
                 "$temp ($employee: $a, $employee: $b, $employee: $c) isa $employment",
@@ -278,7 +278,7 @@ public class UnifyTest {
         );
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -303,7 +303,7 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $employee: $b, $employee: $c) isa $employment; }");
         ThingVariable variable = parseThingVariable(
                 "$temp ($employee: $a, $employee: $b, $employee: $c) isa $employment",
@@ -311,7 +311,7 @@ public class UnifyTest {
         );
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -351,11 +351,11 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, headConjunction.variables());
+        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -368,15 +368,15 @@ public class UnifyTest {
     }
 
     @Test
-    public void has_duplicate_vars_head() {
+    public void has_duplicate_vars_then() {
         String conjunction = "{ $x has name $y; }";
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
-        Conjunction headConjunction = parseConjunction("{ $a has $a;}");
+        Conjunction thenConjunction = parseConjunction("{ $a has $a;}");
         ThingVariable variable = parseThingVariable("$a has $a", "a");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, headConjunction.variables());
+        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -395,10 +395,10 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
 
-        Conjunction headConjunction = parseConjunction("{ $a has $a;}");
+        Conjunction thenConjunction = parseConjunction("{ $a has $a;}");
         ThingVariable variable = parseThingVariable("$a has $a", "a");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, headConjunction.variables());
+        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -416,13 +416,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -442,13 +442,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $employee: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -472,13 +472,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $boss: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -497,13 +497,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -527,13 +527,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -573,13 +573,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -613,13 +613,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $a) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -638,13 +638,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -663,13 +663,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $a) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -689,13 +689,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -715,13 +715,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
@@ -741,13 +741,13 @@ public class UnifyTest {
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
         ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction headConjunction = parseConjunction(
+        Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $company: $b) isa $employment; }");
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $company: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
-                headConjunction.variables());
+                thenConjunction.variables());
 
         Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
