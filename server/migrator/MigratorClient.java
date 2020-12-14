@@ -46,35 +46,51 @@ public class MigratorClient {
                 .putAllRemapLabels(remapLabels)
                 .build();
         CountDownLatch latch = new CountDownLatch(1);
-        boolean[] result = new boolean[1];
         ProgressPrinter progressPrinter = new ProgressPrinter("import");
-        stub.importData(req, new StreamObserver<MigratorProto.Job.Res>() {
-            @Override
-            public void onNext(MigratorProto.Job.Res res) {
-                long current = res.getProgress().getCurrent();
-                long total = res.getProgress().getTotal();
-                progressPrinter.onProgress(current, total);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                throwable.printStackTrace();
-                result[0] = false;
-                latch.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                progressPrinter.onCompletion();
-                result[0] = true;
-                latch.countDown();
-            }
-        });
+        ResponseObserver streamObserver = new ResponseObserver(progressPrinter, latch);
+        stub.importData(req, streamObserver);
         try {
             latch.await();
         } catch (InterruptedException e) {
             throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
         }
-        return result[0];
+        return streamObserver.success();
+    }
+
+    static class ResponseObserver implements StreamObserver<MigratorProto.Job.Res> {
+
+        private final ProgressPrinter progressPrinter;
+        private final CountDownLatch latch;
+        private boolean success;
+
+        public ResponseObserver(ProgressPrinter progressPrinter, CountDownLatch latch) {
+            this.progressPrinter = progressPrinter;
+            this.latch = latch;
+        }
+
+        @Override
+        public void onNext(MigratorProto.Job.Res res) {
+            long current = res.getProgress().getCurrent();
+            long total = res.getProgress().getTotal();
+            progressPrinter.onProgress(current, total);
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            throwable.printStackTrace();
+            success = false;
+            latch.countDown();
+        }
+
+        @Override
+        public void onCompleted() {
+            progressPrinter.onCompletion();
+            success = true;
+            latch.countDown();
+        }
+
+        public boolean success() {
+            return success;
+        }
     }
 }
