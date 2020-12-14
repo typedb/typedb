@@ -65,4 +65,5 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public void recycle() {
 
     }
+
 }

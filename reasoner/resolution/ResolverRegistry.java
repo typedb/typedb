@@ -56,6 +56,7 @@ public class ResolverRegistry {
     public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
         for (Map.Entry<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> c: concludableActorsMap.entrySet()) {
+            // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
                 return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
