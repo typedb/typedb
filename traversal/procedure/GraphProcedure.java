@@ -20,6 +20,7 @@ package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
@@ -30,6 +31,7 @@ import grakn.core.traversal.planner.PlannerEdge;
 import grakn.core.traversal.planner.PlannerVertex;
 import grakn.core.traversal.producer.GraphIterator;
 import grakn.core.traversal.producer.GraphProducer;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +66,11 @@ public class GraphProcedure implements Procedure {
         Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
         planner.vertices().forEach(vertex -> procedure.registerVertex(vertex, registeredVertices, registeredEdges));
         return procedure;
+    }
+
+    public static GraphProcedure.Builder builder(int size) {
+        GraphProcedure procedure = new GraphProcedure(size);
+        return procedure.new Builder();
     }
 
     public Stream<ProcedureVertex<?, ?>> vertices() {
@@ -119,9 +126,13 @@ public class GraphProcedure implements Procedure {
         ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
         ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
+        registerEdge(edge);
+    }
+
+    public void registerEdge(ProcedureEdge<?, ?> edge) {
         edges[edge.order() - 1] = edge;
-        from.out(edge);
-        to.in(edge);
+        edge.from().out(edge);
+        edge.to().in(edge);
     }
 
     private ProcedureVertex<?, ?> vertex(PlannerVertex<?> plannerVertex) {
@@ -130,16 +141,22 @@ public class GraphProcedure implements Procedure {
     }
 
     private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {
-        return vertices.computeIfAbsent(
-                plannerVertex.id(),
-                id -> new ProcedureVertex.Thing(id, plannerVertex.isStartingVertex())
-        ).asThing();
+        return thingVertex(plannerVertex.id(), plannerVertex.isStartingVertex());
     }
 
     private ProcedureVertex.Type typeVertex(PlannerVertex.Type plannerVertex) {
+        return typeVertex(plannerVertex.id(), plannerVertex.isStartingVertex());
+    }
+
+    private ProcedureVertex.Thing thingVertex(Identifier identifier, boolean isStart) {
         return vertices.computeIfAbsent(
-                plannerVertex.id(),
-                id -> new ProcedureVertex.Type(id, plannerVertex.isStartingVertex())
+                identifier, id -> new ProcedureVertex.Thing(id, isStart)
+        ).asThing();
+    }
+
+    private ProcedureVertex.Type typeVertex(Identifier identifier, boolean isStart) {
+        return vertices.computeIfAbsent(
+                identifier, id -> new ProcedureVertex.Type(id, isStart)
         ).asType();
     }
 
@@ -166,15 +183,81 @@ public class GraphProcedure implements Procedure {
         procedureVertices.sort(Comparator.comparing(v -> v.id().toString()));
 
         str.append("\n");
-        str.append("Edges:\n");
-        for (ProcedureEdge<?, ?> e : procedureEdges) {
-            str.append(e).append("\n");
-        }
-        str.append("\n");
         str.append("Vertices:\n");
         for (ProcedureVertex<?, ?> v : procedureVertices) {
             str.append(v).append("\n");
         }
+        str.append("\n");
+        str.append("Edges:\n");
+        for (ProcedureEdge<?, ?> e : procedureEdges) {
+            str.append(e).append("\n");
+        }
         return str.toString();
+    }
+
+    public class Builder { // TODO: to be completed
+
+        public GraphProcedure build() {
+            for (ProcedureEdge<?, ?> edge : edges) assert edge != null;
+            return GraphProcedure.this;
+        }
+
+        public ProcedureVertex.Type labelled(String label) {
+            return labelled(label, false);
+        }
+
+        public ProcedureVertex.Type labelled(String label, boolean isStart) {
+            return typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
+        }
+
+        public ProcedureVertex.Thing named(String name) {
+            return named(name, false);
+        }
+
+        public ProcedureVertex.Thing named(String name, boolean isStart) {
+            return thingVertex(Identifier.Variable.of(Reference.named(name)), isStart);
+        }
+
+        public ProcedureVertex.Type setLabel(ProcedureVertex.Type typeVertex, String label) {
+            typeVertex.props().labels(Label.of(label));
+            return typeVertex;
+        }
+
+        public ProcedureVertex.Type setLabel(ProcedureVertex.Type typeVertex, String label, String scope) {
+            typeVertex.props().labels(Label.of(label, scope));
+            return typeVertex;
+        }
+
+        public ProcedureEdge.Native.Isa.Forward forwardIsa(
+                int order, ProcedureVertex.Thing thing, ProcedureVertex.Type type, boolean isTransitive) {
+            ProcedureEdge.Native.Isa.Forward edge =
+                    new ProcedureEdge.Native.Isa.Forward(thing, type, order, isTransitive);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Isa.Backward backwardIsa(
+                int order, ProcedureVertex.Type type, ProcedureVertex.Thing thing, boolean isTransitive) {
+            ProcedureEdge.Native.Isa.Backward edge =
+                    new ProcedureEdge.Native.Isa.Backward(type, thing, order, isTransitive);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.RolePlayer.Forward forwardRolePlayer(
+                int order, ProcedureVertex.Thing relation, ProcedureVertex.Thing player, Set<Label> roleTypes) {
+            ProcedureEdge.Native.Thing.RolePlayer.Forward edge =
+                    new ProcedureEdge.Native.Thing.RolePlayer.Forward(relation, player, order, roleTypes);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.RolePlayer.Backward backwardRolePlayer(
+                int order, ProcedureVertex.Thing player, ProcedureVertex.Thing relation, Set<Label> roleTypes) {
+            ProcedureEdge.Native.Thing.RolePlayer.Backward edge =
+                    new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, order, roleTypes);
+            registerEdge(edge);
+            return edge;
+        }
     }
 }

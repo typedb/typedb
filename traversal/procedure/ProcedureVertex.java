@@ -50,7 +50,10 @@ import static grakn.core.graph.util.Encoding.ValueType.STRING;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static java.util.Collections.emptyIterator;
 
-public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES extends TraversalVertex.Properties> extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
+public abstract class ProcedureVertex<
+        VERTEX extends Vertex<?, ?>,
+        PROPERTIES extends TraversalVertex.Properties
+        > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private final boolean isStartingVertex;
     private final AtomicReference<Set<Integer>> dependedEdgeOrders;
@@ -97,7 +100,13 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
     }
 
-    static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
+    @Override
+    public String toString() {
+        if (isStartingVertex) return super.toString() + " (start)";
+        else return super.toString();
+    }
+
+    public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
         Thing(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
@@ -228,7 +237,7 @@ public abstract class ProcedureVertex<VERTEX extends Vertex<?, ?>, PROPERTIES ex
         }
     }
 
-    static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
+    public static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
         Type(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
