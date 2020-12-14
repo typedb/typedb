@@ -68,20 +68,20 @@ public class GraknServer implements AutoCloseable {
 
     private final Grakn grakn;
     private final Server server;
-    private final ServerCommand.Start options;
+    private final ServerCommand.Start command;
     private final GraknRPCService graknRPCService;
     private final MigratorRPCService migratorRPCService;
 
-    private GraknServer(ServerCommand.Start options) throws IOException {
-        this.options = options;
+    private GraknServer(ServerCommand.Start command) throws IOException {
+        this.command = command;
         configureAndVerifyDataDir();
         configureTracing();
 
-        if (options.debug()) {
+        if (command.debug()) {
             LOG.info("Running Grakn Core Server in debug mode.");
         }
 
-        grakn = RocksGrakn.open(options.dataDir());
+        grakn = RocksGrakn.open(command.dataDir());
         graknRPCService = new GraknRPCService(grakn);
         migratorRPCService = new MigratorRPCService(grakn);
 
@@ -91,26 +91,26 @@ public class GraknServer implements AutoCloseable {
     }
 
     private void configureAndVerifyDataDir() throws IOException {
-        if (!Files.isDirectory(this.options.dataDir())) {
-            if (this.options.dataDir().equals(ServerDefaults.DATA_DIR)) {
-                Files.createDirectory(this.options.dataDir());
+        if (!Files.isDirectory(this.command.dataDir())) {
+            if (this.command.dataDir().equals(ServerDefaults.DATA_DIR)) {
+                Files.createDirectory(this.command.dataDir());
             } else {
-                throw GraknException.of(DATA_DIRECTORY_NOT_FOUND, this.options.dataDir());
+                throw GraknException.of(DATA_DIRECTORY_NOT_FOUND, this.command.dataDir());
             }
         }
 
-        if (!Files.isWritable(this.options.dataDir())) {
-            throw GraknException.of(DATA_DIRECTORY_NOT_WRITABLE, this.options.dataDir());
+        if (!Files.isWritable(this.command.dataDir())) {
+            throw GraknException.of(DATA_DIRECTORY_NOT_WRITABLE, this.command.dataDir());
         }
     }
 
     private void configureTracing() {
-        if (this.options.grablTrace()) {
+        if (this.command.grablTrace()) {
             final GrablTracing grablTracingClient;
             grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
-                    options.grablURI().toString(),
-                    options.grablUsername(),
-                    options.grablToken()
+                    command.grablURI().toString(),
+                    command.grablUsername(),
+                    command.grablToken()
             ));
             GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
             LOG.info("Grabl tracing is enabled");
@@ -222,7 +222,7 @@ public class GraknServer implements AutoCloseable {
         final NioEventLoopGroup workerELG = new NioEventLoopGroup(
                 MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker")
         );
-        return NettyServerBuilder.forPort(options.port())
+        return NettyServerBuilder.forPort(command.port())
                 .executor(ExecutorService.forkJoinPool())
                 .workerEventLoopGroup(workerELG)
                 .bossEventLoopGroup(workerELG)
