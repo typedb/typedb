@@ -188,8 +188,8 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 Map<RolePlayer, Set<Integer>> rolePlayerUnifier, List<RolePlayer> thenRolePlayers,
                 Map<Reference, Set<Reference>> variableUnifier) {
             Map<Reference, Set<Reference>> newMapping = cloneMapping(variableUnifier);
-            rolePlayerUnifier.forEach((conjRP, thenRPSet) -> thenRPSet.forEach(thenRPidx -> {
-                        RolePlayer thenRP = thenRolePlayers.get(thenRPidx);
+            rolePlayerUnifier.forEach((conjRP, thenRPSet) -> thenRPSet.stream().map(thenRolePlayers::get)
+                    .forEach(thenRP -> {
                         if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
                             assert thenRP.roleType().isPresent();
                             newMapping.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
