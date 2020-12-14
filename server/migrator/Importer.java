@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -73,8 +74,8 @@ public class Importer {
     private long attributeCount = 0;
     private long ownershipCount = 0;
     private long playerCount = 0;
+    private int txWriteCount = 0;
     private Grakn.Transaction tx;
-    private int commitWriteCount = 0;
 
     public Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
@@ -294,18 +295,18 @@ public class Importer {
     }
 
     private void mayCommit() {
-        commitWriteCount++;
-        if (commitWriteCount >= BATCH_SIZE) {
+        txWriteCount++;
+        if (txWriteCount >= BATCH_SIZE) {
             commit();
         }
     }
 
     private void commit() {
-        LOG.debug("Commit start, inserted {} things", commitWriteCount);
-        long time = System.nanoTime();
+        LOG.debug("Commit start, inserted {} things", txWriteCount);
+        Instant start = Instant.now();
         tx.commit();
-        LOG.debug("Commit end, took {}s", (double) (System.nanoTime() - time) / 1_000_000_000.0);
+        LOG.debug("Commit end, took {}s", Duration.between(start, Instant.now()).toMillis());
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
-        commitWriteCount = 0;
+        txWriteCount = 0;
     }
 }

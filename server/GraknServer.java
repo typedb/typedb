@@ -191,7 +191,7 @@ public class GraknServer implements AutoCloseable {
             final ServerCommand command = parseCommandLine(parseProperties(), args);
             if (command == null) System.exit(0);
 
-            if (command instanceof ServerCommand.Start) {
+            if (command.isStart()) {
                 final GraknServer server = new GraknServer(command.asStart());
                 server.start();
 
@@ -201,13 +201,11 @@ public class GraknServer implements AutoCloseable {
                         String.format("%.3f", (end - start) / 1_000_000.00));
 
                 server.serve();
-            } else if (command instanceof ServerCommand.ImportData) {
-                ServerCommand.ImportData importDataCommand = command.asImport();
+            } else if (command.isImportData()) {
+                ServerCommand.ImportData importDataCommand = command.asImportData();
                 MigratorClient migrator = new MigratorClient(importDataCommand.port());
                 boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
                 System.exit(success ? 0 : 1);
-            } else {
-                assert false;
             }
         } catch (Exception e) {
             LOG.error(e.getMessage());

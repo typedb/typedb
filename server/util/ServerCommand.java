@@ -33,11 +33,19 @@ import java.util.Map;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface ServerCommand {
+    default boolean isStart() {
+        return false;
+    }
+
     default Start asStart() {
         throw GraknException.of(ILLEGAL_CAST);
     }
 
-    default ImportData asImport() {
+    default boolean isImportData() {
+        return false;
+    }
+
+    default ImportData asImportData() {
         throw GraknException.of(ILLEGAL_CAST);
     }
 
@@ -114,6 +122,11 @@ public interface ServerCommand {
         }
 
         @Override
+        public boolean isStart() {
+            return true;
+        }
+
+        @Override
         public ServerCommand.Start asStart() {
             return this;
         }
@@ -154,7 +167,12 @@ public interface ServerCommand {
         }
 
         @Override
-        public ImportData asImport() {
+        public boolean isImportData() {
+            return true;
+        }
+
+        @Override
+        public ImportData asImportData() {
             return this;
         }
     }
