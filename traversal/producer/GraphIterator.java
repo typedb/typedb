@@ -244,7 +244,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
                     roles.put(edge.to().id(), e.optimised().get());
                     return true;
                 }
-            }).map(thingEdge -> edge.direction().isForward() ? thingEdge.to() : thingEdge.from());
+            }).map(e -> edge.direction().isForward() ? e.to() : e.from());
         } else {
             toIter = edge.branchTo(graphMgr, fromVertex, parameters);
         }
