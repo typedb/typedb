@@ -189,6 +189,7 @@ public class Rule {
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
+        //TODO: make all variables named.
         return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
 
