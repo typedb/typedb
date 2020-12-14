@@ -20,6 +20,7 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -43,6 +44,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
+import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
@@ -97,8 +99,8 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public String getLabel() {
-        return vertex.label();
+    public Label getLabel() {
+        return vertex.properLabel();
     }
 
     @Override
@@ -140,7 +142,11 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSupertypes(Function<TypeVertex, TYPE> typeConstructor) {
-        return graphMgr.schema().superTypes(vertex).map(typeConstructor).stream();
+        return loop(
+                vertex,
+                Objects::nonNull,
+                v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(vertex.encoding())).firstOrNull()
+        ).map(typeConstructor).stream();
     }
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
@@ -154,6 +160,9 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public TypeImpl asType() { return this; }
+
+    @Override
+    public boolean isType() { return true; }
 
     @Override
     public ThingTypeImpl asThingType() {

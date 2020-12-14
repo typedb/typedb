@@ -133,5 +133,7 @@ public interface ThingAdjacency {
         ResourceIterator<ThingVertex> from();
 
         ResourceIterator<ThingVertex> to();
+
+        ResourceIterator<ThingEdge> get();
     }
 }

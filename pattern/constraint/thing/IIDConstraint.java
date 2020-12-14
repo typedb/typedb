@@ -80,15 +80,7 @@ public class IIDConstraint extends ThingConstraint {
     public String toString() {
         StringBuilder syntax = new StringBuilder();
         syntax.append(IID).append(SPACE);
-        syntax.append(iidAsHexString());
+        syntax.append(Bytes.bytesToHexString(iid));
         return syntax.toString();
     }
-
-    private String iidAsHexString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append("0x");
-        for (byte b : iid) { syntax.append(String.format("%02x", b)); }
-        return syntax.toString();
-    }
-
 }

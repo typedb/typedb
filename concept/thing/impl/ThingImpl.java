@@ -206,6 +206,9 @@ public abstract class ThingImpl implements Thing {
     public ThingImpl asThing() { return this; }
 
     @Override
+    public boolean isThing() { return true; }
+
+    @Override
     public EntityImpl asEntity() {
         throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Entity.class)));
     }

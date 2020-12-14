@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
-Feature: Debugging Space
+Feature: Graql Match Query
 
   Background:
     Given connection has been opened
@@ -23,4 +22,4 @@ Feature: Debugging Space
     Given connection does not have any database
 
   # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.
+  # Do not commit any changes to this f

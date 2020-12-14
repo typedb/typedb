@@ -33,12 +33,12 @@ public abstract class Identifier {
         return isVariable() && asVariable().reference().isName();
     }
 
-    public boolean isGenerated() { return false; }
+    public boolean isScoped() { return false; }
 
     public boolean isVariable() { return false; }
 
-    public Generated asGenerated() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Generated.class));
+    public Scoped asScoped() {
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Scoped.class));
     }
 
     public Variable asVariable() {
@@ -46,30 +46,39 @@ public abstract class Identifier {
     }
 
     @Override
+    public abstract String toString();
+
+    @Override
     public abstract boolean equals(Object o);
 
     @Override
     public abstract int hashCode();
 
-    public static class Generated extends Identifier {
+    public static class Scoped extends Identifier {
 
+        private final Variable scope;
         private final int id;
         private final int hash;
 
-        public Generated(int id) {
+        private Scoped(Variable scope, int id) {
+            this.scope = scope;
             this.id = id;
-            this.hash = Objects.hash(Generated.class, id);
+            this.hash = Objects.hash(Scoped.class, scope, id);
         }
 
-        public static Generated of(int id) {
-            return new Generated(id);
+        public static Scoped of(Variable scope, int id) {
+            return new Scoped(scope, id);
+        }
+
+        public Identifier.Variable scope() {
+            return scope;
         }
 
         @Override
-        public boolean isGenerated() { return true; }
+        public boolean isScoped() { return true; }
 
         @Override
-        public Generated asGenerated() { return this; }
+        public Scoped asScoped() { return this; }
 
         @Override
         public String toString() {
@@ -81,8 +90,8 @@ public abstract class Identifier {
             if (this == o) return true;
             else if (o == null || getClass() != o.getClass()) return false;
 
-            final Generated that = (Generated) o;
-            return this.id == that.id;
+            final Scoped that = (Scoped) o;
+            return this.scope.equals(that.scope) && this.id == that.id;
         }
 
         @Override
@@ -112,6 +121,18 @@ public abstract class Identifier {
 
         public static Anonymous of(Reference.Anonymous reference, int id) {
             return new Anonymous(reference, id);
+        }
+
+        public static Referrable name(String name) {
+            return Variable.of(Reference.named(name));
+        }
+
+        public static Referrable label(String label) {
+            return Variable.of(Reference.label(label));
+        }
+
+        public static Anonymous anon(int id) {
+            return Variable.of(Reference.anonymous(false), id);
         }
 
         public Reference reference() {

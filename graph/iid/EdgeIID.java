@@ -64,6 +64,7 @@ public abstract class EdgeIID<
         return infix().encoding();
     }
 
+    // TODO: rename to isForward()
     public boolean isOutwards() {
         return infix().isOutwards();
     }

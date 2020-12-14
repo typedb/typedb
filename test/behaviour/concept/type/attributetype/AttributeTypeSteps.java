@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.concept.type.attributetype;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.ThingType;
 import io.cucumber.java.en.Then;
@@ -82,14 +83,14 @@ public class AttributeTypeSteps {
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes contain:")
     public void attribute_type_as_value_type_get_subtypes_contain(String typeLabel, AttributeType.ValueType valueType, List<String> subLabels) {
         final AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        final Set<String> actuals = attributeType.getSubtypes().map(ThingType::getLabel).collect(toSet());
+        final Set<String> actuals = attributeType.getSubtypes().map(ThingType::getLabel).map(Label::toString).collect(toSet());
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) as\\( ?{value_type} ?) get subtypes do not contain:")
     public void attribute_type_as_value_type_get_subtypes_do_not_contain(String typeLabel, AttributeType.ValueType valueType, List<String> subLabels) {
         final AttributeType attributeType = attribute_type_as_value_type(typeLabel, valueType);
-        final Set<String> actuals = attributeType.getSubtypes().map(ThingType::getLabel).collect(toSet());
+        final Set<String> actuals = attributeType.getSubtypes().map(ThingType::getLabel).map(Label::toString).collect(toSet());
         for (String subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));
         }
@@ -126,14 +127,14 @@ public class AttributeTypeSteps {
     @Then("attribute\\( ?{type_label} ?) get key owners contain:")
     public void attribute_type_get_owners_as_key_contains(String typeLabel, List<String> ownerLabels) {
         final AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        final Set<String> actuals = attributeType.getOwners(true).map(ThingType::getLabel).collect(toSet());
+        final Set<String> actuals = attributeType.getOwners(true).map(ThingType::getLabel).map(Label::toString).collect(toSet());
         assertTrue(actuals.containsAll(ownerLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) get key owners do not contain:")
     public void attribute_type_get_owners_as_key_do_not_contains(String typeLabel, List<String> ownerLabels) {
         final AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        final Set<String> actuals = attributeType.getOwners(true).map(ThingType::getLabel).collect(toSet());
+        final Set<String> actuals = attributeType.getOwners(true).map(ThingType::getLabel).map(Label::toString).collect(toSet());
         for (String ownerLabel : ownerLabels) {
             assertFalse(actuals.contains(ownerLabel));
         }
@@ -142,14 +143,14 @@ public class AttributeTypeSteps {
     @Then("attribute\\( ?{type_label} ?) get attribute owners contain:")
     public void attribute_type_get_owners_as_attribute_contains(String typeLabel, List<String> ownerLabels) {
         final AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        final Set<String> actuals = attributeType.getOwners(false).map(ThingType::getLabel).collect(toSet());
+        final Set<String> actuals = attributeType.getOwners(false).map(ThingType::getLabel).map(Label::toString).collect(toSet());
         assertTrue(actuals.containsAll(ownerLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) get attribute owners do not contain:")
     public void attribute_type_get_owners_as_attribute_do_not_contains(String typeLabel, List<String> ownerLabels) {
         final AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        final Set<String> actuals = attributeType.getOwners(false).map(ThingType::getLabel).collect(toSet());
+        final Set<String> actuals = attributeType.getOwners(false).map(ThingType::getLabel).map(Label::toString).collect(toSet());
         for (String ownerLabel : ownerLabels) {
             assertFalse(actuals.contains(ownerLabel));
         }

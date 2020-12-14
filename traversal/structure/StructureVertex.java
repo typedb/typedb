@@ -28,8 +28,11 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 public abstract class StructureVertex<PROPERTY extends TraversalVertex.Properties>
         extends TraversalVertex<StructureEdge<?, ?>, PROPERTY> {
 
-    StructureVertex(Identifier identifier) {
+    final Structure structure;
+
+    StructureVertex(Structure structure, Identifier identifier) {
         super(identifier);
+        this.structure = structure;
     }
 
     public StructureVertex.Thing asThing() {
@@ -42,8 +45,8 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
 
     public static class Thing extends StructureVertex<TraversalVertex.Properties.Thing> {
 
-        Thing(Identifier identifier) {
-            super(identifier);
+        Thing(Structure structure, Identifier identifier) {
+            super(structure, identifier);
         }
 
         @Override
@@ -60,8 +63,8 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
 
     public static class Type extends StructureVertex<Properties.Type> {
 
-        Type(Identifier identifier) {
-            super(identifier);
+        Type(Structure structure, Identifier identifier) {
+            super(structure, identifier);
         }
 
         @Override

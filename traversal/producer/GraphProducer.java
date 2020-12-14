@@ -25,12 +25,13 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.procedure.Procedure;
+import grakn.core.traversal.procedure.GraphProcedure;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 import static grakn.core.common.iterator.Iterators.synchronised;
@@ -40,23 +41,25 @@ public class GraphProducer implements Producer<VertexMap> {
 
     private final int parallelisation;
     private final GraphManager graphMgr;
-    private final Procedure procedure;
-    private final Traversal.Parameters parameters;
+    private final GraphProcedure procedure;
+    private final Traversal.Parameters params;
     private final SynchronisedIterator<? extends Vertex<?, ?>> start;
     private final ConcurrentMap<ResourceIterator<VertexMap>, CompletableFuture<Void>> futures;
     private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
     private final AtomicBoolean isDone;
+    private final AtomicInteger runningJobs;
 
-    public GraphProducer(GraphManager graphMgr, Procedure procedure, Traversal.Parameters parameters, int parallelisation) {
+    public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, int parallelisation) {
         assert parallelisation > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
-        this.parameters = parameters;
+        this.params = params;
         this.parallelisation = parallelisation;
         this.isDone = new AtomicBoolean(false);
         this.futures = new ConcurrentHashMap<>();
         this.produced = ConcurrentHashMap.newKeySet();
-        this.start = synchronised(procedure.startVertex().iterator(graphMgr, parameters));
+        this.start = synchronised(procedure.startVertex().iterator(graphMgr, params));
+        this.runningJobs = new AtomicInteger(0);
     }
 
     @Override
@@ -64,7 +67,7 @@ public class GraphProducer implements Producer<VertexMap> {
         int p = futures.isEmpty() ? parallelisation : futures.size();
         int splitCount = (int) Math.ceil((double) count / p);
 
-        if (futures.isEmpty()) {
+        if (runningJobs.get() == 0) {
             if (!start.hasNext()) {
                 done(sink);
                 return;
@@ -72,7 +75,8 @@ public class GraphProducer implements Producer<VertexMap> {
 
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
-                ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, parameters).distinct(produced);
+                runningJobs.incrementAndGet(); // TODO: still not right
+                ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
                 futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
             }
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
@@ -86,21 +90,25 @@ public class GraphProducer implements Producer<VertexMap> {
     private Runnable consume(ResourceIterator<VertexMap> iterator, int count, Sink<VertexMap> sink) {
         return () -> {
             int i = 0;
-            for (; i < count; i++) {
-                if (iterator.hasNext()) sink.put(iterator.next());
-                else break;
+            for (; i < count && iterator.hasNext(); i++) {
+                sink.put(iterator.next());
             }
-            if (i < count) compensate(iterator, count - i, sink);
+            if (i < count) {
+                futures.remove(iterator);
+                compensate(count - i, sink);
+            }
         };
     }
 
-    private void compensate(ResourceIterator<VertexMap> completedIterator, int remaining, Sink<VertexMap> sink) {
-        futures.remove(completedIterator);
+    private void compensate(int remaining, Sink<VertexMap> sink) {
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
-            ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, parameters).distinct(produced);
+            ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, params).distinct(produced);
             futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
-        } else if (futures.isEmpty()) {
+            return;
+        }
+
+        if (runningJobs.decrementAndGet() == 0) {
             done(sink);
         } else {
             produce(sink, remaining);

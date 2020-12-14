@@ -15,19 +15,34 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<configuration xmlns="">
+<configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>
-                %d{HH:mm:ss.SSS} %magenta(%X{address}) %X{currentTime} %yellow(%logger{10}) %-5level %cyan([%thread]) - %msg%n
-            </pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <!--
-      enable this line in order to change log level selectively, for a particular java package
-      <logger name="grakn.core" level="DEBUG" />
-    -->
-    <root level="INFO">
+
+    <root level="ERROR">
         <appender-ref ref="STDOUT"/>
     </root>
+
+    <logger name="grakn.core" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <!-- Use this to suppress excess JanusGraph logging -->
+    <logger name="grakn.core.graph" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="server.Server" level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <!-- Increase this if wanting to see more verbose reasoner output -->
+    <logger name="grakn.core.graql.reasoner" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+
 </configuration>

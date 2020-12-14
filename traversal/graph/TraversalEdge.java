@@ -38,6 +38,6 @@ public abstract class TraversalEdge<VERTEX_FROM extends TraversalVertex<?, ?>, V
 
     @Override
     public String toString() {
-        return String.format("(%s --> %s)", from, to);
+        return String.format("(%s --> %s)", from.id(), to.id());
     }
 }

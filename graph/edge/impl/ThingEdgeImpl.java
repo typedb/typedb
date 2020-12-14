@@ -29,8 +29,11 @@ import grakn.core.graph.vertex.ThingVertex;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
 
@@ -119,6 +122,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             return to;
         }
 
+        @Override
+        public Optional<ThingVertex> optimised() {
+            return Optional.ofNullable(optimised);
+        }
+
         /**
          * Deletes this {@code Edge} from connecting between two {@code Vertex}.
          *
@@ -192,9 +200,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final EdgeIID.Thing inIID;
         private final VertexIID.Thing fromIID;
         private final VertexIID.Thing toIID;
+        private final VertexIID.Thing optimisedIID;
         private final int hash;
         private ThingVertex from;
         private ThingVertex to;
+        private ThingVertex optimised;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
@@ -224,6 +234,13 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 toIID = iid.start();
                 inIID = iid;
                 outIID = EdgeIID.Thing.of(iid.end(), iid.infix().outwards(), iid.start(), iid.suffix());
+            }
+            if (!iid.suffix().isEmpty()) {
+                optimisedIID = VertexIID.Thing.of(join(
+                        VERTEX_ROLE.bytes(), iid.infix().asRolePlayer().tail().bytes(), iid.suffix().bytes()
+                ));
+            } else {
+                optimisedIID = null;
             }
 
             this.hash = hash(Persisted.class, encoding, fromIID.hashCode(), toIID.hashCode());
@@ -258,6 +275,13 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             to = graph.convert(toIID);
             to.ins().cache(this);
             return to;
+        }
+
+        @Override
+        public Optional<ThingVertex> optimised() {
+            if (optimised != null) return Optional.of(optimised);
+            if (optimisedIID != null) optimised = graph.convert(optimisedIID);
+            return Optional.ofNullable(optimised);
         }
 
         /**

@@ -18,6 +18,7 @@
 
 package grakn.core.graph.iid;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.Encoding;
 
 import javax.annotation.Nullable;
@@ -36,8 +37,9 @@ import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.stringToBytes;
-import static grakn.core.graph.util.Encoding.STRING_ENCODING;
-import static grakn.core.graph.util.Encoding.TIME_ZONE_ID;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.graph.util.Encoding.ValueType.STRING_ENCODING;
+import static grakn.core.graph.util.Encoding.ValueType.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
@@ -127,7 +129,13 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringToBytes(value, STRING_ENCODING), typeIID.bytes);
+            byte[] stringBytes;
+            try {
+                stringBytes = stringToBytes(value, STRING_ENCODING);
+            } catch (Exception e) {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+            return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringBytes, typeIID.bytes);
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {

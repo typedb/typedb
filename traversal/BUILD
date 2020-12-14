@@ -45,6 +45,7 @@ native_java_libraries(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api",
     ],
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",
