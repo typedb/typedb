@@ -159,12 +159,10 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             }
 
             Map<Reference, Set<Reference>> finalVariableUnifier = variableUnifier;
-            Stream<Map<RolePlayer, Set<Integer>>> temp = unifyRP(Collections.unmodifiableList(constraint.players()),
-                    Collections.unmodifiableList(unifyWith.constraint().players()),
-                    new HashMap<>(), 0);
-
-            return temp.map(unifier ->
-                    convertRolePlayerUnifier(unifier, Collections.unmodifiableList(unifyWith.constraint().players()), finalVariableUnifier));
+            List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint.players());
+            List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
+            return unifyRP(conjRolePlayers, thenRolePlayers, new HashMap<>(), 0)
+                    .map(unifier -> convertRolePlayerUnifier(unifier, thenRolePlayers, finalVariableUnifier));
         }
 
         private Stream<Map<RolePlayer, Set<Integer>>> unifyRP(
