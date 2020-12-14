@@ -71,7 +71,7 @@ public class MappingAggregator extends Aggregator {
     }
 
     private static ConceptMap transform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
-        Map<Reference, Concept> transformed = new HashMap<>();
+        Map<Reference.Name, Concept> transformed = new HashMap<>();
         for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
             transformed.put(e.getValue(), conceptMap.get(e.getKey()));
         }

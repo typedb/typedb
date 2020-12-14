@@ -31,6 +31,7 @@ public abstract class Aggregator {
     private final ConceptMap transformed;
 
     Aggregator(ConceptMap original, ConceptMap transformed) {
+        // TODO refactor to clean up the ownership of operations and variable domains
         this.original = original;
         this.transformed = transformed;
     }
@@ -39,7 +40,7 @@ public abstract class Aggregator {
         ConceptMap unTransformed = unTransform(toAggregate);
         if (unTransformed == null) return null;
         if (unTransformed.concepts().isEmpty()) ; // TODO What do we do in this case?
-        Map<Reference, Concept> aggregatedMap = new HashMap<>(original.concepts());
+        Map<Reference.Name, Concept> aggregatedMap = new HashMap<>(original.concepts());
         aggregatedMap.putAll(unTransformed.concepts());
         ConceptMap aggregatedConceptMap = new ConceptMap(aggregatedMap);
         return new Aggregated(aggregatedConceptMap, toAggregate);
