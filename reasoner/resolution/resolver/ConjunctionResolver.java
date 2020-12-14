@@ -128,17 +128,12 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
-        boolean match = false;
-        for (Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> planned : plannedConcludables) {
-            if (match) {
-                return planned; // TODO This logic seems a bit bizarre, but is the most efficient
-            }
-            if (actor.equals(planned.first())) {
-                match = true;
-            }
+        int index = -1;
+        for (int i = 0; i < plannedConcludables.size(); i++) {
+            if (actor.equals(plannedConcludables.get(i).first())) { index = i; break; }
         }
-        assert false; // Catch the case where we can't find the given actor in the plan
-        return null;
+        assert index != -1 && index < plannedConcludables.size() - 1 ;
+        return plannedConcludables.get(index + 1);
     }
 
     abstract Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer);
