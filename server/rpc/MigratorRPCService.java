@@ -46,6 +46,7 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void exportData(MigratorProto.ExportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
+        responseObserver.onError(exception(new UnsupportedOperationException("Export data is not currently supported.")));
     }
 
     @Override
@@ -76,6 +77,6 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void exportSchema(MigratorProto.ExportSchema.Req request, StreamObserver<MigratorProto.ExportSchema.Res> responseObserver) {
+        responseObserver.onError(exception(new UnsupportedOperationException("Export schema is not currently supported.")));
     }
-
 }
