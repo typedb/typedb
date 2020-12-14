@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.concludable;
+package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
@@ -43,7 +43,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class Concludable<CONSTRAINT extends Constraint> {
+public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolvable {
 
     private final Map<Rule, Set<Map<Reference.Name, Set<Reference.Name>>>> applicableRules;
     private final CONSTRAINT constraint;
@@ -157,7 +157,17 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
     }
 
     public Conjunction conjunction() {
-        return null; //TODO Make abstract and implement for all subtypes
+        return null; //TODO Implement
+    }
+
+    @Override
+    public boolean isConcludable() {
+        return true;
+    }
+
+    @Override
+    public Concludable<CONSTRAINT> asConcludable() {
+        return this;
     }
 
     public static class Relation extends Concludable<RelationConstraint> {

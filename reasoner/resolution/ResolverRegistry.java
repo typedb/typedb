@@ -21,13 +21,17 @@ package grakn.core.reasoner.resolution;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.exception.GraknException;
 import grakn.core.logic.Rule;
-import grakn.core.logic.concludable.Concludable;
+import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.resolvable.Resolvable;
+import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.reasoner.resolution.answer.MappingAggregator;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
+import grakn.core.reasoner.resolution.resolver.ResolvableResolver;
+import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
 import graql.lang.pattern.variable.Reference;
@@ -35,8 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ResolverRegistry {
 
@@ -54,18 +63,12 @@ public class ResolverRegistry {
         resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
     }
 
-    public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
-        LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActorsMap.entrySet()) {
-            // TODO This needs to be optimised from a linear search to use an alpha hash
-            AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
-            if (alphaEquality.isValid()) {
-                return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
-            }
-        }
-        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
-        concludableActorsMap.put(concludable, concludableActor);
-        return new Pair<>(concludableActor, MappingAggregator.identity(concludable));
+    public Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerResolvable(Resolvable resolvable) {
+        if (resolvable.isRetrievable()) {
+            return registerRetrievable(resolvable.asRetrievable());
+        } else if (resolvable.isConcludable()) {
+            return registerConcludable(resolvable.asConcludable());
+        } else throw GraknException.of(ILLEGAL_STATE);
     }
 
     public Actor<RuleResolver> registerRule(Rule rule) {
@@ -84,5 +87,32 @@ public class ResolverRegistry {
 
     public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
         this.elg = eventLoopGroup;
+    }
+
+    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
+        LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
+        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable));
+        return new Pair<>(retrievableActor, identity(retrievable));
+    }
+
+    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
+        LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
+        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActorsMap.entrySet()) {
+            // TODO This needs to be optimised from a linear search to use an alpha hash
+            AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
+            if (alphaEquality.isValid()) {
+                return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+            }
+        }
+        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
+        concludableActorsMap.put(concludable, concludableActor);
+        return new Pair<>(concludableActor, identity(concludable));
+    }
+
+    private static Map<Reference.Name, Reference.Name> identity(Resolvable resolvable) {
+        return new HashSet<>(resolvable.conjunction().variables()).stream()
+                .filter(variable -> variable.reference().isName())
+                .map(variable -> variable.reference().asName())
+                .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 }

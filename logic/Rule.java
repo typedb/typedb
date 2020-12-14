@@ -23,7 +23,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.concludable.Concludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
@@ -204,6 +204,7 @@ public class Rule {
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
+        // TODO Needs to make all of the variables named
         return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
 
