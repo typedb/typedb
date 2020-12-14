@@ -184,7 +184,7 @@ public class TypeHinter {
         if (subLabels == null) return;
         if (subLabels.isEmpty()) {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
-                    .map(Type::getLabel).map(Label::of).collect(Collectors.toSet());
+                    .map(Type::getLabel).collect(Collectors.toSet());
             addHintLabels(subVar, subHintsOfSupLabels);
             return;
         }
@@ -192,8 +192,7 @@ public class TypeHinter {
         Set<Label> temp = new HashSet<>(subLabels);
         for (Label label : temp) {
             Type hintType = getType(label);
-            //TODO use getProperLabel once that is available
-            while (hintType != null && !supLabels.contains(Label.of(hintType.getLabel()))) {
+            while (hintType != null && !supLabels.contains(hintType.getLabel())) {
                 hintType = hintType.getSupertype();
             }
             if (hintType == null) removeHintLabel(subVar, label);
@@ -239,8 +238,7 @@ public class TypeHinter {
         }
 
         assert lowestCommonAncestor != null;
-        //TODO: use properLabel when avaialble
-        return getOrCreateTypeVariable(Label.of(lowestCommonAncestor.getLabel()), labelMap);
+        return getOrCreateTypeVariable(lowestCommonAncestor.getLabel(), labelMap);
     }
 
     private TypeVariable getOrCreateTypeVariable(Label label, Map<Label, TypeVariable> labelMap) {
@@ -272,7 +270,7 @@ public class TypeHinter {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
-            buffer(traversalEng.execute(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
+            buffer(traversalEng.producer(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));

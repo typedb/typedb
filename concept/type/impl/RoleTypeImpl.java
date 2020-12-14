@@ -73,16 +73,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super.setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
     }
 
-    @Override
-    public String getScope() {
-        return vertex.scope();
-    }
-
-    @Override
-    public String getScopedLabel() {
-        return vertex.scopedLabel();
-    }
-
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
@@ -117,7 +107,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public void delete() {
         if (getInstances().findAny().isPresent()) {
-            throw GraknException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getScopedLabel());
+            throw GraknException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getLabel());
         }
         vertex.delete();
     }

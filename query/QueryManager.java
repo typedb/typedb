@@ -24,7 +24,9 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.Reasoner;
@@ -65,7 +67,7 @@ public class QueryManager {
         // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Disjunction disjunction = Disjunction.create(query.conjunction().normalise());
-            return reasoner.execute(disjunction);
+            return reasoner.executeSync(disjunction);
         } catch (GraknException exception) {
             throw conceptMgr.exception(exception);
         } catch (Exception exception) {
@@ -82,8 +84,10 @@ public class QueryManager {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             if (query.match().isPresent()) {
-                final List<ConceptMap> matched = match(query.match().get()).toList();
-                return iterate(matched).map(answer -> Inserter.create(conceptMgr, query.variables(), answer, context).execute());
+                List<ConceptMap> matched = match(query.match().get()).toList();
+                return iterate(iterate(matched).map(answer -> Inserter.create(
+                        conceptMgr, query.variables(), answer, context
+                ).execute()).toList());
             } else {
                 return iterate(list(Inserter.create(conceptMgr, query.variables(), context).execute()));
             }
@@ -131,5 +135,19 @@ public class QueryManager {
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
+    }
+
+    public Numeric match(GraqlMatch.Aggregate matchAggregate) {
+        // TODO
+        return null;
+    }
+
+    public ResourceIterator<AnswerGroup<ConceptMap>> match(GraqlMatch.Group matchGroup) {
+        // TODO
+        return null;
+    }
+
+    public ResourceIterator<AnswerGroup<Numeric>> match(GraqlMatch.Group.Aggregate matchGroupAggregate) {
+        return null;
     }
 }

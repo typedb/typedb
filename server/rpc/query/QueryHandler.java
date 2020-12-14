@@ -83,7 +83,7 @@ public class QueryHandler {
         transactionRPC.respond(
                 request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
-                        QueryProto.Graql.Match.Res.newBuilder().addAllAnswer(
+                        QueryProto.Graql.Match.Res.newBuilder().addAllAnswers(
                                 as.stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))))
         );
     }
@@ -94,7 +94,7 @@ public class QueryHandler {
         transactionRPC.respond(
                 request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setInsertRes(
-                        QueryProto.Graql.Insert.Res.newBuilder().addAllAnswer(
+                        QueryProto.Graql.Insert.Res.newBuilder().addAllAnswers(
                                 as.stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))))
         );
     }

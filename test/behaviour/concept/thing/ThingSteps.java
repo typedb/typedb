@@ -170,7 +170,7 @@ public class ThingSteps {
 
     @Then("entity/attribute/relation {var} get relations\\( ?{scoped_label} ?) contain: {var}")
     public void thing_get_relations_contain(String var1, ScopedLabel scopedLabel, String var2) {
-        assertTrue(get(var1).getRelations(tx().concepts().getRelationType(scopedLabel.scope()).getRelates(scopedLabel.role()))
+        assertTrue(get(var1).getRelations(tx().concepts().getRelationType(scopedLabel.scope()).getRelates(scopedLabel.label()))
                            .anyMatch(k -> k.equals(get(var2))));
     }
 
@@ -181,7 +181,7 @@ public class ThingSteps {
 
     @Then("entity/attribute/relation {var} get relations\\( ?{scoped_label} ?) do not contain: {var}")
     public void thing_get_relations_do_not_contain(String var1, ScopedLabel scopedLabel, String var2) {
-        assertTrue(get(var1).getRelations(tx().concepts().getRelationType(scopedLabel.scope()).getRelates(scopedLabel.role()))
+        assertTrue(get(var1).getRelations(tx().concepts().getRelationType(scopedLabel.scope()).getRelates(scopedLabel.label()))
                            .noneMatch(k -> k.equals(get(var2))));
     }
 

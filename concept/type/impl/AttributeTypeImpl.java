@@ -42,7 +42,6 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
@@ -774,8 +773,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             validateIsCommittedAndNotAbstract(Attribute.class);
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(GraknException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
-            } else if (value.length() > Encoding.STRING_MAX_LENGTH) {
-                throw exception(GraknException.of(ILLEGAL_STRING_SIZE));
             }
             final AttributeVertex<java.lang.String> attVertex = graphMgr.data().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);

@@ -67,7 +67,7 @@ public class MockTransaction {
 
             @Override
             public ConceptMap next() {
-                Map<Reference, Concept> concepts = new HashMap<>(partialConceptMap.concepts());
+                Map<Reference.Name, Concept> concepts = new HashMap<>(partialConceptMap.concepts());
 
                 variableSeeds.forEach((var, seed) -> {
                     MockConcept mockConcept = new MockConcept(seed + counter);

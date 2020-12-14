@@ -207,13 +207,18 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
+        public ResourceIterator<ThingVertex> from() {
+            return edgeIterator.map(Edge::from);
+        }
+
+        @Override
         public ResourceIterator<ThingVertex> to() {
             return edgeIterator.map(Edge::to);
         }
 
         @Override
-        public ResourceIterator<ThingVertex> from() {
-            return edgeIterator.map(Edge::from);
+        public ResourceIterator<ThingEdge> get() {
+            return edgeIterator;
         }
     }
 

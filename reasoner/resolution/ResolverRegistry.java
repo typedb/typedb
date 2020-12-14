@@ -40,7 +40,8 @@ import java.util.function.Consumer;
 
 public class ResolverRegistry {
 
-    Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
+
     private final HashMap<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> concludableActorsMap;
     private final HashMap<Rule, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;

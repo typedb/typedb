@@ -121,10 +121,10 @@ public class ResponseBuilder {
 
         public static ConceptProto.Type type(Type type) {
             final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
-                    .setLabel(type.getLabel())
+                    .setLabel(type.getLabel().name())
                     .setEncoding(getEncoding(type));
             if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
-            if (type instanceof RoleType) builder.setScope(type.asRoleType().getScope());
+            if (type instanceof RoleType) builder.setScope(type.asRoleType().getLabel().scope().get());
             if (type.isRoot()) builder.setRoot(true);
             return builder.build();
         }
@@ -291,7 +291,7 @@ public class ResponseBuilder {
             // TODO: needs testing
             answer.concepts().forEach((ref, concept) -> {
                 final ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
-                conceptMapProto.putMap(ref.toString(), conceptProto);
+                conceptMapProto.putMap(ref.name(), conceptProto);
             });
 
             // TODO

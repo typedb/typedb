@@ -104,21 +104,37 @@ public class Inserter {
     public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(this::insert);
-            return new ConceptMap(inserted);
+            return answer();
         }
+    }
+
+    private ConceptMap answer() {
+        Map<Reference.Name, Thing> answerMap = new HashMap<>();
+        inserted.forEach((ref, thing) -> {
+            if (ref.isName()) answerMap.put(ref.asName(), thing);
+        });
+        return new ConceptMap(answerMap);
+    }
+
+    private boolean existingContains(ThingVariable variable) {
+        return variable.reference().isName() && existing.contains(variable.reference().asName());
+    }
+
+    public Thing existingGet(ThingVariable variable) {
+        return existing.get(variable.reference().asName()).asThing();
     }
 
     private Thing insert(ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             if (!variable.reference().isAnonymous() && inserted.containsKey(variable.reference())) {
                 return inserted.get(variable.reference());
-            } else if (existing.contains(variable.reference()) && variable.constraints().isEmpty()) {
-                return existing.get(variable.reference()).asThing();
+            } else if (existingContains(variable) && variable.constraints().isEmpty()) {
+                return existingGet(variable);
             } else validate(variable);
 
             final Thing thing;
 
-            if (existing.contains(variable.reference())) thing = existing.get(variable.reference()).asThing();
+            if (existingContains(variable)) thing = existingGet(variable);
             else if (variable.iid().isPresent()) thing = getThing(variable.iid().get());
             else if (variable.isa().isPresent()) thing = insertIsa(variable.isa().get(), variable);
             else throw GraknException.of(THING_ISA_MISSING, variable.reference());
@@ -132,7 +148,7 @@ public class Inserter {
 
     private void validate(ThingVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-            if (existing.contains(variable.reference()) && (variable.iid().isPresent() || variable.isa().isPresent())) {
+            if (existingContains(variable) && (variable.iid().isPresent() || variable.isa().isPresent())) {
                 if (variable.iid().isPresent()) {
                     throw GraknException.of(THING_IID_REASSERTION, variable.reference(), variable.iid().get().iid());
                 } else {

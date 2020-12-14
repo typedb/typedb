@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.producer.Producers.buffer;
 import static java.util.stream.Collectors.toList;
 
@@ -51,6 +52,12 @@ public class Reasoner {
         this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
     }
 
+    public ResourceIterator<ConceptMap> executeSync(Disjunction disjunction) {
+        return iterate(disjunction.conjunctions()).flatMap(
+                c -> traversalEng.iterator(c.traversal()).map(conceptMgr::conceptMap)
+        );
+    }
+
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction) {
         return buffer(disjunction.conjunctions().stream()
                               .flatMap(conjunction -> execute(conjunction).stream())
@@ -64,7 +71,7 @@ public class Reasoner {
     public List<Producer<ConceptMap>> execute(Conjunction conjunction) {
         // TODO conjunction = logicMgr.typeHinter().computeHints(conjunction, PARALLELISATION_FACTOR);
         Producer<ConceptMap> answers = traversalEng
-                .execute(conjunction.traversal(), PARALLELISATION_FACTOR)
+                .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
 
         // TODO enable reasoner here
