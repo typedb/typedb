@@ -204,7 +204,7 @@ public class Importer {
             Attribute attribute;
             switch (valueMsg.getValueCase()) {
                 case STRING:
-                    attribute = attributeType.asString().put(valueMsg.getString().substring(0, Math.min(valueMsg.getString().length(), 250)));
+                    attribute = attributeType.asString().put(valueMsg.getString());
                     break;
                 case BOOLEAN:
                     attribute = attributeType.asBoolean().put(valueMsg.getBoolean());
