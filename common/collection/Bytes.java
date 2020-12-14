@@ -77,7 +77,7 @@ public class Bytes {
 
     public static int unsignedBytesToShort(byte[] bytes) {
         assert bytes.length == SHORT_SIZE;
-        return bytes[0] << 8 & 0xffff | bytes[1];
+        return ((bytes[0] << 8) | bytes[1]) & 0xffff;
     }
 
     public static byte[] shortToSortedBytes(int num) {
