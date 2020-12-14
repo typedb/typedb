@@ -65,14 +65,14 @@ build:
       script: |
         bazel test --config=rbe //test/integration:test-basic --test_output=errors
         bazel test --config=rbe //test/integration:test-query --test_output=errors
-      # bazel test --config=rbe //test/integration/traversal/... --test_output=errors - enable once stable
+      # bazel test --config=rbe //test/integration/traversal/... --test_output=errors
       # bazel test --config=rbe //test/integration/logic/... --test_output=errors
     test-behaviour:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
         bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
         bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
-        bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=errors
+      # bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=errors
     test-assembly-linux-targz:
       machine: graknlabs-ubuntu-20.04-java11
       filter:
