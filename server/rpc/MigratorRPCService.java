@@ -56,6 +56,7 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
             CompletableFuture<Void> importerJob = CompletableFuture.runAsync(importer::run);
             try {
                 while (true) {
+                    // NOTE: We need to have this try...catch block since the CompletableFuture reports the progress report timeout as an exception
                     try {
                         importerJob.get(1, TimeUnit.SECONDS);
                         break;
