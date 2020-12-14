@@ -38,9 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -127,8 +127,8 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return Optional.of(cloneOfMapping);
     }
 
-    <T> Map<T, Set<T>> cloneMapping(Map<T, Set<T>> mapping) {
-        Map<T, Set<T>> clone = new HashMap<>();
+    <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
+        Map<T, Set<V>> clone = new HashMap<>();
         mapping.forEach((key, set) -> clone.put(key, new HashSet<>(set)));
         return clone;
     }
@@ -159,45 +159,46 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             }
 
             Map<Reference, Set<Reference>> finalVariableUnifier = variableUnifier;
-            return unifyRolePlayers(Collections.unmodifiableList(constraint.players()),
+            Stream<Map<RolePlayer, Set<Integer>>> temp = unifyRP(Collections.unmodifiableList(constraint.players()),
                     Collections.unmodifiableList(unifyWith.constraint().players()),
-                    new HashMap<>()).map(unifier -> convertRolePlayerUnifier(unifier, finalVariableUnifier));
+                    new HashMap<>(), 0);
+
+            return temp.map(unifier ->
+                            convertRolePlayerUnifier(unifier, Collections.unmodifiableList(unifyWith.constraint().players()), finalVariableUnifier));
         }
 
-        private Stream<Map<RolePlayer, Set<RolePlayer>>> unifyRolePlayers(
+        private Stream<Map<RolePlayer, Set<Integer>>> unifyRP(
                 List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
-                Map<RolePlayer, Set<RolePlayer>> unifier) {
+                Map<RolePlayer, Set<Integer>> unifier, Integer startCon) {
 
-            int length = conjRolePlayers.size();
-            return conjRolePlayers.stream().findFirst()
-                    .flatMap(conjRP ->
-                            Optional.of(thenRolePlayers.stream()
-                                    .filter(thenRP ->
-                                            unifier.values().stream().noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
-                                    .map(thenRP -> extendRolePlayerUnifier(conjRP, thenRP, unifier))
-                                    .filter(Optional::isPresent).map(Optional::get)
-                                    .flatMap(newUnifier ->
-                                            unifyRolePlayers(conjRolePlayers.subList(1,length), thenRolePlayers, newUnifier)
-                                    ))
-            ).orElseGet(() -> Stream.of(unifier));
+            if (startCon == conjRolePlayers.size()) return Stream.of(unifier);
+            RolePlayer conjRP = conjRolePlayers.get(startCon);
 
+            return IntStream.range(0, thenRolePlayers.size())
+                    .filter(thenIdx -> unifier.values().stream().noneMatch(players ->
+                            players.contains(thenIdx)))
+                    .mapToObj(thenIdx ->
+                            extendRolePlayerUnifier(conjRP, thenRolePlayers.get(thenIdx), thenIdx, unifier))
+                    .filter(Optional::isPresent).map(Optional::get)
+                    .flatMap(newUnifier ->
+                            unifyRP(conjRolePlayers, thenRolePlayers, newUnifier, startCon + 1));
         }
 
         private Map<Reference, Set<Reference>> convertRolePlayerUnifier(
-                Map<RolePlayer, Set<RolePlayer>> rolePlayerUnifier, Map<Reference, Set<Reference>> variableUnifier) {
+                Map<RolePlayer, Set<Integer>> rolePlayerUnifier, List<RolePlayer> thenRolePlayers,
+                Map<Reference, Set<Reference>> variableUnifier) {
             Map<Reference, Set<Reference>> newMapping = cloneMapping(variableUnifier);
-            rolePlayerUnifier.forEach((conjRP, thenRPSet) -> {
-                thenRPSet.forEach( thenRP -> {
-                            if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
-                                assert thenRP.roleType().isPresent();
-                                newMapping.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
-                                newMapping.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
-                            }
-                            newMapping.putIfAbsent(conjRP.player().reference(), new HashSet<>());
-                            newMapping.get(conjRP.player().reference()).add(thenRP.player().reference());
+            rolePlayerUnifier.forEach((conjRP, thenRPSet) -> thenRPSet.forEach(thenRPidx -> {
+                        RolePlayer thenRP = thenRolePlayers.get(thenRPidx);
+                        if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
+                            assert thenRP.roleType().isPresent();
+                            newMapping.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
+                            newMapping.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
                         }
-                );
-            });
+                        newMapping.putIfAbsent(conjRP.player().reference(), new HashSet<>());
+                        newMapping.get(conjRP.player().reference()).add(thenRP.player().reference());
+                    }
+            ));
 
             return newMapping;
         }
@@ -213,12 +214,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             return false;
         }
 
-        private Optional<Map<RolePlayer, Set<RolePlayer>>> extendRolePlayerUnifier(
-                RolePlayer conjRP, RolePlayer thenRP, Map<RolePlayer, Set<RolePlayer>> originalUnifier) {
+        private Optional<Map<RolePlayer, Set<Integer>>> extendRolePlayerUnifier(
+                RolePlayer conjRP, RolePlayer thenRP, int thenIdx, Map<RolePlayer, Set<Integer>> originalUnifier) {
             if (roleHintsDisjoint(conjRP, thenRP)) return Optional.empty();
-            Map<RolePlayer, Set<RolePlayer>> newUnifier = cloneMapping(originalUnifier);
+            Map<RolePlayer, Set<Integer>> newUnifier = cloneMapping(originalUnifier);
             newUnifier.putIfAbsent(conjRP, new HashSet<>());
-            newUnifier.get(conjRP).add(thenRP);
+            newUnifier.get(conjRP).add(thenIdx);
             return Optional.of(newUnifier);
         }
 
