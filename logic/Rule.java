@@ -19,7 +19,6 @@
 package grakn.core.logic;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;

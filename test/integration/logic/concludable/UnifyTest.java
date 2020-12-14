@@ -27,7 +27,6 @@ import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import graql.lang.Graql;
 import graql.lang.pattern.variable.Reference;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
