@@ -29,10 +29,12 @@ public class ResponseProducer {
     private final Iterator<ConceptMap> traversalProducer;
     private final Set<Request> downstreamProducer;
     private Iterator<Request> downstreamProducerSelector;
+    private int currentIteration;
 
-    public ResponseProducer(Iterator<ConceptMap> traversalProducer) {
-        produced = new HashSet<>();
+    public ResponseProducer(Iterator<ConceptMap> traversalProducer, int iteration) {
         this.traversalProducer = traversalProducer;
+        this.currentIteration = iteration;
+        produced = new HashSet<>();
         downstreamProducer = new HashSet<>();
         downstreamProducerSelector = downstreamProducer.iterator();
     }

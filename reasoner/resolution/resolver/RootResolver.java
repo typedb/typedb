@@ -101,7 +101,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
+                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), false);
                 return Either.second(createResponse(fromUpstream, answer));
             }
         }

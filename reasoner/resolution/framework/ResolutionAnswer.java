@@ -31,15 +31,18 @@ public class ResolutionAnswer {
     private final Derivation derivation;
     private final Actor<? extends Resolver<?>> producer;
     private final String patternAnswered;
+    private final boolean fromInference; // record if inference was invoked even when derivations are not active
 
     public ResolutionAnswer(Aggregator.Aggregated aggregatedAnswer,
                             String patternAnswered,
                             Derivation derivation,
-                            Actor<? extends Resolver<?>> producer) {
+                            Actor<? extends Resolver<?>> producer,
+                            boolean fromInference) {
         this.aggregatedAnswer = aggregatedAnswer;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
         this.producer = producer;
+        this.fromInference = fromInference;
     }
 
     public Aggregator.Aggregated aggregated() {
@@ -51,7 +54,7 @@ public class ResolutionAnswer {
     }
 
     public boolean isInferred() {
-        return !derivation.equals(Derivation.EMPTY);
+        return fromInference;
     }
 
     public Actor<? extends Resolver<?>> producer() {

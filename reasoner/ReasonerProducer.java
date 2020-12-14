@@ -34,14 +34,18 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final Request resolveRequest;
     private boolean done;
     private Sink<ConceptMap> sink = null;
+    private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
-        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
         this.registry = resolverRegistry;
+        this.iteration = 0;
+        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
+        this.resolveRequest.setIteration(iteration);
     }
 
     private void onAnswer(final ResolutionAnswer answer) {
+        if (answer.isInferred())
         sink.put(answer.aggregated().conceptMap());
     }
 

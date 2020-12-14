@@ -32,6 +32,7 @@ public class Request {
     private final Path path;
     private final Aggregator partialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
+    private int iteration; // NOTE: modifiable and not part of equality contract!
 
     public Request(Path path,
                    Aggregator partialConceptMap,
@@ -66,22 +67,33 @@ public class Request {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
+        // WARNING: DO NOT INCLUDE ITERATION
         return Objects.equals(path, request.path) &&
                 Objects.equals(partialConceptMap, request.partialConceptMap());
     }
 
     @Override
     public int hashCode() {
+        // WARNING: DO NOT INCLUDE ITERATION
         return Objects.hash(path, partialConceptMap);
     }
 
     @Override
     public String toString() {
-        return "Req(send=" + (sender() == null ? "<none>" : sender().state.name) + ", pAns=" + partialConceptMap + ")";
+        return "Request{" +
+                "path=" + path +
+                ", partialConceptMap=" + partialConceptMap +
+                ", partialDerivation=" + partialDerivation +
+                ", iteration(modifiable)=" + iteration +
+                '}';
     }
 
     public ResolutionAnswer.Derivation partialResolutions() {
         return partialDerivation;
+    }
+
+    public void setIteration(int iteration) {
+        this.iteration = iteration;
     }
 
     public static class Path {

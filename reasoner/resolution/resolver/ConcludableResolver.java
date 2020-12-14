@@ -78,14 +78,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
             ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                           concludable.toString(), derivation, self());
+                                                           concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
             return Either.second(new Response.Answer(fromUpstream, answer));
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
             ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                                 concludable.toString(), derivation, self());
+                                                                 concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
@@ -132,7 +132,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             LOG.trace("{}: hasProduced: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(aggregated, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
+                ResolutionAnswer answer = new ResolutionAnswer(aggregated, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
                 return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }

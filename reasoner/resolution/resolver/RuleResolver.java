@@ -93,7 +93,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
+                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), true);
                 return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
