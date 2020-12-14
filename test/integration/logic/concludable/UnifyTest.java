@@ -684,6 +684,31 @@ public class UnifyTest {
     }
 
     @Test
+    public void map_duplicate_roles_to_duplicate_roles() {
+        String conjunction = "{ (employee: $x, employee: $x) isa employment; }";
+        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
+        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+
+        Conjunction thenConjunction = parseConjunction(
+                "{$temp ($employee: $a, $employee: $a) isa $employment; }");
+        ThingVariable variable =
+                parseThingVariable("$temp ($employee: $a, $employee: $a) isa $employment", "temp");
+        RelationConstraint relationConstraint = variable.relation().iterator().next();
+        ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
+                thenConjunction.variables());
+
+        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
+
+        Set<Map<String, Set<String>>> expected = set(
+                new HashMap<String, Set<String>>() {{
+                    put("$x", set("$a"));
+                }}
+        );
+        assertEquals(expected, result);
+    }
+
+    @Test
     public void relation_match_owner() {
         String conjunction = "{ $r (employee: $x) isa employment; }";
         Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));

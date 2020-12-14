@@ -164,7 +164,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                     new HashMap<>(), 0);
 
             return temp.map(unifier ->
-                            convertRolePlayerUnifier(unifier, Collections.unmodifiableList(unifyWith.constraint().players()), finalVariableUnifier));
+                    convertRolePlayerUnifier(unifier, Collections.unmodifiableList(unifyWith.constraint().players()), finalVariableUnifier));
         }
 
         private Stream<Map<RolePlayer, Set<Integer>>> unifyRP(
@@ -190,15 +190,15 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             Map<Reference, Set<Reference>> newMapping = cloneMapping(variableUnifier);
             rolePlayerUnifier.forEach((conjRP, thenRPSet) -> thenRPSet.stream().map(thenRolePlayers::get)
                     .forEach(thenRP -> {
-                        if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
-                            assert thenRP.roleType().isPresent();
-                            newMapping.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
-                            newMapping.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
-                        }
-                        newMapping.putIfAbsent(conjRP.player().reference(), new HashSet<>());
-                        newMapping.get(conjRP.player().reference()).add(thenRP.player().reference());
-                    }
-            ));
+                                if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
+                                    assert thenRP.roleType().isPresent();
+                                    newMapping.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
+                                    newMapping.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
+                                }
+                                newMapping.putIfAbsent(conjRP.player().reference(), new HashSet<>());
+                                newMapping.get(conjRP.player().reference()).add(thenRP.player().reference());
+                            }
+                    ));
 
             return newMapping;
         }
