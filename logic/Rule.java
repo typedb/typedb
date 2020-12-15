@@ -32,6 +32,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
@@ -165,18 +166,19 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenTypeHints() {
-        then.variables().stream().filter(variable -> variable.identifier().isNamedReference())
-                .forEach(thenVar ->
-                        when.variables().stream()
-                                .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
-                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.typeHints().isEmpty()))
-                                .findFirst().ifPresent(whenVar -> {
-                            if (thenVar.typeHints().isEmpty() && thenVar.isSatisfiable()) {
-                                thenVar.addHints(whenVar.typeHints());
-                            } else thenVar.retainHints(whenVar.typeHints());
-                            if (thenVar.typeHints().isEmpty()) thenVar.setIsSatisfiable(false);
-                        })
-                );
+        then.variables().stream().filter(var -> var.identifier().isNamedReference())
+                .forEach(thenVar -> {
+                    Optional<Variable> whenVar = when.variables().stream().filter(var -> var.identifier().equals(thenVar.identifier())).findFirst();
+                    if (whenVar.isPresent() && whenVar.get().isThing()) {
+                        assert thenVar.isThing();
+                        whenVar.get().asThing().isa().ifPresent(whenIsa -> thenVar.asThing().isa().ifPresent(
+                                thenIsa -> thenIsa.retainHints(whenIsa.getTypeHints())));
+                    } else if (whenVar.isPresent() && whenVar.get().isType()) {
+                        assert thenVar.isType();
+                        whenVar.get().asType().sub().ifPresent(whenSub -> thenVar.asType().sub().ifPresent(
+                                thenSub -> thenSub.retainHints(whenSub.getTypeHints())));
+                    }
+                });
     }
 
     private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {

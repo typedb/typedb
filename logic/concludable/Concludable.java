@@ -85,6 +85,7 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
         IsaConstraint newIsa = variableToConstrain.isa(typeCopy, toCopy.isExplicit());
+        newIsa.addHints(toCopy.getTypeHints());
         return newIsa;
     }
 

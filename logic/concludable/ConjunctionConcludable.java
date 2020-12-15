@@ -30,11 +30,9 @@ import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -225,7 +223,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Isa headIsa) {
-            return null; // TODO Add variable mapping
+            return null;
         }
 
         @Override
