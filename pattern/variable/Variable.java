@@ -86,10 +86,6 @@ public abstract class Variable implements Pattern {
     }
 
     public void retainHints(Set<Label> labels) {
-        if (typeHints.isEmpty() && isSatisfiable) {
-            typeHints.addAll(labels);
-            return;
-        }
         typeHints.retainAll(labels);
     }
 

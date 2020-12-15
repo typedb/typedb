@@ -77,17 +77,17 @@ public class TypeHinter {
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
         Map<Reference, Set<Label>> referenceHintsMapping =
                 retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()), parallelisation);
-        long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
+        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
             if (variable.isThing()) {
-                if (hintLabels.size() != numOfThings) {
+                if (hintLabels.size() != numOfTypes) {
                     addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(variable.reference()), labelMap);
                 }
                 addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
-            } else if (variable.isType() && hintLabels.size() != numOfThings) {
+            } else if (variable.isType() && hintLabels.size() != numOfTypes) {
                 addInferredSubLabels(variable.asType(), referenceHintsMapping.get(variable.reference()), labelMap);
             }
         }
@@ -160,7 +160,7 @@ public class TypeHinter {
         if (subLabels.isEmpty()) {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).collect(Collectors.toSet());
-            subVar.retainHints(subHintsOfSupLabels);
+            subVar.addHints(subHintsOfSupLabels);
             if (subVar.typeHints().isEmpty()) subVar.setSatisfiability(false);
             return;
         }
