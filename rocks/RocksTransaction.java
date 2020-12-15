@@ -50,11 +50,12 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     final Arguments.Transaction.Type type;
     final Context.Transaction context;
     GraphManager graphMgr;
+    TraversalEngine traversalEng;
+    AtomicBoolean isOpen;
     ConceptManager conceptMgr;
     LogicManager logicMgr;
     Reasoner reasoner;
     QueryManager queryMgr;
-    AtomicBoolean isOpen;
 
     private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.type = type;
@@ -63,16 +64,20 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {
-        TraversalEngine traversalEngine = new TraversalEngine(graphMgr, traversalCache);
+        traversalEng = new TraversalEngine(graphMgr, traversalCache);
         conceptMgr = new ConceptManager(graphMgr);
-        logicMgr = new LogicManager(graphMgr, conceptMgr, traversalEngine, logicCache);
-        reasoner = new Reasoner(conceptMgr, traversalEngine, logicMgr);
+        logicMgr = new LogicManager(graphMgr, conceptMgr, traversalEng, logicCache);
+        reasoner = new Reasoner(conceptMgr, traversalEng, logicMgr);
         queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
     }
 
     public Context.Transaction context() {
         return context;
+    }
+
+    public TraversalEngine traversal() {
+        return traversalEng;
     }
 
     @Override
