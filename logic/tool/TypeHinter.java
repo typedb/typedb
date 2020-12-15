@@ -161,7 +161,7 @@ public class TypeHinter {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).collect(Collectors.toSet());
             subVar.addHints(subHintsOfSupLabels);
-            if (subVar.typeHints().isEmpty()) subVar.setSatisfiability(false);
+            if (subVar.typeHints().isEmpty()) subVar.setIsSatisfiable(false);
             return;
         }
 
@@ -173,7 +173,7 @@ public class TypeHinter {
             }
             if (hintType == null) {
                 subVar.removeHint(label);
-                if (subVar.typeHints().isEmpty()) subVar.setSatisfiability(false);
+                if (subVar.typeHints().isEmpty()) subVar.setIsSatisfiable(false);
             }
         }
     }

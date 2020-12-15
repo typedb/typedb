@@ -61,6 +61,7 @@ public abstract class Variable implements Pattern {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices
+        assert !(reference().isLabel() && typeHints.isEmpty());
         if (!typeHints.isEmpty()) traversal.types(identifier, typeHints);
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
@@ -102,7 +103,7 @@ public abstract class Variable implements Pattern {
         return isSatisfiable;
     }
 
-    public void setSatisfiability(boolean isSatisfiable) {
+    public void setIsSatisfiable(boolean isSatisfiable) {
         this.isSatisfiable = isSatisfiable;
     }
 

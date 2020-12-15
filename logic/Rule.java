@@ -174,7 +174,7 @@ public class Rule {
                             if (thenVar.typeHints().isEmpty() && thenVar.isSatisfiable()) {
                                 thenVar.addHints(whenVar.typeHints());
                             } else thenVar.retainHints(whenVar.typeHints());
-                            if (thenVar.typeHints().isEmpty()) thenVar.setSatisfiability(false);
+                            if (thenVar.typeHints().isEmpty()) thenVar.setIsSatisfiable(false);
                         })
                 );
     }
