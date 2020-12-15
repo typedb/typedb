@@ -45,9 +45,9 @@ import static org.junit.Assert.assertTrue;
 
 public class UnifyTest {
 
-    private Map<String, Set<String>> getStringMapping(Map<Reference, Set<Reference>> map) {
+    private Map<String, Set<String>> getStringMapping(Map<Reference.Name, Set<Reference.Name>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().syntax(),
-                e -> e.getValue().stream().map(Reference::syntax).collect(Collectors.toSet()))
+                e -> e.getValue().stream().map(Reference.Name::syntax).collect(Collectors.toSet()))
         );
     }
 
@@ -56,7 +56,7 @@ public class UnifyTest {
     }
 
     private ThingVariable parseThingVariable(String graqlVariable, String variableName) {
-        return createFromThings(list(Graql.parseVariable(graqlVariable).asThing())).get(Reference.named(variableName)).asThing();
+        return createFromThings(list(Graql.parseVariable(graqlVariable).asThing())).get(Reference.Name.named(variableName)).asThing();
     }
 
     //TODO: create more tests when type inference is working. (That is why this is an integration test).
@@ -72,7 +72,7 @@ public class UnifyTest {
         IsaConstraint isaConstraint = variable.isa().get();
         ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(isaConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(isaConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -96,7 +96,7 @@ public class UnifyTest {
         IsaConstraint isaConstraint = variable.isa().get();
         ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(isaConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(isaConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -117,7 +117,7 @@ public class UnifyTest {
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
         ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -138,7 +138,7 @@ public class UnifyTest {
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
         ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -159,7 +159,7 @@ public class UnifyTest {
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
         ThenConcludable.Value valueConcludable = new ThenConcludable.Value(valueConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -182,7 +182,7 @@ public class UnifyTest {
         HasConstraint hasConstraint = variable.has().iterator().next();
         ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -204,7 +204,7 @@ public class UnifyTest {
         HasConstraint hasConstraint = variable.has().iterator().next();
         ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -227,7 +227,7 @@ public class UnifyTest {
         HasConstraint hasConstraint = variable.has().iterator().next();
         ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -252,7 +252,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -279,7 +279,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -312,7 +312,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -356,7 +356,7 @@ public class UnifyTest {
         HasConstraint hasConstraint = variable.has().iterator().next();
         ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -377,7 +377,7 @@ public class UnifyTest {
         HasConstraint hasConstraint = variable.has().iterator().next();
         ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -399,7 +399,7 @@ public class UnifyTest {
         HasConstraint hasConstraint = variable.has().iterator().next();
         ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -423,7 +423,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -449,7 +449,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -479,7 +479,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -504,7 +504,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -534,7 +534,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -580,7 +580,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -620,7 +620,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -645,7 +645,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -670,7 +670,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -696,7 +696,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -721,7 +721,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -747,7 +747,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = set(
@@ -773,7 +773,7 @@ public class UnifyTest {
         ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint,
                 thenConjunction.variables());
 
-        Stream<Map<Reference, Set<Reference>>> unifier = conjConcludable.unify(relationConcludable);
+        Stream<Map<Reference.Name, Set<Reference.Name>>> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(this::getStringMapping).collect(Collectors.toSet());
 
         Set<Map<String, Set<String>>> expected = Collections.emptySet();
