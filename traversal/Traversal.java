@@ -19,6 +19,7 @@
 package grakn.core.traversal;
 
 import grakn.common.collection.Pair;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.producer.Producer;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static grakn.common.collection.Collections.pair;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.producer.Producers.buffer;
 import static grakn.core.common.producer.Producers.produce;
@@ -250,6 +252,7 @@ public class Traversal {
         }
 
         public void putIID(Identifier.Variable identifier, VertexIID.Thing iid) {
+            assert !this.iid.containsKey(identifier);
             this.iid.put(identifier, iid);
         }
 
@@ -263,6 +266,15 @@ public class Traversal {
 
         public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {
             return values.get(pair(identifier, predicate));
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder str = new StringBuilder().append("Parameters: {");
+            if (!iid.isEmpty()) str.append("\n\tiid: ").append(iid);
+            if (!values.isEmpty()) str.append("\n\tvalues: ").append(values);
+            str.append("\n}");
+            return str.toString();
         }
 
         public static class Value {
@@ -339,6 +351,17 @@ public class Traversal {
             public String getString() { return stringVal; }
 
             public Pattern getRegex() { return regexPattern; }
+
+            @Override
+            public String toString() {
+                if (isBoolean()) return "boolean: " + booleanVal;
+                else if (isLong()) return "long: " + longVal;
+                else if (isDouble()) return "double: " + doubleVal;
+                else if (isDateTime()) return "datetime: " + dateTimeVal;
+                else if (isString()) return "string: " + stringVal;
+                else if (isRegex()) return "regex: " + regexPattern.pattern();
+                else throw GraknException.of(ILLEGAL_STATE);
+            }
 
             @Override
             public boolean equals(Object o) {

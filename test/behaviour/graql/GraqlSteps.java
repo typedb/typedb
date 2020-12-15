@@ -347,7 +347,7 @@ public class GraqlSteps {
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
 
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            final Reference var = Reference.named(entry.getKey());
+            final Reference.Name var = Reference.named(entry.getKey());
             final String identifier = entry.getValue();
 
             if (!identifierChecks.containsKey(identifier)) {

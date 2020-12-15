@@ -20,6 +20,7 @@ package grakn.core.concept;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
@@ -59,12 +60,16 @@ public final class ConceptManager {
         this.graphMgr = graphMgr;
     }
 
+    public ResourceIterator<ConceptMap> conceptMaps(ResourceIterator<VertexMap> vertexMap) {
+        return vertexMap.map(this::conceptMap);
+    }
+
     public ConceptMap conceptMap(VertexMap vertexMap) {
-        Map<Reference, Concept> map = new HashMap<>();
+        Map<Reference.Name, Concept> map = new HashMap<>();
         vertexMap.forEach((reference, vertex) -> {
             if (!reference.isName()) throw GraknException.of(ILLEGAL_STATE);
-            if (vertex.isThing()) map.put(reference, ThingImpl.of(vertex.asThing()));
-            else if (vertex.isType()) map.put(reference, TypeImpl.of(graphMgr, vertex.asType()));
+            if (vertex.isThing()) map.put(reference.asName(), ThingImpl.of(vertex.asThing()));
+            else if (vertex.isType()) map.put(reference.asName(), TypeImpl.of(graphMgr, vertex.asType()));
             else throw GraknException.of(ILLEGAL_STATE);
         });
         return new ConceptMap(map);
