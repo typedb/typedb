@@ -56,11 +56,6 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
         runMigrator(importer, responseObserver);
     }
 
-    @Override
-    public void exportSchema(MigratorProto.ExportSchema.Req request, StreamObserver<MigratorProto.ExportSchema.Res> responseObserver) {
-        responseObserver.onError(exception(new UnsupportedOperationException("Export schema is not currently supported.")));
-    }
-
     private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         try {
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(migrator::run);

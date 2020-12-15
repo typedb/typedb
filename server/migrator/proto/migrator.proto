@@ -31,7 +31,6 @@ package migrator;
 service Migrator {
   rpc exportData (ExportData.Req) returns (stream Job.Res);
   rpc importData (ImportData.Req) returns (stream Job.Res);
-  rpc exportSchema (ExportSchema.Req) returns (ExportSchema.Res);
 }
 
 message ExportData {
@@ -57,15 +56,5 @@ message ImportData {
     string database = 1;
     string filename = 2;
     map<string, string> remap_labels = 3;
-  }
-}
-
-message ExportSchema {
-  message Req {
-    string database = 1;
-  }
-
-  message Res {
-    string schema = 1;
   }
 }
