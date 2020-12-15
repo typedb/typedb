@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -157,6 +158,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueDateTimeConstraint;
     }
 
+    public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
+        ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
+        constrain(valueVarConstraint);
+        return valueVarConstraint;
+    }
+
     public Set<RelationConstraint> relation() {
         return relationConstraints;
     }
@@ -200,7 +207,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
         syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
-                .flatMap(Collection::stream).map(ThingConstraint::toString)
+                .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
                 .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);

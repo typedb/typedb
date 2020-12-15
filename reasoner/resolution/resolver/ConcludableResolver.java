@@ -21,21 +21,24 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,65 +48,65 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final Long traversalPattern;
-    private final long traversalSize;
-    private final List<List<Long>> rules;
-    private final Map<Actor<RuleResolver>, List<Long>> ruleActorSources;
+    private final ConjunctionConcludable<?, ?> concludable;
+    private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, Long traversalPattern, List<List<Long>> rules, long traversalSize) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + traversalPattern + ")");
-        this.traversalPattern = traversalPattern;
-        this.traversalSize = traversalSize;
-        this.rules = rules;
+    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable) {
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")");
+        this.concludable = concludable;
         ruleActorSources = new HashMap<>();
         receivedConceptMaps = new HashSet<>();
     }
 
     @Override
     public Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer) {
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
     }
 
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream,
                                                    ResponseProducer responseProducer) {
-        // TODO may combine with partial concept maps from the fromUpstream message
+        final ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
 
-        LOG.trace("{}: hasProduced: {}", name, fromDownstream.answer().conceptMap());
-        if (!responseProducer.hasProduced(fromDownstream.answer().conceptMap())) {
-            responseProducer.recordProduced(fromDownstream.answer().conceptMap());
+        LOG.trace("{}: hasProduced: {}", name, conceptMap);
+        if (!responseProducer.hasProduced(conceptMap)) {
+            responseProducer.recordProduced(conceptMap);
 
             // update partial derivation provided from upstream to carry derivations sideways
-            Answer.Derivation derivation = new Answer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            Answer answer = new Answer(fromDownstream.answer().conceptMap(), traversalPattern.toString(), derivation, self());
+            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
+                                                                                              fromDownstream.answer())));
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                           concludable.toString(), derivation, self());
 
-            return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
+            return Either.second(new Response.Answer(fromUpstream, answer));
         } else {
-            Answer.Derivation derivation = new Answer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(), fromDownstream.answer())));
-            Answer deduplicated = new Answer(fromDownstream.answer().conceptMap(), traversalPattern.toString(), derivation, self());
+            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
+                                                                                              fromDownstream.answer())));
+            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                                 concludable.toString(), derivation, self());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
-            return produceMessage(fromUpstream, responseProducer);
+            return messageToSend(fromUpstream, responseProducer);
         }
     }
 
     @Override
     public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
     }
 
     @Override
     protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(traversalSize)).query(traversalPattern, request.partialConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 
-        if (!receivedConceptMaps.contains(request.partialConceptMap())) {
-            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap(), request.unifiers());
-            receivedConceptMaps.add(request.partialConceptMap());
+        if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
+            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
+            receivedConceptMaps.add(request.partialConceptMap().map());
         }
         return responseProducer;
     }
@@ -111,20 +114,26 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
-        for (List<Long> rule : rules) {
-            Actor<RuleResolver> ruleActor = registry.registerRule(rule, 1L);
-            ruleActorSources.put(ruleActor, rule);
-        }
+        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
+            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
+            ruleActorSources.put(unifier, ruleActor);
+        }));
     }
 
-    private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
+    private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
+            Aggregator.Aggregated aggregated = fromUpstream.partialConceptMap().aggregateWith(conceptMap);
+            if (aggregated == null) {
+                // TODO this should be the only place that aggregation can fail, but can we make this explicit?
+                continue;
+            }
+
             LOG.trace("{}: hasProduced: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                Answer answer = new Answer(conceptMap, traversalPattern.toString(), new Answer.Derivation(map()), self());
-                return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
+                ResolutionAnswer answer = new ResolutionAnswer(aggregated, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
+                return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
 
@@ -135,10 +144,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
     }
 
-    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap,
-                                         List<Object> unifiers) {
-        for (Actor<RuleResolver> ruleActor : ruleActorSources.keySet()) {
-            Request toDownstream = new Request(path.append(ruleActor), partialConceptMap, unifiers, Answer.Derivation.EMPTY);
+    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
+        for (Map.Entry<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
+            Request toDownstream = new Request(path.append(entry.getValue()), UnifyingAggregator.of(partialConceptMap, entry.getKey()), ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }
     }

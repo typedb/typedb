@@ -120,6 +120,10 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         }
     }
 
+    public Reasoner reasoner() {
+        return reasoner;
+    }
+
     void closeResources() {
         closeStorage();
         session.remove(this);
