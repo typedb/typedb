@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -205,10 +206,9 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
-        Set<IsaConstraint> isaConstraintSet = isaConstraint == null ? set() : set(isaConstraint);
-        syntax.append(Stream.of(relationConstraints, isaConstraintSet, hasConstraints, valueConstraints, isConstraints)
-                              .flatMap(Collection::stream).map(ThingConstraint::toString)
-                              .collect(Collectors.joining("" + COMMA + SPACE)));
+        syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
+                .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
+                .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 
@@ -219,10 +219,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
                 .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
-                .validIfAlphaEqual(isaConstraint, that.isaConstraint)
-                .validIfAlphaEqual(relationConstraints, that.relationConstraints)
-                .validIfAlphaEqual(hasConstraints, that.hasConstraints)
-                .validIfAlphaEqual(valueConstraints, that.valueConstraints)
+                .validIf(this.typeHints().equals(that.typeHints()))
+                .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
+                .validIfAlphaEqual(this.relationConstraints, that.relationConstraints)
+                .validIfAlphaEqual(this.hasConstraints, that.hasConstraints)
+                .validIfAlphaEqual(this.valueConstraints, that.valueConstraints)
                 .addMapping(this, that);
     }
 
