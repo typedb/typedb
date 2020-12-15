@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
-@Ignore // TODO Un-ignore
 public class ResolutionTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
@@ -90,7 +89,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
-
+    @Ignore // TODO Un-ignore
     @Test
     public void twoConcludables() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -118,6 +117,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
+    @Ignore // TODO Un-ignore
     @Test
     public void filteringConcludable() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -151,7 +151,7 @@ public class ResolutionTest {
         // TODO This is what the initial test described, but since atomic2 is the conjunction the conjuntion traversal must return the same number of results as the atomic2 traversal.
         String atomic1 = "$p1 isa person, has name \"Bob\";";
         String atomic2 = "$p1 isa person, has age 42;";
-        String rulePattern = "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 isa person, has age 42; };";
+        String rulePattern = "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 has age 42; };";
 
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
@@ -226,6 +226,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
+    @Ignore // TODO Un-ignore
     @Test
     public void shallowRerequestChain() throws InterruptedException {
         String atomic1 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
@@ -264,6 +265,7 @@ public class ResolutionTest {
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }
 
+    @Ignore // TODO Un-ignore
     @Test
     public void deepRerequestChain() throws InterruptedException {
         String atomic1 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
@@ -376,23 +378,26 @@ public class ResolutionTest {
         long answerCount = conjunctionTraversalAnswerCount + atomic2TraversalAnswerCount + ruleTraversalAnswerCount + atomic1TraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ " + atomic2 + " }");
 
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        EventLoopGroup elg = new EventLoopGroup(1, "reasoning-elg");
-        ResolverRegistry registry = new ResolverRegistry(elg);
-        Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+                AtomicLong doneReceived = new AtomicLong(0L);
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
 
-        for (int i = 0; i < answerCount; i++) {
-            root.tell(actor ->
-                              actor.executeReceiveRequest(
-                                      new Request(new Request.Path(root), NoOpAggregator.create(), null),
-                                      registry
-                              )
-            );
-            ResolutionAnswer answer = responses.take();
+                for (int i = 0; i < answerCount; i++) {
+                    root.tell(actor ->
+                                      actor.executeReceiveRequest(
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              registry
+                                      )
+                    );
+                    ResolutionAnswer answer = responses.take();
 
-            // TODO write more meaningful explanation tests
-            System.out.println(answer);
+                    // TODO write more meaningful explanation tests
+                    System.out.println(answer);
+                }
+            }
         }
     }
 

@@ -59,7 +59,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     public Stream<Pair<Rule, Map<Reference.Name, Set<Reference.Name>>>> findUnifiableRules(Stream<Rule> allRules) {
         // TODO Get rules internally
         return allRules.flatMap(rule -> rule.possibleThenConcludables().stream()
-                                               .flatMap(this::unify).map(unifiedBase -> new Pair<>(rule, unifiedBase))
+                                               .flatMap(this::unify).map(variableMapping -> new Pair<>(rule, variableMapping))
         );
     }
 

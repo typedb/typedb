@@ -17,14 +17,16 @@
 
 package grakn.core.reasoner.resolution.answer;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import graql.lang.pattern.variable.Reference;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Aggregator {
     private final ConceptMap original;
@@ -39,7 +41,8 @@ public abstract class Aggregator {
     public Aggregated aggregateWith(ConceptMap toAggregate) {
         ConceptMap unTransformed = unTransform(toAggregate);
         if (unTransformed == null) return null;
-        if (unTransformed.concepts().isEmpty()) ; // TODO What do we do in this case?
+        if (unTransformed.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+        assert unTransformed.concepts().keySet().stream().anyMatch(original.concepts().keySet()::contains);
         Map<Reference.Name, Concept> aggregatedMap = new HashMap<>(original.concepts());
         aggregatedMap.putAll(unTransformed.concepts());
         ConceptMap aggregatedConceptMap = new ConceptMap(aggregatedMap);

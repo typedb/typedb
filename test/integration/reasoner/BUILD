@@ -21,7 +21,7 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 host_compatible_java_test(
     name = "test-resolution",
     srcs = ["ResolutionTest.java"],
-    test_class = "grakn.core.reasoner.ResolutionTest",
+    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
