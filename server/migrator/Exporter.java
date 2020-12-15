@@ -52,12 +52,12 @@ public class Exporter implements Migrator {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter.class);
     private final Grakn.Session session;
     private final Path filename;
-    private long totalThingCount = 0;
     private final AtomicLong entityCount = new AtomicLong(0);
     private final AtomicLong relationCount = new AtomicLong(0);
     private final AtomicLong attributeCount = new AtomicLong(0);
     private final AtomicLong ownershipCount = new AtomicLong(0);
     private final AtomicLong playerCount = new AtomicLong(0);
+    private long totalThingCount = 0;
 
     public Exporter(Grakn grakn, String database, Path filename) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
@@ -126,7 +126,10 @@ public class Exporter implements Migrator {
         DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
                 .setId(new String(entity.getIID()))
                 .setLabel(entity.getType().getLabel().name());
-        readOwnerships(entity).forEach(entityBuilder::addAttribute);
+        readOwnerships(entity).forEach(a -> {
+            ownershipCount.incrementAndGet();
+            entityBuilder.addAttribute(a);
+        });
         return DataProto.Item.newBuilder().setEntity(entityBuilder).build();
     }
 
@@ -147,7 +150,10 @@ public class Exporter implements Migrator {
             }
             relationBuilder.addRole(roleBuilder);
         }
-        readOwnerships(relation).forEach(relationBuilder::addAttribute);
+        readOwnerships(relation).forEach(a -> {
+            ownershipCount.incrementAndGet();
+            relationBuilder.addAttribute(a);
+        });
         return DataProto.Item.newBuilder().setRelation(relationBuilder).build();
     }
 
@@ -157,7 +163,10 @@ public class Exporter implements Migrator {
                 .setId(new String(attribute.getIID()))
                 .setLabel(attribute.getType().getLabel().name())
                 .setValue(readValue(attribute));
-        readOwnerships(attribute).forEach(attributeBuilder::addAttribute);
+        readOwnerships(attribute).forEach(a -> {
+            ownershipCount.incrementAndGet();
+            attributeBuilder.addAttribute(a);
+        });
         return DataProto.Item.newBuilder().setAttribute(attributeBuilder).build();
     }
 
@@ -180,11 +189,8 @@ public class Exporter implements Migrator {
     }
 
     private Stream<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
-        return thing.getHas().map(attribute -> {
-            ownershipCount.incrementAndGet();
-            return DataProto.Item.OwnedAttribute.newBuilder()
-                    .setId(new String(thing.getIID()));
-        });
+        return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
+                .setId(new String(thing.getIID())));
     }
 
     private synchronized void write(OutputStream outputStream, DataProto.Item item) {

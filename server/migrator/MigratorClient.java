@@ -45,15 +45,9 @@ public class MigratorClient {
                 .setFilename(filename)
                 .putAllRemapLabels(remapLabels)
                 .build();
-        CountDownLatch latch = new CountDownLatch(1);
-        ProgressPrinter progressPrinter = new ProgressPrinter("import");
-        ResponseObserver streamObserver = new ResponseObserver(progressPrinter, latch);
+        ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("import"));
         stub.importData(req, streamObserver);
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
-        }
+        streamObserver.await();
         return streamObserver.success();
     }
 
@@ -62,15 +56,9 @@ public class MigratorClient {
                 .setDatabase(database)
                 .setFilename(filename)
                 .build();
-        CountDownLatch latch = new CountDownLatch(1);
-        ProgressPrinter progressPrinter = new ProgressPrinter("export");
-        ResponseObserver streamObserver = new ResponseObserver(progressPrinter, latch);
+        ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("export"));
         stub.exportData(req, streamObserver);
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
-        }
+        streamObserver.await();
         return streamObserver.success();
     }
 
@@ -80,9 +68,9 @@ public class MigratorClient {
         private final CountDownLatch latch;
         private boolean success;
 
-        public ResponseObserver(ProgressPrinter progressPrinter, CountDownLatch latch) {
+        public ResponseObserver(ProgressPrinter progressPrinter) {
             this.progressPrinter = progressPrinter;
-            this.latch = latch;
+            this.latch = new CountDownLatch(1);
         }
 
         @Override
@@ -104,6 +92,14 @@ public class MigratorClient {
             progressPrinter.onCompletion();
             success = true;
             latch.countDown();
+        }
+
+        public void await() {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
+            }
         }
 
         public boolean success() {

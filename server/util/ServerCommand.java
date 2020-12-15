@@ -38,7 +38,7 @@ public interface ServerCommand {
     }
 
     default Start asStart() {
-        throw GraknException.of(ILLEGAL_CAST);
+        throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, Start.class);
     }
 
     default boolean isImportData() {
@@ -46,7 +46,7 @@ public interface ServerCommand {
     }
 
     default ImportData asImportData() {
-        throw GraknException.of(ILLEGAL_CAST);
+        throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, ImportData.class);
     }
 
     default boolean isExportData() {
@@ -54,7 +54,7 @@ public interface ServerCommand {
     }
 
     default ExportData asExportData() {
-        throw GraknException.of(ILLEGAL_CAST);
+        throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, ExportData.class);
     }
 
     @Command(name = "grakn server", mixinStandardHelpOptions = true, version = {Version.VERSION})
