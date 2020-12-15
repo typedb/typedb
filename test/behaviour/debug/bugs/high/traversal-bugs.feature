@@ -53,45 +53,6 @@ Feature: Graql Match Query
     Given the integrity is validated
     Given session opens transaction of type: write
 
-
-  ##################
-  # SCHEMA QUERIES #
-  ##################
-
-
-  # TODO this fails because we use relation:someplayer as a `label` property to create an iterator over. This label does
-  # TODO not exist as a type!
-  Scenario: duplicate role players are retrieved singly when queried doubly
-    Given graql define
-      """
-      define
-      some-entity sub entity, plays symmetric:someplayer, owns ref @key;
-      symmetric sub relation, relates someplayer, owns ref @key;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert $x isa some-entity, has ref 0; (someplayer: $x, someplayer: $x) isa symmetric, has ref 1;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $r (someplayer: $x) isa relation;
-      """
-    And concept identifiers are
-      |      | check | value |
-      | REF0 | key   | ref:0 |
-      | REF1 | key   | ref:1 |
-    Then uniquely identify answer concepts
-      | x    | r    |
-      | REF0 | REF1 |
-
   # TODO traversal bug - requires traversal language, very nondeterministically failing
   # TODO note: can reproduce bug sometimes with only the query: `match (sender: $a, recipient: $b) isa gift-delivery`
   Scenario: matching a chain of relations only returns answers if there is a chain of the required length
@@ -149,36 +110,3 @@ Feature: Graql Match Query
         (sender: $c, recipient: $d) isa gift-delivery;
       """
     Then answer size is: 0
-
-
-  # TODO traversal bug, no answers
-  Scenario: an attribute variable used in both '=' and '>=' predicates is correctly resolved
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert
-      $x isa person, has name "Susie", has age 16, has ref 0;
-      $y isa person, has name "Donald", has age 25, has ref 1;
-      $z isa person, has name "Ralph", has age 18, has ref 2;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match
-        $x has age = $z;
-        $z >= 17;
-        $z isa age;
-      get $x;
-      """
-    And concept identifiers are
-      |     | check | value |
-      | DON | key   | ref:1 |
-      | RAL | key   | ref:2 |
-    Then uniquely identify answer concepts
-      | x   |
-      | DON |
-      | RAL |
