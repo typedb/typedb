@@ -57,6 +57,23 @@ public class MigratorClient {
         return streamObserver.success();
     }
 
+    public boolean exportData(String database, String filename) {
+        MigratorProto.ExportData.Req req = MigratorProto.ExportData.Req.newBuilder()
+                .setDatabase(database)
+                .setFilename(filename)
+                .build();
+        CountDownLatch latch = new CountDownLatch(1);
+        ProgressPrinter progressPrinter = new ProgressPrinter("export");
+        ResponseObserver streamObserver = new ResponseObserver(progressPrinter, latch);
+        stub.exportData(req, streamObserver);
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
+        }
+        return streamObserver.success();
+    }
+
     static class ResponseObserver implements StreamObserver<MigratorProto.Job.Res> {
 
         private final ProgressPrinter progressPrinter;

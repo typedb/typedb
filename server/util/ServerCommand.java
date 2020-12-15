@@ -49,6 +49,14 @@ public interface ServerCommand {
         throw GraknException.of(ILLEGAL_CAST);
     }
 
+    default boolean isExportData() {
+        return false;
+    }
+
+    default ExportData asExportData() {
+        throw GraknException.of(ILLEGAL_CAST);
+    }
+
     @Command(name = "grakn server", mixinStandardHelpOptions = true, version = {Version.VERSION})
     class Start implements ServerCommand {
 
@@ -173,6 +181,44 @@ public interface ServerCommand {
 
         @Override
         public ImportData asImportData() {
+            return this;
+        }
+    }
+
+    @Command(name = "export")
+    class ExportData implements ServerCommand {
+
+        private final Start startCommand;
+
+        @Parameters(  index = "0", description = "Database to export data from")
+        private String database;
+
+        @Parameters(index = "1", description = "File for the data to export to")
+        private String filename;
+
+        public ExportData(Start startCommand) {
+            this.startCommand = startCommand;
+        }
+
+        public String database() {
+            return database;
+        }
+
+        public String filename() {
+            return filename;
+        }
+
+        public int port() {
+            return startCommand.port();
+        }
+
+        @Override
+        public boolean isExportData() {
+            return true;
+        }
+
+        @Override
+        public ExportData asExportData() {
             return this;
         }
     }

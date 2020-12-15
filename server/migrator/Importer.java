@@ -56,7 +56,7 @@ import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_READABL
 import static grakn.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
 import static grakn.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
 
-public class Importer {
+public class Importer implements Migrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(MigratorRPCService.class);
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
@@ -83,6 +83,7 @@ public class Importer {
         this.remapLabels = remapLabels;
     }
 
+    @Override
     public MigratorProto.Job.Progress getProgress() {
         long current = attributeCount + relationCount + entityCount;
         return MigratorProto.Job.Progress.newBuilder()
@@ -91,6 +92,7 @@ public class Importer {
                 .build();
     }
 
+    @Override
     public void run() {
         // We scan the file to find the checksum. This is probably not a good idea for files larger than several
         // gigabytes but that case is rare and the actual import would take so long that even if this took a few
@@ -139,6 +141,7 @@ public class Importer {
         insertMissingOwnerships();
         insertMissingRolePlayers();
         commit();
+        tx.close();
 
         LOG.info("Imported {} entities, {} attributes, {} relations ({} players), {} ownerships",
                 entityCount,
