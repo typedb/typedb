@@ -194,10 +194,6 @@ public class Rule {
     }
 
     private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
-        //TODO: make all variables named.
-
-
-
         HashSet<ThenConcludable<?, ?>> thenConcludables = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
                 .flatMap(constraint -> ThenConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
@@ -209,49 +205,16 @@ public class Rule {
     }
 
     private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable) {
-        //TODO: make all variables named.
-        Conjunction conjunction = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        return nameAllVars(conjunction);
-//        return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        Set<Variable> register = VariableRegistry.createFromThings(list(thenVariable)).variables();
+        return new Conjunction(nameThenVars(register), set());
     }
 
-    private Conjunction nameAllVars(Conjunction conjunction) {
-
-        return conjunction;
-    }
-
-    //    private graql.lang.pattern.variable.ThingVariable<?> nameHasVar(
-//            graql.lang.pattern.variable.ThingVariable<?> variable, ThingConstraint.Has constraint) {
-//        graql.lang.pattern.variable.ThingVariable<?> attrVar = constraint.attribute();
-//        if (attrVar.reference().isName()) return variable;
-//        graql.lang.pattern.variable.ThingVariable<?> newOwner = new graql.lang.pattern.variable.ThingVariable<>(new SystemReference("temp"));
-//        return variable;
-//    }
-//        return variable;
-//        }
-//            }
-//    private Variable nameVar(Variable variable) {
-//        ThingVariable thingVariable;
-//        grakn.core.pattern.variable.ThingVariable newOwner = grakn.core.pattern.variable.ThingVariable.of(variable.identifier());
-//        for (ThingConstraint constraint : variable.constraints()) {
-//            if (constraint.asThing().isValue()) {
-
-    private graql.lang.pattern.variable.ThingVariable<?> nameVar(graql.lang.pattern.variable.ThingVariable<?> variable) {
-        for (ThingConstraint constraint : variable.constraints()) {
-            if (constraint.isHas()) return nameHasVar(variable);
-            else if (constraint.isRelation()) return nameRelationVar(variable, constraint.asRelation());
-        }
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-
-
-//    }
     private Set<Variable> nameThenVars(Set<Variable> variables) {
         for (Variable variable : variables) {
             if (variable.isThing() && !variable.asThing().has().isEmpty()) return nameHasVar(variable.asThing());
             if (variable.isThing() && !variable.asThing().relation().isEmpty()) return nameRelationVar(variable.asThing());
         }
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
     private Set<Variable> nameRelationVar(ThingVariable relVariable) {
@@ -266,6 +229,7 @@ public class Rule {
         register.add(namedType);
 
         List<RolePlayer> namedRolePlayers = new ArrayList<>();
+        assert !relationConstraint.players().isEmpty();
         for (RolePlayer rolePlayer : relationConstraint.players()) {
             RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer);
             register.add(namedRolePlayer.player());
@@ -318,35 +282,6 @@ public class Rule {
         assert typeVariable.label().isPresent();
         namedType.label(typeVariable.label().get().properLabel());
         return namedType;
-    }
-
-//    private ThingVariable nameRelVar(ThingVariable relVariable) {
-//        ThingVariable newOwner;
-//        if (relVariable.reference().isName()) newOwner = ThingVariable.of(relVariable.identifier());
-//        else newOwner = ThingVariable.of(Identifier.Variable.of(new SystemReference("tempRelation")));
-//        for (ThingConstraint constraint : relVariable.constraints()) {
-//            if (constraint.isIsa()) {
-//                if
-//            }
-//        }
-//    }
-
-
-    private Constraint nameConstraint(Constraint constraint) {
-        return constraint;
-    }
-
-//    private grakn.core.pattern.variable.ThingVariable nameVar(grakn.core.pattern.variable.ThingVariable thingVariable) {
-//
-//    }
-
-    private Set<Variable> nameAllVars(Set<Variable> variables) {
-        return variables.stream().map(this::nameVar).collect(Collectors.toSet());
-//        Set<Variable> res = new HashSet<>();
-//        for (Variable variable : variables) {
-//
-//        }
-//        return res;
     }
 
 }
