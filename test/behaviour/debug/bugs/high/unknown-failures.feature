@@ -74,18 +74,13 @@ Feature: Graql Match Query
       """
       match $x isa person; $r (employee: $x) isa relation;
       """
-    And concept identifiers are
-      |      | check | value |
-      | REF0 | key   | ref:0 |
-      | REF1 | key   | ref:1 |
-      | REF2 | key   | ref:2 |
     Then uniquely identify answer concepts
-      | x    | r    |
-      | REF0 | REF2 |
+      | x         | r         |
+      | key:ref:0 | key:ref:2 |
     When get answers of graql query
       """
       match $y isa company; $r (employer: $y) isa relation;
       """
     Then uniquely identify answer concepts
-      | y    | r    |
-      | REF1 | REF2 |
+      | y         | r         |
+      | key:ref:1 | key:ref:2 |

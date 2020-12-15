@@ -100,8 +100,8 @@ Feature: Graql Match Query
       | MAR | key   | ref:1 |
       | PAT | key   | ref:2 |
     Then uniquely identify answer concepts
-      | a   | b   | c   |
-      | SOR | MAR | PAT |
+      | a         | b         | c         |
+      | key:ref:0 | key:ref:1 | key:ref:2 |
     When get answers of graql query
       """
       match
