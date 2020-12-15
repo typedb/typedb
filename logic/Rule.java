@@ -213,9 +213,9 @@ public class Rule {
     }
 
     private Set<Variable> nameRelationVar(ThingVariable relVariable) {
+        Set<Variable> register = new HashSet<>();
         RelationConstraint relationConstraint = relVariable.relation().iterator().next();
         ThingVariable namedOwner = nameRelOwner(relVariable);
-        Set<Variable> register = new HashSet<>();
         register.add(namedOwner);
         assert relVariable.isa().isPresent();
         IsaConstraint isaConstraint = relVariable.isa().get();
@@ -226,7 +226,7 @@ public class Rule {
         List<RolePlayer> namedRolePlayers = new ArrayList<>();
         assert !relationConstraint.players().isEmpty();
         for (RolePlayer rolePlayer : relationConstraint.players()) {
-            RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer);
+            RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer, namedOwner);
             register.add(namedRolePlayer.player());
             register.add(namedRolePlayer.roleType().get());
             namedRolePlayers.add(namedRolePlayer);
@@ -237,11 +237,15 @@ public class Rule {
         return register;
     }
 
-    private RolePlayer nameRolePLayer(RolePlayer rolePlayer) {
+    private RolePlayer nameRolePLayer(RolePlayer rolePlayer, ThingVariable ownerVar) {
         assert rolePlayer.roleType().isPresent();
-        if (rolePlayer.roleType().get().reference().isName()) return rolePlayer;
+        ThingVariable playerVar;
+        if (rolePlayer.player().reference().equals(ownerVar.reference())) {
+            playerVar = ownerVar;
+        } else if (rolePlayer.roleType().get().reference().isName()) return rolePlayer;
+        else playerVar = rolePlayer.player();
         TypeVariable namedRoleType = nameType(rolePlayer.roleType().get());
-        return new RolePlayer(namedRoleType, rolePlayer.player());
+        return new RolePlayer(namedRoleType, playerVar);
     }
 
     private ThingVariable nameRelOwner(ThingVariable relVariable) {
