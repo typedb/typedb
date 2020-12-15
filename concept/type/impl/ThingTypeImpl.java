@@ -92,11 +92,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public long getInstancesCount() {
-        return graphMgr.data().stats().thingVertexTransitiveCount(vertex);
-    }
-
-    @Override
     public void setAbstract() {
         if (getInstances().findFirst().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));

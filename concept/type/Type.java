@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 public interface Type extends Concept {
 
-    Long count();
+    long getInstancesCount();
 
     boolean isRoot();
 
