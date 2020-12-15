@@ -33,6 +33,7 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -93,10 +94,9 @@ public class TraversalTest2 {
         try (RocksSession session = grakn.session(database, DATA)) {
             try (RocksTransaction transaction = session.transaction(WRITE)) {
                 final String queryString = "insert $p isa person, has ref 0;\n" +
-                        "      $c isa company, has ref 1;\n" +
-                        "      $c2 isa company, has ref 2;\n" +
-                        "      $r (employee: $p, employer: $c, employer: $c2) isa employment, has ref 3;";
-
+                        "$c isa company, has ref 1;\n" +
+                        "$c2 isa company, has ref 2;\n" +
+                        "$r (employee: $p, employer: $c, employer: $c2) isa employment, has ref 3;";
                 final GraqlInsert query = parseQuery(queryString);
                 transaction.query().insert(query);
                 transaction.commit();
@@ -134,43 +134,54 @@ public class TraversalTest2 {
             final String queryString = "match $r ($x, $y) isa employment;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertTrue(answers.hasNext());
-            ConceptMap answer = answers.next();
+            ConceptMap answer;
             AttributeType.Long ref = transaction.concepts().getAttributeType("ref").asLong();
             int count = 0;
-            do {
+            while (answers.hasNext()) {
                 count++;
+                answer = answers.next();
                 System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
                 System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
                 System.out.println(answer.get("y").asThing().getHas(ref).findFirst().get().getValue());
-            } while (answers.hasNext());
+            }
             assertEquals(6, count);
         }
     }
 
     @Test
-    public void relations_are_matchable_from_roleplayers_without_specifying_any_roles_1() {
+    public void all_combinations_of_players_in_a_relation_can_be_retrieved_1() {
         Traversal.Parameters params = new Traversal.Parameters();
         GraphProcedure.Builder proc = GraphProcedure.builder(3);
 
-        ProcedureVertex.Type relation = proc.labelled("relation", true);
-        ProcedureVertex.Type person = proc.labelled("person");
-        ProcedureVertex.Thing x = proc.named("x");
+        ProcedureVertex.Type relation = proc.labelled("employment", true);
         ProcedureVertex.Thing r = proc.named("r");
+        ProcedureVertex.Thing x = proc.named("x");
+        ProcedureVertex.Thing y = proc.named("y");
 
-        proc.setLabel(person, "person");
         proc.setLabel(relation, "relation");
 
         proc.backwardIsa(1, relation, r, true);
         proc.forwardRolePlayer(2, r, x, set());
-        proc.forwardIsa(3, x, person, true);
+        proc.forwardRolePlayer(3, r, y, set());
 
         try (RocksTransaction transaction = session.transaction(READ)) {
             ResourceIterator<VertexMap> vertices = transaction.traversal().iterator(proc.build(), params);
             ResourceIterator<ConceptMap> answers = transaction.concepts().conceptMaps(vertices);
-            assertTrue(answers.hasNext());
+            AttributeType.Long ref = transaction.concepts().getAttributeType("ref").asLong();
+            ConceptMap answer;
+            int count = 0;
+            while (answers.hasNext()) {
+                count++;
+                answer = answers.next();
+                System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
+                System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
+                System.out.println(answer.get("y").asThing().getHas(ref).findFirst().get().getValue());
+            }
+            assertEquals(6, count);
         }
     }
 
+    @Ignore
     @Test
     public void relations_are_matchable_from_roleplayers_without_specifying_any_roles_2() {
         Traversal.Parameters params = new Traversal.Parameters();

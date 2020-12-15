@@ -58,7 +58,7 @@ Feature: Invalid Casting Test
   # SCHEMA QUERIES #
   ##################
 
-  # TODO invalid casting from Identifier.Variable.Name to Identifier.Scoped
+#   TODO invalid casting from Identifier.Variable.Name to Identifier.Scoped
   Scenario: relations are matchable from roleplayers without specifying any roles
     Given connection close all sessions
     Given connection open data session for database: grakn
@@ -150,8 +150,8 @@ Feature: Invalid Casting Test
     """
           match ($x, $y) isa $type;
           """
-        # 2 permutations x 3 types {friendship,relation,thing}
-    Then answer size is: 6
+        # 2 permutations x 4 types {friendship,relation}
+    Then answer size is: 4
 
 
   # TODO invalid casting from Identifier.Variable.Name to Identifier.Scoped
@@ -184,5 +184,5 @@ Feature: Invalid Casting Test
       """
       match ($x, $y) isa $type;
       """
-    # 2 permutations x 3 types {friendship,relation,thing}
-    Then answer size is: 6
+    # 2 permutations x 2 types {friendship,relation}
+    Then answer size is: 4
