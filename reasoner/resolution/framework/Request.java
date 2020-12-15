@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.TransformableAnswer;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -30,11 +30,11 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final Aggregator partialConceptMap;
+    private final TransformableAnswer.Transformed partialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   Aggregator partialConceptMap,
+                   TransformableAnswer.Transformed partialConceptMap,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
@@ -57,7 +57,7 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public Aggregator partialConceptMap() {
+    public TransformableAnswer.Transformed partialConceptMap() {
         return partialConceptMap;
     }
 

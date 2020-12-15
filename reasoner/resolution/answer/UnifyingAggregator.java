@@ -23,7 +23,7 @@ import graql.lang.pattern.variable.Reference;
 import java.util.Map;
 import java.util.Set;
 
-public class UnifyingAggregator extends Aggregator {
+public class UnifyingAggregator extends TransformableAnswer {
 
     UnifyingAggregator(ConceptMap conceptMap, Map<Reference.Name, Set<Reference.Name>> unifier) {
         super(conceptMap, transform(conceptMap, unifier));

@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class MappingAggregator extends Aggregator {
+public class MappingAggregator extends TransformableAnswer {
 
     private final Map<Reference.Name, Reference.Name> mapping;
     private final Map<Reference.Name, Reference.Name> reverseMapping;

@@ -19,18 +19,8 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
 
-public class NoOpAggregator extends TransformableAnswer {
+public interface Transformer {
+    ConceptMap transform(ConceptMap toTransform);
 
-    NoOpAggregator() {
-        super(new ConceptMap(), new ConceptMap());
-    }
-
-    public static TransformableAnswer create() {
-        return new NoOpAggregator();
-    }
-
-    @Override
-    ConceptMap unTransform(ConceptMap conceptMap) {
-        return conceptMap;
-    }
+    ConceptMap unTransform(ConceptMap toUnTransform);
 }

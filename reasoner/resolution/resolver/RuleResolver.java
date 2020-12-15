@@ -57,7 +57,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+        ConceptMap conceptMap = fromDownstream.answer().aggregated().aggregated();
 
         ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
         if (fromDownstream.answer().isInferred()) {

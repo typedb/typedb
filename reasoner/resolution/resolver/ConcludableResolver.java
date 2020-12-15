@@ -25,7 +25,7 @@ import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.TransformableAnswer;
 import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -68,7 +68,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream,
                                                    ResponseProducer responseProducer) {
-        final ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+        final ConceptMap conceptMap = fromDownstream.answer().aggregated().aggregated();
 
         LOG.trace("{}: hasProduced: {}", name, conceptMap);
         if (!responseProducer.hasProduced(conceptMap)) {
@@ -77,14 +77,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             // update partial derivation provided from upstream to carry derivations sideways
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
-            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap).unTransform(),
                                                            concludable.toString(), derivation, self());
 
             return Either.second(new Response.Answer(fromUpstream, answer));
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap).unTransform(),
                                                                  concludable.toString(), derivation, self());
             LOG.debug("Recording deduplicated answer: {}", deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
@@ -123,7 +123,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            Aggregator.Aggregated aggregated = fromUpstream.partialConceptMap().aggregateWith(conceptMap);
+            TransformableAnswer.Aggregated aggregated = fromUpstream.partialConceptMap().aggregateWith(conceptMap);
             if (aggregated == null) {
                 // TODO this should be the only place that aggregation can fail, but can we make this explicit?
                 continue;

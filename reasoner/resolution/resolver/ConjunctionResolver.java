@@ -67,7 +67,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
+                                           MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()).original().transform(),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
