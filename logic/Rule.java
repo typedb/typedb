@@ -165,6 +165,7 @@ public class Rule {
                 .forEach(thenVar ->
                         when.variables().stream()
                                 .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
+                                .filter(whenVar -> !(whenVar.isSatisfiable() & whenVar.typeHints().isEmpty()))
                                 .findFirst().ifPresent(whenVar -> {
                                     thenVar.retainHints(whenVar.typeHints());
                                     if (thenVar.typeHints().isEmpty()) thenVar.setSatisfiability(false);
