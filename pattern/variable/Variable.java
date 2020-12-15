@@ -82,9 +82,7 @@ public abstract class Variable implements Pattern {
     }
 
     public void addHints(Set<Label> labels) {
-        if (typeHints.isEmpty() && isSatisfiable) return;
         typeHints.addAll(labels);
-        if (!isSatisfiable && !typeHints.isEmpty()) isSatisfiable = true;
     }
 
     public void retainHints(Set<Label> labels) {
@@ -93,11 +91,10 @@ public abstract class Variable implements Pattern {
             return;
         }
         typeHints.retainAll(labels);
-        if (typeHints.isEmpty()) isSatisfiable = false;
     }
 
     public void removeHint(Label label) {
-        assert !(typeHints.isEmpty() && isSatisfiable);
+        assert !(isSatisfiable && typeHints.isEmpty());
         typeHints.remove(label);
     }
 
@@ -107,6 +104,10 @@ public abstract class Variable implements Pattern {
 
     public boolean isSatisfiable() {
         return isSatisfiable;
+    }
+
+    public void setSatisfiability(boolean isSatisfiable) {
+        this.isSatisfiable = isSatisfiable;
     }
 
     @Override

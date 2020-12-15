@@ -165,7 +165,10 @@ public class Rule {
                 .forEach(thenVar ->
                         when.variables().stream()
                                 .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
-                                .findFirst().ifPresent(whenVar -> thenVar.retainHints(whenVar.typeHints()))
+                                .findFirst().ifPresent(whenVar -> {
+                                    thenVar.retainHints(whenVar.typeHints());
+                                    if (thenVar.typeHints().isEmpty()) thenVar.setSatisfiability(false);
+                                })
                 );
     }
 
