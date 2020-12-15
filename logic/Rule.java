@@ -167,11 +167,11 @@ public class Rule {
                                 .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
                                 .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.typeHints().isEmpty()))
                                 .findFirst().ifPresent(whenVar -> {
-                                    if (thenVar.typeHints().isEmpty() && thenVar.isSatisfiable()) {
-                                        thenVar.addHints(whenVar.typeHints());
-                                    } else thenVar.retainHints(whenVar.typeHints());
-                                    if (thenVar.typeHints().isEmpty()) thenVar.setSatisfiability(false);
-                                })
+                            if (thenVar.typeHints().isEmpty() && thenVar.isSatisfiable()) {
+                                thenVar.addHints(whenVar.typeHints());
+                            } else thenVar.retainHints(whenVar.typeHints());
+                            if (thenVar.typeHints().isEmpty()) thenVar.setSatisfiability(false);
+                        })
                 );
     }
 

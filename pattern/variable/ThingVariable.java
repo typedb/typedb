@@ -19,7 +19,6 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
