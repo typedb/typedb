@@ -215,7 +215,7 @@ public class Rule {
     private Set<Variable> nameRelationVar(ThingVariable relVariable) {
         Set<Variable> register = new HashSet<>();
         RelationConstraint relationConstraint = relVariable.relation().iterator().next();
-        ThingVariable namedOwner = nameRelOwner(relVariable);
+        ThingVariable namedOwner = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp_relation_owner")));
         register.add(namedOwner);
         assert relVariable.isa().isPresent();
         IsaConstraint isaConstraint = relVariable.isa().get();
@@ -225,11 +225,13 @@ public class Rule {
 
         List<RolePlayer> namedRolePlayers = new ArrayList<>();
         assert !relationConstraint.players().isEmpty();
+        int uniqueRoleID = 0;
         for (RolePlayer rolePlayer : relationConstraint.players()) {
-            RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer, namedOwner);
+            RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer, uniqueRoleID);
             register.add(namedRolePlayer.player());
             register.add(namedRolePlayer.roleType().get());
             namedRolePlayers.add(namedRolePlayer);
+            uniqueRoleID++;
         }
 
         namedOwner.relation(namedRolePlayers);
@@ -237,47 +239,46 @@ public class Rule {
         return register;
     }
 
-    private RolePlayer nameRolePLayer(RolePlayer rolePlayer, ThingVariable ownerVar) {
+    private RolePlayer nameRolePLayer(RolePlayer rolePlayer, int uniqueRoleID) {
         assert rolePlayer.roleType().isPresent();
         ThingVariable playerVar;
-        if (rolePlayer.player().reference().equals(ownerVar.reference())) {
-            playerVar = ownerVar;
-        } else if (rolePlayer.roleType().get().reference().isName()) return rolePlayer;
+        if (rolePlayer.roleType().get().reference().isName()) return rolePlayer;
         else playerVar = rolePlayer.player();
-        TypeVariable namedRoleType = nameType(rolePlayer.roleType().get());
+        TypeVariable namedRoleType = nameType(rolePlayer.roleType().get(), uniqueRoleID);
         return new RolePlayer(namedRoleType, playerVar);
-    }
-
-    private ThingVariable nameRelOwner(ThingVariable relVariable) {
-        if (relVariable.reference().isName()) return ThingVariable.of(relVariable.identifier());
-        return ThingVariable.of(Identifier.Variable.of(new SystemReference("temp")));
     }
 
     private Set<Variable> nameHasVar(ThingVariable hasVariable) {
         HasConstraint hasConstraint = hasVariable.has().iterator().next();
         ThingVariable attribute = hasConstraint.attribute();
-        Set<Variable> register = new HashSet<>();
         if (attribute.reference().isName()) return set(hasVariable);
-        ThingVariable namedAttribute = nameAttribute(attribute, register);
+        Set<Variable> register = new HashSet<>();
+        ThingVariable namedAttribute = nameAttribute(attribute);
+        assert namedAttribute.isa().isPresent();
+        register.add(namedAttribute);
+        register.add(namedAttribute.isa().get().type());
         ThingVariable newOwner = ThingVariable.of(hasVariable.identifier());
         newOwner.has(namedAttribute);
         register.add(newOwner);
         return register;
     }
 
-    private ThingVariable nameAttribute(ThingVariable attribute, Set<Variable> register) {
+    private ThingVariable nameAttribute(ThingVariable attribute) {
         assert attribute.isa().isPresent();
         IsaConstraint isaConstraint = attribute.isa().get();
         TypeVariable namedType = nameType(isaConstraint.type());
-        register.add(namedType);
-        ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+        ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp_attr")));
         newAttr.isa(namedType, false);
         return newAttr;
     }
 
     private TypeVariable nameType(TypeVariable typeVariable) {
+        return nameType(typeVariable, 0);
+    }
+
+    private TypeVariable nameType(TypeVariable typeVariable, int uniqueRoleID) {
         if (typeVariable.reference().isName()) return typeVariable;
-        TypeVariable namedType = TypeVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+        TypeVariable namedType = TypeVariable.of(Identifier.Variable.of(new SystemReference("temp_type" + String.valueOf(uniqueRoleID))));
         assert typeVariable.label().isPresent();
         namedType.label(typeVariable.label().get().properLabel());
         return namedType;
