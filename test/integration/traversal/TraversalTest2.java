@@ -131,7 +131,7 @@ public class TraversalTest2 {
     @Test
     public void all_combinations_of_players_in_a_relation_can_be_retrieved_0() {
         try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match ($x, $y) isa employment;";
+            final String queryString = "match $r ($x, $y) isa employment;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertTrue(answers.hasNext());
             ConceptMap answer;
@@ -140,7 +140,7 @@ public class TraversalTest2 {
             while (answers.hasNext()) {
                 count++;
                 answer = answers.next();
-//                System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
+                System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
                 System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
                 System.out.println(answer.get("y").asThing().getHas(ref).findFirst().get().getValue());
             }

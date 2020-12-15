@@ -28,8 +28,6 @@ import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.procedure.ProcedureEdge;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,8 +39,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toMap;
 
 public class GraphIterator implements ResourceIterator<VertexMap> {
-
-    Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 
     private final GraphProcedure procedure;
     private final Traversal.Parameters parameters;
