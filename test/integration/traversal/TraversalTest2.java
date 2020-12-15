@@ -92,10 +92,10 @@ public class TraversalTest2 {
 
         try (RocksSession session = grakn.session(database, DATA)) {
             try (RocksTransaction transaction = session.transaction(WRITE)) {
-                final String queryString = "insert\n" +
-                        "      $x isa person, has ref 0;\n" +
-                        "      $y isa company, has ref 1;\n" +
-                        "      $r (employee: $x, employer: $y) isa employment, has ref 2;";
+                final String queryString = "insert $p isa person, has ref 0;\n" +
+                        "      $c isa company, has ref 1;\n" +
+                        "      $c2 isa company, has ref 2;\n" +
+                        "      $r (employee: $p, employer: $c, employer: $c2) isa employment, has ref 3;";
 
                 final GraqlInsert query = parseQuery(queryString);
                 transaction.query().insert(query);
@@ -113,11 +113,11 @@ public class TraversalTest2 {
     }
 
     @Test
-    public void relations_are_matchable_from_roleplayers_without_specifying_any_roles_0_repeat() {
+    public void all_combinations_of_players_in_a_relation_can_be_retrieved_0_repeat() {
         int success = 0, fail = 0;
         for (int i = 0; i < 10; i++) {
             try {
-                relations_are_matchable_from_roleplayers_without_specifying_any_roles_0();
+                all_combinations_of_players_in_a_relation_can_be_retrieved_0();
                 success++;
                 System.out.println("SUCCESS --------------");
             } catch (AssertionError e) {
@@ -129,9 +129,9 @@ public class TraversalTest2 {
     }
 
     @Test
-    public void relations_are_matchable_from_roleplayers_without_specifying_any_roles_0() {
-        try (RocksTransaction transaction = session.transaction(WRITE)) {
-            final String queryString = "match $x isa person; $r ($x) isa relation;";
+    public void all_combinations_of_players_in_a_relation_can_be_retrieved_0() {
+        try (RocksTransaction transaction = session.transaction(READ)) {
+            final String queryString = "match $r ($x, $y) isa employment;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertTrue(answers.hasNext());
             ConceptMap answer = answers.next();
@@ -139,10 +139,11 @@ public class TraversalTest2 {
             int count = 0;
             do {
                 count++;
-                System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
                 System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
+                System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
+                System.out.println(answer.get("y").asThing().getHas(ref).findFirst().get().getValue());
             } while (answers.hasNext());
-            assertEquals(1, count);
+            assertEquals(6, count);
         }
     }
 
