@@ -21,7 +21,6 @@ package grakn.core.traversal.producer;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.edge.Edge;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
@@ -29,6 +28,8 @@ import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.procedure.ProcedureEdge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,8 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toMap;
 
 public class GraphIterator implements ResourceIterator<VertexMap> {
+
+    Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 
     private final GraphProcedure procedure;
     private final Traversal.Parameters parameters;
@@ -140,10 +143,18 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toId = edge.to().id();
         if (roles.containsKey(toId)) {
-            if (edge.isRolePlayer()) scoped.get(edge.asRolePlayer().scope()).remove(roles.get(toId));
-            else scoped.get(toId.asScoped().scope()).remove(roles.get(toId));
+            if (edge.isRolePlayer()) removePriorScoped(edge.asRolePlayer().scope(), toId);
+            else removePriorScoped(toId.asScoped().scope(), toId);
         }
         return computeNext(pos - 1);
+    }
+
+    private void removePriorScoped(Identifier.Variable scope, Identifier uniqueRoleIdentifier) {
+        ThingVertex previousRole = roles.get(uniqueRoleIdentifier);
+        if (previousRole != null) {
+            scoped.get(scope).remove(previousRole);
+            roles.remove(uniqueRoleIdentifier);
+        }
     }
 
     private boolean computeNext(int pos) {
@@ -230,6 +241,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = edge.branchTo(graphMgr, fromVertex, parameters).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
+                    removePriorScoped(edge.to().id().asScoped().scope(), edge.to().id());
                     withinScope.add(role.asThing());
                     roles.put(edge.to().id(), role.asThing());
                     return true;
@@ -240,6 +252,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, parameters).filter(e -> {
                 if (withinScope.contains(e.optimised().get())) return false;
                 else {
+                    removePriorScoped(edge.asRolePlayer().scope(), edge.to().id());
                     withinScope.add(e.optimised().get());
                     roles.put(edge.to().id(), e.optimised().get());
                     return true;
