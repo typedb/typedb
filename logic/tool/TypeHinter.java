@@ -77,17 +77,17 @@ public class TypeHinter {
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
         Map<Reference, Set<Label>> referenceHintsMapping =
                 retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()), parallelisation);
-        long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
+        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
             if (variable.isThing()) {
-                if (hintLabels.size() != numOfThings) {
+                if (hintLabels.size() != numOfTypes) {
                     addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(variable.reference()), labelMap);
                 }
                 addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
-            } else if (variable.isType() && hintLabels.size() != numOfThings) {
+            } else if (variable.isType() && hintLabels.size() != numOfTypes) {
                 addInferredSubLabels(variable.asType(), referenceHintsMapping.get(variable.reference()), labelMap);
             }
         }
@@ -141,30 +141,6 @@ public class TypeHinter {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private void removeHintLabel(Variable variable, Label label) {
-        if (variable.isType()) variable.asType().sub().ifPresent(subConstraint -> subConstraint.removeHint(label));
-        else if (variable.isThing())
-            variable.asThing().isa().ifPresent(isaConstraint -> isaConstraint.removeHint(label));
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private Set<Label> getHintLabels(Variable variable) {
-        if (variable.isType()) {
-            if (variable.asType().sub().isPresent()) return variable.asType().sub().get().typeHints();
-            return null;
-        } else if (variable.isThing()) {
-            if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().typeHints();
-            return null;
-        } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private void addHintLabels(Variable variable, Set<Label> labels) {
-        if (variable.isType()) variable.asType().sub().ifPresent(subConstraint -> subConstraint.addHints(labels));
-        else if (variable.isThing())
-            variable.asThing().isa().ifPresent(isaConstraint -> isaConstraint.addHints(labels));
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
     private void ensureHintsConformToTheirSuper(Variable variable, Set<Variable> visited) {
         if (variable == null || visited.contains(variable) || variable.reference().isLabel()) return;
         visited.add(variable);
@@ -177,15 +153,14 @@ public class TypeHinter {
         if (supVar == null) return;
         if (supVar.reference().isLabel()) return;
 
-        Set<Label> supLabels = getHintLabels(supVar);
-        Set<Label> subLabels = getHintLabels(subVar);
-        if (supLabels == null || supLabels.isEmpty()) return;
+        Set<Label> supLabels = supVar.typeHints();
+        Set<Label> subLabels = subVar.typeHints();
+        if (supLabels.isEmpty()) return;
 
-        if (subLabels == null) return;
         if (subLabels.isEmpty()) {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).collect(Collectors.toSet());
-            addHintLabels(subVar, subHintsOfSupLabels);
+            subVar.addHints(subHintsOfSupLabels);
             return;
         }
 
@@ -195,7 +170,10 @@ public class TypeHinter {
             while (hintType != null && !supLabels.contains(hintType.getLabel())) {
                 hintType = hintType.getSupertype();
             }
-            if (hintType == null) removeHintLabel(subVar, label);
+            if (hintType == null) {
+                subVar.removeHint(label);
+                if (subVar.typeHints().isEmpty()) subVar.setIsSatisfiable(false);
+            }
         }
     }
 
@@ -210,7 +188,7 @@ public class TypeHinter {
         if (!variable.sub().isPresent()) {
             variable.sub(lowestCommonSuperType(hints, labelMap), false);
         }
-        variable.sub().get().addHints(hints);
+        variable.addHints(hints);
     }
 
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
@@ -219,7 +197,7 @@ public class TypeHinter {
         if (!variable.isa().isPresent()) {
             variable.isa(lowestCommonSuperType(hints, labelMap), false);
         }
-        variable.isa().get().addHints(hints);
+        variable.addHints(hints);
     }
 
     private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {

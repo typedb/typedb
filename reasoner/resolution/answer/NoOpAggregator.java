@@ -13,45 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package grakn.core.concept.type;
+package grakn.core.reasoner.resolution.answer;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
 
-import java.util.List;
-import java.util.stream.Stream;
+public class NoOpAggregator extends Aggregator {
 
-public interface Type extends Concept {
+    NoOpAggregator() {
+        super(new ConceptMap(), new ConceptMap());
+    }
 
-    long getInstancesCount();
+    public static Aggregator create() {
+        return new NoOpAggregator();
+    }
 
-    boolean isRoot();
-
-    void setLabel(String label);
-
-    Label getLabel();
-
-    boolean isAbstract();
-
-    Type getSupertype();
-
-    Stream<? extends Type> getSupertypes();
-
-    Stream<? extends Type> getSubtypes();
-
-    List<GraknException> validate();
-
-    ThingType asThingType();
-
-    EntityType asEntityType();
-
-    AttributeType asAttributeType();
-
-    RelationType asRelationType();
-
-    RoleType asRoleType();
+    @Override
+    ConceptMap unTransform(ConceptMap conceptMap) {
+        return conceptMap;
+    }
 }

@@ -213,11 +213,11 @@ public class GraphProcedure implements Procedure {
             return typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
         }
 
-        public ProcedureVertex.Thing named(String name) {
-            return named(name, false);
+        public ProcedureVertex.Thing nameThing(String name) {
+            return nameThing(name, false);
         }
 
-        public ProcedureVertex.Thing named(String name, boolean isStart) {
+        public ProcedureVertex.Thing nameThing(String name, boolean isStart) {
             return thingVertex(Identifier.Variable.of(Reference.named(name)), isStart);
         }
 

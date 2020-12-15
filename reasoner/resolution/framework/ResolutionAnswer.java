@@ -19,31 +19,31 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.concept.answer.ConceptMap;
+import grakn.core.reasoner.resolution.answer.Aggregator;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static grakn.common.collection.Collections.map;
 
-public class Answer {
-    private final ConceptMap conceptMap;
+public class ResolutionAnswer {
+    private final Aggregator.Aggregated aggregatedAnswer;
     private final Derivation derivation;
     private final Actor<? extends Resolver<?>> producer;
     private final String patternAnswered;
 
-    public Answer(ConceptMap conceptMap,
-                  String patternAnswered,
-                  Derivation derivation,
-                  Actor<? extends Resolver<?>> producer) {
-        this.conceptMap = conceptMap;
+    public ResolutionAnswer(Aggregator.Aggregated aggregatedAnswer,
+                            String patternAnswered,
+                            Derivation derivation,
+                            Actor<? extends Resolver<?>> producer) {
+        this.aggregatedAnswer = aggregatedAnswer;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
         this.producer = producer;
     }
 
-    public ConceptMap conceptMap() {
-        return conceptMap;
+    public Aggregator.Aggregated aggregated() {
+        return aggregatedAnswer;
     }
 
     public Derivation derivation() {
@@ -61,7 +61,7 @@ public class Answer {
     @Override
     public String toString() {
         return "Answer{" +
-                "conceptMap=" + conceptMap +
+                "conceptMap=" + aggregatedAnswer +
                 ", executionRecord=" + derivation +
                 ", patternAnswered='" + patternAnswered + '\'' +
                 ", producer=" + producer +
@@ -71,30 +71,30 @@ public class Answer {
     public static class Derivation {
         public static final Derivation EMPTY = new Derivation(map());
 
-        private Map<Actor<? extends Resolver<?>>, Answer> answers;
+        private Map<Actor<? extends Resolver<?>>, ResolutionAnswer> answers;
 
-        public Derivation(Map<Actor<? extends Resolver<?>>, Answer> answers) {
+        public Derivation(Map<Actor<? extends Resolver<?>>, ResolutionAnswer> answers) {
             this.answers = map(answers);
         }
 
-        public Derivation withAnswer(Actor<? extends Resolver<?>> producer, Answer answer) {
-            Map<Actor<? extends Resolver<?>>, Answer> copiedResolution = new HashMap<>(answers);
+        public Derivation withAnswer(Actor<? extends Resolver<?>> producer, ResolutionAnswer answer) {
+            Map<Actor<? extends Resolver<?>>, ResolutionAnswer> copiedResolution = new HashMap<>(answers);
             copiedResolution.put(producer, answer);
             return new Derivation(copiedResolution);
         }
 
-        public void update(Map<Actor<? extends Resolver<?>>, Answer> newResolutions) {
+        public void update(Map<Actor<? extends Resolver<?>>, ResolutionAnswer> newResolutions) {
             assert answers.keySet().stream().noneMatch(key -> answers.containsKey(key)) : "Cannot overwrite any derivations during an update";
-            Map<Actor<? extends Resolver<?>>, Answer> copiedResolutinos = new HashMap<>(answers);
+            Map<Actor<? extends Resolver<?>>, ResolutionAnswer> copiedResolutinos = new HashMap<>(answers);
             copiedResolutinos.putAll(newResolutions);
             this.answers = copiedResolutinos;
         }
 
-        public void replace(Map<Actor<? extends Resolver<?>>, Answer> newResolutions) {
+        public void replace(Map<Actor<? extends Resolver<?>>, ResolutionAnswer> newResolutions) {
             this.answers = map(newResolutions);
         }
 
-        public Map<Actor<? extends Resolver<?>>, Answer> answers() {
+        public Map<Actor<? extends Resolver<?>>, ResolutionAnswer> answers() {
             return this.answers;
         }
 

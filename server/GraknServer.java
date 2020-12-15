@@ -26,8 +26,8 @@ import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.MigratorClient;
-import grakn.core.server.rpc.MigratorRPCService;
 import grakn.core.server.rpc.GraknRPCService;
+import grakn.core.server.rpc.MigratorRPCService;
 import grakn.core.server.util.ServerCommand;
 import grakn.core.server.util.ServerDefaults;
 import io.grpc.Server;
@@ -154,7 +154,10 @@ public class GraknServer implements AutoCloseable {
     private static ServerCommand parseCommandLine(Properties properties, String[] args) {
         final ServerCommand.Start startCommand = new ServerCommand.Start();
         final ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
-        final CommandLine commandLine = new CommandLine(startCommand).addSubcommand(importDataCommand);
+        final ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
+        final CommandLine commandLine = new CommandLine(startCommand)
+                .addSubcommand(importDataCommand)
+                .addSubcommand(exportDataCommand);
         commandLine.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
 
         try {
@@ -205,6 +208,11 @@ public class GraknServer implements AutoCloseable {
                 ServerCommand.ImportData importDataCommand = command.asImportData();
                 MigratorClient migrator = new MigratorClient(importDataCommand.port());
                 boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
+                System.exit(success ? 0 : 1);
+            } else if (command.isExportData()) {
+                ServerCommand.ExportData exportDataCommand = command.asExportData();
+                MigratorClient migrator = new MigratorClient(exportDataCommand.port());
+                boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
                 System.exit(success ? 0 : 1);
             }
         } catch (Exception e) {

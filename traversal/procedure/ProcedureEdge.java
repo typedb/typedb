@@ -167,8 +167,7 @@ public abstract class ProcedureEdge<
 
         @Override
         public ResourceIterator<? extends Vertex<?, ?>> branchTo(
-                GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                Traversal.Parameters params) {
+                GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
             assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
             ResourceIterator<? extends AttributeVertex<?>> toIter;
 
@@ -291,8 +290,7 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public ResourceIterator<? extends Vertex<?, ?>> branchTo(
-                        GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                        Traversal.Parameters params) {
+                        GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                     TypeVertex type = fromVertex.asType();
                     Set<Label> toTypes = to.props().types();
                     ResourceIterator<TypeVertex> typeIter;
@@ -537,7 +535,8 @@ public abstract class ProcedureEdge<
 
             static abstract class Relates extends Type {
 
-                private Relates(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, Encoding.Direction.Edge direction) {
+                private Relates(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
+                                Encoding.Direction.Edge direction) {
                     super(from, to, order, direction, RELATES.name());
                 }
 
@@ -697,8 +696,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchTo(
-                            GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                            Traversal.Parameters params) {
+                            GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
                         ResourceIterator<? extends ThingVertex> iter;
                         AttributeVertex<?> att = fromVertex.asThing().asAttribute();
@@ -956,8 +954,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends RolePlayer {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                             Set<Label> roleTypes) {
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order, Set<Label> roleTypes) {
                         super(from, to, order, BACKWARD, roleTypes);
                     }
 

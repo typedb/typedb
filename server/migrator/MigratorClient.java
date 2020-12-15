@@ -33,27 +33,32 @@ public class MigratorClient {
 
     private final MigratorGrpc.MigratorStub stub;
 
-    public MigratorClient(int serverPort) {
-        String uri = "localhost:" + serverPort;
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
+    public MigratorClient(final int serverPort) {
+        final String uri = "localhost:" + serverPort;
+        final ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
         stub = MigratorGrpc.newStub(channel);
     }
 
-    public boolean importData(String database, String filename, Map<String, String> remapLabels) {
-        MigratorProto.ImportData.Req req = MigratorProto.ImportData.Req.newBuilder()
+    public boolean importData(final String database, final String filename, final Map<String, String> remapLabels) {
+        final MigratorProto.ImportData.Req req = MigratorProto.ImportData.Req.newBuilder()
                 .setDatabase(database)
                 .setFilename(filename)
                 .putAllRemapLabels(remapLabels)
                 .build();
-        CountDownLatch latch = new CountDownLatch(1);
-        ProgressPrinter progressPrinter = new ProgressPrinter("import");
-        ResponseObserver streamObserver = new ResponseObserver(progressPrinter, latch);
+        final ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("import"));
         stub.importData(req, streamObserver);
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
-        }
+        streamObserver.await();
+        return streamObserver.success();
+    }
+
+    public boolean exportData(final String database, final String filename) {
+        final MigratorProto.ExportData.Req req = MigratorProto.ExportData.Req.newBuilder()
+                .setDatabase(database)
+                .setFilename(filename)
+                .build();
+        final ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("export"));
+        stub.exportData(req, streamObserver);
+        streamObserver.await();
         return streamObserver.success();
     }
 
@@ -63,20 +68,20 @@ public class MigratorClient {
         private final CountDownLatch latch;
         private boolean success;
 
-        public ResponseObserver(ProgressPrinter progressPrinter, CountDownLatch latch) {
+        public ResponseObserver(final ProgressPrinter progressPrinter) {
             this.progressPrinter = progressPrinter;
-            this.latch = latch;
+            this.latch = new CountDownLatch(1);
         }
 
         @Override
-        public void onNext(MigratorProto.Job.Res res) {
-            long current = res.getProgress().getCurrent();
-            long total = res.getProgress().getTotal();
+        public void onNext(final MigratorProto.Job.Res res) {
+            final long current = res.getProgress().getCurrent();
+            final long total = res.getProgress().getTotal();
             progressPrinter.onProgress(current, total);
         }
 
         @Override
-        public void onError(Throwable throwable) {
+        public void onError(final Throwable throwable) {
             throwable.printStackTrace();
             success = false;
             latch.countDown();
@@ -87,6 +92,14 @@ public class MigratorClient {
             progressPrinter.onCompletion();
             success = true;
             latch.countDown();
+        }
+
+        public void await() {
+            try {
+                latch.await();
+            } catch (final InterruptedException e) {
+                throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
+            }
         }
 
         public boolean success() {

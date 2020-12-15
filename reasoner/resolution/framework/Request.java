@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.concept.answer.ConceptMap;
+import grakn.core.reasoner.resolution.answer.Aggregator;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -30,17 +30,14 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final ConceptMap partialConceptMap;
-    private final List<Object> unifiers;
-    private final Answer.Derivation partialDerivation;
+    private final Aggregator partialConceptMap;
+    private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   ConceptMap partialConceptMap,
-                   List<Object> unifiers,
-                   Answer.Derivation partialDerivation) {
+                   Aggregator partialConceptMap,
+                   ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
-        this.unifiers = unifiers;
         this.partialDerivation = partialDerivation;
     }
 
@@ -60,12 +57,8 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public ConceptMap partialConceptMap() {
+    public Aggregator partialConceptMap() {
         return partialConceptMap;
-    }
-
-    public List<Object> unifiers() {
-        return unifiers;
     }
 
     @Override
@@ -74,13 +67,12 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialConceptMap, request.partialConceptMap()) &&
-                Objects.equals(unifiers, request.unifiers());
+                Objects.equals(partialConceptMap, request.partialConceptMap());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialConceptMap, unifiers);
+        return Objects.hash(path, partialConceptMap);
     }
 
     @Override
@@ -88,7 +80,7 @@ public class Request {
         return "Req(send=" + (sender() == null ? "<none>" : sender().state.name) + ", pAns=" + partialConceptMap + ")";
     }
 
-    public Answer.Derivation partialResolutions() {
+    public ResolutionAnswer.Derivation partialResolutions() {
         return partialDerivation;
     }
 

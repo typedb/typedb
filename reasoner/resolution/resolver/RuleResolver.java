@@ -19,76 +19,82 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Either;
+import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.framework.Answer;
+import grakn.core.logic.Rule;
+import grakn.core.reasoner.resolution.answer.MappingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Map;
 
 // TODO unify and materialise in receiveAnswer
 public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
-    public RuleResolver(Actor<RuleResolver> self, List<Long> when, Long traversalSize) {
-        super(self, RuleResolver.class.getSimpleName() + "(pattern:" + when + ")", when, traversalSize);
+    public RuleResolver(Actor<RuleResolver> self, Rule rule) {
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", rule.when(), rule.whenConcludables());
     }
 
     @Override
     public Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer) {
-        return produceMessage(fromUpstream, responseProducer);
+        return messageToSend(fromUpstream, responseProducer);
+    }
+
+    @Override
+    public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
+        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
+        return messageToSend(fromUpstream, responseProducer);
     }
 
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.answer().conceptMap();
+        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
 
-        Answer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
+        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
         if (fromDownstream.answer().isInferred()) {
             derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
         }
 
         if (isLast(sender)) {
-            LOG.trace("{}: hasProduced: {}", name, conceptMap);
+            LOG.trace("{}: has produced: {}", name, conceptMap);
 
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                Answer answer = new Answer(conceptMap, conjunction.toString(), derivation, self());
-                Response.Answer response = new Response.Answer(fromUpstream, answer, fromUpstream.unifiers());
-                return Either.second(response);
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                               conjunction.toString(), derivation, self());
+                return Either.second(createResponse(fromUpstream, answer));
             } else {
-                return produceMessage(fromUpstream, responseProducer);
+                return messageToSend(fromUpstream, responseProducer);
             }
         } else {
-            Actor<ConcludableResolver> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream),
-                                                    conceptMap, fromDownstream.unifiers(), derivation);
+            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
+                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }
     }
 
     @Override
-    public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
-        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        return produceMessage(fromUpstream, responseProducer);
-    }
-
-    private Either<Request, Response> produceMessage(Request fromUpstream, ResponseProducer responseProducer) {
+    Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                Answer answer = new Answer(conceptMap, conjunction.toString(), Answer.Derivation.EMPTY, self());
-                return Either.second(new Response.Answer(fromUpstream, answer, fromUpstream.unifiers()));
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
+                return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
 
@@ -97,5 +103,10 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
         } else {
             return Either.second(new Response.Exhausted(fromUpstream));
         }
+    }
+
+    @Override
+    Response.Answer createResponse(Request fromUpstream, ResolutionAnswer answer) {
+        return new Response.Answer(fromUpstream, answer);
     }
 }

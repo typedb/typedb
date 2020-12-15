@@ -88,7 +88,6 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
         IsaConstraint newIsa = variableToConstrain.isa(typeCopy, toCopy.isExplicit());
-        newIsa.addHints(toCopy.typeHints());
         return newIsa;
     }
 
@@ -129,7 +128,6 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         if (copyFrom.sub().isPresent()) {
             SubConstraint subCopy = copyFrom.sub().get();
             copyTo.sub(subCopy.type(), subCopy.isExplicit());
-            copyTo.sub().get().addHints(subCopy.typeHints());
         }
         if (copyFrom.valueType().isPresent()) copyTo.valueType(copyFrom.valueType().get().valueType());
     }
@@ -141,30 +139,14 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static boolean hasNoHints(Variable variable) {
-        //TODO: refactor once new 'all things' symbol is introduced
-        if (variable.isThing()) {
-            return !variable.asThing().isa().isPresent() || variable.asThing().isa().get().typeHints().isEmpty();
-        } else if (variable.isType()) {
-            return !variable.asType().sub().isPresent() || variable.asType().sub().get().typeHints().isEmpty();
-        } else {
-            throw GraknException.of(ILLEGAL_STATE);
-        }
+        return variable.isSatisfiable() && variable.typeHints().isEmpty();
     }
 
     static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
         if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
-        Set<Label> firstHints;
-        Set<Label> secondHints;
-        if (conjVar.isThing() && thenVar.isThing()) {
-            firstHints = conjVar.asThing().isa().get().typeHints();
-            secondHints = thenVar.asThing().isa().get().typeHints();
-        } else if (conjVar.isType() && thenVar.isType()) {
-            firstHints = conjVar.asType().sub().get().typeHints();
-            secondHints = thenVar.asType().sub().get().typeHints();
-        } else {
-            return true;
-        }
-        return Collections.disjoint(firstHints, secondHints);
+        assert (conjVar.isThing() && thenVar.isThing()) ||
+                (conjVar.isType() && thenVar.isType());
+        return Collections.disjoint(conjVar.typeHints(), thenVar.typeHints());
     }
 
 }
