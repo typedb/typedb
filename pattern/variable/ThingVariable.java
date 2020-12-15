@@ -157,6 +157,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueDateTimeConstraint;
     }
 
+    public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
+        ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
+        constrain(valueVarConstraint);
+        return valueVarConstraint;
+    }
+
     public Set<RelationConstraint> relation() {
         return relationConstraints;
     }
@@ -199,7 +205,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
-        syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
+        Set<IsaConstraint> isaConstraintSet = isaConstraint == null ? set() : set(isaConstraint);
+        syntax.append(Stream.of(relationConstraints, isaConstraintSet, hasConstraints, valueConstraints, isConstraints)
                               .flatMap(Collection::stream).map(ThingConstraint::toString)
                               .collect(Collectors.joining("" + COMMA + SPACE)));
 

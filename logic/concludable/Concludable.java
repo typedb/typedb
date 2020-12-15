@@ -94,19 +94,20 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static ValueConstraint<?> copyValueOntoVariable(ValueConstraint<?> toCopy, ThingVariable toConstrain) {
-        ValueConstraint<?> value;
         if (toCopy.isLong())
-            value = toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
+            return toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
         else if (toCopy.isDouble())
-            value = toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
+            return toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
         else if (toCopy.isBoolean())
-            value = toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
+            return toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
         else if (toCopy.isString())
-            value = toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
+            return toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
         else if (toCopy.isDateTime())
-            value = toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
-        else throw GraknException.of(ILLEGAL_STATE);
-        return value;
+            return toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
+        else if (toCopy.isVariable()) {
+            ThingVariable copyOfVar = copyIsaAndValues(toCopy.asVariable().value());
+            return toConstrain.valueVariable(toCopy.asValue().predicate().asEquality(), copyOfVar);
+        } else throw GraknException.of(ILLEGAL_STATE);
     }
 
     static ThingVariable copyIsaAndValues(ThingVariable copyFrom) {

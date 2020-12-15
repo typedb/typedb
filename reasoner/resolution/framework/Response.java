@@ -44,15 +44,12 @@ public interface Response {
 
     class Answer implements Response {
         private final Request sourceRequest;
-        private final grakn.core.reasoner.resolution.framework.Answer answer;
-        private final List<Object> unifiers;
+        private final ResolutionAnswer answer;
 
         public Answer(Request sourceRequest,
-                      grakn.core.reasoner.resolution.framework.Answer answer,
-                      List<Object> unifiers) {
+                      ResolutionAnswer answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
-            this.unifiers = unifiers;
         }
 
         @Override
@@ -60,12 +57,8 @@ public interface Response {
             return sourceRequest;
         }
 
-        public grakn.core.reasoner.resolution.framework.Answer answer() {
+        public ResolutionAnswer answer() {
             return answer;
-        }
-
-        public List<Object> unifiers() {
-            return unifiers;
         }
 
         @Override
@@ -93,7 +86,6 @@ public interface Response {
             return "\nAnswer{" +
                     "\nsourceRequest=" + sourceRequest +
                     ",\nanswer=" + answer +
-                    ",\nunifiers=" + unifiers +
                     "\n}\n";
         }
     }
