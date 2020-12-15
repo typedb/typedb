@@ -35,6 +35,8 @@ public interface ThingType extends Type {
 
     Stream<? extends Thing> getInstances();
 
+    long getInstancesCount();
+
     void setAbstract();
 
     void unsetAbstract();

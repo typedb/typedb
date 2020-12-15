@@ -34,6 +34,7 @@ public class Exporter implements Migrator {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter.class);
     private final Grakn.Session session;
     private final Path filename;
+    private long totalThingCount = 0;
     private final AtomicLong entityCount = new AtomicLong(0);
     private final AtomicLong relationCount = new AtomicLong(0);
     private final AtomicLong attributeCount = new AtomicLong(0);
@@ -50,8 +51,7 @@ public class Exporter implements Migrator {
         long current = attributeCount.get() + relationCount.get() + entityCount.get();
         return MigratorProto.Job.Progress.newBuilder()
                 .setCurrent(current)
-                // TODO
-                .setTotal(100000000)
+                .setTotal(totalThingCount)
                 .build();
     }
 
@@ -60,6 +60,7 @@ public class Exporter implements Migrator {
         LOG.info("Exporting {} from Grakn {}", session.database().name(), Version.VERSION);
         try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
             try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                totalThingCount = tx.concepts().getRootThingType().getInstancesCount();
                 DataProto.Item header = DataProto.Item.newBuilder()
                         .setHeader(DataProto.Item.Header.newBuilder()
                                 .setGraknVersion(Version.VERSION)
