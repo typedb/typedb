@@ -47,7 +47,9 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         return name;
     }
 
-    protected abstract ResponseProducer createResponseProducer(Request fromUpstream);
+    protected abstract ResponseProducer responseProducerCreate(Request fromUpstream);
+
+    protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer);
 
     protected abstract void initialiseDownstreamActors(ResolverRegistry registry);
 
@@ -70,11 +72,21 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
             isInitialised = true;
         }
 
-        ResponseProducer responseProducer = responseProducers.computeIfAbsent(fromUpstream, key -> {
+        if (!responseProducers.containsKey(fromUpstream)) {
             LOG.debug("{}: Creating a new ResponseProducer for the given Request: {}", name, fromUpstream);
-            return createResponseProducer(fromUpstream);
-        });
-        Either<Request, Response> action = receiveRequest(fromUpstream, responseProducer);
+            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream));
+        } else {
+            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
+            assert responseProducer.currentIteration() == fromUpstream.getIteration() ||
+                    responseProducer.currentIteration() + 1 == fromUpstream.getIteration();
+
+            if (responseProducer.currentIteration() + 1 == fromUpstream.getIteration()) {
+                responseProducers.put(fromUpstream, responseProducerReiterate(fromUpstream, responseProducer));
+            }
+        }
+
+        Either<Request, Response> action = receiveRequest(fromUpstream, responseProducers.get(fromUpstream));
         if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
         else respondToUpstream(action.second(), registry);
     }

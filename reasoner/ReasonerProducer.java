@@ -31,10 +31,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<RootResolver> rootResolver;
     private final ResolverRegistry registry;
-    private final Request resolveRequest;
+    private Request resolveRequest;
     private boolean done;
     private Sink<ConceptMap> sink = null;
     private int iteration;
+    private boolean iterationInferredAnswer;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
@@ -42,18 +43,42 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.iteration = 0;
         this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
         this.resolveRequest.setIteration(iteration);
+        this.iterationInferredAnswer = false;
     }
 
     private void onAnswer(final ResolutionAnswer answer) {
-        if (answer.isInferred())
+        if (answer.isInferred()) iterationInferredAnswer = true;
         sink.put(answer.aggregated().conceptMap());
     }
 
-    private void onDone() {
-        if (!done) {
-            done = true;
-            sink.done(this);
+    private void onDone(int iterationDone) {
+        assert this.iteration == iterationDone || this.iteration == iterationDone + 1;
+
+        if (iterationDone == this.iteration && !mustReiterate()) {
+            if (!done) {
+                done = true;
+                sink.done(this);
+            }
+        } else if (this.iteration == iterationDone + 1) {
+            retryInNextIteration();
+        } else {
+            nextIteration();
         }
+    }
+
+    private boolean mustReiterate() {
+        return iterationInferredAnswer;
+    }
+
+    private void retryInNextIteration() {
+        requestAnswer();
+    }
+
+    private void nextIteration() {
+        iteration++;
+        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
+        this.resolveRequest.setIteration(iteration);
+        requestAnswer();
     }
 
     @Override
@@ -61,7 +86,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         assert this.sink == null || this.sink == sink;
         this.sink = sink;
         for (int i = 0; i < count; i++) {
-            rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry));
+            requestAnswer();
         }
     }
 
@@ -70,4 +95,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     }
 
+    private void requestAnswer() {
+        rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry));
+    }
 }

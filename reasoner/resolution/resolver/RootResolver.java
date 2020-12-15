@@ -41,10 +41,10 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RootResolver.class);
 
     private final Consumer<ResolutionAnswer> onAnswer;
-    private final Runnable onExhausted;
+    private final Consumer<Integer> onExhausted;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                        Runnable onExhausted) {
+                        Consumer<Integer> onExhausted) {
         super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, ConjunctionConcludable.create(conjunction));
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
@@ -79,7 +79,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), derivation, self());
+                                                               conjunction.toString(), derivation, self(), fromDownstream.answer().isInferred());
                 return Either.second(createResponse(fromUpstream, answer));
             } else {
                 return messageToSend(fromUpstream, responseProducer);
@@ -109,7 +109,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
         if (responseProducer.hasDownstreamProducer()) {
             return Either.first(responseProducer.nextDownstreamProducer());
         } else {
-            onExhausted.run();
+            onExhausted.accept(fromUpstream.getIteration());
             return Either.second(new Response.RootResponse(fromUpstream));
         }
     }

@@ -96,6 +96,10 @@ public class Request {
         this.iteration = iteration;
     }
 
+    public int getIteration() {
+        return iteration;
+    }
+
     public static class Path {
         final List<Actor<? extends Resolver<?>>> path;
 

@@ -100,7 +100,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     @Override
-    protected ResponseProducer createResponseProducer(Request request) {
+    protected ResponseProducer responseProducerCreate(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
 

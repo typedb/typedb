@@ -77,4 +77,12 @@ public class ResponseProducer {
         // note: this is a large performance win when processing large batches of requests
         if (removed) downstreamProducerSelector = downstreamProducer.iterator();
     }
+
+    public int currentIteration() {
+        return currentIteration;
+    }
+
+    public void nextIteration(Iterator<ConceptMap> traversal) {
+
+    }
 }

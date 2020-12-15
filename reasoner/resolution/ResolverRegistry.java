@@ -73,7 +73,7 @@ public class ResolverRegistry {
         return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r)));
     }
 
-    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
+    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
         return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted));
     }

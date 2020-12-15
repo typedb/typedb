@@ -94,7 +94,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     @Override
-    protected ResponseProducer createResponseProducer(Request request) {
+    protected ResponseProducer responseProducerCreate(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
