@@ -45,7 +45,7 @@ build:
     build:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel build --config=rbe //...
+        bazel build //...
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
     build-dependency:
@@ -57,22 +57,22 @@ build:
     test-unit:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test --config=rbe //common/... --test_output=errors
-        bazel test --config=rbe //pattern/... --test_output=errors
-        bazel test --config=rbe //reasoner/... --test_output=errors
+        bazel test //common/... --test_output=errors
+        bazel test //pattern/... --test_output=errors
+        bazel test //reasoner/... --test_output=errors
     test-integration:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test --config=rbe //test/integration:test-basic --test_output=errors
-        bazel test --config=rbe //test/integration:test-query --test_output=errors
-      # bazel test --config=rbe //test/integration/traversal/... --test_output=errors
-      # bazel test --config=rbe //test/integration/logic/... --test_output=errors
+        bazel test //test/integration:test-basic --test_output=errors
+        bazel test //test/integration:test-query --test_output=errors
+      # bazel test //test/integration/traversal/... --test_output=errors
+      # bazel test //test/integration/logic/... --test_output=errors
     test-behaviour:
       machine: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test --config=rbe //test/behaviour/connection/... --test_output=errors
-        bazel test --config=rbe //test/behaviour/concept/... --test_output=errors
-      # bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=errors
+        bazel test //test/behaviour/connection/... --test_output=errors
+        bazel test //test/behaviour/concept/... --test_output=errors
+      # bazel test //test/behaviour/graql/language/define/... --test_output=errors
     test-assembly-linux-targz:
       machine: graknlabs-ubuntu-20.04-java11
       filter:

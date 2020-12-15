@@ -34,6 +34,7 @@ import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.planner.PlannerEdge;
+import graql.lang.common.GraqlToken;
 
 import java.util.Objects;
 import java.util.Set;
@@ -51,6 +52,7 @@ import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
+import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
@@ -63,7 +65,6 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
-import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 
 public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>,
@@ -71,11 +72,13 @@ public abstract class ProcedureEdge<
 
     private final int order;
     private final Encoding.Direction.Edge direction;
+    private final String symbol;
 
-    private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction) {
+    private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction, String symbol) {
         super(from, to);
         this.order = order;
         this.direction = direction;
+        this.symbol = symbol;
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -87,8 +90,7 @@ public abstract class ProcedureEdge<
         } else if (plannerEdge.isPredicate()) {
             return new Predicate(from.asThing(), to.asThing(), order, dir, plannerEdge.asPredicate().predicate());
         } else if (plannerEdge.isNative()) {
-            PlannerEdge.Native.Directional<?, ?> edge = plannerEdge.asNative();
-            return Native.of(from, to, edge);
+            return Native.of(from, to, plannerEdge.asNative());
         } else {
             throw GraknException.of(UNRECOGNISED_VALUE);
         }
@@ -120,14 +122,18 @@ public abstract class ProcedureEdge<
 
     @Override
     public String toString() {
-        return String.format("%s: (%s %s %s)", order, from.id(), direction.isForward() ? "-->" : "<--", to.id());
+        if (direction.isForward()) {
+            return String.format("%s: (%s *--[%s]--> %s)", order, from.id(), symbol, to.id());
+        } else {
+            return String.format("%s: (%s <--[%s]--* %s)", order, from.id(), symbol, to.id());
+        }
     }
 
-    static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
+    public static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
         private Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
                       int order, Encoding.Direction.Edge direction) {
-            super(from, to, order, direction);
+            super(from, to, order, direction, GraqlToken.Predicate.Equality.EQ.toString());
         }
 
         @Override
@@ -150,8 +156,13 @@ public abstract class ProcedureEdge<
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                           Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            super(from, to, order, direction);
-            this.predicate = direction.isForward() ? predicate : predicate.reflection();
+            super(from, to, order, direction, getPredicate(direction, predicate).toString());
+            this.predicate = getPredicate(direction, predicate);
+        }
+
+        private static grakn.core.traversal.common.Predicate.Variable getPredicate(
+                Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
+            return direction.isForward() ? predicate : predicate.reflection();
         }
 
         @Override
@@ -194,8 +205,9 @@ public abstract class ProcedureEdge<
             VERTEX_NATIVE_TO extends ProcedureVertex<?, ?>
             > extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
-        private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to, int order, Encoding.Direction.Edge direction) {
-            super(from, to, order, direction);
+        private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to,
+                       int order, Encoding.Direction.Edge direction, String symbol) {
+            super(from, to, order, direction, symbol);
         }
 
         static Native<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -217,13 +229,14 @@ public abstract class ProcedureEdge<
 
         static abstract class Isa<
                 VERTEX_ISA_FROM extends ProcedureVertex<?, ?>,
-                VERTEX_ISA_TO extends ProcedureVertex<?, ?>> extends Native<VERTEX_ISA_FROM, VERTEX_ISA_TO> {
+                VERTEX_ISA_TO extends ProcedureVertex<?, ?>
+                > extends Native<VERTEX_ISA_FROM, VERTEX_ISA_TO> {
 
             final boolean isTransitive;
 
             private Isa(VERTEX_ISA_FROM from, VERTEX_ISA_TO to, int order,
                         Encoding.Direction.Edge direction, boolean isTransitive) {
-                super(from, to, order, direction);
+                super(from, to, order, direction, ISA.name());
                 this.isTransitive = isTransitive;
             }
 
@@ -240,9 +253,14 @@ public abstract class ProcedureEdge<
                 return iterator;
             }
 
+            @Override
+            public String toString() {
+                return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
+            }
+
             static class Forward extends Isa<ProcedureVertex.Thing, ProcedureVertex.Type> {
 
-                private Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, int order, boolean isTransitive) {
+                Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, int order, boolean isTransitive) {
                     super(thing, type, order, FORWARD, isTransitive);
                 }
 
@@ -267,7 +285,7 @@ public abstract class ProcedureEdge<
 
             static class Backward extends Isa<ProcedureVertex.Type, ProcedureVertex.Thing> {
 
-                private Backward(ProcedureVertex.Type type, ProcedureVertex.Thing thing, int order, boolean isTransitive) {
+                Backward(ProcedureVertex.Type type, ProcedureVertex.Thing thing, int order, boolean isTransitive) {
                     super(type, thing, order, BACKWARD, isTransitive);
                 }
 
@@ -299,12 +317,9 @@ public abstract class ProcedureEdge<
 
         static abstract class Type extends Native<ProcedureVertex.Type, ProcedureVertex.Type> {
 
-            final boolean isTransitive;
-
             private Type(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
-                         Encoding.Direction.Edge direction, boolean isTransitive) {
-                super(from, to, order, direction);
-                this.isTransitive = isTransitive;
+                         Encoding.Direction.Edge direction, String symbol) {
+                super(from, to, order, direction, symbol);
             }
 
             static Native.Type of(ProcedureVertex.Type from, ProcedureVertex.Type to,
@@ -332,9 +347,12 @@ public abstract class ProcedureEdge<
 
             static abstract class Sub extends Type {
 
+                final boolean isTransitive;
+
                 private Sub(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
                             Encoding.Direction.Edge direction, boolean isTransitive) {
-                    super(from, to, order, direction, isTransitive);
+                    super(from, to, order, direction, SUB.name());
+                    this.isTransitive = isTransitive;
                 }
 
                 ResourceIterator<TypeVertex> superTypes(TypeVertex type) {
@@ -348,6 +366,11 @@ public abstract class ProcedureEdge<
                     }
 
                     return iterator;
+                }
+
+                @Override
+                public String toString() {
+                    return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
                 }
 
                 static class Forward extends Sub {
@@ -402,8 +425,13 @@ public abstract class ProcedureEdge<
 
                 private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
                              Encoding.Direction.Edge direction, boolean isKey) {
-                    super(from, to, order, direction, false);
+                    super(from, to, order, direction, OWNS.name());
                     this.isKey = isKey;
+                }
+
+                @Override
+                public String toString() {
+                    return super.toString() + String.format(" { isKey: %s }", isKey);
                 }
 
                 static class Forward extends Owns {
@@ -463,7 +491,7 @@ public abstract class ProcedureEdge<
 
                 private Plays(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
                               Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, false);
+                    super(from, to, order, direction, PLAYS.name());
                 }
 
                 static class Forward extends Plays {
@@ -510,7 +538,7 @@ public abstract class ProcedureEdge<
             static abstract class Relates extends Type {
 
                 private Relates(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, false);
+                    super(from, to, order, direction, RELATES.name());
                 }
 
                 static class Forward extends Relates {
@@ -558,8 +586,8 @@ public abstract class ProcedureEdge<
         static abstract class Thing extends Native<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
             private Thing(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                          Encoding.Direction.Edge direction) {
-                super(from, to, order, direction);
+                          Encoding.Direction.Edge direction, String symbol) {
+                super(from, to, order, direction, symbol);
             }
 
             static Native.Thing of(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
@@ -612,12 +640,12 @@ public abstract class ProcedureEdge<
 
                 private Has(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                             Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction);
+                    super(from, to, order, direction, HAS.name());
                 }
 
                 static class Forward extends Has {
 
-                    private Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, FORWARD);
                     }
 
@@ -638,7 +666,7 @@ public abstract class ProcedureEdge<
                             else return empty();
                         } else if (!to.props().types().isEmpty()) {
                             if ((eq = iterate(to.props().predicates())
-                                    .filter(p -> p.operator().equals(EQ)).firstOrNull()) != null) {
+                                    .filter(p -> p.operator().equals(grakn.core.traversal.common.Predicate.Operator.Equality.EQ)).firstOrNull()) != null) {
                                 iter = to.iteratorOfAttributes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
@@ -663,7 +691,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Has {
 
-                    private Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, BACKWARD);
                     }
 
@@ -700,7 +728,7 @@ public abstract class ProcedureEdge<
 
                 private Playing(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                                 Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction);
+                    super(from, to, order, direction, PLAYING.name());
                 }
 
                 static class Forward extends Playing {
@@ -764,7 +792,7 @@ public abstract class ProcedureEdge<
 
                 private Relating(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                                  Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction);
+                    super(from, to, order, direction, RELATING.name());
                 }
 
                 static class Forward extends Relating {
@@ -828,7 +856,7 @@ public abstract class ProcedureEdge<
 
                 private RolePlayer(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                                    Encoding.Direction.Edge direction, Set<Label> roleTypes) {
-                    super(from, to, order, direction);
+                    super(from, to, order, direction, ROLEPLAYER.name());
                     this.roleTypes = roleTypes;
                 }
 
@@ -863,10 +891,14 @@ public abstract class ProcedureEdge<
                     else return to.id().asVariable();
                 }
 
+                @Override
+                public String toString() {
+                    return super.toString() + String.format(" { roleTypes: %s }", roleTypes);
+                }
+
                 static class Forward extends RolePlayer {
 
-                    private Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                                    Set<Label> roleTypes) {
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order, Set<Label> roleTypes) {
                         super(from, to, order, FORWARD, roleTypes);
                     }
 
@@ -924,8 +956,8 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends RolePlayer {
 
-                    private Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                                     Set<Label> roleTypes) {
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                             Set<Label> roleTypes) {
                         super(from, to, order, BACKWARD, roleTypes);
                     }
 
