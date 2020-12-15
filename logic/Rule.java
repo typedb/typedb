@@ -18,11 +18,9 @@
 
 package grakn.core.logic;
 
-import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.thing.Thing;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.concludable.ConjunctionConcludable;
@@ -40,15 +38,12 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
-import graql.lang.pattern.constraint.ThingConstraint;
 
-import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
