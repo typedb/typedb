@@ -31,6 +31,8 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
+import grakn.core.pattern.constraint.thing.RelationConstraint;
+import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -41,7 +43,9 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.constraint.ThingConstraint;
 
 import javax.swing.*;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -204,8 +208,6 @@ public class Rule {
         return Conjunction.create(conjunction.normalise().patterns().get(0));
     }
 
-
-
     private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable) {
         //TODO: make all variables named.
         Conjunction conjunction = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
@@ -218,61 +220,104 @@ public class Rule {
         return conjunction;
     }
 
-    private graql.lang.pattern.variable.ThingVariable<?> nameVar(graql.lang.pattern.variable.ThingVariable<?> variable) {
-        for (ThingConstraint constraint : variable.constraints()) {
-            if (constraint.isHas()) return nameHasVar(variable, constraint.asHas());
-            else if (constraint.isRelation()) return nameRelationVar(variable, constraint.asRelation());
-        }
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private graql.lang.pattern.variable.ThingVariable<?> nameRelationVar(
-            graql.lang.pattern.variable.ThingVariable<?> variable, ThingConstraint.Relation constraint) {
-        return variable;
-    }
-
-//    private graql.lang.pattern.variable.ThingVariable<?> nameHasVar(
+    //    private graql.lang.pattern.variable.ThingVariable<?> nameHasVar(
 //            graql.lang.pattern.variable.ThingVariable<?> variable, ThingConstraint.Has constraint) {
 //        graql.lang.pattern.variable.ThingVariable<?> attrVar = constraint.attribute();
 //        if (attrVar.reference().isName()) return variable;
 //        graql.lang.pattern.variable.ThingVariable<?> newOwner = new graql.lang.pattern.variable.ThingVariable<>(new SystemReference("temp"));
 //        return variable;
 //    }
-
+//        return variable;
+//        }
+//            }
 //    private Variable nameVar(Variable variable) {
 //        ThingVariable thingVariable;
 //        grakn.core.pattern.variable.ThingVariable newOwner = grakn.core.pattern.variable.ThingVariable.of(variable.identifier());
 //        for (ThingConstraint constraint : variable.constraints()) {
 //            if (constraint.asThing().isValue()) {
-//            }
-//        }
-//        return variable;
+
+    private graql.lang.pattern.variable.ThingVariable<?> nameVar(graql.lang.pattern.variable.ThingVariable<?> variable) {
+        for (ThingConstraint constraint : variable.constraints()) {
+            if (constraint.isHas()) return nameHasVar(variable);
+            else if (constraint.isRelation()) return nameRelationVar(variable, constraint.asRelation());
+        }
+        throw GraknException.of(ILLEGAL_STATE);
+    }
+
+
+
 //    }
+    private Set<Variable> nameThenVars(Set<Variable> variables) {
+        for (Variable variable : variables) {
+            if (variable.isThing() && !variable.asThing().has().isEmpty()) return nameHasVar(variable.asThing());
+            if (variable.isThing() && !variable.asThing().relation().isEmpty()) return nameRelationVar(variable.asThing());
+        }
+    }
+
+    private Set<Variable> nameRelationVar(ThingVariable relVariable) {
+        RelationConstraint relationConstraint = relVariable.relation().iterator().next();
+        ThingVariable namedOwner = nameRelOwner(relVariable);
+        Set<Variable> register = new HashSet<>();
+        register.add(namedOwner);
+        assert relVariable.isa().isPresent();
+        IsaConstraint isaConstraint = relVariable.isa().get();
+        TypeVariable namedType = nameType(isaConstraint.type());
+        namedOwner.isa(namedType, false);
+        register.add(namedType);
+
+        List<RolePlayer> namedRolePlayers = new ArrayList<>();
+        for (RolePlayer rolePlayer : relationConstraint.players()) {
+            RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer);
+            register.add(namedRolePlayer.player());
+            register.add(namedRolePlayer.roleType().get());
+            namedRolePlayers.add(namedRolePlayer);
+        }
+
+        namedOwner.relation(namedRolePlayers);
+        register.add(namedOwner);
+        return register;
+    }
+
+    private RolePlayer nameRolePLayer(RolePlayer rolePlayer) {
+        assert rolePlayer.roleType().isPresent();
+        if (rolePlayer.roleType().get().reference().isName()) return rolePlayer;
+        TypeVariable namedRoleType = nameType(rolePlayer.roleType().get());
+        return new RolePlayer(namedRoleType, rolePlayer.player());
+    }
+
+    private ThingVariable nameRelOwner(ThingVariable relVariable) {
+        if (relVariable.reference().isName()) return ThingVariable.of(relVariable.identifier());
+        return ThingVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+    }
 
     private Set<Variable> nameHasVar(ThingVariable hasVariable) {
         HasConstraint hasConstraint = hasVariable.has().iterator().next();
         ThingVariable attribute = hasConstraint.attribute();
+        Set<Variable> register = new HashSet<>();
         if (attribute.reference().isName()) return set(hasVariable);
-        Set<Variable> res = new HashSet<>(nameAttribute(attribute));
-        ThingVariable newOwner = ThingVariable.of(Identifier.Variable.of(hasVariable.identifier()));
-        res.add(newOwner);
-        return res;
+        ThingVariable namedAttribute = nameAttribute(attribute, register);
+        ThingVariable newOwner = ThingVariable.of(hasVariable.identifier());
+        newOwner.has(namedAttribute);
+        register.add(newOwner);
+        return register;
     }
 
-    private Set<Variable> nameAttribute(ThingVariable attribute) {
+    private ThingVariable nameAttribute(ThingVariable attribute, Set<Variable> register) {
         assert attribute.isa().isPresent();
-//        Set<Variable> res = new HashSet<>();
         IsaConstraint isaConstraint = attribute.isa().get();
-        TypeVariable newType = nameType(isaConstraint.type());
-//        res.add(newType);
+        TypeVariable namedType = nameType(isaConstraint.type());
+        register.add(namedType);
         ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp")));
-        newAttr.isa(newType, false);
-        return set(newAttr, newType);
+        newAttr.isa(namedType, false);
+        return newAttr;
     }
 
     private TypeVariable nameType(TypeVariable typeVariable) {
         if (typeVariable.reference().isName()) return typeVariable;
-        return TypeVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+        TypeVariable namedType = TypeVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+        assert typeVariable.label().isPresent();
+        namedType.label(typeVariable.label().get().properLabel());
+        return namedType;
     }
 
 //    private ThingVariable nameRelVar(ThingVariable relVariable) {
