@@ -71,13 +71,16 @@ public class ProgressPrinter {
 
         if (status.equals(STATUS_IN_PROGRESS)) {
             String percent;
+            String count;
             if (total > 0) {
-                percent = String.format("%.1f", (double)current / (double)total * 100.0);
+                percent = String.format("%.1f%%", (double)current / (double)total * 100.0);
+                count = String.format("%,d / %,d", current, total);
             } else {
                 percent = "?";
+                count = String.format("%,d", current);
             }
-            builder.append(String.format(",\n    has progress (%s%%),\n    has count (%,d / %,d)",
-                    percent, current, total));
+            builder.append(String.format(",\n    has progress (%s),\n    has count (%s)",
+                    percent, count));
         }
 
         builder.append(";");
