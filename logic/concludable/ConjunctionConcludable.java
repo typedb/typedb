@@ -158,47 +158,47 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
                 else return Stream.empty();
             }
 
-            Map<Reference, Set<Reference>> finalVariableUnifier = variableUnifier;
+            Map<Reference, Set<Reference>> baseVariableUnifier = variableUnifier;
             List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint.players());
             List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
-            return unifyRP(conjRolePlayers, thenRolePlayers, new HashMap<>(), 0)
-                    .map(unifier -> convertRolePlayerUnifier(unifier, thenRolePlayers, finalVariableUnifier));
+
+            return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
+                    .map(indexMap -> mapRolePlayerMatchingToUnifier(indexMap, thenRolePlayers, baseVariableUnifier));
         }
 
-        private Stream<Map<RolePlayer, Set<Integer>>> unifyRP(
+        private Stream<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
                 List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
-                Map<RolePlayer, Set<Integer>> unifier, Integer startCon) {
+                Map<RolePlayer, Set<Integer>> unifier) {
 
-            if (startCon == conjRolePlayers.size()) return Stream.of(unifier);
-            RolePlayer conjRP = conjRolePlayers.get(startCon);
+            if (conjRolePlayers.isEmpty()) return Stream.of(unifier);
+            RolePlayer conjRP = conjRolePlayers.get(0);
 
             return IntStream.range(0, thenRolePlayers.size())
-                    .filter(thenIdx -> unifier.values().stream().noneMatch(players ->
-                            players.contains(thenIdx)))
+                    .filter(thenIdx -> unifier.values().stream().noneMatch(players -> players.contains(thenIdx)))
                     .mapToObj(thenIdx ->
                             tryExtendRolePlayerUnifier(conjRP, thenRolePlayers.get(thenIdx), thenIdx, unifier))
                     .filter(Optional::isPresent).map(Optional::get)
-                    .flatMap(newUnifier ->
-                            unifyRP(conjRolePlayers, thenRolePlayers, newUnifier, startCon + 1));
+                    .flatMap(newUnifier -> matchRolePlayerIndices(conjRolePlayers.subList(1, conjRolePlayers.size()),
+                            thenRolePlayers, newUnifier));
         }
 
-        private Map<Reference, Set<Reference>> convertRolePlayerUnifier(
-                Map<RolePlayer, Set<Integer>> rolePlayerUnifier, List<RolePlayer> thenRolePlayers,
+        private Map<Reference, Set<Reference>> mapRolePlayerMatchingToUnifier(
+                Map<RolePlayer, Set<Integer>> mathcedRolePlayerIndices, List<RolePlayer> thenRolePlayers,
                 Map<Reference, Set<Reference>> variableUnifier) {
-            Map<Reference, Set<Reference>> newMapping = cloneMapping(variableUnifier);
-            rolePlayerUnifier.forEach((conjRP, thenRPSet) -> thenRPSet.stream().map(thenRolePlayers::get)
+            Map<Reference, Set<Reference>> newUnifier = cloneMapping(variableUnifier);
+            mathcedRolePlayerIndices.forEach((conjRP, thenRPIndices) -> thenRPIndices.stream().map(thenRolePlayers::get)
                     .forEach(thenRP -> {
                                 if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
                                     assert thenRP.roleType().isPresent();
-                                    newMapping.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
-                                    newMapping.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
+                                    newUnifier.putIfAbsent(conjRP.roleType().get().reference(), new HashSet<>());
+                                    newUnifier.get(conjRP.roleType().get().reference()).add(thenRP.roleType().get().reference());
                                 }
-                                newMapping.putIfAbsent(conjRP.player().reference(), new HashSet<>());
-                                newMapping.get(conjRP.player().reference()).add(thenRP.player().reference());
+                                newUnifier.putIfAbsent(conjRP.player().reference(), new HashSet<>());
+                                newUnifier.get(conjRP.player().reference()).add(thenRP.player().reference());
                             }
                     ));
 
-            return newMapping;
+            return newUnifier;
         }
 
         private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
