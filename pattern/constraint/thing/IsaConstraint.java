@@ -60,7 +60,6 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
 
     @Override
     public void addTo(Traversal traversal) {
-        // TODO: assert !(type.reference().isLabel() && typeHints.isEmpty());
         if (type.reference().isName()) traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
     }
 
