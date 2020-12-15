@@ -42,9 +42,9 @@ public class ProgressPrinter {
     private int anim = 0;
     private int lines = 0;
 
-    public ProgressPrinter(String type) {
+    public ProgressPrinter(final String type) {
         this.type = type;
-        TimerTask task = new TimerTask() {
+        final TimerTask task = new TimerTask() {
             @Override
             public void run() {
                 step();
@@ -53,7 +53,7 @@ public class ProgressPrinter {
         timer.scheduleAtFixedRate(task, 0, 100);
     }
 
-    public void onProgress(long current, long total) {
+    public void onProgress(final long current, final long total) {
         status = STATUS_IN_PROGRESS;
         this.current = current;
         this.total = total;
@@ -66,12 +66,12 @@ public class ProgressPrinter {
     }
 
     private synchronized void step() {
-        StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
         builder.append(String.format("$x isa %s,\n    has status \"%s\"", type, status));
 
         if (status.equals(STATUS_IN_PROGRESS)) {
-            String percent;
-            String count;
+            final String percent;
+            final String count;
             if (total > 0) {
                 percent = String.format("%.1f%%", (double)current / (double)total * 100.0);
                 count = String.format("%,d / %,d", current, total);
@@ -89,7 +89,7 @@ public class ProgressPrinter {
             builder.append(" ").append(ANIM[anim]);
         }
 
-        String output = builder.toString();
+        final String output = builder.toString();
         System.out.println((lines > 0 ? "\033[" + lines + "F\033[J" : "") + output);
 
         lines = output.split("\n").length;

@@ -77,7 +77,7 @@ public class Importer implements Migrator {
     private int txWriteCount = 0;
     private Grakn.Transaction tx;
 
-    public Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels) {
+    public Importer(final Grakn grakn, final String database, final Path filename, final Map<String, String> remapLabels) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
         this.remapLabels = remapLabels;
@@ -85,7 +85,7 @@ public class Importer implements Migrator {
 
     @Override
     public MigratorProto.Job.Progress getProgress() {
-        long current = attributeCount + relationCount + entityCount;
+        final long current = attributeCount + relationCount + entityCount;
         return MigratorProto.Job.Progress.newBuilder()
                 .setCurrent(current)
                 .setTotal(Math.max(current, totalThingCount))
@@ -97,7 +97,7 @@ public class Importer implements Migrator {
         // We scan the file to find the checksum. This is probably not a good idea for files larger than several
         // gigabytes but that case is rare and the actual import would take so long that even if this took a few
         // seconds it would still be cheap.
-        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filename))) {
+        try (final InputStream inputStream = new BufferedInputStream(Files.newInputStream(filename))) {
             DataProto.Item item;
             while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
                 if (item.getItemCase() == DataProto.Item.ItemCase.ENTITY ||
@@ -106,17 +106,17 @@ public class Importer implements Migrator {
                     totalThingCount++;
                 }
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw GraknException.of(FILE_NOT_READABLE, filename.toString());
         }
 
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
-        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filename))) {
+        try (final InputStream inputStream = new BufferedInputStream(Files.newInputStream(filename))) {
             DataProto.Item item;
             while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
                 switch (item.getItemCase()) {
                     case HEADER:
-                        DataProto.Item.Header header = item.getHeader();
+                        final DataProto.Item.Header header = item.getHeader();
                         LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
                                 header.getOriginalDatabase(),
                                 header.getGraknVersion(),
@@ -134,7 +134,7 @@ public class Importer implements Migrator {
                         break;
                 }
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw GraknException.of(FILE_NOT_READABLE, filename.toString());
         }
 
@@ -151,10 +151,10 @@ public class Importer implements Migrator {
                 ownershipCount);
     }
 
-    private void insertEntity(DataProto.Item.Entity entityMsg) {
-        EntityType entityType = tx.concepts().getEntityType(relabel(entityMsg.getLabel()));
+    private void insertEntity(final DataProto.Item.Entity entityMsg) {
+        final EntityType entityType = tx.concepts().getEntityType(relabel(entityMsg.getLabel()));
         if (entityType != null) {
-            Entity entity = entityType.create();
+            final Entity entity = entityType.create();
             idMap.put(entityMsg.getId(), entity.getIID());
             insertOwnedAttributesThatExist(entity, entityMsg.getAttributeList());
             entityCount++;
@@ -164,21 +164,21 @@ public class Importer implements Migrator {
         }
     }
 
-    private void insertRelation(DataProto.Item.Relation relationMsg) {
-        RelationType relationType = tx.concepts().getRelationType(relabel(relationMsg.getLabel()));
+    private void insertRelation(final DataProto.Item.Relation relationMsg) {
+        final RelationType relationType = tx.concepts().getRelationType(relabel(relationMsg.getLabel()));
         if (relationType != null) {
-            Map<String, RoleType> roles = getScopedRoleTypes(relationType);
-            Relation relation = relationType.create();
+            final Map<String, RoleType> roles = getScopedRoleTypes(relationType);
+            final Relation relation = relationType.create();
             idMap.put(relationMsg.getId(), relation.getIID());
             insertOwnedAttributesThatExist(relation, relationMsg.getAttributeList());
 
-            List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
-            for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
-                RoleType role = roles.get(relabel(roleMsg.getLabel()));
+            final List<Pair<String, List<String>>> missingRolePlayers = new ArrayList<>();
+            for (final DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
+                final RoleType role = roles.get(relabel(roleMsg.getLabel()));
                 if (role != null) {
-                    List<String> missingPlayers = new ArrayList<>();
-                    for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                        Thing player = getThing(playerMessage.getId());
+                    final List<String> missingPlayers = new ArrayList<>();
+                    for (final DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
+                        final Thing player = getThing(playerMessage.getId());
                         if (player != null) {
                             relation.addPlayer(role, player);
                             playerCount++;
@@ -200,11 +200,11 @@ public class Importer implements Migrator {
         }
     }
 
-    private void insertAttribute(DataProto.Item.Attribute attributeMsg) {
-        AttributeType attributeType = tx.concepts().getAttributeType(relabel(attributeMsg.getLabel()));
+    private void insertAttribute(final DataProto.Item.Attribute attributeMsg) {
+        final AttributeType attributeType = tx.concepts().getAttributeType(relabel(attributeMsg.getLabel()));
         if (attributeType != null) {
-            DataProto.ValueObject valueMsg = attributeMsg.getValue();
-            Attribute attribute;
+            final DataProto.ValueObject valueMsg = attributeMsg.getValue();
+            final Attribute attribute;
             switch (valueMsg.getValueCase()) {
                 case STRING:
                     attribute = attributeType.asString().put(valueMsg.getString());
@@ -234,10 +234,10 @@ public class Importer implements Migrator {
         }
     }
 
-    private void insertOwnedAttributesThatExist(Thing thing, List<DataProto.Item.OwnedAttribute> ownedMsgs) {
-        List<String> missingOwnerships = new ArrayList<>();
-        for (DataProto.Item.OwnedAttribute ownedMsg : ownedMsgs) {
-            Thing attrThing = getThing(ownedMsg.getId());
+    private void insertOwnedAttributesThatExist(final Thing thing, final List<DataProto.Item.OwnedAttribute> ownedMsgs) {
+        final List<String> missingOwnerships = new ArrayList<>();
+        for (final DataProto.Item.OwnedAttribute ownedMsg : ownedMsgs) {
+            final Thing attrThing = getThing(ownedMsg.getId());
             if (attrThing != null) {
                 thing.setHas(attrThing.asAttribute());
                 ownershipCount++;
@@ -250,10 +250,10 @@ public class Importer implements Migrator {
     }
 
     private void insertMissingOwnerships() {
-        for (Pair<byte[], List<String>> ownership : missingOwnerships) {
-            Thing thing = tx.concepts().getThing(ownership.first());
-            for (String originalAttributeId : ownership.second()) {
-                Thing attrThing = getThing(originalAttributeId);
+        for (final Pair<byte[], List<String>> ownership : missingOwnerships) {
+            final Thing thing = tx.concepts().getThing(ownership.first());
+            for (final String originalAttributeId : ownership.second()) {
+                final Thing attrThing = getThing(originalAttributeId);
                 assert thing != null && attrThing != null;
                 thing.setHas(attrThing.asAttribute());
                 ownershipCount++;
@@ -264,16 +264,16 @@ public class Importer implements Migrator {
     }
 
     private void insertMissingRolePlayers() {
-        for (Pair<byte[], List<Pair<String, List<String>>>> rolePlayers : missingRolePlayers) {
-            Thing thing = tx.concepts().getThing(rolePlayers.first());
+        for (final Pair<byte[], List<Pair<String, List<String>>>> rolePlayers : missingRolePlayers) {
+            final Thing thing = tx.concepts().getThing(rolePlayers.first());
             assert thing != null;
-            Relation relation = thing.asRelation();
-            for (Pair<String, List<String>> pair : rolePlayers.second()) {
-                Map<String, RoleType> roles = getScopedRoleTypes(relation.getType());
-                RoleType role = roles.get(pair.first());
+            final Relation relation = thing.asRelation();
+            for (final Pair<String, List<String>> pair : rolePlayers.second()) {
+                final Map<String, RoleType> roles = getScopedRoleTypes(relation.getType());
+                final RoleType role = roles.get(pair.first());
                 assert role != null;
-                for (String originalPlayerId : pair.second()) {
-                    Thing player = getThing(originalPlayerId);
+                for (final String originalPlayerId : pair.second()) {
+                    final Thing player = getThing(originalPlayerId);
                     relation.addPlayer(role, player);
                     playerCount++;
                 }
@@ -283,17 +283,17 @@ public class Importer implements Migrator {
         missingRolePlayers.clear();
     }
 
-    private Thing getThing(String originalId) {
-        byte[] newId = idMap.get(originalId);
+    private Thing getThing(final String originalId) {
+        final byte[] newId = idMap.get(originalId);
         return newId != null ? tx.concepts().getThing(newId) : null;
     }
 
-    private Map<String, RoleType> getScopedRoleTypes(RelationType relationType) {
+    private Map<String, RoleType> getScopedRoleTypes(final RelationType relationType) {
         return relationType.getRelates().collect(
                 Collectors.toMap(x -> x.getLabel().scopedName(), x -> x));
     }
 
-    private String relabel(String label) {
+    private String relabel(final String label) {
         return remapLabels.getOrDefault(label, label);
     }
 
@@ -306,7 +306,7 @@ public class Importer implements Migrator {
 
     private void commit() {
         LOG.debug("Commit start, inserted {} things", txWriteCount);
-        Instant start = Instant.now();
+        final Instant start = Instant.now();
         tx.commit();
         LOG.debug("Commit end, took {}s", Duration.between(start, Instant.now()).toMillis());
         tx = session.transaction(Arguments.Transaction.Type.WRITE);

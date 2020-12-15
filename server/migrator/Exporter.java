@@ -59,14 +59,14 @@ public class Exporter implements Migrator {
     private final AtomicLong playerCount = new AtomicLong(0);
     private long totalThingCount = 0;
 
-    public Exporter(Grakn grakn, String database, Path filename) {
+    public Exporter(final Grakn grakn, final String database, final Path filename) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
     }
 
     @Override
     public MigratorProto.Job.Progress getProgress() {
-        long current = attributeCount.get() + relationCount.get() + entityCount.get();
+        final long current = attributeCount.get() + relationCount.get() + entityCount.get();
         return MigratorProto.Job.Progress.newBuilder()
                 .setCurrent(current)
                 .setTotal(totalThingCount)
@@ -76,32 +76,32 @@ public class Exporter implements Migrator {
     @Override
     public void run() {
         LOG.info("Exporting {} from Grakn {}", session.database().name(), Version.VERSION);
-        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
-            try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+        try (final OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
+            try (final Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 totalThingCount = tx.concepts().getRootThingType().getInstancesCount();
-                DataProto.Item header = DataProto.Item.newBuilder()
+                final DataProto.Item header = DataProto.Item.newBuilder()
                         .setHeader(DataProto.Item.Header.newBuilder()
                                 .setGraknVersion(Version.VERSION)
                                 .setOriginalDatabase(session.database().name()))
                         .build();
                 write(outputStream, header);
 
-                List<Runnable> workers = new ArrayList<>();
+                final List<Runnable> workers = new ArrayList<>();
                 workers.add(() -> tx.concepts().getRootEntityType().getInstances().forEach(entity -> {
-                    DataProto.Item item = readEntity(entity);
+                    final DataProto.Item item = readEntity(entity);
                     write(outputStream, item);
                 }));
                 workers.add(() -> tx.concepts().getRootRelationType().getInstances().forEach(relation -> {
-                    DataProto.Item item = readRelation(relation);
+                    final DataProto.Item item = readRelation(relation);
                     write(outputStream, item);
                 }));
                 workers.add(() -> tx.concepts().getRootAttributeType().getInstances().forEach(attribute -> {
-                    DataProto.Item item = readAttribute(attribute);
+                    final DataProto.Item item = readAttribute(attribute);
                     write(outputStream, item);
                 }));
                 workers.parallelStream().forEach(Runnable::run);
 
-                DataProto.Item checksums = DataProto.Item.newBuilder().setChecksums(DataProto.Item.Checksums.newBuilder()
+                final DataProto.Item checksums = DataProto.Item.newBuilder().setChecksums(DataProto.Item.Checksums.newBuilder()
                         .setEntityCount(entityCount.get())
                         .setAttributeCount(attributeCount.get())
                         .setRelationCount(relationCount.get())
@@ -110,7 +110,7 @@ public class Exporter implements Migrator {
                         .build();
                 write(outputStream, checksums);
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw GraknException.of(FILE_NOT_WRITABLE, filename.toString());
         }
         LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
@@ -121,9 +121,9 @@ public class Exporter implements Migrator {
                 ownershipCount.get());
     }
 
-    private DataProto.Item readEntity(Entity entity) {
+    private DataProto.Item readEntity(final Entity entity) {
         entityCount.incrementAndGet();
-        DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
+        final DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
                 .setId(new String(entity.getIID()))
                 .setLabel(entity.getType().getLabel().name());
         readOwnerships(entity).forEach(a -> {
@@ -133,17 +133,17 @@ public class Exporter implements Migrator {
         return DataProto.Item.newBuilder().setEntity(entityBuilder).build();
     }
 
-    private DataProto.Item readRelation(Relation relation) {
+    private DataProto.Item readRelation(final Relation relation) {
         relationCount.incrementAndGet();
-        DataProto.Item.Relation.Builder relationBuilder = DataProto.Item.Relation.newBuilder()
+        final DataProto.Item.Relation.Builder relationBuilder = DataProto.Item.Relation.newBuilder()
                 .setId(new String(relation.getIID()))
                 .setLabel(relation.getType().getLabel().name());
-        Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
-        for (Map.Entry<? extends RoleType, ? extends  List<? extends Thing>> rolePlayers : playersByRole.entrySet()) {
-            RoleType role = rolePlayers.getKey();
-            DataProto.Item.Relation.Role.Builder roleBuilder = DataProto.Item.Relation.Role.newBuilder()
+        final Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
+        for (final Map.Entry<? extends RoleType, ? extends  List<? extends Thing>> rolePlayers : playersByRole.entrySet()) {
+            final RoleType role = rolePlayers.getKey();
+            final DataProto.Item.Relation.Role.Builder roleBuilder = DataProto.Item.Relation.Role.newBuilder()
                     .setLabel(role.getLabel().scopedName());
-            for (Thing player : rolePlayers.getValue()) {
+            for (final Thing player : rolePlayers.getValue()) {
                 playerCount.incrementAndGet();
                 roleBuilder.addPlayer(DataProto.Item.Relation.Role.Player.newBuilder()
                         .setId(new String(player.getIID())));
@@ -157,9 +157,9 @@ public class Exporter implements Migrator {
         return DataProto.Item.newBuilder().setRelation(relationBuilder).build();
     }
 
-    private DataProto.Item readAttribute(Attribute attribute) {
+    private DataProto.Item readAttribute(final Attribute attribute) {
         attributeCount.incrementAndGet();
-        DataProto.Item.Attribute.Builder attributeBuilder = DataProto.Item.Attribute.newBuilder()
+        final DataProto.Item.Attribute.Builder attributeBuilder = DataProto.Item.Attribute.newBuilder()
                 .setId(new String(attribute.getIID()))
                 .setLabel(attribute.getType().getLabel().name())
                 .setValue(readValue(attribute));
@@ -170,8 +170,8 @@ public class Exporter implements Migrator {
         return DataProto.Item.newBuilder().setAttribute(attributeBuilder).build();
     }
 
-    private DataProto.ValueObject.Builder readValue(Attribute attribute) {
-        DataProto.ValueObject.Builder valueObject = DataProto.ValueObject.newBuilder();
+    private DataProto.ValueObject.Builder readValue(final Attribute attribute) {
+        final DataProto.ValueObject.Builder valueObject = DataProto.ValueObject.newBuilder();
         if (attribute instanceof Attribute.String) {
             valueObject.setString(attribute.asString().getValue());
         } else if (attribute instanceof Attribute.Boolean) {
@@ -188,15 +188,15 @@ public class Exporter implements Migrator {
         return valueObject;
     }
 
-    private Stream<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
+    private Stream<DataProto.Item.OwnedAttribute.Builder> readOwnerships(final Thing thing) {
         return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
                 .setId(new String(thing.getIID())));
     }
 
-    private synchronized void write(OutputStream outputStream, DataProto.Item item) {
+    private synchronized void write(final OutputStream outputStream, final DataProto.Item item) {
         try {
             item.writeDelimitedTo(outputStream);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw GraknException.of(FILE_NOT_WRITABLE, filename.toString());
         }
     }
