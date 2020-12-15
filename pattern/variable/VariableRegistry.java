@@ -51,12 +51,14 @@ public class VariableRegistry {
     private final Map<Reference, TypeVariable> types;
     private final Map<Reference, ThingVariable> things;
     private final Set<ThingVariable> anonymous;
+    private int counter;
 
     public VariableRegistry(@Nullable VariableRegistry bounds) {
         this.bounds = bounds;
         types = new HashMap<>();
         things = new HashMap<>();
         anonymous = new HashSet<>();
+        this.counter = 0;
     }
 
     public static VariableRegistry createFromTypes(List<graql.lang.pattern.variable.TypeVariable> variables) {
@@ -85,6 +87,12 @@ public class VariableRegistry {
             unboundedVariables.forEach(registry::register);
             return registry;
         }
+    }
+
+    public static VariableRegistry createNamedFromVariables(List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
+        final VariableRegistry registry = new VariableRegistry(null);
+        variables.forEach(registry::registerNamed);
+        return registry;
     }
 
     private Variable register(graql.lang.pattern.variable.BoundVariable graqlVar) {
@@ -119,6 +127,18 @@ public class VariableRegistry {
         return computeTypeIfAbsent(
                 graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferrable()))
         ).constrainType(graqlVar.constraints(), this);
+    }
+
+    public ThingVariable registerNamed(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
+        final ThingVariable graknVar;
+        if (graqlVar.reference().isAnonymous()) {
+//            graknVar = new ThingVariable(Identifier.Variable.of(new SystemReference("temp" + String.valueOf(++counter))));
+            graknVar = computeThingIfAbsent(graqlVar.reference(),
+                    r -> new ThingVariable(Identifier.Variable.of(new SystemReference("temp" + String.valueOf(++counter)))));
+        } else {
+            graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable((Identifier.Variable.of(r.asReferrable()))));
+        }
+        return graknVar.constrainThing(graqlVar.constraints(), this);
     }
 
     public ThingVariable register(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
@@ -167,4 +187,5 @@ public class VariableRegistry {
         if (types.containsKey(reference)) throw GraknException.of(VARIABLE_CONTRADICTION, reference);
         else return things.computeIfAbsent(reference, constructor);
     }
+
 }

@@ -18,25 +18,37 @@
 
 package grakn.core.logic;
 
+import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.thing.Thing;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
+import grakn.core.pattern.constraint.thing.HasConstraint;
+import grakn.core.pattern.constraint.thing.IsaConstraint;
+import grakn.core.pattern.variable.SystemReference;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.ThingVariable;
+import graql.lang.pattern.constraint.ThingConstraint;
 
+import javax.swing.*;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
@@ -63,7 +75,7 @@ public class Rule {
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
-                 graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                 graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
         validateRuleStructureLabels(conceptMgr, this.structure);
@@ -85,7 +97,7 @@ public class Rule {
     }
 
     public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
-                          graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                          graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         return new Rule(graphMgr, conceptMgr, logicManager, label, when, then);
     }
 
@@ -123,7 +135,7 @@ public class Rule {
         structure.delete();
     }
 
-    public ThingVariable<?> getThenPreNormalised() {
+    public graql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised() {
         return structure.then();
     }
 
@@ -178,6 +190,10 @@ public class Rule {
     }
 
     private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
+        //TODO: make all variables named.
+
+
+
         HashSet<ThenConcludable<?, ?>> thenConcludables = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
                 .flatMap(constraint -> ThenConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
@@ -188,9 +204,104 @@ public class Rule {
         return Conjunction.create(conjunction.normalise().patterns().get(0));
     }
 
-    private Conjunction thenPattern(ThingVariable<?> thenVariable) {
+
+
+    private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable) {
         //TODO: make all variables named.
-        return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        Conjunction conjunction = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        return nameAllVars(conjunction);
+//        return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+    }
+
+    private Conjunction nameAllVars(Conjunction conjunction) {
+
+        return conjunction;
+    }
+
+    private graql.lang.pattern.variable.ThingVariable<?> nameVar(graql.lang.pattern.variable.ThingVariable<?> variable) {
+        for (ThingConstraint constraint : variable.constraints()) {
+            if (constraint.isHas()) return nameHasVar(variable, constraint.asHas());
+            else if (constraint.isRelation()) return nameRelationVar(variable, constraint.asRelation());
+        }
+        throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    private graql.lang.pattern.variable.ThingVariable<?> nameRelationVar(
+            graql.lang.pattern.variable.ThingVariable<?> variable, ThingConstraint.Relation constraint) {
+        return variable;
+    }
+
+//    private graql.lang.pattern.variable.ThingVariable<?> nameHasVar(
+//            graql.lang.pattern.variable.ThingVariable<?> variable, ThingConstraint.Has constraint) {
+//        graql.lang.pattern.variable.ThingVariable<?> attrVar = constraint.attribute();
+//        if (attrVar.reference().isName()) return variable;
+//        graql.lang.pattern.variable.ThingVariable<?> newOwner = new graql.lang.pattern.variable.ThingVariable<>(new SystemReference("temp"));
+//        return variable;
+//    }
+
+//    private Variable nameVar(Variable variable) {
+//        ThingVariable thingVariable;
+//        grakn.core.pattern.variable.ThingVariable newOwner = grakn.core.pattern.variable.ThingVariable.of(variable.identifier());
+//        for (ThingConstraint constraint : variable.constraints()) {
+//            if (constraint.asThing().isValue()) {
+//            }
+//        }
+//        return variable;
+//    }
+
+    private Set<Variable> nameHasVar(ThingVariable hasVariable) {
+        HasConstraint hasConstraint = hasVariable.has().iterator().next();
+        ThingVariable attribute = hasConstraint.attribute();
+        if (attribute.reference().isName()) return set(hasVariable);
+        Set<Variable> res = new HashSet<>(nameAttribute(attribute));
+        ThingVariable newOwner = ThingVariable.of(Identifier.Variable.of(hasVariable.identifier()));
+        res.add(newOwner);
+        return res;
+    }
+
+    private Set<Variable> nameAttribute(ThingVariable attribute) {
+        assert attribute.isa().isPresent();
+//        Set<Variable> res = new HashSet<>();
+        IsaConstraint isaConstraint = attribute.isa().get();
+        TypeVariable newType = nameType(isaConstraint.type());
+//        res.add(newType);
+        ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+        newAttr.isa(newType, false);
+        return set(newAttr, newType);
+    }
+
+    private TypeVariable nameType(TypeVariable typeVariable) {
+        if (typeVariable.reference().isName()) return typeVariable;
+        return TypeVariable.of(Identifier.Variable.of(new SystemReference("temp")));
+    }
+
+//    private ThingVariable nameRelVar(ThingVariable relVariable) {
+//        ThingVariable newOwner;
+//        if (relVariable.reference().isName()) newOwner = ThingVariable.of(relVariable.identifier());
+//        else newOwner = ThingVariable.of(Identifier.Variable.of(new SystemReference("tempRelation")));
+//        for (ThingConstraint constraint : relVariable.constraints()) {
+//            if (constraint.isIsa()) {
+//                if
+//            }
+//        }
+//    }
+
+
+    private Constraint nameConstraint(Constraint constraint) {
+        return constraint;
+    }
+
+//    private grakn.core.pattern.variable.ThingVariable nameVar(grakn.core.pattern.variable.ThingVariable thingVariable) {
+//
+//    }
+
+    private Set<Variable> nameAllVars(Set<Variable> variables) {
+        return variables.stream().map(this::nameVar).collect(Collectors.toSet());
+//        Set<Variable> res = new HashSet<>();
+//        for (Variable variable : variables) {
+//
+//        }
+//        return res;
     }
 
 }

@@ -24,8 +24,10 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.traversal.common.Identifier;
 
 import java.util.List;
 import java.util.Set;
@@ -129,6 +131,22 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         TypeVariable copy = TypeVariable.of(copyFrom.identifier());
         copyLabelAndValueType(copyFrom, copy);
         return copy;
+    }
+
+    //might need ot delete if we do this via thenPattern in Rule
+    static ValueConstraint<?> nameConstraint(ValueConstraint<?> value) {
+        if (value.isVariable() && value.asVariable().value().reference().isName()) return copyConstraint(value);
+
+        ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
+
+//        ValueConstraint.Variable newValue = new ValueConstraint.Variable()
+        //TODO: ensure this is a unique var.
+        ThingVariable newVal = new ThingVariable(Identifier.Variable.of(new SystemReference("temp")));
+
+        Set<ValueConstraint<?>> otherValues = value.owner().value().stream().filter(value1 -> value != value1)
+                .collect(Collectors.toSet());
+        copyValuesOntoVariable(otherValues, newOwner);
+        return copyValueOntoVariable(value, newOwner);
     }
 
 }
