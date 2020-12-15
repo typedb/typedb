@@ -404,6 +404,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
             public static Value<Operator, String> STRING = new Value<Operator, String>("string") {
                 @Override
                 public boolean apply(Operator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                     assert value.isString() || value.isRegex();
                     if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
                     else return apply(operator, vertex, value.getString());
