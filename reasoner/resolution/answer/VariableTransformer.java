@@ -19,8 +19,10 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
 
-public interface Transformer {
+import java.util.Optional;
+
+public interface VariableTransformer {
     ConceptMap transform(ConceptMap toTransform);
 
-    ConceptMap unTransform(ConceptMap toUnTransform);
+//    Optional<ConceptMap> unTransform(ConceptMap toUnTransform);
 }

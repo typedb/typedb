@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.TransformableAnswer;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -30,11 +30,11 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final TransformableAnswer.Transformed partialConceptMap;
+    private final AnswerState.DownstreamVars.Partial partialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   TransformableAnswer.Transformed partialConceptMap,
+                   AnswerState.DownstreamVars.Partial partialConceptMap,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
@@ -57,7 +57,7 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public TransformableAnswer.Transformed partialConceptMap() {
+    public AnswerState.DownstreamVars.Partial partial() {
         return partialConceptMap;
     }
 
@@ -67,7 +67,7 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialConceptMap, request.partialConceptMap());
+                Objects.equals(partialConceptMap, request.partial());
     }
 
     @Override

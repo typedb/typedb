@@ -19,18 +19,21 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
 
-public class NoOpAggregator extends TransformableAnswer {
+import java.util.Optional;
 
-    NoOpAggregator() {
-        super(new ConceptMap(), new ConceptMap());
-    }
+public class NoOpAggregator implements VariableTransformer {
 
-    public static TransformableAnswer create() {
+    public static NoOpAggregator create() {
         return new NoOpAggregator();
     }
 
     @Override
-    ConceptMap unTransform(ConceptMap conceptMap) {
-        return conceptMap;
+    public ConceptMap transform(ConceptMap toTransform) {
+        return toTransform;
+    }
+
+    @Override
+    public Optional<ConceptMap> unTransform(ConceptMap conceptMap) {
+        return Optional.of(conceptMap);
     }
 }

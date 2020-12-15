@@ -26,22 +26,26 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class MappingAggregator extends TransformableAnswer {
+public class Mapping implements VariableTransformer {
 
     private final Map<Reference.Name, Reference.Name> mapping;
     private final Map<Reference.Name, Reference.Name> reverseMapping;
 
-    MappingAggregator(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
-        super(conceptMap, transform(conceptMap, mapping));
+    Mapping(Map<Reference.Name, Reference.Name> mapping) {
         this.mapping = mapping;
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
-    public static MappingAggregator of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
-        return new MappingAggregator(conceptMap, variableMap);
+    public static Mapping of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
+        return new Mapping(variableMap);
+    }
+
+    public static Mapping of(Map<Reference.Name, Reference.Name> variableMap) {
+        return new Mapping(variableMap);
     }
 
     public static Map<Reference.Name, Reference.Name> identity(ConjunctionConcludable<?, ?> concludable) {
@@ -55,7 +59,7 @@ public class MappingAggregator extends TransformableAnswer {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final MappingAggregator that = (MappingAggregator) o;
+        final Mapping that = (Mapping) o;
         return mapping.equals(that.mapping) &&
                 Objects.equals(reverseMapping, that.reverseMapping);
     }
@@ -66,11 +70,16 @@ public class MappingAggregator extends TransformableAnswer {
     }
 
     @Override
-    ConceptMap unTransform(ConceptMap conceptMap) {
-        return transform(conceptMap, reverseMapping);
+    public ConceptMap transform(ConceptMap toTransform) {
+        return undirectedTransform(toTransform, mapping);
     }
 
-    private static ConceptMap transform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
+//    @Override
+    public ConceptMap unTransform(ConceptMap conceptMap) {
+        return undirectedTransform(conceptMap, reverseMapping);
+    }
+
+    private static ConceptMap undirectedTransform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
         Map<Reference.Name, Concept> transformed = new HashMap<>();
         for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
             transformed.put(e.getValue(), conceptMap.get(e.getKey()));

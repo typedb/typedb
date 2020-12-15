@@ -42,7 +42,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void onAnswer(final ResolutionAnswer answer) {
-        sink.put(answer.aggregated().aggregated());
+        sink.put(answer.derived().aggregated());
     }
 
     private void onDone() {
