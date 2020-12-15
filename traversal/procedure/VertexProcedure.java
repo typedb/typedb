@@ -51,13 +51,15 @@ public class VertexProcedure implements Procedure {
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
-        LOG.debug(toString()); // TODO: remove this
+        LOG.debug(params.toString());
+        LOG.debug(this.toString());
         return new VertexProducer(graphMgr, vertex, params);
     }
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params) {
-        LOG.debug(toString()); // TODO: remove this
+        LOG.debug(params.toString());
+        LOG.debug(this.toString());
         Reference ref = vertex.id().asVariable().reference();
         return vertex.iterator(graphMgr, params).map(v -> VertexMap.of(map(pair(ref, v))));
     }

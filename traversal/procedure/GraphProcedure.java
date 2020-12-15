@@ -25,6 +25,7 @@ import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.GraphPlanner;
 import grakn.core.traversal.planner.PlannerEdge;
@@ -162,13 +163,15 @@ public class GraphProcedure implements Procedure {
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
-        LOG.debug(toString()); // TODO: remove this
+        LOG.debug(params.toString());
+        LOG.debug(this.toString());
         return new GraphProducer(graphMgr, this, params, parallelisation);
     }
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params) {
-        LOG.debug(toString()); // TODO: remove this
+        LOG.debug(params.toString());
+        LOG.debug(this.toString());
         return startVertex().iterator(graphMgr, params).flatMap(
                 sv -> new GraphIterator(graphMgr, sv, this, params)
         ).distinct();
@@ -177,21 +180,21 @@ public class GraphProcedure implements Procedure {
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
+        str.append("Graph Procedure: {");
         List<ProcedureEdge<?, ?>> procedureEdges = Arrays.asList(edges);
         procedureEdges.sort(Comparator.comparing(ProcedureEdge::order));
         List<ProcedureVertex<?, ?>> procedureVertices = new ArrayList<>(vertices.values());
         procedureVertices.sort(Comparator.comparing(v -> v.id().toString()));
 
-        str.append("\n");
-        str.append("Vertices:\n");
+        str.append("\n\tvertices:");
         for (ProcedureVertex<?, ?> v : procedureVertices) {
-            str.append(v).append("\n");
+            str.append("\n\t\t").append(v);
         }
-        str.append("\n");
-        str.append("Edges:\n");
+        str.append("\n\tedges:");
         for (ProcedureEdge<?, ?> e : procedureEdges) {
-            str.append(e).append("\n");
+            str.append("\n\t\t").append(e);
         }
+        str.append("\n}");
         return str.toString();
     }
 
@@ -218,14 +221,19 @@ public class GraphProcedure implements Procedure {
             return thingVertex(Identifier.Variable.of(Reference.named(name)), isStart);
         }
 
-        public ProcedureVertex.Type setLabel(ProcedureVertex.Type typeVertex, String label) {
-            typeVertex.props().labels(Label.of(label));
-            return typeVertex;
+        public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, String label) {
+            type.props().labels(Label.of(label));
+            return type;
         }
 
-        public ProcedureVertex.Type setLabel(ProcedureVertex.Type typeVertex, String label, String scope) {
-            typeVertex.props().labels(Label.of(label, scope));
-            return typeVertex;
+        public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, String label, String scope) {
+            type.props().labels(Label.of(label, scope));
+            return type;
+        }
+
+        public ProcedureVertex.Thing setPredicate(ProcedureVertex.Thing thing, Predicate.Value.SubString predicate) {
+            thing.props().predicate(predicate);
+            return thing;
         }
 
         public ProcedureEdge.Native.Isa.Forward forwardIsa(
@@ -240,6 +248,22 @@ public class GraphProcedure implements Procedure {
                 int order, ProcedureVertex.Type type, ProcedureVertex.Thing thing, boolean isTransitive) {
             ProcedureEdge.Native.Isa.Backward edge =
                     new ProcedureEdge.Native.Isa.Backward(type, thing, order, isTransitive);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.Has.Forward forwardHas(
+                int order, ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {
+            ProcedureEdge.Native.Thing.Has.Forward edge =
+                    new ProcedureEdge.Native.Thing.Has.Forward(owner, attribute, order);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.Has.Backward backwardHas(
+                int order, ProcedureVertex.Thing attribute, ProcedureVertex.Thing owner) {
+            ProcedureEdge.Native.Thing.Has.Backward edge =
+                    new ProcedureEdge.Native.Thing.Has.Backward(attribute, owner, order);
             registerEdge(edge);
             return edge;
         }
