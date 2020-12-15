@@ -139,13 +139,13 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toId = edge.to().id();
         if (roles.containsKey(toId)) {
-            if (edge.isRolePlayer()) removePriorScoped(edge.asRolePlayer().scope(), toId);
-            else removePriorScoped(toId.asScoped().scope(), toId);
+            if (edge.isRolePlayer()) clearPriorScopedRole(edge.asRolePlayer().scope(), toId);
+            else clearPriorScopedRole(toId.asScoped().scope(), toId);
         }
         return computeNext(pos - 1);
     }
 
-    private void removePriorScoped(Identifier.Variable scope, Identifier uniqueRoleIdentifier) {
+    private void clearPriorScopedRole(Identifier.Variable scope, Identifier uniqueRoleIdentifier) {
         ThingVertex previousRole = roles.get(uniqueRoleIdentifier);
         if (previousRole != null) {
             scoped.get(scope).remove(previousRole);
@@ -237,7 +237,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = edge.branchTo(graphMgr, fromVertex, parameters).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
-                    removePriorScoped(edge.to().id().asScoped().scope(), edge.to().id());
+                    clearPriorScopedRole(edge.to().id().asScoped().scope(), edge.to().id());
                     withinScope.add(role.asThing());
                     roles.put(edge.to().id(), role.asThing());
                     return true;
@@ -248,7 +248,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, parameters).filter(e -> {
                 if (withinScope.contains(e.optimised().get())) return false;
                 else {
-                    removePriorScoped(edge.asRolePlayer().scope(), edge.to().id());
+                    clearPriorScopedRole(edge.asRolePlayer().scope(), edge.to().id());
                     withinScope.add(e.optimised().get());
                     roles.put(edge.to().id(), e.optimised().get());
                     return true;
