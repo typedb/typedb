@@ -223,7 +223,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         @Override
         public Stream<Map<Reference.Name, Set<Reference.Name>>> unify(ThenConcludable.Isa headIsa) {
-            return null; // TODO Add variable mapping
+            return null;
         }
 
         @Override
