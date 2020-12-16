@@ -77,7 +77,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
                 return messageToSend(fromUpstream, responseProducer);
             }
         } else {
-            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
                                                     MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
