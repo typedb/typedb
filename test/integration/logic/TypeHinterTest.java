@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -86,10 +87,20 @@ public class TypeHinterTest {
         transaction.query().define(query);
     }
 
+    private Set<Label> getHints(Variable variable) {
+        if (variable.isType() && variable.asType().sub().isPresent()) {
+            return variable.asType().sub().get().getTypeHints();
+        } else if (variable.isThing() && variable.asThing().isa().isPresent()) {
+            return variable.asThing().isa().get().getTypeHints();
+        } else {
+            return new HashSet<>();
+        }
+    }
+
     private Map<String, Set<String>> getHintMap(Conjunction conjunction) {
         return conjunction.variables().stream().collect(Collectors.toMap(
                 variable -> variable.reference().syntax(),
-                variable -> variable.typeHints().stream().map(Label::scopedName).collect(Collectors.toSet())
+                variable -> getHints(variable).stream().map(Label::scopedName).collect(Collectors.toSet())
         ));
     }
 
