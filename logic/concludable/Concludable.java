@@ -133,20 +133,4 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return copy;
     }
 
-    //might need ot delete if we do this via thenPattern in Rule
-    static ValueConstraint<?> nameConstraint(ValueConstraint<?> value) {
-        if (value.isVariable() && value.asVariable().value().reference().isName()) return copyConstraint(value);
-
-        ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
-
-//        ValueConstraint.Variable newValue = new ValueConstraint.Variable()
-        //TODO: ensure this is a unique var.
-        ThingVariable newVal = new ThingVariable(Identifier.Variable.of(new SystemReference("temp")));
-
-        Set<ValueConstraint<?>> otherValues = value.owner().value().stream().filter(value1 -> value != value1)
-                .collect(Collectors.toSet());
-        copyValuesOntoVariable(otherValues, newOwner);
-        return copyValueOntoVariable(value, newOwner);
-    }
-
 }
