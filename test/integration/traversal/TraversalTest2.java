@@ -33,14 +33,12 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
@@ -65,26 +63,14 @@ public class TraversalTest2 {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction transaction = session.transaction(WRITE)) {
                 final String queryString = "define\n" +
-                        "      person sub entity,\n" +
-                        "        plays friendship:friend,\n" +
-                        "        plays employment:employee,\n" +
-                        "        owns name,\n" +
-                        "        owns age,\n" +
-                        "        owns ref @key;\n" +
-                        "      company sub entity,\n" +
-                        "        plays employment:employer,\n" +
-                        "        owns name,\n" +
-                        "        owns ref @key;\n" +
-                        "      friendship sub relation,\n" +
-                        "        relates friend,\n" +
-                        "        owns ref @key;\n" +
-                        "      employment sub relation,\n" +
-                        "        relates employee,\n" +
-                        "        relates employer,\n" +
-                        "        owns ref @key;\n" +
-                        "      name sub attribute, value string;\n" +
-                        "      age sub attribute, value long;\n" +
-                        "      ref sub attribute, value long;";
+                        "sale sub relation,\n" +
+                        "   relates buyer,\n" +
+                        "   relates seller;\n" +
+                        "person sub entity,\n" +
+                        "   owns name," +
+                        "   plays sale:buyer,\n" +
+                        "   plays sale:seller;\n" +
+                        "name sub attribute, value string;";
                 final GraqlDefine query = parseQuery(queryString);
                 transaction.query().define(query);
                 transaction.commit();
@@ -93,10 +79,12 @@ public class TraversalTest2 {
 
         try (RocksSession session = grakn.session(database, DATA)) {
             try (RocksTransaction transaction = session.transaction(WRITE)) {
-                final String queryString = "insert $p isa person, has ref 0;\n" +
-                        "$c isa company, has ref 1;\n" +
-                        "$c2 isa company, has ref 2;\n" +
-                        "$r (employee: $p, employer: $c, employer: $c2) isa employment, has ref 3;";
+                final String queryString = "insert\n" +
+                        "      $a isa person, has name 'alice';\n" +
+                        "      $b isa person, has name 'bob';\n" +
+                        "      $c isa person, has name 'charlie';\n" +
+                        "      (buyer: $a, seller: $b) isa sale;\n" +
+                        "      (buyer: $b, seller: $c) isa sale;";
                 final GraqlInsert query = parseQuery(queryString);
                 transaction.query().insert(query);
                 transaction.commit();
@@ -113,11 +101,11 @@ public class TraversalTest2 {
     }
 
     @Test
-    public void all_combinations_of_players_in_a_relation_can_be_retrieved_0_repeat() {
+    public void test_traversal_repeat() {
         int success = 0, fail = 0;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             try {
-                all_combinations_of_players_in_a_relation_can_be_retrieved_0();
+                test_traversal();
                 success++;
                 System.out.println("SUCCESS --------------");
             } catch (AssertionError e) {
@@ -129,80 +117,82 @@ public class TraversalTest2 {
     }
 
     @Test
-    public void all_combinations_of_players_in_a_relation_can_be_retrieved_0() {
+    public void test_traversal() {
         try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match $r ($x, $y) isa employment;";
+            final String queryString = "match\n" +
+                    "        (buyer: $a, seller: $b) isa sale;\n" +
+                    "        (buyer: $b, seller: $c) isa sale;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertTrue(answers.hasNext());
             ConceptMap answer;
-            AttributeType.Long ref = transaction.concepts().getAttributeType("ref").asLong();
+            AttributeType.String name = transaction.concepts().getAttributeType("name").asString();
             int count = 0;
             while (answers.hasNext()) {
                 count++;
                 answer = answers.next();
-                System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
-                System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
-                System.out.println(answer.get("y").asThing().getHas(ref).findFirst().get().getValue());
+                System.out.println(answer.get("a").asThing().getHas(name).findFirst().get().getValue());
+                System.out.println(answer.get("b").asThing().getHas(name).findFirst().get().getValue());
+                System.out.println(answer.get("c").asThing().getHas(name).findFirst().get().getValue());
             }
-            assertEquals(6, count);
+            assertEquals(1, count);
         }
     }
 
     @Test
-    public void all_combinations_of_players_in_a_relation_can_be_retrieved_1() {
-        Traversal.Parameters params = new Traversal.Parameters();
-        GraphProcedure.Builder proc = GraphProcedure.builder(3);
-
-        ProcedureVertex.Type relation = proc.labelled("employment", true);
-        ProcedureVertex.Thing r = proc.nameThing("r");
-        ProcedureVertex.Thing x = proc.nameThing("x");
-        ProcedureVertex.Thing y = proc.nameThing("y");
-
-        proc.setLabel(relation, "relation");
-
-        proc.backwardIsa(1, relation, r, true);
-        proc.forwardRolePlayer(2, r, x, set());
-        proc.forwardRolePlayer(3, r, y, set());
-
+    public void test_traversal_procedure() {
         try (RocksTransaction transaction = session.transaction(READ)) {
+            GraphProcedure.Builder proc = GraphProcedure.builder(14);
+            Traversal.Parameters params = new Traversal.Parameters();
+
+            ProcedureVertex.Type _sale = proc.labelledType("sale", true);
+            ProcedureVertex.Type _sale_buyer = proc.labelledType("sale:buyer");
+            ProcedureVertex.Type _sale_seller = proc.labelledType("sale:seller");
+
+            proc.setLabel(_sale, "sale");
+            proc.setLabel(_sale_buyer, "sale:buyer");
+            proc.setLabel(_sale_seller, "sale:seller");
+
+            ProcedureVertex.Thing a = proc.namedThing("a");
+            ProcedureVertex.Thing b = proc.namedThing("b");
+            ProcedureVertex.Thing c = proc.namedThing("c");
+
+            ProcedureVertex.Thing _0 = proc.anonymousThing(0);
+            ProcedureVertex.Thing _0_0 = proc.scopedThing(_0, 0);
+            ProcedureVertex.Thing _0_1 = proc.scopedThing(_0, 1);
+            ProcedureVertex.Thing _1 = proc.anonymousThing(1);
+            ProcedureVertex.Thing _1_0 = proc.scopedThing(_1, 0);
+            ProcedureVertex.Thing _1_1 = proc.scopedThing(_1, 1);
+
+            proc.backwardIsa(1, _sale, _1, true);
+            proc.forwardRelating(2, _1, _1_0);
+            proc.backwardPlaying(3, _1_0, b);
+            proc.forwardRelating(4, _1, _1_1);
+            proc.forwardPlaying(5, b, _0_1);
+            proc.backwardPlaying(6, _1_1, c);
+            proc.forwardIsa(7, _1_0, _sale_buyer, true);
+            proc.backwardIsa(8, _sale, _0, true);
+            proc.forwardRelating(9, _0, _0_0);
+            proc.forwardRelating(10, _0, _0_1);
+            proc.forwardIsa(11, _1_1, _sale_seller, true);
+            proc.forwardIsa(12, _0_0, _sale_buyer, true);
+            proc.backwardIsa(13, _sale_seller, _0_1, true);
+            proc.backwardPlaying(14, _0_0, a);
+
             ResourceIterator<VertexMap> vertices = transaction.traversal().iterator(proc.build(), params);
-            ResourceIterator<ConceptMap> answers = transaction.concepts().conceptMaps(vertices);
-            AttributeType.Long ref = transaction.concepts().getAttributeType("ref").asLong();
-            ConceptMap answer;
-            int count = 0;
-            while (answers.hasNext()) {
-                count++;
-                answer = answers.next();
-                System.out.println(answer.get("r").asThing().getHas(ref).findFirst().get().getValue());
-                System.out.println(answer.get("x").asThing().getHas(ref).findFirst().get().getValue());
-                System.out.println(answer.get("y").asThing().getHas(ref).findFirst().get().getValue());
-            }
-            assertEquals(6, count);
-        }
-    }
-
-    @Ignore
-    @Test
-    public void relations_are_matchable_from_roleplayers_without_specifying_any_roles_2() {
-        Traversal.Parameters params = new Traversal.Parameters();
-        GraphProcedure.Builder proc = GraphProcedure.builder(3);
-
-        ProcedureVertex.Type person = proc.labelled("person", true);
-        ProcedureVertex.Type relation = proc.labelled("relation");
-        ProcedureVertex.Thing x = proc.nameThing("x");
-        ProcedureVertex.Thing r = proc.nameThing("r");
-
-        proc.setLabel(person, "person");
-        proc.setLabel(relation, "relation");
-
-        proc.backwardIsa(1, person, x, true);
-        proc.backwardRolePlayer(2, x, r, set());
-        proc.forwardIsa(3, r, relation, true);
-
-        try (RocksTransaction transaction = session.transaction(READ)) {
-            ResourceIterator<VertexMap> vertices = transaction.traversal().iterator(proc.build(), params);
+            assertTrue(vertices.hasNext());
             ResourceIterator<ConceptMap> answers = transaction.concepts().conceptMaps(vertices);
             assertTrue(answers.hasNext());
+            ConceptMap answer;
+            AttributeType.String name = transaction.concepts().getAttributeType("name").asString();
+            int count = 0;
+            while (answers.hasNext()) {
+                count++;
+                answer = answers.next();
+                System.out.println(answer.get("a").asThing().getHas(name).findFirst().get().getValue());
+                System.out.println(answer.get("b").asThing().getHas(name).findFirst().get().getValue());
+                System.out.println(answer.get("c").asThing().getHas(name).findFirst().get().getValue());
+            }
+            assertEquals(1, count);
         }
     }
 }
