@@ -207,7 +207,8 @@ public class Rule {
     private Set<Variable> nameThenVars(Set<Variable> variables) {
         for (Variable variable : variables) {
             if (variable.isThing() && !variable.asThing().has().isEmpty()) return nameHasVar(variable.asThing());
-            if (variable.isThing() && !variable.asThing().relation().isEmpty()) return nameRelationVar(variable.asThing());
+            if (variable.isThing() && !variable.asThing().relation().isEmpty())
+                return nameRelationVar(variable.asThing());
         }
         throw GraknException.of(ILLEGAL_STATE);
     }
