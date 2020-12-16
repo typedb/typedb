@@ -136,7 +136,7 @@ public class TransactionSteps {
     }
 
     @Then("(for each )session(,) transaction(s) has/have type: {transaction_type}")
-    public void for_each_session_transactions_have_type_inline(Arguments.Transaction.Type type) {
+    public void for_each_session_transactions_have_type(Arguments.Transaction.Type type) {
         for_each_session_transactions_have_type(list(type));
     }
 
