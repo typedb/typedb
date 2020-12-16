@@ -204,8 +204,8 @@ public class Rule {
     }
 
     private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable) {
-        Set<Variable> register = VariableRegistry.createFromThings(list(thenVariable)).variables();
-        return new Conjunction(nameThenVars(register), set());
+        Set<Variable> rawThenVars = VariableRegistry.createFromThings(list(thenVariable)).variables();
+        return new Conjunction(nameThenVars(rawThenVars), set());
     }
 
     private Set<Variable> nameThenVars(Set<Variable> variables) {
@@ -220,11 +220,11 @@ public class Rule {
     private Set<Variable> nameRelationVar(ThingVariable relVariable) {
         Set<Variable> register = new HashSet<>();
         RelationConstraint relationConstraint = relVariable.relation().iterator().next();
-        ThingVariable namedOwner = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp_relation_owner")));
+        ThingVariable namedOwner = ThingVariable.of(Identifier.Variable.of(new SystemReference("rel_owner")));
         register.add(namedOwner);
         assert relVariable.isa().isPresent();
         IsaConstraint isaConstraint = relVariable.isa().get();
-        TypeVariable namedType = nameType(isaConstraint.type());
+        TypeVariable namedType = nameType(isaConstraint.type(), "rel_type");
         namedOwner.isa(namedType, false);
         register.add(namedType);
 
@@ -249,7 +249,7 @@ public class Rule {
         ThingVariable playerVar;
         if (rolePlayer.roleType().get().reference().isName()) return rolePlayer;
         else playerVar = rolePlayer.player();
-        TypeVariable namedRoleType = nameType(rolePlayer.roleType().get(), uniqueRoleID);
+        TypeVariable namedRoleType = nameType(rolePlayer.roleType().get(), "role_" + uniqueRoleID);
         return new RolePlayer(namedRoleType, playerVar);
     }
 
@@ -271,19 +271,15 @@ public class Rule {
     private ThingVariable nameAttribute(ThingVariable attribute) {
         assert attribute.isa().isPresent();
         IsaConstraint isaConstraint = attribute.isa().get();
-        TypeVariable namedType = nameType(isaConstraint.type());
-        ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("temp_attr")));
+        TypeVariable namedType = nameType(isaConstraint.type(), "attr_type");
+        ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("attr")));
         newAttr.isa(namedType, false);
         return newAttr;
     }
 
-    private TypeVariable nameType(TypeVariable typeVariable) {
-        return nameType(typeVariable, 0);
-    }
-
-    private TypeVariable nameType(TypeVariable typeVariable, int uniqueRoleID) {
+    private TypeVariable nameType(TypeVariable typeVariable, String tempName) {
         if (typeVariable.reference().isName()) return typeVariable;
-        TypeVariable namedType = TypeVariable.of(Identifier.Variable.of(new SystemReference("temp_type" + String.valueOf(uniqueRoleID))));
+        TypeVariable namedType = TypeVariable.of(Identifier.Variable.of(new SystemReference(tempName)));
         assert typeVariable.label().isPresent();
         namedType.label(typeVariable.label().get().properLabel());
         return namedType;

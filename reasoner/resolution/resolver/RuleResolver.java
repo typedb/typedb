@@ -68,7 +68,6 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
             LOG.trace("{}: has produced: {}", name, conceptMap);
 
             if (!responseProducer.hasProduced(conceptMap)) {
-
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
