@@ -25,19 +25,24 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.logic.concludable.ThenConcludable;
+import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.variable.SystemReference;
+import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
+import graql.lang.pattern.variable.Reference;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
 
 public class RuleTest {
@@ -207,6 +212,9 @@ public class RuleTest {
         }
     }
 
+
+    //THEN PATTERN TESTING
+
     @Test
     public void has_concludable_variable_attribute() throws IOException {
         Util.resetDirectory(directory);
@@ -226,32 +234,57 @@ public class RuleTest {
                     logicMgr.putRule(
                             "old-milk-is-not-good",
                             Graql.parsePattern("{ $x isa milk; $a 10 isa age-in-days; }").asConjunction(),
-                            Graql.parseVariable("$x has name 'bob'").asThing());
+                            Graql.parseVariable("$x has $a").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<Variable> expected = new HashSet<>({{
-                        add
-                    }}
-                    );
-
-                    Set<ThenConcludable<?, ?>> thenConcludables = rule.possibleThenConcludables();
-//                    assertEquals(0, isaHeadConcludablesCount(thenConcludables));
-//                    assertEquals(1, hasHeadConcludablesCount(thenConcludables));
-//                    assertEquals(0, relationHeadConcludablesCount(thenConcludables));
-//                    assertEquals(0, valueHeadConcludablesCount(thenConcludables));
-//
-//                    Set<ConjunctionConcludable<?, ?>> bodyConcludables = rule.whenConcludables();
-//                    assertEquals(2, isaConjunctionConcludablesCount(bodyConcludables));
-//                    assertEquals(0, hasConjunctionConcludablesCount(bodyConcludables));
-//                    assertEquals(0, relationConjunctionConcludablesCount(bodyConcludables));
-//                    assertEquals(0, valueConjunctionConcludablesCount(bodyConcludables));
+                    ThingVariable expectedOwner = ThingVariable.of(Identifier.Variable.of(Reference.named("x")));
+                    ThingVariable expectedAttribute = ThingVariable.of(Identifier.Variable.of(Reference.named("a")));
+                    expectedOwner.has(expectedAttribute);
+                    Set<Variable> expectedSet = set(expectedOwner, expectedAttribute);
+                    Conjunction expected = new Conjunction(expectedSet, set());
+                    assertEquals(expected, rule.then());
 
                 }
             }
         }
     }
+
+    @Test
+    public void has_concludable_concrete_attribute() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType milk = conceptMgr.putEntityType("milk");
+                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    milk.setOwns(ageInDays);
+                    milk.setOwns(isStillGood);
+                    logicMgr.putRule(
+                            "old-milk-is-not-good",
+                            Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+                            Graql.parseVariable("$x has is-still-good false").asThing());
+                    txn.commit();
+                }
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+                    final Rule rule = logicMgr.getRule("old-milk-is-not-good");
+
+                    ThingVariable expectedOwner = ThingVariable.of(Identifier.Variable.of(Reference.named("x")));
+
+                }
+            }
+        }
+    }
+
 }

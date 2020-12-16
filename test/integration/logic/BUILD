@@ -28,6 +28,7 @@ host_compatible_java_test(
         "//concept:concept",
         "//pattern:pattern",
         "//logic:logic",
+        "//traversal:traversal",
     ],
     deps = [
         # Internal dependencies
@@ -36,6 +37,8 @@ host_compatible_java_test(
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern:pattern",
+        "@graknlabs_common//:common",
     ],
     resources = [
         "//common/test:logback"
