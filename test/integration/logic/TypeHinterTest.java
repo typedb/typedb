@@ -51,7 +51,6 @@ import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class TypeHinterTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-test");
     private static String database = "type-hinter-test";
