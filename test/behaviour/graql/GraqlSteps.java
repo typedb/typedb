@@ -391,7 +391,7 @@ public class GraqlSteps {
     private boolean matchAnswerConcept(Map<String, String> answerIdentifiers, ConceptMap answer) {
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
             final Reference.Name var = Reference.named(entry.getKey());
-            final String[] identifier = entry.getValue().split(",", 2);
+            final String[] identifier = entry.getValue().split(":", 2);
             switch (identifier[0]) {
                 case "label":
                     if (!new LabelUniquenessCheck(identifier[1]).check(answer.get(var))) {
