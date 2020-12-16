@@ -731,7 +731,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Playing {
 
-                    private Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, FORWARD);
                     }
 
@@ -751,7 +751,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Playing {
 
-                    private Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, BACKWARD);
                     }
 
@@ -795,7 +795,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Relating {
 
-                    private Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, FORWARD);
                     }
 

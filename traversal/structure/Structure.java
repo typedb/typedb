@@ -41,14 +41,12 @@ public class Structure {
     final Map<Identifier.Variable, TraversalVertex.Properties> properties;
     private final Map<Identifier, StructureVertex<?>> vertices;
     private final Set<StructureEdge<?, ?>> edges;
-    private int generatedIdentifierCount;
     private List<Structure> structures;
 
     public Structure() {
         vertices = new HashMap<>();
         properties = new HashMap<>();
         edges = new HashSet<>();
-        generatedIdentifierCount = 0;
     }
 
     public StructureVertex.Thing thingVertex(Identifier identifier) {
@@ -67,10 +65,6 @@ public class Structure {
             if (id.isVariable()) properties.put(id.asVariable(), v.props());
             return v;
         }).asType();
-    }
-
-    public Identifier.Scoped newIdentifier(Identifier.Variable scope) {
-        return Identifier.Scoped.of(scope, generatedIdentifierCount++);
     }
 
     public Collection<StructureVertex<?>> vertices() {

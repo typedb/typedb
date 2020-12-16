@@ -67,11 +67,12 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public void addTo(Traversal traversal) {
-        rolePlayers.forEach(rp -> {
+        int roleID = 0;
+        for (RolePlayer rp : rolePlayers) {
             if (rp.roleType().isPresent()) {
                 if (rp.roleType().get().reference().isName() || rp.roleTypeHints().isEmpty()) {
                     assert rp.roleType().get().label().get().scope().isPresent();
-                    Identifier.Scoped role = traversal.newIdentifier(owner.identifier());
+                    Identifier.Scoped role = Identifier.Scoped.of(owner.identifier(), roleID++);
                     traversal.relating(owner.identifier(), role);
                     traversal.playing(rp.player().identifier(), role);
                     traversal.isa(role, rp.roleType().get().identifier());
@@ -83,7 +84,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             } else {
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier());
             }
-        });
+        }
     }
 
     @Override
