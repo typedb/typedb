@@ -19,7 +19,9 @@ package grakn.core.server.rpc;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.server.migrator.Exporter;
 import grakn.core.server.migrator.Importer;
+import grakn.core.server.migrator.Migrator;
 import grakn.core.server.migrator.proto.MigratorGrpc;
 import grakn.core.server.migrator.proto.MigratorProto;
 import io.grpc.stub.StreamObserver;
@@ -29,8 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.server.rpc.util.ResponseBuilder.exception;
@@ -46,24 +46,25 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void exportData(MigratorProto.ExportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        responseObserver.onError(exception(new UnsupportedOperationException("Export data is not currently supported.")));
+        Exporter exporter = new Exporter(grakn, request.getDatabase(), Paths.get(request.getFilename()));
+        runMigrator(exporter, responseObserver);
     }
 
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
+        Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()), request.getRemapLabelsMap());
+        runMigrator(importer, responseObserver);
+    }
+
+    private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         try {
-            Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()), request.getRemapLabelsMap());
-            CompletableFuture<Void> importerJob = CompletableFuture.runAsync(importer::run);
+            CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(migrator::run);
             try {
-                while (true) {
-                    // NOTE: We need to have this try...catch block since the CompletableFuture reports the progress report timeout as an exception
-                    try {
-                        importerJob.get(1, TimeUnit.SECONDS);
-                        break;
-                    } catch (TimeoutException e) {
-                        responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(importer.getProgress()).build());
-                    }
+                while (!migratorJob.isDone()) {
+                    Thread.sleep(1000);
+                    responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(migrator.getProgress()).build());
                 }
+                migratorJob.get();
             } catch (InterruptedException e) {
                 throw GraknException.of(UNEXPECTED_INTERRUPTION);
             } catch (ExecutionException e) {
@@ -74,10 +75,5 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
             LOG.error(e.getMessage(), e);
             responseObserver.onError(exception(e));
         }
-    }
-
-    @Override
-    public void exportSchema(MigratorProto.ExportSchema.Req request, StreamObserver<MigratorProto.ExportSchema.Res> responseObserver) {
-        responseObserver.onError(exception(new UnsupportedOperationException("Export schema is not currently supported.")));
     }
 }

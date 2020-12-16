@@ -89,8 +89,8 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     }
 
     @Override
-    public Long count() {
-        return 0L; // TODO: return total number of type instances
+    public long getInstancesCount() {
+        return graphMgr.data().stats().thingVertexTransitiveCount(vertex);
     }
 
     @Override

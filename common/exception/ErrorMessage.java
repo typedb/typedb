@@ -24,6 +24,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         super(codePrefix, codeNumber, messagePrefix, messageBody);
     }
 
+    public static void loadConstants() {
+        for (Class<?> innerClass: ErrorMessage.class.getDeclaredClasses()) {
+            try {
+                Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
+            } catch (ClassNotFoundException e) {
+                throw GraknException.of(e);
+            }
+        }
+    }
+
     public static class Server extends ErrorMessage {
         public static final Server DATA_DIRECTORY_NOT_FOUND =
                 new Server(1, "The expected data directory '%s' does not exist.");
@@ -291,7 +301,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeRead TYPE_ROOT_MISMATCH =
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =
-                new TypeRead(3, "The type '%s' is not found.");
+                new TypeRead(3, "The type '%s' does not exist.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =

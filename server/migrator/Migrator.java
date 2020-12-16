@@ -16,42 +16,13 @@
  *
  */
 
-package grakn.core.concept.type;
+package grakn.core.server.migrator;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
+import grakn.core.server.migrator.proto.MigratorProto;
 
-import java.util.List;
-import java.util.stream.Stream;
+public interface Migrator {
 
-public interface Type extends Concept {
+    void run();
 
-    long getInstancesCount();
-
-    boolean isRoot();
-
-    void setLabel(String label);
-
-    Label getLabel();
-
-    boolean isAbstract();
-
-    Type getSupertype();
-
-    Stream<? extends Type> getSupertypes();
-
-    Stream<? extends Type> getSubtypes();
-
-    List<GraknException> validate();
-
-    ThingType asThingType();
-
-    EntityType asEntityType();
-
-    AttributeType asAttributeType();
-
-    RelationType asRelationType();
-
-    RoleType asRoleType();
+    MigratorProto.Job.Progress getProgress();
 }
