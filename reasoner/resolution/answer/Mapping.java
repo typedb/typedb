@@ -39,10 +39,6 @@ public class Mapping extends VariableTransformer {
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
-    public static Mapping of(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> variableMap) {
-        return new Mapping(variableMap);
-    }
-
     public static Mapping of(Map<Reference.Name, Reference.Name> variableMap) {
         return new Mapping(variableMap);
     }
@@ -72,7 +68,6 @@ public class Mapping extends VariableTransformer {
         return undirectedTransform(toTransform, mapping);
     }
 
-//    @Override
     public ConceptMap unTransform(ConceptMap conceptMap) {
         return undirectedTransform(conceptMap, reverseMapping);
     }

@@ -72,7 +72,7 @@ public abstract class AnswerState {
             }
 
             public Optional<DownstreamVars.Partial> toDownstreamVars(Unifier unifier) {
-                return unifier.transform(conceptMap()).map(unified -> new DownstreamVars.Partial(unified, unifier));
+                return unifier.unify(conceptMap()).map(unified -> new DownstreamVars.Partial(unified, unifier));
             }
 
         }
@@ -178,7 +178,7 @@ public abstract class AnswerState {
             }
 
             public Optional<UpstreamVars.Derived> toUpstreamVars() {
-                return transformer.unTransform(conceptMap()).map(t -> new UpstreamVars.Derived(t, conceptMap()));
+                return transformer.unUnify(conceptMap()).map(t -> new UpstreamVars.Derived(t, conceptMap()));
             }
 
             @Override

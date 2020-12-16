@@ -20,6 +20,7 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -30,11 +31,11 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final AnswerState.DownstreamVars.Partial partialConceptMap;
+    private final Partial partialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   AnswerState.DownstreamVars.Partial partialConceptMap,
+                   Partial partialConceptMap,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
@@ -57,7 +58,7 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public AnswerState.DownstreamVars.Partial partial() {
+    public Partial partial() {
         return partialConceptMap;
     }
 

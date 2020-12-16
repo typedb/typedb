@@ -33,19 +33,15 @@ public class Unifier extends VariableTransformer {
         this.unifier = unifier;
     }
 
-    public static Unifier of(ConceptMap conceptMap, Map<Reference.Name, Set<Reference.Name>> unifier) {
-        return new Unifier(unifier);
-    }
-
     public static Unifier of(Map<Reference.Name, Set<Reference.Name>> unifier) {
         return new Unifier(unifier);
     }
 
-    public Optional<ConceptMap> transform(ConceptMap toTransform) {
-        return null; // TODO
+    public Optional<ConceptMap> unify(ConceptMap toUnify) {
+        return Optional.empty(); // TODO
     }
 
-    public Optional<ConceptMap> unTransform(ConceptMap conceptMap) {
+    public Optional<ConceptMap> unUnify(ConceptMap conceptMap) {
         return Optional.empty(); // TODO
     }
 
