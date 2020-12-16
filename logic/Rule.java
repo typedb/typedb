@@ -195,7 +195,7 @@ public class Rule {
     private Set<Conclusion<?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
         HashSet<Conclusion<?>> thenConcludables = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .flatMap(constraint -> Conclusion.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
+                .map(constraint -> Conclusion.of(constraint, constraintContext)).forEach(thenConcludables::add);
         return thenConcludables;
     }
 
@@ -217,14 +217,12 @@ public class Rule {
             copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
         }
 
-        public static ResourceIterator<? extends Conclusion<?>> of(ThingConstraint constraint, Set<Variable> constraintContext) {
-            Conclusion<?> concludable;
-            if (constraint.isRelation()) concludable = new Relation(constraint.asRelation(), constraintContext);
-            else if (constraint.isHas()) concludable = new Has(constraint.asHas(), constraintContext);
-            else if (constraint.isIsa()) concludable = new Isa(constraint.asIsa(), constraintContext);
-            else if (constraint.isValue()) concludable = new Value(constraint.asValue(), constraintContext);
+        public static Conclusion<?> of(ThingConstraint constraint, Set<Variable> constraintContext) {
+            if (constraint.isRelation()) return new Relation(constraint.asRelation(), constraintContext);
+            else if (constraint.isHas()) return new Has(constraint.asHas(), constraintContext);
+            else if (constraint.isIsa()) return new Isa(constraint.asIsa(), constraintContext);
+            else if (constraint.isValue()) return new Value(constraint.asValue(), constraintContext);
             else throw GraknException.of(ILLEGAL_STATE);
-            return null; // TODO Fix
         }
 
         public CONSTRAINT constraint() {
