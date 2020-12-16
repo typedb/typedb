@@ -28,6 +28,7 @@ import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
@@ -241,8 +242,9 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    ThingVariable expectedOwner = ThingVariable.of(Identifier.Variable.of(Reference.named("x")));
-                    ThingVariable expectedAttribute = ThingVariable.of(Identifier.Variable.of(Reference.named("a")));
+                    ThingVariable expectedOwner = ThingVariable.createNamed("x");
+                    ThingVariable expectedAttribute = ThingVariable.createNamed("a");
+
                     expectedOwner.has(expectedAttribute);
                     Set<Variable> expectedSet = set(expectedOwner, expectedAttribute);
                     Conjunction expected = new Conjunction(expectedSet, set());
@@ -280,7 +282,12 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    ThingVariable expectedOwner = ThingVariable.of(Identifier.Variable.of(Reference.named("x")));
+                    ThingVariable expectedOwner = ThingVariable.createNamed("x");
+                    ThingVariable expectedAttribute = ThingVariable.createTemp("attr");
+                    TypeVariable expectedAttrType = TypeVariable.createTemp("attr_type;");
+                    ThingVariable expectedAttrValue = ThingVariable.createTemp("value");
+                    expectedAttrValue.valueBoolean(Pr)
+
 
                 }
             }

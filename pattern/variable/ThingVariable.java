@@ -30,6 +30,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
+import graql.lang.pattern.variable.Reference;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -78,6 +79,14 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     public static ThingVariable of(Identifier.Variable identifier) {
         return new ThingVariable(identifier);
+    }
+
+    public static ThingVariable createTemp(String name) {
+        return ThingVariable.of(Identifier.Variable.of(new SystemReference(name)));
+    }
+
+    public static ThingVariable createNamed(String name) {
+        return ThingVariable.of(Identifier.Variable.of(Reference.named(name)));
     }
 
     private void constrain(ThingConstraint constraint) {

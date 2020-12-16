@@ -35,6 +35,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.pattern.constraint.ConceptConstraint;
+import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -79,6 +80,14 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
 
     public static TypeVariable of(Identifier.Variable identifier) {
         return new TypeVariable(identifier);
+    }
+
+    public static TypeVariable createTemp(String name) {
+        return TypeVariable.of(Identifier.Variable.of(new SystemReference(name)));
+    }
+
+    public static TypeVariable createNamed(String name) {
+        return TypeVariable.of(Identifier.Variable.of(Reference.named(name)));
     }
 
     TypeVariable constrainType(List<graql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {

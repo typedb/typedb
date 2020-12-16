@@ -32,12 +32,10 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 
 import java.util.ArrayList;
@@ -228,7 +226,7 @@ public class Rule {
     private Set<Variable> nameRelationVar(ThingVariable relVariable) {
         Set<Variable> register = new HashSet<>();
         RelationConstraint relationConstraint = relVariable.relation().iterator().next();
-        ThingVariable namedOwner = ThingVariable.of(Identifier.Variable.of(new SystemReference("rel_owner")));
+        ThingVariable namedOwner = ThingVariable.createTemp("rel_owner");
         register.add(namedOwner);
         assert relVariable.isa().isPresent();
         IsaConstraint isaConstraint = relVariable.isa().get();
@@ -282,7 +280,7 @@ public class Rule {
         TypeVariable namedType = nameType(isaConstraint.type(), "attr_type");
         assert attribute.value().size() == 1;
         ValueConstraint<?> valueConstraint = attribute.value().iterator().next();
-        ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("attr")));
+        ThingVariable newAttr = ThingVariable.createTemp("attr");
         ThingVariable namedValue = nameValue(valueConstraint);
         newAttr.valueVariable(valueConstraint.predicate(), namedValue);
         newAttr.isa(namedType, false);
@@ -291,7 +289,7 @@ public class Rule {
 
     private TypeVariable nameType(TypeVariable typeVariable, String tempName) {
         if (typeVariable.reference().isName()) return typeVariable;
-        TypeVariable namedType = TypeVariable.of(Identifier.Variable.of(new SystemReference(tempName)));
+        TypeVariable namedType = TypeVariable.createTemp(tempName);
         assert typeVariable.label().isPresent();
         namedType.label(typeVariable.label().get().properLabel());
         return namedType;
@@ -299,7 +297,7 @@ public class Rule {
 
     private ThingVariable nameValue(ValueConstraint<?> valueConstraint) {
         if (valueConstraint.isVariable()) return valueConstraint.asVariable().value();
-        ThingVariable newValue = ThingVariable.of(Identifier.Variable.of(new SystemReference("value")));
+        ThingVariable newValue = ThingVariable.createTemp("value");
         newValue.value(valueConstraint.predicate(), valueConstraint.value());
         return newValue;
     }
