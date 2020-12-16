@@ -38,6 +38,7 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTra
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.util.Util.assertThrowsWithMessage;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -98,6 +99,11 @@ public class TransactionSteps {
     @Then("transaction commits; throws exception")
     public void transaction_commits_throws_exception() {
         assertThrows(() -> sessionsToTransactions.get(sessions.get(0)).get(0).commit());
+    }
+
+    @Then("transaction commits; throws exception containing {string}")
+    public void transaction_commits_throws_exception(String exception) {
+        assertThrowsWithMessage(() -> sessionsToTransactions.get(sessions.get(0)).get(0).commit(), exception);
     }
 
     @Then("(for each )session(,) transaction(s) commit(s)")
