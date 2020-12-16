@@ -140,8 +140,8 @@ public class Schema {
     }
 
     private void writeRule(StringBuilder builder, Rule rule) {
-        builder.append(String.format("%s sub rule", rule.getLabel()))
-                .append(COMMA_NEWLINE_INDENT)
+        builder.append(String.format("rule %s:\n", rule.getLabel()))
+                .append(indent(1))
                 .append("when\n")
                 .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised()), 1))
                 .append(COMMA_NEWLINE_INDENT)
