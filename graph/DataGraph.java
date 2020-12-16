@@ -72,6 +72,7 @@ import static grakn.core.graph.util.StatisticsBytes.attributeCountedKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountJobKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeTotalCountKey;
+import static grakn.core.graph.util.StatisticsBytes.snapshotKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexCountKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexTransitiveCountKey;
 import static java.util.stream.Stream.concat;
@@ -502,7 +503,7 @@ public class DataGraph implements Graph {
         private boolean needsBackgroundCounting;
         private final SchemaGraph schemaGraph;
         private final Storage storage;
-        private final AtomicLong snapshot;
+        private final long snapshot;
 
         public Statistics(SchemaGraph schemaGraph, Storage storage) {
             persistedVertexCount = new ConcurrentHashMap<>();
@@ -513,13 +514,13 @@ public class DataGraph implements Graph {
             attributeVertexCountJobs = new ConcurrentHashMap<>();
             hasEdgeCountJobs = new ConcurrentHashMap<>();
             needsBackgroundCounting = false;
+            snapshot = readSnapshot();
             this.schemaGraph = schemaGraph;
             this.storage = storage;
-            snapshot = new AtomicLong(0);
         }
 
         public long snapshot() {
-            return snapshot.get();
+            return snapshot;
         }
 
         public long hasEdgeSum(TypeVertex owner, Set<TypeVertex> attributes) {
@@ -583,12 +584,10 @@ public class DataGraph implements Graph {
 
         public void vertexCreated(VertexIID.Type typeIID) {
             deltaVertexCount.compute(typeIID, (k, v) -> (v == null ? 0 : v) + 1);
-            snapshot.incrementAndGet();
         }
 
         public void vertexDeleted(VertexIID.Type typeIID) {
             deltaVertexCount.compute(typeIID, (k, v) -> (v == null ? 0 : v) - 1);
-            snapshot.incrementAndGet();
         }
 
         public void attributeVertexCreated(VertexIID.Attribute<?> attIID) {
@@ -609,6 +608,11 @@ public class DataGraph implements Graph {
         public void hasEdgeDeleted(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
             hasEdgeCountJobs.put(pair(thingIID, attIID), DELETED);
             needsBackgroundCounting = true;
+        }
+
+        private long readSnapshot() {
+            byte[] snapshotBytes = storage.get(snapshotKey());
+            return snapshotBytes != null ? bytesToLong(snapshotBytes) : 0;
         }
 
         private long vertexCount(VertexIID.Type typeIID, boolean isTransitive) {
@@ -699,6 +703,9 @@ public class DataGraph implements Graph {
             hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putUntracked(
                     hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()
             ));
+            if (!deltaVertexCount.isEmpty()) {
+                storage.mergeUntracked(snapshotKey(), longToBytes(1));
+            }
         }
 
         private void clear() {
@@ -723,6 +730,7 @@ public class DataGraph implements Graph {
                 }
                 storage.delete(countJob.key());
             }
+            storage.mergeUntracked(snapshotKey(), longToBytes(1));
         }
 
         private void processAttributeCountJob(CountJob countJob) {
