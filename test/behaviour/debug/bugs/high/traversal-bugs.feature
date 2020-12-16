@@ -94,11 +94,6 @@ Feature: Graql Match Query
         (sender: $a, recipient: $b) isa gift-delivery;
         (sender: $b, recipient: $c) isa gift-delivery;
       """
-    When concept identifiers are
-      |     | check | value |
-      | SOR | key   | ref:0 |
-      | MAR | key   | ref:1 |
-      | PAT | key   | ref:2 |
     Then uniquely identify answer concepts
       | a         | b         | c         |
       | key:ref:0 | key:ref:1 | key:ref:2 |
