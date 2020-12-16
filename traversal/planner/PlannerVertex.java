@@ -241,7 +241,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             } else if (props().regex().isPresent()) {
                 setObjectiveCoefficient(1);
             } else {
-                assert false;
+                setObjectiveCoefficient(graph.schema().stats().thingTypeCount());
             }
         }
 

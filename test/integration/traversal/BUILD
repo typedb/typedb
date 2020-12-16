@@ -58,7 +58,6 @@ host_compatible_java_test(
         "//common:common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/query:query",
     ],

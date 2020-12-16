@@ -342,7 +342,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
                     if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                     assert vertex.isBoolean();
-                    return vertex.asBoolean().value() == value;
+                    return vertex.asBoolean().value().equals(value);
                 }
             };
 
