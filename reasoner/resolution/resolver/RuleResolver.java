@@ -55,10 +55,6 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     }
 
     @Override
-    //fromUpstream a query or a ConjunctionConcludable
-    //from Downsteam is the answer to the rule that been's triggered
-    //responseProducer keeps a memory of what is being answered and the current state of answering.
-    //
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
@@ -71,11 +67,8 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
         if (isLast(sender)) {
             LOG.trace("{}: has produced: {}", name, conceptMap);
 
-
-            //material here
-            //returns Concept Map
             if (!responseProducer.hasProduced(conceptMap)) {
-                //now we've inferred something, so we should materialise.
+
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
