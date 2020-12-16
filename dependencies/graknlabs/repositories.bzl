@@ -60,7 +60,8 @@ def graknlabs_grabl_tracing():
 #    )
 
 def graknlabs_behaviour():
-    native.local_repository(
+    git_repository(
         name = "graknlabs_behaviour",
-        path = "../behaviour",
+        remote = "https://github.com/Phillammon/behaviour",
+        commit = "f5826b135ffbab1cecdae1b248e64c26a2e589bc", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
     )
