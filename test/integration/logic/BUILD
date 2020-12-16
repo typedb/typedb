@@ -46,7 +46,6 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-type-hinter",
     srcs = ["TypeHinterTest.java"],
-    data = [":basic-schema.gql"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -65,11 +64,12 @@ host_compatible_java_test(
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
     ],
+    data = [":basic-schema.gql"],
 )
 
 host_compatible_java_test(
     name = "test-unify",
-    srcs = ["concludable/UnifyTest.java"],
+    srcs = ["concludable/UnificationTest.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
