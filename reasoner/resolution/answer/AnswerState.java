@@ -91,7 +91,7 @@ public abstract class AnswerState {
                 this.transformer = transformer;
             }
 
-            public static Partial empty() {
+            public static Partial root() {
                 // This is the entry answer state for the request received by the root resolver
                 return new Partial(new ConceptMap(), null); // TODO Should the transformer be Nullable?
             }
@@ -128,7 +128,7 @@ public abstract class AnswerState {
             }
 
             public static Aggregated of(ConceptMap aggregated, Partial derivedFrom) {
-                if (derivedFrom.transformer() == null) return new NoOp(aggregated, derivedFrom.map());
+                if (derivedFrom.transformer() == null) return new Root(aggregated, derivedFrom.map());
                 else if (derivedFrom.transformer().isUnifier()) return new Unified(aggregated, derivedFrom.map(), derivedFrom.transformer.asUnifier());
                 else if (derivedFrom.transformer().isMapping()) return new Mapped(aggregated, derivedFrom.map(), derivedFrom.transformer.asMapped());
                 else throw GraknException.of(ILLEGAL_STATE);
@@ -142,8 +142,8 @@ public abstract class AnswerState {
                 throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unified.class));
             }
 
-            public NoOp asNoOp() {
-                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(NoOp.class));
+            public Root asRoot() {
+                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Root.class));
             }
 
             public static class Mapped extends Aggregated {
@@ -184,9 +184,9 @@ public abstract class AnswerState {
                 }
             }
 
-            public static class NoOp extends Aggregated implements ResponseAnswer {
-                // TODO Would like to do without this class
-                NoOp(ConceptMap aggregated, ConceptMap conceptMap) {
+            public static class Root extends Aggregated implements ResponseAnswer {
+                // TODO Would like to make this class the same as Derived
+                Root(ConceptMap aggregated, ConceptMap conceptMap) {
                     super(aggregated, conceptMap);
                 }
 
@@ -201,7 +201,7 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                public NoOp asNoOp() {
+                public Root asRoot() {
                     return this;
                 }
             }

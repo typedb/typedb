@@ -388,7 +388,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Partial.empty(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
                                               registry
                                       )
                     );
@@ -439,7 +439,7 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.executeReceiveRequest(
-                                      new Request(new Request.Path(root), DownstreamVars.Partial.empty(), ResolutionAnswer.Derivation.EMPTY),
+                                      new Request(new Request.Path(root), DownstreamVars.Partial.root(), ResolutionAnswer.Derivation.EMPTY),
                                       registry
                               )
             );
