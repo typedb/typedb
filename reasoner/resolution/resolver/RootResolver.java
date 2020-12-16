@@ -109,7 +109,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
         if (responseProducer.hasDownstreamProducer()) {
             return Either.first(responseProducer.nextDownstreamProducer());
         } else {
-            onExhausted.accept(fromUpstream.getIteration());
+            onExhausted.accept(fromUpstream.iteration());
             return Either.second(new Response.RootResponse(fromUpstream));
         }
     }

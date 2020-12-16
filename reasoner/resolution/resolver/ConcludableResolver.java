@@ -102,12 +102,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected ResponseProducer responseProducerCreate(Request request) {
         Actor<RootResolver> root = request.path().root();
-        iterationStates.putIfAbsent(root, new IterationState(request.getIteration()));
+        iterationStates.putIfAbsent(root, new IterationState(request.iteration()));
         IterationState iterationState = iterationStates.get(root);
-        assert iterationState.iteration() == request.getIteration();
+        assert iterationState.iteration() == request.iteration();
 
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, request.getIteration());
+        ResponseProducer responseProducer = new ResponseProducer(traversal, request.iteration());
 
         if (!iterationState.hasReceived(request.partialConceptMap().map())) {
             registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
@@ -121,13 +121,13 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         Actor<RootResolver> root = request.path().root();
         assert iterationStates.containsKey(root);
         IterationState iterationState = iterationStates.get(root);
-        if (iterationState.iteration() != request.getIteration()) {
-            assert iterationState.iteration + 1 == request.getIteration();
+        if (iterationState.iteration() != request.iteration()) {
+            assert iterationState.iteration + 1 == request.iteration();
             iterationState.nextIteration();
         }
 
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, request.getIteration());
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, request.iteration());
 
         if (!iterationState.hasReceived(request.partialConceptMap().map())) {
             registerDownstreamRules(responseProducerNewIter, request.path(), request.partialConceptMap().map());

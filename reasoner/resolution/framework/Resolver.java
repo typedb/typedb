@@ -78,10 +78,10 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         } else {
             ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-            assert responseProducer.iteration() == fromUpstream.getIteration() ||
-                    responseProducer.iteration() + 1 == fromUpstream.getIteration();
+            assert responseProducer.iteration() == fromUpstream.iteration() ||
+                    responseProducer.iteration() + 1 == fromUpstream.iteration();
 
-            if (responseProducer.iteration() + 1 == fromUpstream.getIteration()) {
+            if (responseProducer.iteration() + 1 == fromUpstream.iteration()) {
                 responseProducers.put(fromUpstream, responseProducerReiterate(fromUpstream, responseProducer));
             }
         }

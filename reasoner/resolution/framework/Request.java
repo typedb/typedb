@@ -33,14 +33,16 @@ public class Request {
     private final Path path;
     private final Aggregator partialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
-    private int iteration; // NOTE: modifiable and not part of equality contract!
+    private final int iteration; // NOTE: not part of equality contract!
 
     public Request(Path path,
                    Aggregator partialConceptMap,
-                   ResolutionAnswer.Derivation partialDerivation) {
+                   ResolutionAnswer.Derivation partialDerivation,
+                   int iteration) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
         this.partialDerivation = partialDerivation;
+        this.iteration = iteration;
     }
 
     public Path path() {
@@ -93,11 +95,7 @@ public class Request {
         return partialDerivation;
     }
 
-    public void setIteration(int iteration) {
-        this.iteration = iteration;
-    }
-
-    public int getIteration() {
+    public int iteration() {
         return iteration;
     }
 

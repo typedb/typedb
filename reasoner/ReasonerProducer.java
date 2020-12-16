@@ -41,9 +41,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
         this.registry = resolverRegistry;
         this.iteration = 0;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
-        this.resolveRequest.setIteration(iteration);
-        this.iterationInferredAnswer = false;
+        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
     }
 
     private void onAnswer(final ResolutionAnswer answer) {
@@ -63,10 +61,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
             retryInNextIteration();
         } else {
             nextIteration();
+            retryInNextIteration();
         }
     }
 
     private boolean mustReiterate() {
+        /*
+        TODO room for optimisation:
+        for example, reiteration should never be required if there
+        are no loops in the rule graph
+        NOTE: double check this logic holds in the actor execution model
+         */
         return iterationInferredAnswer;
     }
 
@@ -76,9 +81,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void nextIteration() {
         iteration++;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
-        this.resolveRequest.setIteration(iteration);
-        requestAnswer();
+        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
     }
 
     @Override
