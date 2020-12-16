@@ -51,6 +51,7 @@ java_test(
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection/transaction:steps",
         "//test/behaviour/connection/session:steps",
+        "//test/behaviour/graql/language/define:steps",
     ],
     data = [
         "@graknlabs_behaviour//connection:database.feature",
