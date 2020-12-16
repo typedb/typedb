@@ -185,7 +185,7 @@ public class TypeHinter {
     }
 
     private void addInferredSubLabels(TypeVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
-        if (!variable.sub().isPresent()) {
+        if (!variable.sub().isPresent() && !hints.isEmpty()) {
             variable.sub(lowestCommonSuperType(hints, labelMap), false);
         }
         variable.addHints(hints);
@@ -194,7 +194,7 @@ public class TypeHinter {
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
         //TODO: use .getType(label) once ConceptManager can handle labels
         hints.removeIf(label -> conceptMgr.getType(label.scopedName()).isAbstract());
-        if (!variable.isa().isPresent()) {
+        if (!variable.isa().isPresent() && !hints.isEmpty()) {
             variable.isa(lowestCommonSuperType(hints, labelMap), false);
         }
         variable.addHints(hints);
@@ -248,6 +248,7 @@ public class TypeHinter {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
+            varHints.forEach(variable -> mapping.putIfAbsent(variable.reference(), new HashSet<>()));
             buffer(traversalEng.producer(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
                         mapping.putIfAbsent(ref, new HashSet<>());
