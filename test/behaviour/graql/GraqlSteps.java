@@ -264,7 +264,7 @@ public class GraqlSteps {
         );
 
         for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
-            final String[] identifier = answerIdentifierGroup.ownerIdentifier.split(",", 2);
+            final String[] identifier = answerIdentifierGroup.ownerIdentifier.split(":", 2);
             UniquenessCheck checker;
             switch (identifier[0]) {
                 case "label":
@@ -318,7 +318,7 @@ public class GraqlSteps {
         );
 
         for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
-            final String[] identifier = expectation.getKey().split(",", 2);
+            final String[] identifier = expectation.getKey().split(":", 2);
             UniquenessCheck checker;
             switch (identifier[0]) {
                 case "label":
