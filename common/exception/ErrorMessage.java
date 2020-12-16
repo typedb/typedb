@@ -328,10 +328,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(10, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
                 new TypeWrite(11, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
-        public static final TypeWrite ATTRIBUTE_SUBTYPE_NOT_ABSTRACT =
-                new TypeWrite(12, "The attribute type '%s' cannot be set to abstract as its subtypes are not abstract.");
-        public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
-                new TypeWrite(13, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
+        public static final TypeWrite ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES =
+                new TypeWrite(12, "The attribute type '%s' cannot be set to non abstract as it has subtypes.");
+        public static final TypeWrite ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT =
+                new TypeWrite(13, "The attribute type '%s' cannot be subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
                 new TypeWrite(14, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE =
