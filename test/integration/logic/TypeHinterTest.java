@@ -188,7 +188,7 @@ public class TypeHinterTest {
         define_standard_schema("basic-schema");
         TypeHinter typeHinter = transaction.logic().typeHinter();
 
-        String queryString = "match $p has name 'bob';";
+        String queryString = "match $p isa animal, has name 'bob';";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
         Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);

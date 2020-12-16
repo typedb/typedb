@@ -310,7 +310,7 @@ public class TypeHinter {
         }
 
         private void putSubThingConstraintIfAbsent(TypeVariable variable) {
-            if (isMapped(variable)) variable.sub(metaThing, true);
+            if (isMapped(variable)) variable.sub(metaThing, false);
         }
 
         private boolean isMapped(TypeVariable variable) {
