@@ -77,8 +77,9 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream().filter(value1 -> value != value1)
                 .collect(Collectors.toSet());
+
         copyValuesOntoVariable(otherValues, newOwner);
-        return copyValueOntoVariable(value, newOwner);
+        return newOwner.value(value.predicate(), value.value());
     }
 
 
@@ -90,24 +91,7 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static void copyValuesOntoVariable(Set<ValueConstraint<?>> toCopy, ThingVariable newOwner) {
-        toCopy.forEach(valueConstraint -> copyValueOntoVariable(valueConstraint, newOwner));
-    }
-
-    static ValueConstraint<?> copyValueOntoVariable(ValueConstraint<?> toCopy, ThingVariable toConstrain) {
-        if (toCopy.isLong())
-            return toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
-        else if (toCopy.isDouble())
-            return toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
-        else if (toCopy.isBoolean())
-            return toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
-        else if (toCopy.isString())
-            return toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
-        else if (toCopy.isDateTime())
-            return toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
-        else if (toCopy.isVariable()) {
-            ThingVariable copyOfVar = copyIsaAndValues(toCopy.asVariable().value());
-            return toConstrain.valueVariable(toCopy.asValue().predicate().asEquality(), copyOfVar);
-        } else throw GraknException.of(ILLEGAL_STATE);
+        toCopy.forEach(valueConstraint -> newOwner.value(valueConstraint.predicate(), valueConstraint.value()));
     }
 
     static ThingVariable copyIsaAndValues(ThingVariable copyFrom) {

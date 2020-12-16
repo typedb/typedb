@@ -297,7 +297,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class Variable extends ValueConstraint<ThingVariable> {
 
-        public Variable(ThingVariable owner, GraqlToken.Predicate.Equality predicate, ThingVariable variable) {
+        public Variable(ThingVariable owner, GraqlToken.Predicate predicate, ThingVariable variable) {
             super(owner, predicate, variable, set(variable));
         }
 

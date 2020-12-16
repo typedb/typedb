@@ -31,6 +31,7 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
+import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -122,6 +123,10 @@ public class Rule {
         return when;
     }
 
+    Conjunction then() {
+        return then;
+    }
+
     public String getLabel() {
         return structure.label();
     }
@@ -210,7 +215,10 @@ public class Rule {
 
     private Set<Variable> nameThenVars(Set<Variable> variables) {
         for (Variable variable : variables) {
-            if (variable.isThing() && !variable.asThing().has().isEmpty()) return nameHasVar(variable.asThing());
+            if (variable.isThing() && !variable.asThing().has().isEmpty()){
+                if (variable.asThing().has().iterator().next().attribute().reference().isName()) return variables;
+                return nameHasVar(variable.asThing());
+            }
             if (variable.isThing() && !variable.asThing().relation().isEmpty())
                 return nameRelationVar(variable.asThing());
         }
@@ -256,12 +264,12 @@ public class Rule {
     private Set<Variable> nameHasVar(ThingVariable hasVariable) {
         HasConstraint hasConstraint = hasVariable.has().iterator().next();
         ThingVariable attribute = hasConstraint.attribute();
-        if (attribute.reference().isName()) return set(hasVariable);
         Set<Variable> register = new HashSet<>();
         ThingVariable namedAttribute = nameAttribute(attribute);
         assert namedAttribute.isa().isPresent();
         register.add(namedAttribute);
         register.add(namedAttribute.isa().get().type());
+        register.add(namedAttribute.value().iterator().next().asVariable().value());
         ThingVariable newOwner = ThingVariable.of(hasVariable.identifier());
         newOwner.has(namedAttribute);
         register.add(newOwner);
@@ -272,7 +280,11 @@ public class Rule {
         assert attribute.isa().isPresent();
         IsaConstraint isaConstraint = attribute.isa().get();
         TypeVariable namedType = nameType(isaConstraint.type(), "attr_type");
+        assert attribute.value().size() == 1;
+        ValueConstraint<?> valueConstraint = attribute.value().iterator().next();
         ThingVariable newAttr = ThingVariable.of(Identifier.Variable.of(new SystemReference("attr")));
+        ThingVariable namedValue = nameValue(valueConstraint);
+        newAttr.valueVariable(valueConstraint.predicate(), namedValue);
         newAttr.isa(namedType, false);
         return newAttr;
     }
@@ -283,6 +295,13 @@ public class Rule {
         assert typeVariable.label().isPresent();
         namedType.label(typeVariable.label().get().properLabel());
         return namedType;
+    }
+
+    private ThingVariable nameValue(ValueConstraint<?> valueConstraint) {
+        if (valueConstraint.isVariable()) return valueConstraint.asVariable().value();
+        ThingVariable newValue = ThingVariable.of(Identifier.Variable.of(new SystemReference("value")));
+        newValue.value(valueConstraint.predicate(), valueConstraint.value());
+        return newValue;
     }
 
 }

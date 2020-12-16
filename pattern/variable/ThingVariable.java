@@ -127,7 +127,23 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueConstraints;
     }
 
-    public ValueConstraint.Long valueLong(GraqlToken.Predicate.Equality comparator, long value) {
+    public <T> ValueConstraint<?> value(GraqlToken.Predicate comparator, T value) {
+        if (value instanceof Long && comparator.isEquality()) {
+            return valueLong(comparator.asEquality(), (long) value);
+        } else if (value instanceof Double && comparator.isEquality()) {
+            return valueDouble(comparator.asEquality(), (double) value);
+        } else if (value instanceof Boolean && comparator.isEquality()) {
+            return valueBoolean(comparator.asEquality(), (boolean) value);
+        } else if (value instanceof LocalDateTime && comparator.isEquality()) {
+            return valueDateTime(comparator.asEquality(), (LocalDateTime) value);
+        } else if (value instanceof String) {
+            return valueString(comparator, (String) value);
+        } else if (value instanceof ThingVariable) {
+            return valueVariable(comparator, (ThingVariable) value);
+        } else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public ValueConstraint<Long> valueLong(GraqlToken.Predicate.Equality comparator, long value) {
         ValueConstraint.Long valueLongConstraint = new ValueConstraint.Long(this, comparator, value);
         constrain(valueLongConstraint);
         return valueLongConstraint;
@@ -157,7 +173,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueDateTimeConstraint;
     }
 
-    public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
+    public ValueConstraint.Variable valueVariable(GraqlToken.Predicate comparator, ThingVariable variable) {
         ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
         constrain(valueVarConstraint);
         return valueVarConstraint;
