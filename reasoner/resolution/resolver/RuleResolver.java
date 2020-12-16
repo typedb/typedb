@@ -71,7 +71,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), derivation, self());
+                                                               conjunction.toString(), derivation, self(), true);
                 return Either.second(createResponse(fromUpstream, answer));
             } else {
                 return messageToSend(fromUpstream, responseProducer);

@@ -47,11 +47,11 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         return name;
     }
 
+    protected abstract void initialiseDownstreamActors(ResolverRegistry registry);
+
     protected abstract ResponseProducer responseProducerCreate(Request fromUpstream);
 
     protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer);
-
-    protected abstract void initialiseDownstreamActors(ResolverRegistry registry);
 
     protected abstract Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer);
 
@@ -78,10 +78,10 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         } else {
             ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-            assert responseProducer.currentIteration() == fromUpstream.getIteration() ||
-                    responseProducer.currentIteration() + 1 == fromUpstream.getIteration();
+            assert responseProducer.iteration() == fromUpstream.getIteration() ||
+                    responseProducer.iteration() + 1 == fromUpstream.getIteration();
 
-            if (responseProducer.currentIteration() + 1 == fromUpstream.getIteration()) {
+            if (responseProducer.iteration() + 1 == fromUpstream.getIteration()) {
                 responseProducers.put(fromUpstream, responseProducerReiterate(fromUpstream, responseProducer));
             }
         }

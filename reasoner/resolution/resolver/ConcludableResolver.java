@@ -50,14 +50,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private final ConjunctionConcludable<?, ?> concludable;
     private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
-    private final Set<ConceptMap> receivedConceptMaps;
+    private final Map<Actor<RootResolver>, IterationState> iterationStates;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
     public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.concludable = concludable;
-        ruleActorSources = new HashMap<>();
-        receivedConceptMaps = new HashSet<>();
+        this.ruleActorSources = new HashMap<>();
+        this.iterationStates = new HashMap<>();
     }
 
     @Override
@@ -101,15 +101,41 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer responseProducerCreate(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducer = new ResponseProducer(traversal);
+        Actor<RootResolver> root = request.path().root();
+        iterationStates.putIfAbsent(root, new IterationState(request.getIteration()));
+        IterationState iterationState = iterationStates.get(root);
+        assert iterationState.iteration() == request.getIteration();
 
-        if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        ResponseProducer responseProducer = new ResponseProducer(traversal, request.getIteration());
+
+        if (!iterationState.hasReceived(request.partialConceptMap().map())) {
             registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
-            receivedConceptMaps.add(request.partialConceptMap().map());
+            iterationState.recordReceived(request.partialConceptMap().map());
         }
         return responseProducer;
     }
+
+    @Override
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious) {
+        Actor<RootResolver> root = request.path().root();
+        assert iterationStates.containsKey(root);
+        IterationState iterationState = iterationStates.get(root);
+        if (iterationState.iteration() != request.getIteration()) {
+            assert iterationState.iteration + 1 == request.getIteration();
+            iterationState.nextIteration();
+        }
+
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, request.getIteration());
+
+        if (!iterationState.hasReceived(request.partialConceptMap().map())) {
+            registerDownstreamRules(responseProducerNewIter, request.path(), request.partialConceptMap().map());
+            iterationState.recordReceived(request.partialConceptMap().map());
+        }
+        return responseProducerNewIter;
+    }
+
 
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
@@ -155,6 +181,38 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     protected void exception(Exception e) {
         LOG.error("Actor exception", e);
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+    }
+
+    /**
+     * Maintain iteration state per root query
+     * This allows us to share actors across different queries
+     * while maintaining the ability to do loop termination within a single query
+     */
+    private static class IterationState {
+        private Set<ConceptMap> receivedMaps;
+        private int iteration;
+
+        IterationState(int iteration) {
+            this.iteration = iteration;
+            this.receivedMaps = new HashSet<>();
+        }
+
+        public int iteration() {
+            return iteration;
+        }
+
+        public void nextIteration() {
+            iteration++;
+            receivedMaps = new HashSet<>();
+        }
+
+        public void recordReceived(ConceptMap conceptMap) {
+            receivedMaps.add(conceptMap);
+        }
+
+        public boolean hasReceived(ConceptMap conceptMap) {
+            return receivedMaps.contains(conceptMap);
+        }
     }
 }
 

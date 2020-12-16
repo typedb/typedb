@@ -96,13 +96,24 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     protected ResponseProducer responseProducerCreate(Request request) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducer = new ResponseProducer(traversal);
+        ResponseProducer responseProducer = new ResponseProducer(traversal, request.getIteration());
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;
+    }
+
+    @Override
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducer) {
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
+        ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, request.getIteration());
+        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
+                                           MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
+                                           new ResolutionAnswer.Derivation(map()));
+        responseProducerNewIter.addDownstreamProducer(toDownstream);
+        return responseProducerNewIter;
     }
 
     @Override

@@ -28,13 +28,17 @@ public class ResponseProducer {
     private final Set<ConceptMap> produced;
     private final Iterator<ConceptMap> traversalProducer;
     private final Set<Request> downstreamProducer;
+    private final int iteration;
     private Iterator<Request> downstreamProducerSelector;
-    private int currentIteration;
 
     public ResponseProducer(Iterator<ConceptMap> traversalProducer, int iteration) {
+        this(traversalProducer, iteration, new HashSet<>());
+    }
+
+    private ResponseProducer(Iterator<ConceptMap> traversalProducer, int iteration, Set<ConceptMap> produced) {
         this.traversalProducer = traversalProducer;
-        this.currentIteration = iteration;
-        produced = new HashSet<>();
+        this.iteration = iteration;
+        this.produced = produced;
         downstreamProducer = new HashSet<>();
         downstreamProducerSelector = downstreamProducer.iterator();
     }
@@ -78,11 +82,15 @@ public class ResponseProducer {
         if (removed) downstreamProducerSelector = downstreamProducer.iterator();
     }
 
-    public int currentIteration() {
-        return currentIteration;
+    public int iteration() {
+        return iteration;
     }
 
-    public void nextIteration(Iterator<ConceptMap> traversal) {
-
+    /**
+     * Prepare a response producer for the another iteration from this one
+     * Notably maintains the set of produced answers for deduplication
+     */
+    public ResponseProducer newIteration(Iterator<ConceptMap> traversalProducer, int iteration) {
+        return new ResponseProducer(traversalProducer, iteration, this.produced);
     }
 }
