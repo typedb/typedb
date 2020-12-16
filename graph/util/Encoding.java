@@ -135,6 +135,7 @@ public class Encoding {
         STATISTICS_THINGS(50, PrefixType.STATISTICS),
         STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
         STATISTICS_COUNTED(52, PrefixType.STATISTICS),
+        STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
