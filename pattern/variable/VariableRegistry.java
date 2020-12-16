@@ -167,5 +167,4 @@ public class VariableRegistry {
         if (types.containsKey(reference)) throw GraknException.of(VARIABLE_CONTRADICTION, reference);
         else return things.computeIfAbsent(reference, constructor);
     }
-
 }
