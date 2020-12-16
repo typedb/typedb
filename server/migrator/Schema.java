@@ -25,6 +25,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.logic.Rule;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -194,6 +196,6 @@ public class Schema {
     }
 
     private static String indent(int indent) {
-        return IntStream.range(0, indent * 4).mapToObj(i -> " ").collect(Collectors.joining(""));
+        return IntStream.range(0, indent * 4).mapToObj(i -> " ").collect(Collectors.joining());
     }
 }

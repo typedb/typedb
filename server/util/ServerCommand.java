@@ -57,12 +57,12 @@ public interface ServerCommand {
         throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, ExportData.class);
     }
 
-    default boolean isGetSchema() {
+    default boolean isPrintSchema() {
         return false;
     }
 
-    default GetSchema asGetSchema() {
-        throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, GetSchema.class);
+    default PrintSchema asPrintSchema() {
+        throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, PrintSchema.class);
     }
 
     @Command(name = "grakn server", mixinStandardHelpOptions = true, version = {Version.VERSION})
@@ -232,14 +232,14 @@ public interface ServerCommand {
     }
 
     @Command(name = "schema")
-    class GetSchema implements ServerCommand {
+    class PrintSchema implements ServerCommand {
 
         private final Start startCommand;
 
         @Parameters(index = "0", description = "Database to get schema")
         private String database;
 
-        public GetSchema(Start startCommand) {
+        public PrintSchema(Start startCommand) {
             this.startCommand = startCommand;
         }
 
@@ -252,12 +252,12 @@ public interface ServerCommand {
         }
 
         @Override
-        public boolean isGetSchema() {
+        public boolean isPrintSchema() {
             return true;
         }
 
         @Override
-        public GetSchema asGetSchema() {
+        public PrintSchema asPrintSchema() {
             return this;
         }
     }

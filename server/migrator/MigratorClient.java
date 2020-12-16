@@ -66,7 +66,7 @@ public class MigratorClient {
         return streamObserver.success();
     }
 
-    public void getSchema(final String database) {
+    public void printSchema(final String database) {
         final MigratorProto.GetSchema.Req req = MigratorProto.GetSchema.Req.newBuilder()
                 .setDatabase(database)
                 .build();
