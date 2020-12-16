@@ -79,7 +79,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asRoot(),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asDerived(),
                                                                conjunction.toString(), derivation, self());
                 return Either.second(createResponse(fromUpstream, answer));
             } else {
@@ -103,7 +103,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asRoot(),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asDerived(),
                                                                conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
                 return Either.second(createResponse(fromUpstream, answer));
             }

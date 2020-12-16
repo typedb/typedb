@@ -62,21 +62,23 @@ public abstract class AnswerState {
             }
         }
 
-        public static class Derived extends AnswerState implements ResponseAnswer {
-
-            private final ConceptMap derivedFrom;
+        public static class Derived extends Aggregated {
 
             Derived(ConceptMap partial, ConceptMap derivedFrom) {
-                super(partial);
-                this.derivedFrom = derivedFrom;
+                super(partial, derivedFrom);
             }
 
             public ConceptMap from() {
-                return derivedFrom;
+                return super.derivedFrom;
             }
 
             public ConceptMap map() {
                 return new ConceptMap(conceptMap().concepts());
+            }
+
+            @Override
+            public UpstreamVars.Derived asDerived() {
+                return this;
             }
         }
     }
@@ -118,93 +120,73 @@ public abstract class AnswerState {
             }
         }
 
-        public abstract static class Aggregated extends AnswerState {
+        public static class Mapped extends Aggregated {
 
-            private final ConceptMap derivedFrom;
+            private final Mapping transformer;
 
-            Aggregated(ConceptMap aggregated, ConceptMap derivedFrom) {
-                super(aggregated);
-                this.derivedFrom = derivedFrom;
+            Mapped(ConceptMap aggregated, ConceptMap conceptMap, Mapping transformer) {
+                super(aggregated, conceptMap);
+                this.transformer = transformer;
             }
 
-            public static Aggregated of(ConceptMap aggregated, Partial derivedFrom) {
-                if (derivedFrom.transformer() == null) return new Root(aggregated, derivedFrom.map());
-                else if (derivedFrom.transformer().isUnifier()) return new Unified(aggregated, derivedFrom.map(), derivedFrom.transformer.asUnifier());
-                else if (derivedFrom.transformer().isMapping()) return new Mapped(aggregated, derivedFrom.map(), derivedFrom.transformer.asMapped());
-                else throw GraknException.of(ILLEGAL_STATE);
+            public UpstreamVars.Derived toUpstreamVars() {
+                return new UpstreamVars.Derived(transformer.unTransform(conceptMap()), conceptMap());
             }
 
+            @Override
             public Mapped asMapped() {
-                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapped.class));
+                return this;
+            }
+        }
+
+        public static class Unified extends Aggregated {
+
+            private final Unifier transformer;
+
+            Unified(ConceptMap aggregated, ConceptMap conceptMap, Unifier transformer) {
+                super(aggregated, conceptMap);
+                this.transformer = transformer;
             }
 
+            public Optional<UpstreamVars.Derived> toUpstreamVars() {
+                return transformer.unTransform(conceptMap()).map(t -> new UpstreamVars.Derived(t, conceptMap()));
+            }
+
+            @Override
             public Unified asUnified() {
-                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unified.class));
+                return this;
             }
+        }
+    }
 
-            public Root asRoot() {
-                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Root.class));
-            }
+    public abstract static class Aggregated extends AnswerState {
 
-            public static class Mapped extends Aggregated {
+        private final ConceptMap derivedFrom;
 
-                private final Mapping transformer;
+        Aggregated(ConceptMap aggregated, ConceptMap derivedFrom) {
+            super(aggregated);
+            this.derivedFrom = derivedFrom;
+        }
 
-                Mapped(ConceptMap aggregated, ConceptMap conceptMap, Mapping transformer) {
-                    super(aggregated, conceptMap);
-                    this.transformer = transformer;
-                }
+        public static Aggregated of(ConceptMap aggregated, DownstreamVars.Partial derivedFrom) {
+            if (derivedFrom.transformer() == null) return new UpstreamVars.Derived(aggregated, derivedFrom.map());
+            else if (derivedFrom.transformer().isUnifier())
+                return new DownstreamVars.Unified(aggregated, derivedFrom.map(), derivedFrom.transformer.asUnifier());
+            else if (derivedFrom.transformer().isMapping())
+                return new DownstreamVars.Mapped(aggregated, derivedFrom.map(), derivedFrom.transformer.asMapped());
+            else throw GraknException.of(ILLEGAL_STATE);
+        }
 
-                public UpstreamVars.Derived toUpstreamVars() {
-                    return new UpstreamVars.Derived(transformer.unTransform(conceptMap()), conceptMap());
-                }
+        public AnswerState.DownstreamVars.Mapped asMapped() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Mapped.class));
+        }
 
-                @Override
-                public Mapped asMapped() {
-                    return this;
-                }
-            }
+        public AnswerState.DownstreamVars.Unified asUnified() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Unified.class));
+        }
 
-            public static class Unified extends Aggregated {
-
-                private final Unifier transformer;
-
-                Unified(ConceptMap aggregated, ConceptMap conceptMap, Unifier transformer) {
-                    super(aggregated, conceptMap);
-                    this.transformer = transformer;
-                }
-
-                public Optional<UpstreamVars.Derived> toUpstreamVars() {
-                    return transformer.unTransform(conceptMap()).map(t -> new UpstreamVars.Derived(t, conceptMap()));
-                }
-
-                @Override
-                public Unified asUnified() {
-                    return this;
-                }
-            }
-
-            public static class Root extends Aggregated implements ResponseAnswer {
-                // TODO Would like to make this class the same as Derived
-                Root(ConceptMap aggregated, ConceptMap conceptMap) {
-                    super(aggregated, conceptMap);
-                }
-
-                @Override
-                public ConceptMap from() {
-                    return super.derivedFrom;
-                }
-
-                @Override
-                public ConceptMap map() {
-                    return new ConceptMap(conceptMap().concepts());
-                }
-
-                @Override
-                public Root asRoot() {
-                    return this;
-                }
-            }
+        public AnswerState.UpstreamVars.Derived asDerived() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.UpstreamVars.Derived.class));
         }
     }
 }
