@@ -74,6 +74,11 @@ public class DatabaseSteps {
         }
     }
 
+    @Then("connection delete database; throws exception: {word}")
+    public void connection_delete_database_throws_exception(String name) {
+        connection_delete_databases_throws_exception(list(name));
+    }
+
     @Then("connection delete database(s); throws exception")
     public void connection_delete_databases_throws_exception(List<String> names) {
         for (String databaseName : names) {

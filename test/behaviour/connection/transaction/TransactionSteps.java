@@ -48,7 +48,7 @@ public class TransactionSteps {
     // sequential sessions, sequential transactions //
     // =============================================//
 
-    @When("session opens transaction of type: {transaction_type}")
+    @When("(for each )session(,) open(s) transaction(s) of type: {transaction_type}")
     public void session_opens_transaction_of_type(Arguments.Transaction.Type type) {
         for_each_session_open_transactions_of_type(list(type));
     }
@@ -66,7 +66,7 @@ public class TransactionSteps {
     }
 
 
-    @When("(for each )session(,) open transactions of type; throws exception: {transaction_type}")
+    @When("(for each )session(,) open transaction(s) of type; throws exception: {transaction_type}")
     public void for_each_session_open_transactions_of_type_throws_exception(Arguments.Transaction.Type type) {
         for_each_session_open_transactions_of_type_throws_exception(list(type));
     }
@@ -133,6 +133,11 @@ public class TransactionSteps {
                 assertion.accept(transaction);
             }
         }
+    }
+
+    @Then("(for each )session(,) transaction(s) has/have type: {transaction_type}")
+    public void for_each_session_transactions_have_type_inline(Arguments.Transaction.Type type) {
+        for_each_session_transactions_have_type(list(type));
     }
 
     @Then("(for each )session(,) transaction(s) has/have type:")

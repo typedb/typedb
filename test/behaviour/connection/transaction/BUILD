@@ -57,7 +57,7 @@ java_test(
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
-        "//test/behaviour/graql/language/define:steps",
+        "//test/behaviour/graql:steps",
     ],
     data = [
         "@graknlabs_behaviour//connection:transaction.feature",

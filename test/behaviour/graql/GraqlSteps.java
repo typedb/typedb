@@ -77,6 +77,11 @@ public class GraqlSteps {
         tx().query().define(graqlQuery);
     }
 
+    @Given("graql define; throws exception containing {string}")
+    public void graql_define_throws_exception(String exception, String defineQueryStatements) {
+        assertThrows(() -> graql_define(defineQueryStatements));
+    }
+
     @Given("graql define; throws exception")
     public void graql_define_throws_exception(String defineQueryStatements) {
         assertThrows(() -> graql_define(defineQueryStatements));
@@ -101,6 +106,11 @@ public class GraqlSteps {
 
     @Given("graql insert; throws exception")
     public void graql_insert_throws_exception(String insertQueryStatements) {
+        assertThrows(() -> graql_insert(insertQueryStatements));
+    }
+
+    @Given("graql insert; throws exception containing {string}")
+    public void graql_insert_throws_exception(String exception, String insertQueryStatements) {
         assertThrows(() -> graql_insert(insertQueryStatements));
     }
 
