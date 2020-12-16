@@ -20,8 +20,6 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.exception.GraknException;
 
-import java.util.List;
-
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
