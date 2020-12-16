@@ -197,7 +197,7 @@ public class GraqlSteps {
 
             for (Map<String, String> answerIdentifier : answersIdentifiers) {
 
-                if (matchAnswer(answerIdentifier, answer)) {
+                if (matchAnswerConcept(answerIdentifier, answer)) {
                     matchingIdentifiers.add(answerIdentifier);
                 }
             }
@@ -221,7 +221,7 @@ public class GraqlSteps {
             final Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
             assertTrue(
                     String.format("The answer at index %d does not match the identifier entry (row) at index %d", i, i),
-                    matchAnswer(answerIdentifiers, answer)
+                    matchAnswerConcept(answerIdentifiers, answer)
             );
         }
     }
@@ -275,7 +275,7 @@ public class GraqlSteps {
 
                 for (Map<String, String> answerIdentifiers : answersIdentifiers) {
 
-                    if (matchAnswer(answerIdentifiers, answer)) {
+                    if (matchAnswerConcept(answerIdentifiers, answer)) {
                         matchingIdentifiers.add(answerIdentifiers);
                     }
                 }
@@ -355,6 +355,28 @@ public class GraqlSteps {
 
             if (!identifierChecks.get(identifier).check(answer.get(var))) {
                 return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean matchAnswerConcept(Map<String, String> answerIdentifiers, ConceptMap answer) {
+        for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
+            final Reference.Name var = Reference.named(entry.getKey());
+            final String[] identifier = entry.getValue().split(",", 2);
+            switch (identifier[0]) {
+                case "label":
+                    if (!new LabelUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                        return false;
+                    }
+                case "key":
+                    if (!new KeyUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                        return false;
+                    }
+                case "value":
+                    if (!new ValueUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                        return false;
+                    }
             }
         }
         return true;
