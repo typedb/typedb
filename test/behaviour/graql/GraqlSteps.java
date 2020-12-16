@@ -185,17 +185,17 @@ public class GraqlSteps {
     }
 
     @Then("uniquely identify answer concepts")
-    public void uniquely_identify_answer_concepts(List<Map<String, String>> answersIdentifiers) {
+    public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-                              answersIdentifiers.size(), answers.size()),
-                answersIdentifiers.size(), answers.size()
+                        answerConcepts.size(), answers.size()),
+                answerConcepts.size(), answers.size()
         );
 
         for (ConceptMap answer : answers) {
             List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
 
-            for (Map<String, String> answerIdentifier : answersIdentifiers) {
+            for (Map<String, String> answerIdentifier : answerConcepts) {
 
                 if (matchAnswerConcept(answerIdentifier, answer)) {
                     matchingIdentifiers.add(answerIdentifier);
@@ -211,6 +211,7 @@ public class GraqlSteps {
 
     @Then("order of answer concepts is")
     public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
+        System.out.println(answers);
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
                               answersIdentifiers.size(), answers.size()),

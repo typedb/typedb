@@ -66,7 +66,7 @@ public class TransactionSteps {
     }
 
 
-    @When("for each )session(,) open transactions of type; throws exception: {transaction_type}")
+    @When("(for each )session(,) open transactions of type; throws exception: {transaction_type}")
     public void for_each_session_open_transactions_of_type_throws_exception(Arguments.Transaction.Type type) {
         for_each_session_open_transactions_of_type_throws_exception(list(type));
     }
