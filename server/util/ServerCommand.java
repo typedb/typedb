@@ -21,8 +21,8 @@ package grakn.core.server.util;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.Version;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Option;
 
 import java.net.URI;
 import java.nio.file.Path;

@@ -82,7 +82,7 @@ public abstract class Identifier {
 
         @Override
         public String toString() {
-            return "#_" + id;
+            return scope + ":" + id;
         }
 
         @Override
