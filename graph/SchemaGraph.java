@@ -607,7 +607,14 @@ public class SchemaGraph implements Graph {
         public long subTypesDepth(TypeVertex type) {
             Supplier<Long> maxDepthFn =
                     () -> 1 + type.ins().edge(SUB).from().stream().mapToLong(this::subTypesDepth).max().orElse(0);
-            if (isReadOnly) return subTypesDepth.computeIfAbsent(type, t -> maxDepthFn.get());
+            if (isReadOnly) {
+                if (!subTypesDepth.containsKey(type)) {
+                    long depth = maxDepthFn.get();
+                    return subTypesDepth.computeIfAbsent(type, t -> depth);
+                } else {
+                    return subTypesDepth.get(type);
+                }
+            }
             else return maxDepthFn.get();
         }
     }
