@@ -72,12 +72,9 @@ Feature: Graql Match Query
       """
       match $x owns $x;
       """
-    And concept identifiers are
-      |      | check | value  |
-      | UNIT | label | unit   |
     Then uniquely identify answer concepts
-      | x    |
-      | UNIT |
+      | x          |
+      | label:unit |
 
 
   # TODO query planning error

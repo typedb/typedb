@@ -24,6 +24,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         super(codePrefix, codeNumber, messagePrefix, messageBody);
     }
 
+    public static void loadConstants() {
+        for (Class<?> innerClass: ErrorMessage.class.getDeclaredClasses()) {
+            try {
+                Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
+            } catch (ClassNotFoundException e) {
+                throw GraknException.of(e);
+            }
+        }
+    }
+
     public static class Server extends ErrorMessage {
         public static final Server DATA_DIRECTORY_NOT_FOUND =
                 new Server(1, "The expected data directory '%s' does not exist.");
@@ -291,7 +301,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeRead TYPE_ROOT_MISMATCH =
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =
-                new TypeRead(3, "The type '%s' is not found.");
+                new TypeRead(3, "The type '%s' does not exist.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
@@ -328,10 +338,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(10, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
                 new TypeWrite(11, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
-        public static final TypeWrite ATTRIBUTE_SUBTYPE_NOT_ABSTRACT =
-                new TypeWrite(12, "The attribute type '%s' cannot be set to abstract as its subtypes are not abstract.");
-        public static final TypeWrite ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT =
-                new TypeWrite(13, "The attribute type '%s' cannot be a subtyped as it is not abstract.");
+        public static final TypeWrite ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES =
+                new TypeWrite(12, "The attribute type '%s' cannot be set to non abstract as it has subtypes.");
+        public static final TypeWrite ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT =
+                new TypeWrite(13, "The attribute type '%s' cannot be subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
                 new TypeWrite(14, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE =

@@ -65,12 +65,9 @@ Feature: Role Scoping
       """
       match $x relates employee;
       """
-    And concept identifiers are
-      |     | check | value      |
-      | EMP | label | employment |
     Then uniquely identify answer concepts
-      | x   |
-      | EMP |
+      | x                |
+      | label:employment |
 
 
 
@@ -90,9 +87,6 @@ Feature: Role Scoping
       """
       match $x relates friend;
       """
-    And concept identifiers are
-      |     | check | value      |
-      | FRE | label | friendship |
     Then uniquely identify answer concepts
-      | x   |
-      | FRE |
+      | x                |
+      | label:friendship |

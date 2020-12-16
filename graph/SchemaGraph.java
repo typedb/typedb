@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
+import static grakn.core.common.iterator.Iterators.empty;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
@@ -109,7 +110,6 @@ public class SchemaGraph implements Graph {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
         }
-
     }
 
     @Override
@@ -239,6 +239,15 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex getType(String label) {
         return getType(label, null);
+    }
+
+    public ResourceIterator<TypeVertex> getRoleTypes(Label scopedLabel) {
+        assert scopedLabel.scope().isPresent();
+        TypeVertex relationType = getType(scopedLabel.scope().get());
+        if (relationType == null) return empty();
+        else return tree(relationType, r -> r.ins().edge(SUB).from())
+                .flatMap(r -> r.outs().edge(RELATES).to())
+                .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()));
     }
 
     public TypeVertex getType(String label, @Nullable String scope) {
@@ -598,7 +607,14 @@ public class SchemaGraph implements Graph {
         public long subTypesDepth(TypeVertex type) {
             Supplier<Long> maxDepthFn =
                     () -> 1 + type.ins().edge(SUB).from().stream().mapToLong(this::subTypesDepth).max().orElse(0);
-            if (isReadOnly) return subTypesDepth.computeIfAbsent(type, t -> maxDepthFn.get());
+            if (isReadOnly) {
+                if (!subTypesDepth.containsKey(type)) {
+                    long depth = maxDepthFn.get();
+                    return subTypesDepth.computeIfAbsent(type, t -> depth);
+                } else {
+                    return subTypesDepth.get(type);
+                }
+            }
             else return maxDepthFn.get();
         }
     }

@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -72,6 +71,7 @@ import static grakn.core.graph.util.StatisticsBytes.attributeCountedKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountJobKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeTotalCountKey;
+import static grakn.core.graph.util.StatisticsBytes.snapshotKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexCountKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexTransitiveCountKey;
 import static java.util.stream.Stream.concat;
@@ -502,7 +502,7 @@ public class DataGraph implements Graph {
         private boolean needsBackgroundCounting;
         private final SchemaGraph schemaGraph;
         private final Storage storage;
-        private final AtomicLong snapshot;
+        private final long snapshot;
 
         public Statistics(SchemaGraph schemaGraph, Storage storage) {
             persistedVertexCount = new ConcurrentHashMap<>();
@@ -513,13 +513,13 @@ public class DataGraph implements Graph {
             attributeVertexCountJobs = new ConcurrentHashMap<>();
             hasEdgeCountJobs = new ConcurrentHashMap<>();
             needsBackgroundCounting = false;
+            snapshot =  bytesToLongOrZero(storage.get(snapshotKey()));
             this.schemaGraph = schemaGraph;
             this.storage = storage;
-            snapshot = new AtomicLong(0);
         }
 
         public long snapshot() {
-            return snapshot.get();
+            return snapshot;
         }
 
         public long hasEdgeSum(TypeVertex owner, Set<TypeVertex> attributes) {
@@ -583,12 +583,10 @@ public class DataGraph implements Graph {
 
         public void vertexCreated(VertexIID.Type typeIID) {
             deltaVertexCount.compute(typeIID, (k, v) -> (v == null ? 0 : v) + 1);
-            snapshot.incrementAndGet();
         }
 
         public void vertexDeleted(VertexIID.Type typeIID) {
             deltaVertexCount.compute(typeIID, (k, v) -> (v == null ? 0 : v) - 1);
-            snapshot.incrementAndGet();
         }
 
         public void attributeVertexCreated(VertexIID.Attribute<?> attIID) {
@@ -631,8 +629,7 @@ public class DataGraph implements Graph {
             if (isTransitive) {
                 return persistedVertexTransitiveCount.computeIfAbsent(typeIID, iid -> {
                     if (isRootTypeIID(typeIID)) {
-                        final byte[] val = storage.get(vertexTransitiveCountKey(typeIID));
-                        return val == null ? 0 : bytesToLong(val);
+                        return bytesToLongOrZero(storage.get(vertexTransitiveCountKey(typeIID)));
                     } else {
                         ResourceIterator<TypeVertex> subTypes = schemaGraph.convert(typeIID).ins().edge(SUB).from();
                         long childrenPersistedCount = 0;
@@ -645,26 +642,20 @@ public class DataGraph implements Graph {
                     }
                 });
             } else {
-                return persistedVertexCount.computeIfAbsent(typeIID, iid -> {
-                    final byte[] val = storage.get(vertexCountKey(typeIID));
-                    return val == null ? 0 : bytesToLong(val);
-                });
+                return persistedVertexCount.computeIfAbsent(typeIID, iid ->
+                        bytesToLongOrZero(storage.get(vertexCountKey(typeIID))));
             }
         }
 
         private long persistedHasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
-            return persistedHasEdgeCount.computeIfAbsent(pair(thingTypeIID, attTypeIID), iid -> {
-                final byte[] val = storage.get(hasEdgeCountKey(thingTypeIID, attTypeIID));
-                return val == null ? 0 : bytesToLong(val);
-            });
+            return persistedHasEdgeCount.computeIfAbsent(pair(thingTypeIID, attTypeIID), iid ->
+                    bytesToLongOrZero(storage.get(hasEdgeCountKey(thingTypeIID, attTypeIID))));
         }
 
         private long persistedHasEdgeTotalCount(VertexIID.Type rootTypeIID) {
             if (isRootTypeIID(rootTypeIID)) {
-                return persistedHasEdgeTotalCount.computeIfAbsent(rootTypeIID, iid -> {
-                    final byte[] val = storage.get(hasEdgeTotalCountKey(rootTypeIID));
-                    return val == null ? 0 : bytesToLong(val);
-                });
+                return persistedHasEdgeTotalCount.computeIfAbsent(rootTypeIID, iid ->
+                        bytesToLongOrZero(storage.get(hasEdgeTotalCountKey(rootTypeIID))));
             } else if (rootTypeIID.equals(schemaGraph.rootThingType().iid())) {
                 return persistedHasEdgeTotalCount(schemaGraph.rootEntityType().iid()) +
                         persistedHasEdgeTotalCount(schemaGraph.rootRelationType().iid()) +
@@ -699,6 +690,9 @@ public class DataGraph implements Graph {
             hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putUntracked(
                     hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()
             ));
+            if (!deltaVertexCount.isEmpty()) {
+                storage.mergeUntracked(snapshotKey(), longToBytes(1));
+            }
         }
 
         private void clear() {
@@ -723,6 +717,7 @@ public class DataGraph implements Graph {
                 }
                 storage.delete(countJob.key());
             }
+            storage.mergeUntracked(snapshotKey(), longToBytes(1));
         }
 
         private void processAttributeCountJob(CountJob countJob) {
@@ -794,6 +789,10 @@ public class DataGraph implements Graph {
                 }
                 storage.delete(StatisticsBytes.hasEdgeCountedKey(thingIID, attIID));
             }
+        }
+
+        private long bytesToLongOrZero(byte[] bytes) {
+            return bytes != null ? bytesToLong(bytes) : 0;
         }
 
         public abstract static class CountJob {

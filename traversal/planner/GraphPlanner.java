@@ -98,7 +98,7 @@ public class GraphPlanner implements Planner {
         totalCostPrevious = 0.01;
         totalCostNext = 0.01;
         branchingFactor = 0.01;
-        snapshot = 0L;
+        snapshot = -1L;
     }
 
     static GraphPlanner create(Structure structure) {
@@ -326,7 +326,8 @@ public class GraphPlanner implements Planner {
             }
             isOptimising.set(false);
             Instant e = Instant.now();
-            LOG.trace(String.format("[%s] optimisation duration: %s (ms)", toString(), Duration.between(s, e).toMillis()));
+            LOG.debug(String.format("Optimisation status: %s", resultStatus.name()));
+            LOG.debug(String.format("Optimisation duration: %s (ms)", Duration.between(s, e).toMillis()));
         }
     }
 

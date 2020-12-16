@@ -202,23 +202,34 @@ public class GraphProcedure implements Procedure {
 
         public GraphProcedure build() {
             for (ProcedureEdge<?, ?> edge : edges) assert edge != null;
+            vertices.values().forEach(v -> {
+                if (v.isType()) v.asType().props(v.asType().props());
+            });
             return GraphProcedure.this;
         }
 
-        public ProcedureVertex.Type labelled(String label) {
-            return labelled(label, false);
+        public ProcedureVertex.Type labelledType(String label) {
+            return labelledType(label, false);
         }
 
-        public ProcedureVertex.Type labelled(String label, boolean isStart) {
+        public ProcedureVertex.Type labelledType(String label, boolean isStart) {
             return typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
         }
 
-        public ProcedureVertex.Thing nameThing(String name) {
-            return nameThing(name, false);
+        public ProcedureVertex.Thing namedThing(String name) {
+            return namedThing(name, false);
         }
 
-        public ProcedureVertex.Thing nameThing(String name, boolean isStart) {
+        public ProcedureVertex.Thing namedThing(String name, boolean isStart) {
             return thingVertex(Identifier.Variable.of(Reference.named(name)), isStart);
+        }
+
+        public ProcedureVertex.Thing anonymousThing(int id) {
+            return thingVertex(Identifier.Variable.anon(id), false);
+        }
+
+        public ProcedureVertex.Thing scopedThing(ProcedureVertex.Thing scope, int id) {
+            return thingVertex(Identifier.Scoped.of(scope.id().asVariable(), id), false);
         }
 
         public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, String label) {
@@ -264,6 +275,30 @@ public class GraphProcedure implements Procedure {
                 int order, ProcedureVertex.Thing attribute, ProcedureVertex.Thing owner) {
             ProcedureEdge.Native.Thing.Has.Backward edge =
                     new ProcedureEdge.Native.Thing.Has.Backward(attribute, owner, order);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.Relating.Forward forwardRelating(
+                int order, ProcedureVertex.Thing relation, ProcedureVertex.Thing role) {
+            ProcedureEdge.Native.Thing.Relating.Forward edge =
+                    new ProcedureEdge.Native.Thing.Relating.Forward(relation, role, order);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.Playing.Forward forwardPlaying(
+                int order, ProcedureVertex.Thing player, ProcedureVertex.Thing role) {
+            ProcedureEdge.Native.Thing.Playing.Forward edge =
+                    new ProcedureEdge.Native.Thing.Playing.Forward(player, role, order);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.Playing.Backward backwardPlaying(
+                int order, ProcedureVertex.Thing role, ProcedureVertex.Thing player) {
+            ProcedureEdge.Native.Thing.Playing.Backward edge =
+                    new ProcedureEdge.Native.Thing.Playing.Backward(role, player, order);
             registerEdge(edge);
             return edge;
         }

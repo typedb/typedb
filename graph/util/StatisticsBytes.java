@@ -87,4 +87,8 @@ public class StatisticsBytes {
                 attIID.bytes()
         );
     }
+
+    public static byte[] snapshotKey() {
+        return Encoding.Prefix.STATISTICS_SNAPSHOT.bytes();
+    }
 }
