@@ -24,6 +24,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         super(codePrefix, codeNumber, messagePrefix, messageBody);
     }
 
+    public static void loadConstants() {
+        for (Class<?> innerClass: ErrorMessage.class.getDeclaredClasses()) {
+            try {
+                Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
+            } catch (ClassNotFoundException e) {
+                throw GraknException.of(e);
+            }
+        }
+    }
+
     public static class Server extends ErrorMessage {
         public static final Server DATA_DIRECTORY_NOT_FOUND =
                 new Server(1, "The expected data directory '%s' does not exist.");
