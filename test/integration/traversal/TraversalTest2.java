@@ -19,7 +19,6 @@
 package grakn.core.traversal;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.rocks.RocksGrakn;
@@ -40,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
+import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static graql.lang.Graql.parseQuery;
@@ -60,7 +60,7 @@ public class TraversalTest2 {
         grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
 
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = grakn.session(database, SCHEMA)) {
             try (RocksTransaction transaction = session.transaction(WRITE)) {
                 final String queryString = "define\n" +
                         "sale sub relation,\n" +
@@ -149,8 +149,8 @@ public class TraversalTest2 {
             ProcedureVertex.Type _sale_seller = proc.labelledType("sale:seller");
 
             proc.setLabel(_sale, "sale");
-            proc.setLabel(_sale_buyer, "sale:buyer");
-            proc.setLabel(_sale_seller, "sale:seller");
+            proc.setLabel(_sale_buyer, "buyer", "sale");
+            proc.setLabel(_sale_seller, "seller", "sale");
 
             ProcedureVertex.Thing a = proc.namedThing("a");
             ProcedureVertex.Thing b = proc.namedThing("b");
