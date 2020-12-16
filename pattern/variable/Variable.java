@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Variable implements Pattern {
@@ -61,8 +62,6 @@ public abstract class Variable implements Pattern {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices
-//        assert !(reference().isLabel() && typeHints.isEmpty());
-        if (!typeHints.isEmpty()) traversal.types(identifier, typeHints);
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 

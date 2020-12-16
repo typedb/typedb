@@ -28,6 +28,7 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 
@@ -79,6 +80,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     public static ThingVariable of(Identifier.Variable identifier) {
         return new ThingVariable(identifier);
+    }
+
+    @Override
+    public void addTo(Traversal traversal) {
+        if (!typeHints().isEmpty()) traversal.types(identifier(), typeHints());
+        super.addTo(traversal);
     }
 
     private void constrain(ThingConstraint constraint) {
