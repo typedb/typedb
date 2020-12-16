@@ -26,7 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class AnswerState {
     // TODO Add equals and hashcode methods throughout
@@ -133,15 +135,15 @@ public abstract class AnswerState {
             }
 
             public Mapped asMapped() {
-                return null; // TODO
+                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapped.class));
             }
 
             public Unified asUnified() {
-                return null; // TODO
+                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unified.class));
             }
 
             public NoOp asNoOp() {
-                return null; // TODO
+                throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(NoOp.class));
             }
 
             public static class Mapped extends Aggregated {
@@ -155,6 +157,11 @@ public abstract class AnswerState {
 
                 public UpstreamVars.Derived toUpstreamVars() {
                     return new UpstreamVars.Derived(transformer.unTransform(conceptMap()), conceptMap());
+                }
+
+                @Override
+                public Mapped asMapped() {
+                    return this;
                 }
             }
 
@@ -170,10 +177,15 @@ public abstract class AnswerState {
                 public Optional<UpstreamVars.Derived> toUpstreamVars() {
                     return transformer.unTransform(conceptMap()).map(t -> new UpstreamVars.Derived(t, conceptMap()));
                 }
+
+                @Override
+                public Unified asUnified() {
+                    return this;
+                }
             }
 
             public static class NoOp extends Aggregated implements ResponseAnswer {
-
+                // TODO Would like to do without this class
                 NoOp(ConceptMap aggregated, ConceptMap conceptMap) {
                     super(aggregated, conceptMap);
                 }
@@ -186,6 +198,11 @@ public abstract class AnswerState {
                 @Override
                 public ConceptMap map() {
                     return new ConceptMap(conceptMap().concepts());
+                }
+
+                @Override
+                public NoOp asNoOp() {
+                    return this;
                 }
             }
         }
