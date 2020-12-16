@@ -59,10 +59,15 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void getSchema(MigratorProto.GetSchema.Req request, StreamObserver<MigratorProto.GetSchema.Res> responseObserver) {
-        String schema = new Schema(grakn, request.getDatabase()).getSchema();
-        MigratorProto.GetSchema.Res res = MigratorProto.GetSchema.Res.newBuilder().setSchema(schema).build();
-        responseObserver.onNext(res);
-        responseObserver.onCompleted();
+        try {
+            String schema = new Schema(grakn, request.getDatabase()).getSchema();
+            MigratorProto.GetSchema.Res res = MigratorProto.GetSchema.Res.newBuilder().setSchema(schema).build();
+            responseObserver.onNext(res);
+            responseObserver.onCompleted();
+        } catch (GraknException e) {
+            LOG.error(e.getMessage(), e);
+            responseObserver.onError(exception(e));
+        }
     }
 
     private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
