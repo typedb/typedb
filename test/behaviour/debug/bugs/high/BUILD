@@ -19,41 +19,6 @@ package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "start-iterators-test",
-    srcs = [
-        "StartingIteratorTest.java",
-    ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.high.StartingIteratorTest",
-    deps = [
-        # Internal dependencies
-
-        # Add your additional debugging dependencies here
-        # e.g. "//test/behaviour/connection/session:steps",
-
-        # External Maven Dependencies
-        "@maven//:io_cucumber_cucumber_java",
-        "@maven//:io_cucumber_cucumber_junit",
-    ],
-    runtime_deps = [
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/concept/thing/entity:steps",
-        "//test/behaviour/concept/thing/attribute:steps",
-        "//test/behaviour/concept/thing/relation:steps",
-        "//test/behaviour/concept/type/attributetype:steps",
-        "//test/behaviour/concept/type/relationtype:steps",
-        "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/graql:steps",
-    ],
-    data = [
-        ":start-iterator-bugs.feature",
-    ],
-    size = "medium",
-)
-
-java_test(
     name = "traversal-test",
     srcs = [
         "TraversalTest.java",
@@ -84,42 +49,6 @@ java_test(
     ],
     data = [
         ":traversal-bugs.feature",
-    ],
-    size = "medium",
-)
-
-
-java_test(
-    name = "unknown-failures-test",
-    srcs = [
-        "UnknownFailuresTest.java",
-    ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.high.UnknownFailuresTest",
-    deps = [
-        # Internal dependencies
-
-        # Add your additional debugging dependencies here
-        # e.g. "//test/behaviour/connection/session:steps",
-
-        # External Maven Dependencies
-        "@maven//:io_cucumber_cucumber_java",
-        "@maven//:io_cucumber_cucumber_junit",
-    ],
-    runtime_deps = [
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/concept/thing/entity:steps",
-        "//test/behaviour/concept/thing/attribute:steps",
-        "//test/behaviour/concept/thing/relation:steps",
-        "//test/behaviour/concept/type/attributetype:steps",
-        "//test/behaviour/concept/type/relationtype:steps",
-        "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/graql:steps",
-    ],
-    data = [
-        ":unknown-failures.feature",
     ],
     size = "medium",
 )

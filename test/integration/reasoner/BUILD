@@ -16,55 +16,37 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-package(default_visibility = [
-    "//query:__subpackages__",
-    "//reasoner:__subpackages__",
-    "//rocks:__pkg__",
-    "//test/integration/reasoner:__pkg__",
-])
-
-native_java_libraries(
-    name = "reasoner",
-    srcs = glob(
-        ["*.java",
-         "resolution/*.java",
-         "resolution/framework/*.java",
-         "resolution/resolver/*.java",
-         "resolution/answer/*.java",
-         ],
-        exclude = ["*Test.java", "*/*Test.java"],
-    ),
+host_compatible_java_test(
+    name = "test-resolution",
+    srcs = ["ResolutionTest.java"],
+    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
     native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
         "//concept:concept",
-        "//logic:logic",
         "//pattern:pattern",
-        "//traversal:traversal",
+        "//logic:logic",
+        "//reasoner:reasoner",
     ],
     deps = [
         # Internal dependencies
-        "//common",
-        "//graph", # TODO: this is bad and needs to go
+        "//test/integration/util:util",
+        "//common:common",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common",
-        "@graknlabs_graql//java/pattern",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:org_slf4j_slf4j_api"
+        "@graknlabs_graql//java:graql",
     ],
-    runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
+    resources = [
+        "//common/test:logback"
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     license_type = "agpl",
 )

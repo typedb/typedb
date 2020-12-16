@@ -154,9 +154,9 @@ public class TraversalTest2 {
         GraphProcedure.Builder proc = GraphProcedure.builder(3);
 
         ProcedureVertex.Type relation = proc.labelled("employment", true);
-        ProcedureVertex.Thing r = proc.named("r");
-        ProcedureVertex.Thing x = proc.named("x");
-        ProcedureVertex.Thing y = proc.named("y");
+        ProcedureVertex.Thing r = proc.nameThing("r");
+        ProcedureVertex.Thing x = proc.nameThing("x");
+        ProcedureVertex.Thing y = proc.nameThing("y");
 
         proc.setLabel(relation, "relation");
 
@@ -189,8 +189,8 @@ public class TraversalTest2 {
 
         ProcedureVertex.Type person = proc.labelled("person", true);
         ProcedureVertex.Type relation = proc.labelled("relation");
-        ProcedureVertex.Thing x = proc.named("x");
-        ProcedureVertex.Thing r = proc.named("r");
+        ProcedureVertex.Thing x = proc.nameThing("x");
+        ProcedureVertex.Thing r = proc.nameThing("r");
 
         proc.setLabel(person, "person");
         proc.setLabel(relation, "relation");

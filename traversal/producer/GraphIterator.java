@@ -290,7 +290,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
 
         private SeekStack(int size) {
             seek = new boolean[size];
-            lastPos = 1;
+            lastPos = 0;
         }
 
         private void addSeeks(Set<Integer> seeks) {
@@ -303,13 +303,16 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         }
 
         private int popLastPos() {
+            assert lastPos > 0;
             seek[lastPos - 1] = false;
             int currentLastPos = lastPos;
 
             for (int p = lastPos - 1; p >= 0; p--) {
-                if (p > 1 && seek[p - 1]) {
+                if (p > 0 && seek[p - 1]) {
                     lastPos = p;
                     break;
+                } else if (p == 0) {
+                    lastPos = 0;
                 }
             }
             return currentLastPos;

@@ -70,6 +70,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         rolePlayers.forEach(rp -> {
             if (rp.roleType().isPresent()) {
                 if (rp.roleType().get().reference().isName() || rp.roleTypeHints().isEmpty()) {
+                    assert rp.roleType().get().label().get().scope().isPresent();
                     Identifier.Scoped role = traversal.newIdentifier(owner.identifier());
                     traversal.relating(owner.identifier(), role);
                     traversal.playing(rp.player().identifier(), role);
