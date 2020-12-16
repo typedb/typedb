@@ -50,7 +50,8 @@ import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABL
 public class Exporter implements Migrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(Exporter.class);
-    private final Grakn.Session session;
+    private final Grakn grakn;
+    private final String database;
     private final Path filename;
     private final AtomicLong entityCount = new AtomicLong(0);
     private final AtomicLong relationCount = new AtomicLong(0);
@@ -60,7 +61,8 @@ public class Exporter implements Migrator {
     private long totalThingCount = 0;
 
     public Exporter(final Grakn grakn, final String database, final Path filename) {
-        this.session = grakn.session(database, Arguments.Session.Type.DATA);
+        this.grakn = grakn;
+        this.database = database;
         this.filename = filename;
     }
 
@@ -75,9 +77,10 @@ public class Exporter implements Migrator {
 
     @Override
     public void run() {
-        LOG.info("Exporting {} from Grakn {}", session.database().name(), Version.VERSION);
+        LOG.info("Exporting {} from Grakn {}", database, Version.VERSION);
         try (final OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
-            try (final Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+            try (final Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
+                 final Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 totalThingCount = tx.concepts().getRootThingType().getInstancesCount();
                 final DataProto.Item header = DataProto.Item.newBuilder()
                         .setHeader(DataProto.Item.Header.newBuilder()

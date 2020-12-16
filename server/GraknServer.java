@@ -155,9 +155,11 @@ public class GraknServer implements AutoCloseable {
         final ServerCommand.Start startCommand = new ServerCommand.Start();
         final ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
         final ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
+        final ServerCommand.GetSchema getSchemaCommand = new ServerCommand.GetSchema(startCommand);
         final CommandLine commandLine = new CommandLine(startCommand)
                 .addSubcommand(importDataCommand)
-                .addSubcommand(exportDataCommand);
+                .addSubcommand(exportDataCommand)
+                .addSubcommand(getSchemaCommand);
         commandLine.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
 
         try {
@@ -214,6 +216,10 @@ public class GraknServer implements AutoCloseable {
                 MigratorClient migrator = new MigratorClient(exportDataCommand.port());
                 boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
                 System.exit(success ? 0 : 1);
+            } else if (command.isGetSchema()) {
+                ServerCommand.GetSchema getSchemaCommand = command.asGetSchema();
+                MigratorClient migrator = new MigratorClient(getSchemaCommand.port());
+                migrator.getSchema(getSchemaCommand.database());
             }
         } catch (Exception e) {
             LOG.error(e.getMessage());
