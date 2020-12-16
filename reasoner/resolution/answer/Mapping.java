@@ -26,11 +26,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class Mapping implements VariableTransformer {
+public class Mapping extends VariableTransformer {
 
     private final Map<Reference.Name, Reference.Name> mapping;
     private final Map<Reference.Name, Reference.Name> reverseMapping;
@@ -69,7 +68,6 @@ public class Mapping implements VariableTransformer {
         return Objects.hash(mapping, reverseMapping);
     }
 
-    @Override
     public ConceptMap transform(ConceptMap toTransform) {
         return undirectedTransform(toTransform, mapping);
     }
@@ -85,5 +83,15 @@ public class Mapping implements VariableTransformer {
             transformed.put(e.getValue(), conceptMap.get(e.getKey()));
         }
         return new ConceptMap(transformed);
+    }
+
+    @Override
+    public boolean isMapping() {
+        return true;
+    }
+
+    @Override
+    public Mapping asMapped() {
+        return this;
     }
 }

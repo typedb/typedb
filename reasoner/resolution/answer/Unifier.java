@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-public class Unifier implements VariableTransformer {
+public class Unifier extends VariableTransformer {
 
     private final Map<Reference.Name, Set<Reference.Name>> unifier;
 
@@ -41,12 +41,10 @@ public class Unifier implements VariableTransformer {
         return new Unifier(unifier);
     }
 
-    @Override
-    public ConceptMap transform(ConceptMap toTransform) {
+    public Optional<ConceptMap> transform(ConceptMap toTransform) {
         return null; // TODO
     }
 
-    @Override
     public Optional<ConceptMap> unTransform(ConceptMap conceptMap) {
         return Optional.empty(); // TODO
     }
@@ -64,4 +62,13 @@ public class Unifier implements VariableTransformer {
         return Objects.hash(unifier);
     }
 
+    @Override
+    public boolean isUnifier() {
+        return true;
+    }
+
+    @Override
+    public Unifier asUnifier() {
+        return this;
+    }
 }

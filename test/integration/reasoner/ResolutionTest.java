@@ -23,7 +23,6 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.NoOpAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -43,6 +42,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -388,7 +388,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.empty(), null),
                                               registry
                                       )
                     );
@@ -439,7 +439,7 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.executeReceiveRequest(
-                                      new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY),
+                                      new Request(new Request.Path(root), DownstreamVars.Partial.empty(), ResolutionAnswer.Derivation.EMPTY),
                                       registry
                               )
             );

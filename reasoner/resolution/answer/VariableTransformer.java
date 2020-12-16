@@ -17,12 +17,27 @@
 
 package grakn.core.reasoner.resolution.answer;
 
-import grakn.core.concept.answer.ConceptMap;
+import grakn.core.common.exception.GraknException;
 
-import java.util.Optional;
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public interface VariableTransformer {
-    ConceptMap transform(ConceptMap toTransform);
+public abstract class VariableTransformer {
 
-//    Optional<ConceptMap> unTransform(ConceptMap toUnTransform);
+    boolean isUnifier() {
+        return false;
+    }
+
+    Unifier asUnifier() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unifier.class));
+    }
+
+    boolean isMapping() {
+        return false;
+    }
+
+    Mapping asMapped() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapping.class));
+    }
+
 }

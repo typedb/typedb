@@ -124,17 +124,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.partial().aggregateWith(conceptMap).toUpstreamVars();
-
-            if (!derivedAnswer.isPresent()) {
-                // TODO this should be the only place that aggregation can fail, but can we make this explicit?
-                continue;
-            }
-
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.partial().aggregateWith(conceptMap).asMapped().toUpstreamVars();
             LOG.trace("{}: hasProduced: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
+                ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
                 return Either.second(new Response.Answer(fromUpstream, answer));
             }
         }
@@ -148,10 +142,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
         for (Map.Entry<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
-            Request toDownstream = new Request(path.append(entry.getValue()),
-                                               AnswerState.UpstreamVars.Partial.of(partialConceptMap).toDownstreamVars(Unifier.of(entry.getKey())),
-                                               ResolutionAnswer.Derivation.EMPTY);
-            responseProducer.addDownstreamProducer(toDownstream);
+            Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Partial.of(partialConceptMap).toDownstreamVars(Unifier.of(entry.getKey()));
+            if (unified.isPresent()) {
+                Request toDownstream = new Request(path.append(entry.getValue()), unified.get(), ResolutionAnswer.Derivation.EMPTY);
+                responseProducer.addDownstreamProducer(toDownstream);
+            }
         }
     }
 
