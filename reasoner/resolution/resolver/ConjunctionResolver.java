@@ -87,7 +87,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
+                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation,
+                                                    responseProducer.iteration());
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }
@@ -99,7 +100,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         ResponseProducer responseProducer = new ResponseProducer(traversal, request.iteration());
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
-                                           new ResolutionAnswer.Derivation(map()));
+                                           new ResolutionAnswer.Derivation(map()), responseProducer.iteration());
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;
@@ -111,7 +112,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, request.iteration());
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
-                                           new ResolutionAnswer.Derivation(map()));
+                                           new ResolutionAnswer.Derivation(map()), responseProducer.iteration());
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }

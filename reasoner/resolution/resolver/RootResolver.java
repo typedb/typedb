@@ -87,7 +87,8 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
+                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation,
+                                                    responseProducer.iteration());
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }

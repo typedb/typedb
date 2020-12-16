@@ -383,12 +383,12 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null, 0),
                                               registry
                                       )
                     );
@@ -425,7 +425,7 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
                 assertResponses(root, responses, doneReceived, answerCount, registry);
             }
         }
@@ -439,7 +439,7 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.executeReceiveRequest(
-                                      new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY),
+                                      new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, 0),
                                       registry
                               )
             );
