@@ -31,4 +31,13 @@ public class Util {
             assertTrue(true);
         }
     }
+
+    public static void assertThrowsWithMessage(Runnable function, String message) {
+        try {
+            function.run();
+            fail();
+        } catch (RuntimeException e) {
+            assert(e.toString().contains(message));
+        }
+    }
 }

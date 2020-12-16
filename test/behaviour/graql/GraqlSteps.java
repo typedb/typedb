@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.util.Util.assertThrowsWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -79,7 +80,7 @@ public class GraqlSteps {
 
     @Given("graql define; throws exception containing {string}")
     public void graql_define_throws_exception(String exception, String defineQueryStatements) {
-        assertThrows(() -> graql_define(defineQueryStatements));
+        assertThrowsWithMessage(() -> graql_define(defineQueryStatements), exception);
     }
 
     @Given("graql define; throws exception")
@@ -111,7 +112,7 @@ public class GraqlSteps {
 
     @Given("graql insert; throws exception containing {string}")
     public void graql_insert_throws_exception(String exception, String insertQueryStatements) {
-        assertThrows(() -> graql_insert(insertQueryStatements));
+        assertThrowsWithMessage(() -> graql_insert(insertQueryStatements), exception);
     }
 
     @Given("graql delete")
