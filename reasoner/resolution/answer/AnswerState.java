@@ -22,8 +22,10 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import graql.lang.pattern.variable.Reference;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static grakn.common.util.Objects.className;
@@ -31,7 +33,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class AnswerState {
-    // TODO Add equals and hashcode methods throughout
     private final ConceptMap conceptMap;
 
     AnswerState(ConceptMap conceptMap) {
@@ -39,6 +40,19 @@ public abstract class AnswerState {
     }
     protected ConceptMap conceptMap() {
         return conceptMap;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final AnswerState that = (AnswerState) o;
+        return conceptMap.equals(that.conceptMap);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(conceptMap);
     }
 
     public static class UpstreamVars {
@@ -60,6 +74,7 @@ public abstract class AnswerState {
             public Optional<DownstreamVars.Partial> toDownstreamVars(Unifier unifier) {
                 return unifier.transform(conceptMap()).map(unified -> new DownstreamVars.Partial(unified, unifier));
             }
+
         }
 
         public static class Derived extends Aggregated {
@@ -88,20 +103,20 @@ public abstract class AnswerState {
         public static class Partial extends AnswerState {
             private final VariableTransformer transformer;
 
-            Partial(ConceptMap conceptMap, VariableTransformer transformer) {
+            Partial(ConceptMap conceptMap, @Nullable VariableTransformer transformer) {
                 super(conceptMap);
                 this.transformer = transformer;
             }
 
             public static Partial root() {
-                // This is the entry answer state for the request received by the root resolver
-                return new Partial(new ConceptMap(), null); // TODO Should the transformer be Nullable?
+                // This is the entry-point answer state for the request received by the root resolver
+                return new Partial(new ConceptMap(), null);
             }
 
             public Aggregated aggregateWith(ConceptMap conceptMap) {
                 if (conceptMap == null) return null;
                 if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                Map<Reference.Name, Concept> aggregatedMap = new HashMap<>(conceptMap().concepts());
+                Map<Reference.Name, Concept> aggregatedMap = new HashMap<>(this.conceptMap().concepts());
                 aggregatedMap.putAll(conceptMap.concepts());
                 ConceptMap aggregated = new ConceptMap(aggregatedMap);
                 return Aggregated.of(aggregated, this);
@@ -117,6 +132,20 @@ public abstract class AnswerState {
 
             public ConceptMap map() {
                 return new ConceptMap(conceptMap().concepts());
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                if (!super.equals(o)) return false;
+                final Partial partial = (Partial) o;
+                return transformer.equals(partial.transformer);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(super.hashCode(), transformer);
             }
         }
 
@@ -187,6 +216,20 @@ public abstract class AnswerState {
 
         public AnswerState.UpstreamVars.Derived asDerived() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.UpstreamVars.Derived.class));
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            final Aggregated that = (Aggregated) o;
+            return derivedFrom.equals(that.derivedFrom);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), derivedFrom);
         }
     }
 }
