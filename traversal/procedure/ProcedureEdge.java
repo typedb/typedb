@@ -239,17 +239,12 @@ public abstract class ProcedureEdge<
                 this.isTransitive = isTransitive;
             }
 
-            ResourceIterator<TypeVertex> isaTypes(ThingVertex fromVertex) {
-                ResourceIterator<TypeVertex> iterator = single(fromVertex.type());
-                if (isTransitive) {
-                    Encoding.Vertex.Type encoding = fromVertex.type().encoding();
-                    iterator = loop(
-                            fromVertex.type(),
-                            Objects::nonNull,
-                            v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(encoding)).firstOrNull()
-                    );
-                }
-                return iterator;
+            ResourceIterator<TypeVertex> isaTypes(ThingVertex thing) {
+                if (!isTransitive) return single(thing.type());
+                else return loop(
+                        thing.type(), Objects::nonNull,
+                        v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(thing.type().encoding())).firstOrNull()
+                );
             }
 
             @Override
@@ -265,8 +260,7 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public ResourceIterator<? extends Vertex<?, ?>> branchTo(
-                        GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                        Traversal.Parameters params) {
+                        GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                     assert fromVertex.isThing();
                     Set<Label> fromTypes = from.props().types();
                     ResourceIterator<TypeVertex> iter = isaTypes(fromVertex.asThing());

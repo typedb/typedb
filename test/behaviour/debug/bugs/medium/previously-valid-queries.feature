@@ -69,16 +69,11 @@ Feature: Graql Match Query
       """
       match writer sub $x;
       """
-    And concept identifiers are
-      |     | check | value  |
-      | WRI | label | writer |
-      | PER | label | person |
-      | ENT | label | entity |
     Then uniquely identify answer concepts
-      | x   |
-      | WRI |
-      | PER |
-      | ENT |
+      | x            |
+      | label:writer |
+      | label:person |
+      | label:entity |
 
 
   # TODO should be include the type itself in the return of `sub`
@@ -123,36 +118,22 @@ Feature: Graql Match Query
         $x isa $type;
         $type sub worker;
       """
-    When concept identifiers are
-      |     | check | value                        |
-      | CHA | key   | ref:2                        |
-      | DEB | key   | ref:3                        |
-      | EDM | key   | ref:4                        |
-      | FEL | key   | ref:5                        |
-      | GAR | key   | ref:6                        |
-      | CON | label | construction-worker          |
-      | BRI | label | bricklayer                   |
-      | CRA | label | crane-driver                 |
-      | TEL | label | telecoms-worker              |
-      | MNR | label | mobile-network-researcher    |
-      | TBS | label | telecoms-business-strategist |
-      | WOR | label | worker                       |
     # Alfred and Barbara are not retrieved, as they aren't subtypes of worker
     Then uniquely identify answer concepts
-      | x   | type |
-      | CHA | BRI  |
-      | CHA | CON  |
-      | CHA | WOR  |
-      | DEB | CRA  |
-      | DEB | CON  |
-      | DEB | WOR  |
-      | EDM | MNR  |
-      | EDM | TEL  |
-      | EDM | WOR  |
-      | FEL | TBS  |
-      | FEL | TEL  |
-      | FEL | WOR  |
-      | GAR | WOR  |
+      | x         | type                                |
+      | key:ref:2 | label:bricklayer                    |
+      | key:ref:2 | label:construction-worker           |
+      | key:ref:2 | label:worker                        |
+      | key:ref:3 | label:crane-driver                  |
+      | key:ref:3 | label:construction-worker           |
+      | key:ref:3 | label:worker                        |
+      | key:ref:4 | label:mobile-network-researcher     |
+      | key:ref:4 | label:telecoms-worker               |
+      | key:ref:4 | label:worker                        |
+      | key:ref:5 | label:telecoms-business-strategist  |
+      | key:ref:5 | label:telecoms-worker               |
+      | key:ref:5 | label:worker                        |
+      | key:ref:6 | label:worker                        |
 
 
   # TODO should be include the type itself in the return of `sub`
@@ -172,14 +153,10 @@ Feature: Graql Match Query
       """
       match $x sub! person;
       """
-    And concept identifiers are
-      |     | check | value    |
-      | WRI | label | writer   |
-      | MUS | label | musician |
     Then uniquely identify answer concepts
-      | x   |
-      | WRI |
-      | MUS |
+      | x              |
+      | label:writer   |
+      | label:musician |
 
 
   # TODO should be include the type itself in the return of `sub`
@@ -197,12 +174,9 @@ Feature: Graql Match Query
       """
       match writer sub! $x;
       """
-    And concept identifiers are
-      |     | check | value  |
-      | PER | label | person |
     Then uniquely identify answer concepts
-      | x   |
-      | PER |
+      | x            |
+      | label:person |
 
 
 
@@ -228,12 +202,9 @@ Feature: Graql Match Query
       """
       match $a <value>;
       """
-    And concept identifiers are
-      |     | check | value |
-      | ATT | key   | ref:0 |
     Then uniquely identify answer concepts
-      | a   |
-      | ATT |
+      | a         |
+      | key:ref:0 |
 
     Examples:
       | attr        | type     | value      |
@@ -289,14 +260,10 @@ Feature: Graql Match Query
       """
       match $x contains "Fun";
       """
-    And concept identifiers are
-      |     | check | value                            |
-      | FOU | value | name:Four Weddings and a Funeral |
-      | FUN | value | name:Fun Facts about Space       |
     Then uniquely identify answer concepts
-      | x   |
-      | FOU |
-      | FUN |
+      | x                                      |
+      | value:name:Four Weddings and a Funeral |
+      | value:name:Fun Facts about Space       |
 
 
    # TODO we are now case sensitive apparently! Must include "isa attribute" else same error as above
@@ -318,14 +285,10 @@ Feature: Graql Match Query
       """
       match $x contains "Bean";
       """
-    And concept identifiers are
-      |     | check | value                         |
-      | PIR | value | name:Pirates of the Caribbean |
-      | MRB | value | name:Mr. Bean                 |
     Then uniquely identify answer concepts
-      | x   |
-      | PIR |
-      | MRB |
+      | x                                   |
+      | value:name:Pirates of the Caribbean |
+      | value:name:Mr. Bean                 |
 
 
   # TODO works if including `isa attribute`
@@ -347,14 +310,10 @@ Feature: Graql Match Query
       """
       match $x like "^[0-9]+$";
       """
-    And concept identifiers are
-      |     | check | value       |
-      | ONE | value | name:123456 |
-      | NIN | value | name:9      |
     Then uniquely identify answer concepts
-      | x   |
-      | ONE |
-      | NIN |
+      | x                 |
+      | value:name:123456 |
+      | value:name:9      |
 
   Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
     Given graql define
@@ -381,32 +340,26 @@ Feature: Graql Match Query
     Given transaction commits
     Given the integrity is validated
     Given session opens transaction of type: read
-    Given concept identifiers are
-      |     | check | value |
-      | PER | key   | ref:0 |
-      | EMP | key   | ref:1 |
-      | FRI | key   | ref:2 |
-      | RES | key   | ref:3 |
     Given get answers of graql query
       """
       match $r isa relation;
       """
     Given uniquely identify answer concepts
-      | r   |
-      | EMP |
-      | FRI |
-      | RES |
+      | r         |
+      | key:ref:1 |
+      | key:ref:2 |
+      | key:ref:3 |
     When get answers of graql query
       """
       match ($x) isa relation;
       """
     Then uniquely identify answer concepts
-      | x   |
-      | PER |
+      | x         |
+      | key:ref:0 |
     When get answers of graql query
       """
       match ($x);
       """
     Then uniquely identify answer concepts
-      | x   |
-      | PER |
+      | x         |
+      | key:ref:0 |

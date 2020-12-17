@@ -77,12 +77,9 @@ Feature: Graql Match Query
       """
       match $x has $x;
       """
-    And concept identifiers are
-      |       | check | value  |
-      | METER | key   | ref:0  |
     Then uniquely identify answer concepts
-      | x     |
-      | METER |
+      | x         |
+      | key:ref:0 |
 
 
   # TODO probably also fails if you try to insert a relation playing a role in itself
