@@ -119,10 +119,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public abstract Stream<? extends AttributeTypeImpl> getSubtypes();
 
     @Override
+    public abstract Stream<? extends AttributeTypeImpl> getSubtypesDirect();
+
+    @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
     ResourceIterator<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
+    }
+
+    ResourceIterator<TypeVertex> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
+        return vertex.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
     }
 
     @Override
@@ -303,6 +310,26 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeTypeImpl> getSubtypesDirect() {
+            return getSubtypesDirect(v -> {
+                switch (v.valueType()) {
+                    case BOOLEAN:
+                        return AttributeTypeImpl.Boolean.of(graphMgr, v);
+                    case LONG:
+                        return AttributeTypeImpl.Long.of(graphMgr, v);
+                    case DOUBLE:
+                        return AttributeTypeImpl.Double.of(graphMgr, v);
+                    case STRING:
+                        return AttributeTypeImpl.String.of(graphMgr, v);
+                    case DATETIME:
+                        return AttributeTypeImpl.DateTime.of(graphMgr, v);
+                    default:
+                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                }
+            });
+        }
+
+        @Override
         public Stream<AttributeImpl<?>> getInstances() {
             return instances(v -> AttributeImpl.of(v.asAttribute()));
         }
@@ -360,6 +387,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeTypeImpl.Boolean> getSubtypesDirect() {
+            return super.getSubtypesDirect(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
+        }
+
+        @Override
         public Stream<AttributeImpl.Boolean> getInstances() {
             return instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
@@ -405,6 +437,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
                 return super.getSubtypeVertices(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v)).stream();
+            }
+
+            @Override
+            public Stream<AttributeTypeImpl.Boolean> getSubtypesDirect() {
+                return super.getSubtypeVerticesDirect(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v)).stream();
             }
 
             @Override
@@ -475,6 +512,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeTypeImpl.Long> getSubtypesDirect() {
+            return super.getSubtypesDirect(v -> AttributeTypeImpl.Long.of(graphMgr, v));
+        }
+
+        @Override
         public Stream<AttributeImpl.Long> getInstances() {
             return instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
@@ -522,6 +564,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.Long> getSubtypes() {
                 return super.getSubtypeVertices(LONG).map(v -> AttributeTypeImpl.Long.of(graphMgr, v)).stream();
+            }
+
+            @Override
+            public Stream<AttributeTypeImpl.Long> getSubtypesDirect() {
+                return super.getSubtypeVerticesDirect(LONG).map(v -> AttributeTypeImpl.Long.of(graphMgr, v)).stream();
             }
 
             @Override
@@ -592,6 +639,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeTypeImpl.Double> getSubtypesDirect() {
+            return super.getSubtypesDirect(v -> AttributeTypeImpl.Double.of(graphMgr, v));
+        }
+
+        @Override
         public Stream<AttributeImpl.Double> getInstances() {
             return instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
@@ -639,6 +691,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.Double> getSubtypes() {
                 return super.getSubtypeVertices(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphMgr, v)).stream();
+            }
+
+            @Override
+            public Stream<AttributeTypeImpl.Double> getSubtypesDirect() {
+                return super.getSubtypeVerticesDirect(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphMgr, v)).stream();
             }
 
             @Override
@@ -706,6 +763,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Stream<AttributeTypeImpl.String> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.String.of(graphMgr, v));
+        }
+
+        @Override
+        public Stream<AttributeTypeImpl.String> getSubtypesDirect() {
+            return super.getSubtypesDirect(v -> AttributeTypeImpl.String.of(graphMgr, v));
         }
 
         @Override
@@ -786,6 +848,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public Stream<AttributeTypeImpl.String> getSubtypesDirect() {
+                return super.getSubtypeVerticesDirect(STRING).map(v -> AttributeTypeImpl.String.of(graphMgr, v)).stream();
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(GraknException.of(ROOT_TYPE_MUTATION));
             }
@@ -863,6 +930,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Stream<AttributeTypeImpl.DateTime> getSubtypesDirect() {
+            return super.getSubtypesDirect(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
+        }
+
+        @Override
         public Stream<AttributeImpl.DateTime> getInstances() {
             return instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
@@ -911,6 +983,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
                 return super.getSubtypeVertices(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v)).stream();
+            }
+
+            @Override
+            public Stream<AttributeTypeImpl.DateTime> getSubtypesDirect() {
+                return super.getSubtypeVerticesDirect(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v)).stream();
             }
 
             @Override

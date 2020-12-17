@@ -122,6 +122,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
 
     @Override
+    public abstract Stream<? extends ThingTypeImpl> getSubtypesDirect();
+
+    @Override
     public void setOwns(AttributeType attributeType) {
         setOwns(attributeType, false);
     }
@@ -248,8 +251,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
+    public Stream<AttributeTypeImpl> getOwnsDirect() {
+        return getOwnsDirect(false);
+    }
+
+    @Override
     public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType) {
         return getOwns(valueType, false);
+    }
+
+    @Override
+    public Stream<AttributeTypeImpl> getOwnsDirect(AttributeType.ValueType valueType) {
+        return getOwnsDirect(valueType, false);
     }
 
     @Override
@@ -260,8 +273,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return concat(declaredOwns(onlyKey), getSupertype().getOwns(onlyKey).filter(key -> !overridden.contains(key)));
     }
 
+    @Override
+    public Stream<AttributeTypeImpl> getOwnsDirect(boolean onlyKey) {
+        if (isRoot()) return Stream.of();
+        return declaredOwns(onlyKey);
+    }
+
     public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
+    }
+
+    public Stream<AttributeTypeImpl> getOwnsDirect(AttributeType.ValueType valueType, boolean onlyKey) {
+        return getOwnsDirect(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
     @Override
@@ -300,6 +323,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream(),
                 getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
         );
+    }
+
+    @Override
+    public Stream<RoleTypeImpl> getPlaysDirect() {
+        if (isRoot()) return Stream.of();
+        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override
@@ -372,6 +401,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case THING_TYPE:
                         assert this.vertex == v;
                         return this;
+                    case ENTITY_TYPE:
+                        return EntityTypeImpl.of(graphMgr, v);
+                    case ATTRIBUTE_TYPE:
+                        return AttributeTypeImpl.of(graphMgr, v);
+                    case RELATION_TYPE:
+                        return RelationTypeImpl.of(graphMgr, v);
+                    default:
+                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                }
+            });
+        }
+
+        @Override
+        public Stream<ThingTypeImpl> getSubtypesDirect() {
+            return getSubtypesDirect(v -> {
+                switch (v.encoding()) {
                     case ENTITY_TYPE:
                         return EntityTypeImpl.of(graphMgr, v);
                     case ATTRIBUTE_TYPE:

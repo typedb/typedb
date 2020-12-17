@@ -33,6 +33,9 @@ public interface AttributeType extends ThingType {
     Stream<? extends AttributeType> getSubtypes();
 
     @Override
+    Stream<? extends AttributeType> getSubtypesDirect();
+
+    @Override
     Stream<? extends Attribute> getInstances();
 
     void setSupertype(AttributeType superType);
@@ -116,6 +119,9 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.Boolean> getSubtypes();
 
         @Override
+        Stream<? extends AttributeType.Boolean> getSubtypesDirect();
+
+        @Override
         Stream<? extends Attribute.Boolean> getInstances();
 
         Attribute.Boolean put(boolean value);
@@ -129,6 +135,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.Long> getSubtypes();
+
+        @Override
+        Stream<? extends AttributeType.Long> getSubtypesDirect();
 
         @Override
         Stream<? extends Attribute.Long> getInstances();
@@ -146,6 +155,9 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.Double> getSubtypes();
 
         @Override
+        Stream<? extends AttributeType.Double> getSubtypesDirect();
+
+        @Override
         Stream<? extends Attribute.Double> getInstances();
 
         Attribute.Double put(double value);
@@ -159,6 +171,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.String> getSubtypes();
+
+        @Override
+        Stream<? extends AttributeType.String> getSubtypesDirect();
 
         @Override
         Stream<? extends Attribute.String> getInstances();
@@ -180,6 +195,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         Stream<? extends AttributeType.DateTime> getSubtypes();
+
+        @Override
+        Stream<? extends AttributeType.DateTime> getSubtypesDirect();
 
         @Override
         Stream<? extends Attribute.DateTime> getInstances();

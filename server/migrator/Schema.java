@@ -25,7 +25,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
 import grakn.core.logic.Rule;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -35,10 +34,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static graql.lang.common.util.Strings.escapeRegex;
+import static graql.lang.common.util.Strings.quoteString;
 
 public class Schema {
 
@@ -59,20 +59,17 @@ public class Schema {
              final Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
             tx.concepts()
                     .getRootAttributeType()
-                    .getSubtypes()
-                    .filter(x -> !x.isRoot())
+                    .getSubtypesDirect()
                     .sorted(Comparator.comparing(x -> x.getLabel().name()))
                     .forEach(x -> writeAttributeType(builder, x));
             tx.concepts()
                     .getRootRelationType()
-                    .getSubtypes()
-                    .filter(x -> !x.isRoot())
+                    .getSubtypesDirect()
                     .sorted(Comparator.comparing(x -> x.getLabel().name()))
                     .forEach(x -> writeRelationType(builder, x));
             tx.concepts()
                     .getRootEntityType()
-                    .getSubtypes()
-                    .filter(x -> !x.isRoot())
+                    .getSubtypesDirect()
                     .sorted(Comparator.comparing(x -> x.getLabel().name()))
                     .forEach(x -> writeEntityType(builder, x));
             tx.logic().rules()
@@ -84,37 +81,63 @@ public class Schema {
     }
 
     private void writeAttributeType(StringBuilder builder, AttributeType attributeType) {
-        builder.append(String.format("%s sub %s, value %s",
+        builder.append(String.format("%s sub %s",
                 attributeType.getLabel().name(),
-                attributeType.getSupertype().getLabel().name(),
-                getValueTypeString(attributeType.getValueType())));
+                attributeType.getSupertype().getLabel().name()))
+                .append(COMMA_NEWLINE_INDENT)
+                .append(String.format("value %s", getValueTypeString(attributeType.getValueType())));
+        if (attributeType instanceof AttributeType.String) {
+            java.util.regex.Pattern regex = attributeType.asString().getRegex();
+            if (regex != null) {
+                builder.append(COMMA_NEWLINE_INDENT)
+                        .append(String.format("regex %s", quoteString(escapeRegex(regex.pattern()))));
+            }
+        }
+        writeAbstract(builder, attributeType);
         writeOwns(builder, attributeType);
         writePlays(builder, attributeType);
         builder.append(SEMICOLON_NEWLINE_X2);
+        attributeType.getSubtypesDirect()
+                .sorted(Comparator.comparing(x -> x.getLabel().name()))
+                .forEach(x -> writeAttributeType(builder, x));
     }
 
     private void writeRelationType(StringBuilder builder, RelationType relationType) {
         builder.append(String.format("%s sub %s",
                 relationType.getLabel().name(),
                 relationType.getSupertype().getLabel().name()));
+        writeAbstract(builder, relationType);
         writeOwns(builder, relationType);
         writeRelates(builder, relationType);
         writePlays(builder, relationType);
         builder.append(SEMICOLON_NEWLINE_X2);
+        relationType.getSubtypesDirect()
+                .sorted(Comparator.comparing(x -> x.getLabel().name()))
+                .forEach(x -> writeRelationType(builder, x));
     }
 
     private void writeEntityType(StringBuilder builder, EntityType entityType) {
         builder.append(String.format("%s sub %s",
                 entityType.getLabel().name(),
                 entityType.getSupertype().getLabel().name()));
+        writeAbstract(builder, entityType);
         writeOwns(builder, entityType);
         writePlays(builder, entityType);
         builder.append(SEMICOLON_NEWLINE_X2);
+        entityType.getSubtypesDirect()
+                .sorted(Comparator.comparing(x -> x.getLabel().name()))
+                .forEach(x -> writeEntityType(builder, x));
+    }
+
+    private void writeAbstract(StringBuilder builder, ThingType thingType) {
+        if (thingType.isAbstract()) {
+            builder.append(COMMA_NEWLINE_INDENT).append("abstract");
+        }
     }
 
     private void writeOwns(StringBuilder builder, ThingType thingType) {
-        Set<String> keys = thingType.getOwns(true).map(x -> x.getLabel().name()).collect(Collectors.toSet());
-        List<String> attributeTypes = thingType.getOwns().map(x -> x.getLabel().name()).collect(Collectors.toList());
+        Set<String> keys = thingType.getOwnsDirect(true).map(x -> x.getLabel().name()).collect(Collectors.toSet());
+        List<String> attributeTypes = thingType.getOwnsDirect().map(x -> x.getLabel().name()).collect(Collectors.toList());
         attributeTypes.stream().filter(x -> keys.contains(x)).sorted()
                 .forEach(x -> builder
                         .append(COMMA_NEWLINE_INDENT)
@@ -126,14 +149,14 @@ public class Schema {
     }
 
     private void writeRelates(StringBuilder builder, RelationType relationType) {
-        relationType.getRelates().sorted(Comparator.comparing(x -> x.getLabel().name()))
+        relationType.getRelatesDirect().sorted(Comparator.comparing(x -> x.getLabel().name()))
                 .forEach(x -> builder
                         .append(COMMA_NEWLINE_INDENT)
                         .append(String.format("relates %s", x.getLabel().name())));
     }
 
     private void writePlays(StringBuilder builder, ThingType thingType) {
-        thingType.getPlays().sorted(Comparator.comparing(x -> x.getLabel().scopedName()))
+        thingType.getPlaysDirect().sorted(Comparator.comparing(x -> x.getLabel().scopedName()))
                 .forEach(x -> builder
                         .append(COMMA_NEWLINE_INDENT)
                         .append(String.format("plays %s", x.getLabel().scopedName())));
@@ -144,7 +167,8 @@ public class Schema {
                 .append(indent(1))
                 .append("when\n")
                 .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised()), 1))
-                .append(COMMA_NEWLINE_INDENT)
+                .append("\n")
+                .append(indent(1))
                 .append("then\n")
                 .append(getPatternString(wrapConjunction(rule.getThenPreNormalised()), 1))
                 .append(SEMICOLON_NEWLINE_X2);

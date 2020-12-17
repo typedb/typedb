@@ -193,7 +193,7 @@ public class Exporter implements Migrator {
 
     private Stream<DataProto.Item.OwnedAttribute.Builder> readOwnerships(final Thing thing) {
         return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
-                .setId(new String(thing.getIID())));
+                .setId(new String(attribute.getIID())));
     }
 
     private synchronized void write(final OutputStream outputStream, final DataProto.Item item) {

@@ -33,6 +33,9 @@ public interface ThingType extends Type {
     @Override
     Stream<? extends ThingType> getSubtypes();
 
+    @Override
+    Stream<? extends ThingType> getSubtypesDirect();
+
     Stream<? extends Thing> getInstances();
 
     void setAbstract();
@@ -51,11 +54,19 @@ public interface ThingType extends Type {
 
     Stream<? extends AttributeType> getOwns();
 
+    Stream<? extends AttributeType> getOwnsDirect();
+
     Stream<? extends AttributeType> getOwns(boolean onlyKey);
+
+    Stream<? extends AttributeType> getOwnsDirect(boolean onlyKey);
 
     Stream<? extends AttributeType> getOwns(AttributeType.ValueType valueType);
 
+    Stream<? extends AttributeType> getOwnsDirect(AttributeType.ValueType valueType);
+
     Stream<? extends AttributeType> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
+
+    Stream<? extends AttributeType> getOwnsDirect(AttributeType.ValueType valueType, boolean onlyKey);
 
     void setPlays(RoleType roleType);
 
@@ -64,4 +75,6 @@ public interface ThingType extends Type {
     void unsetPlays(RoleType roleType);
 
     Stream<? extends RoleType> getPlays();
+
+    Stream<? extends RoleType> getPlaysDirect();
 }

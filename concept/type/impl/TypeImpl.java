@@ -112,6 +112,9 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     @Override
     public abstract Stream<? extends TypeImpl> getSubtypes();
 
+    @Override
+    public abstract Stream<? extends TypeImpl> getSubtypesDirect();
+
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
     }
@@ -137,6 +140,10 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
         return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor).stream();
+    }
+
+    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypesDirect(Function<TypeVertex, TYPE> typeConstructor) {
+        return vertex.ins().edge(SUB).from().map(typeConstructor).stream();
     }
 
     @Override

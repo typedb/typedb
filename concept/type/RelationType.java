@@ -28,6 +28,9 @@ public interface RelationType extends ThingType {
     Stream<? extends RelationType> getSubtypes();
 
     @Override
+    Stream<? extends RelationType> getSubtypesDirect();
+
+    @Override
     Stream<? extends Relation> getInstances();
 
     void setSupertype(RelationType superType);
@@ -40,7 +43,11 @@ public interface RelationType extends ThingType {
 
     Stream<? extends RoleType> getRelates();
 
+    Stream<? extends RoleType> getRelatesDirect();
+
     RoleType getRelates(String roleLabel);
+
+    RoleType getRelatesDirect(String roleLabel);
 
     Relation create();
 

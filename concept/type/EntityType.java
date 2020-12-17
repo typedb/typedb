@@ -28,6 +28,9 @@ public interface EntityType extends ThingType {
     Stream<? extends EntityType> getSubtypes();
 
     @Override
+    Stream<? extends EntityType> getSubtypesDirect();
+
+    @Override
     Stream<? extends Entity> getInstances();
 
     void setSupertype(EntityType superType);
