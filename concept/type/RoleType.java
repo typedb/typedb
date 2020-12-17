@@ -32,7 +32,7 @@ public interface RoleType extends Type {
     Stream<? extends RoleType> getSubtypes();
 
     @Override
-    Stream<? extends RoleType> getSubtypesDirect();
+    Stream<? extends RoleType> getSubtypesExplicit();
 
     RelationType getRelationType();
 

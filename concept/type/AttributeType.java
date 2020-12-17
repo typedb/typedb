@@ -33,7 +33,7 @@ public interface AttributeType extends ThingType {
     Stream<? extends AttributeType> getSubtypes();
 
     @Override
-    Stream<? extends AttributeType> getSubtypesDirect();
+    Stream<? extends AttributeType> getSubtypesExplicit();
 
     @Override
     Stream<? extends Attribute> getInstances();
@@ -119,7 +119,7 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.Boolean> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.Boolean> getSubtypesDirect();
+        Stream<? extends AttributeType.Boolean> getSubtypesExplicit();
 
         @Override
         Stream<? extends Attribute.Boolean> getInstances();
@@ -137,7 +137,7 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.Long> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.Long> getSubtypesDirect();
+        Stream<? extends AttributeType.Long> getSubtypesExplicit();
 
         @Override
         Stream<? extends Attribute.Long> getInstances();
@@ -155,7 +155,7 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.Double> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.Double> getSubtypesDirect();
+        Stream<? extends AttributeType.Double> getSubtypesExplicit();
 
         @Override
         Stream<? extends Attribute.Double> getInstances();
@@ -173,7 +173,7 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.String> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.String> getSubtypesDirect();
+        Stream<? extends AttributeType.String> getSubtypesExplicit();
 
         @Override
         Stream<? extends Attribute.String> getInstances();
@@ -197,7 +197,7 @@ public interface AttributeType extends ThingType {
         Stream<? extends AttributeType.DateTime> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.DateTime> getSubtypesDirect();
+        Stream<? extends AttributeType.DateTime> getSubtypesExplicit();
 
         @Override
         Stream<? extends Attribute.DateTime> getInstances();

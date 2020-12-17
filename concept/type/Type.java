@@ -43,7 +43,7 @@ public interface Type extends Concept {
 
     Stream<? extends Type> getSubtypes();
 
-    Stream<? extends Type> getSubtypesDirect();
+    Stream<? extends Type> getSubtypesExplicit();
 
     List<GraknException> validate();
 

@@ -73,7 +73,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public Stream<EntityTypeImpl> getSubtypesDirect() {
+    public Stream<EntityTypeImpl> getSubtypesExplicit() {
         return super.getSubtypesDirect(v -> of(graphMgr, v));
     }
 

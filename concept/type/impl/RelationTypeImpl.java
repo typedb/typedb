@@ -106,7 +106,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Stream<RelationTypeImpl> getSubtypesDirect() {
+    public Stream<RelationTypeImpl> getSubtypesExplicit() {
         return super.getSubtypesDirect(v -> of(graphMgr, v));
     }
 
@@ -169,7 +169,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Stream<RoleTypeImpl> getRelatesDirect() {
+    public Stream<RoleTypeImpl> getRelatesExplicit() {
         final ResourceIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
         return roles.stream();
     }
@@ -217,7 +217,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public RoleTypeImpl getRelatesDirect(String roleLabel) {
+    public RoleTypeImpl getRelatesExplicit(String roleLabel) {
         final TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
             return RoleTypeImpl.of(graphMgr, roleTypeVertex);
