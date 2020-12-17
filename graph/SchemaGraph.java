@@ -49,6 +49,7 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.iterator.Iterators.empty;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
@@ -166,7 +167,7 @@ public class SchemaGraph implements Graph {
         Encoding.Prefix index = IndexIID.Rule.prefix();
         ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                 convert(StructureIID.Rule.of(value)));
-        return link(list(Iterators.iterate(rulesByIID.values()), persistedRules)).distinct();
+        return link(list(iterate(rulesByIID.values()), persistedRules)).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -538,8 +539,9 @@ public class SchemaGraph implements Graph {
         }
 
         public long attTypesWithValTypeComparableTo(Set<Label> labels) {
-            Set<Encoding.ValueType> valueTypes =
-                    labels.stream().flatMap(l -> getType(l).valueType().comparables().stream()).collect(toSet());
+            Set<Encoding.ValueType> valueTypes = iterate(labels)
+                    .map(l -> getType(l).valueType()).noNulls()
+                    .flatMap(vt -> iterate(vt.comparables())).toSet();
             return valueTypes.stream().mapToLong(this::attTypesWithValueType).sum();
         }
 
