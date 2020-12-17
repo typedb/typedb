@@ -246,17 +246,28 @@ public class TypeHinter {
 
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints, int parallelisation) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
-        return logicCache.hinter().get(varHintsConjunction, conjunction -> {
-            Map<Reference, Set<Label>> mapping = new HashMap<>();
-            varHints.forEach(variable -> mapping.putIfAbsent(variable.reference(), new HashSet<>()));
-            buffer(traversalEng.producer(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
-                    result -> result.forEach((ref, vertex) -> {
-                        mapping.putIfAbsent(ref, new HashSet<>());
-                        mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
-                    })
-            );
-            return mapping;
-        });
+
+        Map<Reference, Set<Label>> mapping = new HashMap<>();
+        varHints.forEach(variable -> mapping.putIfAbsent(variable.reference(), new HashSet<>()));
+        buffer(traversalEng.producer(varHintsConjunction.traversal(), parallelisation)).iterator().forEachRemaining(
+                result -> result.forEach((ref, vertex) -> {
+                    mapping.putIfAbsent(ref, new HashSet<>());
+                    mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
+                })
+        );
+        return mapping;
+
+//        return logicCache.hinter().get(varHintsConjunction, conjunction -> {
+//            Map<Reference, Set<Label>> mapping = new HashMap<>();
+//            varHints.forEach(variable -> mapping.putIfAbsent(variable.reference(), new HashSet<>()));
+//            buffer(traversalEng.producer(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
+//                    result -> result.forEach((ref, vertex) -> {
+//                        mapping.putIfAbsent(ref, new HashSet<>());
+//                        mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
+//                    })
+//            );
+//            return mapping;
+//        });
     }
 
     private Type getType(Label label) {
@@ -286,7 +297,7 @@ public class TypeHinter {
             this.metaRelation = createMeta(Label.of(RELATION.toString()));
             this.metaRole = createMeta(Label.of(ROLE.toString(), RELATION.toString()));
             conjunction.variables().forEach(this::convertVariable);
-            varHints.getVariableHints().forEach(this::putSubThingConstraintIfAbsent);
+//            varHints.getVariableHints().forEach(this::putSubThingConstraintIfAbsent);
         }
 
         private TypeVariable createMeta(Label metaLabel) {
@@ -343,32 +354,36 @@ public class TypeHinter {
         }
 
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
-            if (isMapped(owner)) owner.sub(metaRelation, true);
+            if (isMapped(owner)) owner.sub(metaRelation, false);
             ThingVariable ownerThing = relationConstraint.owner();
-            TypeVariable relationTypeVar;
-            if (!ownerThing.isa().isPresent()) {
-                relationTypeVar = varHints.newHintingeVariable();
-                neighbours.put(relationTypeVar, new HashSet<>());
-            } else {
-                relationTypeVar = convertVariable(ownerThing.isa().get().type());
+//            if (!ownerThing.isa().isPresent()) {
+//                relationTypeVar = varHints.newHintingVariable();
+//                neighbours.put(relationTypeVar, new HashSet<>());
+//            } else {
+//                relationTypeVar = convertVariable(ownerThing.isa().get().type());
+//            }
+            if (ownerThing.isa().isPresent()) {
+                TypeVariable relationTypeVar = convertVariable(ownerThing.isa().get().type());
+                if (isMapped(relationTypeVar)) relationTypeVar.sub(metaRelation, false);
             }
-            if (isMapped(relationTypeVar)) relationTypeVar.sub(metaRelation, true);
             for (RelationConstraint.RolePlayer rolePlayer : relationConstraint.players()) {
                 TypeVariable playerType = convertVariable(rolePlayer.player());
                 TypeVariable roleTypeVar = rolePlayer.roleType().orElse(null);
+
                 if (roleTypeVar != null) {
                     roleTypeVar = convertVariable(roleTypeVar);
-                    if (isMapped(roleTypeVar)) roleTypeVar.sub(metaRole, true);
+                    if (isMapped(roleTypeVar)) roleTypeVar.sub(metaRole, false);
                     addRelatesConstraint(owner, roleTypeVar);
-                    addRelatesConstraint(relationTypeVar, roleTypeVar);
+//                    addRelatesConstraint(relationTypeVar, roleTypeVar);
+                    if (roleTypeVar.reference().isLabel()) playerType.plays(metaRelation, roleTypeVar, null);
                 }
 
                 if (roleTypeVar == null || roleTypeVar.reference().isLabel()) {
                     TypeVariable rolePlayerHint = varHints.convert(rolePlayer);
                     neighbours.put(rolePlayerHint, new HashSet<>());
-                    if (isMapped(rolePlayerHint)) rolePlayerHint.sub(metaRole, true);
+                    if (isMapped(rolePlayerHint)) rolePlayerHint.sub(metaRole, false);
                     addRelatesConstraint(owner, rolePlayerHint);
-                    addRelatesConstraint(relationTypeVar, rolePlayerHint);
+//                    addRelatesConstraint(relationTypeVar, rolePlayerHint);
                     playerType.plays(null, rolePlayerHint, null);
                     addNeighbour(playerType, rolePlayerHint);
                 } else {
@@ -386,7 +401,7 @@ public class TypeHinter {
         private void convertHas(TypeVariable owner, HasConstraint hasConstraint) {
             TypeVariable attributeTypeVar = convertVariable(hasConstraint.attribute());
             owner.owns(attributeTypeVar, null, false);
-            if (isMapped(attributeTypeVar)) attributeTypeVar.sub(metaAttribute, true);
+            if (isMapped(attributeTypeVar)) attributeTypeVar.sub(metaAttribute, false);
             addNeighbour(owner, attributeTypeVar);
         }
 
@@ -413,7 +428,7 @@ public class TypeHinter {
             else if (constraint.isDouble()) owner.valueType(GraqlArg.ValueType.DOUBLE);
             else if (constraint.isLong()) owner.valueType(GraqlArg.ValueType.LONG);
             else throw GraknException.of(ILLEGAL_STATE);
-            if (isMapped(owner)) owner.sub(metaAttribute, true);
+            if (isMapped(owner)) owner.sub(metaAttribute, false);
         }
 
         public void addNeighbour(TypeVariable from, TypeVariable to) {
@@ -436,7 +451,7 @@ public class TypeHinter {
             this.rolePlayerHints = new HashMap<>();
         }
 
-        TypeVariable newHintingeVariable() {
+        TypeVariable newHintingVariable() {
             TypeVariable tempVar = new TypeVariable(Identifier.Variable.of(
                     new SystemReference("temp" + addAndGetCounter())));
             varHints.put(tempVar.reference(), tempVar);
