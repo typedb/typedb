@@ -40,6 +40,8 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +60,7 @@ public class Retrievable extends Resolvable {
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable<?>> toExclude) {
-        return Retrievable.Extractor.from(conjunction, toExclude).split();
+        return Retrievable.Extractor.from(conjunction, toExclude).extract();
     }
 
     @Override
@@ -80,10 +82,9 @@ public class Retrievable extends Resolvable {
         private final Conjunction conjunction;
         private final Set<Concludable<?>> concludables;
 
-        private final Set<Constraint> concludableConstraints = set();
-        private final Map<Variable, Variable> variablesMap = map(); // Map from variables in original conjunction to new subConjunction
-        private final Set<Constraint> visitedConstraints = set();
-        private final Set<Set<Variable>> connectedSubgraphs = set();
+        private final Map<Variable, Variable> variablesMap = new HashMap<>(); // Map from variables in original conjunction to new subConjunction
+        private final Set<Constraint> visitedConstraints = new HashSet<>();
+        private final Set<Set<Variable>> connectedSubgraphs = new HashSet<>();
         private Set<Variable> connectedSubgraph;
 
 
@@ -96,15 +97,13 @@ public class Retrievable extends Resolvable {
             return new Extractor(conjunction, concludables);
         }
 
-        public Set<Retrievable> split() {
-            concludables.forEach(concludable -> concludableConstraints.add(concludable.constraint()));
-            visitedConstraints.addAll(concludableConstraints);
-
+        public Set<Retrievable> extract() {
+            concludables.forEach(concludable -> visitedConstraints.add(concludable.constraint()));
             conjunction.variables().forEach(var -> {
                 if (variablesMap.get(var) == null) {
-                    connectedSubgraph = set();
-                    if (var.isThing()) addVariable(var.asThing());
-                    else if (var.isThing()) addVariable(var.asType());
+                    connectedSubgraph = new HashSet<>();
+                    if (var.isThing()) addThingVariable(var.asThing());
+                    else if (var.isType()) addTypeVariable(var.asType());
                     else throw GraknException.of(ILLEGAL_STATE);
                     connectedSubgraphs.add(connectedSubgraph);
                 }
@@ -116,10 +115,18 @@ public class Retrievable extends Resolvable {
             connectedSubgraph.add(copy);
         }
 
-        private TypeVariable addVariable(TypeVariable variable) {
-            TypeVariable copy = variablesMap.get(variable).asType();
+        private TypeVariable addTypeVariable(TypeVariable variable) {
+            return addVariable(variable).asType();
+        }
+
+        private ThingVariable addThingVariable(ThingVariable variable) {
+            return addVariable(variable).asThing();
+        }
+
+        private Variable addVariable(Variable variable) {
+            Variable copy = variablesMap.get(variable);
             if (copy == null) {
-                copy = TypeVariable.of(variable.identifier());
+                copy = copyVariable(variable);
                 addToConnected(copy);
                 variablesMap.put(variable, copy);
                 variable.constraints().forEach(this::addConstraint);
@@ -128,16 +135,10 @@ public class Retrievable extends Resolvable {
             return copy;
         }
 
-        private ThingVariable addVariable(ThingVariable variable) {
-            ThingVariable copy = variablesMap.get(variable).asThing();
-            if (copy == null) {
-                copy = ThingVariable.of(variable.identifier());
-                addToConnected(copy);
-                variablesMap.put(variable, copy);
-                variable.constraints().forEach(this::addConstraint);
-                variable.constrainedBy().forEach(this::addConstraint);
-            }
-            return copy;
+        private Variable copyVariable(Variable toCopy) {
+            if (toCopy.isThing()) return ThingVariable.of(toCopy.identifier());
+            else if (toCopy.isType()) return TypeVariable.of(toCopy.identifier());
+            else throw GraknException.of(ILLEGAL_STATE);
         }
 
         private void addConstraint(Constraint constraint) {
@@ -177,13 +178,13 @@ public class Retrievable extends Resolvable {
         }
 
         private void copyConstraint(RelationConstraint constraint) {
-            addVariable(constraint.owner()).asThing().relation(copyRolePlayers(constraint.players()));
+            addThingVariable(constraint.owner()).asThing().relation(copyRolePlayers(constraint.players()));
         }
 
         private List<RelationConstraint.RolePlayer> copyRolePlayers(List<RelationConstraint.RolePlayer> players) {
             return players.stream().map(rolePlayer -> {
-                TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? addVariable(rolePlayer.roleType().get()) : null;
-                ThingVariable playerCopy = addVariable(rolePlayer.player());
+                TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? addTypeVariable(rolePlayer.roleType().get()) : null;
+                ThingVariable playerCopy = addThingVariable(rolePlayer.player());
                 RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
                 rolePlayerCopy.addRoleTypeHints(rolePlayer.roleTypeHints());
                 return rolePlayerCopy;
@@ -191,15 +192,15 @@ public class Retrievable extends Resolvable {
         }
 
         private void copyConstraint(HasConstraint constraint) {
-            addVariable(constraint.owner()).has(addVariable(constraint.attribute()));
+            addThingVariable(constraint.owner()).has(addThingVariable(constraint.attribute()));
         }
 
         private void copyConstraint(IsConstraint constraint) {
-            addVariable(constraint.owner()).is(addVariable(constraint.variable()));
+            addThingVariable(constraint.owner()).is(addThingVariable(constraint.variable()));
         }
 
         private void copyConstraint(ValueConstraint<?> constraint) {
-            ThingVariable var = addVariable(constraint.owner());
+            ThingVariable var = addThingVariable(constraint.owner());
             if (constraint.isLong())
                 var.valueLong(constraint.asLong().predicate().asEquality(), constraint.asLong().value());
             else if (constraint.isDouble())
@@ -211,58 +212,58 @@ public class Retrievable extends Resolvable {
             else if (constraint.isDateTime())
                 var.valueDateTime(constraint.asDateTime().predicate().asEquality(), constraint.asDateTime().value());
             else if (constraint.isVariable()) {
-                ThingVariable attributeVarCopy = addVariable(constraint.asVariable().value());
+                ThingVariable attributeVarCopy = addThingVariable(constraint.asVariable().value());
                 var.valueVariable(constraint.asValue().predicate().asEquality(), attributeVarCopy);
             } else throw GraknException.of(ILLEGAL_STATE);
         }
 
         private void copyConstraint(IsaConstraint constraint) {
-            addVariable(constraint.owner()).isa(addVariable(constraint.type()), constraint.isExplicit());
+            addThingVariable(constraint.owner()).isa(addTypeVariable(constraint.type()), constraint.isExplicit());
         }
 
         private void copyConstraint(IIDConstraint constraint) {
-            addVariable(constraint.owner()).iid(constraint.iid());
+            addThingVariable(constraint.owner()).iid(constraint.iid());
         }
 
         private void copyConstraint(AbstractConstraint abstractConstraint) {
-            addVariable(abstractConstraint.owner()).makeAbstract();
+            addTypeVariable(abstractConstraint.owner()).makeAbstract();
         }
 
         private void copyConstraint(grakn.core.pattern.constraint.type.IsConstraint constraint) {
-            addVariable(constraint.owner()).is(addVariable(constraint.variable()));
+            addTypeVariable(constraint.owner()).is(addTypeVariable(constraint.variable()));
         }
 
         private void copyConstraint(LabelConstraint constraint) {
-            addVariable(constraint.owner()).label(constraint.properLabel());
+            addTypeVariable(constraint.owner()).label(constraint.properLabel());
         }
 
         private void copyConstraint(OwnsConstraint constraint) {
-            addVariable(constraint.owner()).owns(addVariable(constraint.attribute()),
-                                                 constraint.overridden().map(this::addVariable).orElse(null),
-                                                 constraint.isKey());
+            addTypeVariable(constraint.owner()).owns(addTypeVariable(constraint.attribute()),
+                                                     constraint.overridden().map(this::addTypeVariable).orElse(null),
+                                                     constraint.isKey());
         }
 
         private void copyConstraint(PlaysConstraint constraint) {
-            addVariable(constraint.owner()).plays(constraint.relation().map(this::addVariable).orElse(null),
-                                                  addVariable(constraint.role()),
-                                                  constraint.overridden().map(this::addVariable).orElse(null));
+            addTypeVariable(constraint.owner()).plays(constraint.relation().map(this::addTypeVariable).orElse(null),
+                                                      addTypeVariable(constraint.role()),
+                                                      constraint.overridden().map(this::addTypeVariable).orElse(null));
         }
 
         private void copyConstraint(RelatesConstraint constraint) {
-            addVariable(constraint.owner()).relates(addVariable(constraint.role()),
-                                                    constraint.overridden().map(this::addVariable).orElse(null));
+            addTypeVariable(constraint.owner()).relates(addTypeVariable(constraint.role()),
+                                                        constraint.overridden().map(this::addTypeVariable).orElse(null));
         }
 
         private void copyConstraint(RegexConstraint constraint) {
-            addVariable(constraint.owner()).regex(constraint.regex());
+            addTypeVariable(constraint.owner()).regex(constraint.regex());
         }
 
         private void copyConstraint(SubConstraint constraint) {
-            addVariable(constraint.owner()).sub(addVariable(constraint.type()), constraint.isExplicit());
+            addTypeVariable(constraint.owner()).sub(addTypeVariable(constraint.type()), constraint.isExplicit());
         }
 
         private void copyConstraint(ValueTypeConstraint constraint) {
-            addVariable(constraint.owner()).valueType(constraint.valueType());
+            addTypeVariable(constraint.owner()).valueType(constraint.valueType());
         }
     }
 }

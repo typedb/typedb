@@ -29,7 +29,13 @@ package(
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(["*.java", "**/*.java"], exclude = ["resolvable/ConcludableTest.java"]),
+    srcs = glob(
+        ["*.java", "**/*.java"],
+        exclude = [
+            "resolvable/ConcludableTest.java",
+            "resolvable/RetrievableTest.java",
+        ]
+    ),
     deps = [
         # Internal dependencies
         "//common:common",
@@ -59,6 +65,27 @@ host_compatible_java_test(
         "resolvable/ConcludableTest.java",
     ],
     test_class = "grakn.core.logic.resolvable.ConcludableTest",
+    native_libraries_deps = [
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    deps = [
+        # Internal dependencies
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common",
+        "@graknlabs_graql//java/pattern",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-retrievable",
+    srcs = [
+        "resolvable/RetrievableTest.java",
+    ],
+    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     native_libraries_deps = [
         "//logic:logic",
         "//pattern:pattern",
