@@ -487,6 +487,10 @@ public class SchemaGraph implements Graph {
             }
         }
 
+        public long typeCount() {
+            return thingTypeCount() + roleTypeCount();
+        }
+
         public long thingTypeCount() {
             Supplier<Integer> fn = () -> toIntExact(thingTypes().stream().count());
             if (isReadOnly) {
