@@ -82,7 +82,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
         Set<Concludable<?>> concludablesWithApplicableRules = concludables.stream().filter(c -> c.getApplicableRules().findAny().isPresent()).collect(Collectors.toSet());
-        Set<Retrievable> retrievables = Resolvable.extractRetrievables(conjunction, concludablesWithApplicableRules);
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludablesWithApplicableRules);
         Set<Resolvable> resolvables = new HashSet<>();
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
