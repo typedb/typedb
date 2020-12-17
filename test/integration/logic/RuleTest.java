@@ -34,6 +34,7 @@ import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
+import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -281,12 +282,104 @@ public class RuleTest {
                     final ConceptManager conceptMgr = txn.concepts();
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
+                    final Conjunction result = rule.then();
 
                     ThingVariable expectedOwner = ThingVariable.createNamed("x");
                     ThingVariable expectedAttribute = ThingVariable.createTemp("attr");
-                    TypeVariable expectedAttrType = TypeVariable.createTemp("attr_type;");
+                    TypeVariable expectedAttrType = TypeVariable.createTemp("attr_type");
                     ThingVariable expectedAttrValue = ThingVariable.createTemp("value");
-                    expectedAttrValue.valueBoolean(Pr)
+                    expectedAttrValue.valueBoolean(GraqlToken.Predicate.Equality.EQ, false);
+                    expectedAttribute.valueVariable(GraqlToken.Predicate.Equality.EQ, expectedAttrValue);
+                    expectedAttribute.isa(expectedAttrType, false);
+                    expectedOwner.has(expectedAttribute);
+
+                    Conjunction expected = new Conjunction(
+                            set(expectedOwner, expectedAttribute, expectedAttrType, expectedAttrValue),
+                            set()
+                    );
+
+                    assertEquals(expected, result);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void has_concludable_concrete_string_attribute() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType milk = conceptMgr.putEntityType("milk");
+                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    final AttributeType isStillGood = conceptMgr.putAttributeType("label", AttributeType.ValueType.STRING);
+                    milk.setOwns(ageInDays);
+                    milk.setOwns(isStillGood);
+                    logicMgr.putRule(
+                            "old-milk-is-not-good",
+                            Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+                            Graql.parseVariable("$x has label 'bad'").asThing());
+                    txn.commit();
+                }
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    final LogicManager logicMgr = txn.logic();
+                    final Rule rule = logicMgr.getRule("old-milk-is-not-good");
+                    final Conjunction result = rule.then();
+
+                    ThingVariable expectedOwner = ThingVariable.createNamed("x");
+                    ThingVariable expectedAttribute = ThingVariable.createTemp("attr");
+                    TypeVariable expectedAttrType = TypeVariable.createTemp("attr_type");
+                    ThingVariable expectedAttrValue = ThingVariable.createTemp("value");
+                    expectedAttrValue.valueString(GraqlToken.Predicate.Equality.EQ, "bad");
+                    expectedAttribute.valueVariable(GraqlToken.Predicate.Equality.EQ, expectedAttrValue);
+                    expectedAttribute.isa(expectedAttrType, false);
+                    expectedOwner.has(expectedAttribute);
+
+                    Conjunction expected = new Conjunction(
+                            set(expectedOwner, expectedAttribute, expectedAttrType, expectedAttrValue),
+                            set()
+                    );
+
+                    assertEquals(expected, result);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void relation_concludable_one_player_concrete_relation() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final RelationType employment = conceptMgr.putRelationType("employment");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    employment.setRelates("employee");
+                    person.setPlays(employment.getRelates("employee"));
+                    person.setOwns(name);
+                    logicMgr.putRule(
+                            "bob-is-employed",
+                            Graql.parsePattern("{$x isa person; $x has name 'bob'; }").asConjunction(),
+                            Graql.parseVariable("(employee: $x) isa employment").asThing());
+                    txn.commit();
+                }
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    final LogicManager logicMgr = txn.logic();
+                    final Rule rule = logicMgr.getRule("bob-is-employed");
+                    final Conjunction result = rule.then();
+
+                    ThingVariable expectedOwner = ThingVariable.createTemp("rel_owner");
 
 
                 }
