@@ -46,7 +46,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Map<Identifier.Variable, Set<ThingVertex>> scoped;
     private final Map<Identifier, ThingVertex> roles;
-    private final SeekStack computeFirstSeekStack;
+    private final SeekStack seekStack;
     private final int edgeCount;
     private final GraphManager graphMgr;
     private int computeNextSeekPos;
@@ -66,7 +66,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         this.roles = new HashMap<>();
         this.answer = new HashMap<>();
         this.answer.put(procedure.startVertex().id(), start);
-        this.computeFirstSeekStack = new SeekStack(edgeCount);
+        this.seekStack = new SeekStack(edgeCount);
         this.state = State.INIT;
     }
 
@@ -102,15 +102,17 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             answer.put(toID, toIter.next());
             if (pos == edgeCount) return true;
             while (!computeFirst(pos + 1)) {
-                if (pos == computeFirstSeekStack.peekLastPos()) {
-                    computeFirstSeekStack.popLastPos();
+                if (pos == seekStack.peekLastPos()) {
+                    seekStack.popLastPos();
                     if (toIter.hasNext()) answer.put(toID, toIter.next());
                     else {
+                        backTrackCleanUp(pos);
                         answer.remove(toID);
-                        computeFirstSeekStack.addSeeks(edge.from().dependedEdgeOrders());
+                        seekStack.addSeeks(edge.from().dependedEdgeOrders());
                         return false;
                     }
                 } else {
+                    backTrackCleanUp(pos);
                     answer.remove(toID);
                     toIter.recycle();
                     return false;
@@ -118,7 +120,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             }
             return true;
         } else {
-            computeFirstSeekStack.addSeeks(edge.from().dependedEdgeOrders());
+            seekStack.addSeeks(edge.from().dependedEdgeOrders());
             return false;
         }
     }
@@ -129,27 +131,9 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             if (pos == edgeCount) return true;
             else return computeFirst(pos + 1);
         } else {
-            computeFirstSeekStack.addSeeks(edge.from().dependedEdgeOrders());
-            computeFirstSeekStack.addSeeks(edge.to().dependedEdgeOrders());
+            seekStack.addSeeks(edge.from().dependedEdgeOrders());
+            seekStack.addSeeks(edge.to().dependedEdgeOrders());
             return false;
-        }
-    }
-
-    private boolean backTrack(int pos) {
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Identifier toId = edge.to().id();
-        if (roles.containsKey(toId)) {
-            if (edge.isRolePlayer()) clearPriorScopedRole(edge.asRolePlayer().scope(), toId);
-            else clearPriorScopedRole(toId.asScoped().scope(), toId);
-        }
-        return computeNext(pos - 1);
-    }
-
-    private void clearPriorScopedRole(Identifier.Variable scope, Identifier uniqueRoleIdentifier) {
-        ThingVertex previousRole = roles.get(uniqueRoleIdentifier);
-        if (previousRole != null) {
-            scoped.get(scope).remove(previousRole);
-            roles.remove(uniqueRoleIdentifier);
         }
     }
 
@@ -237,7 +221,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = edge.branchTo(graphMgr, fromVertex, parameters).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
-                    clearPriorScopedRole(edge.to().id().asScoped().scope(), edge.to().id());
+                    removePreviousScopedRole(edge.to().id().asScoped().scope(), edge.to().id());
                     withinScope.add(role.asThing());
                     roles.put(edge.to().id(), role.asThing());
                     return true;
@@ -248,7 +232,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, parameters).filter(e -> {
                 if (withinScope.contains(e.optimised().get())) return false;
                 else {
-                    clearPriorScopedRole(edge.asRolePlayer().scope(), edge.to().id());
+                    removePreviousScopedRole(edge.asRolePlayer().scope(), edge.to().id());
                     withinScope.add(e.optimised().get());
                     roles.put(edge.to().id(), e.optimised().get());
                     return true;
@@ -263,6 +247,27 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             toIter = toIter.limit(1);
         }
         return toIter;
+    }
+
+    private boolean backTrack(int pos) {
+        backTrackCleanUp(pos);
+        return computeNext(pos - 1);
+    }
+
+    private void backTrackCleanUp(int pos) {
+        ProcedureEdge<?, ?> edge = procedure.edge(pos);
+        Identifier toId = edge.to().id();
+        if (roles.containsKey(toId)) {
+            if (edge.isRolePlayer()) removePreviousScopedRole(edge.asRolePlayer().scope(), toId);
+            else removePreviousScopedRole(toId.asScoped().scope(), toId);
+        }
+    }
+
+    private void removePreviousScopedRole(Identifier.Variable scope, Identifier toId) {
+        ThingVertex previousRole = roles.remove(toId);
+        if (previousRole != null) {
+            scoped.get(scope).remove(previousRole);
+        }
     }
 
     @Override
