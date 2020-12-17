@@ -75,9 +75,8 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
 
     static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
-        Set<ValueConstraint<?>> otherValues = value.owner().value().stream().filter(value1 -> value != value1)
-                .collect(Collectors.toSet());
-
+        Set<ValueConstraint<?>> otherValues = value.owner().value().stream()
+                .filter(value1 -> !value.equals(value1)).collect(Collectors.toSet());
         copyValuesOntoVariable(otherValues, newOwner);
         return newOwner.value(value.predicate(), value.value());
     }
@@ -86,7 +85,6 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
         IsaConstraint newIsa = variableToConstrain.isa(typeCopy, toCopy.isExplicit());
-        newIsa.addHints(toCopy.getTypeHints());
         return newIsa;
     }
 

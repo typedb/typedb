@@ -79,14 +79,8 @@ public class Traversal {
         parameters = new Parameters();
     }
 
-    public Identifier.Scoped newIdentifier(Identifier.Variable scope) {
-        return structure.newIdentifier(scope);
-    }
-
     void initialisePlanner(TraversalCache cache) {
-        planners = structure.asGraphs().stream().map(s -> {
-            return cache.get(s, Planner::create);
-        }).collect(toList());
+        planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
     }
 
     ResourceIterator<VertexMap> iterator(GraphManager graphMgr) {

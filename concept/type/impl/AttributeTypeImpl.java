@@ -46,8 +46,8 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CAS
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUBTYPE_NOT_ABSTRACT;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
@@ -100,12 +100,18 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void setAbstract() {
-        if (getSubtypes().filter(sub -> !sub.equals(this)).anyMatch(sub -> !sub.isAbstract())) {
-            throw exception(GraknException.of(ATTRIBUTE_SUBTYPE_NOT_ABSTRACT, getLabel()));
-        } else if (getInstances().findFirst().isPresent()) {
+        if (getInstances().findFirst().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
         vertex.isAbstract(true);
+    }
+
+    @Override
+    public void unsetAbstract() {
+        if (getSubtypes().anyMatch(sub -> !sub.equals(this))) {
+            throw exception(GraknException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
+        }
+        vertex.isAbstract(false);
     }
 
     @Nullable
@@ -131,7 +137,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             throw exception(GraknException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
                                               superType.getLabel(), superType.getValueType().name()));
         } else if (!superType.isAbstract()) {
-            throw exception(GraknException.of(ATTRIBUTE_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
+            throw exception(GraknException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }

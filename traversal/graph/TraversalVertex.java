@@ -120,6 +120,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             private final Set<Predicate.Value<?>> predicates;
 
             public Thing() {
+                hasIID = false;
                 types = new HashSet<>();
                 predicates = new HashSet<>();
             }
@@ -233,9 +234,9 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
                 Properties.Type that = (Properties.Type) o;
                 return (this.isAbstract == that.isAbstract &&
-                        this.labels == that.labels &&
-                        this.valueType.equals(that.valueType) &&
-                        this.regex.equals(that.regex));
+                        this.labels.equals(that.labels) &&
+                        Objects.equals(this.valueType, that.valueType) &&
+                        Objects.equals(this.regex, that.regex));
             }
 
             @Override

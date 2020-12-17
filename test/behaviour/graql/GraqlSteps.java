@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.util.Util.assertThrowsWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -77,6 +78,11 @@ public class GraqlSteps {
         tx().query().define(graqlQuery);
     }
 
+    @Given("graql define; throws exception containing {string}")
+    public void graql_define_throws_exception(String exception, String defineQueryStatements) {
+        assertThrowsWithMessage(() -> graql_define(defineQueryStatements), exception);
+    }
+
     @Given("graql define; throws exception")
     public void graql_define_throws_exception(String defineQueryStatements) {
         assertThrows(() -> graql_define(defineQueryStatements));
@@ -102,6 +108,11 @@ public class GraqlSteps {
     @Given("graql insert; throws exception")
     public void graql_insert_throws_exception(String insertQueryStatements) {
         assertThrows(() -> graql_insert(insertQueryStatements));
+    }
+
+    @Given("graql insert; throws exception containing {string}")
+    public void graql_insert_throws_exception(String exception, String insertQueryStatements) {
+        assertThrowsWithMessage(() -> graql_insert(insertQueryStatements), exception);
     }
 
     @Given("graql delete")
@@ -185,19 +196,19 @@ public class GraqlSteps {
     }
 
     @Then("uniquely identify answer concepts")
-    public void uniquely_identify_answer_concepts(List<Map<String, String>> answersIdentifiers) {
+    public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-                              answersIdentifiers.size(), answers.size()),
-                answersIdentifiers.size(), answers.size()
+                        answerConcepts.size(), answers.size()),
+                answerConcepts.size(), answers.size()
         );
 
         for (ConceptMap answer : answers) {
             List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
 
-            for (Map<String, String> answerIdentifier : answersIdentifiers) {
+            for (Map<String, String> answerIdentifier : answerConcepts) {
 
-                if (matchAnswer(answerIdentifier, answer)) {
+                if (matchAnswerConcept(answerIdentifier, answer)) {
                     matchingIdentifiers.add(answerIdentifier);
                 }
             }
@@ -221,7 +232,7 @@ public class GraqlSteps {
             final Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
             assertTrue(
                     String.format("The answer at index %d does not match the identifier entry (row) at index %d", i, i),
-                    matchAnswer(answerIdentifiers, answer)
+                    matchAnswerConcept(answerIdentifiers, answer)
             );
         }
     }
@@ -238,22 +249,13 @@ public class GraqlSteps {
         assertNull(numericAnswer);
     }
 
-    @Then("group identifiers are")
-    public void group_identifiers_are(Map<String, Map<String, String>> identifiers) {
-        for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
-            final String groupIdentifier = entry.getKey();
-            final Map<String, String> variables = entry.getValue();
-            groupOwnerIdentifiers.put(groupIdentifier, variables.get("owner"));
-        }
-    }
-
     @Then("answer groups are")
     public void answer_groups_are(List<Map<String, String>> answerIdentifierTable) {
         Set<AnswerIdentifierGroup> answerIdentifierGroups = answerIdentifierTable.stream()
                 .collect(Collectors.groupingBy(x -> x.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME)))
                 .values()
                 .stream()
-                .map(answerIdentifiers -> new AnswerIdentifierGroup(answerIdentifiers, groupOwnerIdentifiers))
+                .map(AnswerIdentifierGroup::new)
                 .collect(Collectors.toSet());
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
@@ -262,12 +264,26 @@ public class GraqlSteps {
         );
 
         for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
-            String groupOwnerIdentifier = answerIdentifierGroup.groupOwnerIdentifier;
+            final String[] identifier = answerIdentifierGroup.ownerIdentifier.split(":", 2);
+            UniquenessCheck checker;
+            switch (identifier[0]) {
+                case "label":
+                    checker = new LabelUniquenessCheck(identifier[1]);
+                    break;
+                case "key":
+                    checker = new KeyUniquenessCheck(identifier[1]);
+                    break;
+                case "value":
+                    checker = new ValueUniquenessCheck(identifier[1]);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + identifier[0]);
+            }
             AnswerGroup<ConceptMap> answerGroup = answerGroups.stream()
-                    .filter(ag -> identifierChecks.get(groupOwnerIdentifier).check(ag.owner()))
+                    .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
-            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", groupOwnerIdentifier), answerGroup);
+            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", answerIdentifierGroup.ownerIdentifier), answerGroup);
 
             List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.answersIdentifiers;
             for (ConceptMap answer : answerGroup.answers()) {
@@ -275,7 +291,7 @@ public class GraqlSteps {
 
                 for (Map<String, String> answerIdentifiers : answersIdentifiers) {
 
-                    if (matchAnswer(answerIdentifiers, answer)) {
+                    if (matchAnswerConcept(answerIdentifiers, answer)) {
                         matchingIdentifiers.add(answerIdentifiers);
                     }
                 }
@@ -292,8 +308,7 @@ public class GraqlSteps {
     public void group_aggregate_values_are(List<Map<String, String>> answerIdentifierTable) {
         Map<String, Double> expectations = new HashMap<>();
         for (Map<String, String> answerIdentifierRow : answerIdentifierTable) {
-            String groupIdentifier = answerIdentifierRow.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME);
-            String groupOwnerIdentifier = groupOwnerIdentifiers.get(groupIdentifier);
+            String groupOwnerIdentifier = answerIdentifierRow.get(AnswerIdentifierGroup.GROUP_COLUMN_NAME);
             double expectedAnswer = Double.parseDouble(answerIdentifierRow.get("value"));
             expectations.put(groupOwnerIdentifier, expectedAnswer);
         }
@@ -303,18 +318,32 @@ public class GraqlSteps {
         );
 
         for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
-            String groupIdentifier = expectation.getKey();
+            final String[] identifier = expectation.getKey().split(":", 2);
+            UniquenessCheck checker;
+            switch (identifier[0]) {
+                case "label":
+                    checker = new LabelUniquenessCheck(identifier[1]);
+                    break;
+                case "key":
+                    checker = new KeyUniquenessCheck(identifier[1]);
+                    break;
+                case "value":
+                    checker = new ValueUniquenessCheck(identifier[1]);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + identifier[0]);
+            }
             double expectedAnswer = expectation.getValue();
             AnswerGroup<Numeric> answerGroup = numericAnswerGroups.stream()
-                    .filter(ag -> identifierChecks.get(groupIdentifier).check(ag.owner()))
+                    .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
-            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", groupIdentifier), answerGroup);
+            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", expectation.getKey()), answerGroup);
 
             double actualAnswer = answerGroup.answers().get(0).number().doubleValue();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
-                                  expectedAnswer, groupIdentifier, actualAnswer),
+                                  expectedAnswer, expectation.getKey(), actualAnswer),
                     expectedAnswer, actualAnswer, 0.01
             );
         }
@@ -326,14 +355,13 @@ public class GraqlSteps {
     }
 
     public static class AnswerIdentifierGroup {
-        private final String groupOwnerIdentifier;
+        private final String ownerIdentifier;
         private final List<Map<String, String>> answersIdentifiers;
 
-        private static final String GROUP_COLUMN_NAME = "group";
+        private static final String GROUP_COLUMN_NAME = "owner";
 
-        public AnswerIdentifierGroup(List<Map<String, String>> answerIdentifierTable, Map<String, String> groupOwnerIdentifiers) {
-            final String groupIdentifier = answerIdentifierTable.get(0).get(GROUP_COLUMN_NAME);
-            groupOwnerIdentifier = groupOwnerIdentifiers.get(groupIdentifier);
+        public AnswerIdentifierGroup(List<Map<String, String>> answerIdentifierTable) {
+            ownerIdentifier = answerIdentifierTable.get(0).get(GROUP_COLUMN_NAME);
             answersIdentifiers = new ArrayList<>();
             for (Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
                 answersIdentifiers.add(rawAnswerIdentifiers.entrySet().stream()
@@ -355,6 +383,31 @@ public class GraqlSteps {
 
             if (!identifierChecks.get(identifier).check(answer.get(var))) {
                 return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean matchAnswerConcept(Map<String, String> answerIdentifiers, ConceptMap answer) {
+        for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
+            final Reference.Name var = Reference.named(entry.getKey());
+            final String[] identifier = entry.getValue().split(":", 2);
+            switch (identifier[0]) {
+                case "label":
+                    if (!new LabelUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                        return false;
+                    }
+                    break;
+                case "key":
+                    if (!new KeyUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                        return false;
+                    }
+                    break;
+                case "value":
+                    if (!new ValueUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                        return false;
+                    }
+                    break;
             }
         }
         return true;

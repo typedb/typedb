@@ -32,6 +32,7 @@ import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.pattern.constraint.ConceptConstraint;
@@ -221,6 +222,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public TypeVariable asType() {
         return this;
+    }
+
+    @Override
+    public void addTo(Traversal traversal) {
+        if (!typeHints().isEmpty()) traversal.labels(identifier(), typeHints());
+        super.addTo(traversal);
     }
 
     @Override
