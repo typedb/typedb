@@ -339,6 +339,7 @@ public class TypeHinter {
             thingVariable.has().forEach(constraint -> convertHas(varHint, constraint));
             thingVariable.value().forEach(constraint -> convertValue(varHint, constraint));
             thingVariable.relation().forEach(constraint -> convertRelation(varHint, constraint));
+
         }
 
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
@@ -396,7 +397,7 @@ public class TypeHinter {
             else if (isaConstraint.type().label().isPresent())
                 owner.label(isaConstraint.type().label().get().properLabel());
             else throw GraknException.of(ILLEGAL_STATE);
-            addNeighbour(isaVar, isaVar);
+            addNeighbour(owner, isaVar);
         }
 
         private void convertIs(TypeVariable owner, grakn.core.pattern.constraint.thing.IsConstraint isConstraint) {

@@ -134,14 +134,14 @@ public class TypeHinterTest {
 
         String queryString = "match $p isa person; ";
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -151,14 +151,14 @@ public class TypeHinterTest {
 
         String queryString = "match $p isa! person; ";
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -167,12 +167,12 @@ public class TypeHinterTest {
         TypeHinter typeHinter = transaction.logic().typeHinter();
 
         String queryString = "match" +
-                "  $p sub entity;" +
+                "  $p isa entity;" +
                 "  $p is $q;" +
-                "  $q sub mammal;";
+                "  $q isa mammal;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("mammal", "person", "man", "woman", "dog"));
@@ -180,7 +180,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+////        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -191,14 +191,14 @@ public class TypeHinterTest {
         String queryString = "match $p isa animal, has name 'bob';";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -209,14 +209,14 @@ public class TypeHinterTest {
         String queryString = "match $p has name $a;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
             put("$a", set("name", "dog-name"));
         }};
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -229,13 +229,13 @@ public class TypeHinterTest {
                 "  $p has $a;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("perimeter", "area"));
         }};
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -246,7 +246,7 @@ public class TypeHinterTest {
         String queryString = "match $r (wife: $yoko) isa marriage;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -254,14 +254,15 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+
+////        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
 
         Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
-            put(new Pair<>("$yoko", ""), set("marriage:husband", "marriage:wife", "marriage:spouse"));
+            put(new Pair<>("", "$yoko"), set("marriage:husband", "marriage:wife", "marriage:spouse"));
         }};
 
         assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
+////        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
     }
 
     @Test
@@ -272,7 +273,7 @@ public class TypeHinterTest {
         String queryString = "match $r ($role: $yoko) isa marriage;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -281,14 +282,14 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
 
         Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
             put(new Pair<>("$yoko", "$role"), set("marriage:husband", "marriage:wife", "marriage:spouse"));
         }};
 
         assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
+//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
     }
 
     @Test
@@ -299,7 +300,7 @@ public class TypeHinterTest {
         String queryString = "match $r (wife: $yoko) isa $m;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -312,9 +313,9 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
+//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -325,7 +326,7 @@ public class TypeHinterTest {
         String queryString = "match $r (wife: $yoko);";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -333,13 +334,13 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
         Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
             put(new Pair<>("$yoko", ""), set("marriage:husband", "marriage:wife", "marriage:spouse"));
         }};
 
         assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
+//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
     }
 
     @Test
@@ -350,7 +351,7 @@ public class TypeHinterTest {
         String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -360,7 +361,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
 
         Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
             put(new Pair<>("$yoko", "$role"), set("marriage:husband", "marriage:wife", "marriage:spouse"));
@@ -368,7 +369,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
+//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
     }
 
     @Test
@@ -381,14 +382,14 @@ public class TypeHinterTest {
                 "  $p has $a;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("name, dog-name"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -400,14 +401,14 @@ public class TypeHinterTest {
                 "  not {$p isa man;};";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -426,7 +427,7 @@ public class TypeHinterTest {
                 "  man sub $q;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("man", "greek", "socrates"));
@@ -434,7 +435,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -452,7 +453,7 @@ public class TypeHinterTest {
                 "  $a='bob';";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person"));
@@ -460,7 +461,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -481,7 +482,7 @@ public class TypeHinterTest {
                 "  $p has weight $c;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("animal, dog, person, chair"));
@@ -490,7 +491,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
 
@@ -509,7 +510,7 @@ public class TypeHinterTest {
                 "  $b has $a";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("name", "surname"));
@@ -517,7 +518,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -540,7 +541,7 @@ public class TypeHinterTest {
                 "  $d has $a";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$a", set("name", "surname", "nickname", "middlename"));
@@ -550,7 +551,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expectedExhaustive.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expectedSimple.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expectedSimple.entrySet()));
     }
 
     @Test
@@ -561,14 +562,14 @@ public class TypeHinterTest {
         String queryString = "match $x isa thing;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", Collections.emptySet());
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -589,7 +590,7 @@ public class TypeHinterTest {
                 "  $w sub! man;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -600,7 +601,7 @@ public class TypeHinterTest {
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     // It might be assumed that the set of hint labels will have to conform to certain forms.
