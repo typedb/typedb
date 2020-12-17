@@ -34,8 +34,20 @@ public class RetrievableTest {
 
     @Test
     public void test_basic() {
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction("{ $p has $n; }"));
-        Set<Retrievable> retrievables = Retrievable.extractFrom(parseConjunction("{ $p isa person; $p has $n; $n isa name; }"), concludables);
+        Conjunction conjunction1 = parseConjunction("{ $p has $n; }");
+        Set<Concludable<?>> concludables = Concludable.create(conjunction1);
+        Conjunction conjunction2 = parseConjunction("{ $p isa person; $p has $n; $n isa name; }");
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction2, concludables);
+        assertEquals(1, concludables.size());
+        assertEquals(2, retrievables.size());
+    }
+
+    @Test
+    public void test_basic_2() {
+        Conjunction conjunction1 = parseConjunction("{ $p isa person; }");
+        Set<Concludable<?>> concludables = Concludable.create(conjunction1);
+        Conjunction conjunction2 = parseConjunction("{ $p isa person; $p has $n; $n isa name; }");
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction2, concludables);
         assertEquals(1, concludables.size());
         assertEquals(1, retrievables.size());
     }

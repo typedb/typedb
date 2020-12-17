@@ -117,10 +117,31 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, identifier());
             }
             subConstraint = constraint.asSub();
-        } else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
-        else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
-        else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
-        else if (constraint.isIs()) isConstraints.add(constraint.asIs());
+            subConstraint.type().constrainedBy(subConstraint);
+        } else if (constraint.isOwns()) {
+            OwnsConstraint ownsConstraint = constraint.asOwns();
+            ownsConstraints.add(ownsConstraint);
+            ownsConstraint.attribute().constrainedBy(ownsConstraint);
+            ownsConstraint.overridden().ifPresent(t -> t.constrainedBy(ownsConstraint));
+        }
+        else if (constraint.isPlays()) {
+            PlaysConstraint playsConstraint = constraint.asPlays();
+            playsConstraints.add(playsConstraint);
+            playsConstraint.relation().ifPresent(r -> r.constrainedBy(playsConstraint));
+            playsConstraint.role().constrainedBy(playsConstraint);
+            playsConstraint.overridden().ifPresent(o -> o.constrainedBy(playsConstraint));
+        }
+        else if (constraint.isRelates()) {
+            RelatesConstraint relatesConstraint = constraint.asRelates();
+            relatesConstraints.add(relatesConstraint);
+            relatesConstraint.role().constrainedBy(relatesConstraint);
+            relatesConstraint.overridden().ifPresent(r -> r.constrainedBy(relatesConstraint));
+        }
+        else if (constraint.isIs()) {
+            IsConstraint isConstraint = constraint.asIs();
+            isConstraints.add(isConstraint);
+            isConstraint.variable().constrainedBy(isConstraint);
+        }
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -176,7 +197,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public SubConstraint sub(TypeVariable type, boolean isExplicit) {
         SubConstraint subConstraint = new SubConstraint(this, type, isExplicit);
         constrain(subConstraint);
-        type.constrainedBy(subConstraint);
         return subConstraint;
     }
 
@@ -187,8 +207,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
         OwnsConstraint ownsConstraint = new OwnsConstraint(this, attributeType, overriddenAttributeType, isKey);
         constrain(ownsConstraint);
-        attributeType.constrainedBy(ownsConstraint);
-        if (overriddenAttributeType != null) overriddenAttributeType.constrainedBy(ownsConstraint);
         return ownsConstraint;
     }
 
@@ -212,8 +230,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public RelatesConstraint relates(TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         RelatesConstraint relatesConstraint = new RelatesConstraint(this, roleType, overriddenRoleType);
         constrain(relatesConstraint);
-        roleType.constrainedBy(relatesConstraint);
-        if (overriddenRoleType != null) overriddenRoleType.constrainedBy(relatesConstraint);
         return relatesConstraint;
     }
 

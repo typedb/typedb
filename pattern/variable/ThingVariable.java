@@ -95,10 +95,28 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
                 throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, identifier());
             }
             isaConstraint = constraint.asIsa();
-        } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
-        else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
-        else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
-        else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
+            isaConstraint.type().constrainedBy(isaConstraint);
+        } else if (constraint.isIs()) {
+            isConstraints.add(constraint.asIs());
+            constraint.asIs().variable().constrainedBy(constraint.asIs());
+        }
+        else if (constraint.isRelation()) {
+            RelationConstraint relationConstraint = constraint.asRelation();
+            relationConstraints.add(relationConstraint);
+            for (RelationConstraint.RolePlayer rp : relationConstraint.players()) {
+                rp.player().constrainedBy(relationConstraint);
+                rp.roleType().ifPresent(roleType -> roleType.constrainedBy(relationConstraint));
+            }
+        }
+        else if (constraint.isHas()) {
+            hasConstraints.add(constraint.asHas());
+            constraint.asHas().attribute().constrainedBy(constraint.asHas());
+        }
+        else if (constraint.isValue()) {
+            ValueConstraint<?> valueConstraint = constraint.asValue();
+            valueConstraints.add(valueConstraint);
+            if (valueConstraint.isVariable()) valueConstraint.asVariable().value().constrainedBy(valueConstraint.asVariable());
+        }
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -124,7 +142,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public IsaConstraint isa(TypeVariable type, boolean isExplicit) {
         IsaConstraint isaConstraint = new IsaConstraint(this, type, isExplicit);
         constrain(isaConstraint);
-        type.constrainedBy(isaConstraint);
         return isaConstraint;
     }
 
@@ -135,7 +152,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public IsConstraint is(ThingVariable variable) {
         IsConstraint isConstraint = new IsConstraint(this, variable);
         constrain(isConstraint);
-        variable.constrainedBy(isConstraint);
         return isConstraint;
     }
 
@@ -176,7 +192,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
         ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
         constrain(valueVarConstraint);
-        variable.constrainedBy(valueVarConstraint);
         return valueVarConstraint;
     }
 
@@ -187,10 +202,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public RelationConstraint relation(List<RelationConstraint.RolePlayer> rolePlayers) {
         RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
         constrain(relationConstraint);
-        for (RelationConstraint.RolePlayer rp : rolePlayers) {
-            rp.player().constrainedBy(relationConstraint);
-            rp.roleType().ifPresent(roleType -> roleType.constrainedBy(relationConstraint));
-        }
         return relationConstraint;
     }
 
@@ -201,7 +212,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public HasConstraint has(ThingVariable attribute) {
         HasConstraint hasConstraint = new HasConstraint(this, attribute);
         constrain(hasConstraint);
-        attribute.constrainedBy(hasConstraint);
         return hasConstraint;
     }
 
