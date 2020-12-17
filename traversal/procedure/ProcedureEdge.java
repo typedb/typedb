@@ -348,16 +348,11 @@ public abstract class ProcedureEdge<
                 }
 
                 ResourceIterator<TypeVertex> superTypes(TypeVertex type) {
-                    ResourceIterator<TypeVertex> iterator;
-                    if (!isTransitive) iterator = type.outs().edge(SUB).to();
-                    else {
-                        iterator = loop(
-                                type, Objects::nonNull,
-                                v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(type.encoding())).firstOrNull()
-                        ).filter(t -> !t.equals(type));
-                    }
-
-                    return iterator;
+                    if (!isTransitive) return type.outs().edge(SUB).to();
+                    else return loop(
+                            type, Objects::nonNull,
+                            v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(type.encoding())).firstOrNull()
+                    );
                 }
 
                 @Override
@@ -373,8 +368,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchTo(
-                            GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                            Traversal.Parameters params) {
+                            GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         ResourceIterator<TypeVertex> iterator = superTypes(fromVertex.asType());
                         return to.filter(iterator);
                     }
@@ -394,12 +388,11 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branchTo(
-                            GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                            Traversal.Parameters params) {
+                            GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         ResourceIterator<TypeVertex> iter;
                         TypeVertex type = fromVertex.asType();
-                        if (isTransitive) iter = type.ins().edge(SUB).from();
-                        else iter = tree(type, t -> t.ins().edge(SUB).from()).filter(t -> t.equals(type));
+                        if (!isTransitive) iter = type.ins().edge(SUB).from();
+                        else iter = tree(type, t -> t.ins().edge(SUB).from());
                         return to.filter(iter);
                     }
 
