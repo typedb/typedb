@@ -506,12 +506,17 @@ public class TypeHinterTest {
                         "  person sub entity, owns name, owns height;" +
                         "  name sub attribute, value string, owns nickname;" +
                         "  nickname sub attribute, value string, owns name;" +
-                        "  surname sub attribute, value string, owns name;"
+                        "  surname sub attribute, value string, owns name;" +
+                        "  name sub attribute, value string;" +
+                        "  surname sub attribute, value string;" +
+                        "  nickname sub attribute, value string;" +
+                        "  height sub attribute, value double;" +
+                        "  "
         );
         TypeHinter typeHinter = transaction.logic().typeHinter();
         String queryString = "match" +
-                "  $a has $b" +
-                "  $b has $a";
+                "  $a has $b;" +
+                "  $b has $a;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
 //        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
@@ -560,7 +565,7 @@ public class TypeHinterTest {
 
     @Test
     public void you_know_the_thing() throws IOException {
-        define_standard_schema("schema-basic");
+        define_standard_schema("basic-schema");
         TypeHinter typeHinter = transaction.logic().typeHinter();
 
         String queryString = "match $x isa thing;";
@@ -591,7 +596,7 @@ public class TypeHinterTest {
         String queryString = "match $x isa $y;" +
                 "  $y sub $z;" +
                 "  $z sub $w;" +
-                "  $w sub! man;";
+                "  $w sub person;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
 //        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
@@ -601,7 +606,7 @@ public class TypeHinterTest {
             put("$x", set("man", "greek", "socrates"));
             put("$y", set("man", "greek", "socrates"));
             put("$z", set("man", "greek", "socrates"));
-            put("$w", set("man", "greek"));
+//            put("$w", set("man", "greek"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
@@ -675,7 +680,7 @@ public class TypeHinterTest {
                 "  $t owns $c; " +
                 "  $t sub entity; " +
                 "  ($a, $b) isa $rel; " +
-                "  $rel owns $c " +
+                "  $rel owns $c; " +
                 "  $a has left-attr true; " +
                 "  $b has right-attr true;";
 
