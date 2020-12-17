@@ -169,12 +169,12 @@ public class Rule {
                 .forEach(thenVar ->
                         when.variables().stream()
                                 .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
-                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.typeHints().isEmpty()))
+                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
                                 .findFirst().ifPresent(whenVar -> {
-                            if (thenVar.typeHints().isEmpty() && thenVar.isSatisfiable()) {
-                                thenVar.addHints(whenVar.typeHints());
-                            } else thenVar.retainHints(whenVar.typeHints());
-                            if (thenVar.typeHints().isEmpty()) thenVar.setIsSatisfiable(false);
+                            if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
+                                thenVar.addResolvedTypes(whenVar.resolvedTypes());
+                            } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
+                            if (thenVar.resolvedTypes().isEmpty()) thenVar.setSatisfiable(false);
                         })
                 );
     }
