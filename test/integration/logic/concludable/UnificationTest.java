@@ -43,7 +43,7 @@ import static grakn.core.pattern.variable.VariableRegistry.createFromThings;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class UnifyTest {
+public class UnificationTest {
 
     private Map<String, Set<String>> getStringMapping(Map<Reference.Name, Set<Reference.Name>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().syntax(),
