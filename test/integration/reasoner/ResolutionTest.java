@@ -40,11 +40,14 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class ResolutionTest {
 
@@ -397,6 +400,110 @@ public class ResolutionTest {
                     // TODO write more meaningful explanation tests
                     System.out.println(answer);
                 }
+            }
+        }
+    }
+
+    /*
+    This test is intended to force "reiteration" to find the complete set of answers
+    It's actually quite hard to find a case that should always reiterate... it may depend on the order of resolution
+    and implementation details of materialisations while holding open iterators
+    As a result, this test may or may not be the one we want to examine!
+     */
+    @Ignore
+    @Test
+    public void testTransitiveReiteration() throws InterruptedException {
+        String rule = "rule transitive-scoping: " +
+                "when { (inner: $x, outer: $y) isa scoping; (inner: $y, outer: $z) isa scoping; } " +
+                "then { (inner: $x, outer: $z) isa scoping; };";
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define place sub entity, plays scoping:inner, plays scoping:outer;" +
+                                "scoping sub relation, relates inner, relates outer;" +
+                                rule));
+                transaction.commit();
+            }
+        }
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert (inner: $a, outer: $b) isa scoping; " +
+                                                                    "(inner: $c, outer: $d) isa scoping; " +
+                                                                    "(inner: $e, outer: $f) isa scoping; "));
+                transaction.commit();
+            }
+        }
+
+        int answerCount = 8;
+        Conjunction conjunctionPattern = parseConjunction("{ (inner: $x, outer: $y) isa scoping}");
+
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+                int[] iteration = {0};
+                int[] doneInIteration = {0};
+                boolean[] receivedInferredAnswer = {false};
+
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, answer -> {
+                    if (answer.isInferred()) receivedInferredAnswer[0] = true;
+                    responses.add(answer);
+                }, iterDone -> {
+                    assert iteration[0] == iterDone;
+                    doneInIteration[0]++;
+                });
+
+                for (int i = 0; i < answerCount; i++) {
+                    root.tell(actor ->
+                                      actor.executeReceiveRequest(
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
+                                              registry
+                                      )
+                    );
+                }
+
+                // ONE answer (maybe) only be available in the next iteration, so taking the last answer here would block
+                for (int i = 0; i < answerCount - 1; i++) {
+                    responses.take();
+                }
+                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
+
+                assertTrue(receivedInferredAnswer[0]);
+                assertEquals(1, doneInIteration[0]);
+
+                // reset for next iteration
+                iteration[0]++;
+                receivedInferredAnswer[0] = false;
+                doneInIteration[0] = 0;
+                // get last answer and a exhausted message
+                for (int i = 0; i < 2; i++) {
+                    root.tell(actor ->
+                                      actor.executeReceiveRequest(
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
+                                              registry
+                                      )
+                    );
+                }
+                responses.take();
+                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
+
+                assertTrue(receivedInferredAnswer[0]);
+                assertEquals(1, doneInIteration[0]);
+
+                // reset for next iteration
+                iteration[0]++;
+                receivedInferredAnswer[0] = false;
+                doneInIteration[0] = 0;
+                // confirm there are no more answers
+                root.tell(actor ->
+                                  actor.executeReceiveRequest(
+                                          new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
+                                          registry
+                                  )
+                );
+                Thread.sleep(1000); // allow Exhausted message to propagate to top level
+                assertFalse(receivedInferredAnswer[0]);
+                assertEquals(1, doneInIteration[0]);
             }
         }
     }
