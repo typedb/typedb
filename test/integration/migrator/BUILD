@@ -51,5 +51,6 @@ checkstyle_test(
     include = glob([
         "*"
     ]),
+    exclude = ["data.grakn"],
     license_type = "agpl",
 )
