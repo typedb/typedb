@@ -19,6 +19,7 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
@@ -56,6 +57,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<HasConstraint> hasConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
+    private final Set<Constraint> constrainedBy;
 
     ThingVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -64,6 +66,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
+        this.constrainedBy = new HashSet<>();
     }
 
     ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
@@ -99,8 +102,19 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
+    @Override
+    protected void constrainedBy(Constraint constraint) {
+        constrainedBy.add(constraint);
+    }
+
     public Optional<IIDConstraint> iid() {
         return Optional.ofNullable(iidConstraint);
+    }
+
+    public IIDConstraint iid(byte[] iid) {
+        iidConstraint = new IIDConstraint(this, iid);
+        constrain(iidConstraint);
+        return iidConstraint;
     }
 
     public Optional<IsaConstraint> isa() {
@@ -110,6 +124,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public IsaConstraint isa(TypeVariable type, boolean isExplicit) {
         IsaConstraint isaConstraint = new IsaConstraint(this, type, isExplicit);
         constrain(isaConstraint);
+        type.constrainedBy(isaConstraint);
         return isaConstraint;
     }
 
@@ -120,6 +135,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public IsConstraint is(ThingVariable variable) {
         IsConstraint isConstraint = new IsConstraint(this, variable);
         constrain(isConstraint);
+        variable.constrainedBy(isConstraint);
         return isConstraint;
     }
 
@@ -160,6 +176,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
         ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
         constrain(valueVarConstraint);
+        variable.constrainedBy(valueVarConstraint);
         return valueVarConstraint;
     }
 
@@ -170,6 +187,10 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public RelationConstraint relation(List<RelationConstraint.RolePlayer> rolePlayers) {
         RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
         constrain(relationConstraint);
+        for (RelationConstraint.RolePlayer rp : rolePlayers) {
+            rp.player().constrainedBy(relationConstraint);
+            rp.roleType().ifPresent(roleType -> roleType.constrainedBy(relationConstraint));
+        }
         return relationConstraint;
     }
 
@@ -180,12 +201,18 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public HasConstraint has(ThingVariable attribute) {
         HasConstraint hasConstraint = new HasConstraint(this, attribute);
         constrain(hasConstraint);
+        attribute.constrainedBy(hasConstraint);
         return hasConstraint;
     }
 
     @Override
     public Set<ThingConstraint> constraints() {
         return constraints;
+    }
+
+    @Override
+    public Set<Constraint> constrainedBy() {
+        return constrainedBy;
     }
 
     @Override

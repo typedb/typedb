@@ -24,6 +24,7 @@ import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
+import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
@@ -39,10 +40,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
@@ -78,8 +81,11 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
         resolutionRecorder = registry.resolutionRecorder();
-        Set<Resolvable> resolvables = Resolvable.split(conjunction, concludables);
-
+        Set<Concludable<?>> concludablesWithApplicableRules = concludables.stream().filter(c -> c.getApplicableRules().findAny().isPresent()).collect(Collectors.toSet());
+        Set<Retrievable> retrievables = Resolvable.extractRetrievables(conjunction, concludablesWithApplicableRules);
+        Set<Resolvable> resolvables = new HashSet<>();
+        resolvables.addAll(concludablesWithApplicableRules);
+        resolvables.addAll(retrievables);
         // TODO Plan the order in which to execute the concludables
         List<Resolvable> plan = list(resolvables);
         for (Resolvable planned : plan) {

@@ -57,6 +57,10 @@ public class SubConstraint extends TypeConstraint {
         return type;
     }
 
+    public boolean isExplicit() {
+        return isExplicit;
+    }
+
     public void addHints(Set<Label> labels) {
         typeHints.addAll(labels);
     }

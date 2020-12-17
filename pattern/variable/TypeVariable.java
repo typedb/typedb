@@ -20,6 +20,7 @@ package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.type.AbstractConstraint;
 import grakn.core.pattern.constraint.type.IsConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
@@ -67,6 +68,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     private final Set<RelatesConstraint> relatesConstraints;
     private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
+    private final Set<Constraint> constrainedBy;
 
     public TypeVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -75,6 +77,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         relatesConstraints = new HashSet<>();
         isConstraints = new HashSet<>();
         constraints = new HashSet<>();
+        constrainedBy = new HashSet<>();
     }
 
     public static TypeVariable of(Identifier.Variable identifier) {
@@ -121,6 +124,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
+    @Override
+    protected void constrainedBy(Constraint constraint) {
+        constrainedBy.add(constraint);
+    }
+
     public Optional<LabelConstraint> label() {
         return Optional.ofNullable(labelConstraint);
     }
@@ -133,6 +141,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
 
     public Optional<AbstractConstraint> abstractConstraint() {
         return Optional.ofNullable(abstractConstraint);
+    }
+
+    public AbstractConstraint makeAbstract() {
+        AbstractConstraint abstractConstraint = new AbstractConstraint(this);
+        constrain(abstractConstraint);
+        return abstractConstraint;
     }
 
     public Optional<ValueTypeConstraint> valueType() {
@@ -149,6 +163,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return Optional.ofNullable(regexConstraint);
     }
 
+    public RegexConstraint regex(java.util.regex.Pattern regex) {
+        regexConstraint = new RegexConstraint(this, regex);
+        constrain(regexConstraint);
+        return regexConstraint;
+    }
+
     public Optional<SubConstraint> sub() {
         return Optional.ofNullable(subConstraint);
     }
@@ -156,6 +176,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public SubConstraint sub(TypeVariable type, boolean isExplicit) {
         SubConstraint subConstraint = new SubConstraint(this, type, isExplicit);
         constrain(subConstraint);
+        type.constrainedBy(subConstraint);
         return subConstraint;
     }
 
@@ -166,6 +187,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
         OwnsConstraint ownsConstraint = new OwnsConstraint(this, attributeType, overriddenAttributeType, isKey);
         constrain(ownsConstraint);
+        attributeType.constrainedBy(ownsConstraint);
+        if (overriddenAttributeType != null) overriddenAttributeType.constrainedBy(ownsConstraint);
         return ownsConstraint;
     }
 
@@ -176,6 +199,9 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public PlaysConstraint plays(@Nullable TypeVariable relationType, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         PlaysConstraint playsConstraint = new PlaysConstraint(this, relationType, roleType, overriddenRoleType);
         constrain(playsConstraint);
+        if (relationType != null) relationType.constrainedBy(playsConstraint);
+        roleType.constrainedBy(playsConstraint);
+        if (overriddenRoleType != null) overriddenRoleType.constrainedBy(playsConstraint);
         return playsConstraint;
     }
 
@@ -186,6 +212,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public RelatesConstraint relates(TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         RelatesConstraint relatesConstraint = new RelatesConstraint(this, roleType, overriddenRoleType);
         constrain(relatesConstraint);
+        roleType.constrainedBy(relatesConstraint);
+        if (overriddenRoleType != null) overriddenRoleType.constrainedBy(relatesConstraint);
         return relatesConstraint;
     }
 
@@ -196,12 +224,18 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public IsConstraint is(TypeVariable variable) {
         IsConstraint isConstraint = new IsConstraint(this, variable);
         constrain(isConstraint);
+        variable.constrainedBy(isConstraint);
         return isConstraint;
     }
 
     @Override
     public Set<TypeConstraint> constraints() {
         return constraints;
+    }
+
+    @Override
+    public Set<Constraint> constrainedBy() {
+        return constrainedBy;
     }
 
     @Override

@@ -21,6 +21,12 @@ import grakn.core.pattern.Conjunction;
 
 public class Retrievable extends Resolvable {
 
+    private Conjunction conjunction;
+
+    public Retrievable(Conjunction conjunction) {
+        this.conjunction = conjunction;
+    }
+
     @Override
     public Conjunction conjunction() {
         return null; // TODO
