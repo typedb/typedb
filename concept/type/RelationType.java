@@ -25,12 +25,6 @@ import java.util.stream.Stream;
 public interface RelationType extends ThingType {
 
     @Override
-    RelationType getSupertype();
-
-    @Override
-    Stream<? extends RelationType> getSupertypes();
-
-    @Override
     Stream<? extends RelationType> getSubtypes();
 
     @Override

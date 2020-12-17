@@ -55,7 +55,7 @@ public class AttributeTypeSteps {
 
     @Then("attribute\\( ?{type_label} ?) get supertype value type: {value_type}")
     public void attribute_type_get_supertype_value_type(String typeLabel, AttributeType.ValueType valueType) {
-        final AttributeType supertype = tx().concepts().getAttributeType(typeLabel).getSupertype();
+        final AttributeType supertype = tx().concepts().getAttributeType(typeLabel).getSupertype().asAttributeType();
         assertEquals(valueType, supertype.getValueType());
     }
 

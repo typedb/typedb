@@ -67,17 +67,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         super.setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
-    @Nullable
-    @Override
-    public EntityTypeImpl getSupertype() {
-        return super.getSupertype(v -> of(graphMgr, v));
-    }
-
-    @Override
-    public Stream<EntityTypeImpl> getSupertypes() {
-        return super.getSupertypes(v -> of(graphMgr, v));
-    }
-
     @Override
     public Stream<EntityTypeImpl> getSubtypes() {
         return super.getSubtypes(v -> of(graphMgr, v));
@@ -104,6 +93,9 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         final ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return EntityImpl.of(instance);
     }
+
+    @Override
+    public boolean isEntityType() { return true; }
 
     @Override
     public EntityTypeImpl asEntityType() { return this; }

@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
@@ -114,13 +115,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         vertex.isAbstract(false);
     }
 
-    @Nullable
-    @Override
-    public abstract AttributeTypeImpl getSupertype();
-
-    @Override
-    public abstract Stream<? extends AttributeTypeImpl> getSupertypes();
-
     @Override
     public abstract Stream<? extends AttributeTypeImpl> getSubtypes();
 
@@ -181,7 +175,25 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
+    public boolean isAttributeType() { return true; }
+
+    @Override
     public AttributeTypeImpl asAttributeType() { return this; }
+
+    @Override
+    public boolean isBoolean() { return false; }
+
+    @Override
+    public boolean isLong() { return false; }
+
+    @Override
+    public boolean isDouble() { return false; }
+
+    @Override
+    public boolean isString() { return false; }
+
+    @Override
+    public boolean isDateTime() { return false; }
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
@@ -261,12 +273,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public void setSupertype(AttributeType superType) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
-
-        @Nullable
-        @Override
-        public AttributeTypeImpl getSupertype() {
-            return null;
-        }
 
         @Override
         public Stream<AttributeTypeImpl> getSupertypes() {
@@ -348,17 +354,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Boolean(graphMgr, vertex);
         }
 
-        @Nullable
-        @Override
-        public AttributeTypeImpl.Boolean getSupertype() {
-            return super.getSupertype(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
-        }
-
-        @Override
-        public Stream<AttributeTypeImpl.Boolean> getSupertypes() {
-            return super.getSupertypes(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
-        }
-
         @Override
         public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
@@ -371,6 +366,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public ValueType getValueType() { return ValueType.BOOLEAN; }
+
+        @Override
+        public boolean isBoolean() { return true; }
 
         @Override
         public AttributeTypeImpl.Boolean asBoolean() { return this; }
@@ -471,17 +469,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Long(graphMgr, vertex);
         }
 
-        @Nullable
-        @Override
-        public AttributeTypeImpl.Long getSupertype() {
-            return super.getSupertype(v -> AttributeTypeImpl.Long.of(graphMgr, v));
-        }
-
-        @Override
-        public Stream<AttributeTypeImpl.Long> getSupertypes() {
-            return super.getSupertypes(v -> AttributeTypeImpl.Long.of(graphMgr, v));
-        }
-
         @Override
         public Stream<AttributeTypeImpl.Long> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.Long.of(graphMgr, v));
@@ -496,6 +483,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public ValueType getValueType() {
             return ValueType.LONG;
         }
+
+        @Override
+        public boolean isLong() { return true; }
 
         @Override
         public AttributeTypeImpl.Long asLong() { return this; }
@@ -596,17 +586,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.Double(graphMgr, vertex);
         }
 
-        @Nullable
-        @Override
-        public AttributeTypeImpl.Double getSupertype() {
-            return super.getSupertype(v -> AttributeTypeImpl.Double.of(graphMgr, v));
-        }
-
-        @Override
-        public Stream<AttributeTypeImpl.Double> getSupertypes() {
-            return super.getSupertypes(v -> AttributeTypeImpl.Double.of(graphMgr, v));
-        }
-
         @Override
         public Stream<AttributeTypeImpl.Double> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.Double.of(graphMgr, v));
@@ -621,6 +600,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public ValueType getValueType() {
             return ValueType.DOUBLE;
         }
+
+        @Override
+        public boolean isDouble() { return true; }
 
         @Override
         public AttributeTypeImpl.Double asDouble() { return this; }
@@ -721,17 +703,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.String(graphMgr, vertex);
         }
 
-        @Nullable
-        @Override
-        public AttributeTypeImpl.String getSupertype() {
-            return super.getSupertype(v -> AttributeTypeImpl.String.of(graphMgr, v));
-        }
-
-        @Override
-        public Stream<AttributeTypeImpl.String> getSupertypes() {
-            return super.getSupertypes(v -> AttributeTypeImpl.String.of(graphMgr, v));
-        }
-
         @Override
         public Stream<AttributeTypeImpl.String> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.String.of(graphMgr, v));
@@ -741,6 +712,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Stream<AttributeImpl.String> getInstances() {
             return instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
+
+        @Override
+        public boolean isString() { return true; }
 
         @Override
         public AttributeTypeImpl.String asString() { return this; }
@@ -883,17 +857,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     new AttributeTypeImpl.DateTime(graphMgr, vertex);
         }
 
-        @Nullable
-        @Override
-        public AttributeTypeImpl.DateTime getSupertype() {
-            return super.getSupertype(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
-        }
-
-        @Override
-        public Stream<AttributeTypeImpl.DateTime> getSupertypes() {
-            return super.getSupertypes(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
-        }
-
         @Override
         public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
@@ -908,6 +871,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public ValueType getValueType() {
             return ValueType.DATETIME;
         }
+
+        @Override
+        public boolean isDateTime() { return true; }
 
         @Override
         public AttributeTypeImpl.DateTime asDateTime() { return this; }

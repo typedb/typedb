@@ -143,7 +143,7 @@ public class LogicManager {
                 if (scope == null) return false;
                 return scope.getRelates(label.name()) == null;
             } else {
-                return conceptMgr.getType(label.name()) == null;
+                return conceptMgr.getThingType(label.name()) == null;
             }
         }).map(Label::scopedName).collect(Collectors.toSet());
     }

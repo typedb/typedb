@@ -99,17 +99,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         super.setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
-    @Nullable
-    @Override
-    public RelationTypeImpl getSupertype() {
-        return super.getSupertype(v -> of(graphMgr, v));
-    }
-
-    @Override
-    public Stream<RelationTypeImpl> getSupertypes() {
-        return super.getSupertypes(v -> of(graphMgr, v));
-    }
-
     @Override
     public Stream<RelationTypeImpl> getSubtypes() {
         return super.getSubtypes(v -> of(graphMgr, v));
@@ -124,10 +113,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setRelates(String roleLabel) {
         final TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
-            if (getSupertypes().filter(t -> !t.equals(this)).flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().name().equals(roleLabel))) {
+            if (getSupertypes().filter(t -> !t.equals(this) && t.isRelationType()).map(TypeImpl::asRelationType)
+                    .flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().name().equals(roleLabel))) {
                 throw exception(GraknException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleLabel));
             } else {
                 final RoleTypeImpl roleType = RoleTypeImpl.of(graphMgr, roleLabel, vertex.label());
+                assert roleType.getSupertype() != null;
                 if (this.isAbstract()) roleType.setAbstract();
                 vertex.outs().put(RELATES, roleType.vertex);
                 vertex.outs().edge(RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
@@ -138,11 +129,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setRelates(String roleLabel, String overriddenLabel) {
         this.setRelates(roleLabel);
-        final RoleTypeImpl roleType = this.getRelates(roleLabel);
+        RoleTypeImpl roleType = this.getRelates(roleLabel);
 
-        final Optional<RoleTypeImpl> inherited;
+        Optional<RoleTypeImpl> inherited;
+        assert getSupertype() != null;
         if (declaredRoles().anyMatch(r -> r.getLabel().name().equals(overriddenLabel)) ||
-                !(inherited = getSupertype().getRelates().filter(role -> role.getLabel().name().equals(overriddenLabel)).findFirst()).isPresent()) {
+                !(inherited = getSupertype().asRelationType().getRelates().filter(role -> role.getLabel().name().equals(overriddenLabel)).findFirst()).isPresent()) {
             throw exception(GraknException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
         }
 
@@ -161,9 +153,10 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         if (isRoot()) {
             return roles.stream();
         } else {
+            assert getSupertype() != null;
             final Set<RoleTypeImpl> direct = new HashSet<>();
             roles.forEachRemaining(direct::add);
-            return Stream.concat(direct.stream(), getSupertype().getRelates().filter(
+            return Stream.concat(direct.stream(), getSupertype().asRelationType().getRelates().filter(
                     role -> overriddenRoles().noneMatch(o -> o.equals(role))
             ));
         }
@@ -233,6 +226,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         final ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return RelationImpl.of(instance);
     }
+
+    @Override
+    public boolean isRelationType() { return true; }
 
     @Override
     public RelationTypeImpl asRelationType() { return this; }

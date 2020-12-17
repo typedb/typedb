@@ -27,6 +27,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.core.server.rpc.util.ResponseBuilder;
 import grakn.protocol.ConceptProto;
@@ -117,11 +118,11 @@ public class ThingHandler {
         return conceptManager.getThing(protoThing.getIid().toByteArray());
     }
 
-    private grakn.core.concept.type.Type getType(ConceptProto.Type protoType) {
-        return conceptManager.getType(protoType.getLabel());
+    private ThingType getThingType(ConceptProto.Type protoType) {
+        return conceptManager.getThingType(protoType.getLabel());
     }
 
-    private grakn.core.concept.type.RoleType getRoleType(ConceptProto.Type protoRoleType) {
+    private RoleType getRoleType(ConceptProto.Type protoRoleType) {
         RelationType relationType = conceptManager.getRelationType(protoRoleType.getScope());
         if (relationType != null) return relationType.getRelates(protoRoleType.getLabel());
         else return null;
@@ -154,7 +155,7 @@ public class ThingHandler {
             attributes = thing.getHas(req.getKeysOnly());
         } else {
             final AttributeType[] attributeTypes = protoTypes.stream()
-                    .map(type -> notNull(getType(type)).asAttributeType())
+                    .map(type -> notNull(getThingType(type)).asAttributeType())
                     .toArray(AttributeType[]::new);
             attributes = thing.getHas(attributeTypes);
         }
@@ -260,7 +261,7 @@ public class ThingHandler {
         final Stream<? extends Thing> things;
         switch (getOwnersReq.getFilterCase()) {
             case THING_TYPE:
-                things = attribute.getOwners(getType(getOwnersReq.getThingType()).asThingType());
+                things = attribute.getOwners(getThingType(getOwnersReq.getThingType()).asThingType());
                 break;
             case FILTER_NOT_SET:
             default:
