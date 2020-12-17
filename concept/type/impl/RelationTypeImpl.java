@@ -27,6 +27,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -171,6 +172,19 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public Stream<RoleTypeImpl> getRelatesDirect() {
         final ResourceIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
         return roles.stream();
+    }
+
+    @Override
+    public RoleType getRelatesOverridden(String roleLabel) {
+        final TypeVertex roleVertex = graphMgr.schema().getType(roleLabel, vertex.label());
+        if (roleVertex != null) {
+            final TypeEdge relatesEdge = vertex.outs().edge(RELATES, roleVertex);
+            if (relatesEdge != null &&
+                    relatesEdge.overridden() != null &&
+                    !relatesEdge.overridden().equals(graphMgr.schema().rootRoleType()))
+                return RoleTypeImpl.of(graphMgr, relatesEdge.overridden());
+        }
+        return null;
     }
 
     Stream<RoleTypeImpl> overriddenRoles() {

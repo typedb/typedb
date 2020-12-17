@@ -65,6 +65,8 @@ import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 
@@ -279,12 +281,28 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return declaredOwns(onlyKey);
     }
 
+    @Override
     public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
+    @Override
     public Stream<AttributeTypeImpl> getOwnsDirect(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwnsDirect(onlyKey).filter(att -> att.getValueType().equals(valueType));
+    }
+
+    @Override
+    public AttributeType getOwnsOverridden(AttributeType attributeType) {
+        final TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
+        if (attrVertex != null) {
+            TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
+            if (ownsEdge != null && ownsEdge.overridden() != null)
+                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
+            ownsEdge = vertex.outs().edge(OWNS, attrVertex);
+            if (ownsEdge != null && ownsEdge.overridden() != null)
+                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
+        }
+        return null;
     }
 
     @Override
@@ -329,6 +347,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public Stream<RoleTypeImpl> getPlaysDirect() {
         if (isRoot()) return Stream.of();
         return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
+    }
+
+    @Override
+    public RoleType getPlaysOverridden(RoleType roleType) {
+        final TypeVertex roleVertex = graphMgr.schema().getType(roleType.getLabel());
+        if (roleVertex != null) {
+            final TypeEdge playsEdge = vertex.outs().edge(PLAYS, roleVertex);
+            if (playsEdge != null && playsEdge.overridden() != null)
+                return RoleTypeImpl.of(graphMgr, playsEdge.overridden());
+        }
+        return null;
     }
 
     @Override

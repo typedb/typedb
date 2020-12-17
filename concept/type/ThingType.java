@@ -18,6 +18,7 @@
 
 package grakn.core.concept.type;
 
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 
 import java.util.stream.Stream;
@@ -68,6 +69,8 @@ public interface ThingType extends Type {
 
     Stream<? extends AttributeType> getOwnsDirect(AttributeType.ValueType valueType, boolean onlyKey);
 
+    AttributeType getOwnsOverridden(AttributeType attributeType);
+
     void setPlays(RoleType roleType);
 
     void setPlays(RoleType roleType, RoleType overriddenType);
@@ -77,4 +80,6 @@ public interface ThingType extends Type {
     Stream<? extends RoleType> getPlays();
 
     Stream<? extends RoleType> getPlaysDirect();
+
+    RoleType getPlaysOverridden(RoleType roleType);
 }

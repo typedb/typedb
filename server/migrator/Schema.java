@@ -24,6 +24,7 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.logic.Rule;
 import graql.lang.pattern.Conjunction;
@@ -137,29 +138,52 @@ public class Schema {
 
     private void writeOwns(StringBuilder builder, ThingType thingType) {
         Set<String> keys = thingType.getOwnsDirect(true).map(x -> x.getLabel().name()).collect(Collectors.toSet());
-        List<String> attributeTypes = thingType.getOwnsDirect().map(x -> x.getLabel().name()).collect(Collectors.toList());
-        attributeTypes.stream().filter(x -> keys.contains(x)).sorted()
-                .forEach(x -> builder
-                        .append(COMMA_NEWLINE_INDENT)
-                        .append(String.format("owns %s @key", x)));
-        attributeTypes.stream().filter(type -> !keys.contains(type)).sorted()
-                .forEach(x -> builder
-                        .append(COMMA_NEWLINE_INDENT)
-                        .append(String.format("owns %s", x)));
+        List<AttributeType> attributeTypes = thingType.getOwnsDirect().collect(Collectors.toList());
+        attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
+                .sorted(Comparator.comparing(x -> x.getLabel().name()))
+                .forEach(attributeType -> {
+                    builder.append(COMMA_NEWLINE_INDENT)
+                            .append(String.format("owns %s", attributeType.getLabel().name()));
+                    AttributeType overridden = thingType.getOwnsOverridden(attributeType);
+                    if (overridden != null) {
+                        builder.append(String.format(" as %s", overridden.getLabel().name()));
+                    }
+                    builder.append(" @key");
+                });
+        attributeTypes.stream().filter(x -> !keys.contains(x.getLabel().name()))
+                .sorted(Comparator.comparing(x -> x.getLabel().name()))
+                .forEach(attributeType -> {
+                    builder.append(COMMA_NEWLINE_INDENT)
+                            .append(String.format("owns %s", attributeType.getLabel().name()));
+                    AttributeType overridden = thingType.getOwnsOverridden(attributeType);
+                    if (overridden != null) {
+                        builder.append(String.format(" as %s", overridden.getLabel().name()));
+                    }
+                });
     }
 
     private void writeRelates(StringBuilder builder, RelationType relationType) {
         relationType.getRelatesDirect().sorted(Comparator.comparing(x -> x.getLabel().name()))
-                .forEach(x -> builder
-                        .append(COMMA_NEWLINE_INDENT)
-                        .append(String.format("relates %s", x.getLabel().name())));
+                .forEach(roleType -> {
+                    builder.append(COMMA_NEWLINE_INDENT)
+                            .append(String.format("relates %s", roleType.getLabel().name()));
+                    RoleType overridden = relationType.getRelatesOverridden(roleType.getLabel().name());
+                    if (overridden != null) {
+                        builder.append(String.format(" as %s", overridden.getLabel().name()));
+                    }
+                });
     }
 
     private void writePlays(StringBuilder builder, ThingType thingType) {
         thingType.getPlaysDirect().sorted(Comparator.comparing(x -> x.getLabel().scopedName()))
-                .forEach(x -> builder
-                        .append(COMMA_NEWLINE_INDENT)
-                        .append(String.format("plays %s", x.getLabel().scopedName())));
+                .forEach(roleType -> {
+                    builder.append(COMMA_NEWLINE_INDENT)
+                            .append(String.format("plays %s", roleType.getLabel().scopedName()));
+                    RoleType overridden = thingType.getPlaysOverridden(roleType);
+                    if (overridden != null) {
+                        builder.append(String.format(" as %s", overridden.getLabel().scopedName()));
+                    }
+                });
     }
 
     private void writeRule(StringBuilder builder, Rule rule) {

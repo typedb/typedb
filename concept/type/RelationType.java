@@ -49,6 +49,8 @@ public interface RelationType extends ThingType {
 
     RoleType getRelatesDirect(String roleLabel);
 
+    RoleType getRelatesOverridden(String roleLabel);
+
     Relation create();
 
     Relation create(boolean isInferred);
