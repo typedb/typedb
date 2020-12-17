@@ -29,20 +29,20 @@ import static grakn.common.collection.Collections.map;
 public class ResolutionAnswer {
     private final Aggregator.Aggregated aggregatedAnswer;
     private final Derivation derivation;
-    private final Actor<? extends Resolver<?>> producer;
+    private final boolean isInferred; // record if inference was invoked even when derivations are not active
     private final String patternAnswered;
-    private final boolean fromInference; // record if inference was invoked even when derivations are not active
+    private final Actor<? extends Resolver<?>> producer;
 
     public ResolutionAnswer(Aggregator.Aggregated aggregatedAnswer,
                             String patternAnswered,
                             Derivation derivation,
                             Actor<? extends Resolver<?>> producer,
-                            boolean fromInference) {
+                            boolean isInferred) {
         this.aggregatedAnswer = aggregatedAnswer;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
         this.producer = producer;
-        this.fromInference = fromInference;
+        this.isInferred = isInferred;
     }
 
     public Aggregator.Aggregated aggregated() {
@@ -54,7 +54,7 @@ public class ResolutionAnswer {
     }
 
     public boolean isInferred() {
-        return fromInference;
+        return isInferred;
     }
 
     public Actor<? extends Resolver<?>> producer() {

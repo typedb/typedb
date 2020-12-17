@@ -70,7 +70,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         TODO room for optimisation:
         for example, reiteration should never be required if there
         are no loops in the rule graph
-        NOTE: double check this logic holds in the actor execution model
+        NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may
+        always have to reiterate until no more answers are found.
          */
         return iterationInferredAnswer;
     }
