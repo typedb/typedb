@@ -67,11 +67,30 @@ host_compatible_java_test(
     data = [":basic-schema.gql"],
 )
 
+host_compatible_java_test(
+    name = "test-unify",
+    srcs = ["concludable/UnificationTest.java"],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    test_class = "grakn.core.logic.concludable.UnifyTest",
+    deps = [
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
         "reasoner/*",
+        "concludable/*",
     ]),
     license_type = "agpl",
 )

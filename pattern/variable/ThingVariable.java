@@ -59,7 +59,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
 
-    ThingVariable(Identifier.Variable identifier) {
+    public ThingVariable(Identifier.Variable identifier) {
         super(identifier);
         this.isConstraints = new HashSet<>();
         this.valueConstraints = new HashSet<>();

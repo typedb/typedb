@@ -293,6 +293,7 @@ public abstract class ProcedureEdge<
                     if (!toTypes.isEmpty()) typeIter = typeIter.filter(t -> toTypes.contains(t.properLabel()));
 
                     ResourceIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t));
+                    if (to.id().isVariable()) iter = to.filterReferableThings(iter);
                     if (to.props().hasIID()) iter = to.filterIID(iter, params);
                     if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(iter, params);
                     return iter;

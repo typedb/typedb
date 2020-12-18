@@ -101,5 +101,9 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return set;
     }
 
+    default int count() {
+        return this.toList().size();
+    }
+
     void recycle();
 }

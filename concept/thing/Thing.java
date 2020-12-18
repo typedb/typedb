@@ -28,11 +28,19 @@ import java.util.stream.Stream;
 public interface Thing extends Concept {
 
     /**
-     * Returns the {@code IID} of this {@code Thing} has hexadecimal string.
+     * Returns the {@code IID} of this {@code Thing} as a byte array.
      *
-     * @return the {@code IID} of this {@code Thing} has hexadecimal string
+     * @return the {@code IID} of this {@code Thing} as a byte array
      */
     byte[] getIID();
+
+
+    /**
+     * Returns the {@code IID} of this {@code Thing} as hexadecimal string.
+     *
+     * @return the {@code IID} of this {@code Thing} as hexadecimal string
+     */
+    String getIIDForPrinting();
 
     /**
      * Get the immediate {@code ThingType} in which this this {@code Thing} is
