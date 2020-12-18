@@ -41,7 +41,6 @@ import graql.lang.pattern.Pattern;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
@@ -205,15 +204,15 @@ public class Rule {
     }
 
     private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable) {
-        Set<Variable> rawThenVars = VariableRegistry.createFromThings(list(thenVariable)).variables();
-        return new Conjunction(nameThenVars(rawThenVars), set());
+        Set<Variable> unnamedThenVars = VariableRegistry.createFromThings(list(thenVariable)).variables();
+        return new Conjunction(nameThenVars(unnamedThenVars), set());
     }
 
     private Set<Variable> nameThenVars(Set<Variable> variables) {
         for (Variable variable : variables) {
             if (variable.isThing() && !variable.asThing().has().isEmpty()){
                 if (variable.asThing().has().iterator().next().attribute().reference().isName()) return variables;
-                return nameHasVar(variable.asThing());
+                return nameHasVariable(variable.asThing());
             }
             if (variable.isThing() && !variable.asThing().relation().isEmpty())
                 return nameRelationVar(variable.asThing());
@@ -221,31 +220,31 @@ public class Rule {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private Set<Variable> nameRelationVar(ThingVariable relVariable) {
-        Set<Variable> register = new HashSet<>();
-        RelationConstraint relationConstraint = relVariable.relation().iterator().next();
+    private Set<Variable> nameRelationVar(ThingVariable oldOwner) {
+        Set<Variable> namedVariables = new HashSet<>();
+        RelationConstraint relationConstraint = oldOwner.relation().iterator().next();
         ThingVariable namedOwner = ThingVariable.createTemp("rel_owner");
-        register.add(namedOwner);
-        assert relVariable.isa().isPresent();
-        IsaConstraint isaConstraint = relVariable.isa().get();
+        namedVariables.add(namedOwner);
+        assert oldOwner.isa().isPresent();
+        IsaConstraint isaConstraint = oldOwner.isa().get();
         TypeVariable namedType = nameType(isaConstraint.type(), "rel_type");
         namedOwner.isa(namedType, false);
-        register.add(namedType);
+        namedVariables.add(namedType);
 
         List<RolePlayer> namedRolePlayers = new ArrayList<>();
         assert !relationConstraint.players().isEmpty();
         int uniqueRoleID = 0;
         for (RolePlayer rolePlayer : relationConstraint.players()) {
             RolePlayer namedRolePlayer = nameRolePLayer(rolePlayer, uniqueRoleID);
-            register.add(namedRolePlayer.player());
-            register.add(namedRolePlayer.roleType().get());
+            namedVariables.add(namedRolePlayer.player());
+            namedVariables.add(namedRolePlayer.roleType().get());
             namedRolePlayers.add(namedRolePlayer);
             uniqueRoleID++;
         }
 
         namedOwner.relation(namedRolePlayers);
-        register.add(namedOwner);
-        return register;
+        namedVariables.add(namedOwner);
+        return namedVariables;
     }
 
     private RolePlayer nameRolePLayer(RolePlayer rolePlayer, int uniqueRoleID) {
@@ -257,19 +256,19 @@ public class Rule {
         return new RolePlayer(namedRoleType, playerVar);
     }
 
-    private Set<Variable> nameHasVar(ThingVariable hasVariable) {
+    private Set<Variable> nameHasVariable(ThingVariable hasVariable) {
         HasConstraint hasConstraint = hasVariable.has().iterator().next();
         ThingVariable attribute = hasConstraint.attribute();
-        Set<Variable> register = new HashSet<>();
+        Set<Variable> namedVariables = new HashSet<>();
         ThingVariable namedAttribute = nameAttribute(attribute);
         assert namedAttribute.isa().isPresent();
-        register.add(namedAttribute);
-        register.add(namedAttribute.isa().get().type());
-        register.add(namedAttribute.value().iterator().next().asVariable().value());
-        ThingVariable newOwner = ThingVariable.of(hasVariable.identifier());
-        newOwner.has(namedAttribute);
-        register.add(newOwner);
-        return register;
+        namedVariables.add(namedAttribute);
+        namedVariables.add(namedAttribute.isa().get().type());
+        namedVariables.add(namedAttribute.value().iterator().next().asVariable().value());
+        ThingVariable namedOwner = ThingVariable.of(hasVariable.identifier());
+        namedOwner.has(namedAttribute);
+        namedVariables.add(namedOwner);
+        return namedVariables;
     }
 
     private ThingVariable nameAttribute(ThingVariable attribute) {
@@ -278,11 +277,11 @@ public class Rule {
         TypeVariable namedType = nameType(isaConstraint.type(), "attr_type");
         assert attribute.value().size() == 1;
         ValueConstraint<?> valueConstraint = attribute.value().iterator().next();
-        ThingVariable newAttr = ThingVariable.createTemp("attr");
+        ThingVariable namedAttr = ThingVariable.createTemp("attr");
         ThingVariable namedValue = nameValue(valueConstraint);
-        newAttr.valueVariable(valueConstraint.predicate(), namedValue);
-        newAttr.isa(namedType, false);
-        return newAttr;
+        namedAttr.valueVariable(valueConstraint.predicate(), namedValue);
+        namedAttr.isa(namedType, false);
+        return namedAttr;
     }
 
     private TypeVariable nameType(TypeVariable typeVariable, String tempName) {
@@ -295,9 +294,9 @@ public class Rule {
 
     private ThingVariable nameValue(ValueConstraint<?> valueConstraint) {
         if (valueConstraint.isVariable()) return valueConstraint.asVariable().value();
-        ThingVariable newValue = ThingVariable.createTemp("value");
-        newValue.value(valueConstraint.predicate(), valueConstraint.value());
-        return newValue;
+        ThingVariable namedValue = ThingVariable.createTemp("value");
+        namedValue.value(valueConstraint.predicate(), valueConstraint.value());
+        return namedValue;
     }
 
 }

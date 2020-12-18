@@ -28,17 +28,13 @@ import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
 import graql.lang.common.GraqlToken;
-import graql.lang.pattern.constraint.ThingConstraint;
-import graql.lang.pattern.variable.Reference;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -51,8 +47,8 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class RuleTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
