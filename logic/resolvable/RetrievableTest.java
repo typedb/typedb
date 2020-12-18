@@ -123,4 +123,21 @@ public class RetrievableTest {
         assertEquals(set(parse("{ $a($b); $b($a); }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
+
+    @Test
+    public void test_multiple_value_constraints_in_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $a has $b; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
+        assertEquals(1, concludables.size());
+        assertEquals(set(parse("{ $b > 5; $b < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_disconnected_conjunction_in_retrievable() {
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a = 7; $b > 5; $b < 10; }"), set());
+        assertEquals(set(parse("{ $b > 5; $b < 10; }"),
+                         parse("{ $a = 7; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
 }

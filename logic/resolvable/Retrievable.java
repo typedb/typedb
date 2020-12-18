@@ -108,7 +108,7 @@ public class Retrievable extends Resolvable {
                 }
             });
             return connectedSubgraphs.stream()
-                    .filter(subGraph -> subGraph.size() > 1)
+//                    .filter(subGraph -> !((subGraph.size() == 1) && !(subGraph.iterator().next().constraints().size() > 0))) // TODO
                     .map(subGraph -> new Retrievable(new Conjunction(subGraph, set()))).collect(Collectors.toSet());
         }
 
