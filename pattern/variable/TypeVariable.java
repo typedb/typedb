@@ -226,7 +226,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
 
     @Override
     public void addTo(Traversal traversal) {
-        if (!typeHints().isEmpty()) traversal.labels(identifier(), typeHints());
+        if (!resolvedTypes().isEmpty()) traversal.labels(identifier(), resolvedTypes());
         super.addTo(traversal);
     }
 

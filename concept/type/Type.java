@@ -45,6 +45,16 @@ public interface Type extends Concept {
 
     List<GraknException> validate();
 
+    boolean isThingType();
+
+    boolean isEntityType();
+
+    boolean isAttributeType();
+
+    boolean isRelationType();
+
+    boolean isRoleType();
+
     ThingType asThingType();
 
     EntityType asEntityType();

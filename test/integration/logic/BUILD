@@ -49,7 +49,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-type-hinter",
-    srcs = ["TypeHinterTest.java"],
+    srcs = ["TypeResolverTest.java"],
     test_class = "grakn.core.logic.TypeHinterTest",
     native_libraries_deps = [
         "//rocks:rocks",

@@ -30,12 +30,6 @@ import java.util.stream.Stream;
 public interface AttributeType extends ThingType {
 
     @Override
-    AttributeType getSupertype();
-
-    @Override
-    Stream<? extends AttributeType> getSupertypes();
-
-    @Override
     Stream<? extends AttributeType> getSubtypes();
 
     @Override
@@ -50,6 +44,16 @@ public interface AttributeType extends ThingType {
     Stream<? extends ThingType> getOwners();
 
     Stream<? extends ThingType> getOwners(boolean onlyKey);
+
+    boolean isBoolean();
+
+    boolean isLong();
+
+    boolean isDouble();
+
+    boolean isString();
+
+    boolean isDateTime();
 
     AttributeType.Boolean asBoolean();
 
@@ -109,12 +113,6 @@ public interface AttributeType extends ThingType {
     interface Boolean extends AttributeType {
 
         @Override
-        AttributeType.Boolean getSupertype();
-
-        @Override
-        Stream<? extends AttributeType.Boolean> getSupertypes();
-
-        @Override
         Stream<? extends AttributeType.Boolean> getSubtypes();
 
         @Override
@@ -128,12 +126,6 @@ public interface AttributeType extends ThingType {
     }
 
     interface Long extends AttributeType {
-
-        @Override
-        AttributeType.Long getSupertype();
-
-        @Override
-        Stream<? extends AttributeType.Long> getSupertypes();
 
         @Override
         Stream<? extends AttributeType.Long> getSubtypes();
@@ -151,12 +143,6 @@ public interface AttributeType extends ThingType {
     interface Double extends AttributeType {
 
         @Override
-        AttributeType.Double getSupertype();
-
-        @Override
-        Stream<? extends AttributeType.Double> getSupertypes();
-
-        @Override
         Stream<? extends AttributeType.Double> getSubtypes();
 
         @Override
@@ -170,12 +156,6 @@ public interface AttributeType extends ThingType {
     }
 
     interface String extends AttributeType {
-
-        @Override
-        AttributeType.String getSupertype();
-
-        @Override
-        Stream<? extends AttributeType.String> getSupertypes();
 
         @Override
         Stream<? extends AttributeType.String> getSubtypes();
@@ -197,12 +177,6 @@ public interface AttributeType extends ThingType {
     }
 
     interface DateTime extends AttributeType {
-
-        @Override
-        AttributeType.DateTime getSupertype();
-
-        @Override
-        Stream<? extends AttributeType.DateTime> getSupertypes();
 
         @Override
         Stream<? extends AttributeType.DateTime> getSubtypes();

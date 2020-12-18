@@ -104,7 +104,7 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
-        if (copyFrom.label().isPresent()) copyTo.label(Label.of(copyFrom.label().get().label()));
+        if (copyFrom.label().isPresent()) copyTo.label(copyFrom.label().get().properLabel());
         if (copyFrom.valueType().isPresent()) copyTo.valueType(copyFrom.valueType().get().valueType());
     }
 

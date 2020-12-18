@@ -85,7 +85,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     @Override
     public void addTo(Traversal traversal) {
-        if (!typeHints().isEmpty()) traversal.types(identifier(), typeHints());
+        if (!resolvedTypes().isEmpty()) traversal.types(identifier(), resolvedTypes());
         super.addTo(traversal);
     }
 
@@ -251,7 +251,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
                 .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
-                .validIf(this.typeHints().equals(that.typeHints()))
+                .validIf(this.resolvedTypes().equals(that.resolvedTypes()))
                 .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
                 .validIfAlphaEqual(this.relationConstraints, that.relationConstraints)
                 .validIfAlphaEqual(this.hasConstraints, that.hasConstraints)

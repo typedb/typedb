@@ -61,8 +61,10 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTAT
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 
@@ -106,7 +108,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Nullable
     @Override
-    public abstract ThingTypeImpl getSupertype();
+    public ThingTypeImpl getSupertype() {
+        return vertex.outs().edge(SUB).to().map(t -> ThingTypeImpl.of(graphMgr, t)).firstOrNull();
+    }
+
+    @Override
+    public Stream<? extends ThingTypeImpl> getSupertypes() {
+        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
+                .map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
+    }
 
     @Override
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
@@ -312,6 +322,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
         return exceptions;
     }
+
+    @Override
+    public boolean isThingType() { return true; }
 
     @Override
     public ThingTypeImpl asThingType() { return this; }

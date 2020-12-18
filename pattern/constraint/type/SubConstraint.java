@@ -59,7 +59,7 @@ public class SubConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        if (type.reference().isName() || owner.typeHints().isEmpty())
+        if (type.reference().isName() || owner.resolvedTypes().isEmpty())
             traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
     }
 
