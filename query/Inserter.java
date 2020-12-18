@@ -176,9 +176,9 @@ public class Inserter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
             if (variable.reference().isLabel()) {
                 assert variable.label().isPresent();
-                final Type type = conceptMgr.getType(variable.label().get().label());
-                if (type == null) throw GraknException.of(TYPE_NOT_FOUND, variable.label().get().label());
-                else return type.asThingType();
+                final ThingType thingType = conceptMgr.getThingType(variable.label().get().label());
+                if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, variable.label().get().label());
+                else return thingType.asThingType();
             } else {
                 throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, variable.reference());
             }

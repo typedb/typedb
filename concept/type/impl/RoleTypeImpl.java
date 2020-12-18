@@ -29,11 +29,14 @@ import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.iterator.Iterators.loop;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
@@ -76,12 +79,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
-        return super.getSupertype(v -> of(graphMgr, v));
+        return vertex.outs().edge(SUB).to().map(t -> RoleTypeImpl.of(graphMgr, t)).firstOrNull();
     }
 
     @Override
     public Stream<RoleTypeImpl> getSupertypes() {
-        return super.getSupertypes(v -> of(graphMgr, v));
+        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
+                .map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override
@@ -120,6 +124,9 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     public List<GraknException> validate() {
         return super.validate();
     }
+
+    @Override
+    public boolean isRoleType() { return true; }
 
     @Override
     public RoleTypeImpl asRoleType() { return this; }

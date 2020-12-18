@@ -303,9 +303,7 @@ public abstract class ProcedureVertex<
             if (props().valueType().isPresent()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
             if (props().isAbstract()) iterator = iterateOrFilterAbstract(graphMgr, iterator);
             if (props().regex().isPresent()) iterator = iterateAndFilterRegex(graphMgr, iterator);
-            if (iterator == null)
-                iterator = link(list(graphMgr.schema().entityTypes(), graphMgr.schema().relationTypes(),
-                                     graphMgr.schema().attributeTypes()));// graphMgr.schema().roleTypes())); // TODO discuss ramifications
+            if (iterator == null) iterator = graphMgr.schema().thingTypes(); // graphMgr.schema().roleTypes())); // TODO discuss ramifications
             return iterator;
         }
 

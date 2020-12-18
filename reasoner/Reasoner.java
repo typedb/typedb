@@ -26,10 +26,12 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
@@ -69,7 +71,8 @@ public class Reasoner {
     }
 
     public List<Producer<ConceptMap>> execute(Conjunction conjunction) {
-        // TODO conjunction = logicMgr.typeHinter().computeHints(conjunction, PARALLELISATION_FACTOR);
+        // conjunction = logicMgr.typeResolver().resolveRoleTypes(conjunction);
+        // conjunction = logicMgr.typeResolver().resolveThingTypes(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
@@ -80,12 +83,12 @@ public class Reasoner {
         //          resolve(conjunctionResolvedTypes)
         //      ));
 
-        if (conjunction.negations().isEmpty()) {
-            return list(answers);
-        } else {
-            Predicate<ConceptMap> predicate = answer -> !buffer(conjunction.negations().stream().flatMap(
-                    negation -> execute(negation.disjunction(), answer).stream()
-            ).collect(toList())).iterator().hasNext();
+        Set<Negation> negations = conjunction.negations();
+        if (negations.isEmpty()) return list(answers);
+        else {
+            Predicate<ConceptMap> predicate = answer -> !buffer(iterate(negations).flatMap(
+                    n -> iterate(execute(n.disjunction(), answer))).toList()
+            ).iterator().hasNext();
             return list(answers.filter(predicate));
         }
     }
