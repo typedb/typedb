@@ -33,9 +33,6 @@ import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalVertex;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -50,12 +47,9 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
-import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static java.util.Collections.emptyIterator;
 
@@ -107,13 +101,6 @@ public abstract class ProcedureVertex<
 
     public ProcedureVertex.Type asType() {
         throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
-    }
-
-    static ResourceIterator<TypeVertex> assertRoleTypesNotEmpty(ResourceIterator<TypeVertex> roleTypes, Label scopedLabel) {
-        // TODO: replace this with assertions once query validation is implemented
-        // TODO: what happens to the state of transaction if we throw in a traversal/match?
-        if (!roleTypes.hasNext()) throw GraknException.of(TYPE_NOT_FOUND, scopedLabel);
-        else return roleTypes;
     }
 
     static TypeVertex assertTypeNotNull(TypeVertex type, Label label) {
@@ -177,11 +164,18 @@ public abstract class ProcedureVertex<
                         .flatMap(t -> graphMgr.data().get(t));
             }
 
+            if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
             else return filterPredicates(iter, parameters, eq.orElse(null));
         }
 
-        ResourceIterator<? extends ThingVertex> filterIID(ResourceIterator<? extends ThingVertex> iterator, Traversal.Parameters parameters) {
+        ResourceIterator<? extends ThingVertex> filterReferableThings(ResourceIterator<? extends ThingVertex> iterator) {
+            assert id().isVariable();
+            return iterator.filter(v -> !v.encoding().equals(ROLE));
+        }
+
+        ResourceIterator<? extends ThingVertex> filterIID(ResourceIterator<? extends ThingVertex> iterator,
+                                                          Traversal.Parameters parameters) {
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
 
@@ -261,37 +255,13 @@ public abstract class ProcedureVertex<
 
     public static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
-        private final Set<Label> thingTypeLabels;
-        private final Set<Label> roleTypeLabels;
-        private final Map<String, Set<String>> roleTypeToRelationTypes;
-
         Type(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
-            thingTypeLabels = new HashSet<>();
-            roleTypeLabels = new HashSet<>();
-            roleTypeToRelationTypes = new HashMap<>();
         }
 
         @Override
         protected Properties.Type newProperties() {
             return new Properties.Type();
-        }
-
-        @Override
-        public void props(Properties.Type properties) {
-            super.props(properties);
-            if (!properties.labels().isEmpty()) {
-                for (Label label : properties.labels()) {
-                    if (!label.scope().isPresent()) {
-                        thingTypeLabels.add(label);
-                    } else {
-                        roleTypeLabels.add(label);
-                        roleTypeToRelationTypes.computeIfAbsent(
-                                label.name(), l -> new HashSet<>()
-                        ).add(label.scope().get());
-                    }
-                }
-            }
         }
 
         @Override
@@ -303,7 +273,7 @@ public abstract class ProcedureVertex<
             if (props().valueType().isPresent()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
             if (props().isAbstract()) iterator = iterateOrFilterAbstract(graphMgr, iterator);
             if (props().regex().isPresent()) iterator = iterateAndFilterRegex(graphMgr, iterator);
-            if (iterator == null) iterator = graphMgr.schema().thingTypes(); // graphMgr.schema().roleTypes())); // TODO discuss ramifications
+            if (iterator == null) iterator = link(list(graphMgr.schema().thingTypes(), graphMgr.schema().roleTypes()));
             return iterator;
         }
 
@@ -316,33 +286,12 @@ public abstract class ProcedureVertex<
         }
 
         private ResourceIterator<TypeVertex> iterateLabels(GraphManager graphMgr) {
-            ResourceIterator<TypeVertex> thingTypes = iterate(thingTypeLabels)
-                    .map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l));
-            ResourceIterator<TypeVertex> roleTypes = iterate(roleTypeLabels)
-                    .flatMap(l -> assertRoleTypesNotEmpty(graphMgr.schema().getRoleTypes(l), l));
-            return link(list(thingTypes, roleTypes));
+            return iterate(props().labels()).map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l));
         }
 
         private ResourceIterator<TypeVertex> filterLabels(ResourceIterator<TypeVertex> iterator) {
             assert !props().labels().isEmpty();
-            return iterator.filter(t -> {
-                if (!t.properLabel().scope().isPresent()) {
-                    return thingTypeLabels.contains(t.properLabel());
-                } else if (roleTypeToRelationTypes.containsKey(t.properLabel().name())) {
-                    Set<String> rels;
-                    if (!(rels = roleTypeToRelationTypes.get(t.properLabel().name())).contains(t.properLabel().scope().get())) {
-                        TypeVertex rel = t.ins().edge(RELATES).from().firstOrNull();
-                        return loop(
-                                rel, Objects::nonNull,
-                                v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(RELATION_TYPE)).firstOrNull()
-                        ).anyMatch(sup -> rels.contains(sup.properLabel().name()));
-                    } else {
-                        return true;
-                    }
-                } else {
-                    return false;
-                }
-            });
+            return iterator.filter(t -> props().labels().contains(t.properLabel()));
         }
 
         private ResourceIterator<TypeVertex> iterateOrFilterValueTypes(GraphManager graphMgr,

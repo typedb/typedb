@@ -94,6 +94,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
+    public Stream<RoleTypeImpl> getSubtypesExplicit() {
+        return super.getSubtypesExplicit(v -> of(graphMgr, v));
+    }
+
+    @Override
     public RelationTypeImpl getRelationType() {
         return RelationTypeImpl.of(graphMgr, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }

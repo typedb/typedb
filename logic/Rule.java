@@ -173,7 +173,6 @@ public class Rule {
         // TODO detect negated cycles in the rule graph
         // TODO use the new rule as a starting point
         // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
-
     }
 
     /**
@@ -197,7 +196,7 @@ public class Rule {
     private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
         HashSet<ThenConcludable<?, ?>> thenConcludables = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .flatMap(constraint -> ThenConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
+                .map(constraint -> ThenConcludable.create(constraint, constraintContext)).forEach(thenConcludables::add);
         return thenConcludables;
     }
 

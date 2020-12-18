@@ -24,9 +24,12 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.Variable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,13 +77,13 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
+        //NOTE: isa can never exist on a Value Concludable (or else it would be a Isa Concludable).
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream()
                 .filter(value1 -> !value.equals(value1)).collect(Collectors.toSet());
         copyValuesOntoVariable(otherValues, newOwner);
         return newOwner.value(value.predicate(), value.value());
     }
-
 
     static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
@@ -103,15 +106,30 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         copyValuesOntoVariable(oldOwner.value(), newOwner);
     }
 
-    static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
+    static void copyLabelSubAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
         if (copyFrom.label().isPresent()) copyTo.label(copyFrom.label().get().properLabel());
+        if (copyFrom.sub().isPresent()) {
+            SubConstraint subCopy = copyFrom.sub().get();
+            copyTo.sub(subCopy.type(), subCopy.isExplicit());
+        }
         if (copyFrom.valueType().isPresent()) copyTo.valueType(copyFrom.valueType().get().valueType());
     }
 
     static TypeVariable copyVariableWithLabelAndValueType(TypeVariable copyFrom) {
         TypeVariable copy = TypeVariable.of(copyFrom.identifier());
-        copyLabelAndValueType(copyFrom, copy);
+        copyLabelSubAndValueType(copyFrom, copy);
         return copy;
+    }
+
+    static boolean hasNoHints(Variable variable) {
+        return variable.isSatisfiable() && variable.resolvedTypes().isEmpty();
+    }
+
+    static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
+        if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
+        assert (conjVar.isThing() && thenVar.isThing()) ||
+                (conjVar.isType() && thenVar.isType());
+        return Collections.disjoint(conjVar.resolvedTypes(), thenVar.resolvedTypes());
     }
 
 }
