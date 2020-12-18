@@ -38,50 +38,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean iterationInferredAnswer;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
-        this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
+        this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
         this.registry = resolverRegistry;
         this.iteration = 0;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
-    }
-
-    private void onAnswer(final ResolutionAnswer answer) {
-        if (answer.isInferred()) iterationInferredAnswer = true;
-        sink.put(answer.aggregated().conceptMap());
-    }
-
-    private void onDone(int iterationDone) {
-        assert this.iteration == iterationDone || this.iteration == iterationDone + 1;
-
-        if (iterationDone == this.iteration && !mustReiterate()) {
-            if (!done) {
-                done = true;
-                sink.done(this);
-            }
-        } else if (this.iteration == iterationDone + 1) {
-            retryInNextIteration();
-        } else {
-            nextIteration();
-            retryInNextIteration();
-        }
-    }
-
-    private boolean mustReiterate() {
-        /*
-        TODO room for optimisation:
-        for example, reiteration should never be required if there
-        are no loops in the rule graph
-        NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may
-        always have to reiterate until no more answers are found.
-         */
-        return iterationInferredAnswer;
-    }
-
-    private void retryInNextIteration() {
-        requestAnswer();
-    }
-
-    private void nextIteration() {
-        iteration++;
         this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
     }
 
@@ -97,6 +56,47 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     @Override
     public void recycle() {
 
+    }
+
+    private void requestAnswered(final ResolutionAnswer answer) {
+        if (answer.isInferred()) iterationInferredAnswer = true;
+        sink.put(answer.aggregated().conceptMap());
+    }
+
+    private void requestFailed(int iteration) {
+        assert this.iteration == iteration || this.iteration == iteration + 1;
+
+        if (iteration == this.iteration && !mustReiterate()) {
+            if (!done) {
+                done = true;
+                sink.done(this);
+            }
+        } else if (this.iteration == iteration + 1) {
+            retry();
+        } else {
+            nextIteration();
+            retry();
+        }
+    }
+
+    private void nextIteration() {
+        iteration++;
+        resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
+    }
+
+    private boolean mustReiterate() {
+        /*
+        TODO room for optimisation:
+        for example, reiteration should never be required if there
+        are no loops in the rule graph
+        NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may
+        always have to reiterate until no more answers are found.
+         */
+        return iterationInferredAnswer;
+    }
+
+    private void retry() {
+        requestAnswer();
     }
 
     private void requestAnswer() {

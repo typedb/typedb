@@ -82,7 +82,8 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
                     responseProducer.iteration() + 1 == fromUpstream.iteration();
 
             if (responseProducer.iteration() + 1 == fromUpstream.iteration()) {
-                responseProducers.put(fromUpstream, responseProducerReiterate(fromUpstream, responseProducer));
+                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer);
+                responseProducers.put(fromUpstream, responseProducerNextIter);
             }
         }
 
