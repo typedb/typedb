@@ -139,14 +139,14 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
     }
 
     static boolean hasNoHints(Variable variable) {
-        return variable.isSatisfiable() && variable.typeHints().isEmpty();
+        return variable.isSatisfiable() && variable.resolvedTypes().isEmpty();
     }
 
     static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
         if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
         assert (conjVar.isThing() && thenVar.isThing()) ||
                 (conjVar.isType() && thenVar.isType());
-        return Collections.disjoint(conjVar.typeHints(), thenVar.typeHints());
+        return Collections.disjoint(conjVar.resolvedTypes(), thenVar.resolvedTypes());
     }
 
 }
