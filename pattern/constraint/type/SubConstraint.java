@@ -68,6 +68,10 @@ public class SubConstraint extends TypeConstraint {
         return true;
     }
 
+    public boolean isExplicit() {
+        return isExplicit;
+    }
+
     @Override
     public SubConstraint asSub() {
         return this;
