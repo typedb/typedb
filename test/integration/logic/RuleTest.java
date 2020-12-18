@@ -19,6 +19,7 @@ package grakn.core.logic;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -288,6 +289,8 @@ public class RuleTest {
                     ThingVariable expectedAttribute = ThingVariable.createTemp("attr");
                     TypeVariable expectedAttrType = TypeVariable.createTemp("attr_type");
                     ThingVariable expectedAttrValue = ThingVariable.createTemp("value");
+                    Label expectedAttrTypeLabel = Label.of("is-still-good");
+                    expectedAttrType.label(expectedAttrTypeLabel);
                     expectedAttrValue.valueBoolean(GraqlToken.Predicate.Equality.EQ, false);
                     expectedAttribute.valueVariable(GraqlToken.Predicate.Equality.EQ, expectedAttrValue);
                     expectedAttribute.isa(expectedAttrType, false);
