@@ -435,7 +435,7 @@ public class TypeHinterTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("man", "greek", "socrates"));
-            put("$q", set("thing", "entity", "animal", "person", "man"));
+            put("$q", set("entity", "animal", "person", "man"));
         }};
 
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
