@@ -44,9 +44,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-type-hinter",
+    name = "test-type-resolver",
     srcs = ["TypeResolverTest.java"],
-    test_class = "grakn.core.logic.TypeHinterTest",
+    test_class = "grakn.core.logic.TypeResolverTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -68,8 +68,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-unify",
+    name = "test-unification",
     srcs = ["concludable/UnificationTest.java"],
+    test_class = "grakn.core.logic.concludable.UnificationTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -77,7 +78,6 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
-    test_class = "grakn.core.logic.concludable.UnifyTest",
     deps = [
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
