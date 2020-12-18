@@ -82,6 +82,11 @@ public abstract class ThingImpl implements Thing {
     }
 
     @Override
+    public String getIIDForPrinting() {
+        return vertex.iid().toString();
+    }
+
+    @Override
     public boolean isDeleted() {
         return vertex.isDeleted();
     }

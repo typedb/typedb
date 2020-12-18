@@ -36,14 +36,14 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 public abstract class Variable implements Pattern {
 
     private final Identifier.Variable identifier;
+    private final Set<Label> resolvedTypes;
     private final int hash;
-    private final Set<Label> typeHints;
     private boolean isSatisfiable;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
         this.hash = Objects.hash(identifier);
-        this.typeHints = new HashSet<>();
+        this.resolvedTypes = new HashSet<>();
         this.isSatisfiable = true;
     }
 
@@ -80,28 +80,28 @@ public abstract class Variable implements Pattern {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
 
-    public void addHints(Set<Label> labels) {
-        typeHints.addAll(labels);
+    public void addResolvedTypes(Set<Label> labels) {
+        resolvedTypes.addAll(labels);
     }
 
-    public void retainHints(Set<Label> labels) {
-        typeHints.retainAll(labels);
+    public void retainResolvedTypes(Set<Label> labels) {
+        resolvedTypes.retainAll(labels);
     }
 
-    public void removeHint(Label label) {
-        assert !(isSatisfiable && typeHints.isEmpty());
-        typeHints.remove(label);
+    public void removeResolvedType(Label label) {
+        assert !(isSatisfiable && resolvedTypes.isEmpty());
+        resolvedTypes.remove(label);
     }
 
-    public Set<Label> typeHints() {
-        return typeHints;
+    public Set<Label> resolvedTypes() {
+        return resolvedTypes;
     }
 
     public boolean isSatisfiable() {
         return isSatisfiable;
     }
 
-    public void setIsSatisfiable(boolean isSatisfiable) {
+    public void setSatisfiable(boolean isSatisfiable) {
         this.isSatisfiable = isSatisfiable;
     }
 

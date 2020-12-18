@@ -155,9 +155,11 @@ public class GraknServer implements AutoCloseable {
         final ServerCommand.Start startCommand = new ServerCommand.Start();
         final ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
         final ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
+        final ServerCommand.PrintSchema printSchemaCommand = new ServerCommand.PrintSchema(startCommand);
         final CommandLine commandLine = new CommandLine(startCommand)
                 .addSubcommand(importDataCommand)
-                .addSubcommand(exportDataCommand);
+                .addSubcommand(exportDataCommand)
+                .addSubcommand(printSchemaCommand);
         commandLine.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
 
         try {
@@ -188,32 +190,19 @@ public class GraknServer implements AutoCloseable {
 
     public static void main(String[] args) {
         try {
-            final long start = System.nanoTime();
-
             printASCIILogo();
             final ServerCommand command = parseCommandLine(parseProperties(), args);
             if (command == null) System.exit(0);
 
             if (command.isStart()) {
-                final GraknServer server = new GraknServer(command.asStart());
-                server.start();
-
-                final long end = System.nanoTime();
-                LOG.info("Grakn Core version: {}", Version.VERSION);
-                LOG.info("Grakn Core Server has been started (in {} ms)",
-                        String.format("%.3f", (end - start) / 1_000_000.00));
-
-                server.serve();
+                startGraknServer(command.asStart());
             } else if (command.isImportData()) {
-                ServerCommand.ImportData importDataCommand = command.asImportData();
-                MigratorClient migrator = new MigratorClient(importDataCommand.port());
-                boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
-                System.exit(success ? 0 : 1);
+                importData(command.asImportData());
             } else if (command.isExportData()) {
-                ServerCommand.ExportData exportDataCommand = command.asExportData();
-                MigratorClient migrator = new MigratorClient(exportDataCommand.port());
-                boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
-                System.exit(success ? 0 : 1);
+                exportData(command.asExportData());
+            } else if (command.isPrintSchema()) {
+                ServerCommand.PrintSchema printSchemaCommand = command.asPrintSchema();
+                printSchema(printSchemaCommand);
             }
         } catch (Exception e) {
             LOG.error(e.getMessage());
@@ -222,6 +211,34 @@ public class GraknServer implements AutoCloseable {
         }
 
         System.exit(0);
+    }
+
+    private static void printSchema(ServerCommand.PrintSchema printSchemaCommand) {
+        MigratorClient migrator = new MigratorClient(printSchemaCommand.port());
+        migrator.printSchema(printSchemaCommand.database());
+    }
+
+    private static void exportData(ServerCommand.ExportData exportDataCommand) {
+        MigratorClient migrator = new MigratorClient(exportDataCommand.port());
+        boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
+        System.exit(success ? 0 : 1);
+    }
+
+    private static void importData(ServerCommand.ImportData importDataCommand) {
+        MigratorClient migrator = new MigratorClient(importDataCommand.port());
+        boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
+        System.exit(success ? 0 : 1);
+    }
+
+    private static void startGraknServer(ServerCommand.Start command) throws IOException {
+        final long start = System.nanoTime();
+        final GraknServer server = new GraknServer(command);
+        server.start();
+        final long end = System.nanoTime();
+        LOG.info("Grakn Core version: {}", Version.VERSION);
+        LOG.info("Grakn Core Server has been started (in {} ms)",
+                String.format("%.3f", (end - start) / 1_000_000.00));
+        server.serve();
     }
 
     private Server rpcServer() {

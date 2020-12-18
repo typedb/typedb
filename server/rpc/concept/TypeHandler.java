@@ -65,7 +65,7 @@ public class TypeHandler {
         final String scope = typeReq.getScope();
         final Type type = scope != null && !scope.isEmpty() ?
                 notNull(conceptManager.getRelationType(scope)).getRelates(label) :
-                notNull(conceptManager.getType(label));
+                notNull(conceptManager.getThingType(label));
         switch (typeReq.getReqCase()) {
             case TYPE_DELETE_REQ:
                 delete(request, type);
@@ -176,8 +176,8 @@ public class TypeHandler {
         return type;
     }
 
-    private Type getType(ConceptProto.Type protoType) {
-        return conceptManager.getType(protoType.getLabel());
+    private Type getThingType(ConceptProto.Type protoType) {
+        return conceptManager.getThingType(protoType.getLabel());
     }
 
     private RoleType getRoleType(ConceptProto.Type protoRoleType) {
@@ -214,7 +214,7 @@ public class TypeHandler {
     }
 
     private void setSupertype(Transaction.Req request, Type type, ConceptProto.Type supertype) {
-        final Type sup = getType(supertype);
+        final Type sup = getThingType(supertype);
 
         if (type instanceof EntityType) {
             type.asEntityType().setSupertype(sup.asEntityType());
@@ -298,11 +298,11 @@ public class TypeHandler {
     }
 
     private void setOwns(Transaction.Req request, ThingType thingType, ConceptProto.ThingType.SetOwns.Req req) {
-        final AttributeType attributeType = getType(req.getAttributeType()).asAttributeType();
+        final AttributeType attributeType = getThingType(req.getAttributeType()).asAttributeType();
         final boolean isKey = req.getIsKey();
 
         if (req.hasOverriddenType()) {
-            final AttributeType overriddenType = getType(req.getOverriddenType()).asAttributeType();
+            final AttributeType overriddenType = getThingType(req.getOverriddenType()).asAttributeType();
             thingType.setOwns(attributeType, overriddenType, isKey);
         } else {
             thingType.setOwns(attributeType, isKey);
@@ -326,7 +326,7 @@ public class TypeHandler {
     }
 
     private void unsetOwns(Transaction.Req request, ThingType thingType, ConceptProto.Type protoAttributeType) {
-        final AttributeType attributeType = getType(protoAttributeType).asAttributeType();
+        final AttributeType attributeType = getThingType(protoAttributeType).asAttributeType();
         thingType.unsetOwns(attributeType);
         transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(
                 ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance()

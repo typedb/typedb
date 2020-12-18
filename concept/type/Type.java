@@ -43,7 +43,19 @@ public interface Type extends Concept {
 
     Stream<? extends Type> getSubtypes();
 
+    Stream<? extends Type> getSubtypesExplicit();
+
     List<GraknException> validate();
+
+    boolean isThingType();
+
+    boolean isEntityType();
+
+    boolean isAttributeType();
+
+    boolean isRelationType();
+
+    boolean isRoleType();
 
     ThingType asThingType();
 

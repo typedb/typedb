@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.server.migrator.Exporter;
 import grakn.core.server.migrator.Importer;
 import grakn.core.server.migrator.Migrator;
+import grakn.core.server.migrator.Schema;
 import grakn.core.server.migrator.proto.MigratorGrpc;
 import grakn.core.server.migrator.proto.MigratorProto;
 import io.grpc.stub.StreamObserver;
@@ -54,6 +55,19 @@ public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()), request.getRemapLabelsMap());
         runMigrator(importer, responseObserver);
+    }
+
+    @Override
+    public void getSchema(MigratorProto.GetSchema.Req request, StreamObserver<MigratorProto.GetSchema.Res> responseObserver) {
+        try {
+            String schema = new Schema(grakn, request.getDatabase()).getSchema();
+            MigratorProto.GetSchema.Res res = MigratorProto.GetSchema.Res.newBuilder().setSchema(schema).build();
+            responseObserver.onNext(res);
+            responseObserver.onCompleted();
+        } catch (GraknException e) {
+            LOG.error(e.getMessage(), e);
+            responseObserver.onError(exception(e));
+        }
     }
 
     private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
