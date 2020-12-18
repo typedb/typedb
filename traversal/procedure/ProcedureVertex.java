@@ -55,6 +55,7 @@ import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static java.util.Collections.emptyIterator;
@@ -177,11 +178,18 @@ public abstract class ProcedureVertex<
                         .flatMap(t -> graphMgr.data().get(t));
             }
 
+            if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
             else return filterPredicates(iter, parameters, eq.orElse(null));
         }
 
-        ResourceIterator<? extends ThingVertex> filterIID(ResourceIterator<? extends ThingVertex> iterator, Traversal.Parameters parameters) {
+        ResourceIterator<? extends ThingVertex> filterReferableThings(ResourceIterator<? extends ThingVertex> iterator) {
+            assert id().isVariable();
+            return iterator.filter(v -> !v.encoding().equals(ROLE));
+        }
+
+        ResourceIterator<? extends ThingVertex> filterIID(ResourceIterator<? extends ThingVertex> iterator,
+                                                          Traversal.Parameters parameters) {
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
 
@@ -303,7 +311,7 @@ public abstract class ProcedureVertex<
             if (props().valueType().isPresent()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
             if (props().isAbstract()) iterator = iterateOrFilterAbstract(graphMgr, iterator);
             if (props().regex().isPresent()) iterator = iterateAndFilterRegex(graphMgr, iterator);
-            if (iterator == null) iterator = graphMgr.schema().thingTypes(); // graphMgr.schema().roleTypes())); // TODO discuss ramifications
+            if (iterator == null) iterator = link(list(graphMgr.schema().thingTypes(), graphMgr.schema().roleTypes()));
             return iterator;
         }
 
