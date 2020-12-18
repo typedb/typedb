@@ -293,6 +293,8 @@ public class RuleTest {
                     expectedAttribute.isa(expectedAttrType, false);
                     expectedOwner.has(expectedAttribute);
 
+
+
                     Conjunction expected = new Conjunction(
                             set(expectedOwner, expectedAttribute, expectedAttrType, expectedAttrValue),
                             set()
