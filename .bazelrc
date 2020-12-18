@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-build --workspace_status_command bin/workspace_status.sh --incompatible_strict_action_env
+build --workspace_status_command bin/workspace_status.sh --incompatible_strict_action_env --javacopt='--release 8'
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env
 
