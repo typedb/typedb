@@ -31,7 +31,6 @@ import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -107,7 +106,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Stream<RelationTypeImpl> getSubtypesExplicit() {
-        return super.getSubtypesDirect(v -> of(graphMgr, v));
+        return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override

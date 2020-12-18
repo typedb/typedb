@@ -95,7 +95,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<RoleTypeImpl> getSubtypesExplicit() {
-        return super.getSubtypesDirect(v -> of(graphMgr, v));
+        return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override

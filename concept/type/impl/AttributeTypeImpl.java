@@ -22,7 +22,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
@@ -31,7 +30,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -311,7 +309,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl> getSubtypesExplicit() {
-            return getSubtypesDirect(v -> {
+            return getSubtypesExplicit(v -> {
                 switch (v.valueType()) {
                     case BOOLEAN:
                         return AttributeTypeImpl.Boolean.of(graphMgr, v);
@@ -388,7 +386,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl.Boolean> getSubtypesExplicit() {
-            return super.getSubtypesDirect(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
         }
 
         @Override
@@ -513,7 +511,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl.Long> getSubtypesExplicit() {
-            return super.getSubtypesDirect(v -> AttributeTypeImpl.Long.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> AttributeTypeImpl.Long.of(graphMgr, v));
         }
 
         @Override
@@ -640,7 +638,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl.Double> getSubtypesExplicit() {
-            return super.getSubtypesDirect(v -> AttributeTypeImpl.Double.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> AttributeTypeImpl.Double.of(graphMgr, v));
         }
 
         @Override
@@ -767,7 +765,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl.String> getSubtypesExplicit() {
-            return super.getSubtypesDirect(v -> AttributeTypeImpl.String.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> AttributeTypeImpl.String.of(graphMgr, v));
         }
 
         @Override
@@ -931,7 +929,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Stream<AttributeTypeImpl.DateTime> getSubtypesExplicit() {
-            return super.getSubtypesDirect(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
         }
 
         @Override

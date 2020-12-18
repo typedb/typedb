@@ -443,7 +443,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Stream<ThingTypeImpl> getSubtypesExplicit() {
-            return getSubtypesDirect(v -> {
+            return getSubtypesExplicit(v -> {
                 switch (v.encoding()) {
                     case ENTITY_TYPE:
                         return EntityTypeImpl.of(graphMgr, v);

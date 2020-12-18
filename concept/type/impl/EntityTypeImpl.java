@@ -28,7 +28,6 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -74,7 +73,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Stream<EntityTypeImpl> getSubtypesExplicit() {
-        return super.getSubtypesDirect(v -> of(graphMgr, v));
+        return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
