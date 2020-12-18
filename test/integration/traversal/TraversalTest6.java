@@ -126,7 +126,7 @@ public class TraversalTest6 {
         grakn.close();
     }
 
-    private Map<String, Set<String>> processResult(ResourceIterator<ConceptMap> answers) {
+    private Map<String, Set<String>> retrieveAnswers(ResourceIterator<ConceptMap> answers) {
         Map<String, Set<String>> res = new HashMap<>();
         while (answers.hasNext()) {
             answers.next().concepts().forEach((k, v) -> {
@@ -145,7 +145,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
@@ -163,7 +163,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
@@ -183,7 +183,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
@@ -203,7 +203,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<>();
@@ -223,7 +223,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
@@ -244,7 +244,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(3, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
@@ -267,7 +267,7 @@ public class TraversalTest6 {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = processResult(answers);
+            Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(4, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
