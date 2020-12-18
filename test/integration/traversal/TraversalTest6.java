@@ -139,44 +139,6 @@ public class TraversalTest6 {
     }
 
     @Test
-    public void test_subs() {
-        try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match $a sub mammal;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
-            assertNotNulls(answers);
-            assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = retrieveAnswers(answers);
-            assertEquals(1, result.keySet().size());
-
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
-                put("a", set("mammal", "rat", "dog", "person", "man", "woman"));
-            }};
-
-            assertEquals(expected, result);
-        }
-    }
-
-    @Test
-    public void test_owns() {
-        try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match $p owns tail-length;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
-            assertNotNulls(answers);
-            assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = retrieveAnswers(answers);
-            assertEquals(1, result.keySet().size());
-
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
-                put("p", set("dog", "rat"));
-            }};
-
-            assertEquals(expected, result);
-        }
-    }
-
-    @Test
-    @Ignore
-    //TODO: re-enable when this is fixed (currently does not find attributes that have been inherited.
     public void test_owns_inheritance() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match $p owns name;";
@@ -195,8 +157,6 @@ public class TraversalTest6 {
     }
 
     @Test
-    @Ignore
-    //TODO: re-enable when this is fixed (currently breaks on traversal)
     public void test_owns_cycle() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match $a owns $b; $b owns $a;";
@@ -213,8 +173,6 @@ public class TraversalTest6 {
     }
 
     @Test
-    @Ignore
-    //TODO: re-enable when this is fixed (currently breaks on traversal)
     public void test_relation_concrete_role() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match " +
@@ -229,52 +187,6 @@ public class TraversalTest6 {
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
                 put("r", set("marriage"));
                 put("yoko", set("woman"));
-            }};
-
-            assertEquals(expected, result);
-        }
-    }
-
-    @Test
-    public void test_relation_variable_role() {
-        try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match " +
-                    "   $r sub marriage, relates $role;" +
-                    "   $yoko plays $role;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
-            assertNotNulls(answers);
-            assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = retrieveAnswers(answers);
-            assertEquals(3, result.keySet().size());
-
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
-                put("r", set("marriage"));
-                put("yoko", set("woman", "person", "man"));
-                put("role", set("marriage:husband", "marriage:wife", "marriage:spouse"));
-            }};
-
-            assertEquals(expected, result);
-        }
-    }
-
-    @Test
-    public void test_relation_variable_relation() {
-        try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match " +
-                    "   $r sub $m, relates $role;" +
-                    "   $m sub relation;" +
-                    "   $yoko plays $role;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
-            assertNotNulls(answers);
-            assertTrue(answers.hasNext());
-            Map<String, Set<String>> result = retrieveAnswers(answers);
-            assertEquals(4, result.keySet().size());
-
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
-                put("r", set("marriage"));
-                put("m", set("marriage", "relation"));
-                put("yoko", set("woman", "person", "man"));
-                put("role", set("marriage:husband", "marriage:wife", "marriage:spouse"));
             }};
 
             assertEquals(expected, result);
