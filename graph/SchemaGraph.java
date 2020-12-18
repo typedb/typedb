@@ -49,7 +49,6 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
-import static grakn.core.common.iterator.Iterators.empty;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
@@ -214,6 +213,21 @@ public class SchemaGraph implements Graph {
         else return fn.get();
     }
 
+    public Set<Label> resolveRoleTypeLabels(Label scopedLabel) {
+        assert scopedLabel.scope().isPresent();
+        Supplier<Set<Label>> fn = () -> {
+            TypeVertex relationType = getType(scopedLabel.scope().get());
+            if (relationType == null) return set();
+            else return tree(relationType, rel -> rel.ins().edge(SUB).from())
+                    .flatMap(rel -> rel.outs().edge(RELATES).to())
+                    .map(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                            .filter(r -> r.properLabel().name().equals(scopedLabel.name())).firstOrNull())
+                    .noNulls().map(TypeVertex::properLabel).toSet();
+        };
+        if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
+        else return fn.get();
+    }
+
     public Stream<TypeVertex> bufferedTypes() {
         return typesByIID.values().stream();
     }
@@ -244,30 +258,6 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex getType(String label) {
         return getType(label, null);
-    }
-
-    public Set<Label> resolveRoleTypeLabels(Label scopedLabel) {
-        assert scopedLabel.scope().isPresent();
-        Supplier<Set<Label>> fn = () -> {
-            TypeVertex relationType = getType(scopedLabel.scope().get());
-            if (relationType == null) return set();
-            else return tree(relationType, rel -> rel.ins().edge(SUB).from())
-                    .flatMap(rel -> rel.outs().edge(RELATES).to())
-                    .filter(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                            .anyMatch(r -> r.properLabel().name().equals(scopedLabel.name())))
-                    .map(TypeVertex::properLabel).toSet();
-        };
-        if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
-        else return fn.get();
-    }
-
-    public ResourceIterator<TypeVertex> getRoleTypes(Label scopedLabel) {
-        assert scopedLabel.scope().isPresent();
-        TypeVertex relationType = getType(scopedLabel.scope().get());
-        if (relationType == null) return empty();
-        else return tree(relationType, r -> r.ins().edge(SUB).from())
-                .flatMap(r -> r.outs().edge(RELATES).to())
-                .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()));
     }
 
     public TypeVertex getType(String label, @Nullable String scope) {
