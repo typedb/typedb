@@ -19,7 +19,6 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -31,7 +30,6 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,10 +42,8 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
-import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Vertex.Type.THING_TYPE;
 
 public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
@@ -112,6 +108,9 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
     @Override
     public abstract Stream<? extends TypeImpl> getSubtypes();
 
+    @Override
+    public abstract Stream<? extends TypeImpl> getSubtypesExplicit();
+
     <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
     }
@@ -137,6 +136,10 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
         return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor).stream();
+    }
+
+    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
+        return vertex.ins().edge(SUB).from().map(typeConstructor).stream();
     }
 
     @Override

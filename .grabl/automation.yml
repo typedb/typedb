@@ -65,6 +65,7 @@ build:
       script: |
         bazel test //test/integration:test-basic --test_output=errors
         bazel test //test/integration:test-query --test_output=errors
+        bazel test //test/integration/migrator/... --test_output=errors
       # bazel test //test/integration/traversal/... --test_output=errors
       # bazel test //test/integration/logic/... --test_output=errors
     test-behaviour:

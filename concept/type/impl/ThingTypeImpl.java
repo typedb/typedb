@@ -65,6 +65,7 @@ import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 
@@ -120,6 +121,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public abstract Stream<? extends ThingTypeImpl> getSubtypes();
+
+    @Override
+    public abstract Stream<? extends ThingTypeImpl> getSubtypesExplicit();
 
     @Override
     public void setOwns(AttributeType attributeType) {
@@ -248,8 +252,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
+    public Stream<AttributeTypeImpl> getOwnsExplicit() {
+        return getOwnsExplicit(false);
+    }
+
+    @Override
     public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType) {
         return getOwns(valueType, false);
+    }
+
+    @Override
+    public Stream<AttributeTypeImpl> getOwnsExplicit(AttributeType.ValueType valueType) {
+        return getOwnsExplicit(valueType, false);
     }
 
     @Override
@@ -260,8 +274,34 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return concat(declaredOwns(onlyKey), getSupertype().getOwns(onlyKey).filter(key -> !overridden.contains(key)));
     }
 
+    @Override
+    public Stream<AttributeTypeImpl> getOwnsExplicit(boolean onlyKey) {
+        if (isRoot()) return Stream.of();
+        return declaredOwns(onlyKey);
+    }
+
+    @Override
     public Stream<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
+    }
+
+    @Override
+    public Stream<AttributeTypeImpl> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey) {
+        return getOwnsExplicit(onlyKey).filter(att -> att.getValueType().equals(valueType));
+    }
+
+    @Override
+    public AttributeType getOwnsOverridden(AttributeType attributeType) {
+        final TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
+        if (attrVertex != null) {
+            TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
+            if (ownsEdge != null && ownsEdge.overridden() != null)
+                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
+            ownsEdge = vertex.outs().edge(OWNS, attrVertex);
+            if (ownsEdge != null && ownsEdge.overridden() != null)
+                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
+        }
+        return null;
     }
 
     @Override
@@ -300,6 +340,23 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream(),
                 getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
         );
+    }
+
+    @Override
+    public Stream<RoleTypeImpl> getPlaysExplicit() {
+        if (isRoot()) return Stream.of();
+        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
+    }
+
+    @Override
+    public RoleType getPlaysOverridden(RoleType roleType) {
+        final TypeVertex roleVertex = graphMgr.schema().getType(roleType.getLabel());
+        if (roleVertex != null) {
+            final TypeEdge playsEdge = vertex.outs().edge(PLAYS, roleVertex);
+            if (playsEdge != null && playsEdge.overridden() != null)
+                return RoleTypeImpl.of(graphMgr, playsEdge.overridden());
+        }
+        return null;
     }
 
     @Override
@@ -372,6 +429,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case THING_TYPE:
                         assert this.vertex == v;
                         return this;
+                    case ENTITY_TYPE:
+                        return EntityTypeImpl.of(graphMgr, v);
+                    case ATTRIBUTE_TYPE:
+                        return AttributeTypeImpl.of(graphMgr, v);
+                    case RELATION_TYPE:
+                        return RelationTypeImpl.of(graphMgr, v);
+                    default:
+                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                }
+            });
+        }
+
+        @Override
+        public Stream<ThingTypeImpl> getSubtypesExplicit() {
+            return getSubtypesExplicit(v -> {
+                switch (v.encoding()) {
                     case ENTITY_TYPE:
                         return EntityTypeImpl.of(graphMgr, v);
                     case ATTRIBUTE_TYPE:
