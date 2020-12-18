@@ -176,7 +176,7 @@ public class TraversalTest6 {
 
     @Test
     @Ignore
-    //TODO: re-enable when this is fixed
+    //TODO: re-enable when this is fixed (currently does not find attributes that have been inherited.
     public void test_owns_inheritance() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match $p owns name;";
@@ -196,7 +196,7 @@ public class TraversalTest6 {
 
     @Test
     @Ignore
-    //TODO: re-enable when this is fixed
+    //TODO: re-enable when this is fixed (currently breaks on traversal)
     public void test_owns_cycle() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match $a owns $b; $b owns $a;";
@@ -214,7 +214,7 @@ public class TraversalTest6 {
 
     @Test
     @Ignore
-    //TODO: re-enable when this is fixed
+    //TODO: re-enable when this is fixed (currently breaks on traversal)
     public void test_relation_concrete_role() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match " +
