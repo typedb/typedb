@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package grakn.core.logic.transformer;
 
 import grakn.core.concept.answer.ConceptMap;
 import graql.lang.pattern.variable.Reference;
@@ -66,5 +66,9 @@ public class Unifier extends VariableTransformer {
     @Override
     public Unifier asUnifier() {
         return this;
+    }
+
+    public Map<Reference.Name, Set<Reference.Name>> mapping() {
+        return unifier;
     }
 }

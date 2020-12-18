@@ -22,17 +22,16 @@ import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.transformer.Unifier;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.Unifier;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
-import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final ConjunctionConcludable<?, ?> concludable;
-    private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
+    private final Map<Unifier, Actor<RuleResolver>> ruleActorSources;
     private final Set<ConceptMap> receivedConceptMaps;
     private Actor<ResolutionRecorder> resolutionRecorder;
 
@@ -141,8 +140,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
-        for (Map.Entry<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
-            Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Partial.of(partialConceptMap).toDownstreamVars(Unifier.of(entry.getKey()));
+        for (Map.Entry<Unifier, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
+            Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Partial.of(partialConceptMap).toDownstreamVars(entry.getKey());
             if (unified.isPresent()) {
                 Request toDownstream = new Request(path.append(entry.getValue()), unified.get(), ResolutionAnswer.Derivation.EMPTY);
                 responseProducer.addDownstreamProducer(toDownstream);

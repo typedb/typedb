@@ -20,6 +20,9 @@ package grakn.core.reasoner.resolution.answer;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.logic.transformer.Mapping;
+import grakn.core.logic.transformer.Unifier;
+import grakn.core.logic.transformer.VariableTransformer;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
@@ -140,7 +143,7 @@ public abstract class AnswerState {
                 if (o == null || getClass() != o.getClass()) return false;
                 if (!super.equals(o)) return false;
                 final Partial partial = (Partial) o;
-                return transformer.equals(partial.transformer);
+                return Objects.equals(transformer, partial.transformer);
             }
 
             @Override

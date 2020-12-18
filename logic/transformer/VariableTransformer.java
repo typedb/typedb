@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package grakn.core.logic.transformer;
 
 import grakn.core.common.exception.GraknException;
 
@@ -24,19 +24,19 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class VariableTransformer {
 
-    boolean isUnifier() {
+    public boolean isUnifier() {
         return false;
     }
 
-    Unifier asUnifier() {
+    public Unifier asUnifier() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unifier.class));
     }
 
-    boolean isMapping() {
+    public boolean isMapping() {
         return false;
     }
 
-    Mapping asMapped() {
+    public Mapping asMapped() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapping.class));
     }
 
