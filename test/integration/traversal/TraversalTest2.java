@@ -126,6 +126,7 @@ public class TraversalTest2 {
             assertTrue(answers.hasNext());
             ConceptMap answer;
             AttributeType.String name = transaction.concepts().getAttributeType("name").asString();
+
             int count = 0;
             while (answers.hasNext()) {
                 count++;
