@@ -380,7 +380,8 @@ public class RuleTest {
                     final Conjunction result = rule.then();
 
                     ThingVariable expectedOwner = ThingVariable.createTemp("rel_owner");
-
+                    TypeVariable expectedRelType = TypeVariable.createTemp("rel_type");
+//                    TypeVariable expectedRelTypeLabel = TypeVariable.createNamed()
 
                 }
             }
