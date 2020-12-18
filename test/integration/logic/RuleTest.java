@@ -27,6 +27,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.logic.concludable.ThenConcludable;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -36,6 +37,7 @@ import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
 import graql.lang.common.GraqlToken;
+import graql.lang.pattern.constraint.ThingConstraint;
 import graql.lang.pattern.variable.Reference;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,9 +45,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
 public class RuleTest {
@@ -216,7 +222,22 @@ public class RuleTest {
     }
 
 
+
     //THEN PATTERN TESTING
+
+    private boolean conjsEqual(Conjunction expected, Conjunction result) {
+
+        for (Variable var : expected.variables()) {
+            Optional<Variable> other = result.variables().stream().filter(variable -> variable.equals(var)).findFirst();
+            if (!other.isPresent()) {
+                return false;
+            }
+            if (!other.get().constraints().equals(var.constraints())) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Test
     public void has_concludable_variable_attribute() throws IOException {
@@ -304,6 +325,7 @@ public class RuleTest {
                     );
 
                     assertEquals(expected, result);
+                    assertTrue(conjsEqual(expected, result));
                 }
             }
         }
@@ -328,7 +350,7 @@ public class RuleTest {
                     logicMgr.putRule(
                             "old-milk-is-not-good",
                             Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
-                            Graql.parseVariable("$x has label 'bad'").asThing());
+                            Graql.parseVariable("$x has judgement 'bad'").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -340,6 +362,8 @@ public class RuleTest {
                     ThingVariable expectedAttribute = ThingVariable.createTemp("attr");
                     TypeVariable expectedAttrType = TypeVariable.createTemp("attr_type");
                     ThingVariable expectedAttrValue = ThingVariable.createTemp("value");
+                    Label expectedAttrTypeLabel = Label.of("judgement");
+                    expectedAttrType.label(expectedAttrTypeLabel);
                     expectedAttrValue.valueString(GraqlToken.Predicate.Equality.EQ, "bad");
                     expectedAttribute.valueVariable(GraqlToken.Predicate.Equality.EQ, expectedAttrValue);
                     expectedAttribute.isa(expectedAttrType, false);
@@ -351,6 +375,7 @@ public class RuleTest {
                     );
 
                     assertEquals(expected, result);
+                    assertTrue(conjsEqual(expected, result));
                 }
             }
         }
@@ -386,11 +411,30 @@ public class RuleTest {
 
                     ThingVariable expectedOwner = ThingVariable.createTemp("rel_owner");
                     TypeVariable expectedRelType = TypeVariable.createTemp("rel_type");
-//                    TypeVariable expectedRelTypeLabel = TypeVariable.createNamed()
+                    Label expectedRelTypeLabel = Label.of("employment");
+                    TypeVariable expectedRoleType = TypeVariable.createTemp("role_0");
+                    Label expectedRoleTypeLabel = Label.of("employee", "employment");
+                    ThingVariable expectedPlayer = ThingVariable.createNamed("x");
+                    List<RelationConstraint.RolePlayer> expectedRolePlayers =
+                            list(new RelationConstraint.RolePlayer(expectedRoleType, expectedPlayer));
+                    expectedOwner.relation(expectedRolePlayers);
+                    expectedOwner.isa(expectedRelType, false);
+                    expectedRelType.label(expectedRelTypeLabel);
+                    expectedRoleType.label(expectedRoleTypeLabel);
 
+                    Conjunction expected = new Conjunction(
+                            set(expectedOwner, expectedPlayer, expectedRelType, expectedRoleType),
+                            set()
+                    );
+
+                    assertEquals(expected, result);
+                    assertTrue(conjsEqual(expected, result));
                 }
             }
         }
     }
+
+
+
 
 }
