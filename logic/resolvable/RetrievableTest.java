@@ -23,32 +23,104 @@ import graql.lang.Graql;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
 
 public class RetrievableTest {
 
-    private Conjunction parseConjunction(String query) {
+    private Conjunction parse(String query) {
         return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
     }
 
     @Test
-    public void test_basic() {
-        Conjunction conjunction1 = parseConjunction("{ $p has $n; }");
-        Set<Concludable<?>> concludables = Concludable.create(conjunction1);
-        Conjunction conjunction2 = parseConjunction("{ $p isa person; $p has $n; $n isa name; }");
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction2, concludables);
+    public void test_has_concludable_splits_retrievables() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p has $n; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(2, retrievables.size());
+        assertEquals(set(parse("{ $p isa person; }"), parse("{ $n isa name; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 
     @Test
-    public void test_basic_2() {
-        Conjunction conjunction1 = parseConjunction("{ $p isa person; }");
-        Set<Concludable<?>> concludables = Concludable.create(conjunction1);
-        Conjunction conjunction2 = parseConjunction("{ $p isa person; $p has $n; $n isa name; }");
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction2, concludables);
+    public void test_isa_concludable_omitted_from_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa person; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(1, retrievables.size());
+        assertEquals(set(parse("{ $p has $n; $n isa name; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_lone_type_variable_is_not_a_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa $pt; $pt type person; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
+                "{ $p isa $pt; $pt type person; $p has $n; $n isa name; }"), concludables);
+        assertEquals(1, concludables.size());
+        assertEquals(set(parse("{ $p has $n; $n isa name; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_isa_named_type_var_sub_is_a_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa $pt; $pt sub person; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
+                "{ $p isa $pt; $pt sub person; $p has $n; $n isa name; }"), concludables);
+        assertEquals(1, concludables.size());
+        assertEquals(set(parse("{ $p has $n; $n isa name; }"), parse("{ $pt sub person; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_relation_concludable_excluded_from_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $e(employee: $p, employer:$c) isa employment; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
+                "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
+        assertEquals(1, concludables.size());
+        assertEquals(set(parse("{ $p isa person, has name \"Alice\"; }"),
+                         parse("{ $e isa employment; }"),
+                         parse("{ $c isa company; }")
+                     ),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_relation_and_isas_excluded_from_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse(
+                "{ $e(employee: $p, employer:$c) isa employment; $p isa person; $c isa company; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
+                "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
+        assertEquals(3, concludables.size());
+        assertEquals(set(parse("{ $p has name \"Alice\"; }"),
+                         parse("{ $e isa employment; }") // TODO This will produce missing (incorrect) results
+                     ),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_relation_is_in_retrievable() {
+        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa person, has name $n; $n \"Alice\"; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
+                "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name $n; $n \"Alice\"; $c isa company; }"), concludables);
+        assertEquals(2, concludables.size());
+        assertEquals(set(parse("{ $e(employee: $p, employer:$c) isa employment; $c isa company; }"),
+                         parse("{ $n \"Alice\" isa name; }") // TODO This will produce missing (incorrect) results. We have this because we don't treat the `isa` constraint in the concludable as a core constraint, so we don't exclude it from building the retrievable
+                     ),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_termination_building_retrievable_with_a_has_cycle() {
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b has $a; }"), set());
+        assertEquals(set(parse("{ $a has $b; $b has $a; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_termination_building_retrievable_with_a_relation_cycle() {
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a($b); $b($a); }"), set());
+        assertEquals(set(parse("{ $a($b); $b($a); }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 }

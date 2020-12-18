@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -108,7 +107,9 @@ public class Retrievable extends Resolvable {
                     connectedSubgraphs.add(connectedSubgraph);
                 }
             });
-            return connectedSubgraphs.stream().map(subGraph -> new Retrievable(new Conjunction(subGraph, set()))).collect(Collectors.toSet());
+            return connectedSubgraphs.stream()
+                    .filter(subGraph -> subGraph.size() > 1)
+                    .map(subGraph -> new Retrievable(new Conjunction(subGraph, set()))).collect(Collectors.toSet());
         }
 
         private void addToConnected(Variable copy) {
