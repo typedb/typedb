@@ -388,9 +388,9 @@ public class ResolutionTest {
 
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
-                                      actor.executeReceiveRequest(
+                                      actor.receiveRequest(
                                               new Request(new Request.Path(root), NoOpAggregator.create(), null),
-                                              registry, 0)
+                                              0)
                     );
                     ResolutionAnswer answer = responses.take();
 
@@ -452,9 +452,9 @@ public class ResolutionTest {
 
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
-                                      actor.executeReceiveRequest(
+                                      actor.receiveRequest(
                                               new Request(new Request.Path(root), NoOpAggregator.create(), null),
-                                              registry, iteration[0])
+                                              iteration[0])
                     );
                 }
 
@@ -474,9 +474,9 @@ public class ResolutionTest {
                 // get last answer and a exhausted message
                 for (int i = 0; i < 2; i++) {
                     root.tell(actor ->
-                                      actor.executeReceiveRequest(
+                                      actor.receiveRequest(
                                               new Request(new Request.Path(root), NoOpAggregator.create(), null),
-                                              registry, iteration[0])
+                                              iteration[0])
                     );
                 }
                 responses.take();
@@ -491,9 +491,9 @@ public class ResolutionTest {
                 doneInIteration[0] = 0;
                 // confirm there are no more answers
                 root.tell(actor ->
-                                  actor.executeReceiveRequest(
+                                  actor.receiveRequest(
                                           new Request(new Request.Path(root), NoOpAggregator.create(), null),
-                                          registry, iteration[0])
+                                          iteration[0])
                 );
                 Thread.sleep(1000); // allow Exhausted message to propagate to top level
                 assertFalse(receivedInferredAnswer[0]);
@@ -539,9 +539,9 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
-                              actor.executeReceiveRequest(
+                              actor.receiveRequest(
                                       new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY),
-                                      registry, 0)
+                                      0)
             );
         }
 

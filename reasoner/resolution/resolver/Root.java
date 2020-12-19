@@ -65,8 +65,8 @@ public class Root extends Resolver<Root> {
     private ResponseProducer responseProducer;
 
     public Root(Actor<Root> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder) {
-        super(self, Root.class.getSimpleName() + "(pattern:" + conjunction + ")");
+                Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry) {
+        super(self, Root.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
@@ -77,7 +77,7 @@ public class Root extends Resolver<Root> {
     }
 
     @Override
-    protected void initialiseDownstreamActors(ResolverRegistry registry) {
+    protected void initialiseDownstreamActors() {
 
         // TODO Find the applicable rules for each, which requires 1 or more valid unifications with a rule.
         // TODO Mark concludables with no applicable rules as inconcludable
@@ -105,10 +105,10 @@ public class Root extends Resolver<Root> {
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducer, int iteration) {
-        assert iteration > responseProducer.iteration();
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducer, int newIteration) {
+        assert newIteration > responseProducer.iteration();
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, iteration);
+        ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
@@ -117,25 +117,27 @@ public class Root extends Resolver<Root> {
     }
 
     @Override
-    public void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry, int iteration) {
-        LOG.trace("{}: Receiving a new Request: {}", name, fromUpstream);
+    public void receiveRequest(Request fromUpstream, int iteration) {
+        LOG.trace("{}: Receiving a new Request: {}", name(), fromUpstream);
         if (!isInitialised) {
-            LOG.debug(name + ": initialising downstream actors");
-            initialiseDownstreamActors(registry);
+            LOG.debug("{}: initialising downstream actors", name());
+            initialiseDownstreamActors();
             isInitialised = true;
             responseProducer = responseProducerCreate(fromUpstream, iteration);
         }
 
-        retryOrExhausted(fromUpstream, responseProducer, registry, iteration);
+        tryAnswer(fromUpstream, responseProducer, iteration);
     }
 
     @Override
-    protected void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry, int iteration) {
+    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
 
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+
+        LOG.trace("{}: received answer: {}", name(), conceptMap);
 
         ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
         if (fromDownstream.answer().isInferred()) {
@@ -143,8 +145,6 @@ public class Root extends Resolver<Root> {
         }
 
         if (isLast(sender)) {
-            LOG.trace("{}: has produced: {}", name, conceptMap);
-
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
@@ -152,23 +152,23 @@ public class Root extends Resolver<Root> {
                                                                conjunction.toString(), derivation, self(), fromDownstream.answer().isInferred());
                 submitAnswer(answer);
             } else {
-                retryOrExhausted(fromUpstream, responseProducer, registry, iteration);
+                tryAnswer(fromUpstream, responseProducer, iteration);
             }
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
                                                     MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
-            requestFromDownstream(downstreamRequest, fromUpstream, registry, iteration);
+            requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
     }
 
     @Override
-    protected void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry, int iteration) {
+    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        retryOrExhausted(fromUpstream, responseProducer, registry, iteration);
+        tryAnswer(fromUpstream, responseProducer, iteration);
     }
 
     @Override
@@ -177,10 +177,10 @@ public class Root extends Resolver<Root> {
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
     }
 
-    private void retryOrExhausted(Request fromUpstream, ResponseProducer responseProducer, ResolverRegistry registry, int iteration) {
+    private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            LOG.trace("{}: traversal answer: {}", name, conceptMap);
+            LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
@@ -190,7 +190,7 @@ public class Root extends Resolver<Root> {
         }
 
         if (responseProducer.hasDownstreamProducer()) {
-            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, registry, iteration);
+            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
         } else {
             onExhausted.accept(iteration);
         }

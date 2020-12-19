@@ -63,19 +63,19 @@ public class ResolverRegistry {
                 return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
-        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable, resolutionRecorder));
+        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable, resolutionRecorder, this));
         concludableActors.put(concludable, concludableActor);
         return new Pair<>(concludableActor, MappingAggregator.identity(concludable));
     }
 
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r)));
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this)));
     }
 
     public Actor<Root> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new Root(self, pattern, onAnswer, onExhausted, resolutionRecorder));
+        return Actor.create(elg, self -> new Root(self, pattern, onAnswer, onExhausted, resolutionRecorder, this));
     }
 
     // for testing

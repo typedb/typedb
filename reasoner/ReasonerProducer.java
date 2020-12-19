@@ -30,7 +30,6 @@ import grakn.core.reasoner.resolution.resolver.Root;
 public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<Root> rootResolver;
-    private final ResolverRegistry registry;
     private Request resolveRequest;
     private boolean done;
     private Sink<ConceptMap> sink = null;
@@ -39,7 +38,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
-        this.registry = resolverRegistry;
         this.iteration = 0;
         this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
     }
@@ -54,11 +52,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void recycle() {
+    public void recycle() {}
 
-    }
-
-    private void requestAnswered(final ResolutionAnswer answer) {
+    private void requestAnswered(ResolutionAnswer answer) {
         if (answer.isInferred()) iterationInferredAnswer = true;
         sink.put(answer.aggregated().conceptMap());
     }
@@ -102,6 +98,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry, iteration));
+        rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }

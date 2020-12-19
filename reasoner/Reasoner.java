@@ -103,7 +103,6 @@ public class Reasoner {
     }
 
     private ReasonerProducer resolve(Conjunction conjunction) {
-        // TODO get onAnswer and onDone callbacks
         return new ReasonerProducer(conjunction, resolverRegistry);
     }
 }
