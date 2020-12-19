@@ -22,12 +22,11 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -47,7 +46,7 @@ import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
-import static grakn.core.reasoner.resolution.answer.AnswerState.*;
+import static grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 
 /**
  * A root resolver is a special resolver: it is aware that it is not the child any resolver, so does not
