@@ -26,7 +26,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.NoOpAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -384,7 +384,7 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<Root> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
@@ -442,7 +442,7 @@ public class ResolutionTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<Root> root = registry.createRoot(conjunctionPattern, answer -> {
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, answer -> {
                     if (answer.isInferred()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
@@ -526,13 +526,13 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<Root> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
                 assertResponses(root, responses, doneReceived, answerCount, registry);
             }
         }
     }
 
-    private void assertResponses(final Actor<Root> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
+    private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
                                  final AtomicLong doneReceived, final long answerCount, ResolverRegistry registry)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();

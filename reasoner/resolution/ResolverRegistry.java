@@ -28,7 +28,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.reasoner.resolution.answer.MappingAggregator;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
@@ -73,9 +73,9 @@ public class ResolverRegistry {
         return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this)));
     }
 
-    public Actor<Root> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
+    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new Root(self, pattern, onAnswer, onExhausted, resolutionRecorder, this));
+        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this));
     }
 
     // for testing

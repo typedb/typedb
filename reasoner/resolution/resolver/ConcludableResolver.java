@@ -49,7 +49,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private final ConjunctionConcludable<?, ?> concludable;
     private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> availableRules;
-    private final Map<Actor<Root>, IterationState> iterationStates;
+    private final Map<Actor<RootResolver>, IterationState> iterationStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
@@ -66,56 +66,19 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
-        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
-            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
-            availableRules.put(unifier, ruleActor);
-        }));
-    }
-
-    @Override
-    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
-        Actor<Root> root = request.path().root();
-        iterationStates.putIfAbsent(root, new IterationState(iteration));
-        IterationState iterationState = iterationStates.get(root);
-
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
-        mayRegisterRules(request, iterationState, responseProducer);
-        return responseProducer;
-    }
-
-    @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
-        assert newIteration > responseProducerPrevious.iteration();
-
-        Actor<Root> root = request.path().root();
-        assert iterationStates.containsKey(root);
-        IterationState iterationState = iterationStates.get(root);
-        if (iterationState.iteration() > newIteration) {
-            iterationState.nextIteration(newIteration);
-        }
-
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
-        mayRegisterRules(request, iterationState, responseProducerNewIter);
-        return responseProducerNewIter;
-    }
-
-    @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
+        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+
         if (!isInitialised) {
-            LOG.debug("{}: initialising downstream actors", name());
             initialiseDownstreamActors();
             isInitialised = true;
         }
-        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
 
+        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit if the request came from a prior iteration
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
-        }
-        else {
+        } else {
             assert iteration == responseProducer.iteration();
             tryAnswer(fromUpstream, responseProducer, iteration);
         }
@@ -123,13 +86,13 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+        LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-        final ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
-
-        LOG.trace("{}: received answer: {}", name(), conceptMap);
+        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
         if (!responseProducer.hasProduced(conceptMap)) {
             responseProducer.recordProduced(conceptMap);
 
@@ -154,13 +117,53 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
-        LOG.trace("{}: Receiving a new Exhausted from downstream: {}", name(), fromDownstream);
+        LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         tryAnswer(fromUpstream, responseProducer, iteration);
+    }
+
+    @Override
+    protected void initialiseDownstreamActors() {
+        LOG.debug("{}: initialising downstream actors", name());
+        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
+            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
+            availableRules.put(unifier, ruleActor);
+        }));
+    }
+
+    @Override
+    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
+        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
+        Actor<RootResolver> root = request.path().root();
+        iterationStates.putIfAbsent(root, new IterationState(iteration));
+        IterationState iterationState = iterationStates.get(root);
+
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+        mayRegisterRules(request, iterationState, responseProducer);
+        return responseProducer;
+    }
+
+    @Override
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+        assert newIteration > responseProducerPrevious.iteration();
+        LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
+
+        Actor<RootResolver> root = request.path().root();
+        assert iterationStates.containsKey(root);
+        IterationState iterationState = iterationStates.get(root);
+        if (iterationState.iteration() > newIteration) {
+            iterationState.nextIteration(newIteration);
+        }
+
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+        mayRegisterRules(request, iterationState, responseProducerNewIter);
+        return responseProducerNewIter;
     }
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
@@ -189,16 +192,13 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
         if (!responseProducers.containsKey(fromUpstream)) {
-            LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
             responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
         } else {
             ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
             assert responseProducer.iteration() == iteration ||
                     responseProducer.iteration() + 1 == iteration;
 
             if (responseProducer.iteration() + 1 == iteration) {
-                LOG.debug("{}: Initialising ResponseProducer iteration '{}'  for request: {}", name(), iteration, fromUpstream);
                 // when the same request for the next iteration the first time, re-initialise required state
                 ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
                 responseProducers.put(fromUpstream, responseProducerNextIter);

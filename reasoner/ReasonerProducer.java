@@ -25,11 +25,11 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.NoOpAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 
 public class ReasonerProducer implements Producer<ConceptMap> {
 
-    private final Actor<Root> rootResolver;
+    private final Actor<RootResolver> rootResolver;
     private Request resolveRequest;
     private boolean done;
     private Sink<ConceptMap> sink = null;

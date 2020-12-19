@@ -66,7 +66,71 @@ public class RuleResolver extends Resolver<RuleResolver> {
     }
 
     @Override
+    public void receiveRequest(Request fromUpstream, int iteration) {
+        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+
+        if (!isInitialised) {
+            initialiseDownstreamActors();
+            isInitialised = true;
+        }
+
+        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
+        if (iteration < responseProducer.iteration()) {
+            // short circuit if the request came from a prior iteration
+            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+        } else {
+            tryAnswer(fromUpstream, responseProducer, iteration);
+        }
+    }
+
+    @Override
+    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+        LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
+        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
+        if (fromDownstream.answer().isInferred()) {
+            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+        }
+
+        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+        if (isLast(sender)) {
+            if (!responseProducer.hasProduced(conceptMap)) {
+                responseProducer.recordProduced(conceptMap);
+
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                                                               conjunction.toString(), derivation, self(), true);
+                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+            } else {
+                tryAnswer(fromUpstream, responseProducer, iteration);
+            }
+        } else {
+            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
+                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
+            responseProducer.addDownstreamProducer(downstreamRequest);
+            requestFromDownstream(downstreamRequest, fromUpstream, iteration);
+        }
+    }
+
+    @Override
+    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
+        LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
+        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
+        tryAnswer(fromUpstream, responseProducer, iteration);
+    }
+
+    @Override
     protected void initialiseDownstreamActors() {
+        LOG.debug("{}: initialising downstream actors", name());
 
         // TODO Find the applicable rules for each, which requires 1 or more valid unifications with a rule.
         // TODO Mark concludables with no applicable rules as inconcludable
@@ -94,79 +158,17 @@ public class RuleResolver extends Resolver<RuleResolver> {
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducer, int newIteration) {
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+        assert newIteration > responseProducerPrevious.iteration();
+        LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
+
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, newIteration);
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
-    }
-
-    @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        if (!isInitialised) {
-            LOG.debug("{}: initialising downstream actors", name());
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
-
-        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
-        if (iteration < responseProducer.iteration()) {
-            // short circuit if the request came from a prior iteration
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
-        } else {
-            tryAnswer(fromUpstream, responseProducer, iteration);
-        }
-    }
-
-    @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
-
-        LOG.trace("{}: received answer: {}", name(), conceptMap);
-
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-        }
-
-        if (isLast(sender)) {
-            LOG.trace("{}: has produced: {}", name(), conceptMap);
-
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), derivation, self(), true);
-                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
-            } else {
-                tryAnswer(fromUpstream, responseProducer, iteration);
-            }
-        } else {
-            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
-            responseProducer.addDownstreamProducer(downstreamRequest);
-            requestFromDownstream(downstreamRequest, fromUpstream, iteration);
-        }
-    }
-
-    @Override
-    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
-        LOG.trace("{}: Receiving a new Exhausted from downstream: {}", name(), fromDownstream);
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        tryAnswer(fromUpstream, responseProducer, iteration);
     }
 
     @Override
@@ -197,16 +199,13 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
         if (!responseProducers.containsKey(fromUpstream)) {
-            LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
             responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
         } else {
             ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
             assert responseProducer.iteration() == iteration ||
                     responseProducer.iteration() + 1 == iteration;
 
             if (responseProducer.iteration() + 1 == iteration) {
-                LOG.debug("{}: Initialising ResponseProducer iteration '{}'  for request: {}", name(), iteration, fromUpstream);
                 // when the same request for the next iteration the first time, re-initialise required state
                 ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
                 responseProducers.put(fromUpstream, responseProducerNextIter);
