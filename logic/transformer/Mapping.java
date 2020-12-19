@@ -19,7 +19,7 @@ package grakn.core.logic.transformer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.concludable.Concludable;
+import grakn.core.logic.resolvable.Concludable;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;

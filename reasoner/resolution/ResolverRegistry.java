@@ -22,7 +22,7 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.Rule;
-import grakn.core.logic.concludable.Concludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.logic.transformer.Mapping;

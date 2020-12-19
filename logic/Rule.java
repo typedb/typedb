@@ -23,7 +23,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.concludable.Concludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;

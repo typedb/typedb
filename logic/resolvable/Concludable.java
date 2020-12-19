@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.concludable;
+package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;

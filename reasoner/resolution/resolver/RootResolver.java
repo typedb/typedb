@@ -21,7 +21,7 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.concludable.Concludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.transformer.Mapping;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;

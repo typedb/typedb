@@ -69,8 +69,8 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-unification",
-    srcs = ["concludable/UnificationTest.java"],
-    test_class = "grakn.core.logic.concludable.UnificationTest",
+    srcs = ["resolvable/UnificationTest.java"],
+    test_class = "grakn.core.logic.resolvable.UnificationTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -90,7 +90,7 @@ checkstyle_test(
     include = glob([
         "*",
         "reasoner/*",
-        "concludable/*",
+        "resolvable/*",
     ]),
     license_type = "agpl",
 )

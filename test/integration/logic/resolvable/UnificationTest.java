@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.logic.concludable;
+package grakn.core.logic.resolvable;
 
 import grakn.core.logic.Rule;
 import grakn.core.logic.transformer.Unifier;
