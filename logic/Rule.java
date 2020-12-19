@@ -23,7 +23,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.concludable.ConjunctionConcludable;
-import grakn.core.logic.concludable.ThenConcludable;
+import grakn.core.logic.concludable.Conclusion;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.Variable;
@@ -45,7 +45,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<ThenConcludable<?, ?>> possibleThenConcludables;
+    private final Set<Conclusion<?, ?>> possibleConclusions;
     private final Set<ConjunctionConcludable<?, ?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -57,7 +57,7 @@ public class Rule {
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
         pruneThenTypeHints();
-        this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
+        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
         this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
     }
 
@@ -74,7 +74,7 @@ public class Rule {
         validateSatisfiable();
         pruneThenTypeHints();
 
-        this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
+        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
         this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
         validateCycles();
     }
@@ -92,8 +92,8 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Set<ThenConcludable<?, ?>> possibleThenConcludables() {
-        return possibleThenConcludables;
+    public Set<Conclusion<?, ?>> possibleConclusions() {
+        return possibleConclusions;
     }
 
     public ResourceIterator<Rule> findApplicableRulesPositive() {
@@ -178,11 +178,11 @@ public class Rule {
                 );
     }
 
-    private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
-        HashSet<ThenConcludable<?, ?>> thenConcludables = new HashSet<>();
+    private Set<Conclusion<?, ?>> buildConclusions(Conjunction then, Set<Variable> constraintContext) {
+        HashSet<Conclusion<?, ?>> conclusions = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> ThenConcludable.create(constraint, constraintContext)).forEach(thenConcludables::add);
-        return thenConcludables;
+                .map(constraint -> Conclusion.create(constraint, constraintContext)).forEach(conclusions::add);
+        return conclusions;
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {

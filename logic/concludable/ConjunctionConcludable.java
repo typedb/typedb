@@ -64,7 +64,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
     public Stream<Pair<Rule, Unifier>> findUnifiableRules(Stream<Rule> allRules) {
         // TODO Get rules internally
-        return allRules.flatMap(rule -> rule.possibleThenConcludables().stream()
+        return allRules.flatMap(rule -> rule.possibleConclusions().stream()
                 .flatMap(this::unify).map(variableMapping -> new Pair<>(rule, variableMapping))
         );
     }
@@ -77,27 +77,27 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(ThenConcludable<?, ?> unifyWith) {
-        if (unifyWith instanceof ThenConcludable.Relation) return unify((ThenConcludable.Relation) unifyWith);
-        else if (unifyWith instanceof ThenConcludable.Has) return unify((ThenConcludable.Has) unifyWith);
-        else if (unifyWith instanceof ThenConcludable.Isa) return unify((ThenConcludable.Isa) unifyWith);
-        else if (unifyWith instanceof ThenConcludable.Value) return unify((ThenConcludable.Value) unifyWith);
+    private Stream<Unifier> unify(Conclusion<?, ?> unifyWith) {
+        if (unifyWith instanceof Conclusion.Relation) return unify((Conclusion.Relation) unifyWith);
+        else if (unifyWith instanceof Conclusion.Has) return unify((Conclusion.Has) unifyWith);
+        else if (unifyWith instanceof Conclusion.Isa) return unify((Conclusion.Isa) unifyWith);
+        else if (unifyWith instanceof Conclusion.Value) return unify((Conclusion.Value) unifyWith);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(ThenConcludable.Relation unifyWith) {
+    Stream<Unifier> unify(Conclusion.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Has unifyWith) {
+    Stream<Unifier> unify(Conclusion.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Isa unifyWith) {
+    Stream<Unifier> unify(Conclusion.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
+    Stream<Unifier> unify(Conclusion.Value unifyWith) {
         return Stream.empty();
     }
 
@@ -182,7 +182,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Relation unifyWith) {
+        public Stream<Unifier> unify(Conclusion.Relation unifyWith) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
             Map<Reference.Name, Set<Reference.Name>> variableMapping = new HashMap<>();
             Optional<Unifier> newUnifier;
@@ -285,7 +285,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Has unifyWith) {
+        public Stream<Unifier> unify(Conclusion.Has unifyWith) {
             Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
             if (constraint.attribute().reference().isName()) {
@@ -318,7 +318,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        Stream<Unifier> unify(ThenConcludable.Isa unifyWith) {
+        Stream<Unifier> unify(Conclusion.Isa unifyWith) {
             Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
             if (constraint.type().reference().isName()) {
@@ -351,7 +351,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
+        Stream<Unifier> unify(Conclusion.Value unifyWith) {
             Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
             if (constraint.isVariable() && constraint.asVariable().value().reference().isName()) {

@@ -263,7 +263,7 @@ public class ConcludableTest {
         Conjunction conjunction = parseConjunction("{ $a 5; $a isa age; }");
         ThingVariable variable = parseThingVariable("$a isa age", "a");
         IsaConstraint isaConstraint = variable.isa().get();
-        ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, conjunction.variables());
+        Conclusion.Isa isaConcludable = new Conclusion.Isa(isaConstraint, conjunction.variables());
         assertEquals(5, isaConcludable.constraint().owner().value().iterator().next().asLong().value().longValue());
     }
 
@@ -272,7 +272,7 @@ public class ConcludableTest {
         Conjunction conjunction = parseConjunction("{ $a > 5; $a isa age; }");
         ThingVariable variable = parseThingVariable("$a isa age", "a");
         IsaConstraint isaConstraint = variable.isa().get();
-        ThenConcludable.Isa isaConcludable = new ThenConcludable.Isa(isaConstraint, conjunction.variables());
+        Conclusion.Isa isaConcludable = new Conclusion.Isa(isaConstraint, conjunction.variables());
         assertEquals(5, isaConcludable.constraint().owner().value().iterator().next().asLong().value().longValue());
         assertEquals(GT, isaConcludable.constraint().owner().value().iterator().next().asLong().predicate().asEquality());
     }
@@ -282,7 +282,7 @@ public class ConcludableTest {
         ThingVariable variable = parseThingVariable("$x has $a", "x");
         HasConstraint hasConstraint = variable.has().iterator().next();
         Set<Variable> contextVariables = parseConjunction("{ $x isa $p; $p type person; }").variables();
-        ThenConcludable.Has hasConcludable = new ThenConcludable.Has(hasConstraint, contextVariables);
+        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, contextVariables);
         assertEquals("person", hasConcludable.constraint().owner().isa().get().type().label().get().label());
     }
 
@@ -291,7 +291,7 @@ public class ConcludableTest {
         ThingVariable variable = parseThingVariable("$diag(patient: $per) isa $diagnosis", "diag");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         Set<Variable> contextVariables = parseConjunction("{ $per isa $person; $person type person-type; }").variables();
-        ThenConcludable.Relation relationConcludable = new ThenConcludable.Relation(relationConstraint, contextVariables);
+        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint, contextVariables);
         assertEquals("person-type", relationConcludable.constraint().players().get(0).player().isa().get()
                 .type().label().get().label());
     }
