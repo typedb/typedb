@@ -64,14 +64,23 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        return match(query, new Options.Query());
+        return match(query, new Options.Query(), true);
+    }
+
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel) {
+        return match(query, new Options.Query(), isParallel);
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
+        return match(query, options, true);
+    }
+
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options, boolean isParallel) {
         // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Disjunction disjunction = Disjunction.create(query.conjunction().normalise());
-            return reasoner.iteratorAsync(disjunction);
+            if (isParallel) return reasoner.iteratorParallel(disjunction);
+            else return reasoner.iteratorSingleThreaded(disjunction);
         } catch (GraknException exception) {
             throw conceptMgr.exception(exception);
         } catch (Exception exception) {
@@ -88,7 +97,7 @@ public class QueryManager {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             if (query.match().isPresent()) {
-                List<ConceptMap> matched = match(query.match().get()).toList();
+                List<ConceptMap> matched = match(query.match().get(), options).toList();
                 return iterate(iterate(matched).map(answer -> Inserter.create(
                         conceptMgr, query.variables(), answer, context
                 ).execute()).toList());
@@ -110,7 +119,7 @@ public class QueryManager {
         if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
-            final List<ConceptMap> matched = match(query.match()).toList();
+            final List<ConceptMap> matched = match(query.match(), options).toList();
             matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
         } catch (GraknException exception) {
             throw conceptMgr.exception(exception);

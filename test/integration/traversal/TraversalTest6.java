@@ -28,7 +28,6 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -142,7 +141,7 @@ public class TraversalTest6 {
     public void test_owns_inheritance() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match $p owns name;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
+            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Map<String, Set<String>> result = retrieveAnswers(answers);
@@ -160,7 +159,7 @@ public class TraversalTest6 {
     public void test_owns_cycle() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match $a owns $b; $b owns $a;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
+            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Map<String, Set<String>> result = retrieveAnswers(answers);
@@ -178,7 +177,7 @@ public class TraversalTest6 {
             final String queryString = "match " +
                     "   $r sub marriage, relates $role, relates wife;" +
                     "   $yoko plays $role, plays relation:wife;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
+            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Map<String, Set<String>> result = retrieveAnswers(answers);

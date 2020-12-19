@@ -122,7 +122,7 @@ public class TraversalTest2 {
             final String queryString = "match\n" +
                     "        (buyer: $a, seller: $b) isa sale;\n" +
                     "        (buyer: $b, seller: $c) isa sale;";
-            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch());
+            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertTrue(answers.hasNext());
             ConceptMap answer;
             AttributeType.String name = transaction.concepts().getAttributeType("name").asString();

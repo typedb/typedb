@@ -58,17 +58,17 @@ public class Reasoner {
         this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng);
     }
 
-    public ResourceIterator<ConceptMap> iteratorSync(Disjunction disjunction) {
-        return iterate(disjunction.conjunctions()).flatMap(this::iteratorSync);
+    public ResourceIterator<ConceptMap> iteratorSingleThreaded(Disjunction disjunction) {
+        return iterate(disjunction.conjunctions()).flatMap(this::iteratorSingleThreaded);
     }
 
-    public ResourceIterator<ConceptMap> iteratorSync(Conjunction conjunction) {
+    public ResourceIterator<ConceptMap> iteratorSingleThreaded(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabeledVars(conjunction);
         // conjunction = logicMgr.typeResolver().resolveThingTypes(conjunction);
         return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
     }
 
-    public ResourceIterator<ConceptMap> iteratorAsync(Disjunction disjunction) {
+    public ResourceIterator<ConceptMap> iteratorParallel(Disjunction disjunction) {
         List<Producer<ConceptMap>> producers = disjunction.conjunctions().stream()
                 .flatMap(conjunction -> producers(conjunction).stream())
                 .collect(toList());

@@ -110,34 +110,34 @@ public class TraversalTest3 {
         try (RocksTransaction transaction = session.transaction(READ)) {
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(
                     "match $from has internal_id 'ui1'; "
-            ).asMatch());
+            ).asMatch(), false);
             assertTrue(answers.hasNext());
 
             answers = transaction.query().match(parseQuery(
                     "match $to has internal_id 'ti1';"
-            ).asMatch());
+            ).asMatch(), false);
             assertTrue(answers.hasNext());
 
             answers = transaction.query().match(parseQuery(
                     "match $from has internal_id 'ui1'; $to has internal_id 'ti1';"
-            ).asMatch());
+            ).asMatch(), false);
             assertTrue(answers.hasNext());
         }
 
         try (RocksTransaction transaction = session.transaction(READ)) {
             ResourceIterator<ConceptMap> tokens = transaction.query().match(parseQuery(
                     "match $entity isa Token; $entity has internal_id 'ti1';"
-            ).asMatch());
+            ).asMatch(), false);
             assertEquals(1, tokens.toList().size());
 
             ResourceIterator<ConceptMap> users = transaction.query().match(parseQuery(
                     "match $entity isa User; $entity has standard_id 'us1';"
-            ).asMatch());
+            ).asMatch(), false);
             assertEquals(1, users.toList().size());
 
             ResourceIterator<ConceptMap> authorisations = transaction.query().match(parseQuery(
                     "match $rel isa authorized-by;"
-            ).asMatch());
+            ).asMatch(), false);
             assertEquals(1, authorisations.toList().size());
         }
     }
