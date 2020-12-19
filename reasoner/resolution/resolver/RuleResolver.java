@@ -22,7 +22,7 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -55,7 +55,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     private final Map<Request, ResponseProducer> responseProducers;
     private final Conjunction conjunction;
-    private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
+    private final Set<Concludable<?>> concludables;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
     private boolean isInitialised;
 
@@ -63,7 +63,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine);
         this.responseProducers = new HashMap<>();
         this.conjunction = rule.when();
-        this.conjunctionConcludables = rule.whenConcludables();
+        this.concludables = rule.whenConcludables();
         this.plannedConcludables = new ArrayList<>();
         this.isInitialised = false;
     }
@@ -143,8 +143,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
         // TODO Tell the concludables to extend themselves by traversing all inconcludable constraints
 
         // Plan the order in which to execute the concludables
-        List<ConjunctionConcludable<?, ?>> planned = list(conjunctionConcludables); // TODO Do some actual planning
-        for (ConjunctionConcludable<?, ?> concludable : planned) {
+        List<Concludable<?>> planned = list(concludables); // TODO Do some actual planning
+        for (Concludable<?> concludable : planned) {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
             plannedConcludables.add(concludableUnifierPair);
         }

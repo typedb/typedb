@@ -22,7 +22,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.Concludable;
 import grakn.core.logic.concludable.Conclusion;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
@@ -46,7 +46,7 @@ public class Rule {
     private final Conjunction when;
     private final Conjunction then;
     private final Set<Conclusion<?, ?>> possibleConclusions;
-    private final Set<ConjunctionConcludable<?, ?>> requiredWhenConcludables;
+    private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
         this.logicManager = logicManager;
@@ -58,7 +58,7 @@ public class Rule {
         this.then = thenPattern(structure.then());
         pruneThenTypeHints();
         this.possibleConclusions = buildConclusions(this.then, this.when.variables());
-        this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
+        this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
@@ -75,7 +75,7 @@ public class Rule {
         pruneThenTypeHints();
 
         this.possibleConclusions = buildConclusions(this.then, this.when.variables());
-        this.requiredWhenConcludables = ConjunctionConcludable.create(this.when);
+        this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
     }
 
@@ -88,7 +88,7 @@ public class Rule {
         return new Rule(graphMgr, conceptMgr, logicManager, label, when, then);
     }
 
-    public Set<ConjunctionConcludable<?, ?>> whenConcludables() {
+    public Set<Concludable<?>> whenConcludables() {
         return requiredWhenConcludables;
     }
 
@@ -97,12 +97,12 @@ public class Rule {
     }
 
     public ResourceIterator<Rule> findApplicableRulesPositive() {
-        // TODO find applicable rules from each non-negated ConjunctionConcludables
+        // TODO find applicable rules from each non-negated Concludables
         return null;
     }
 
     public ResourceIterator<Rule> findApplicableRulesNegative() {
-        // TODO find applicable rules from negated ConjunctionConcludables
+        // TODO find applicable rules from negated Concludables
         return null;
     }
 

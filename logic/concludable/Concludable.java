@@ -49,12 +49,12 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U extends ConjunctionConcludable<CONSTRAINT, U>> {
+public abstract class Concludable<CONSTRAINT extends Constraint> {
 
     private final Map<Rule, Set<Unifier>> applicableRules;
     private final CONSTRAINT constraint;
 
-    private ConjunctionConcludable(CONSTRAINT constraint) {
+    private Concludable(CONSTRAINT constraint) {
         this.constraint = constraint;
         applicableRules = new HashMap<>(); // TODO Implement
     }
@@ -63,7 +63,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return constraint;
     }
 
-    public static Set<ConjunctionConcludable<?, ?>> create(grakn.core.pattern.Conjunction conjunction) {
+    public static Set<Concludable<?>> create(grakn.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction.variables()).concludables();
     }
 
@@ -106,7 +106,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return Stream.empty();
     }
 
-    public AlphaEquivalence alphaEquals(ConjunctionConcludable<?, ?> that) {
+    public AlphaEquivalence alphaEquals(Concludable<?> that) {
         if (that.isRelation()) return alphaEquals(that.asRelation());
         else if (that.isHas()) return alphaEquals(that.asHas());
         else if (that.isIsa()) return alphaEquals(that.asIsa());
@@ -114,19 +114,19 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Relation that) {
+    AlphaEquivalence alphaEquals(Concludable.Relation that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Has that) {
+    AlphaEquivalence alphaEquals(Concludable.Has that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Isa that) {
+    AlphaEquivalence alphaEquals(Concludable.Isa that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Value that) {
+    AlphaEquivalence alphaEquals(Concludable.Value that) {
         return null;
     }
 
@@ -180,7 +180,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return null; //TODO Make abstract and implement for all subtypes
     }
 
-    public static class Relation extends ConjunctionConcludable<RelationConstraint, ConjunctionConcludable.Relation> {
+    public static class Relation extends Concludable<RelationConstraint> {
 
         public Relation(final RelationConstraint constraint) {
             super(ConstraintCopier.copyConstraint(constraint));
@@ -278,12 +278,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Relation that) {
+        AlphaEquivalence alphaEquals(Concludable.Relation that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Has extends ConjunctionConcludable<HasConstraint, ConjunctionConcludable.Has> {
+    public static class Has extends Concludable<HasConstraint> {
 
         public Has(final HasConstraint constraint) {
             super(ConstraintCopier.copyConstraint(constraint));
@@ -311,12 +311,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Has that) {
+        AlphaEquivalence alphaEquals(Concludable.Has that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Isa extends ConjunctionConcludable<IsaConstraint, ConjunctionConcludable.Isa> {
+    public static class Isa extends Concludable<IsaConstraint> {
 
         public Isa(final IsaConstraint constraint) {
             super(ConstraintCopier.copyConstraint(constraint));
@@ -344,12 +344,12 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Isa that) {
+        AlphaEquivalence alphaEquals(Concludable.Isa that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Value extends ConjunctionConcludable<ValueConstraint<?>, ConjunctionConcludable.Value> {
+    public static class Value extends Concludable<ValueConstraint<?>> {
 
         public Value(final ValueConstraint<?> constraint) {
             super(ConstraintCopier.copyConstraint(constraint));
@@ -378,7 +378,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Value that) {
+        AlphaEquivalence alphaEquals(Concludable.Value that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
@@ -388,7 +388,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         private final Set<Variable> isaOwnersToSkip = new HashSet<>();
         private final Set<Variable> valueOwnersToSkip = new HashSet<>();
-        private final Set<ConjunctionConcludable<?, ?>> concludables = new HashSet<>();
+        private final Set<Concludable<?>> concludables = new HashSet<>();
 
         Extractor(Set<Variable> variables) {
             Set<Constraint> constraints = variables.stream().flatMap(variable -> variable.constraints().stream())
@@ -404,29 +404,29 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            concludables.add(new ConjunctionConcludable.Relation(relationConstraint));
+            concludables.add(new Concludable.Relation(relationConstraint));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            concludables.add(new ConjunctionConcludable.Has(hasConstraint));
+            concludables.add(new Concludable.Has(hasConstraint));
             isaOwnersToSkip.add(hasConstraint.attribute());
             if (hasConstraint.attribute().isa().isPresent()) valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         public void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(new ConjunctionConcludable.Isa(isaConstraint));
+            concludables.add(new Concludable.Isa(isaConstraint));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }
 
         private void fromConstraint(ValueConstraint<?> valueConstraint) {
             if (valueOwnersToSkip.contains(valueConstraint.owner())) return;
-            concludables.add(new ConjunctionConcludable.Value(valueConstraint));
+            concludables.add(new Concludable.Value(valueConstraint));
         }
 
-        public Set<ConjunctionConcludable<?, ?>> concludables() {
+        public Set<Concludable<?>> concludables() {
             return new HashSet<>(concludables);
         }
     }

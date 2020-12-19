@@ -64,8 +64,8 @@ public class UnificationTest {
     @Test
     public void unify_isa_variable() {
         String conjunction = "{ $x isa $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Isa conjConcludable = concludables.iterator().next().asIsa();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa conjConcludable = concludables.iterator().next().asIsa();
 
         Conjunction thenConjunction = parseConjunction("{ $a 7; $a isa $age; }");
         ThingVariable variable = parseThingVariable("$a isa $age", "a");
@@ -88,8 +88,8 @@ public class UnificationTest {
     @Test
     public void unify_isa_concrete() {
         String conjunction = "{ $x isa person; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Isa conjConcludable = concludables.iterator().next().asIsa();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa conjConcludable = concludables.iterator().next().asIsa();
 
         Conjunction thenConjunction = parseConjunction("{ $a 7; $a isa $person; }");
         ThingVariable variable = parseThingVariable("$a isa $person", "a");
@@ -110,8 +110,8 @@ public class UnificationTest {
     @Test
     public void unify_value_concrete() {
         String conjunction = "{ $x = 7; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Value conjConcludable = concludables.iterator().next().asValue();
 
         Conjunction thenConjunction = parseConjunction("{ $a = $b; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a = 7", "a");
@@ -131,8 +131,8 @@ public class UnificationTest {
     @Test
     public void unify_value_predicate() {
         String conjunction = "{ $x > 7; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Value conjConcludable = concludables.iterator().next().asValue();
 
         Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a > $num", "a");
@@ -152,8 +152,8 @@ public class UnificationTest {
     @Test
     public void unify_value_variable() {
         String conjunction = "{ $x > $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Value conjConcludable = concludables.iterator().next().asValue();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Value conjConcludable = concludables.iterator().next().asValue();
 
         Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a > $num", "a");
@@ -174,8 +174,8 @@ public class UnificationTest {
     @Test
     public void unify_has_concrete() {
         String conjunction = "{ $x has name 'bob'; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
@@ -196,8 +196,8 @@ public class UnificationTest {
     @Test
     public void unify_has_variable() {
         String conjunction = "{ $x has $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
@@ -219,8 +219,8 @@ public class UnificationTest {
     @Test
     public void unify_has_syntax_sugar() {
         String conjunction = "{ $x has name $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
@@ -242,8 +242,8 @@ public class UnificationTest {
     @Test
     public void unify_relation_one_to_one_player() {
         String conjunction = "{ (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a) isa $employment; }");
@@ -267,8 +267,8 @@ public class UnificationTest {
     @Test
     public void unify_relation_one_to_many() {
         String conjunction = "{ (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $employee: $b, $employee: $c) isa $employment; }");
@@ -300,8 +300,8 @@ public class UnificationTest {
     @Test
     public void unify_relation_many_to_many() {
         String conjunction = "{ (employee: $x, employee: $y) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $employee: $b, $employee: $c) isa $employment; }");
@@ -348,8 +348,8 @@ public class UnificationTest {
     @Test
     public void has_duplicate_vars_conj() {
         String conjunction = "{ $x has name $x; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
@@ -370,8 +370,8 @@ public class UnificationTest {
     @Test
     public void has_duplicate_vars_then() {
         String conjunction = "{ $x has name $y; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction thenConjunction = parseConjunction("{ $a has $a;}");
         ThingVariable variable = parseThingVariable("$a has $a", "a");
@@ -392,8 +392,8 @@ public class UnificationTest {
     @Test
     public void has_duplicate_vars_both() {
         String conjunction = "{ $x has name $x; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Has conjConcludable = concludables.iterator().next().asHas();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
 
         Conjunction thenConjunction = parseConjunction("{ $a has $a;}");
         ThingVariable variable = parseThingVariable("$a has $a", "a");
@@ -413,8 +413,8 @@ public class UnificationTest {
     @Test
     public void relation_named_role() {
         String conjunction = "{ ($role: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a) isa $employment; }");
@@ -439,8 +439,8 @@ public class UnificationTest {
     @Test
     public void relation_named_role_duplication() {
         String conjunction = "{ ($role: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $employee: $b) isa $employment; }");
@@ -469,8 +469,8 @@ public class UnificationTest {
     @Test
     public void relation_repeated_players() {
         String conjunction = "{ (employee: $x, boss: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{ ($employee: $a, $boss: $b) isa $employment; }");
@@ -494,8 +494,8 @@ public class UnificationTest {
     @Test
     public void relation_repeated_players_many_to_many() {
         String conjunction = "{ (employee: $x, boss: $x, employee: $y) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
@@ -524,8 +524,8 @@ public class UnificationTest {
     @Test
     public void relation_repeated_players_many_to_many_roles() {
         String conjunction = "{ ($role1: $x, $role2: $y, $role1: $y) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
@@ -570,8 +570,8 @@ public class UnificationTest {
     @Test
     public void relation_repeated_role_players() {
         String conjunction = "{ ($role1: $x, $role2: $y, $role1: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
@@ -610,8 +610,8 @@ public class UnificationTest {
     @Test
     public void map_one_role_to_many() {
         String conjunction = "{ (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $a) isa $employment; }");
@@ -635,8 +635,8 @@ public class UnificationTest {
     @Test
     public void map_duplicate_roles_to_distinct_roles() {
         String conjunction = "{ (employee: $x, employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $b) isa $employment; }");
@@ -660,8 +660,8 @@ public class UnificationTest {
     @Test
     public void map_distinct_roles_to_duplicate_roles() {
         String conjunction = "{ (employee: $x, employee: $y) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $a) isa $employment; }");
@@ -686,8 +686,8 @@ public class UnificationTest {
     @Test
     public void map_duplicate_roles_to_duplicate_roles() {
         String conjunction = "{ (employee: $x, employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $employee: $a) isa $employment; }");
@@ -711,8 +711,8 @@ public class UnificationTest {
     @Test
     public void relation_match_owner() {
         String conjunction = "{ $r (employee: $x) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a) isa $employment; }");
@@ -737,8 +737,8 @@ public class UnificationTest {
     @Test
     public void relation_match_relation() {
         String conjunction = "{ (employee: $x) isa $rel; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a) isa $employment; }");
@@ -763,8 +763,8 @@ public class UnificationTest {
     @Test
     public void cannot_unify_more_specific_relation() {
         String conjunction = "{ (employee: $x, company: $y, contract: $z) isa employment; }";
-        Set<ConjunctionConcludable<?, ?>> concludables = ConjunctionConcludable.create(parseConjunction(conjunction));
-        ConjunctionConcludable.Relation conjConcludable = concludables.iterator().next().asRelation();
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Relation conjConcludable = concludables.iterator().next().asRelation();
 
         Conjunction thenConjunction = parseConjunction(
                 "{$temp ($employee: $a, $company: $b) isa $employment; }");

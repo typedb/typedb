@@ -19,7 +19,7 @@ package grakn.core.logic.transformer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.concludable.Concludable;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
@@ -43,7 +43,7 @@ public class Mapping extends VariableTransformer {
         return new Mapping(variableMap);
     }
 
-    public static Map<Reference.Name, Reference.Name> identity(ConjunctionConcludable<?, ?> concludable) {
+    public static Map<Reference.Name, Reference.Name> identity(Concludable<?> concludable) {
         return new HashSet<>(concludable.constraint().variables()).stream()
                 .filter(variable -> variable.reference().isName())
                 .map(variable -> variable.reference().asName())
