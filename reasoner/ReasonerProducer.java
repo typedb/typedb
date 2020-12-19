@@ -22,10 +22,11 @@ import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.NoOpAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
+
+import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial.root;
 
 public class ReasonerProducer implements Producer<ConceptMap> {
 
@@ -37,12 +38,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
-        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
+        this.resolveRequest = new Request(new Request.Path(rootResolver), root(), ResolutionAnswer.Derivation.EMPTY);
         this.registry = resolverRegistry;
     }
 
     private void onAnswer(final ResolutionAnswer answer) {
-        sink.put(answer.aggregated().conceptMap());
+        sink.put(answer.derived().map());
     }
 
     private void onDone() {

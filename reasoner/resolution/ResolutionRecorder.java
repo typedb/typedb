@@ -68,7 +68,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
 
         int actorIndex = actorIndices.computeIfAbsent(newAnswer.producer(), key -> actorIndices.size());
         LOG.debug("actor index for " + newAnswer.producer() + ": " + actorIndex);
-        AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.aggregated().original());
+        AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.derived().from());
         if (answers.containsKey(newAnswerIndex)) {
             ResolutionAnswer existingAnswer = answers.get(newAnswerIndex);
             ResolutionAnswer.Derivation existingDerivation = existingAnswer.derivation();

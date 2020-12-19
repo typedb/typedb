@@ -24,7 +24,8 @@ import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.answer.MappingAggregator;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -65,7 +66,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     @Override
     public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+        ConceptMap conceptMap = fromDownstream.answer().derived().map();
 
         ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
         if (fromDownstream.answer().isInferred()) {
@@ -78,7 +79,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asDerived(),
                                                                conjunction.toString(), derivation, self());
                 return Either.second(createResponse(fromUpstream, answer));
             } else {
@@ -87,7 +88,9 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
+                                                    AnswerState.UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
+                                                            Mapping.of(nextPlannedDownstream.second())),
+                                                    derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }
@@ -100,7 +103,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asDerived(),
                                                                conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self());
                 return Either.second(createResponse(fromUpstream, answer));
             }
@@ -115,7 +118,7 @@ public class RootResolver extends ConjunctionResolver<RootResolver> {
     }
 
     Response.RootResponse createResponse(Request fromUpstream, final ResolutionAnswer answer) {
-        LOG.debug("Responding RootResponse and Recording root answer execution tree for: {}", answer.aggregated());
+        LOG.debug("Responding RootResponse and Recording root answer execution tree for: {}", answer.derived());
         resolutionRecorder.tell(state -> state.record(answer));
         onAnswer.accept(answer);
         return new Response.RootResponse(fromUpstream);

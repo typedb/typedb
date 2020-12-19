@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Derived;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,23 +27,23 @@ import java.util.Map;
 import static grakn.common.collection.Collections.map;
 
 public class ResolutionAnswer {
-    private final Aggregator.Aggregated aggregatedAnswer;
+    private final Derived answer;
     private final Derivation derivation;
     private final Actor<? extends Resolver<?>> producer;
     private final String patternAnswered;
 
-    public ResolutionAnswer(Aggregator.Aggregated aggregatedAnswer,
+    public ResolutionAnswer(Derived answer,
                             String patternAnswered,
                             Derivation derivation,
                             Actor<? extends Resolver<?>> producer) {
-        this.aggregatedAnswer = aggregatedAnswer;
+        this.answer = answer;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
         this.producer = producer;
     }
 
-    public Aggregator.Aggregated aggregated() {
-        return aggregatedAnswer;
+    public Derived derived() {
+        return answer;
     }
 
     public Derivation derivation() {
@@ -61,7 +61,7 @@ public class ResolutionAnswer {
     @Override
     public String toString() {
         return "Answer{" +
-                "conceptMap=" + aggregatedAnswer +
+                "conceptMap=" + answer +
                 ", executionRecord=" + derivation +
                 ", patternAnswered='" + patternAnswered + '\'' +
                 ", producer=" + producer +
