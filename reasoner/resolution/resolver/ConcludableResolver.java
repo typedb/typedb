@@ -20,7 +20,7 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.transformer.Unifier;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
@@ -48,14 +48,14 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final ConjunctionConcludable<?, ?> concludable;
+    private final Concludable<?> concludable;
     private final Map<Unifier, Actor<RuleResolver>> availableRules;
     private final Map<Actor<RootResolver>, IterationState> iterationStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable,
+    public ConcludableResolver(Actor<ConcludableResolver> self, Concludable<?> concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine);

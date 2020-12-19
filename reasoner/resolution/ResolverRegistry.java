@@ -22,7 +22,7 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.Rule;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.logic.transformer.Mapping;
@@ -43,7 +43,7 @@ public class ResolverRegistry {
 
     private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
 
-    private final HashMap<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> concludableActors;
+    private final HashMap<Concludable<?>, Actor<ConcludableResolver>> concludableActors;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private TraversalEngine traversalEngine;
     private final HashMap<Rule, Actor<RuleResolver>> rules;
@@ -57,9 +57,9 @@ public class ResolverRegistry {
         concludableActors = new HashMap<>();
     }
 
-    public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
+    public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> c: concludableActors.entrySet()) {
+        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {

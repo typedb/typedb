@@ -15,11 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.concludable;
+package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.Rule;
+import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
@@ -48,23 +49,27 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U extends ConjunctionConcludable<CONSTRAINT, U>>
-        extends Concludable<CONSTRAINT, U> {
+public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolvable {
 
     private final Map<Rule, Set<Unifier>> applicableRules;
+    private final CONSTRAINT constraint;
 
-    private ConjunctionConcludable(CONSTRAINT constraint) {
-        super(constraint);
+    private Concludable(CONSTRAINT constraint) {
+        this.constraint = constraint;
         applicableRules = new HashMap<>(); // TODO Implement
     }
 
-    public static Set<ConjunctionConcludable<?, ?>> create(grakn.core.pattern.Conjunction conjunction) {
+    public CONSTRAINT constraint() {
+        return constraint;
+    }
+
+    public static Set<Concludable<?>> create(grakn.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction.variables()).concludables();
     }
 
     public Stream<Pair<Rule, Unifier>> findUnifiableRules(Stream<Rule> allRules) {
         // TODO Get rules internally
-        return allRules.flatMap(rule -> rule.possibleThenConcludables().stream()
+        return allRules.flatMap(rule -> rule.possibleConclusions().stream()
                 .flatMap(this::unify).map(variableMapping -> new Pair<>(rule, variableMapping))
         );
     }
@@ -77,31 +82,31 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(ThenConcludable<?, ?> unifyWith) {
-        if (unifyWith instanceof ThenConcludable.Relation) return unify((ThenConcludable.Relation) unifyWith);
-        else if (unifyWith instanceof ThenConcludable.Has) return unify((ThenConcludable.Has) unifyWith);
-        else if (unifyWith instanceof ThenConcludable.Isa) return unify((ThenConcludable.Isa) unifyWith);
-        else if (unifyWith instanceof ThenConcludable.Value) return unify((ThenConcludable.Value) unifyWith);
+    private Stream<Unifier> unify(Rule.Conclusion<?, ?> unifyWith) {
+        if (unifyWith instanceof Rule.Conclusion.Relation) return unify((Rule.Conclusion.Relation) unifyWith);
+        else if (unifyWith instanceof Rule.Conclusion.Has) return unify((Rule.Conclusion.Has) unifyWith);
+        else if (unifyWith instanceof Rule.Conclusion.Isa) return unify((Rule.Conclusion.Isa) unifyWith);
+        else if (unifyWith instanceof Rule.Conclusion.Value) return unify((Rule.Conclusion.Value) unifyWith);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(ThenConcludable.Relation unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Has unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Isa unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
         return Stream.empty();
     }
 
-    public AlphaEquivalence alphaEquals(ConjunctionConcludable<?, ?> that) {
+    public AlphaEquivalence alphaEquals(Concludable<?> that) {
         if (that.isRelation()) return alphaEquals(that.asRelation());
         else if (that.isHas()) return alphaEquals(that.asHas());
         else if (that.isIsa()) return alphaEquals(that.asIsa());
@@ -109,19 +114,19 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Relation that) {
+    AlphaEquivalence alphaEquals(Concludable.Relation that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Has that) {
+    AlphaEquivalence alphaEquals(Concludable.Has that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Isa that) {
+    AlphaEquivalence alphaEquals(Concludable.Isa that) {
         return null;
     }
 
-    AlphaEquivalence alphaEquals(ConjunctionConcludable.Value that) {
+    AlphaEquivalence alphaEquals(Concludable.Value that) {
         return null;
     }
 
@@ -158,7 +163,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     }
 
     Optional<Unifier> tryExtendUnifier(Variable conjVar, Variable headVar, Map<Reference.Name, Set<Reference.Name>> unifierMapping) {
-        if (varHintsDisjoint(headVar, conjVar)) return Optional.empty();
+        if (ConstraintCopier.varHintsDisjoint(headVar, conjVar)) return Optional.empty();
         Map<Reference.Name, Set<Reference.Name>> cloneOfMapping = cloneMapping(unifierMapping);
         cloneOfMapping.putIfAbsent(conjVar.reference().asName(), new HashSet<>());
         cloneOfMapping.get(conjVar.reference().asName()).add(headVar.reference().asName());
@@ -175,24 +180,24 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         return null; //TODO Make abstract and implement for all subtypes
     }
 
-    public static class Relation extends ConjunctionConcludable<RelationConstraint, ConjunctionConcludable.Relation> {
+    public static class Relation extends Concludable<RelationConstraint> {
 
         public Relation(final RelationConstraint constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Relation unifyWith) {
+        public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
             Map<Reference.Name, Set<Reference.Name>> variableMapping = new HashMap<>();
             Optional<Unifier> newUnifier;
-            if (constraint.owner().reference().isName()) {
+            if (constraint().owner().reference().isName()) {
                 newUnifier = tryExtendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), variableMapping);
                 if (newUnifier.isPresent()) variableMapping = newUnifier.get().mapping();
                 else return Stream.empty();
             }
 
-            if (constraint.owner().isa().isPresent() && constraint.owner().isa().get().type().reference().isName()) {
+            if (constraint().owner().isa().isPresent() && constraint().owner().isa().get().type().reference().isName()) {
                 assert unifyWith.constraint().owner().isa().isPresent();
                 newUnifier = tryExtendUnifier(this.constraint().owner().isa().get().type(),
                                               unifyWith.constraint().owner().isa().get().type(), variableMapping);
@@ -201,7 +206,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
             }
 
             Map<Reference.Name, Set<Reference.Name>> baseVariableMapping = variableMapping;
-            List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint.players());
+            List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint().players());
             List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
@@ -245,10 +250,10 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
             if (!conjRP.roleTypeHints().isEmpty() && !thenRP.roleTypeHints().isEmpty()
                     && Collections.disjoint(conjRP.roleTypeHints(), thenRP.roleTypeHints())) return true;
-            if (varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
+            if (ConstraintCopier.varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
             if (conjRP.roleType().isPresent()) {
                 assert thenRP.roleType().isPresent();
-                return varHintsDisjoint(conjRP.roleType().get(), thenRP.roleType().get());
+                return ConstraintCopier.varHintsDisjoint(conjRP.roleType().get(), thenRP.roleType().get());
             }
             return false;
         }
@@ -273,23 +278,23 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Relation that) {
-            return constraint.alphaEquals(that.constraint());
+        AlphaEquivalence alphaEquals(Concludable.Relation that) {
+            return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Has extends ConjunctionConcludable<HasConstraint, ConjunctionConcludable.Has> {
+    public static class Has extends Concludable<HasConstraint> {
 
         public Has(final HasConstraint constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
-        public Stream<Unifier> unify(ThenConcludable.Has unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), new HashMap<>());
+        public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
+            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
-            if (constraint.attribute().reference().isName()) {
-                unifier = tryExtendUnifier(constraint.attribute(), unifyWith.constraint().attribute(), unifier.get().mapping());
+            if (constraint().attribute().reference().isName()) {
+                unifier = tryExtendUnifier(constraint().attribute(), unifyWith.constraint().attribute(), unifier.get().mapping());
                 if (!unifier.isPresent()) return Stream.empty();
             }
             return Stream.of(unifier.get());
@@ -306,23 +311,23 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Has that) {
-            return constraint.alphaEquals(that.constraint());
+        AlphaEquivalence alphaEquals(Concludable.Has that) {
+            return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Isa extends ConjunctionConcludable<IsaConstraint, ConjunctionConcludable.Isa> {
+    public static class Isa extends Concludable<IsaConstraint> {
 
         public Isa(final IsaConstraint constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
-        Stream<Unifier> unify(ThenConcludable.Isa unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), new HashMap<>());
+        Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
+            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
-            if (constraint.type().reference().isName()) {
-                unifier = tryExtendUnifier(constraint.type(), unifyWith.constraint().type(), unifier.get().mapping());
+            if (constraint().type().reference().isName()) {
+                unifier = tryExtendUnifier(constraint().type(), unifyWith.constraint().type(), unifier.get().mapping());
                 if (!unifier.isPresent()) return Stream.empty();
             }
             return Stream.of(unifier.get());
@@ -339,23 +344,23 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Isa that) {
-            return constraint.alphaEquals(that.constraint());
+        AlphaEquivalence alphaEquals(Concludable.Isa that) {
+            return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Value extends ConjunctionConcludable<ValueConstraint<?>, ConjunctionConcludable.Value> {
+    public static class Value extends Concludable<ValueConstraint<?>> {
 
         public Value(final ValueConstraint<?> constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
-        Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), new HashMap<>());
+        Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
+            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
-            if (constraint.isVariable() && constraint.asVariable().value().reference().isName()) {
-                unifier = tryExtendUnifier(constraint.asVariable().value(),
+            if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {
+                unifier = tryExtendUnifier(constraint().asVariable().value(),
                                            unifyWith.constraint().asVariable().value(), unifier.get().mapping());
                 if (!unifier.isPresent()) return Stream.empty();
             }
@@ -373,8 +378,8 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         @Override
-        AlphaEquivalence alphaEquals(ConjunctionConcludable.Value that) {
-            return constraint.alphaEquals(that.constraint());
+        AlphaEquivalence alphaEquals(Concludable.Value that) {
+            return constraint().alphaEquals(that.constraint());
         }
     }
 
@@ -383,7 +388,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
 
         private final Set<Variable> isaOwnersToSkip = new HashSet<>();
         private final Set<Variable> valueOwnersToSkip = new HashSet<>();
-        private final Set<ConjunctionConcludable<?, ?>> concludables = new HashSet<>();
+        private final Set<Concludable<?>> concludables = new HashSet<>();
 
         Extractor(Set<Variable> variables) {
             Set<Constraint> constraints = variables.stream().flatMap(variable -> variable.constraints().stream())
@@ -399,29 +404,29 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            concludables.add(new ConjunctionConcludable.Relation(relationConstraint));
+            concludables.add(new Concludable.Relation(relationConstraint));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            concludables.add(new ConjunctionConcludable.Has(hasConstraint));
+            concludables.add(new Concludable.Has(hasConstraint));
             isaOwnersToSkip.add(hasConstraint.attribute());
             if (hasConstraint.attribute().isa().isPresent()) valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         public void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(new ConjunctionConcludable.Isa(isaConstraint));
+            concludables.add(new Concludable.Isa(isaConstraint));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }
 
         private void fromConstraint(ValueConstraint<?> valueConstraint) {
             if (valueOwnersToSkip.contains(valueConstraint.owner())) return;
-            concludables.add(new ConjunctionConcludable.Value(valueConstraint));
+            concludables.add(new Concludable.Value(valueConstraint));
         }
 
-        public Set<ConjunctionConcludable<?, ?>> concludables() {
+        public Set<Concludable<?>> concludables() {
             return new HashSet<>(concludables);
         }
     }
