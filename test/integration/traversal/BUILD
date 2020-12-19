@@ -116,6 +116,33 @@ host_compatible_java_test(
     resource_strip_prefix = "common/test",
 )
 
+host_compatible_java_test(
+    name = "test-traversal-8",
+    srcs = ["TraversalTest8.java"],
+    test_class = "grakn.core.traversal.TraversalTest8",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//server:server",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/query:query",
+        "@graknlabs_common//:common",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+    data = [":TraversalTest8/world2.gql", ":TraversalTest8/world2.data"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([
