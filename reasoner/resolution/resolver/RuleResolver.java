@@ -81,7 +81,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    AnswerState.UpstreamVars.Partial.of(conceptMap).toDownstreamVars(
+                                                    AnswerState.UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
                                                             Mapping.of(nextPlannedDownstream.second())),
                                                     derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);

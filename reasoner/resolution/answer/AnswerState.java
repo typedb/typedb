@@ -60,14 +60,14 @@ public abstract class AnswerState {
 
     public static class UpstreamVars {
 
-        public static class Partial extends AnswerState {
+        public static class Initial extends AnswerState {
 
-            Partial(ConceptMap conceptMap) {
+            Initial(ConceptMap conceptMap) {
                 super(conceptMap);
             }
 
-            public static UpstreamVars.Partial of(ConceptMap conceptMap) {
-                return new UpstreamVars.Partial(conceptMap);
+            public static Initial of(ConceptMap conceptMap) {
+                return new Initial(conceptMap);
             }
 
             public DownstreamVars.Partial toDownstreamVars(Mapping mapping) {
@@ -125,8 +125,8 @@ public abstract class AnswerState {
                 return Aggregated.of(aggregated, this);
             }
 
-            public UpstreamVars.Partial asUpstream() {
-                return new UpstreamVars.Partial(map());
+            public UpstreamVars.Initial asUpstream() {
+                return new UpstreamVars.Initial(map());
             }
 
             public VariableTransformer transformer() {

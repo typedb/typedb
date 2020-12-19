@@ -141,7 +141,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
         for (Map.Entry<Unifier, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
-            Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Partial.of(partialConceptMap).toDownstreamVars(entry.getKey());
+            Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Initial.of(partialConceptMap).toDownstreamVars(entry.getKey());
             if (unified.isPresent()) {
                 Request toDownstream = new Request(path.append(entry.getValue()), unified.get(), ResolutionAnswer.Derivation.EMPTY);
                 responseProducer.addDownstreamProducer(toDownstream);
