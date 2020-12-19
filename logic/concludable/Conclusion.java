@@ -36,12 +36,17 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class Conclusion<CONSTRAINT extends Constraint, U extends Conclusion<CONSTRAINT, U>>
-        extends Concludable<CONSTRAINT, U> {
+public abstract class Conclusion<CONSTRAINT extends Constraint, U extends Conclusion<CONSTRAINT, U>> {
+
+    private final CONSTRAINT constraint;
 
     private Conclusion(CONSTRAINT constraint, Set<Variable> constraintContext) {
-        super(constraint);
+        this.constraint = constraint;
         copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
+    }
+
+    public CONSTRAINT constraint() {
+        return constraint;
     }
 
     public static Conclusion<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
