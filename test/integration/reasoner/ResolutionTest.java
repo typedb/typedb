@@ -389,8 +389,8 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null, 0),
-                                              registry, iteration)
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              registry, 0)
                     );
                     ResolutionAnswer answer = responses.take();
 
@@ -453,8 +453,8 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
-                                              registry, iteration)
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              registry, iteration[0])
                     );
                 }
 
@@ -475,8 +475,8 @@ public class ResolutionTest {
                 for (int i = 0; i < 2; i++) {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
-                                              registry, iteration)
+                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              registry, iteration[0])
                     );
                 }
                 responses.take();
@@ -492,8 +492,8 @@ public class ResolutionTest {
                 // confirm there are no more answers
                 root.tell(actor ->
                                   actor.executeReceiveRequest(
-                                          new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
-                                          registry, iteration)
+                                          new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                          registry, iteration[0])
                 );
                 Thread.sleep(1000); // allow Exhausted message to propagate to top level
                 assertFalse(receivedInferredAnswer[0]);
@@ -540,8 +540,8 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.executeReceiveRequest(
-                                      new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, 0),
-                                      registry, iteration)
+                                      new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY),
+                                      registry, 0)
             );
         }
 
