@@ -19,6 +19,7 @@ package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.logic.Rule;
 import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.logic.transformer.Unifier;
@@ -32,7 +33,6 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.Variable;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,12 +162,12 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
-    Optional<Unifier> tryExtendUnifier(Variable conjVar, Variable headVar, Map<Reference.Name, Set<Reference.Name>> unifierMapping) {
+    Optional<Unifier> tryExtendUnifier(Variable conjVar, Variable headVar, Unifier unifier) {
         if (ConstraintCopier.varHintsDisjoint(headVar, conjVar)) return Optional.empty();
-        Map<Reference.Name, Set<Reference.Name>> cloneOfMapping = cloneMapping(unifierMapping);
-        cloneOfMapping.putIfAbsent(conjVar.reference().asName(), new HashSet<>());
-        cloneOfMapping.get(conjVar.reference().asName()).add(headVar.reference().asName());
-        return Optional.of(Unifier.of(cloneOfMapping));
+        // TODO compute set of types
+        Set<Label> allowedTypes; // may be able to use conjVar.resolvedTypes(), if they exist. But if not?
+        Unifier clone = unifier.extend(conjVar.reference().asName(), headVar.reference().asName(), allowedTypes);
+        return Optional.of(clone);
     }
 
     <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
@@ -189,28 +189,27 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         @Override
         public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
-            Map<Reference.Name, Set<Reference.Name>> variableMapping = new HashMap<>();
-            Optional<Unifier> newUnifier;
+            Optional<Unifier> newUnifier = Optional.empty();
             if (constraint().owner().reference().isName()) {
-                newUnifier = tryExtendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), variableMapping);
-                if (newUnifier.isPresent()) variableMapping = newUnifier.get().mapping();
-                else return Stream.empty();
+                newUnifier = tryExtendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
             }
 
             if (constraint().owner().isa().isPresent() && constraint().owner().isa().get().type().reference().isName()) {
                 assert unifyWith.constraint().owner().isa().isPresent();
-                newUnifier = tryExtendUnifier(this.constraint().owner().isa().get().type(),
-                                              unifyWith.constraint().owner().isa().get().type(), variableMapping);
-                if (newUnifier.isPresent()) variableMapping = newUnifier.get().mapping();
-                else return Stream.empty();
+                newUnifier = newUnifier.flatMap(u -> tryExtendUnifier(this.constraint().owner().isa().get().type(),
+                                                                      unifyWith.constraint().owner().isa().get().type(), u)
+                );
             }
 
-            Map<Reference.Name, Set<Reference.Name>> baseVariableMapping = variableMapping;
             List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint().players());
             List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
 
-            return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
-                    .map(indexMap -> Unifier.of(mapRolePlayerMatchingToMapping(indexMap, thenRolePlayers, baseVariableMapping)));
+            if (!newUnifier.isPresent()) return Stream.empty();
+            else {
+                Unifier unifier = newUnifier.get();
+                return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
+                        .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifier));
+            }
         }
 
         private Stream<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
@@ -229,22 +228,23 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                                                   thenRolePlayers, newMapping));
         }
 
-        private Map<Reference.Name, Set<Reference.Name>> mapRolePlayerMatchingToMapping(
+        private Unifier rolePlayerMappingToUnifier(
                 Map<RolePlayer, Set<Integer>> matchedRolePlayerIndices, List<RolePlayer> thenRolePlayers,
-                Map<Reference.Name, Set<Reference.Name>> variableMapping) {
-            Map<Reference.Name, Set<Reference.Name>> newMapping = cloneMapping(variableMapping);
+                Unifier baseUnifier) {
+            Unifier.Builder unifierBuilder = baseUnifier.builder();
+
             matchedRolePlayerIndices.forEach((conjRP, thenRPIndices) -> thenRPIndices.stream().map(thenRolePlayers::get)
                     .forEach(thenRP -> {
                                  if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
                                      assert thenRP.roleType().isPresent();
-                                     newMapping.putIfAbsent(conjRP.roleType().get().reference().asName(), new HashSet<>());
-                                     newMapping.get(conjRP.roleType().get().reference().asName()).add(thenRP.roleType().get().reference().asName());
+                                     Set<Label> allowedTypes; // TODO compute
+                                     unifierBuilder.add(conjRP.roleType().get().reference().asName(), thenRP.roleType().get().reference().asName(), allowedTypes);
                                  }
-                                 newMapping.putIfAbsent(conjRP.player().reference().asName(), new HashSet<>());
-                                 newMapping.get(conjRP.player().reference().asName()).add(thenRP.player().reference().asName());
+                                 Set<Label> allowedTypes; // TODO complete
+                                 unifierBuilder.add(conjRP.player().reference().asName(), thenRP.player().reference().asName(), allowedTypes);
                              }
                     ));
-            return newMapping;
+            return unifierBuilder.build();
         }
 
         private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
@@ -291,13 +291,11 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
-            if (!unifier.isPresent()) return Stream.empty();
+            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
             if (constraint().attribute().reference().isName()) {
-                unifier = tryExtendUnifier(constraint().attribute(), unifyWith.constraint().attribute(), unifier.get().mapping());
-                if (!unifier.isPresent()) return Stream.empty();
+                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().attribute(), unifyWith.constraint().attribute(), u));
             }
-            return Stream.of(unifier.get());
+            return unifier.map(Stream::of).orElseGet(Stream::empty);
         }
 
         @Override

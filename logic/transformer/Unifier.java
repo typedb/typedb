@@ -17,24 +17,36 @@
 
 package grakn.core.logic.transformer;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.answer.ConceptMap;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
+
 public class Unifier extends VariableTransformer {
 
     private final Map<Reference.Name, Set<Reference.Name>> unifier;
+    private final Map<Reference.Name, Set<Label>> allowedTypes;
 
-    Unifier(Map<Reference.Name, Set<Reference.Name>> unifier) {
-        this.unifier = unifier;
+    Unifier(Map<Reference.Name, Set<Reference.Name>> unifier, Map<Reference.Name, Set<Label>> allowedTypes) {
+        this.unifier = Collections.unmodifiableMap(unifier);
+        this.allowedTypes = Collections.unmodifiableMap(allowedTypes);
     }
 
     public static Unifier of(Map<Reference.Name, Set<Reference.Name>> unifier) {
         return new Unifier(unifier);
+    }
+
+    public static Unifier empty() {
+        return new Unifier(new HashMap<>(), new HashMap<>());
     }
 
     public Optional<ConceptMap> unify(ConceptMap toUnify) {
@@ -70,5 +82,49 @@ public class Unifier extends VariableTransformer {
 
     public Map<Reference.Name, Set<Reference.Name>> mapping() {
         return unifier;
+    }
+
+    public Unifier extend(Reference.Name source, Reference.Name target, Set<Label> allowedSourceTypes) {
+        Map<Reference.Name, Set<Reference.Name>> unifierClone = new HashMap<>();
+        unifier.forEach((ref, unifieds) -> unifierClone.put(ref, set(unifieds)));
+        unifierClone.putIfAbsent(source, new HashSet<>());
+        unifierClone.get(source).add(target);
+        Map<Reference.Name, Set<Label>> typesClone = new HashMap<>();
+        allowedTypes.forEach((ref, types) -> typesClone.put(ref, set(types)));
+        if (typesClone.containsKey(source)) assert typesClone.get(source).equals(allowedSourceTypes);
+        else typesClone.put(source, set(allowedSourceTypes));
+        return new Unifier(unifierClone, typesClone);
+    }
+
+    public Unifier.Builder builder() {
+        return new Builder();
+    }
+
+    public class Builder {
+        Map<Reference.Name, Set<Reference.Name>> unifierBuilder;
+        Map<Reference.Name, Set<Label>> allowedTypesBuilder;
+        public Builder() {
+             this.unifierBuilder = new HashMap<>();
+             this.allowedTypesBuilder = new HashMap<>();
+        }
+
+        public void add(Reference.Name source, Reference.Name target, Set<Label> types) {
+            unifierBuilder.putIfAbsent(source, new HashSet<>());
+            unifierBuilder.get(source).add(target);
+            if (allowedTypesBuilder.containsKey(source)) assert allowedTypesBuilder.get(source).equals(types);
+            else allowedTypesBuilder.put(source, new HashSet<>(types));
+        }
+
+        public Unifier build() {
+            unifier.forEach((ref, unifieds) -> {
+                assert !unifierBuilder.containsKey(ref);
+                unifierBuilder.put(ref, set(unifieds));
+            });
+            allowedTypes.forEach((ref, labels) -> {
+                assert !allowedTypesBuilder.containsKey(ref);
+                allowedTypesBuilder.put(ref, set(labels));
+            });
+            return new Unifier(unifier, allowedTypesBuilder);
+        }
     }
 }

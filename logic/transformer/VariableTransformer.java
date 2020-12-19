@@ -18,6 +18,10 @@
 package grakn.core.logic.transformer;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
+import graql.lang.pattern.variable.Reference;
+
+import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -39,5 +43,4 @@ public abstract class VariableTransformer {
     public Mapping asMapped() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapping.class));
     }
-
 }
