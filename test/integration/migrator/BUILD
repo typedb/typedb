@@ -19,15 +19,13 @@ load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
-    name = "test-rule",
-    srcs = ["RuleTest.java"],
-    test_class = "grakn.core.logic.RuleTest",
+    name = "test-migrator",
+    srcs = ["MigratorTest.java"],
+    test_class = "grakn.core.server.migrator.MigratorTest",
     native_libraries_deps = [
+        "//server:server",
         "//rocks:rocks",
         "//:grakn",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//logic:logic",
     ],
     deps = [
         # Internal dependencies
@@ -36,61 +34,23 @@ host_compatible_java_test(
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/query:query",
+
+        # External dependencies from Maven
+        "@maven//:com_google_protobuf_protobuf_java",
     ],
     resources = [
         "//common/test:logback"
     ],
     resource_strip_prefix = "common/test",
-)
-
-host_compatible_java_test(
-    name = "test-type-resolver",
-    srcs = ["TypeResolverTest.java"],
-    test_class = "grakn.core.logic.TypeResolverTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-        "//logic:logic",
-        "//pattern:pattern",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
-    ],
-    data = [":basic-schema.gql"],
-)
-
-host_compatible_java_test(
-    name = "test-unification",
-    srcs = ["concludable/UnificationTest.java"],
-    test_class = "grakn.core.logic.concludable.UnificationTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-        "//logic:logic",
-        "//pattern:pattern",
-    ],
-    deps = [
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern",
-    ],
+    data = [":schema.gql", "data.grakn"],
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob([
-        "*",
-        "reasoner/*",
-        "concludable/*",
+        "*"
     ]),
+    exclude = ["data.grakn"],
     license_type = "agpl",
 )

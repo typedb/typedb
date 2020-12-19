@@ -68,6 +68,7 @@ native_java_libraries(
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/query",
+        "@graknlabs_graql//java/common",
         "@graknlabs_protocol//grpc/java:protocol",
 
         # External dependencies from Maven

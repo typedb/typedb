@@ -158,7 +158,6 @@ public class Rule {
         // TODO detect negated cycles in the rule graph
         // TODO use the new rule as a starting point
         // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
-
     }
 
     /**
@@ -169,12 +168,12 @@ public class Rule {
                 .forEach(thenVar ->
                         when.variables().stream()
                                 .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
-                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.typeHints().isEmpty()))
+                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
                                 .findFirst().ifPresent(whenVar -> {
-                            if (thenVar.typeHints().isEmpty() && thenVar.isSatisfiable()) {
-                                thenVar.addHints(whenVar.typeHints());
-                            } else thenVar.retainHints(whenVar.typeHints());
-                            if (thenVar.typeHints().isEmpty()) thenVar.setIsSatisfiable(false);
+                            if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
+                                thenVar.addResolvedTypes(whenVar.resolvedTypes());
+                            } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
+                            if (thenVar.resolvedTypes().isEmpty()) thenVar.setSatisfiable(false);
                         })
                 );
     }
@@ -182,7 +181,7 @@ public class Rule {
     private Set<ThenConcludable<?, ?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
         HashSet<ThenConcludable<?, ?>> thenConcludables = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .flatMap(constraint -> ThenConcludable.of(constraint, constraintContext).stream()).forEach(thenConcludables::add);
+                .map(constraint -> ThenConcludable.create(constraint, constraintContext)).forEach(thenConcludables::add);
         return thenConcludables;
     }
 

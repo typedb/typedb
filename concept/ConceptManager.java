@@ -155,9 +155,9 @@ public final class ConceptManager {
         else return null;
     }
 
-    public Type getType(String label) {
+    public ThingType getThingType(String label) {
         final TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return TypeImpl.of(graphMgr, vertex);
+        if (vertex != null) return ThingTypeImpl.of(graphMgr, vertex);
         else return null;
     }
 

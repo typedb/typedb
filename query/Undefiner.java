@@ -119,7 +119,7 @@ public class Undefiner {
             } else if (labelConstraint.scope().isPresent()) return; // do nothing
             else if (undefined.contains(variable)) return; // do nothing
 
-            final ThingType type = getType(labelConstraint);
+            final ThingType type = getThingType(labelConstraint);
             if (type == null) throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
 
             if (!variable.plays().isEmpty()) undefinePlays(type, variable.plays());
@@ -142,10 +142,10 @@ public class Undefiner {
         }
     }
 
-    private ThingType getType(LabelConstraint label) {
+    private ThingType getThingType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "gettype")) {
-            final Type type;
-            if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
+            final ThingType thingType;
+            if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
             else return null;
         }
     }
@@ -153,8 +153,8 @@ public class Undefiner {
     private RoleType getRoleType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
             assert label.scope().isPresent();
-            final Type type = conceptMgr.getType(label.scope().get());
-            if (type != null) return type.asRelationType().getRelates(label.label());
+            final ThingType thingType = conceptMgr.getThingType(label.scope().get());
+            if (thingType != null) return thingType.asRelationType().getRelates(label.label());
             return null;
         }
     }
@@ -164,7 +164,7 @@ public class Undefiner {
             if (thingType instanceof RoleType) {
                 throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, thingType.getLabel());
             }
-            final ThingType supertype = getType(subConstraint.type().label().get());
+            final ThingType supertype = getThingType(subConstraint.type().label().get());
             if (supertype == null) {
                 throw GraknException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))
@@ -216,7 +216,7 @@ public class Undefiner {
     private void undefineOwns(ThingType thingType, Set<OwnsConstraint> ownsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefineowns")) {
             ownsConstraints.forEach(owns -> {
-                final Type attributeType = getType(owns.attribute().label().get());
+                final Type attributeType = getThingType(owns.attribute().label().get());
                 if (attributeType == null && !undefined.contains(owns.attribute())) {
                     throw GraknException.of(TYPE_NOT_FOUND, owns.attribute().label().get().label());
                 } else if (owns.overridden().isPresent()) {

@@ -142,6 +142,7 @@ public class Importer implements Migrator {
         insertMissingRolePlayers();
         commit();
         tx.close();
+        session.close();
 
         LOG.info("Imported {} entities, {} attributes, {} relations ({} players), {} ownerships",
                 entityCount,

@@ -91,7 +91,7 @@ public class Definer {
         }
     }
 
-    private Type define(TypeVariable variable) {
+    private ThingType define(TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
             assert variable.label().isPresent();
             final LabelConstraint labelConstraint = variable.label().get();
@@ -101,7 +101,7 @@ public class Definer {
             } else if (!variable.is().isEmpty()) {
                 throw GraknException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
-            else if (created.contains(variable)) return conceptMgr.getType(labelConstraint.scopedLabel());
+            else if (created.contains(variable)) return conceptMgr.getThingType(labelConstraint.scopedLabel());
 
             ThingType type = getThingType(labelConstraint);
             if (variable.sub().isPresent()) {
@@ -151,8 +151,8 @@ public class Definer {
 
     private ThingType getThingType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
-            final Type type;
-            if ((type = conceptMgr.getType(label.label())) != null) return type.asThingType();
+            final ThingType thingType;
+            if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
             else return null;
         }
     }
@@ -162,10 +162,10 @@ public class Definer {
             // We always assume that Role Types already exist,
             // defined by their Relation Types ahead of time
             assert label.scope().isPresent();
-            final Type type;
+            final ThingType thingType;
             final RoleType roleType;
-            if ((type = conceptMgr.getType(label.scope().get())) == null ||
-                    (roleType = type.asRelationType().getRelates(label.label())) == null) {
+            if ((thingType = conceptMgr.getThingType(label.scope().get())) == null ||
+                    (roleType = thingType.asRelationType().getRelates(label.label())) == null) {
                 throw GraknException.of(TYPE_NOT_FOUND, label.scopedLabel());
             }
             return roleType;

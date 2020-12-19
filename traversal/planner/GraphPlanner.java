@@ -53,7 +53,6 @@ import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityV
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.INCREMENTALITY;
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
 import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 
 public class GraphPlanner implements Planner {
@@ -231,17 +230,10 @@ public class GraphPlanner implements Planner {
 
     private void initialiseConstraintsForVariables() {
         String conPrefix = "planner::vertex::con::";
-        boolean hasPotentialStartingVertex = false;
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
         MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
-            if (vertex.isPotentialStartingVertex) {
-                conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
-                hasPotentialStartingVertex = true;
-            }
-        }
-        if (!hasPotentialStartingVertex) {
-            throw GraknException.of(ILLEGAL_STATE);
+            conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
         }
     }
 
@@ -319,7 +311,10 @@ public class GraphPlanner implements Planner {
                     Instant finish = Instant.now();
                     long timeElapsed = Duration.between(start, finish).toMillis();
                     totalDuration -= (TIME_LIMIT_MILLIS - timeElapsed);
-                    if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
+                    if (isError()) {
+                        LOG.error(solver.exportModelAsLpFormat());
+                        throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
+                    }
                 } while (!isPlanned());
                 produceProcedure();
                 isUpToDate = true;

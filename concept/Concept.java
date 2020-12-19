@@ -30,9 +30,6 @@ public interface Concept {
 
     boolean isDeleted();
 
-    /**
-     * Deletes this {@code Thing} from the system.
-     */
     void delete();
 
     default Type asType() {

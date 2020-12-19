@@ -27,16 +27,20 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 
 public class MigratorClient {
 
-    private final MigratorGrpc.MigratorStub stub;
+    private final MigratorGrpc.MigratorStub streamingStub;
+    private final MigratorGrpc.MigratorBlockingStub blockingStub;
 
     public MigratorClient(final int serverPort) {
         final String uri = "localhost:" + serverPort;
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
-        stub = MigratorGrpc.newStub(channel);
+        streamingStub = MigratorGrpc.newStub(channel);
+        blockingStub = MigratorGrpc.newBlockingStub(channel);
     }
 
     public boolean importData(final String database, final String filename, final Map<String, String> remapLabels) {
@@ -46,7 +50,7 @@ public class MigratorClient {
                 .putAllRemapLabels(remapLabels)
                 .build();
         final ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("import"));
-        stub.importData(req, streamObserver);
+        streamingStub.importData(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
     }
@@ -57,9 +61,17 @@ public class MigratorClient {
                 .setFilename(filename)
                 .build();
         final ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("export"));
-        stub.exportData(req, streamObserver);
+        streamingStub.exportData(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
+    }
+
+    public void printSchema(final String database) {
+        final MigratorProto.GetSchema.Req req = MigratorProto.GetSchema.Req.newBuilder()
+                .setDatabase(database)
+                .build();
+        MigratorProto.GetSchema.Res res = blockingStub.getSchema(req);
+        System.out.println(res.getSchema());
     }
 
     static class ResponseObserver implements StreamObserver<MigratorProto.Job.Res> {
@@ -104,6 +116,82 @@ public class MigratorClient {
 
         public boolean success() {
             return success;
+        }
+    }
+
+    private static class ProgressPrinter {
+
+        private static final String[] ANIM = new String[] {
+                "-",
+                "\\",
+                "|",
+                "/"
+        };
+        private static final String STATUS_STARTING = "starting";
+        private static final String STATUS_IN_PROGRESS = "in progress";
+        private static final String STATUS_COMPLETED = "completed";
+
+        private final String type;
+        private final Timer timer = new Timer();
+
+        private String status = STATUS_STARTING;
+        private long current = 0;
+        private long total = 0;
+
+        private int anim = 0;
+        private int lines = 0;
+
+        public ProgressPrinter(final String type) {
+            this.type = type;
+            final TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    step();
+                }
+            };
+            timer.scheduleAtFixedRate(task, 0, 100);
+        }
+
+        public void onProgress(final long current, final long total) {
+            status = STATUS_IN_PROGRESS;
+            this.current = current;
+            this.total = total;
+        }
+
+        public void onCompletion() {
+            status = STATUS_COMPLETED;
+            step();
+            timer.cancel();
+        }
+
+        private synchronized void step() {
+            final StringBuilder builder = new StringBuilder();
+            builder.append(String.format("$x isa %s,\n    has status \"%s\"", type, status));
+
+            if (status.equals(STATUS_IN_PROGRESS)) {
+                final String percent;
+                final String count;
+                if (total > 0) {
+                    percent = String.format("%.1f%%", (double)current / (double)total * 100.0);
+                    count = String.format("%,d / %,d", current, total);
+                } else {
+                    percent = "?";
+                    count = String.format("%,d", current);
+                }
+                builder.append(String.format(",\n    has progress (%s),\n    has count (%s)",
+                        percent, count));
+            }
+
+            builder.append(";");
+            if (status.equals(STATUS_IN_PROGRESS)) {
+                anim = (anim + 1) % ANIM.length;
+                builder.append(" ").append(ANIM[anim]);
+            }
+
+            final String output = builder.toString();
+            System.out.println((lines > 0 ? "\033[" + lines + "F\033[J" : "") + output);
+
+            lines = output.split("\n").length;
         }
     }
 }

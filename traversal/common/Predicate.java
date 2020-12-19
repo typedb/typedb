@@ -76,6 +76,10 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
             super(operator, argument);
         }
 
+        public Encoding.ValueType valueType() {
+            return argument.valueType();
+        }
+
         public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
             return argument.apply(operator, vertex, value);
         }
@@ -289,15 +293,15 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
     public abstract static class Argument {
 
-        private final String name;
+        private final String symbol;
 
-        protected Argument(String name) {
-            this.name = name;
+        protected Argument(String symbol) {
+            this.symbol = symbol;
         }
 
         @Override
         public String toString() {
-            return "<" + name + ">";
+            return "<" + symbol + ">";
         }
 
         @Override
@@ -306,18 +310,25 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
             if (o == null || getClass() != o.getClass()) return false;
 
             Argument that = (Argument) o;
-            return this.name.equals(that.name);
+            return this.symbol.equals(that.symbol);
         }
 
         @Override
         public int hashCode() {
-            return name.hashCode();
+            return symbol.hashCode();
         }
 
         public static abstract class Value<ARG_VAL_OP extends Operator, ARG_VAL_TYPE> extends Argument {
 
-            public Value(String name) {
-                super(name);
+            private final Encoding.ValueType valueType;
+
+            public Value(Encoding.ValueType valueType) {
+                super(valueType.name());
+                this.valueType = valueType;
+            }
+
+            public Encoding.ValueType valueType() {
+                return valueType;
             }
 
             public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value);
@@ -331,7 +342,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 else return res;
             }
 
-            public static Value<Operator.Equality, Boolean> BOOLEAN = new Value<Operator.Equality, Boolean>("boolean") {
+            public static Value<Operator.Equality, Boolean> BOOLEAN = new Value<Operator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isBoolean();
@@ -346,7 +357,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 }
             };
 
-            public static Value<Operator.Equality, Long> LONG = new Value<Operator.Equality, Long>("long") {
+            public static Value<Operator.Equality, Long> LONG = new Value<Operator.Equality, Long>(Encoding.ValueType.LONG) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isLong();
@@ -365,7 +376,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 }
             };
 
-            public static Value<Operator.Equality, Double> DOUBLE = new Value<Operator.Equality, Double>("double") {
+            public static Value<Operator.Equality, Double> DOUBLE = new Value<Operator.Equality, Double>(Encoding.ValueType.DOUBLE) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isDouble();
@@ -385,7 +396,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 }
             };
 
-            public static Value<Operator.Equality, LocalDateTime> DATETIME = new Value<Operator.Equality, LocalDateTime>("datetime") {
+            public static Value<Operator.Equality, LocalDateTime> DATETIME = new Value<Operator.Equality, LocalDateTime>(Encoding.ValueType.DATETIME) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isDateTime();
@@ -401,7 +412,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 }
             };
 
-            public static Value<Operator, String> STRING = new Value<Operator, String>("string") {
+            public static Value<Operator, String> STRING = new Value<Operator, String>(Encoding.ValueType.STRING) {
                 @Override
                 public boolean apply(Operator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;

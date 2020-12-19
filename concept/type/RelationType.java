@@ -25,13 +25,10 @@ import java.util.stream.Stream;
 public interface RelationType extends ThingType {
 
     @Override
-    RelationType getSupertype();
-
-    @Override
-    Stream<? extends RelationType> getSupertypes();
-
-    @Override
     Stream<? extends RelationType> getSubtypes();
+
+    @Override
+    Stream<? extends RelationType> getSubtypesExplicit();
 
     @Override
     Stream<? extends Relation> getInstances();
@@ -46,7 +43,13 @@ public interface RelationType extends ThingType {
 
     Stream<? extends RoleType> getRelates();
 
+    Stream<? extends RoleType> getRelatesExplicit();
+
     RoleType getRelates(String roleLabel);
+
+    RoleType getRelatesExplicit(String roleLabel);
+
+    RoleType getRelatesOverridden(String roleLabel);
 
     Relation create();
 

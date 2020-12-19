@@ -18,8 +18,6 @@
 package grakn.core.logic.concludable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -28,7 +26,6 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,25 +35,21 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends ThenConcludable<CONSTRAINT, T>>
-        extends Concludable<CONSTRAINT, T> {
+public abstract class ThenConcludable<CONSTRAINT extends Constraint, U extends ThenConcludable<CONSTRAINT, U>>
+        extends Concludable<CONSTRAINT, U> {
 
     private ThenConcludable(CONSTRAINT constraint, Set<Variable> constraintContext) {
         super(constraint);
         copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
     }
 
-    public static ResourceIterator<? extends ThenConcludable<?, ?>> of(ThingConstraint constraint, Set<Variable> constraintContext) {
-        ThenConcludable<?, ?> concludable;
-        if (constraint.isRelation()) concludable = new Relation(constraint.asRelation(), constraintContext);
-        else if (constraint.isHas()) concludable = new Has(constraint.asHas(), constraintContext);
-        else if (constraint.isIsa()) concludable = new Isa(constraint.asIsa(), constraintContext);
-        else if (constraint.isValue()) concludable = new Value(constraint.asValue(), constraintContext);
+    public static ThenConcludable<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
+        if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
+        else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
+        else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
+        else if (constraint.isValue()) return Value.create(constraint.asValue(), constraintContext);
         else throw GraknException.of(ILLEGAL_STATE);
-        return concludable.getGeneralisations();
     }
-
-    abstract ResourceIterator<T> getGeneralisations();
 
     public boolean isRelation() {
         return false;
@@ -90,19 +83,18 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends T
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
-
     private void copyAdditionalConstraints(Set<Variable> fromVars, Set<Variable> toVars) {
-        Map<Variable, Variable> nonAnonfromVarsMap = fromVars.stream()
+        Map<Variable, Variable> nonAnonFromVarsMap = fromVars.stream()
                 .filter(variable -> !variable.identifier().reference().isAnonymous())
                 .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
         toVars.stream().filter(variable -> !variable.identifier().reference().isAnonymous())
                 .forEach(copyTo -> {
-                    if (nonAnonfromVarsMap.containsKey(copyTo)) {
-                        Variable copyFrom = nonAnonfromVarsMap.get(copyTo);
+                    if (nonAnonFromVarsMap.containsKey(copyTo)) {
+                        Variable copyFrom = nonAnonFromVarsMap.get(copyTo);
                         if (copyTo.isThing() && copyFrom.isThing()) {
                             copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
                         } else if (copyTo.isType() && copyFrom.isType()) {
-                            copyLabelAndValueType(copyFrom.asType(), copyTo.asType());
+                            copyLabelSubAndValueType(copyFrom.asType(), copyTo.asType());
                         } else throw GraknException.of(ILLEGAL_STATE);
                     }
                 });
@@ -111,13 +103,12 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends T
     public static class Relation extends ThenConcludable<RelationConstraint, Relation> {
 
         public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
-            super(copyConstraint(constraint), constraintContext);
+            super(constraint, constraintContext);
         }
 
-        @Override
-        ResourceIterator<Relation> getGeneralisations() {
-            // TODO
-            return Iterators.iterate(Collections.singletonList(this));
+
+        public static Relation create(RelationConstraint constraint, Set<Variable> constraintContext) {
+            return new Relation(copyConstraint(constraint), constraintContext);
         }
 
         @Override
@@ -134,13 +125,11 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends T
     public static class Has extends ThenConcludable<HasConstraint, Has> {
 
         public Has(HasConstraint constraint, Set<Variable> constraintContext) {
-            super(copyConstraint(constraint), constraintContext);
+            super(constraint, constraintContext);
         }
 
-        @Override
-        ResourceIterator<Has> getGeneralisations() {
-            // TODO
-            return Iterators.iterate(Collections.singletonList(this));
+        public static Has create(HasConstraint constraint, Set<Variable> constraintContext) {
+            return new Has(copyConstraint(constraint), constraintContext);
         }
 
         @Override
@@ -157,13 +146,11 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends T
     public static class Isa extends ThenConcludable<IsaConstraint, ThenConcludable.Isa> {
 
         public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
-            super(copyConstraint(constraint), constraintContext);
+            super(constraint, constraintContext);
         }
 
-        @Override
-        ResourceIterator<Isa> getGeneralisations() {
-            // TODO
-            return Iterators.iterate(Collections.singletonList(this));
+        public static Isa create(IsaConstraint constraint, Set<Variable> constraintContext) {
+            return new Isa(copyConstraint(constraint), constraintContext);
         }
 
         @Override
@@ -179,14 +166,12 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends T
 
     public static class Value extends ThenConcludable<ValueConstraint<?>, Value> {
 
-        public Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
-            super(copyConstraint(constraint), constraintContext);
+        Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
+            super(constraint, constraintContext);
         }
 
-        @Override
-        ResourceIterator<Value> getGeneralisations() {
-            // TODO
-            return Iterators.iterate(Collections.singletonList(this));
+        public static Value create(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
+            return new Value(copyConstraint(constraint), constraintContext);
         }
 
         @Override
@@ -199,4 +184,6 @@ public abstract class ThenConcludable<CONSTRAINT extends Constraint, T extends T
             return this;
         }
     }
+
 }
+

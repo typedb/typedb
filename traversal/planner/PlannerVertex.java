@@ -21,12 +21,17 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
+import java.util.stream.Stream;
+
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
@@ -48,12 +53,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     MPVariable varIsEndingVertex;
     MPVariable varHasIncomingEdges;
     MPVariable varHasOutgoingEdges;
-    boolean isPotentialStartingVertex;
 
     PlannerVertex(Identifier identifier, GraphPlanner planner) {
         super(identifier);
         this.planner = planner;
-        isPotentialStartingVertex = false;
         isInitialisedVariables = false;
         isInitialisedConstraints = false;
         costPrevious = 0.01; // non-zero value for safe division
@@ -100,9 +103,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void initialiseVariables() {
-        if (isPotentialStartingVertex) {
-            varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
-        }
+        varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
         varIsEndingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_ending_vertex");
         varHasIncomingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_incoming_edges");
         varHasOutgoingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_outgoing_edges");
@@ -141,7 +142,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private void initialiseConstraintsForVertexFlow() {
         MPConstraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
-        if (isPotentialStartingVertex) conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
+        conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
 
         MPConstraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
@@ -149,7 +150,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
 
         MPConstraint conVertexFlow = planner.solver().makeConstraint(0, 0, conPrefix + "vertex_flow");
-        if (isPotentialStartingVertex) conVertexFlow.setCoefficient(varIsStartingVertex, 1);
+        conVertexFlow.setCoefficient(varIsStartingVertex, 1);
         conVertexFlow.setCoefficient(varHasIncomingEdges, 1);
         conVertexFlow.setCoefficient(varIsEndingVertex, -1);
         conVertexFlow.setCoefficient(varHasOutgoingEdges, -1);
@@ -170,7 +171,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void recordValues() {
-        valueIsStartingVertex = isPotentialStartingVertex ? (int) Math.round(varIsStartingVertex.solutionValue()) : 0;
+        valueIsStartingVertex = (int) Math.round(varIsStartingVertex.solutionValue());
         valueIsEndingVertex = (int) Math.round(varIsEndingVertex.solutionValue());
         valueHasIncomingEdges = (int) Math.round(varHasIncomingEdges.solutionValue());
         valueHasOutgoingEdges = (int) Math.round(varHasOutgoingEdges.solutionValue());
@@ -200,13 +201,22 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             if (props().hasIID()) {
                 setObjectiveCoefficient(1);
             } else if (!props().types().isEmpty()) {
-                if (props().predicates().stream().anyMatch(p -> p.operator().equals(EQ))) {
+                if (iterate(props().predicates()).anyMatch(p -> p.operator().equals(EQ))) {
                     setObjectiveCoefficient(props().types().size());
                 } else {
                     setObjectiveCoefficient(graph.data().stats().thingVertexSum(props().types()));
                 }
+            } else if (!props().predicates().isEmpty()) {
+                ResourceIterator<TypeVertex> attTypes = iterate(props().predicates())
+                        .flatMap(p -> iterate(p.valueType().comparables()))
+                        .flatMap(vt -> graph.schema().attributeTypes(vt));
+                if (iterate(props().predicates()).anyMatch(p -> p.operator().equals(EQ))) {
+                    setObjectiveCoefficient(attTypes.count());
+                } else {
+                    setObjectiveCoefficient(graph.data().stats().thingVertexSum(attTypes.stream()));
+                }
             } else {
-                assert !isPotentialStartingVertex;
+                setObjectiveCoefficient(graph.data().stats().thingVertexTransitiveCount(graph.schema().rootThingType()));
             }
         }
 
@@ -215,19 +225,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
         @Override
         public PlannerVertex.Thing asThing() { return this; }
-
-        @Override
-        public void props(TraversalVertex.Properties.Thing properties) {
-            if (properties.hasIID() || !properties.types().isEmpty()) isPotentialStartingVertex = true;
-            super.props(properties);
-        }
     }
 
     public static class Type extends PlannerVertex<Properties.Type> {
 
         Type(Identifier identifier, GraphPlanner planner) {
             super(identifier, planner);
-            this.isPotentialStartingVertex = true; // VertexProperty.Type is always indexed
         }
 
         @Override
@@ -241,7 +244,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             } else if (props().regex().isPresent()) {
                 setObjectiveCoefficient(1);
             } else {
-                setObjectiveCoefficient(graph.schema().stats().thingTypeCount());
+                setObjectiveCoefficient(graph.schema().stats().typeCount());
             }
         }
 
