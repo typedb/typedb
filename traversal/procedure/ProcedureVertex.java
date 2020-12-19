@@ -48,6 +48,8 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
+import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
@@ -138,7 +140,39 @@ public abstract class ProcedureVertex<
             assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else if (!props().types().isEmpty()) return iterateAndFilterFromTypes(graphMgr, parameters);
-            else throw GraknException.of(ILLEGAL_STATE);
+            else if (!props().predicates().isEmpty()) return iterateAndFilterFromAttributes(graphMgr, parameters);
+            else return iterateFromAnything(graphMgr);
+        }
+
+        private ResourceIterator<? extends AttributeVertex<?>> iterateAndFilterFromAttributes(
+                GraphManager graph, Traversal.Parameters parameters) {
+            assert !props().predicates().isEmpty();
+            ResourceIterator<? extends ThingVertex> iter;
+            Optional<Predicate.Value<?>> eq;
+
+            ResourceIterator<TypeVertex> attTypes = iterate(props().predicates())
+                    .flatMap(p -> iterate(p.valueType().comparables()))
+                    .flatMap(vt -> graph.schema().attributeTypes(vt));
+
+            if ((eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst()).isPresent()) {
+                iter = iteratorOfAttributes(graph, attTypes, parameters, eq.get());
+            } else {
+                iter = attTypes.flatMap(t -> graph.data().get(t));
+            }
+
+            return filterPredicates(iter, parameters, eq.orElse(null));
+        }
+
+        private ResourceIterator<? extends ThingVertex> iterateFromAnything(GraphManager graphMgr) {
+            if (id().isVariable()) {
+                return tree(graphMgr.schema().rootThingType(), t -> t.ins().edge(SUB).from())
+                        .flatMap(t -> graphMgr.data().get(t));
+            } else if (id().isScoped()) {
+                return tree(graphMgr.schema().rootRoleType(), t -> t.ins().edge(SUB).from())
+                        .flatMap(t -> graphMgr.data().get(t));
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
         }
 
         ResourceIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
@@ -229,16 +263,22 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(GraphManager graphMgr,
-                                                                            Traversal.Parameters parameters,
-                                                                            Predicate.Value<?> eqPredicate) {
+        ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(
+                GraphManager graphMgr, Traversal.Parameters params, Predicate.Value<?> eq) {
+            ResourceIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
+                    .map(l -> graphMgr.schema().getType(l)).noNulls()
+                    .filter(TypeVertex::isAttributeType);
+            return iteratorOfAttributes(graphMgr, attributeTypes, params, eq);
+        }
+
+        ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(
+                GraphManager graphMgr, ResourceIterator<TypeVertex> attributeTypes,
+                Traversal.Parameters parameters, Predicate.Value<?> eqPredicate) {
             // TODO: should we throw an exception if the user asserts 2 values for a given vertex?
             assert id().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
             if (values.size() > 1) return iterate(emptyIterator());
-            return iterate(props().types().iterator())
-                    .map(l -> graphMgr.schema().getType(l)).noNulls().filter(TypeVertex::isAttributeType)
-                    .map(t -> attributeVertex(graphMgr, t, values.iterator().next())).noNulls();
+            return attributeTypes.map(t -> attributeVertex(graphMgr, t, values.iterator().next())).noNulls();
         }
 
         private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type,

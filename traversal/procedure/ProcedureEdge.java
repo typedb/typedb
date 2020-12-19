@@ -72,13 +72,11 @@ public abstract class ProcedureEdge<
 
     private final int order;
     private final Encoding.Direction.Edge direction;
-    private final String symbol;
 
     private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction, String symbol) {
-        super(from, to);
+        super(from, to, symbol);
         this.order = order;
         this.direction = direction;
-        this.symbol = symbol;
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,

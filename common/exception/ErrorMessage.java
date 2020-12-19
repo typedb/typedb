@@ -96,7 +96,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Internal UNEXPECTED_INTERRUPTION =
                 new Internal(9, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
-                new Internal(10, "Unexpected error during traversal planning and/or optimisation.");
+                new Internal(10, "Unexpected error during traversal plan optimisation.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
