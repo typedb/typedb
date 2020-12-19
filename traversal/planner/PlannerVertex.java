@@ -27,8 +27,6 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
-import java.util.stream.Stream;
-
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -148,12 +146,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         MPConstraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
         conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
-
-        MPConstraint conVertexFlow = planner.solver().makeConstraint(0, 0, conPrefix + "vertex_flow");
-        conVertexFlow.setCoefficient(varIsStartingVertex, 1);
-        conVertexFlow.setCoefficient(varHasIncomingEdges, 1);
-        conVertexFlow.setCoefficient(varIsEndingVertex, -1);
-        conVertexFlow.setCoefficient(varHasOutgoingEdges, -1);
     }
 
     protected void setObjectiveCoefficient(double cost) {
@@ -183,6 +175,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     public PlannerVertex.Type asType() {
         throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
+    }
+
+    @Override
+    public String toString() {
+        String string = super.toString();
+        if (isStartingVertex()) string += " (start)";
+        else if (isEndingVertex()) string += " (end)";
+        return string;
     }
 
     public static class Thing extends PlannerVertex<Properties.Thing> {

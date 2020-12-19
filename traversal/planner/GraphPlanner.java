@@ -26,6 +26,7 @@ import grakn.core.common.concurrent.ManagedCountDownLatch;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.structure.Structure;
 import grakn.core.traversal.structure.StructureEdge;
@@ -37,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -312,6 +314,7 @@ public class GraphPlanner implements Planner {
                     long timeElapsed = Duration.between(start, finish).toMillis();
                     totalDuration -= (TIME_LIMIT_MILLIS - timeElapsed);
                     if (isError()) {
+                        LOG.error(toString());
                         LOG.error(solver.exportModelAsLpFormat());
                         throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
                     }
@@ -331,5 +334,26 @@ public class GraphPlanner implements Planner {
         edges.forEach(PlannerEdge::recordValues);
         procedure = GraphProcedure.create(this);
         if (procedureLatch.getCount() > 0) procedureLatch.countDown();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append("Graph Planner: {");
+        List<PlannerEdge<?, ?>> plannerEdges = new ArrayList<>(edges);
+        plannerEdges.sort(Comparator.comparing(TraversalEdge::toString));
+        List<PlannerVertex<?>> plannerVertices = new ArrayList<>(vertices.values());
+        plannerVertices.sort(Comparator.comparing(v -> v.id().toString()));
+
+        str.append("\n\tvertices:");
+        for (PlannerVertex<?> v : plannerVertices) {
+            str.append("\n\t\t").append(v);
+        }
+        str.append("\n\tedges:");
+        for (PlannerEdge<?, ?> e : plannerEdges) {
+            str.append("\n\t\t").append(e);
+        }
+        str.append("\n}");
+        return str.toString();
     }
 }

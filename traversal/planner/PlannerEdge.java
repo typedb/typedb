@@ -216,8 +216,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private void initialiseConstraintsForOrderSequence() {
             to.outs().stream().filter(e -> !e.parent.equals(this.parent)).forEach(subsequentEdge -> {
-                MPConstraint conOrderSequence = planner.solver().makeConstraint(0, planner.edges().size() + 1, conPrefix + "order_sequence");
-                conOrderSequence.setCoefficient(to.varIsEndingVertex, planner.edges().size());
+                MPConstraint conOrderSequence =
+                        planner.solver().makeConstraint(0, planner.edges().size(), conPrefix + "order_sequence");
+                conOrderSequence.setCoefficient(to.varIsEndingVertex, planner.edges().size() + 1);
                 conOrderSequence.setCoefficient(subsequentEdge.varOrderNumber, 1);
                 conOrderSequence.setCoefficient(this.varIsSelected, -1);
                 conOrderSequence.setCoefficient(this.varOrderNumber, -1);
