@@ -20,6 +20,7 @@ package grakn.core.logic.concludable;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.Rule;
+import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
@@ -158,7 +159,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     }
 
     Optional<Unifier> tryExtendUnifier(Variable conjVar, Variable headVar, Map<Reference.Name, Set<Reference.Name>> unifierMapping) {
-        if (varHintsDisjoint(headVar, conjVar)) return Optional.empty();
+        if (ConstraintCopier.varHintsDisjoint(headVar, conjVar)) return Optional.empty();
         Map<Reference.Name, Set<Reference.Name>> cloneOfMapping = cloneMapping(unifierMapping);
         cloneOfMapping.putIfAbsent(conjVar.reference().asName(), new HashSet<>());
         cloneOfMapping.get(conjVar.reference().asName()).add(headVar.reference().asName());
@@ -178,7 +179,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     public static class Relation extends ConjunctionConcludable<RelationConstraint, ConjunctionConcludable.Relation> {
 
         public Relation(final RelationConstraint constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
@@ -245,10 +246,10 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
         private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
             if (!conjRP.roleTypeHints().isEmpty() && !thenRP.roleTypeHints().isEmpty()
                     && Collections.disjoint(conjRP.roleTypeHints(), thenRP.roleTypeHints())) return true;
-            if (varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
+            if (ConstraintCopier.varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
             if (conjRP.roleType().isPresent()) {
                 assert thenRP.roleType().isPresent();
-                return varHintsDisjoint(conjRP.roleType().get(), thenRP.roleType().get());
+                return ConstraintCopier.varHintsDisjoint(conjRP.roleType().get(), thenRP.roleType().get());
             }
             return false;
         }
@@ -281,7 +282,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     public static class Has extends ConjunctionConcludable<HasConstraint, ConjunctionConcludable.Has> {
 
         public Has(final HasConstraint constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
@@ -314,7 +315,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     public static class Isa extends ConjunctionConcludable<IsaConstraint, ConjunctionConcludable.Isa> {
 
         public Isa(final IsaConstraint constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
@@ -347,7 +348,7 @@ public abstract class ConjunctionConcludable<CONSTRAINT extends Constraint, U ex
     public static class Value extends ConjunctionConcludable<ValueConstraint<?>, ConjunctionConcludable.Value> {
 
         public Value(final ValueConstraint<?> constraint) {
-            super(copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint));
         }
 
         @Override
