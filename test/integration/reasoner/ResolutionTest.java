@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class ResolutionTest {
 
@@ -383,20 +384,120 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
-                                      actor.executeReceiveRequest(
+                                      actor.receiveRequest(
                                               new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
-                                              registry
-                                      )
+                                              0)
                     );
                     ResolutionAnswer answer = responses.take();
 
                     // TODO write more meaningful explanation tests
                     System.out.println(answer);
                 }
+            }
+        }
+    }
+
+    /*
+    This test is intended to force "reiteration" to find the complete set of answers
+    It's actually quite hard to find a case that should always reiterate... it may depend on the order of resolution
+    and implementation details of materialisations while holding open iterators
+    As a result, this test may or may not be the one we want to examine!
+     */
+    @Ignore
+    @Test
+    public void testTransitiveReiteration() throws InterruptedException {
+        String rule = "rule transitive-scoping: " +
+                "when { (inner: $x, outer: $y) isa scoping; (inner: $y, outer: $z) isa scoping; } " +
+                "then { (inner: $x, outer: $z) isa scoping; };";
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define place sub entity, plays scoping:inner, plays scoping:outer;" +
+                                "scoping sub relation, relates inner, relates outer;" +
+                                rule));
+                transaction.commit();
+            }
+        }
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert (inner: $a, outer: $b) isa scoping; " +
+                                                                    "(inner: $c, outer: $d) isa scoping; " +
+                                                                    "(inner: $e, outer: $f) isa scoping; "));
+                transaction.commit();
+            }
+        }
+
+        int answerCount = 8;
+        Conjunction conjunctionPattern = parseConjunction("{ (inner: $x, outer: $y) isa scoping}");
+
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+                int[] iteration = {0};
+                int[] doneInIteration = {0};
+                boolean[] receivedInferredAnswer = {false};
+
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, answer -> {
+                    if (answer.isInferred()) receivedInferredAnswer[0] = true;
+                    responses.add(answer);
+                }, iterDone -> {
+                    assert iteration[0] == iterDone;
+                    doneInIteration[0]++;
+                });
+
+                for (int i = 0; i < answerCount; i++) {
+                    root.tell(actor ->
+                                      actor.receiveRequest(
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                              iteration[0])
+                    );
+                }
+
+                // ONE answer (maybe) only be available in the next iteration, so taking the last answer here would block
+                for (int i = 0; i < answerCount - 1; i++) {
+                    responses.take();
+                }
+                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
+
+                assertTrue(receivedInferredAnswer[0]);
+                assertEquals(1, doneInIteration[0]);
+
+                // reset for next iteration
+                iteration[0]++;
+                receivedInferredAnswer[0] = false;
+                doneInIteration[0] = 0;
+                // get last answer and a exhausted message
+                for (int i = 0; i < 2; i++) {
+                    root.tell(actor ->
+                                      actor.receiveRequest(
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                              iteration[0])
+                    );
+                }
+                responses.take();
+                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
+
+                assertTrue(receivedInferredAnswer[0]);
+                assertEquals(1, doneInIteration[0]);
+
+                // reset for next iteration
+                iteration[0]++;
+                receivedInferredAnswer[0] = false;
+                doneInIteration[0] = 0;
+                // confirm there are no more answers
+                root.tell(actor ->
+                                  actor.receiveRequest(
+                                          new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                          iteration[0])
+                );
+                Thread.sleep(1000); // allow Exhausted message to propagate to top level
+                assertFalse(receivedInferredAnswer[0]);
+                assertEquals(1, doneInIteration[0]);
             }
         }
     }
@@ -425,23 +526,22 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, doneReceived::incrementAndGet);
-                assertResponses(root, responses, doneReceived, answerCount, registry);
+                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
+                assertResponses(root, responses, doneReceived, answerCount);
             }
         }
     }
 
     private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
-                                 final AtomicLong doneReceived, final long answerCount, ResolverRegistry registry)
+                                 final AtomicLong doneReceived, final long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
-                              actor.executeReceiveRequest(
+                              actor.receiveRequest(
                                       new Request(new Request.Path(root), DownstreamVars.Partial.root(), ResolutionAnswer.Derivation.EMPTY),
-                                      registry
-                              )
+                                      0)
             );
         }
 

@@ -29,17 +29,20 @@ import static grakn.common.collection.Collections.map;
 public class ResolutionAnswer {
     private final Derived answer;
     private final Derivation derivation;
-    private final Actor<? extends Resolver<?>> producer;
+    private final boolean isInferred; // record if inference was invoked even when derivations are not active
     private final String patternAnswered;
+    private final Actor<? extends Resolver<?>> producer;
 
     public ResolutionAnswer(Derived answer,
                             String patternAnswered,
                             Derivation derivation,
-                            Actor<? extends Resolver<?>> producer) {
+                            Actor<? extends Resolver<?>> producer,
+                            boolean isInferred) {
         this.answer = answer;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
         this.producer = producer;
+        this.isInferred = isInferred;
     }
 
     public Derived derived() {
@@ -51,7 +54,7 @@ public class ResolutionAnswer {
     }
 
     public boolean isInferred() {
-        return !derivation.equals(Derivation.EMPTY);
+        return isInferred;
     }
 
     public Actor<? extends Resolver<?>> producer() {

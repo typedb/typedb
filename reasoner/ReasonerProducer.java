@@ -26,31 +26,21 @@ import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial.root;
+import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial;
 
 public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<RootResolver> rootResolver;
-    private final ResolverRegistry registry;
-    private final Request resolveRequest;
+    private Request resolveRequest;
     private boolean done;
     private Sink<ConceptMap> sink = null;
+    private int iteration;
+    private boolean iterationInferredAnswer;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
-        this.rootResolver = resolverRegistry.createRoot(conjunction, this::onAnswer, this::onDone);
-        this.resolveRequest = new Request(new Request.Path(rootResolver), root(), ResolutionAnswer.Derivation.EMPTY);
-        this.registry = resolverRegistry;
-    }
-
-    private void onAnswer(final ResolutionAnswer answer) {
-        sink.put(answer.derived().map());
-    }
-
-    private void onDone() {
-        if (!done) {
-            done = true;
-            sink.done(this);
-        }
+        this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+        this.iteration = 0;
+        this.resolveRequest = new Request(new Request.Path(rootResolver), Partial.root(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     @Override
@@ -58,13 +48,57 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         assert this.sink == null || this.sink == sink;
         this.sink = sink;
         for (int i = 0; i < count; i++) {
-            rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry));
+            requestAnswer();
         }
     }
 
     @Override
-    public void recycle() {
+    public void recycle() {}
 
+    private void requestAnswered(ResolutionAnswer answer) {
+        if (answer.isInferred()) iterationInferredAnswer = true;
+        sink.put(answer.derived().map());
     }
 
+    private void requestFailed(int iteration) {
+        assert this.iteration == iteration || this.iteration == iteration + 1;
+
+        if (iteration == this.iteration && mustReiterate()) {
+            nextIteration();
+            retry();
+        } else if (this.iteration == iteration) {
+            // fully terminated finding answers
+            if (!done) {
+                done = true;
+                sink.done(this);
+            }
+        } else {
+            // straggler request failing from prior iteration
+            retry();
+        }
+    }
+
+    private void nextIteration() {
+        iteration++;
+        resolveRequest = new Request(new Request.Path(rootResolver), Partial.root(), ResolutionAnswer.Derivation.EMPTY);
+    }
+
+    private boolean mustReiterate() {
+        /*
+        TODO room for optimisation:
+        for example, reiteration should never be required if there
+        are no loops in the rule graph
+        NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may
+        always have to reiterate until no more answers are found.
+         */
+        return iterationInferredAnswer;
+    }
+
+    private void retry() {
+        requestAnswer();
+    }
+
+    private void requestAnswer() {
+        rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
+    }
 }

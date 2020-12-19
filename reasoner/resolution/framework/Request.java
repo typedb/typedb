@@ -21,6 +21,7 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -78,7 +79,11 @@ public class Request {
 
     @Override
     public String toString() {
-        return "Req(send=" + (sender() == null ? "<none>" : sender().state.name) + ", pAns=" + partialConceptMap + ")";
+        return "Request{" +
+                "path=" + path +
+                ", partialConceptMap=" + partialConceptMap +
+                ", partialDerivation=" + partialDerivation +
+                '}';
     }
 
     public ResolutionAnswer.Derivation partialResolutions() {
@@ -114,6 +119,11 @@ public class Request {
         @Override
         public int hashCode() {
             return Objects.hash(path);
+        }
+
+        public Actor<RootResolver> root() {
+            assert path.get(0).state instanceof RootResolver;
+            return (Actor<RootResolver>) path.get(0);
         }
     }
 }
