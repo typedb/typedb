@@ -18,20 +18,18 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.Rule;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.MappingAggregator;
+import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
@@ -44,22 +42,38 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
 
-// TODO unify and materialise in receiveAnswer
-public class RuleResolver extends ChildResolver<RuleResolver> {
-    private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
+/**
+ * A root resolver is a special resolver: it is aware that it is not the child any resolver, so does not
+ * pass any responses upwards. Instead, it can submit Answers or Exhausted statuses to the owner
+ * of the Root resolver. This leads to a different structure of the class, however its operations
+ * otherwise are very similar to child resolvers
+ */
+public class Root extends Resolver<Root> {
+    private static final Logger LOG = LoggerFactory.getLogger(Root.class);
 
-    final Conjunction conjunction;
+    private final Conjunction conjunction;
     private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
+    private final Consumer<ResolutionAnswer> onAnswer;
+    private final Consumer<Integer> onExhausted;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
+    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private boolean isInitialised;
+    private ResponseProducer responseProducer;
 
-    public RuleResolver(Actor<RuleResolver> self, Rule rule) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")");
-        this.conjunction = rule.when();
-        this.conjunctionConcludables = rule.whenConcludables();
+    public Root(Actor<Root> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
+                Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder) {
+        super(self, Root.class.getSimpleName() + "(pattern:" + conjunction + ")");
+        this.conjunction = conjunction;
+        this.onAnswer = onAnswer;
+        this.onExhausted = onExhausted;
+        this.resolutionRecorder = resolutionRecorder;
+        this.isInitialised = false;
+        this.conjunctionConcludables = ConjunctionConcludable.create(conjunction);
         this.plannedConcludables = new ArrayList<>();
     }
 
@@ -78,7 +92,6 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
             plannedConcludables.add(concludableUnifierPair);
         }
     }
-
 
     @Override
     protected ResponseProducer responseProducerCreate(Request request) {
@@ -104,18 +117,23 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
     }
 
     @Override
-    public Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer) {
-        return messageToSend(fromUpstream, responseProducer);
+    public void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry) {
+        LOG.trace("{}: Receiving a new Request: {}", name, fromUpstream);
+        if (!isInitialised) {
+            LOG.debug(name + ": initialising downstream actors");
+            initialiseDownstreamActors(registry);
+            isInitialised = true;
+            responseProducer = responseProducerCreate(fromUpstream);
+        }
+
+        retryOrExhausted(fromUpstream, responseProducer, registry);
     }
 
     @Override
-    public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
-        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        return messageToSend(fromUpstream, responseProducer);
-    }
+    protected void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry) {
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
 
-    @Override
-    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer) {
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
 
@@ -131,10 +149,10 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), derivation, self(), true);
-                return Either.second(new Response.Answer(fromUpstream, answer));
+                                                               conjunction.toString(), derivation, self(), fromDownstream.answer().isInferred());
+                submitAnswer(answer);
             } else {
-                return messageToSend(fromUpstream, responseProducer);
+                retryOrExhausted(fromUpstream, responseProducer, registry);
             }
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
@@ -142,8 +160,16 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
                                                     MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation,
                                                     responseProducer.iteration());
             responseProducer.addDownstreamProducer(downstreamRequest);
-            return Either.first(downstreamRequest);
+            requestFromDownstream(downstreamRequest, fromUpstream, registry);
         }
+    }
+
+    @Override
+    protected void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry) {
+        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        retryOrExhausted(fromUpstream, responseProducer, registry);
     }
 
     @Override
@@ -152,25 +178,30 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
     }
 
-    private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
+    private void retryOrExhausted(Request fromUpstream, ResponseProducer responseProducer, ResolverRegistry registry) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: traversal answer: {}", name, conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), true);
-                return Either.second(new Response.Answer(fromUpstream, answer));
+                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), false);
+                submitAnswer(answer);
             }
         }
 
         if (responseProducer.hasDownstreamProducer()) {
-            return Either.first(responseProducer.nextDownstreamProducer());
+            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, registry);
         } else {
-            return Either.second(new Response.Exhausted(fromUpstream));
+            onExhausted.accept(fromUpstream.iteration());
         }
     }
 
+    private void submitAnswer(ResolutionAnswer answer) {
+        LOG.debug("Submitting root answer: {}", answer.aggregated());
+        resolutionRecorder.tell(state -> state.record(answer));
+        onAnswer.accept(answer);
+    }
 
     private boolean isLast(Actor<? extends Resolver<?>> actor) {
         return plannedConcludables.get(plannedConcludables.size() - 1).first().equals(actor);
@@ -181,7 +212,7 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
         for (int i = 0; i < plannedConcludables.size(); i++) {
             if (actor.equals(plannedConcludables.get(i).first())) { index = i; break; }
         }
-        assert index != -1 && index < plannedConcludables.size() - 1 ;
+        assert index != -1 && index < plannedConcludables.size() - 1;
         return plannedConcludables.get(index + 1);
     }
 }

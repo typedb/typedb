@@ -29,7 +29,7 @@ import grakn.core.reasoner.resolution.answer.Aggregator;
 import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import graql.lang.pattern.variable.Reference;
@@ -45,17 +45,19 @@ import java.util.Set;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 
-public class ConcludableResolver extends Resolver<ConcludableResolver> {
+public class ConcludableResolver extends ChildResolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final ConjunctionConcludable<?, ?> concludable;
     private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
-    private final Map<Actor<RootResolver>, IterationState> iterationStates;
-    private Actor<ResolutionRecorder> resolutionRecorder;
+    private final Map<Actor<Root>, IterationState> iterationStates;
+    private final Actor<ResolutionRecorder> resolutionRecorder;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable) {
+    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable,
+                               Actor<ResolutionRecorder> resolutionRecorder) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.concludable = concludable;
+        this.resolutionRecorder = resolutionRecorder;
         this.ruleActorSources = new HashMap<>();
         this.iterationStates = new HashMap<>();
     }
@@ -101,7 +103,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer responseProducerCreate(Request request) {
-        Actor<RootResolver> root = request.path().root();
+        Actor<Root> root = request.path().root();
         iterationStates.putIfAbsent(root, new IterationState(request.iteration()));
         IterationState iterationState = iterationStates.get(root);
         assert iterationState.iteration() == request.iteration();
@@ -118,7 +120,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious) {
-        Actor<RootResolver> root = request.path().root();
+        Actor<Root> root = request.path().root();
         assert iterationStates.containsKey(root);
         IterationState iterationState = iterationStates.get(root);
         if (iterationState.iteration() != request.iteration()) {
@@ -139,7 +141,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     @Override
     protected void initialiseDownstreamActors(ResolverRegistry registry) {
-        resolutionRecorder = registry.resolutionRecorder();
         concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
             Actor<RuleResolver> ruleActor = registry.registerRule(rule);
             ruleActorSources.put(unifier, ruleActor);

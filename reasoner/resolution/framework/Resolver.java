@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import org.slf4j.Logger;
@@ -31,21 +30,23 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
     protected final String name;
-    private final Map<Request, ResponseProducer> responseProducers;
     private final Map<Request, Request> requestRouter;
-    private boolean isInitialised;
 
-    public Resolver(Actor<T> self, String name) {
+    protected Resolver(Actor<T> self, String name) {
         super(self);
         this.name = name;
-        isInitialised = false;
-        responseProducers = new HashMap<>();
-        requestRouter = new HashMap<>();
+        this.requestRouter = new HashMap<>();
     }
 
     public String name() {
         return name;
     }
+
+    public abstract void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry);
+
+    protected abstract void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry);
+
+    protected abstract void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry);
 
     protected abstract void initialiseDownstreamActors(ResolverRegistry registry);
 
@@ -53,97 +54,16 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer);
 
-    protected abstract Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer);
-
-    protected abstract Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream, ResponseProducer responseProducer);
-
-    protected abstract Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer);
-
-    /*
-     *
-     * Handlers for messages sent into the execution actor that are dispatched via the actor model.
-     *
-     */
-    public void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry) {
-        LOG.trace("{}: Receiving a new Request: {}", name, fromUpstream);
-        if (!isInitialised) {
-            LOG.debug(name + ": initialising downstream actors");
-            initialiseDownstreamActors(registry);
-            isInitialised = true;
-        }
-
-        if (!responseProducers.containsKey(fromUpstream)) {
-            LOG.debug("{}: Creating a new ResponseProducer for the given Request: {}", name, fromUpstream);
-            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream));
-        } else {
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-            assert responseProducer.iteration() == fromUpstream.iteration() ||
-                    responseProducer.iteration() + 1 == fromUpstream.iteration();
-
-            if (responseProducer.iteration() + 1 == fromUpstream.iteration()) {
-                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer);
-                responseProducers.put(fromUpstream, responseProducerNextIter);
-            }
-        }
-
-        Either<Request, Response> action = receiveRequest(fromUpstream, responseProducers.get(fromUpstream));
-        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
-        else respondToUpstream(action.second(), registry);
+    protected Request fromUpstream(Request toDownstream) {
+        assert requestRouter.containsKey(toDownstream);
+        return requestRouter.get(toDownstream);
     }
 
-    void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry) {
-        LOG.trace("{}: Receiving a new Answer from downstream: {}", name, fromDownstream);
-        Request sentDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = requestRouter.get(sentDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-        Either<Request, Response> action = receiveAnswer(fromUpstream, fromDownstream, responseProducer);
-
-        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
-        else respondToUpstream(action.second(), registry);
-    }
-
-    void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry) {
-        LOG.trace("{}: Receiving a new Exhausted from downstream: {}", name, fromDownstream);
-        Request sentDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = requestRouter.get(sentDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-        Either<Request, Response> action = receiveExhausted(fromUpstream, fromDownstream, responseProducer);
-
-        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
-        else respondToUpstream(action.second(), registry);
-
-    }
-
-    /*
-     *
-     * Helper method private to this class.
-     *
-     * */
-    private void requestFromDownstream(Request request, Request fromUpstream, ResolverRegistry registry) {
+    protected void requestFromDownstream(Request request, Request fromUpstream, ResolverRegistry registry) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
         // TODO we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
         receiver.tell(actor -> actor.executeReceiveRequest(request, registry));
     }
-
-    private void respondToUpstream(Response response, ResolverRegistry registry) {
-        if (response.isRootResponse()) {
-            return;
-        }
-
-        Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
-        if (response.isAnswer()) {
-            LOG.trace("{} : Sending a new Response.Answer to upstream", name);
-            receiver.tell(actor -> actor.executeReceiveAnswer(response.asAnswer(), registry));
-        } else if (response.isExhausted()) {
-            LOG.trace("{}: Sending a new Response.Exhausted to upstream", name);
-            receiver.tell(actor -> actor.executeReceiveExhausted(response.asExhausted(), registry));
-        } else {
-            throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));
-        }
-    }
-
 }

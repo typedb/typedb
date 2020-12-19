@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
@@ -26,6 +27,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 
@@ -44,12 +46,14 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
+    private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
 
     public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicManager logicMgr) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
+        this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
+        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), this.resolutionRecorder);
     }
 
     public ResourceIterator<ConceptMap> executeSync(Disjunction disjunction) {
