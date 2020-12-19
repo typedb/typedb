@@ -146,7 +146,7 @@ host_compatible_java_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob([
-        "*",
+        "*", "*/*",
     ]),
     exclude = ["TraversalTest8/world2.data"],
     license_type = "agpl",
