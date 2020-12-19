@@ -148,5 +148,6 @@ checkstyle_test(
     include = glob([
         "*",
     ]),
+    exclude = ["TraversalTest8/world2.data"],
     license_type = "agpl",
 )
