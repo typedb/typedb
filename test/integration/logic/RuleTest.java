@@ -24,7 +24,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.logic.concludable.Concludable;
-import grakn.core.logic.concludable.Conclusion;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
@@ -57,20 +56,20 @@ public class RuleTest {
         return concludables.stream().filter(Concludable::isValue).count();
     }
 
-    private long isaHeadConcludablesCount(Set<Conclusion<?, ?>> concludables) {
-        return concludables.stream().filter(Conclusion::isIsa).count();
+    private long isaHeadConcludablesCount(Set<Rule.Conclusion<?, ?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isIsa).count();
     }
 
-    private long hasHeadConcludablesCount(Set<Conclusion<?, ?>> concludables) {
-        return concludables.stream().filter(Conclusion::isHas).count();
+    private long hasHeadConcludablesCount(Set<Rule.Conclusion<?, ?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isHas).count();
     }
 
-    private long relationHeadConcludablesCount(Set<Conclusion<?, ?>> concludables) {
-        return concludables.stream().filter(Conclusion::isRelation).count();
+    private long relationHeadConcludablesCount(Set<Rule.Conclusion<?, ?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isRelation).count();
     }
 
-    private long valueHeadConcludablesCount(Set<Conclusion<?, ?>> concludables) {
-        return concludables.stream().filter(Conclusion::isValue).count();
+    private long valueHeadConcludablesCount(Set<Rule.Conclusion<?, ?>> concludables) {
+        return concludables.stream().filter(Rule.Conclusion::isValue).count();
     }
 
     @Test
@@ -101,7 +100,7 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
-                    Set<Conclusion<?, ?>> conclusions = rule.possibleConclusions();
+                    Set<Rule.Conclusion<?, ?>> conclusions = rule.possibleConclusions();
                     assertEquals(1, isaHeadConcludablesCount(conclusions));
                     assertEquals(0, hasHeadConcludablesCount(conclusions));
                     assertEquals(1, relationHeadConcludablesCount(conclusions));
@@ -144,7 +143,7 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<Conclusion<?, ?>> conclusions = rule.possibleConclusions();
+                    Set<Rule.Conclusion<?, ?>> conclusions = rule.possibleConclusions();
                     assertEquals(1, isaHeadConcludablesCount(conclusions));
                     assertEquals(1, hasHeadConcludablesCount(conclusions));
                     assertEquals(0, relationHeadConcludablesCount(conclusions));
@@ -186,7 +185,7 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<Conclusion<?, ?>> conclusions = rule.possibleConclusions();
+                    Set<Rule.Conclusion<?, ?>> conclusions = rule.possibleConclusions();
                     assertEquals(0, isaHeadConcludablesCount(conclusions));
                     assertEquals(1, hasHeadConcludablesCount(conclusions));
                     assertEquals(0, relationHeadConcludablesCount(conclusions));

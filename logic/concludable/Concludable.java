@@ -82,27 +82,27 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(Conclusion<?, ?> unifyWith) {
-        if (unifyWith instanceof Conclusion.Relation) return unify((Conclusion.Relation) unifyWith);
-        else if (unifyWith instanceof Conclusion.Has) return unify((Conclusion.Has) unifyWith);
-        else if (unifyWith instanceof Conclusion.Isa) return unify((Conclusion.Isa) unifyWith);
-        else if (unifyWith instanceof Conclusion.Value) return unify((Conclusion.Value) unifyWith);
+    private Stream<Unifier> unify(Rule.Conclusion<?, ?> unifyWith) {
+        if (unifyWith instanceof Rule.Conclusion.Relation) return unify((Rule.Conclusion.Relation) unifyWith);
+        else if (unifyWith instanceof Rule.Conclusion.Has) return unify((Rule.Conclusion.Has) unifyWith);
+        else if (unifyWith instanceof Rule.Conclusion.Isa) return unify((Rule.Conclusion.Isa) unifyWith);
+        else if (unifyWith instanceof Rule.Conclusion.Value) return unify((Rule.Conclusion.Value) unifyWith);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(Conclusion.Relation unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(Conclusion.Has unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(Conclusion.Isa unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(Conclusion.Value unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
         return Stream.empty();
     }
 
@@ -187,7 +187,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
         }
 
         @Override
-        public Stream<Unifier> unify(Conclusion.Relation unifyWith) {
+        public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
             Map<Reference.Name, Set<Reference.Name>> variableMapping = new HashMap<>();
             Optional<Unifier> newUnifier;
@@ -290,7 +290,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
         }
 
         @Override
-        public Stream<Unifier> unify(Conclusion.Has unifyWith) {
+        public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
             Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
             if (constraint().attribute().reference().isName()) {
@@ -323,7 +323,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
         }
 
         @Override
-        Stream<Unifier> unify(Conclusion.Isa unifyWith) {
+        Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
             Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
             if (constraint().type().reference().isName()) {
@@ -356,7 +356,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> {
         }
 
         @Override
-        Stream<Unifier> unify(Conclusion.Value unifyWith) {
+        Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
             Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
             if (!unifier.isPresent()) return Stream.empty();
             if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {

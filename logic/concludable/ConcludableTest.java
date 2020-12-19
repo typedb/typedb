@@ -17,6 +17,7 @@
 
 package grakn.core.logic.concludable;
 
+import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -263,7 +264,7 @@ public class ConcludableTest {
         Conjunction conjunction = parseConjunction("{ $a 5; $a isa age; }");
         ThingVariable variable = parseThingVariable("$a isa age", "a");
         IsaConstraint isaConstraint = variable.isa().get();
-        Conclusion.Isa isaConcludable = new Conclusion.Isa(isaConstraint, conjunction.variables());
+        Rule.Conclusion.Isa isaConcludable = new Rule.Conclusion.Isa(isaConstraint, conjunction.variables());
         assertEquals(5, isaConcludable.constraint().owner().value().iterator().next().asLong().value().longValue());
     }
 
@@ -272,7 +273,7 @@ public class ConcludableTest {
         Conjunction conjunction = parseConjunction("{ $a > 5; $a isa age; }");
         ThingVariable variable = parseThingVariable("$a isa age", "a");
         IsaConstraint isaConstraint = variable.isa().get();
-        Conclusion.Isa isaConcludable = new Conclusion.Isa(isaConstraint, conjunction.variables());
+        Rule.Conclusion.Isa isaConcludable = new Rule.Conclusion.Isa(isaConstraint, conjunction.variables());
         assertEquals(5, isaConcludable.constraint().owner().value().iterator().next().asLong().value().longValue());
         assertEquals(GT, isaConcludable.constraint().owner().value().iterator().next().asLong().predicate().asEquality());
     }
@@ -282,7 +283,7 @@ public class ConcludableTest {
         ThingVariable variable = parseThingVariable("$x has $a", "x");
         HasConstraint hasConstraint = variable.has().iterator().next();
         Set<Variable> contextVariables = parseConjunction("{ $x isa $p; $p type person; }").variables();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, contextVariables);
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, contextVariables);
         assertEquals("person", hasConcludable.constraint().owner().isa().get().type().label().get().label());
     }
 
@@ -291,7 +292,7 @@ public class ConcludableTest {
         ThingVariable variable = parseThingVariable("$diag(patient: $per) isa $diagnosis", "diag");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         Set<Variable> contextVariables = parseConjunction("{ $per isa $person; $person type person-type; }").variables();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint, contextVariables);
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint, contextVariables);
         assertEquals("person-type", relationConcludable.constraint().players().get(0).player().isa().get()
                 .type().label().get().label());
     }

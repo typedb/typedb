@@ -18,6 +18,7 @@
 
 package grakn.core.logic.concludable;
 
+import grakn.core.logic.Rule;
 import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -71,7 +72,7 @@ public class UnificationTest {
         ThingVariable variable = parseThingVariable("$a isa $age", "a");
         assertTrue(variable.isa().isPresent());
         IsaConstraint isaConstraint = variable.isa().get();
-        Conclusion.Isa isaConcludable = new Conclusion.Isa(isaConstraint, thenConjunction.variables());
+        Rule.Conclusion.Isa isaConcludable = new Rule.Conclusion.Isa(isaConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(isaConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -95,7 +96,7 @@ public class UnificationTest {
         ThingVariable variable = parseThingVariable("$a isa $person", "a");
         assertTrue(variable.isa().isPresent());
         IsaConstraint isaConstraint = variable.isa().get();
-        Conclusion.Isa isaConcludable = new Conclusion.Isa(isaConstraint, thenConjunction.variables());
+        Rule.Conclusion.Isa isaConcludable = new Rule.Conclusion.Isa(isaConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(isaConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -116,7 +117,7 @@ public class UnificationTest {
         Conjunction thenConjunction = parseConjunction("{ $a = $b; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a = 7", "a");
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-        Conclusion.Value valueConcludable = new Conclusion.Value(valueConstraint, thenConjunction.variables());
+        Rule.Conclusion.Value valueConcludable = Rule.Conclusion.Value.create(valueConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -137,7 +138,7 @@ public class UnificationTest {
         Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a > $num", "a");
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-        Conclusion.Value valueConcludable = new Conclusion.Value(valueConstraint, thenConjunction.variables());
+        Rule.Conclusion.Value valueConcludable = Rule.Conclusion.Value.create(valueConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -158,7 +159,7 @@ public class UnificationTest {
         Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
         ThingVariable variable = parseThingVariable("$a > $num", "a");
         ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-        Conclusion.Value valueConcludable = new Conclusion.Value(valueConstraint, thenConjunction.variables());
+        Rule.Conclusion.Value valueConcludable = Rule.Conclusion.Value.create(valueConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(valueConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -181,7 +182,7 @@ public class UnificationTest {
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -203,7 +204,7 @@ public class UnificationTest {
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -226,7 +227,7 @@ public class UnificationTest {
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -250,8 +251,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -277,8 +278,8 @@ public class UnificationTest {
                 "temp"
         );
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -310,8 +311,8 @@ public class UnificationTest {
                 "temp"
         );
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -355,7 +356,7 @@ public class UnificationTest {
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -376,7 +377,7 @@ public class UnificationTest {
         Conjunction thenConjunction = parseConjunction("{ $a has $a;}");
         ThingVariable variable = parseThingVariable("$a has $a", "a");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -398,7 +399,7 @@ public class UnificationTest {
         Conjunction thenConjunction = parseConjunction("{ $a has $a;}");
         ThingVariable variable = parseThingVariable("$a has $a", "a");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Conclusion.Has hasConcludable = new Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
         Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
         assertTrue(unifier.isPresent());
@@ -421,8 +422,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -447,8 +448,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -477,8 +478,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -502,8 +503,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -532,8 +533,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -578,8 +579,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -618,8 +619,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -643,8 +644,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -668,8 +669,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -694,8 +695,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -719,8 +720,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -745,8 +746,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
@@ -771,8 +772,8 @@ public class UnificationTest {
         ThingVariable variable =
                 parseThingVariable("$temp ($employee: $a, $company: $b) isa $employment", "temp");
         RelationConstraint relationConstraint = variable.relation().iterator().next();
-        Conclusion.Relation relationConcludable = new Conclusion.Relation(relationConstraint,
-                                                                          thenConjunction.variables());
+        Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint,
+                                                                                    thenConjunction.variables());
 
         Stream<Unifier> unifier = conjConcludable.unify(relationConcludable);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
