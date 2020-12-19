@@ -61,19 +61,17 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Consumer<Integer> onExhausted;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
     private final Actor<ResolutionRecorder> resolutionRecorder;
-    private final TraversalEngine traversalEngine;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                         Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                         TraversalEngine traversalEngine) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
         this.resolutionRecorder = resolutionRecorder;
-        this.traversalEngine = traversalEngine;
         this.isInitialised = false;
         this.conjunctionConcludables = ConjunctionConcludable.create(conjunction);
         this.plannedConcludables = new ArrayList<>();

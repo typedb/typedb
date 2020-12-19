@@ -55,12 +55,10 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private final Conjunction conjunction;
     private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
-    private final TraversalEngine traversalEngine;
     private boolean isInitialised;
 
     public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegistry registry, TraversalEngine traversalEngine) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry);
-        this.traversalEngine = traversalEngine;
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine);
         this.responseProducers = new HashMap<>();
         this.conjunction = rule.when();
         this.conjunctionConcludables = rule.whenConcludables();
