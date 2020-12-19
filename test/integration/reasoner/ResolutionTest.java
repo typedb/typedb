@@ -23,7 +23,6 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.NoOpAggregator;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -43,6 +42,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -389,7 +389,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
                                               0)
                     );
                     ResolutionAnswer answer = responses.take();
@@ -453,7 +453,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
                                               iteration[0])
                     );
                 }
@@ -475,7 +475,7 @@ public class ResolutionTest {
                 for (int i = 0; i < 2; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
                                               iteration[0])
                     );
                 }
@@ -492,7 +492,7 @@ public class ResolutionTest {
                 // confirm there are no more answers
                 root.tell(actor ->
                                   actor.receiveRequest(
-                                          new Request(new Request.Path(root), NoOpAggregator.create(), null),
+                                          new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
                                           iteration[0])
                 );
                 Thread.sleep(1000); // allow Exhausted message to propagate to top level
@@ -527,20 +527,20 @@ public class ResolutionTest {
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
-                assertResponses(root, responses, doneReceived, answerCount, registry);
+                assertResponses(root, responses, doneReceived, answerCount);
             }
         }
     }
 
     private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
-                                 final AtomicLong doneReceived, final long answerCount, ResolverRegistry registry)
+                                 final AtomicLong doneReceived, final long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.receiveRequest(
-                                      new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY),
+                                      new Request(new Request.Path(root), DownstreamVars.Partial.root(), ResolutionAnswer.Derivation.EMPTY),
                                       0)
             );
         }

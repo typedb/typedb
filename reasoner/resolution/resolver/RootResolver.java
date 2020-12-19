@@ -26,7 +26,8 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.MappingAggregator;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -46,6 +47,7 @@ import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
+import static grakn.core.reasoner.resolution.answer.AnswerState.*;
 
 /**
  * A root resolver is a special resolver: it is aware that it is not the child any resolver, so does not
@@ -107,13 +109,13 @@ public class RootResolver extends Resolver<RootResolver> {
             derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
         }
 
-        ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+        ConceptMap conceptMap = fromDownstream.answer().derived().map();
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         if (isLast(sender)) {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asDerived(),
                                                                conjunction.toString(), derivation, self(),
                                                                fromDownstream.answer().isInferred());
                 submitAnswer(answer);
@@ -123,7 +125,9 @@ public class RootResolver extends Resolver<RootResolver> {
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
+                                                    UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
+                                                            Mapping.of(nextPlannedDownstream.second())),
+                                                    derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -161,7 +165,7 @@ public class RootResolver extends Resolver<RootResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
+                                           UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -177,7 +181,7 @@ public class RootResolver extends Resolver<RootResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
+                                           UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
@@ -195,7 +199,7 @@ public class RootResolver extends Resolver<RootResolver> {
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asDerived(),
                                                                conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), false);
                 submitAnswer(answer);
             }
@@ -215,7 +219,7 @@ public class RootResolver extends Resolver<RootResolver> {
     }
 
     private void submitAnswer(ResolutionAnswer answer) {
-        LOG.debug("Submitting root answer: {}", answer.aggregated());
+        LOG.debug("Submitting root answer: {}", answer.derived());
         resolutionRecorder.tell(state -> state.record(answer));
         onAnswer.accept(answer);
     }

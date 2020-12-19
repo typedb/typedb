@@ -15,22 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package grakn.core.logic.transformer;
 
-import grakn.core.concept.answer.ConceptMap;
+import grakn.core.common.exception.GraknException;
 
-public class NoOpAggregator extends Aggregator {
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-    NoOpAggregator() {
-        super(new ConceptMap(), new ConceptMap());
+public abstract class VariableTransformer {
+
+    public boolean isUnifier() {
+        return false;
     }
 
-    public static Aggregator create() {
-        return new NoOpAggregator();
+    public Unifier asUnifier() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unifier.class));
     }
 
-    @Override
-    ConceptMap unTransform(ConceptMap conceptMap) {
-        return conceptMap;
+    public boolean isMapping() {
+        return false;
     }
+
+    public Mapping asMapped() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapping.class));
+    }
+
 }

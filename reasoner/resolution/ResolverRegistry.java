@@ -25,7 +25,7 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.reasoner.resolution.answer.MappingAggregator;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -68,7 +68,7 @@ public class ResolverRegistry {
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine));
         concludableActors.put(concludable, concludableActor);
-        return new Pair<>(concludableActor, MappingAggregator.identity(concludable));
+        return new Pair<>(concludableActor, Mapping.identity(concludable));
     }
 
     public Actor<RuleResolver> registerRule(Rule rule) {
