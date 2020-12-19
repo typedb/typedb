@@ -58,5 +58,10 @@ public class FilteredProducer<T> implements Producer<T> {
         public void done(Producer<T> producer) {
             baseSink.done(FilteredProducer.this);
         }
+
+        @Override
+        public void done(Producer<T> producer, Throwable e) {
+            baseSink.done(FilteredProducer.this, e);
+        }
     }
 }

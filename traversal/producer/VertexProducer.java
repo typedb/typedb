@@ -45,7 +45,12 @@ public class VertexProducer implements Producer<VertexMap> {
 
     @Override
     public void produce(Sink<VertexMap> sink, int count) {
-        if (future == null) future = runAsync(consume(count, sink), forkJoinPool());
+        if (future == null) {
+            future = runAsync(consume(count, sink), forkJoinPool()).exceptionally(e -> {
+                sink.done(this, e);
+                return null;
+            });
+        }
         else future.thenRun(consume(count, sink));
     }
 
