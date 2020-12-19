@@ -60,7 +60,7 @@ public class Importer implements Migrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(MigratorRPCService.class);
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
-    private static final int BATCH_SIZE = 10_000;
+    private static final int BATCH_SIZE = 20_000;
     private final Grakn.Session session;
     private final Path filename;
     private final Map<String, String> remapLabels;
