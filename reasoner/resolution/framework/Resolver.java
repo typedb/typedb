@@ -42,28 +42,28 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         return name;
     }
 
-    public abstract void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry);
-
-    protected abstract void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry);
-
-    protected abstract void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry);
-
     protected abstract void initialiseDownstreamActors(ResolverRegistry registry);
 
-    protected abstract ResponseProducer responseProducerCreate(Request fromUpstream);
+    protected abstract ResponseProducer responseProducerCreate(Request fromUpstream, int iteration);
 
-    protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer);
+    protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer, int iteration);
+
+    public abstract void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry, int iteration);
+
+    protected abstract void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry, int iteration);
+
+    protected abstract void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry, int iteration);
 
     protected Request fromUpstream(Request toDownstream) {
         assert requestRouter.containsKey(toDownstream);
         return requestRouter.get(toDownstream);
     }
 
-    protected void requestFromDownstream(Request request, Request fromUpstream, ResolverRegistry registry) {
+    protected void requestFromDownstream(Request request, Request fromUpstream, ResolverRegistry registry, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
         // TODO we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
-        receiver.tell(actor -> actor.executeReceiveRequest(request, registry));
+        receiver.tell(actor -> actor.executeReceiveRequest(request, registry, iteration));
     }
 }

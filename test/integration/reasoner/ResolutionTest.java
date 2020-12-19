@@ -390,7 +390,7 @@ public class ResolutionTest {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
                                               new Request(new Request.Path(root), NoOpAggregator.create(), null, 0),
-                                              registry)
+                                              registry, iteration)
                     );
                     ResolutionAnswer answer = responses.take();
 
@@ -454,7 +454,7 @@ public class ResolutionTest {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
                                               new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
-                                              registry)
+                                              registry, iteration)
                     );
                 }
 
@@ -476,7 +476,7 @@ public class ResolutionTest {
                     root.tell(actor ->
                                       actor.executeReceiveRequest(
                                               new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
-                                              registry)
+                                              registry, iteration)
                     );
                 }
                 responses.take();
@@ -493,7 +493,7 @@ public class ResolutionTest {
                 root.tell(actor ->
                                   actor.executeReceiveRequest(
                                           new Request(new Request.Path(root), NoOpAggregator.create(), null, iteration[0]),
-                                          registry)
+                                          registry, iteration)
                 );
                 Thread.sleep(1000); // allow Exhausted message to propagate to top level
                 assertFalse(receivedInferredAnswer[0]);
@@ -541,7 +541,7 @@ public class ResolutionTest {
             root.tell(actor ->
                               actor.executeReceiveRequest(
                                       new Request(new Request.Path(root), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, 0),
-                                      registry)
+                                      registry, iteration)
             );
         }
 

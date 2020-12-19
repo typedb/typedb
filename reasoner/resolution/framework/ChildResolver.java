@@ -51,7 +51,7 @@ public abstract class ChildResolver<T extends ChildResolver<T>> extends Resolver
      *
      */
     @Override
-    public void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry) {
+    public void executeReceiveRequest(Request fromUpstream, ResolverRegistry registry, int iteration) {
         LOG.trace("{}: Receiving a new Request: {}", name, fromUpstream);
         if (!isInitialised) {
             LOG.debug(name + ": initialising downstream actors");
@@ -61,38 +61,43 @@ public abstract class ChildResolver<T extends ChildResolver<T>> extends Resolver
 
         if (!responseProducers.containsKey(fromUpstream)) {
             LOG.debug("{}: Creating a new ResponseProducer for the given Request: {}", name, fromUpstream);
-            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream));
+            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
         } else {
             ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-            assert responseProducer.iteration() == fromUpstream.iteration() ||
-                    responseProducer.iteration() + 1 == fromUpstream.iteration();
+            assert responseProducer.iteration() == iteration ||
+                    responseProducer.iteration() + 1 == iteration;
 
-            if (responseProducer.iteration() + 1 == fromUpstream.iteration()) {
-                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer);
+            if (responseProducer.iteration() + 1 == iteration) {
+                // when the same request for the next iteration the first time, re-initialise required state
+                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
                 responseProducers.put(fromUpstream, responseProducerNextIter);
             }
         }
 
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+        // short circuit if the request came from a prior iteration
+        if (iteration < responseProducer.iteration()) respondToUpstream(new Response.Exhausted(fromUpstream), registry, iteration);
+
         Either<Request, Response> action = receiveRequest(fromUpstream, responseProducers.get(fromUpstream));
-        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
-        else respondToUpstream(action.second(), registry);
+        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry, iteration);
+        else respondToUpstream(action.second(), registry, iteration);
     }
 
     @Override
-    protected void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry) {
+    protected void executeReceiveAnswer(Response.Answer fromDownstream, ResolverRegistry registry, int iteration) {
         LOG.trace("{}: Receiving a new Answer from downstream: {}", name, fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
         Either<Request, Response> action = receiveAnswer(fromUpstream, fromDownstream, responseProducer);
 
-        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
-        else respondToUpstream(action.second(), registry);
+        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry, iteration);
+        else respondToUpstream(action.second(), registry, iteration);
     }
 
     @Override
-    protected void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry) {
+    protected void executeReceiveExhausted(Response.Exhausted fromDownstream, ResolverRegistry registry, int iteration) {
         LOG.trace("{}: Receiving a new Exhausted from downstream: {}", name, fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -100,19 +105,19 @@ public abstract class ChildResolver<T extends ChildResolver<T>> extends Resolver
 
         Either<Request, Response> action = receiveExhausted(fromUpstream, fromDownstream, responseProducer);
 
-        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry);
-        else respondToUpstream(action.second(), registry);
+        if (action.isFirst()) requestFromDownstream(action.first(), fromUpstream, registry, iteration);
+        else respondToUpstream(action.second(), registry, iteration);
 
     }
 
-    private void respondToUpstream(Response response, ResolverRegistry registry) {
+    private void respondToUpstream(Response response, ResolverRegistry registry, int iteration) {
         Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
         if (response.isAnswer()) {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name);
-            receiver.tell(actor -> actor.executeReceiveAnswer(response.asAnswer(), registry));
+            receiver.tell(actor -> actor.executeReceiveAnswer(response.asAnswer(), registry, iteration));
         } else if (response.isExhausted()) {
             LOG.trace("{}: Sending a new Response.Exhausted to upstream", name);
-            receiver.tell(actor -> actor.executeReceiveExhausted(response.asExhausted(), registry));
+            receiver.tell(actor -> actor.executeReceiveExhausted(response.asExhausted(), registry, iteration));
         } else {
             throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));
         }

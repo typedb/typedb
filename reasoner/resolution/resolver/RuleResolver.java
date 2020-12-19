@@ -26,12 +26,11 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.concludable.ConjunctionConcludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.MappingAggregator;
+import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
@@ -79,26 +78,25 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
         }
     }
 
-
     @Override
-    protected ResponseProducer responseProducerCreate(Request request) {
+    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, request.iteration());
+        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
-                                           new ResolutionAnswer.Derivation(map()), responseProducer.iteration());
+                                           new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducer) {
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducer, int newIteration) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, request.iteration());
+        ResponseProducer responseProducerNewIter = responseProducer.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            MappingAggregator.of(request.partialConceptMap().map(), plannedConcludables.get(0).second()),
-                                           new ResolutionAnswer.Derivation(map()), responseProducer.iteration());
+                                           new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }
@@ -139,8 +137,7 @@ public class RuleResolver extends ChildResolver<RuleResolver> {
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation,
-                                                    responseProducer.iteration());
+                                                    MappingAggregator.of(conceptMap, nextPlannedDownstream.second()), derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             return Either.first(downstreamRequest);
         }

@@ -41,7 +41,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
         this.registry = resolverRegistry;
         this.iteration = 0;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
+        this.resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     @Override
@@ -66,22 +66,24 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestFailed(int iteration) {
         assert this.iteration == iteration || this.iteration == iteration + 1;
 
-        if (iteration == this.iteration && !mustReiterate()) {
+        if (iteration == this.iteration && mustReiterate()) {
+            nextIteration();
+            retry();
+        } else if (this.iteration == iteration) {
+            // fully terminated finding answers
             if (!done) {
                 done = true;
                 sink.done(this);
             }
-        } else if (this.iteration == iteration + 1) {
-            retry();
         } else {
-            nextIteration();
+            // straggler request failing from prior iteration
             retry();
         }
     }
 
     private void nextIteration() {
         iteration++;
-        resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY, iteration);
+        resolveRequest = new Request(new Request.Path(rootResolver), NoOpAggregator.create(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     private boolean mustReiterate() {
@@ -100,6 +102,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry));
+        rootResolver.tell(actor -> actor.executeReceiveRequest(resolveRequest, registry, iteration));
     }
 }

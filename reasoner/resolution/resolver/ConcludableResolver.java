@@ -27,9 +27,9 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.Aggregator;
 import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
+import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.ChildResolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import graql.lang.pattern.variable.Reference;
@@ -60,6 +60,51 @@ public class ConcludableResolver extends ChildResolver<ConcludableResolver> {
         this.resolutionRecorder = resolutionRecorder;
         this.ruleActorSources = new HashMap<>();
         this.iterationStates = new HashMap<>();
+    }
+
+    @Override
+    protected void initialiseDownstreamActors(ResolverRegistry registry) {
+        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
+            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
+            ruleActorSources.put(unifier, ruleActor);
+        }));
+    }
+
+    @Override
+    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
+        Actor<Root> root = request.path().root();
+        iterationStates.putIfAbsent(root, new IterationState(iteration));
+        IterationState iterationState = iterationStates.get(root);
+
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+
+        if (!iterationState.hasReceived(request.partialConceptMap().map())) {
+            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
+            iterationState.recordReceived(request.partialConceptMap().map());
+        }
+        return responseProducer;
+    }
+
+    @Override
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+        assert newIteration > responseProducerPrevious.iteration();
+
+        Actor<Root> root = request.path().root();
+        assert iterationStates.containsKey(root);
+        IterationState iterationState = iterationStates.get(root);
+        if (iterationState.iteration() > newIteration) {
+            iterationState.nextIteration(newIteration);
+        }
+
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+
+        if (!iterationState.hasReceived(request.partialConceptMap().map())) {
+            registerDownstreamRules(responseProducerNewIter, request.path(), request.partialConceptMap().map());
+            iterationState.recordReceived(request.partialConceptMap().map());
+        }
+        return responseProducerNewIter;
     }
 
     @Override
@@ -101,51 +146,6 @@ public class ConcludableResolver extends ChildResolver<ConcludableResolver> {
         return messageToSend(fromUpstream, responseProducer);
     }
 
-    @Override
-    protected ResponseProducer responseProducerCreate(Request request) {
-        Actor<Root> root = request.path().root();
-        iterationStates.putIfAbsent(root, new IterationState(request.iteration()));
-        IterationState iterationState = iterationStates.get(root);
-        assert iterationState.iteration() == request.iteration();
-
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, request.iteration());
-
-        if (!iterationState.hasReceived(request.partialConceptMap().map())) {
-            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
-            iterationState.recordReceived(request.partialConceptMap().map());
-        }
-        return responseProducer;
-    }
-
-    @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious) {
-        Actor<Root> root = request.path().root();
-        assert iterationStates.containsKey(root);
-        IterationState iterationState = iterationStates.get(root);
-        if (iterationState.iteration() != request.iteration()) {
-            assert iterationState.iteration + 1 == request.iteration();
-            iterationState.nextIteration();
-        }
-
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, request.iteration());
-
-        if (!iterationState.hasReceived(request.partialConceptMap().map())) {
-            registerDownstreamRules(responseProducerNewIter, request.path(), request.partialConceptMap().map());
-            iterationState.recordReceived(request.partialConceptMap().map());
-        }
-        return responseProducerNewIter;
-    }
-
-
-    @Override
-    protected void initialiseDownstreamActors(ResolverRegistry registry) {
-        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
-            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
-            ruleActorSources.put(unifier, ruleActor);
-        }));
-    }
 
     private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
         while (responseProducer.hasTraversalProducer()) {
@@ -174,7 +174,7 @@ public class ConcludableResolver extends ChildResolver<ConcludableResolver> {
     private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
         for (Map.Entry<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
             Request toDownstream = new Request(path.append(entry.getValue()), UnifyingAggregator.of(partialConceptMap, entry.getKey()),
-                                               ResolutionAnswer.Derivation.EMPTY, responseProducer.iteration());
+                                               ResolutionAnswer.Derivation.EMPTY);
             responseProducer.addDownstreamProducer(toDownstream);
         }
     }
@@ -203,8 +203,9 @@ public class ConcludableResolver extends ChildResolver<ConcludableResolver> {
             return iteration;
         }
 
-        public void nextIteration() {
-            iteration++;
+        public void nextIteration(int newIteration) {
+            assert newIteration > iteration;
+            iteration = newIteration;
             receivedMaps = new HashSet<>();
         }
 
