@@ -31,6 +31,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,14 +52,17 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> availableRules;
     private final Map<Actor<RootResolver>, IterationState> iterationStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final TraversalEngine traversalEngine;
     private final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
 
     public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry) {
+                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                               TraversalEngine traversalEngine) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
+        this.traversalEngine = traversalEngine;
         this.availableRules = new HashMap<>();
         this.iterationStates = new HashMap<>();
         this.responseProducers = new HashMap<>();
@@ -166,6 +170,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         return responseProducerNewIter;
     }
 
+    @Override
+    protected void exception(Exception e) {
+        LOG.error("Actor exception", e);
+        // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+    }
+
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
@@ -219,12 +229,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             }
             iterationState.recordReceived(request.partialConceptMap().map());
         }
-    }
-
-    @Override
-    protected void exception(Exception e) {
-        LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
     }
 
     /**

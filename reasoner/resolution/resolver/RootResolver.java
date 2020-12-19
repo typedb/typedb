@@ -32,6 +32,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +50,7 @@ import static grakn.common.collection.Collections.map;
 /**
  * A root resolver is a special resolver: it is aware that it is not the child any resolver, so does not
  * pass any responses upwards. Instead, it can submit Answers or Exhausted statuses to the owner
- * of the Root resolver. This leads to a different structure of the class, however its operations
- * otherwise are very similar to child resolvers
+ * of the Root resolver.
  */
 public class RootResolver extends Resolver<RootResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RootResolver.class);
@@ -61,16 +61,19 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Consumer<Integer> onExhausted;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
     private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final TraversalEngine traversalEngine;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry) {
+                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                        TraversalEngine traversalEngine) {
         super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
         this.resolutionRecorder = resolutionRecorder;
+        this.traversalEngine = traversalEngine;
         this.isInitialised = false;
         this.conjunctionConcludables = ConjunctionConcludable.create(conjunction);
         this.plannedConcludables = new ArrayList<>();
@@ -113,7 +116,8 @@ public class RootResolver extends Resolver<RootResolver> {
                 responseProducer.recordProduced(conceptMap);
 
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                               conjunction.toString(), derivation, self(), fromDownstream.answer().isInferred());
+                                                               conjunction.toString(), derivation, self(),
+                                                               fromDownstream.answer().isInferred());
                 submitAnswer(answer);
             } else {
                 tryAnswer(fromUpstream, iteration);

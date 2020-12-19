@@ -32,6 +32,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,10 +55,12 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private final Conjunction conjunction;
     private final Set<ConjunctionConcludable<?, ?>> conjunctionConcludables;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
+    private final TraversalEngine traversalEngine;
     private boolean isInitialised;
 
-    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegistry registry) {
+    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegistry registry, TraversalEngine traversalEngine) {
         super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry);
+        this.traversalEngine = traversalEngine;
         this.responseProducers = new HashMap<>();
         this.conjunction = rule.when();
         this.conjunctionConcludables = rule.whenConcludables();
