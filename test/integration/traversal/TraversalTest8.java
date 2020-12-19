@@ -72,12 +72,12 @@ public class TraversalTest8 {
 
             long start = System.currentTimeMillis();
             List<String> cities = list(
-                    "London",
-                    "New York",
-                    "Berlin",
-                    "Brasilia",
-                    "Cape Town",
-                    "Beijing",
+//                    "London",
+//                    "New York",
+//                    "Berlin",
+//                    "Brasilia",
+//                    "Cape Town",
+//                    "Beijing",
                     "Canberra"
             );
             cities.parallelStream().forEach(city -> {
