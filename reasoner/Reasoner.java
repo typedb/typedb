@@ -55,7 +55,7 @@ public class Reasoner {
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
         this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), this.resolutionRecorder);
+        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng);
     }
 
     public ResourceIterator<ConceptMap> iteratorSync(Disjunction disjunction) {
