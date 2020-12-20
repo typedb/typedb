@@ -103,7 +103,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    protected void constrainedBy(Constraint constraint) {
+    public void constrainedBy(Constraint constraint) {
         constrainedBy.add(constraint);
     }
 

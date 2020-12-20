@@ -38,6 +38,7 @@ public class IsConstraint extends TypeConstraint {
         super(owner, set(variable));
         this.variable = variable;
         this.hash = Objects.hash(IsConstraint.class, this.owner, this.variable);
+        variable.constrainedBy(this);
     }
 
     static IsConstraint of(TypeVariable owner, ConceptConstraint.Is constraint, VariableRegistry registry) {

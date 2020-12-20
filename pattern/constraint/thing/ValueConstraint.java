@@ -299,6 +299,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         public Variable(ThingVariable owner, GraqlToken.Predicate.Equality predicate, ThingVariable variable) {
             super(owner, predicate, variable, set(variable));
+            variable.constrainedBy(this);
         }
 
         @Override

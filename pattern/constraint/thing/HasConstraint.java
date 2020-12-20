@@ -40,6 +40,7 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
         assert attribute != null;
         this.attribute = attribute;
         this.hash = Objects.hash(HasConstraint.class, this.owner, this.attribute);
+        attribute.constrainedBy(this);
     }
 
     static HasConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Has constraint,

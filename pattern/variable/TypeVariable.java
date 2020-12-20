@@ -125,7 +125,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     }
 
     @Override
-    protected void constrainedBy(Constraint constraint) {
+    public void constrainedBy(Constraint constraint) {
         constrainedBy.add(constraint);
     }
 

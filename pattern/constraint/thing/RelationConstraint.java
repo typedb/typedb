@@ -53,6 +53,10 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         assert rolePlayers != null && !rolePlayers.isEmpty();
         this.rolePlayers = new ArrayList<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
+        for (RelationConstraint.RolePlayer rp : rolePlayers) {
+            rp.player().constrainedBy(this);
+            rp.roleType().ifPresent(roleType -> roleType.constrainedBy(this));
+        }
     }
 
     static RelationConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Relation constraint,

@@ -90,5 +90,5 @@ public abstract class Variable implements Pattern {
         return hash;
     }
 
-    protected abstract void constrainedBy(Constraint constraint);
+    public abstract void constrainedBy(Constraint constraint);
 }
