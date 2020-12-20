@@ -217,9 +217,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public PlaysConstraint plays(@Nullable TypeVariable relationType, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         PlaysConstraint playsConstraint = new PlaysConstraint(this, relationType, roleType, overriddenRoleType);
         constrain(playsConstraint);
-        if (relationType != null) relationType.constrainedBy(playsConstraint);
-        roleType.constrainedBy(playsConstraint);
-        if (overriddenRoleType != null) overriddenRoleType.constrainedBy(playsConstraint);
         return playsConstraint;
     }
 
@@ -240,7 +237,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public IsConstraint is(TypeVariable variable) {
         IsConstraint isConstraint = new IsConstraint(this, variable);
         constrain(isConstraint);
-        variable.constrainedBy(isConstraint);
         return isConstraint;
     }
 
