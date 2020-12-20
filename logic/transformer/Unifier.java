@@ -63,12 +63,12 @@ public class Unifier extends VariableTransformer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Unifier that = (Unifier) o;
-        return unifier.equals(that.unifier);
+        return unifier.equals(that.unifier) && allowedTypes.equals(that.allowedTypes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(unifier);
+        return Objects.hash(unifier, allowedTypes);
     }
 
     @Override

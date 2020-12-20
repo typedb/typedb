@@ -19,8 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Initial;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
 import javax.annotation.Nullable;
@@ -32,14 +31,14 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final Partial partialConceptMap;
+    private final Initial initialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   Partial partialConceptMap,
+                   Initial initialConceptMap,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
-        this.partialConceptMap = partialConceptMap;
+        this.initialConceptMap = initialConceptMap;
         this.partialDerivation = partialDerivation;
     }
 
@@ -59,8 +58,8 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public Partial partial() {
-        return partialConceptMap;
+    public Initial partial() {
+        return initialConceptMap;
     }
 
     @Override
@@ -69,19 +68,19 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialConceptMap, request.partial());
+                Objects.equals(initialConceptMap, request.partial());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialConceptMap);
+        return Objects.hash(path, initialConceptMap);
     }
 
     @Override
     public String toString() {
         return "Request{" +
                 "path=" + path +
-                ", partialConceptMap=" + partialConceptMap +
+                ", partialConceptMap=" + initialConceptMap +
                 ", partialDerivation=" + partialDerivation +
                 '}';
     }

@@ -182,9 +182,9 @@ public class UnificationTest {
                 "{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
         ThingVariable variable = parseThingVariable("$p has $name", "p");
         HasConstraint hasConstraint = variable.has().iterator().next();
-        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
+        Rule.Conclusion.Has hasConclusion = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
 
-        Optional<Unifier> unifier = conjConcludable.unify(hasConcludable).findFirst();
+        Optional<Unifier> unifier = conjConcludable.unify(hasConclusion).findFirst();
         assertTrue(unifier.isPresent());
         Map<String, Set<String>> result = getStringMapping(unifier.get().mapping());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{

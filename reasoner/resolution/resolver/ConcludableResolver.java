@@ -215,7 +215,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!iterationState.hasReceived(request.partial().map())) {
             for (Map.Entry<Unifier, Actor<RuleResolver>> entry : availableRules.entrySet()) {
-                Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(entry.getKey());
+                Optional<AnswerState.DownstreamVars.Initial> unified = AnswerState.UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(entry.getKey());
                 if (unified.isPresent()) {
                     Request toDownstream = new Request(request.path().append(entry.getValue()), unified.get(),
                                                        ResolutionAnswer.Derivation.EMPTY);

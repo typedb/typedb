@@ -70,12 +70,12 @@ public abstract class AnswerState {
                 return new Initial(conceptMap);
             }
 
-            public DownstreamVars.Partial toDownstreamVars(Mapping mapping) {
-                return new DownstreamVars.Partial(mapping.transform(conceptMap()), mapping);
+            public DownstreamVars.Initial toDownstreamVars(Mapping mapping) {
+                return new DownstreamVars.Initial(mapping.transform(conceptMap()), mapping);
             }
 
-            public Optional<DownstreamVars.Partial> toDownstreamVars(Unifier unifier) {
-                return unifier.unify(conceptMap()).map(unified -> new DownstreamVars.Partial(unified, unifier));
+            public Optional<DownstreamVars.Initial> toDownstreamVars(Unifier unifier) {
+                return unifier.unify(conceptMap()).map(unified -> new DownstreamVars.Initial(unified, unifier));
             }
 
         }
@@ -103,17 +103,17 @@ public abstract class AnswerState {
 
     public static class DownstreamVars {
 
-        public static class Partial extends AnswerState {
+        public static class Initial extends AnswerState {
             private final VariableTransformer transformer;
 
-            Partial(ConceptMap conceptMap, @Nullable VariableTransformer transformer) {
+            Initial(ConceptMap conceptMap, @Nullable VariableTransformer transformer) {
                 super(conceptMap);
                 this.transformer = transformer;
             }
 
-            public static Partial root() {
+            public static Initial root() {
                 // This is the entry-point answer state for the request received by the root resolver
-                return new Partial(new ConceptMap(), null);
+                return new Initial(new ConceptMap(), null);
             }
 
             public Aggregated aggregateWith(ConceptMap conceptMap) {
@@ -142,8 +142,8 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 if (!super.equals(o)) return false;
-                final Partial partial = (Partial) o;
-                return Objects.equals(transformer, partial.transformer);
+                final Initial initial = (Initial) o;
+                return Objects.equals(transformer, initial.transformer);
             }
 
             @Override
@@ -200,7 +200,7 @@ public abstract class AnswerState {
             this.derivedFrom = derivedFrom;
         }
 
-        public static Aggregated of(ConceptMap aggregated, DownstreamVars.Partial derivedFrom) {
+        public static Aggregated of(ConceptMap aggregated, DownstreamVars.Initial derivedFrom) {
             if (derivedFrom.transformer() == null) return new UpstreamVars.Derived(aggregated, derivedFrom.map());
             else if (derivedFrom.transformer().isUnifier())
                 return new DownstreamVars.Unified(aggregated, derivedFrom.map(), derivedFrom.transformer.asUnifier());
