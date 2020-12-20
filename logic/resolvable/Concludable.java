@@ -165,7 +165,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     Optional<Unifier> tryExtendUnifier(Variable conjVar, Variable headVar, Unifier unifier) {
         if (ConstraintCopier.varHintsDisjoint(headVar, conjVar)) return Optional.empty();
         // TODO compute set of types
-        Set<Label> allowedTypes; // may be able to use conjVar.resolvedTypes(), if they exist. But if not?
+        Set<Label> allowedTypes = null; // may be able to use conjVar.resolvedTypes(), if they exist. But if not?
         Unifier clone = unifier.extend(conjVar.reference().asName(), headVar.reference().asName(), allowedTypes);
         return Optional.of(clone);
     }
@@ -237,10 +237,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                     .forEach(thenRP -> {
                                  if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
                                      assert thenRP.roleType().isPresent();
-                                     Set<Label> allowedTypes; // TODO compute
+                                     Set<Label> allowedTypes = null; // TODO compute
                                      unifierBuilder.add(conjRP.roleType().get().reference().asName(), thenRP.roleType().get().reference().asName(), allowedTypes);
                                  }
-                                 Set<Label> allowedTypes; // TODO complete
+                                 Set<Label> allowedTypes = null; // TODO complete
                                  unifierBuilder.add(conjRP.player().reference().asName(), thenRP.player().reference().asName(), allowedTypes);
                              }
                     ));
@@ -321,19 +321,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-<<<<<<< HEAD:logic/resolvable/Concludable.java
         Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
-            if (!unifier.isPresent()) return Stream.empty();
+            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
             if (constraint().type().reference().isName()) {
-                unifier = tryExtendUnifier(constraint().type(), unifyWith.constraint().type(), unifier.get().mapping());
-                if (!unifier.isPresent()) return Stream.empty();
-=======
-        Stream<Unifier> unify(ThenConcludable.Isa unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), Unifier.empty());
-            if (constraint.type().reference().isName()) {
-                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint.type(), unifyWith.constraint().type(), u));
->>>>>>> cleaning up for work on required types:logic/concludable/ConjunctionConcludable.java
+                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().type(), unifyWith.constraint().type(), u));
             }
             return unifier.map(Stream::of).orElseGet(Stream::empty);
         }
@@ -361,21 +352,11 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-<<<<<<< HEAD:logic/resolvable/Concludable.java
         Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), new HashMap<>());
-            if (!unifier.isPresent()) return Stream.empty();
+            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
             if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {
-                unifier = tryExtendUnifier(constraint().asVariable().value(),
-                                           unifyWith.constraint().asVariable().value(), unifier.get().mapping());
-                if (!unifier.isPresent()) return Stream.empty();
-=======
-        Stream<Unifier> unify(ThenConcludable.Value unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint.owner(), unifyWith.constraint().owner(), Unifier.empty());
-            if (constraint.isVariable() && constraint.asVariable().value().reference().isName()) {
-                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint.asVariable().value(),
+                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().asVariable().value(),
                                            unifyWith.constraint().asVariable().value(), u));
->>>>>>> cleaning up for work on required types:logic/concludable/ConjunctionConcludable.java
             }
             return unifier.map(Stream::of).orElseGet(Stream::empty);
         }

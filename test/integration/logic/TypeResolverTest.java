@@ -412,7 +412,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void up_down_hierarchy_isa() throws IOException {
+    public void up_down_hierarchy_isa() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity;" +
@@ -439,7 +439,25 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void infer_from_value_type() throws IOException {
+    public void test_type_var_with_label() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeHinter = transaction.logic().typeResolver();
+
+        String queryString = "match $t type shape;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
+        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$t", set("shape"));
+        }};
+
+        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+    }
+
+    @Test
+    public void infer_from_value_type() {
         define_custom_schema(
                 "define" +
                         "  dog sub entity, owns weight;" +
@@ -465,7 +483,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_hierarchy() throws IOException {
+    public void has_hierarchy() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity, owns weight;" +
@@ -522,7 +540,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_with_big_cycle() throws IOException {
+    public void has_with_big_cycle() {
         define_custom_schema(
                 "define" +
                         "  person sub entity, owns name, owns height;" +
@@ -555,7 +573,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void you_know_the_thing() throws IOException {
+    public void all_things_is_empty_set() throws IOException {
         define_standard_schema("schema-basic");
         TypeResolver typeHinter = transaction.logic().typeResolver();
 
