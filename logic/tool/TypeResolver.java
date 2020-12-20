@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.Type;
+import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -67,7 +68,7 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public Conjunction computeHintsExhaustive(Conjunction conjunction) {
+    public Conjunction resolvedNamedVarsExhaustive(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
@@ -90,7 +91,7 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolveThingTypes(Conjunction conjunction) {
+    public Conjunction resolveNamedVars(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
@@ -259,15 +260,21 @@ public class TypeResolver {
         }
     }
 
-    public Conjunction resolveRoleTypes(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(
-                v -> v.isType() && v.asType().label().isPresent() &&
-                        v.asType().label().get().properLabel().scope().isPresent()
-        ).map(Variable::asType).forEachRemaining(type -> {
-            Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(type.label().get().properLabel());
-            if (labels.isEmpty()) throw GraknException.of(TYPE_NOT_FOUND, type.label().get().properLabel());
-            type.addResolvedTypes(labels);
-        });
+    public Conjunction resolveLabeledVarTypes(Conjunction conjunction) {
+        iterate(conjunction.variables()).filter(v -> v.reference().isLabel())
+                .forEachRemaining(typeVar -> {
+                    assert typeVar.isType() && typeVar.asType().label().isPresent();
+                    Label label = typeVar.asType().label().get().properLabel();
+                    if (label.scope().isPresent()) {
+                        Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
+                        if (labels.isEmpty()) throw GraknException.of(TYPE_NOT_FOUND, label);
+                        typeVar.addResolvedTypes(labels);
+                    } else {
+                        TypeVertex type = traversalEng.graph().schema().getType(label);
+                        if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
+                        typeVar.addResolvedType(label);
+                    }
+                });
         return conjunction;
     }
 

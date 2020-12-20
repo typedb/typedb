@@ -80,6 +80,10 @@ public abstract class Variable implements Pattern {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
 
+    public void addResolvedType(Label label) {
+        resolvedTypes.add(label);
+    }
+
     public void addResolvedTypes(Set<Label> labels) {
         resolvedTypes.addAll(labels);
     }
