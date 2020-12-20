@@ -119,6 +119,11 @@ public class SessionSteps {
         CompletableFuture.allOf(assertions.toArray(CompletableFuture[]::new)).join();
     }
 
+    @Then("session(s) has/have database: {word}")
+    public void sessions_have_database(String name) {
+        sessions_have_databases(list(name));
+    }
+
     @Then("session(s) has/have database(s):")
     public void sessions_have_databases(List<String> names) {
         assertEquals(names.size(), sessions.size());

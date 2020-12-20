@@ -18,7 +18,6 @@
 
 package grakn.core.logic.tool;
 
-import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
@@ -49,56 +48,49 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.producer.Producers.buffer;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 import static graql.lang.common.GraqlToken.Type.RELATION;
 import static graql.lang.common.GraqlToken.Type.ROLE;
 import static graql.lang.common.GraqlToken.Type.THING;
 
-public class TypeHinter {
+public class TypeResolver {
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
 
-    public TypeHinter(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
+    public TypeResolver(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
     }
 
     public Conjunction computeHintsExhaustive(Conjunction conjunction) {
-        return computeHintsExhaustive(conjunction, ExecutorService.PARALLELISATION_FACTOR);
-    }
-
-    public Conjunction computeHintsExhaustive(Conjunction conjunction, int parallelisation) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
         Map<Reference, Set<Label>> referenceHintsMapping =
-                retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()), parallelisation);
-        long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
+                retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()));
+        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
             if (variable.isThing()) {
-                if (hintLabels.size() != numOfThings) {
+                if (hintLabels.size() != numOfTypes) {
                     addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(variable.reference()), labelMap);
                 }
                 addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
-            } else if (variable.isType() && hintLabels.size() != numOfThings) {
+            } else if (variable.isType() && hintLabels.size() != numOfTypes) {
                 addInferredSubLabels(variable.asType(), referenceHintsMapping.get(variable.reference()), labelMap);
             }
         }
         return conjunction;
     }
 
-    public Conjunction computeHints(Conjunction conjunction) {
-        return computeHints(conjunction, ExecutorService.PARALLELISATION_FACTOR);
-    }
-
-    public Conjunction computeHints(Conjunction conjunction, int parallelisation) {
+    public Conjunction resolveThingTypes(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
@@ -110,7 +102,7 @@ public class TypeHinter {
             TypeVariable typeVariable = variableHints.getConversion(variable);
             neighbourhood.add(typeVariable);
             neighbourhood.addAll(constraintMapper.getVariableNeighbours().get(typeVariable));
-            Map<Reference, Set<Label>> localTypeHints = retrieveVariableHints(neighbourhood, parallelisation);
+            Map<Reference, Set<Label>> localTypeHints = retrieveVariableHints(neighbourhood);
             Set<Label> hintLabels = localTypeHints.get(variable.reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfThings) {
@@ -141,30 +133,6 @@ public class TypeHinter {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private void removeHintLabel(Variable variable, Label label) {
-        if (variable.isType()) variable.asType().sub().ifPresent(subConstraint -> subConstraint.removeHint(label));
-        else if (variable.isThing())
-            variable.asThing().isa().ifPresent(isaConstraint -> isaConstraint.removeHint(label));
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private Set<Label> getHintLabels(Variable variable) {
-        if (variable.isType()) {
-            if (variable.asType().sub().isPresent()) return variable.asType().sub().get().getTypeHints();
-            return null;
-        } else if (variable.isThing()) {
-            if (variable.asThing().isa().isPresent()) return variable.asThing().isa().get().getTypeHints();
-            return null;
-        } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private void addHintLabels(Variable variable, Set<Label> labels) {
-        if (variable.isType()) variable.asType().sub().ifPresent(subConstraint -> subConstraint.addHints(labels));
-        else if (variable.isThing())
-            variable.asThing().isa().ifPresent(isaConstraint -> isaConstraint.addHints(labels));
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
     private void ensureHintsConformToTheirSuper(Variable variable, Set<Variable> visited) {
         if (variable == null || visited.contains(variable) || variable.reference().isLabel()) return;
         visited.add(variable);
@@ -177,15 +145,14 @@ public class TypeHinter {
         if (supVar == null) return;
         if (supVar.reference().isLabel()) return;
 
-        Set<Label> supLabels = getHintLabels(supVar);
-        Set<Label> subLabels = getHintLabels(subVar);
-        if (supLabels == null || supLabels.isEmpty()) return;
+        Set<Label> supLabels = supVar.resolvedTypes();
+        Set<Label> subLabels = subVar.resolvedTypes();
+        if (supLabels.isEmpty()) return;
 
-        if (subLabels == null) return;
         if (subLabels.isEmpty()) {
             Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).collect(Collectors.toSet());
-            addHintLabels(subVar, subHintsOfSupLabels);
+            subVar.addResolvedTypes(subHintsOfSupLabels);
             return;
         }
 
@@ -195,7 +162,10 @@ public class TypeHinter {
             while (hintType != null && !supLabels.contains(hintType.getLabel())) {
                 hintType = hintType.getSupertype();
             }
-            if (hintType == null) removeHintLabel(subVar, label);
+            if (hintType == null) {
+                subVar.removeResolvedType(label);
+                if (subVar.resolvedTypes().isEmpty()) subVar.setSatisfiable(false);
+            }
         }
     }
 
@@ -210,16 +180,16 @@ public class TypeHinter {
         if (!variable.sub().isPresent()) {
             variable.sub(lowestCommonSuperType(hints, labelMap), false);
         }
-        variable.sub().get().addHints(hints);
+        variable.addResolvedTypes(hints);
     }
 
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
         //TODO: use .getType(label) once ConceptManager can handle labels
-        hints.removeIf(label -> conceptMgr.getType(label.scopedName()).isAbstract());
+        hints.removeIf(label -> conceptMgr.getThingType(label.scopedName()).isAbstract());
         if (!variable.isa().isPresent()) {
             variable.isa(lowestCommonSuperType(hints, labelMap), false);
         }
-        variable.isa().get().addHints(hints);
+        variable.addResolvedTypes(hints);
     }
 
     private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {
@@ -266,11 +236,11 @@ public class TypeHinter {
         }
     }
 
-    private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints, int parallelisation) {
+    private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
-            buffer(traversalEng.producer(conjunction.traversal(), parallelisation)).iterator().forEachRemaining(
+            traversalEng.iterator(conjunction.traversal()).forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
@@ -285,8 +255,20 @@ public class TypeHinter {
             assert conceptMgr.getRelationType(label.scope().get()) != null;
             return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name());
         } else {
-            return conceptMgr.getType(label.name());
+            return conceptMgr.getThingType(label.name());
         }
+    }
+
+    public Conjunction resolveRoleTypes(Conjunction conjunction) {
+        iterate(conjunction.variables()).filter(
+                v -> v.isType() && v.asType().label().isPresent() &&
+                        v.asType().label().get().properLabel().scope().isPresent()
+        ).map(Variable::asType).forEachRemaining(type -> {
+            Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(type.label().get().properLabel());
+            if (labels.isEmpty()) throw GraknException.of(TYPE_NOT_FOUND, type.label().get().properLabel());
+            type.addResolvedTypes(labels);
+        });
+        return conjunction;
     }
 
     private static class ConstraintMapper {

@@ -25,13 +25,10 @@ import java.util.stream.Stream;
 public interface EntityType extends ThingType {
 
     @Override
-    EntityType getSupertype();
-
-    @Override
-    Stream<? extends EntityType> getSupertypes();
-
-    @Override
     Stream<? extends EntityType> getSubtypes();
+
+    @Override
+    Stream<? extends EntityType> getSubtypesExplicit();
 
     @Override
     Stream<? extends Entity> getInstances();

@@ -26,6 +26,7 @@ import grakn.core.common.concurrent.ManagedCountDownLatch;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.structure.Structure;
 import grakn.core.traversal.structure.StructureEdge;
@@ -37,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,7 +55,6 @@ import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityV
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.INCREMENTALITY;
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
 import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 
 public class GraphPlanner implements Planner {
@@ -231,17 +232,10 @@ public class GraphPlanner implements Planner {
 
     private void initialiseConstraintsForVariables() {
         String conPrefix = "planner::vertex::con::";
-        boolean hasPotentialStartingVertex = false;
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
         MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
-            if (vertex.isPotentialStartingVertex) {
-                conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
-                hasPotentialStartingVertex = true;
-            }
-        }
-        if (!hasPotentialStartingVertex) {
-            throw GraknException.of(ILLEGAL_STATE);
+            conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
         }
     }
 
@@ -319,7 +313,11 @@ public class GraphPlanner implements Planner {
                     Instant finish = Instant.now();
                     long timeElapsed = Duration.between(start, finish).toMillis();
                     totalDuration -= (TIME_LIMIT_MILLIS - timeElapsed);
-                    if (isError()) throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
+                    if (isError()) {
+                        LOG.error(toString());
+                        LOG.error(solver.exportModelAsLpFormat());
+                        throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
+                    }
                 } while (!isPlanned());
                 produceProcedure();
                 isUpToDate = true;
@@ -336,5 +334,26 @@ public class GraphPlanner implements Planner {
         edges.forEach(PlannerEdge::recordValues);
         procedure = GraphProcedure.create(this);
         if (procedureLatch.getCount() > 0) procedureLatch.countDown();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append("Graph Planner: {");
+        List<PlannerEdge<?, ?>> plannerEdges = new ArrayList<>(edges);
+        plannerEdges.sort(Comparator.comparing(TraversalEdge::toString));
+        List<PlannerVertex<?>> plannerVertices = new ArrayList<>(vertices.values());
+        plannerVertices.sort(Comparator.comparing(v -> v.id().toString()));
+
+        str.append("\n\tvertices:");
+        for (PlannerVertex<?> v : plannerVertices) {
+            str.append("\n\t\t").append(v);
+        }
+        str.append("\n\tedges:");
+        for (PlannerEdge<?, ?> e : plannerEdges) {
+            str.append("\n\t\t").append(e);
+        }
+        str.append("\n}");
+        return str.toString();
     }
 }

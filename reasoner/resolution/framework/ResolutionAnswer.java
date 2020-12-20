@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Derived;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,23 +27,26 @@ import java.util.Map;
 import static grakn.common.collection.Collections.map;
 
 public class ResolutionAnswer {
-    private final Aggregator.Aggregated aggregatedAnswer;
+    private final Derived answer;
     private final Derivation derivation;
-    private final Actor<? extends Resolver<?>> producer;
+    private final boolean isInferred; // record if inference was invoked even when derivations are not active
     private final String patternAnswered;
+    private final Actor<? extends Resolver<?>> producer;
 
-    public ResolutionAnswer(Aggregator.Aggregated aggregatedAnswer,
+    public ResolutionAnswer(Derived answer,
                             String patternAnswered,
                             Derivation derivation,
-                            Actor<? extends Resolver<?>> producer) {
-        this.aggregatedAnswer = aggregatedAnswer;
+                            Actor<? extends Resolver<?>> producer,
+                            boolean isInferred) {
+        this.answer = answer;
         this.patternAnswered = patternAnswered;
         this.derivation = derivation;
         this.producer = producer;
+        this.isInferred = isInferred;
     }
 
-    public Aggregator.Aggregated aggregated() {
-        return aggregatedAnswer;
+    public Derived derived() {
+        return answer;
     }
 
     public Derivation derivation() {
@@ -51,7 +54,7 @@ public class ResolutionAnswer {
     }
 
     public boolean isInferred() {
-        return !derivation.equals(Derivation.EMPTY);
+        return isInferred;
     }
 
     public Actor<? extends Resolver<?>> producer() {
@@ -61,7 +64,7 @@ public class ResolutionAnswer {
     @Override
     public String toString() {
         return "Answer{" +
-                "conceptMap=" + aggregatedAnswer +
+                "conceptMap=" + answer +
                 ", executionRecord=" + derivation +
                 ", patternAnswered='" + patternAnswered + '\'' +
                 ", producer=" + producer +

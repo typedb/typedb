@@ -162,17 +162,14 @@ public class BasicTest {
                             tx -> {
                                 final EntityType rootEntityType = tx.concepts().getRootEntityType();
                                 assertNotNull(rootEntityType);
-                                assertNull(rootEntityType.getSupertype());
                             },
                             tx -> {
                                 final RelationType rootRelationType = tx.concepts().getRootRelationType();
                                 assertNotNull(rootRelationType);
-                                assertNull(rootRelationType.getSupertype());
                             },
                             tx -> {
                                 final AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
                                 assertNotNull(rootAttributeType);
-                                assertNull(rootAttributeType.getSupertype());
                             }
                     );
 

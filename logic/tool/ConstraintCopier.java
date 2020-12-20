@@ -18,14 +18,16 @@
 package grakn.core.logic.tool;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.Variable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,10 +64,10 @@ public class ConstraintCopier {
     }
 
     public static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
+        //NOTE: isa can never exist on a Value Concludable (or else it would be a Isa Concludable).
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream()
-                .filter(value1 -> value.equals(value1))
-                .collect(Collectors.toSet());
+                .filter(value1 -> !value.equals(value1)).collect(Collectors.toSet());
         copyValuesOntoVariable(otherValues, newOwner);
         return copyValueOntoVariable(value, newOwner);
     }
@@ -73,7 +75,6 @@ public class ConstraintCopier {
     static IsaConstraint copyIsaOntoVariable(IsaConstraint toCopy, ThingVariable variableToConstrain) {
         TypeVariable typeCopy = copyVariableWithLabelAndValueType(toCopy.type());
         IsaConstraint newIsa = variableToConstrain.isa(typeCopy, toCopy.isExplicit());
-        newIsa.addHints(toCopy.getTypeHints());
         return newIsa;
     }
 
@@ -83,15 +84,15 @@ public class ConstraintCopier {
 
     static ValueConstraint<?> copyValueOntoVariable(ValueConstraint<?> toCopy, ThingVariable toConstrain) {
         if (toCopy.isLong())
-            return toConstrain.valueLong(toCopy.asLong().predicate().asEquality(), toCopy.asLong().value());
+            return toConstrain.valueLong(toCopy.asLong().predicate(), toCopy.asLong().value());
         else if (toCopy.isDouble())
-            return toConstrain.valueDouble(toCopy.asDouble().predicate().asEquality(), toCopy.asDouble().value());
+            return toConstrain.valueDouble(toCopy.asDouble().predicate(), toCopy.asDouble().value());
         else if (toCopy.isBoolean())
-            return toConstrain.valueBoolean(toCopy.asBoolean().predicate().asEquality(), toCopy.asBoolean().value());
+            return toConstrain.valueBoolean(toCopy.asBoolean().predicate(), toCopy.asBoolean().value());
         else if (toCopy.isString())
             return toConstrain.valueString(toCopy.asString().predicate(), toCopy.asString().value());
         else if (toCopy.isDateTime())
-            return toConstrain.valueDateTime(toCopy.asDateTime().predicate().asEquality(), toCopy.asDateTime().value());
+            return toConstrain.valueDateTime(toCopy.asDateTime().predicate(), toCopy.asDateTime().value());
         else if (toCopy.isVariable()) {
             ThingVariable copyOfVar = copyIsaAndValues(toCopy.asVariable().value());
             return toConstrain.valueVariable(toCopy.asValue().predicate().asEquality(), copyOfVar);
@@ -109,14 +110,29 @@ public class ConstraintCopier {
         copyValuesOntoVariable(oldOwner.value(), newOwner);
     }
 
-    public static void copyLabelAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
-        if (copyFrom.label().isPresent()) copyTo.label(Label.of(copyFrom.label().get().label()));
+    public static void copyLabelSubAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
+        if (copyFrom.label().isPresent()) copyTo.label(copyFrom.label().get().properLabel());
+        if (copyFrom.sub().isPresent()) {
+            SubConstraint subCopy = copyFrom.sub().get();
+            copyTo.sub(subCopy.type(), subCopy.isExplicit());
+        }
         if (copyFrom.valueType().isPresent()) copyTo.valueType(copyFrom.valueType().get().valueType());
     }
 
     static TypeVariable copyVariableWithLabelAndValueType(TypeVariable copyFrom) {
         TypeVariable copy = TypeVariable.of(copyFrom.identifier());
-        copyLabelAndValueType(copyFrom, copy);
+        copyLabelSubAndValueType(copyFrom, copy);
         return copy;
+    }
+
+    static boolean hasNoHints(Variable variable) {
+        return variable.isSatisfiable() && variable.resolvedTypes().isEmpty();
+    }
+
+    public static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
+        if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
+        assert (conjVar.isThing() && thenVar.isThing()) ||
+                (conjVar.isType() && thenVar.isType());
+        return Collections.disjoint(conjVar.resolvedTypes(), thenVar.resolvedTypes());
     }
 }

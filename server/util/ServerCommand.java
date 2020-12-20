@@ -21,8 +21,8 @@ package grakn.core.server.util;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.Version;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -55,6 +55,14 @@ public interface ServerCommand {
 
     default ExportData asExportData() {
         throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, ExportData.class);
+    }
+
+    default boolean isPrintSchema() {
+        return false;
+    }
+
+    default PrintSchema asPrintSchema() {
+        throw GraknException.of(ILLEGAL_CAST, ServerCommand.class, PrintSchema.class);
     }
 
     @Command(name = "grakn server", mixinStandardHelpOptions = true, version = {Version.VERSION})
@@ -190,7 +198,7 @@ public interface ServerCommand {
 
         private final Start startCommand;
 
-        @Parameters(  index = "0", description = "Database to export data from")
+        @Parameters(index = "0", description = "Database to export data from")
         private String database;
 
         @Parameters(index = "1", description = "File for the data to export to")
@@ -219,6 +227,37 @@ public interface ServerCommand {
 
         @Override
         public ExportData asExportData() {
+            return this;
+        }
+    }
+
+    @Command(name = "schema")
+    class PrintSchema implements ServerCommand {
+
+        private final Start startCommand;
+
+        @Parameters(index = "0", description = "Database to get schema")
+        private String database;
+
+        public PrintSchema(Start startCommand) {
+            this.startCommand = startCommand;
+        }
+
+        public String database() {
+            return database;
+        }
+
+        public int port() {
+            return startCommand.port();
+        }
+
+        @Override
+        public boolean isPrintSchema() {
+            return true;
+        }
+
+        @Override
+        public PrintSchema asPrintSchema() {
             return this;
         }
     }

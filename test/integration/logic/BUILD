@@ -44,9 +44,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-type-hinter",
-    srcs = ["TypeHinterTest.java"],
-    test_class = "grakn.core.logic.TypeHinterTest",
+    name = "test-type-resolver",
+    srcs = ["TypeResolverTest.java"],
+    test_class = "grakn.core.logic.TypeResolverTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -67,11 +67,30 @@ host_compatible_java_test(
     data = [":basic-schema.gql"],
 )
 
+host_compatible_java_test(
+    name = "test-unification",
+    srcs = ["resolvable/UnificationTest.java"],
+    test_class = "grakn.core.logic.resolvable.UnificationTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    deps = [
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
         "reasoner/*",
+        "resolvable/*",
     ]),
     license_type = "agpl",
 )

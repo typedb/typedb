@@ -18,7 +18,6 @@
 
 package grakn.core.pattern.constraint.thing;
 
-import grakn.core.common.parameters.Label;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -26,9 +25,7 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static graql.lang.common.GraqlToken.Char.SPACE;
@@ -40,14 +37,12 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     private final TypeVariable type;
     private final boolean isExplicit;
     private final int hash;
-    private final Set<Label> typeHints;
 
     public IsaConstraint(ThingVariable owner, TypeVariable type, boolean isExplicit) {
         super(owner, set(type));
         this.type = type;
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(IsaConstraint.class, this.owner, this.type, this.isExplicit);
-        this.typeHints = new HashSet<>();
         type.constrainedBy(this);
     }
 
@@ -64,31 +59,11 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
         return isExplicit;
     }
 
-    public void addHints(Set<Label> labels) {
-        typeHints.addAll(labels);
-    }
-
-    public void retainHints(Set<Label> labels) { typeHints.retainAll(labels); }
-
-    public void removeHint(Label label) {
-        typeHints.remove(label);
-    }
-
-    public void clearHintLabels() {
-        typeHints.clear();
-    }
-
-    public Set<Label> getTypeHints() {
-        return typeHints;
-    }
-
     @Override
     public void addTo(Traversal traversal) {
         // TODO: assert !(type.reference().isLabel() && typeHints.isEmpty());
-        if (!typeHints.isEmpty()) traversal.types(owner.identifier(), typeHints);
-        if (type.reference().isName() || typeHints.isEmpty()) {
+        if (type.reference().isName() || owner.resolvedTypes().isEmpty())
             traversal.isa(owner.identifier(), type.identifier(), !isExplicit);
-        }
     }
 
     @Override
@@ -125,7 +100,6 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     public AlphaEquivalence alphaEquals(IsaConstraint that) {
         return AlphaEquivalence.valid()
                 .validIf(isExplicit() == that.isExplicit())
-                .validIf(typeHints.equals(that.typeHints))
                 .validIfAlphaEqual(type, that.type);
     }
 }

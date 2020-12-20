@@ -62,11 +62,21 @@ public class DatabaseSteps {
         CompletableFuture.allOf(creations).join();
     }
 
+    @When("connection delete database: {word}")
+    public void connection_delete_database(String name) {
+        connection_delete_databases(list(name));
+    }
+
     @When("connection delete database(s):")
     public void connection_delete_databases(List<String> names) {
         for (String databaseName : names) {
             grakn.databases().get(databaseName).delete();
         }
+    }
+
+    @Then("connection delete database; throws exception: {word}")
+    public void connection_delete_database_throws_exception(String name) {
+        connection_delete_databases_throws_exception(list(name));
     }
 
     @Then("connection delete database(s); throws exception")
@@ -100,12 +110,22 @@ public class DatabaseSteps {
         CompletableFuture.allOf(deletions).join();
     }
 
+    @When("connection has database: {word}")
+    public void connection_has_database(String name) {
+        connection_has_databases(list(name));
+    }
+
     @Then("connection has database(s):")
     public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
                      grakn.databases().all().stream()
                              .map(database -> database.name())
                              .collect(Collectors.toSet()));
+    }
+
+    @Then("connection does not have database: {word}")
+    public void connection_does_not_have_database(String name) {
+        connection_does_not_have_databases(list(name));
     }
 
     @Then("connection does not have database(s):")

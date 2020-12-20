@@ -77,7 +77,12 @@ public class GraphProducer implements Producer<VertexMap> {
             for (; i < parallelisation && start.hasNext(); i++) {
                 runningJobs.incrementAndGet(); // TODO: still not right
                 ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
-                futures.computeIfAbsent(iterator, k -> runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
+                futures.computeIfAbsent(iterator, k ->
+                        runAsync(consume(iterator, splitCount, sink), forkJoinPool()).exceptionally(e -> {
+                            sink.done(this, e);
+                            return null;
+                        })
+                );
             }
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
         } else {
@@ -104,7 +109,12 @@ public class GraphProducer implements Producer<VertexMap> {
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
             ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, params).distinct(produced);
-            futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
+            futures.put(iterator,
+                    runAsync(consume(iterator, remaining, sink), forkJoinPool()).exceptionally(e -> {
+                        sink.done(this, e);
+                        return null;
+                    })
+            );
             return;
         }
 

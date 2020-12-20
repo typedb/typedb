@@ -39,7 +39,6 @@ import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -57,7 +56,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<Conclusion<?>> possibleThenConcludables;
+    private final Set<Conclusion<?, ?>> possibleConclusions;
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -69,7 +68,7 @@ public class Rule {
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
         pruneThenTypeHints();
-        this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
+        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
@@ -86,7 +85,7 @@ public class Rule {
         validateSatisfiable();
         pruneThenTypeHints();
 
-        this.possibleThenConcludables = buildThenConcludables(this.then, this.when.variables());
+        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
     }
@@ -104,17 +103,17 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Set<Conclusion<?>> possibleThenConcludables() {
-        return possibleThenConcludables;
+    public Set<Conclusion<?, ?>> possibleConclusions() {
+        return possibleConclusions;
     }
 
     public ResourceIterator<Rule> findApplicableRulesPositive() {
-        // TODO find applicable rules from each non-negated ConjunctionConcludables
+        // TODO find applicable rules from each non-negated Concludables
         return null;
     }
 
     public ResourceIterator<Rule> findApplicableRulesNegative() {
-        // TODO find applicable rules from negated ConjunctionConcludables
+        // TODO find applicable rules from negated Concludables
         return null;
     }
 
@@ -170,33 +169,31 @@ public class Rule {
         // TODO detect negated cycles in the rule graph
         // TODO use the new rule as a starting point
         // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
-
     }
 
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenTypeHints() {
-        then.variables().stream().filter(var -> var.identifier().isNamedReference())
-                .forEach(thenVar -> {
-                    Optional<Variable> whenVar = when.variables().stream().filter(var -> var.identifier().equals(thenVar.identifier())).findFirst();
-                    if (whenVar.isPresent() && whenVar.get().isThing()) {
-                        assert thenVar.isThing();
-                        whenVar.get().asThing().isa().ifPresent(whenIsa -> thenVar.asThing().isa().ifPresent(
-                                thenIsa -> thenIsa.retainHints(whenIsa.getTypeHints())));
-                    } else if (whenVar.isPresent() && whenVar.get().isType()) {
-                        assert thenVar.isType();
-                        whenVar.get().asType().sub().ifPresent(whenSub -> thenVar.asType().sub().ifPresent(
-                                thenSub -> thenSub.retainHints(whenSub.getTypeHints())));
-                    }
-                });
+        then.variables().stream().filter(variable -> variable.identifier().isNamedReference())
+                .forEach(thenVar ->
+                        when.variables().stream()
+                                .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
+                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
+                                .findFirst().ifPresent(whenVar -> {
+                            if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
+                                thenVar.addResolvedTypes(whenVar.resolvedTypes());
+                            } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
+                            if (thenVar.resolvedTypes().isEmpty()) thenVar.setSatisfiable(false);
+                        })
+                );
     }
 
-    private Set<Conclusion<?>> buildThenConcludables(Conjunction then, Set<Variable> constraintContext) {
-        HashSet<Conclusion<?>> thenConcludables = new HashSet<>();
+    private Set<Conclusion<?, ?>> buildConclusions(Conjunction then, Set<Variable> constraintContext) {
+        HashSet<Conclusion<?, ?>> conclusions = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> Conclusion.of(constraint, constraintContext)).forEach(thenConcludables::add);
-        return thenConcludables;
+                .map(constraint -> Conclusion.create(constraint, constraintContext)).forEach(conclusions::add);
+        return conclusions;
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
@@ -204,11 +201,10 @@ public class Rule {
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
-        // TODO Needs to make all of the variables named
         return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
 
-    public abstract static class Conclusion<CONSTRAINT extends Constraint> {
+    public abstract static class Conclusion<CONSTRAINT extends Constraint, U extends Conclusion<CONSTRAINT, U>> {
 
         private final CONSTRAINT constraint;
 
@@ -217,16 +213,16 @@ public class Rule {
             copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
         }
 
-        public static Conclusion<?> of(ThingConstraint constraint, Set<Variable> constraintContext) {
-            if (constraint.isRelation()) return new Relation(constraint.asRelation(), constraintContext);
-            else if (constraint.isHas()) return new Has(constraint.asHas(), constraintContext);
-            else if (constraint.isIsa()) return new Isa(constraint.asIsa(), constraintContext);
-            else if (constraint.isValue()) return new Value(constraint.asValue(), constraintContext);
-            else throw GraknException.of(ILLEGAL_STATE);
-        }
-
         public CONSTRAINT constraint() {
             return constraint;
+        }
+
+        public static Conclusion<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
+            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
+            else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
+            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
+            else if (constraint.isValue()) return Value.create(constraint.asValue(), constraintContext);
+            else throw GraknException.of(ILLEGAL_STATE);
         }
 
         public boolean isRelation() {
@@ -261,28 +257,32 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
         }
 
-
         private void copyAdditionalConstraints(Set<Variable> fromVars, Set<Variable> toVars) {
-            Map<Variable, Variable> nonAnonfromVarsMap = fromVars.stream()
+            Map<Variable, Variable> nonAnonFromVarsMap = fromVars.stream()
                     .filter(variable -> !variable.identifier().reference().isAnonymous())
                     .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
             toVars.stream().filter(variable -> !variable.identifier().reference().isAnonymous())
                     .forEach(copyTo -> {
-                        if (nonAnonfromVarsMap.containsKey(copyTo)) {
-                            Variable copyFrom = nonAnonfromVarsMap.get(copyTo);
+                        if (nonAnonFromVarsMap.containsKey(copyTo)) {
+                            Variable copyFrom = nonAnonFromVarsMap.get(copyTo);
                             if (copyTo.isThing() && copyFrom.isThing()) {
                                 ConstraintCopier.copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
                             } else if (copyTo.isType() && copyFrom.isType()) {
-                                ConstraintCopier.copyLabelAndValueType(copyFrom.asType(), copyTo.asType());
+                                ConstraintCopier.copyLabelSubAndValueType(copyFrom.asType(), copyTo.asType());
                             } else throw GraknException.of(ILLEGAL_STATE);
                         }
                     });
         }
 
-        public static class Relation extends Conclusion<RelationConstraint> {
+        public static class Relation extends Conclusion<RelationConstraint, Conclusion.Relation> {
 
             public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
-                super(ConstraintCopier.copyConstraint(constraint), constraintContext);
+                super(constraint, constraintContext);
+            }
+
+
+            public static Relation create(RelationConstraint constraint, Set<Variable> constraintContext) {
+                return new Relation(ConstraintCopier.copyConstraint(constraint), constraintContext);
             }
 
             @Override
@@ -296,10 +296,14 @@ public class Rule {
             }
         }
 
-        public static class Has extends Conclusion<HasConstraint> {
+        public static class Has extends Conclusion<HasConstraint, Conclusion.Has> {
 
             public Has(HasConstraint constraint, Set<Variable> constraintContext) {
-                super(ConstraintCopier.copyConstraint(constraint), constraintContext);
+                super(constraint, constraintContext);
+            }
+
+            public static Has create(HasConstraint constraint, Set<Variable> constraintContext) {
+                return new Has(ConstraintCopier.copyConstraint(constraint), constraintContext);
             }
 
             @Override
@@ -313,10 +317,14 @@ public class Rule {
             }
         }
 
-        public static class Isa extends Conclusion<IsaConstraint> {
+        public static class Isa extends Conclusion<IsaConstraint, Conclusion.Isa> {
 
             public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
-                super(ConstraintCopier.copyConstraint(constraint), constraintContext);
+                super(constraint, constraintContext);
+            }
+
+            public static Isa create(IsaConstraint constraint, Set<Variable> constraintContext) {
+                return new Isa(ConstraintCopier.copyConstraint(constraint), constraintContext);
             }
 
             @Override
@@ -330,10 +338,14 @@ public class Rule {
             }
         }
 
-        public static class Value extends Conclusion<ValueConstraint<?>> {
+        public static class Value extends Conclusion<ValueConstraint<?>, Conclusion.Value> {
 
-            public Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
-                super(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
+                super(constraint, constraintContext);
+            }
+
+            public static Value create(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
+                return new Value(ConstraintCopier.copyConstraint(constraint), constraintContext);
             }
 
             @Override
@@ -346,5 +358,6 @@ public class Rule {
                 return this;
             }
         }
+
     }
 }

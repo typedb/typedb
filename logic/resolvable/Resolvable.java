@@ -20,6 +20,8 @@ package grakn.core.logic.resolvable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Conjunction;
 
+import java.util.Set;
+
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Resolvable {
@@ -42,4 +44,11 @@ public abstract class Resolvable {
         throw GraknException.of(INVALID_CASTING);
     }
 
+    public static Set<Resolvable> split(Conjunction conjunction, Set<Concludable<?>> concludables) {
+        // TODO Filter the set of concludables to those with applicable rules, record their core constraints as a set
+        //  Constraints which aren't in the concludables constraint set are retrievable
+        //  Build Retrievables, also recording the variables that they share with concludables, these need to be
+        //  accessible for planning purposes
+        return null;
+    }
 }

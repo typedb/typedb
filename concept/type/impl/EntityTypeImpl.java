@@ -28,7 +28,6 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -67,20 +66,14 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         super.setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
-    @Nullable
-    @Override
-    public EntityTypeImpl getSupertype() {
-        return super.getSupertype(v -> of(graphMgr, v));
-    }
-
-    @Override
-    public Stream<EntityTypeImpl> getSupertypes() {
-        return super.getSupertypes(v -> of(graphMgr, v));
-    }
-
     @Override
     public Stream<EntityTypeImpl> getSubtypes() {
         return super.getSubtypes(v -> of(graphMgr, v));
+    }
+
+    @Override
+    public Stream<EntityTypeImpl> getSubtypesExplicit() {
+        return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
@@ -104,6 +97,9 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         final ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return EntityImpl.of(instance);
     }
+
+    @Override
+    public boolean isEntityType() { return true; }
 
     @Override
     public EntityTypeImpl asEntityType() { return this; }

@@ -23,6 +23,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.protocol.ConceptProto;
@@ -47,8 +48,8 @@ public class ConceptManagerHandler {
     public void handleRequest(Transaction.Req request) {
         final ConceptProto.ConceptManager.Req conceptManagerReq = request.getConceptManagerReq();
         switch (conceptManagerReq.getReqCase()) {
-            case GET_TYPE_REQ:
-                getType(request, conceptManagerReq.getGetTypeReq().getLabel());
+            case GET_THING_TYPE_REQ:
+                getThingType(request, conceptManagerReq.getGetThingTypeReq().getLabel());
                 return;
             case GET_THING_REQ:
                 getThing(request, conceptManagerReq.getGetThingReq().getIid().toByteArray());
@@ -72,11 +73,11 @@ public class ConceptManagerHandler {
         return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setConceptManagerRes(res).build();
     }
 
-    private void getType(Transaction.Req request, String label) {
-        final Type type = conceptManager.getType(label);
-        final ConceptProto.ConceptManager.GetType.Res.Builder getTypeRes = ConceptProto.ConceptManager.GetType.Res.newBuilder();
-        if (type != null) getTypeRes.setType(type(type));
-        transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetTypeRes(getTypeRes)));
+    private void getThingType(Transaction.Req request, String label) {
+        final ThingType thingType = conceptManager.getThingType(label);
+        final ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes = ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
+        if (thingType != null) getThingTypeRes.setThingType(type(thingType));
+        transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetThingTypeRes(getThingTypeRes)));
     }
 
     private void getThing(Transaction.Req request, byte[] iid) {

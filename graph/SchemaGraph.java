@@ -21,7 +21,6 @@ package grakn.core.graph;
 import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.IndexIID;
@@ -39,6 +38,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -47,9 +47,11 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
-import static grakn.core.common.iterator.Iterators.empty;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
@@ -80,6 +82,7 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
+
     private final Statistics statistics;
     private final Cache cache;
     private final boolean isReadOnly;
@@ -103,12 +106,13 @@ public class SchemaGraph implements Graph {
     static class Cache {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
-
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
+        private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
+            resolvedRoleTypeLabels = new ConcurrentHashMap<>();
         }
     }
 
@@ -166,7 +170,7 @@ public class SchemaGraph implements Graph {
         Encoding.Prefix index = IndexIID.Rule.prefix();
         ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                 convert(StructureIID.Rule.of(value)));
-        return link(list(Iterators.iterate(rulesByIID.values()), persistedRules)).distinct();
+        return link(list(iterate(rulesByIID.values()), persistedRules)).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -209,6 +213,21 @@ public class SchemaGraph implements Graph {
         else return fn.get();
     }
 
+    public Set<Label> resolveRoleTypeLabels(Label scopedLabel) {
+        assert scopedLabel.scope().isPresent();
+        Supplier<Set<Label>> fn = () -> {
+            TypeVertex relationType = getType(scopedLabel.scope().get());
+            if (relationType == null) return set();
+            else return tree(relationType, rel -> rel.ins().edge(SUB).from())
+                    .flatMap(rel -> rel.outs().edge(RELATES).to())
+                    .map(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                            .filter(r -> r.properLabel().name().equals(scopedLabel.name())).firstOrNull())
+                    .noNulls().map(TypeVertex::properLabel).toSet();
+        };
+        if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
+        else return fn.get();
+    }
+
     public Stream<TypeVertex> bufferedTypes() {
         return typesByIID.values().stream();
     }
@@ -239,15 +258,6 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex getType(String label) {
         return getType(label, null);
-    }
-
-    public ResourceIterator<TypeVertex> getRoleTypes(Label scopedLabel) {
-        assert scopedLabel.scope().isPresent();
-        TypeVertex relationType = getType(scopedLabel.scope().get());
-        if (relationType == null) return empty();
-        else return tree(relationType, r -> r.ins().edge(SUB).from())
-                .flatMap(r -> r.outs().edge(RELATES).to())
-                .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()));
     }
 
     public TypeVertex getType(String label, @Nullable String scope) {
@@ -487,6 +497,10 @@ public class SchemaGraph implements Graph {
             }
         }
 
+        public long typeCount() {
+            return thingTypeCount() + roleTypeCount();
+        }
+
         public long thingTypeCount() {
             Supplier<Integer> fn = () -> toIntExact(thingTypes().stream().count());
             if (isReadOnly) {
@@ -534,8 +548,9 @@ public class SchemaGraph implements Graph {
         }
 
         public long attTypesWithValTypeComparableTo(Set<Label> labels) {
-            Set<Encoding.ValueType> valueTypes =
-                    labels.stream().flatMap(l -> getType(l).valueType().comparables().stream()).collect(toSet());
+            Set<Encoding.ValueType> valueTypes = iterate(labels)
+                    .map(l -> getType(l).valueType()).noNulls()
+                    .flatMap(vt -> iterate(vt.comparables())).toSet();
             return valueTypes.stream().mapToLong(this::attTypesWithValueType).sum();
         }
 

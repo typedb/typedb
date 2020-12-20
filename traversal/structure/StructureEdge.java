@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.graph.TraversalEdge;
+import graql.lang.common.GraqlToken;
 
 import java.util.Objects;
 import java.util.Set;
@@ -32,8 +33,8 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
 
-    StructureEdge(VERTEX_FROM from, VERTEX_TO to) {
-        super(from, to);
+    StructureEdge(VERTEX_FROM from, VERTEX_TO to, String symbol) {
+        super(from, to, symbol);
     }
 
     public boolean isEqual() {
@@ -68,7 +69,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         private final int hash;
 
         Equal(StructureVertex<?> from, StructureVertex<?> to) {
-            super(from, to);
+            super(from, to, GraqlToken.Predicate.Equality.EQ.toString());
             this.hash = Objects.hash(getClass(), from, to);
         }
 
@@ -104,7 +105,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         private final int hash;
 
         Predicate(StructureVertex.Thing from, StructureVertex.Thing to, grakn.core.traversal.common.Predicate.Variable predicate) {
-            super(from, to);
+            super(from, to, predicate.toString());
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
         }
@@ -149,7 +150,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         private final int hash;
 
         public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive) {
-            super(from, to);
+            super(from, to, encoding.name());
             this.encoding = encoding;
             this.isTransitive = isTransitive;
             this.hash = Objects.hash(getClass(), from, to, this.encoding, this.isTransitive);

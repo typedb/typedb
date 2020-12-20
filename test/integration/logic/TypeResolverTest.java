@@ -21,7 +21,7 @@ package grakn.core.logic;
 import grakn.common.collection.Pair;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
-import grakn.core.logic.tool.TypeHinter;
+import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
@@ -43,7 +43,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +52,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertTrue;
 
 @Ignore
-public class TypeHinterTest {
+public class TypeResolverTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-test");
     private static String database = "type-hinter-test";
     private static RocksGrakn grakn;
@@ -87,20 +86,10 @@ public class TypeHinterTest {
         transaction.query().define(query);
     }
 
-    private Set<Label> getHints(Variable variable) {
-        if (variable.isType() && variable.asType().sub().isPresent()) {
-            return variable.asType().sub().get().getTypeHints();
-        } else if (variable.isThing() && variable.asThing().isa().isPresent()) {
-            return variable.asThing().isa().get().getTypeHints();
-        } else {
-            return new HashSet<>();
-        }
-    }
-
     private Map<String, Set<String>> getHintMap(Conjunction conjunction) {
         return conjunction.variables().stream().collect(Collectors.toMap(
                 variable -> variable.reference().syntax(),
-                variable -> getHints(variable).stream().map(Label::scopedName).collect(Collectors.toSet())
+                variable -> variable.resolvedTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
         ));
     }
 
@@ -131,18 +120,18 @@ public class TypeHinterTest {
         return Disjunction.create(query.conjunction().normalise()).conjunctions().iterator().next();
     }
 
-    private Conjunction runExhaustiveHinter(TypeHinter typeHinter, String matchString) {
+    private Conjunction runExhaustiveHinter(TypeResolver typeHinter, String matchString) {
         return typeHinter.computeHintsExhaustive(createConjunction(matchString));
     }
 
-    private Conjunction runSimpleHinter(TypeHinter typeHinter, String matchString) {
-        return typeHinter.computeHints(createConjunction(matchString));
+    private Conjunction runSimpleHinter(TypeResolver typeHinter, String matchString) {
+        return typeHinter.resolveThingTypes(createConjunction(matchString));
     }
 
     @Test
     public void isa_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $p isa person; ";
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
@@ -159,7 +148,7 @@ public class TypeHinterTest {
     @Test
     public void isa_explicit_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $p isa! person; ";
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
@@ -176,7 +165,7 @@ public class TypeHinterTest {
     @Test
     public void is_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $p sub entity;" +
@@ -198,7 +187,7 @@ public class TypeHinterTest {
     @Test
     public void has_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $p has name 'bob';";
 
@@ -216,7 +205,7 @@ public class TypeHinterTest {
     @Test
     public void has_inference_variable_with_attribute_type() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $p has name $a;";
 
@@ -234,7 +223,7 @@ public class TypeHinterTest {
     @Test
     public void has_inference_variable_without_attribute_type() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $p isa shape;" +
@@ -253,7 +242,7 @@ public class TypeHinterTest {
     @Test
     public void relation_concrete_role_concrete() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $r (wife: $yoko) isa marriage;";
 
@@ -279,7 +268,7 @@ public class TypeHinterTest {
     @Test
     public void relation_variable_role_concrete_relation_hidden_variable() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $r ($role: $yoko) isa marriage;";
 
@@ -306,7 +295,7 @@ public class TypeHinterTest {
     @Test
     public void relation_variable_role_variable_relation_named_variable() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $r (wife: $yoko) isa $m;";
 
@@ -332,7 +321,7 @@ public class TypeHinterTest {
     @Test
     public void minimal_relation() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $r (wife: $yoko);";
 
@@ -357,7 +346,7 @@ public class TypeHinterTest {
     @Test
     public void relation_multiple_roles() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
 
@@ -386,7 +375,7 @@ public class TypeHinterTest {
     @Test
     public void has_reverse() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $p isa! person;" +
@@ -406,7 +395,7 @@ public class TypeHinterTest {
     @Test
     public void negations_ignored() throws IOException {
         define_standard_schema("basic-schema");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $p isa person;" +
                 "  not {$p isa man;};";
@@ -432,7 +421,7 @@ public class TypeHinterTest {
                         "  greek sub man;" +
                         "  socrates sub greek;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $p isa man;" +
                 "  man sub $q;";
@@ -458,7 +447,7 @@ public class TypeHinterTest {
                         "  weight sub attribute, value double;" +
                         "  name sub attribute, value string;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $p has $a;" +
                 "  $a='bob';";
@@ -486,7 +475,7 @@ public class TypeHinterTest {
                         "  weight sub attribute, value long;" +
                         "  leg-weight, sub weight;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has weight $c;" +
                 "  $b has leg-weight 5;" +
@@ -515,7 +504,7 @@ public class TypeHinterTest {
                         "  nickname sub attribute, value string, owns name;" +
                         "  surname sub attribute, value string, owns name;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has $b" +
                 "  $b has $a";
@@ -544,7 +533,7 @@ public class TypeHinterTest {
                         "  weight sub attribute, value double, owns measure-system;" +
                         "  measure-system sub attribute, owns conversion-rate;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has $b" +
                 "  $b has $c" +
@@ -568,7 +557,7 @@ public class TypeHinterTest {
     @Test
     public void you_know_the_thing() throws IOException {
         define_standard_schema("schema-basic");
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $x isa thing;";
 
@@ -593,7 +582,7 @@ public class TypeHinterTest {
                         "  greek sub man;" +
                         "  socrates sub greek;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match $x isa $y;" +
                 "  $y sub $z;" +
@@ -635,7 +624,7 @@ public class TypeHinterTest {
                         "  hand-weight sub weight;" +
                         "  tail-weight sub weight"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $a has $c;" +
@@ -675,7 +664,7 @@ public class TypeHinterTest {
                         "  marriage sub relation, relates husband, relates wife, owns marriage-attr; " +
                         "  ownership sub relation, relates pet, relates owner, owns ownership-attr;"
         );
-        TypeHinter typeHinter = transaction.logic().typeHinter();
+        TypeResolver typeHinter = transaction.logic().typeResolver();
         String queryString = "match " +
                 "  $a isa $t; " +
                 "  $b isa $t; " +

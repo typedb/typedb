@@ -38,6 +38,7 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTra
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
 import static grakn.core.test.behaviour.util.Util.assertThrows;
+import static grakn.core.test.behaviour.util.Util.assertThrowsWithMessage;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,12 +49,12 @@ public class TransactionSteps {
     // sequential sessions, sequential transactions //
     // =============================================//
 
-    @When("session opens transaction of type: {transaction_type}")
+    @When("(for each )session(,) open(s) transaction(s) of type: {transaction_type}")
     public void session_opens_transaction_of_type(Arguments.Transaction.Type type) {
         for_each_session_open_transactions_of_type(list(type));
     }
 
-    @When("for each session, open transaction(s) of type:")
+    @When("(for each )session(,) open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types) {
         for (Grakn.Session session : sessions) {
             final List<Grakn.Transaction> transactions = new ArrayList<>();
@@ -65,7 +66,13 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, open transaction(s) of type; throws exception")
+
+    @When("(for each )session(,) open transaction(s) of type; throws exception: {transaction_type}")
+    public void for_each_session_open_transactions_of_type_throws_exception(Arguments.Transaction.Type type) {
+        for_each_session_open_transactions_of_type_throws_exception(list(type));
+    }
+
+    @Then("(for each )session(,) open transaction(s) of type; throws exception")
     public void for_each_session_open_transactions_of_type_throws_exception(List<Arguments.Transaction.Type> types) {
         for (Grakn.Session session : sessions) {
             for (Arguments.Transaction.Type type : types) {
@@ -74,12 +81,12 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transaction(s) is/are null: {bool}")
+    @Then("(for each )session(,) transaction(s) is/are null: {bool}")
     public void for_each_session_transactions_are_null(boolean isNull) {
         for_each_session_transactions_are(transaction -> assertEquals(isNull, isNull(transaction)));
     }
 
-    @Then("for each session, transaction(s) is/are open: {bool}")
+    @Then("(for each )session(,) transaction(s) is/are open: {bool}")
     public void for_each_session_transactions_are_open(boolean isOpen) {
         for_each_session_transactions_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
     }
@@ -94,7 +101,12 @@ public class TransactionSteps {
         assertThrows(() -> sessionsToTransactions.get(sessions.get(0)).get(0).commit());
     }
 
-    @Then("for each session, transaction(s) commit(s)")
+    @Then("transaction commits; throws exception containing {string}")
+    public void transaction_commits_throws_exception(String exception) {
+        assertThrowsWithMessage(() -> sessionsToTransactions.get(sessions.get(0)).get(0).commit(), exception);
+    }
+
+    @Then("(for each )session(,) transaction(s) commit(s)")
     public void for_each_session_transactions_commit() {
         for (Grakn.Session session : sessions) {
             for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
@@ -103,7 +115,7 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transaction(s) commit(s); throws exception")
+    @Then("(for each )session(,) transaction(s) commit(s); throws exception")
     public void for_each_session_transactions_commits_throws_exception() {
         for (Grakn.Session session : sessions) {
             for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
@@ -112,7 +124,7 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transaction close(s)")
+    @Then("(for each )session(,) transaction close(s)")
     public void for_each_session_transaction_closes() {
         for (Grakn.Session session : sessions) {
             for (Grakn.Transaction transaction : sessionsToTransactions.get(session)) {
@@ -129,7 +141,12 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transaction(s) has/have type:")
+    @Then("(for each )session(,) transaction(s) has/have type: {transaction_type}")
+    public void for_each_session_transactions_have_type(Arguments.Transaction.Type type) {
+        for_each_session_transactions_have_type(list(type));
+    }
+
+    @Then("(for each )session(,) transaction(s) has/have type:")
     public void for_each_session_transactions_have_type(List<Arguments.Transaction.Type> types) {
         for (Grakn.Session session : sessions) {
             final List<Grakn.Transaction> transactions = sessionsToTransactions.get(session);
@@ -147,7 +164,7 @@ public class TransactionSteps {
     // sequential sessions, parallel transactions //
     // ===========================================//
 
-    @When("for each session, open transaction(s) in parallel of type:")
+    @When("(for each )session(,) open transaction(s) in parallel of type:")
     public void for_each_session_open_transactions_in_parallel_of_type(List<Arguments.Transaction.Type> types) {
         assertTrue(THREAD_POOL_SIZE >= types.size());
         for (Grakn.Session session : sessions) {
@@ -159,12 +176,12 @@ public class TransactionSteps {
         }
     }
 
-    @Then("for each session, transactions in parallel are null: {bool}")
+    @Then("(for each )session(,) transactions in parallel are null: {bool}")
     public void for_each_session_transactions_in_parallel_are_null(boolean isNull) {
         for_each_session_transactions_in_parallel_are(transaction -> assertEquals(isNull, isNull(transaction)));
     }
 
-    @Then("for each session, transactions in parallel are open: {bool}")
+    @Then("(for each )session(,) transactions in parallel are open: {bool}")
     public void for_each_session_transactions_in_parallel_are_open(boolean isOpen) {
         for_each_session_transactions_in_parallel_are(transaction -> assertEquals(isOpen, transaction.isOpen()));
     }
@@ -184,7 +201,7 @@ public class TransactionSteps {
         CompletableFuture.allOf(assertions.toArray(new CompletableFuture[0])).join();
     }
 
-    @Then("for each session, transactions in parallel have type:")
+    @Then("(for each )session(,) transactions in parallel have type:")
     public void for_each_session_transactions_in_parallel_have_type(List<Arguments.Transaction.Type> types) {
         final List<CompletableFuture<Void>> assertions = new ArrayList<>();
         for (Grakn.Session session : sessions) {

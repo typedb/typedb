@@ -20,8 +20,6 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.exception.GraknException;
 
-import java.util.List;
-
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
@@ -31,8 +29,6 @@ public interface Response {
     boolean isAnswer();
 
     boolean isExhausted();
-
-    boolean isRootResponse();
 
     default Answer asAnswer() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
@@ -68,11 +64,6 @@ public interface Response {
 
         @Override
         public boolean isExhausted() {
-            return false;
-        }
-
-        @Override
-        public boolean isRootResponse() {
             return false;
         }
 
@@ -113,11 +104,6 @@ public interface Response {
         }
 
         @Override
-        public boolean isRootResponse() {
-            return false;
-        }
-
-        @Override
         public Exhausted asExhausted() {
             return this;
         }
@@ -130,34 +116,4 @@ public interface Response {
                     '}';
         }
     }
-
-    class RootResponse implements Response {
-
-        private final Request sourceRequest;
-
-        public RootResponse(Request sourceRequest) {
-            this.sourceRequest = sourceRequest;
-        }
-
-        @Override
-        public Request sourceRequest() {
-            return sourceRequest;
-        }
-
-        @Override
-        public boolean isAnswer() {
-            return false;
-        }
-
-        @Override
-        public boolean isExhausted() {
-            return false;
-        }
-
-        @Override
-        public boolean isRootResponse() {
-            return true;
-        }
-    }
-
 }

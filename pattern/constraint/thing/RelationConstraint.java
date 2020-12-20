@@ -75,7 +75,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         for (RolePlayer rp : rolePlayers) {
             if (rp.roleType().isPresent()) {
                 if (rp.roleType().get().reference().isName() || rp.roleTypeHints().isEmpty()) {
-                    assert rp.roleType().get().label().get().scope().isPresent();
                     Identifier.Scoped role = Identifier.Scoped.of(owner.identifier(), roleID++);
                     traversal.relating(owner.identifier(), role);
                     traversal.playing(rp.player().identifier(), role);
@@ -149,6 +148,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         private Set<Label> roleTypeHints;
 
         public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
+            assert roleType == null || roleType.reference().isName() ||
+                    (roleType.label().isPresent() && roleType.label().get().scope().isPresent());
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;

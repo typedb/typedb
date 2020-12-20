@@ -53,43 +53,6 @@ Feature: Graql Match Query
     Given the integrity is validated
     Given session opens transaction of type: write
 
-
-  # TODO should throw exceptions when labels don't exist -- unsatisfiable check/exception?
-  Scenario: when matching by a type whose label doesn't exist, an error is thrown
-    Then graql match; throws exception
-      """
-      match $x isa ganesh;
-      """
-    Then the integrity is validated
-
-
-  # TODO should throw exceptions when labels don't exist -- unsatisfiable check/exception?
-  Scenario: when matching by a relation type whose label doesn't exist, an error is thrown
-    Then graql match; throws exception
-      """
-      match ($x, $y) isa $type; $type type jakas-relacja;
-      """
-    Then the integrity is validated
-
-
-  # TODO should throw exceptions when labels don't exist -- unsatisfiable check/exception?
-  Scenario: when matching a non-existent type label to a variable from a generic 'isa' query, an error is thrown
-    Then graql match; throws exception
-      """
-      match $x isa $type; $type type polok;
-      """
-    Then the integrity is validated
-
-
-   # TODO should this throw in the new semantics? Should be "unsatisfiable"
-  Scenario: an error is thrown when matching an entity type as if it were a role type
-    Then graql match; throws exception
-      """
-      match (person: $x) isa relation;
-      """
-    Then the integrity is validated
-
-
    # TODO should this throw in the new semantics? Should be "unsatisfiable"
   Scenario: an error is thrown when matching an entity as if it were a relation
     Then graql match; throws exception
@@ -98,47 +61,10 @@ Feature: Graql Match Query
       """
     Then the integrity is validated
 
-
-  # TODO should this throw if using a label that doesn't exist
-  Scenario: an error is thrown when matching a non-existent type label as if it were a relation type
-    Then graql match; throws exception
-      """
-      match ($x) isa bottle-of-rum;
-      """
-    Then the integrity is validated
-
-
-  #  TODO should this throw if using a label that doesn't exist
-  Scenario: when matching a role type that doesn't exist, an error is thrown
-    Then graql match; throws exception
-      """
-      match (rolein-rolein-rolein: $rolein) isa relation;
-      """
-    Then the integrity is validated
-
-
    # TODO this should either throw or be unsatisfiable
   Scenario: an error is thrown when matching by attribute ownership, when the owned thing is actually an entity
     Then graql match; throws exception
       """
       match $x has person "Luke";
-      """
-    Then the integrity is validated
-
-
-  # TODO this should either throw or be unsatisfiable
-  Scenario: when matching by an attribute ownership, if the owner can't actually own it, an empty result is returned
-    When get answers of graql query
-      """
-      match $x isa company, has age $n;
-      """
-    Then answer size is: 0
-
-
-  # TODO this should either throw or be unsatisfiable
-  Scenario: an error is thrown when matching by attribute ownership, when the owned type label doesn't exist
-    Then graql match; throws exception
-      """
-      match $x has bananananananana "rama";
       """
     Then the integrity is validated

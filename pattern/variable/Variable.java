@@ -19,12 +19,14 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -34,11 +36,15 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 public abstract class Variable implements Pattern {
 
     private final Identifier.Variable identifier;
+    private final Set<Label> resolvedTypes;
     private final int hash;
+    private boolean isSatisfiable;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
         this.hash = Objects.hash(identifier);
+        this.resolvedTypes = new HashSet<>();
+        this.isSatisfiable = true;
     }
 
     public abstract Set<? extends Constraint> constraints();
@@ -74,6 +80,31 @@ public abstract class Variable implements Pattern {
 
     public ThingVariable asThing() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
+    }
+
+    public void addResolvedTypes(Set<Label> labels) {
+        resolvedTypes.addAll(labels);
+    }
+
+    public void retainResolvedTypes(Set<Label> labels) {
+        resolvedTypes.retainAll(labels);
+    }
+
+    public void removeResolvedType(Label label) {
+        assert !(isSatisfiable && resolvedTypes.isEmpty());
+        resolvedTypes.remove(label);
+    }
+
+    public Set<Label> resolvedTypes() {
+        return resolvedTypes;
+    }
+
+    public boolean isSatisfiable() {
+        return isSatisfiable;
+    }
+
+    public void setSatisfiable(boolean isSatisfiable) {
+        this.isSatisfiable = isSatisfiable;
     }
 
     @Override

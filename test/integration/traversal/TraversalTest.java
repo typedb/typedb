@@ -104,6 +104,17 @@ public class TraversalTest {
     }
 
     @Test
+    public void traversal_isa() {
+        try (RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+            GraqlMatch query = Graql.parseQuery("match $x isa $y;");
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            answers.forEachRemaining(answer -> {
+                System.out.println(answer.get("y").asType().getLabel() + ": " + answer.get("x").asThing().getIIDForPrinting());
+            });
+        }
+    }
+
+    @Test
     public void traversal_1_repeat() {
         int success = 0, fail = 0;
         for (int i = 0; i < 30; i++) {

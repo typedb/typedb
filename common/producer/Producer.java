@@ -39,5 +39,7 @@ public interface Producer<T> {
         void put(U item);
 
         void done(Producer<U> producer);
+
+        void done(Producer<U> producer, Throwable e);
     }
 }

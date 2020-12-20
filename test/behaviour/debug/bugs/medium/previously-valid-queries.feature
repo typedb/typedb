@@ -53,159 +53,6 @@ Feature: Graql Match Query
     Given the integrity is validated
     Given session opens transaction of type: write
 
-
-  # TODO should be include the type itself in the return of `sub`
-  Scenario: 'sub' can be used to match the specified type and all its supertypes, including indirect supertypes
-    Given graql define
-      """
-      define
-      writer sub person;
-      scifi-writer sub writer;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match writer sub $x;
-      """
-    And concept identifiers are
-      |     | check | value  |
-      | WRI | label | writer |
-      | PER | label | person |
-      | ENT | label | entity |
-    Then uniquely identify answer concepts
-      | x   |
-      | WRI |
-      | PER |
-      | ENT |
-
-
-  # TODO should be include the type itself in the return of `sub`
-  Scenario: 'sub' can be used to retrieve all instances of types that are subtypes of a given type
-    Given graql define
-      """
-      define
-
-      child sub person;
-      worker sub person;
-      retired-person sub person;
-      construction-worker sub worker;
-      bricklayer sub construction-worker;
-      crane-driver sub construction-worker;
-      telecoms-worker sub worker;
-      mobile-network-researcher sub telecoms-worker;
-      smartphone-designer sub telecoms-worker;
-      telecoms-business-strategist sub telecoms-worker;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert
-      $a isa child, has name "Alfred", has ref 0;
-      $b isa retired-person, has name "Barbara", has ref 1;
-      $c isa bricklayer, has name "Charles", has ref 2;
-      $d isa crane-driver, has name "Debbie", has ref 3;
-      $e isa mobile-network-researcher, has name "Edmund", has ref 4;
-      $f isa telecoms-business-strategist, has name "Felicia", has ref 5;
-      $g isa worker, has name "Gary", has ref 6;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match
-        $x isa $type;
-        $type sub worker;
-      """
-    When concept identifiers are
-      |     | check | value                        |
-      | CHA | key   | ref:2                        |
-      | DEB | key   | ref:3                        |
-      | EDM | key   | ref:4                        |
-      | FEL | key   | ref:5                        |
-      | GAR | key   | ref:6                        |
-      | CON | label | construction-worker          |
-      | BRI | label | bricklayer                   |
-      | CRA | label | crane-driver                 |
-      | TEL | label | telecoms-worker              |
-      | MNR | label | mobile-network-researcher    |
-      | TBS | label | telecoms-business-strategist |
-      | WOR | label | worker                       |
-    # Alfred and Barbara are not retrieved, as they aren't subtypes of worker
-    Then uniquely identify answer concepts
-      | x   | type |
-      | CHA | BRI  |
-      | CHA | CON  |
-      | CHA | WOR  |
-      | DEB | CRA  |
-      | DEB | CON  |
-      | DEB | WOR  |
-      | EDM | MNR  |
-      | EDM | TEL  |
-      | EDM | WOR  |
-      | FEL | TBS  |
-      | FEL | TEL  |
-      | FEL | WOR  |
-      | GAR | WOR  |
-
-
-  # TODO should be include the type itself in the return of `sub`
-  Scenario: 'sub!' matches the specified type and its direct subtypes
-    Given graql define
-      """
-      define
-      writer sub person;
-      scifi-writer sub writer;
-      musician sub person;
-      flutist sub musician;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $x sub! person;
-      """
-    And concept identifiers are
-      |     | check | value    |
-      | WRI | label | writer   |
-      | MUS | label | musician |
-    Then uniquely identify answer concepts
-      | x   |
-      | WRI |
-      | MUS |
-
-
-  # TODO should be include the type itself in the return of `sub`
-  Scenario: 'sub!' can be used to match the specified type and its direct supertype
-    Given graql define
-      """
-      define
-      writer sub person;
-      scifi-writer sub writer;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match writer sub! $x;
-      """
-    And concept identifiers are
-      |     | check | value  |
-      | PER | label | person |
-    Then uniquely identify answer concepts
-      | x   |
-      | PER |
-
-
-
   # TODO do we want to allow `match $x 10;` as a query without `isa`?
   Scenario Outline: '<type>' attributes can be matched by value
     Given graql define
@@ -228,12 +75,9 @@ Feature: Graql Match Query
       """
       match $a <value>;
       """
-    And concept identifiers are
-      |     | check | value |
-      | ATT | key   | ref:0 |
     Then uniquely identify answer concepts
-      | a   |
-      | ATT |
+      | a         |
+      | key:ref:0 |
 
     Examples:
       | attr        | type     | value      |
@@ -267,38 +111,6 @@ Feature: Graql Match Query
       | gluten-free | boolean  | false      |
       | use-by-date | datetime | 2020-06-16 |
 
-
- # TODO do we want to allow `match $x contains "..."` - similar to attribute predicate lookup, also without `isa`
- # TODO this currently throws an illegal start state because there is no Thing vertex start information, which can only be IID or a type
-  # TODO otherwise it works if including "isa attribute"
-  Scenario: 'contains' matches strings that contain the specified substring
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert
-      $x "Seven Databases in Seven Weeks" isa name;
-      $y "Four Weddings and a Funeral" isa name;
-      $z "Fun Facts about Space" isa name;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $x contains "Fun";
-      """
-    And concept identifiers are
-      |     | check | value                            |
-      | FOU | value | name:Four Weddings and a Funeral |
-      | FUN | value | name:Fun Facts about Space       |
-    Then uniquely identify answer concepts
-      | x   |
-      | FOU |
-      | FUN |
-
-
    # TODO we are now case sensitive apparently! Must include "isa attribute" else same error as above
   Scenario: 'contains' performs a case-insensitive match
     Given connection close all sessions
@@ -318,95 +130,7 @@ Feature: Graql Match Query
       """
       match $x contains "Bean";
       """
-    And concept identifiers are
-      |     | check | value                         |
-      | PIR | value | name:Pirates of the Caribbean |
-      | MRB | value | name:Mr. Bean                 |
     Then uniquely identify answer concepts
-      | x   |
-      | PIR |
-      | MRB |
-
-
-  # TODO works if including `isa attribute`
-  Scenario: 'like' matches strings that match the specified regex
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert
-      $x "ABC123" isa name;
-      $y "123456" isa name;
-      $z "9" isa name;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $x like "^[0-9]+$";
-      """
-    And concept identifiers are
-      |     | check | value       |
-      | ONE | value | name:123456 |
-      | NIN | value | name:9      |
-    Then uniquely identify answer concepts
-      | x   |
-      | ONE |
-      | NIN |
-
-  Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
-    Given graql define
-      """
-      define
-      residency sub relation,
-        relates resident,
-        owns ref @key;
-      person plays residency:resident;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert
-      $x isa person, has ref 0;
-      $e (employee: $x) isa employment, has ref 1;
-      $f (friend: $x) isa friendship, has ref 2;
-      $r (resident: $x) isa residency, has ref 3;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    Given concept identifiers are
-      |     | check | value |
-      | PER | key   | ref:0 |
-      | EMP | key   | ref:1 |
-      | FRI | key   | ref:2 |
-      | RES | key   | ref:3 |
-    Given get answers of graql query
-      """
-      match $r isa relation;
-      """
-    Given uniquely identify answer concepts
-      | r   |
-      | EMP |
-      | FRI |
-      | RES |
-    When get answers of graql query
-      """
-      match ($x) isa relation;
-      """
-    Then uniquely identify answer concepts
-      | x   |
-      | PER |
-    When get answers of graql query
-      """
-      match ($x);
-      """
-    Then uniquely identify answer concepts
-      | x   |
-      | PER |
+      | x                                   |
+      | value:name:Pirates of the Caribbean |
+      | value:name:Mr. Bean                 |
