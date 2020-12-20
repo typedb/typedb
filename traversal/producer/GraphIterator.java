@@ -28,6 +28,8 @@ import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.procedure.ProcedureEdge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +41,8 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toMap;
 
 public class GraphIterator implements ResourceIterator<VertexMap> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 
     private final GraphProcedure procedure;
     private final Traversal.Parameters parameters;
@@ -72,19 +76,25 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
 
     @Override
     public boolean hasNext() {
-        if (state == State.COMPLETED) return false;
-        else if (state == State.FETCHED) return true;
-        else if (state == State.INIT) {
-            if (computeFirst(1)) state = State.FETCHED;
-            else state = State.COMPLETED;
-        } else if (state == State.EMPTY) {
-            computeNextSeekPos = edgeCount;
-            if (computeNext(edgeCount)) state = State.FETCHED;
-            else state = State.COMPLETED;
-        } else {
-            throw GraknException.of(ILLEGAL_STATE);
+        try {
+            if (state == State.COMPLETED) return false;
+            else if (state == State.FETCHED) return true;
+            else if (state == State.INIT) {
+                if (computeFirst(1)) state = State.FETCHED;
+                else state = State.COMPLETED;
+            } else if (state == State.EMPTY) {
+                computeNextSeekPos = edgeCount;
+                if (computeNext(edgeCount)) state = State.FETCHED;
+                else state = State.COMPLETED;
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+            return state == State.FETCHED;
+        } catch (Throwable e) {
+            LOG.error("Parameters: " + parameters.toString());
+            LOG.error("GraphProcedure: " + procedure.toString());
+            throw e;
         }
-        return state == State.FETCHED;
     }
 
     private boolean computeFirst(int pos) {

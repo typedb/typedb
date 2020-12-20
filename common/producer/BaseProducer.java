@@ -44,7 +44,6 @@ public class BaseProducer<T> implements Producer<T> {
             }
             catch (Throwable e) {
                 sink.done(this, e);
-                throw e;
             }
         });
     }
