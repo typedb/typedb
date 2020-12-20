@@ -52,3 +52,9 @@ java_test(
     ],
     size = "medium",
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "agpl",
+)
