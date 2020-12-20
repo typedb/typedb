@@ -68,7 +68,7 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public Conjunction resolvedNamedVarsExhaustive(Conjunction conjunction) {
+    public Conjunction resolveNamedVarsExhaustive(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
@@ -116,6 +116,24 @@ public class TypeResolver {
         }
 
         ensureHintsConformToTheirSuper(conjunction);
+        return conjunction;
+    }
+
+    public Conjunction resolveLabeledVarTypes(Conjunction conjunction) {
+        iterate(conjunction.variables()).filter(v -> v.reference().isLabel())
+                .forEachRemaining(typeVar -> {
+                    assert typeVar.isType() && typeVar.asType().label().isPresent();
+                    Label label = typeVar.asType().label().get().properLabel();
+                    if (label.scope().isPresent()) {
+                        Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
+                        if (labels.isEmpty()) throw GraknException.of(TYPE_NOT_FOUND, label);
+                        typeVar.addResolvedTypes(labels);
+                    } else {
+                        TypeVertex type = traversalEng.graph().schema().getType(label);
+                        if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
+                        typeVar.addResolvedType(label);
+                    }
+                });
         return conjunction;
     }
 
@@ -258,24 +276,6 @@ public class TypeResolver {
         } else {
             return conceptMgr.getThingType(label.name());
         }
-    }
-
-    public Conjunction resolveLabeledVarTypes(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(v -> v.reference().isLabel())
-                .forEachRemaining(typeVar -> {
-                    assert typeVar.isType() && typeVar.asType().label().isPresent();
-                    Label label = typeVar.asType().label().get().properLabel();
-                    if (label.scope().isPresent()) {
-                        Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
-                        if (labels.isEmpty()) throw GraknException.of(TYPE_NOT_FOUND, label);
-                        typeVar.addResolvedTypes(labels);
-                    } else {
-                        TypeVertex type = traversalEng.graph().schema().getType(label);
-                        if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
-                        typeVar.addResolvedType(label);
-                    }
-                });
-        return conjunction;
     }
 
     private static class ConstraintMapper {

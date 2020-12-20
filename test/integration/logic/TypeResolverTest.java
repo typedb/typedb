@@ -121,7 +121,7 @@ public class TypeResolverTest {
     }
 
     private Conjunction runExhaustiveHinter(TypeResolver typeHinter, String matchString) {
-        return typeHinter.resolvedNamedVarsExhaustive(createConjunction(matchString));
+        return typeHinter.resolveNamedVarsExhaustive(createConjunction(matchString));
     }
 
     private Conjunction runSimpleHinter(TypeResolver typeHinter, String matchString) {
