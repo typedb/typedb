@@ -82,7 +82,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(Rule.Conclusion<?, ?> unifyWith) {
+    private Stream<Unifier> unify(Rule.Conclusion<?> unifyWith) {
         if (unifyWith instanceof Rule.Conclusion.Relation) return unify((Rule.Conclusion.Relation) unifyWith);
         else if (unifyWith instanceof Rule.Conclusion.Has) return unify((Rule.Conclusion.Has) unifyWith);
         else if (unifyWith instanceof Rule.Conclusion.Isa) return unify((Rule.Conclusion.Isa) unifyWith);
