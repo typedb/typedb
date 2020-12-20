@@ -73,6 +73,64 @@ Feature: Graql Match Query
       | label:entity |
       | label:thing  |
 
+  Scenario: 'sub' can be used to retrieve all instances of types that are subtypes of a given type
+    Given graql define
+      """
+      define
+
+      child sub person;
+      worker sub person;
+      retired-person sub person;
+      construction-worker sub worker;
+      bricklayer sub construction-worker;
+      crane-driver sub construction-worker;
+      telecoms-worker sub worker;
+      mobile-network-researcher sub telecoms-worker;
+      smartphone-designer sub telecoms-worker;
+      telecoms-business-strategist sub telecoms-worker;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given connection close all sessions
+    Given connection open data session for database: grakn
+    Given session opens transaction of type: write
+    Given graql insert
+      """
+      insert
+      $a isa child, has name "Alfred", has ref 0;
+      $b isa retired-person, has name "Barbara", has ref 1;
+      $c isa bricklayer, has name "Charles", has ref 2;
+      $d isa crane-driver, has name "Debbie", has ref 3;
+      $e isa mobile-network-researcher, has name "Edmund", has ref 4;
+      $f isa telecoms-business-strategist, has name "Felicia", has ref 5;
+      $g isa worker, has name "Gary", has ref 6;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given session opens transaction of type: read
+    When get answers of graql query
+      """
+      match
+        $x isa $type;
+        $type sub worker;
+      """
+    # Alfred and Barbara are not retrieved, as they aren't subtypes of worker
+    Then uniquely identify answer concepts
+      | x         | type                                |
+      | key:ref:2 | label:bricklayer                    |
+      | key:ref:2 | label:construction-worker           |
+      | key:ref:2 | label:worker                        |
+      | key:ref:3 | label:crane-driver                  |
+      | key:ref:3 | label:construction-worker           |
+      | key:ref:3 | label:worker                        |
+      | key:ref:4 | label:mobile-network-researcher     |
+      | key:ref:4 | label:telecoms-worker               |
+      | key:ref:4 | label:worker                        |
+      | key:ref:5 | label:telecoms-business-strategist  |
+      | key:ref:5 | label:telecoms-worker               |
+      | key:ref:5 | label:worker                        |
+      | key:ref:6 | label:worker                        |
+
   Scenario: duplicate role players are retrieved singly when queried doubly
     Given graql define
       """
@@ -119,6 +177,55 @@ Feature: Graql Match Query
       match (friend: $x, friend: $x) isa friendship;
       """
     Then answer size is: 0
+
+  Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
+    Given graql define
+      """
+      define
+      residency sub relation,
+        relates resident,
+        owns ref @key;
+      person plays residency:resident;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given connection close all sessions
+    Given connection open data session for database: grakn
+    Given session opens transaction of type: write
+    Given graql insert
+      """
+      insert
+      $x isa person, has ref 0;
+      $e (employee: $x) isa employment, has ref 1;
+      $f (friend: $x) isa friendship, has ref 2;
+      $r (resident: $x) isa residency, has ref 3;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given session opens transaction of type: read
+    Given get answers of graql query
+      """
+      match $r isa relation;
+      """
+    Given uniquely identify answer concepts
+      | r         |
+      | key:ref:1 |
+      | key:ref:2 |
+      | key:ref:3 |
+    When get answers of graql query
+      """
+      match ($x) isa relation;
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | key:ref:0 |
+    When get answers of graql query
+      """
+      match ($x);
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | key:ref:0 |
 
   Scenario: Relations can be queried with pairings of relation and role types that are not directly related to each other
     Given graql define
@@ -240,50 +347,23 @@ Feature: Graql Match Query
       """
     Then answer size is: 0
 
-  Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
-    Given graql define
-      """
-      define
-      residency sub relation,
-        relates resident,
-        owns ref @key;
-      person plays residency:resident;
-      """
-    Given transaction commits
-    Given the integrity is validated
+  Scenario: 'has $attr < $x' matches owners of any instance '$y' of '$attr' where '$y < $x'
     Given connection close all sessions
     Given connection open data session for database: grakn
     Given session opens transaction of type: write
     Given graql insert
       """
       insert
-      $x isa person, has ref 0;
-      $e (employee: $x) isa employment, has ref 1;
-      $f (friend: $x) isa friendship, has ref 2;
-      $r (resident: $x) isa residency, has ref 3;
+      $x isa person, has name "Susie", has age 16, has ref 0;
+      $y isa person, has name "Donald", has age 25, has ref 1;
+      $z isa person, has name "Ralph", has age 18, has ref 2;
       """
     Given transaction commits
     Given the integrity is validated
     Given session opens transaction of type: read
-    Given get answers of graql query
-      """
-      match $r isa relation;
-      """
-    Given uniquely identify answer concepts
-      | r         |
-      | key:ref:1 |
-      | key:ref:2 |
-      | key:ref:3 |
     When get answers of graql query
       """
-      match ($x) isa relation;
-      """
-    Then uniquely identify answer concepts
-      | x         |
-      | key:ref:0 |
-    When get answers of graql query
-      """
-      match ($x);
+      match $x has age < 18;
       """
     Then uniquely identify answer concepts
       | x         |

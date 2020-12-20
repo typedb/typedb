@@ -140,27 +140,33 @@ public abstract class ProcedureVertex<
             assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else if (!props().types().isEmpty()) return iterateAndFilterFromTypes(graphMgr, parameters);
-            else if (!props().predicates().isEmpty()) return iterateAndFilterFromAttributes(graphMgr, parameters);
+            else if (mustBeAttribute()) return iterateAndFilterFromAttributes(graphMgr, parameters);
             else return iterateFromAnything(graphMgr);
+        }
+
+        private boolean mustBeAttribute() {
+            return !props().predicates().isEmpty() || iterate(outs()).anyMatch(ProcedureEdge::startsFromAttribute);
         }
 
         private ResourceIterator<? extends AttributeVertex<?>> iterateAndFilterFromAttributes(
                 GraphManager graph, Traversal.Parameters parameters) {
-            assert !props().predicates().isEmpty();
-            ResourceIterator<? extends ThingVertex> iter;
-            Optional<Predicate.Value<?>> eq;
+            ResourceIterator<? extends AttributeVertex<?>> iter;
+            ResourceIterator<TypeVertex> attTypes;
 
-            ResourceIterator<TypeVertex> attTypes = iterate(props().predicates())
-                    .flatMap(p -> iterate(p.valueType().comparables()))
-                    .flatMap(vt -> graph.schema().attributeTypes(vt));
-
-            if ((eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst()).isPresent()) {
-                iter = iteratorOfAttributes(graph, attTypes, parameters, eq.get());
+            if (!props().predicates().isEmpty()) {
+                attTypes = iterate(props().predicates())
+                        .flatMap(p -> iterate(p.valueType().comparables()))
+                        .flatMap(vt -> graph.schema().attributeTypes(vt));
             } else {
-                iter = attTypes.flatMap(t -> graph.data().get(t));
+                attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
             }
 
-            return filterPredicates(iter, parameters, eq.orElse(null));
+            Optional<Predicate.Value<?>> eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst();
+            if (eq.isPresent()) iter = iteratorOfAttributes(graph, attTypes, parameters, eq.get());
+            else iter = attTypes.flatMap(t -> graph.data().get(t)).map(ThingVertex::asAttribute);
+
+            if (props().predicates().isEmpty()) return iter;
+            else return filterPredicates(iter, parameters, eq.orElse(null));
         }
 
         private ResourceIterator<? extends ThingVertex> iterateFromAnything(GraphManager graphMgr) {
@@ -180,7 +186,7 @@ public abstract class ProcedureVertex<
             Identifier.Variable id = id().asVariable();
             ResourceIterator<? extends ThingVertex> iter = single(graphMgr.data().get(parameters.getIID(id))).noNulls();
             if (!props().types().isEmpty()) iter = filterTypes(iter);
-            if (!props().predicates().isEmpty()) iter = filterPredicates(iter, parameters);
+            if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters);
             return iter;
         }
 
@@ -200,7 +206,7 @@ public abstract class ProcedureVertex<
 
             if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
-            else return filterPredicates(iter, parameters, eq.orElse(null));
+            else return filterPredicates(filterAttributes(iter), parameters, eq.orElse(null));
         }
 
         ResourceIterator<? extends ThingVertex> filterReferableThings(ResourceIterator<? extends ThingVertex> iterator) {
@@ -228,26 +234,24 @@ public abstract class ProcedureVertex<
             return iterator.filter(e -> props().types().contains(fn.apply(e).type().properLabel()));
         }
 
-        ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends ThingVertex> iterator,
+        ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends AttributeVertex<?>> iterator,
                                                                         Traversal.Parameters parameters) {
             return filterPredicates(iterator, parameters, null);
         }
 
-        ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends ThingVertex> iterator,
+        ResourceIterator<? extends AttributeVertex<?>> filterPredicates(ResourceIterator<? extends AttributeVertex<?>> iterator,
                                                                         Traversal.Parameters parameters,
                                                                         @Nullable Predicate.Value<?> exclude) {
             // TODO: should we throw an exception if the user asserts a value predicate on a non-attribute?
             // TODO: should we throw an exception if the user assert a value non-comparable value types?
             assert id().isVariable();
-            ResourceIterator<? extends AttributeVertex<?>> attributes =
-                    iterator.filter(ThingVertex::isAttribute).<AttributeVertex<?>>map(ThingVertex::asAttribute);
             for (Predicate.Value<?> predicate : props().predicates()) {
                 if (Objects.equals(predicate, exclude)) break;
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
-                    attributes = attributes.filter(a -> predicate.apply(a, value));
+                    iterator = iterator.filter(a -> predicate.apply(a, value));
                 }
             }
-            return attributes;
+            return iterator;
         }
 
         ResourceIterator<ThingEdge> filterPredicatesOnEdge(ResourceIterator<ThingEdge> iterator,
@@ -290,6 +294,10 @@ public abstract class ProcedureVertex<
             else if (value.isString()) return graphMgr.data().get(type, value.getString());
             else if (value.isDateTime()) return graphMgr.data().get(type, value.getDateTime());
             else throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        static ResourceIterator<? extends AttributeVertex<?>> filterAttributes(ResourceIterator<? extends ThingVertex> iterator) {
+            return iterator.filter(ThingVertex::isAttribute).map(ThingVertex::asAttribute);
         }
     }
 

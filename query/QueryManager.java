@@ -64,18 +64,18 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        return match(query, new Options.Query(), true);
+        return match(query, true, new Options.Query());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel) {
-        return match(query, new Options.Query(), isParallel);
+        return match(query, isParallel, new Options.Query());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
-        return match(query, options, true);
+        return match(query, true, options);
     }
 
-    public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options, boolean isParallel) {
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel, Options.Query options) {
         // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Disjunction disjunction = Disjunction.create(query.conjunction().normalise());

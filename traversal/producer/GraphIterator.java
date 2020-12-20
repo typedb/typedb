@@ -105,7 +105,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
     private boolean computeFirstBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toID = edge.to().id();
-        ResourceIterator<? extends Vertex<?, ?>> toIter = branchFrom(answer.get(edge.from().id()), edge);
+        ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
 
         if (toIter.hasNext()) {
             iterators.put(toID, toIter);
@@ -165,7 +165,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
                 if (isClosure(edge, fromVertex, toVertex)) return true;
                 else return computeNextClosure(pos);
             } else {
-                ResourceIterator<? extends Vertex<?, ?>> toIter = branchFrom(answer.get(edge.from().id()), edge);
+                ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
                 iterators.put(toID, toIter);
             }
         } else if (edge.isClosureEdge()) {
@@ -201,7 +201,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         do {
             if (backTrack(pos)) {
                 Vertex<?, ?> fromVertex = answer.get(edge.from().id());
-                newIter = branchFrom(fromVertex, edge);
+                newIter = branch(fromVertex, edge);
                 if (!newIter.hasNext()) {
                     assert !edge.from().ins().isEmpty();
                     computeNextSeekPos = edge.from().branchEdge().order();
@@ -224,11 +224,11 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         }
     }
 
-    private ResourceIterator<? extends Vertex<?, ?>> branchFrom(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
+    private ResourceIterator<? extends Vertex<?, ?>> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
         ResourceIterator<? extends Vertex<?, ?>> toIter;
         if (edge.to().id().isScoped()) {
             Set<ThingVertex> withinScope = scoped.computeIfAbsent(edge.to().id().asScoped().scope(), id -> new HashSet<>());
-            toIter = edge.branchTo(graphMgr, fromVertex, parameters).filter(role -> {
+            toIter = edge.branch(graphMgr, fromVertex, parameters).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
                     removePreviousScopedRole(edge.to().id().asScoped().scope(), edge.to().id());
@@ -249,7 +249,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
                 }
             }).map(e -> edge.direction().isForward() ? e.to() : e.from());
         } else {
-            toIter = edge.branchTo(graphMgr, fromVertex, parameters);
+            toIter = edge.branch(graphMgr, fromVertex, parameters);
         }
         if (!edge.to().id().isNamedReference() && edge.to().outs().isEmpty() && edge.to().ins().size() == 1) {
             // TODO: This optimisation can apply to more situations, such as to
