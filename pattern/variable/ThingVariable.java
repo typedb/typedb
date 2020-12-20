@@ -95,28 +95,10 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
                 throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, identifier());
             }
             isaConstraint = constraint.asIsa();
-            isaConstraint.type().constrainedBy(isaConstraint);
-        } else if (constraint.isIs()) {
-            isConstraints.add(constraint.asIs());
-            constraint.asIs().variable().constrainedBy(constraint.asIs());
-        }
-        else if (constraint.isRelation()) {
-            RelationConstraint relationConstraint = constraint.asRelation();
-            relationConstraints.add(relationConstraint);
-            for (RelationConstraint.RolePlayer rp : relationConstraint.players()) {
-                rp.player().constrainedBy(relationConstraint);
-                rp.roleType().ifPresent(roleType -> roleType.constrainedBy(relationConstraint));
-            }
-        }
-        else if (constraint.isHas()) {
-            hasConstraints.add(constraint.asHas());
-            constraint.asHas().attribute().constrainedBy(constraint.asHas());
-        }
-        else if (constraint.isValue()) {
-            ValueConstraint<?> valueConstraint = constraint.asValue();
-            valueConstraints.add(valueConstraint);
-            if (valueConstraint.isVariable()) valueConstraint.asVariable().value().constrainedBy(valueConstraint.asVariable());
-        }
+        } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
+        else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
+        else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
+        else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 

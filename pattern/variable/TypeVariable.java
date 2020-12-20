@@ -117,31 +117,10 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
                 throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, identifier());
             }
             subConstraint = constraint.asSub();
-            subConstraint.type().constrainedBy(subConstraint);
-        } else if (constraint.isOwns()) {
-            OwnsConstraint ownsConstraint = constraint.asOwns();
-            ownsConstraints.add(ownsConstraint);
-            ownsConstraint.attribute().constrainedBy(ownsConstraint);
-            ownsConstraint.overridden().ifPresent(t -> t.constrainedBy(ownsConstraint));
-        }
-        else if (constraint.isPlays()) {
-            PlaysConstraint playsConstraint = constraint.asPlays();
-            playsConstraints.add(playsConstraint);
-            playsConstraint.relation().ifPresent(r -> r.constrainedBy(playsConstraint));
-            playsConstraint.role().constrainedBy(playsConstraint);
-            playsConstraint.overridden().ifPresent(o -> o.constrainedBy(playsConstraint));
-        }
-        else if (constraint.isRelates()) {
-            RelatesConstraint relatesConstraint = constraint.asRelates();
-            relatesConstraints.add(relatesConstraint);
-            relatesConstraint.role().constrainedBy(relatesConstraint);
-            relatesConstraint.overridden().ifPresent(r -> r.constrainedBy(relatesConstraint));
-        }
-        else if (constraint.isIs()) {
-            IsConstraint isConstraint = constraint.asIs();
-            isConstraints.add(isConstraint);
-            isConstraint.variable().constrainedBy(isConstraint);
-        }
+        } else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
+        else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
+        else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
+        else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
