@@ -63,7 +63,7 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> iteratorSync(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveLabeledVarTypes(conjunction);
+        conjunction = logicMgr.typeResolver().resolveLabeledVars(conjunction);
         // conjunction = logicMgr.typeResolver().resolveThingTypes(conjunction);
         return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
     }
@@ -82,7 +82,7 @@ public class Reasoner {
     }
 
     public List<Producer<ConceptMap>> producers(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveLabeledVarTypes(conjunction);
+        conjunction = logicMgr.typeResolver().resolveLabeledVars(conjunction);
 //         conjunction = logicMgr.typeResolver().resolveNamedVars(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)

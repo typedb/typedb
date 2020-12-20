@@ -119,7 +119,7 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolveLabeledVarTypes(Conjunction conjunction) {
+    public Conjunction resolveLabeledVars(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.reference().isLabel())
                 .forEachRemaining(typeVar -> {
                     assert typeVar.isType() && typeVar.asType().label().isPresent();
