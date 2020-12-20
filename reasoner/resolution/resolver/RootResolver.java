@@ -22,6 +22,8 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.resolvable.Resolvable;
+import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.logic.transformer.Mapping;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
@@ -38,11 +40,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
@@ -60,7 +64,7 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Set<Concludable<?>> concludables;
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Consumer<Integer> onExhausted;
-    private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
+    private final List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
@@ -75,7 +79,7 @@ public class RootResolver extends Resolver<RootResolver> {
         this.resolutionRecorder = resolutionRecorder;
         this.isInitialised = false;
         this.concludables = Concludable.create(conjunction);
-        this.plannedConcludables = new ArrayList<>();
+        this.plan = new ArrayList<>();
     }
 
     @Override
@@ -143,18 +147,16 @@ public class RootResolver extends Resolver<RootResolver> {
 
     @Override
     protected void initialiseDownstreamActors() {
-        LOG.debug("{}: initialising downstream actors", name());
-
-        // TODO Find the applicable rules for each, which requires 1 or more valid unifications with a rule.
-        // TODO Mark concludables with no applicable rules as inconcludable
-        // TODO Return to the conjunction now knowing the set of inconcludable constraints
-        // TODO Tell the concludables to extend themselves by traversing all inconcludable constraints
-
-        // Plan the order in which to execute the concludables
-        List<Concludable<?>> planned = list(concludables); // TODO Do some actual planning
-        for (Concludable<?> concludable : planned) {
-            Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
-            plannedConcludables.add(concludableUnifierPair);
+        Set<Concludable<?>> concludablesWithApplicableRules = concludables.stream().filter(c -> c.getApplicableRules().findAny().isPresent()).collect(Collectors.toSet());
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludablesWithApplicableRules);
+        Set<Resolvable> resolvables = new HashSet<>();
+        resolvables.addAll(concludablesWithApplicableRules);
+        resolvables.addAll(retrievables);
+        // TODO Plan the order in which to execute the concludables
+        List<Resolvable> plan = list(resolvables);
+        for (Resolvable planned : plan) {
+            Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerResolvable(planned);
+            this.plan.add(concludableUnifierPair);
         }
     }
 
@@ -163,8 +165,8 @@ public class RootResolver extends Resolver<RootResolver> {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
+        Request toDownstream = new Request(request.path().append(plan.get(0).first()),
+                                           UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plan.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -179,8 +181,8 @@ public class RootResolver extends Resolver<RootResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
-        Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
+        Request toDownstream = new Request(request.path().append(plan.get(0).first()),
+                                           UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plan.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
@@ -224,15 +226,15 @@ public class RootResolver extends Resolver<RootResolver> {
     }
 
     private boolean isLast(Actor<? extends Resolver<?>> actor) {
-        return plannedConcludables.get(plannedConcludables.size() - 1).first().equals(actor);
+        return plan.get(plan.size() - 1).first().equals(actor);
     }
 
-    private Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         int index = -1;
-        for (int i = 0; i < plannedConcludables.size(); i++) {
-            if (actor.equals(plannedConcludables.get(i).first())) { index = i; break; }
+        for (int i = 0; i < plan.size(); i++) {
+            if (actor.equals(plan.get(i).first())) { index = i; break; }
         }
-        assert index != -1 && index < plannedConcludables.size() - 1;
-        return plannedConcludables.get(index + 1);
+        assert index != -1 && index < plan.size() - 1 ;
+        return plan.get(index + 1);
     }
 }

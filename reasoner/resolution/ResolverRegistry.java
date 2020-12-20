@@ -28,7 +28,6 @@ import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ResolvableResolver;
@@ -92,20 +91,20 @@ public class ResolverRegistry {
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
-        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable));
+        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine));
         return new Pair<>(retrievableActor, identity(retrievable));
     }
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActorsMap.entrySet()) {
+        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
                 return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
-        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
+        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine));
         concludableActors.put(concludable, concludableActor);
         return new Pair<>(concludableActor, identity(concludable));
     }
