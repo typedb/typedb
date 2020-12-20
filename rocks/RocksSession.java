@@ -38,7 +38,7 @@ public abstract class RocksSession implements Grakn.Session {
     private final Arguments.Session.Type type;
     private final Context.Session context;
     private final UUID uuid;
-    final RocksDatabase database;
+    public final RocksDatabase database;
     final ConcurrentMap<RocksTransaction, Long> transactions;
     final AtomicBoolean isOpen;
 
@@ -109,9 +109,11 @@ public abstract class RocksSession implements Grakn.Session {
     }
 
     public static class Schema extends RocksSession {
+        private final RocksCreator rocksCreator;
 
-        public Schema(RocksDatabase database, Options.Session options) {
+        public Schema(RocksDatabase database, Options.Session options, RocksCreator rocksCreator) {
             super(database, Arguments.Session.Type.SCHEMA, options);
+            this.rocksCreator = rocksCreator;
         }
 
         @Override
@@ -132,7 +134,7 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
-            final RocksTransaction.Schema transaction = new RocksTransaction.Schema(this, type, options);
+            final RocksTransaction.Schema transaction = rocksCreator.transactionSchema(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
         }
@@ -145,8 +147,11 @@ public abstract class RocksSession implements Grakn.Session {
 
     public static class Data extends RocksSession {
 
-        public Data(RocksDatabase database, Options.Session options) {
+        private final RocksCreator rocksCreator;
+
+        public Data(RocksDatabase database, Options.Session options, RocksCreator rocksCreator) {
             super(database, Arguments.Session.Type.DATA, options);
+            this.rocksCreator = rocksCreator;
         }
 
         @Override
@@ -169,7 +174,7 @@ public abstract class RocksSession implements Grakn.Session {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock = 0;
             if (type.isWrite()) lock = database.dataWriteSchemaLock().readLock();
-            final RocksTransaction.Data transaction = new RocksTransaction.Data(this, type, options);
+            final RocksTransaction.Data transaction = rocksCreator.transactionData(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }

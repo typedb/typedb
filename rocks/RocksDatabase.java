@@ -56,22 +56,24 @@ import static java.util.Comparator.reverseOrder;
 
 public class RocksDatabase implements Grakn.Database {
 
-    private final String name;
+    protected final String name;
     private final RocksGrakn rocksGrakn;
-    private final OptimisticTransactionDB rocksData;
-    private final OptimisticTransactionDB rocksSchema;
+    private final RocksCreator rocksCreator;
+    protected final OptimisticTransactionDB rocksData;
+    protected final OptimisticTransactionDB rocksSchema;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
-    private final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     private final StampedLock dataWriteSchemaLock;
-    private final AtomicBoolean isOpen;
+    protected final AtomicBoolean isOpen;
     private Cache cache;
     private final RocksSession.Data statisticsBackgroundCounterSession;
-    final StatisticsBackgroundCounter statisticsBackgroundCounter;
+    protected final StatisticsBackgroundCounter statisticsBackgroundCounter;
 
-    private RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew) {
+    protected RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew, RocksCreator rocksCreator) {
         this.name = name;
         this.rocksGrakn = rocksGrakn;
+        this.rocksCreator = rocksCreator;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
@@ -87,31 +89,35 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
         if (isNew) initialise();
         else load();
-        statisticsBackgroundCounterSession = new RocksSession.Data(this, new Options.Session());
+        statisticsBackgroundCounterSession = rocksCreator.sessionData(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
     }
 
-    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name) {
+    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
         try {
-            Files.createDirectory(rocksGrakn.directory().resolve(name));
+            Files.createDirectories(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
-        return new RocksDatabase(rocksGrakn, name, true);
+        return rocksCreator.databaseCreate(rocksGrakn, name);
     }
 
-    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name) {
-        return new RocksDatabase(rocksGrakn, name, false);
+    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
+        return rocksCreator.databaseLoad(rocksGrakn, name);
     }
 
     private void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
-            try (RocksTransaction txn = session.transaction(WRITE)) {
-                if (txn.asSchema().graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
-                txn.asSchema().graph().initialise();
-                txn.commit();
+            try (RocksTransaction.Schema txn = session.transaction(WRITE).asSchema()) {
+                if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
+                txn.graph().initialise();
+                commitInitialise(txn);
             }
         }
+    }
+
+    protected void commitInitialise(RocksTransaction.Schema txn) {
+        txn.commit();
     }
 
     private void load() {
@@ -131,9 +137,9 @@ public class RocksDatabase implements Grakn.Database {
 
         if (type.isSchema()) {
             lock = dataWriteSchemaLock().writeLock();
-            session = new RocksSession.Schema(this, options);
+            session = rocksCreator.sessionSchema(this, options);
         } else if (type.isData()) {
-            session = new RocksSession.Data(this, options);
+            session = rocksCreator.sessionData(this, options);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -145,7 +151,7 @@ public class RocksDatabase implements Grakn.Database {
     synchronized Cache borrowCache() {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
-        if (cache == null) cache = new Cache(this);
+        if (cache == null) cache = new Cache(this, rocksCreator);
         cache.borrow();
         return cache;
     }
@@ -154,7 +160,7 @@ public class RocksDatabase implements Grakn.Database {
         cache.unborrow();
     }
 
-    synchronized void invalidateCache() {
+    public synchronized void invalidateCache() {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
         if (cache != null) {
@@ -167,7 +173,7 @@ public class RocksDatabase implements Grakn.Database {
         if (cache != null) cache.close();
     }
 
-    private Path directory() {
+    protected Path directory() {
         return rocksGrakn.directory().resolve(name);
     }
 
@@ -213,13 +219,17 @@ public class RocksDatabase implements Grakn.Database {
 
     void close() {
         if (isOpen.compareAndSet(true, false)) {
-            sessions.values().forEach(p -> p.first().close());
-            statisticsBackgroundCounter.stop();
-            statisticsBackgroundCounterSession.close();
-            closeCache();
-            rocksData.close();
-            rocksSchema.close();
+            closeResources();
         }
+    }
+
+    protected void closeResources() {
+        sessions.values().forEach(p -> p.first().close());
+        statisticsBackgroundCounter.stop();
+        statisticsBackgroundCounterSession.close();
+        closeCache();
+        rocksData.close();
+        rocksSchema.close();
     }
 
     @Override
@@ -263,8 +273,8 @@ public class RocksDatabase implements Grakn.Database {
         private long borrowerCount;
         private boolean invalidated;
 
-        private Cache(RocksDatabase database) {
-            schemaStorage = new RocksStorage(database.rocksSchema(), true);
+        private Cache(RocksDatabase database, RocksCreator rocksCreator) {
+            schemaStorage = rocksCreator.rocksStorage(database);
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();
@@ -309,7 +319,7 @@ public class RocksDatabase implements Grakn.Database {
         }
     }
 
-    static class StatisticsBackgroundCounter {
+    public static class StatisticsBackgroundCounter {
         private final RocksSession.Data session;
         private final Thread thread;
         private final Semaphore countJobNotifications;
@@ -320,7 +330,7 @@ public class RocksDatabase implements Grakn.Database {
             countJobNotifications = new Semaphore(0);
             thread = NamedThreadFactory.create(session.database.name + "::statistics-background-counter")
                     .newThread(this::countFn);
-            thread.start();
+
         }
 
         public void needsBackgroundCounting() {
@@ -359,7 +369,7 @@ public class RocksDatabase implements Grakn.Database {
             countJobNotifications.drainPermits();
         }
 
-        private void stop() {
+        public void stop() {
             try {
                 isStopped = true;
                 countJobNotifications.release();

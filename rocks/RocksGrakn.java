@@ -30,6 +30,9 @@ import org.rocksdb.UInt64AddOperator;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
@@ -50,7 +53,7 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
 
-    private RocksGrakn(Path directory, Options.Database options) {
+    protected RocksGrakn(Path directory, Options.Database options, RocksCreator rocksCreator) {
         this.directory = directory;
         this.options = options;
         this.rocksConfig = new org.rocksdb.Options()
@@ -58,20 +61,24 @@ public class RocksGrakn implements Grakn {
                 .setMergeOperator(new UInt64AddOperator());
 
         ExecutorService.init(MAX_THREADS);
-        databaseMgr = new RocksDatabaseManager(this);
+        databaseMgr = rocksCreator.databaseManager(this);
         databaseMgr.loadAll();
         isOpen = new AtomicBoolean(true);
     }
 
     public static RocksGrakn open(Path directory) {
-        return open(directory, new Options.Database());
+        return open(directory, new Options.Database(), new RocksCreator());
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options) {
-        return new RocksGrakn(directory, options);
+    public static RocksGrakn open(Path directory, RocksCreator rocksCreator) {
+        return open(directory, new Options.Database(), rocksCreator);
     }
 
-    Path directory() {
+    public static RocksGrakn open(Path directory, Options.Database options, RocksCreator rocksCreator) {
+        return rocksCreator.grakn(directory, options);
+    }
+
+    public Path directory() {
         return directory;
     }
 
@@ -108,8 +115,12 @@ public class RocksGrakn implements Grakn {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
-            rocksConfig.close();
+            closeResources();
         }
+    }
+
+    protected void closeResources() {
+        databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
+        rocksConfig.close();
     }
 }

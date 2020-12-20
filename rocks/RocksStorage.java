@@ -43,7 +43,7 @@ import java.util.function.BiFunction;
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
-class RocksStorage implements Storage {
+public class RocksStorage implements Storage {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
@@ -56,9 +56,9 @@ class RocksStorage implements Storage {
     private final Snapshot snapshot;
     private final ManagedReadWriteLock readWriteLock;
     private final AtomicBoolean isOpen;
-    final Transaction rocksTx;
+    protected final Transaction rocksTx;
 
-    RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
+    public RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
         iterators = ConcurrentHashMap.newKeySet();
         recycled = new ConcurrentLinkedQueue<>();
@@ -225,7 +225,7 @@ class RocksStorage implements Storage {
 
     static abstract class TransactionBounded extends RocksStorage {
 
-        private final RocksTransaction transaction;
+        protected final RocksTransaction transaction;
 
         TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
             super(rocksDB, transaction.type().isRead());
@@ -250,13 +250,24 @@ class RocksStorage implements Storage {
             return exception;
         }
 
+        public void commit() throws RocksDBException {
+            rocksTx.commit();
+        }
+
+        public void disableIndexing() {
+            rocksTx.disableIndexing();
+        }
+
+        public void rollback() throws RocksDBException {
+            rocksTx.rollback();
+        }
     }
 
-    static class Schema extends TransactionBounded implements Storage.Schema {
+    public static class Schema extends TransactionBounded implements Storage.Schema {
 
         private final KeyGenerator.Schema schemaKeyGenerator;
 
-        Schema(RocksDatabase database, RocksTransaction transaction) {
+        public Schema(RocksDatabase database, RocksTransaction transaction) {
             super(database.rocksSchema(), transaction);
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
@@ -267,11 +278,11 @@ class RocksStorage implements Storage {
         }
     }
 
-    static class Data extends TransactionBounded implements Storage.Data {
+    public static class Data extends TransactionBounded implements Storage.Data {
 
         private final KeyGenerator.Data dataKeyGenerator;
 
-        Data(RocksDatabase database, RocksTransaction transaction) {
+        public Data(RocksDatabase database, RocksTransaction transaction) {
             super(database.rocksData(), transaction);
             this.dataKeyGenerator = database.dataKeyGenerator();
         }
