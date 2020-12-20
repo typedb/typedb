@@ -188,7 +188,7 @@ Feature: Graql Match Query
       match (role: $x, role: $y) isa relation;
       """
     Then answer size is: 2
-    
+
   Scenario: matching a chain of relations only returns answers if there is a chain of the required length
     Given graql define
       """
@@ -239,3 +239,52 @@ Feature: Graql Match Query
         (sender: $c, recipient: $d) isa gift-delivery;
       """
     Then answer size is: 0
+
+  Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
+    Given graql define
+      """
+      define
+      residency sub relation,
+        relates resident,
+        owns ref @key;
+      person plays residency:resident;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given connection close all sessions
+    Given connection open data session for database: grakn
+    Given session opens transaction of type: write
+    Given graql insert
+      """
+      insert
+      $x isa person, has ref 0;
+      $e (employee: $x) isa employment, has ref 1;
+      $f (friend: $x) isa friendship, has ref 2;
+      $r (resident: $x) isa residency, has ref 3;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given session opens transaction of type: read
+    Given get answers of graql query
+      """
+      match $r isa relation;
+      """
+    Given uniquely identify answer concepts
+      | r         |
+      | key:ref:1 |
+      | key:ref:2 |
+      | key:ref:3 |
+    When get answers of graql query
+      """
+      match ($x) isa relation;
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | key:ref:0 |
+    When get answers of graql query
+      """
+      match ($x);
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | key:ref:0 |
