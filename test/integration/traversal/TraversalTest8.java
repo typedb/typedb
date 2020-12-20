@@ -18,21 +18,24 @@
 
 package grakn.core.traversal;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.server.migrator.Importer;
 import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlMatch;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 
@@ -42,19 +45,16 @@ import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static graql.lang.Graql.parseQuery;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertTrue;
 
 public class TraversalTest8 {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("world2");
     private static String database = "world2";
-    private static RocksGrakn grakn;
-    private static RocksSession session;
 
-    @Test
-    public void test() throws IOException {
-        for (int i = 0; i < 30; i++)
-        {
-            Util.resetDirectory(directory);
-            grakn = RocksGrakn.open(directory);
+    @BeforeClass
+    public static void before() throws IOException {
+        Util.resetDirectory(directory);
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
             grakn.databases().create(database);
 
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -67,52 +67,45 @@ public class TraversalTest8 {
 
             Importer importer = new Importer(grakn, database, Paths.get("test/integration/traversal/TraversalTest8/world2.data"), new HashMap<>());
             importer.run();
+        }
+    }
 
-            session = grakn.session(database, DATA);
+    @Test
+    public void test_repeat() {
+        int rep = 30, success = 0, fail = 0;
+        List<String> cities = list("London", "New York", "Berlin", "Brasilia", "Cape Town", "Beijing", "Canberra");
+        for (int i = 0; i < rep; i++) {
+            Instant start = Instant.now();
+            try {
+                test();
+                success++;
+                Instant end = Instant.now();
+                System.out.println(String.format("Duration: %s (ms)", Duration.between(start, end).toMillis()));
+            } catch (AssertionError e) {
+                fail++;
+                System.out.println("FAILED!");
+                e.printStackTrace();
+                break;
+            }
+        }
+        System.out.println(String.format("Success: %s, Fail: %s", success, fail));
+    }
 
-            long start = System.currentTimeMillis();
-            List<String> cities = list(
-//                    "London",
-//                    "New York",
-//                    "Berlin",
-//                    "Brasilia",
-//                    "Cape Town",
-//                    "Beijing",
-                    "Canberra"
-            );
-            cities.parallelStream().forEach(city -> {
+    @Test
+    public void test() {
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+            try (RocksSession session = grakn.session(database, DATA)) {
                 try (RocksTransaction transaction = session.transaction(READ)) {
-                    GraqlMatch query = Graql.match(
-                            Graql.var("city").isa("city")
-                                    .has("location-name", city),
-                            Graql.var("m")
-                                    .rel("husband", Graql.var("husband"))
-                                    .rel("wife", Graql.var("wife"))
-                                    .isa("marriage")
-                                    .has("marriage-id", Graql.var("marriage-id")),
-                            Graql.not(
-                                    Graql.var("par")
-                                            .rel("parent", "husband")
-                                            .rel("parent", "wife")
-                                            .isa("parentship")
-                            ),
-                            Graql.var("husband").isa("person")
-                                    .has("email", Graql.var("husband-email")),
-                            Graql.var("wife").isa("person")
-                                    .has("email", Graql.var("wife-email")),
-                            Graql.var()
-                                    .rel("located", Graql.var("m"))
-                                    .rel("location", Graql.var("city"))
-                                    .isa("locates")
-                    ).sort("marriage-id");
-                    transaction.query().match(query).toList();
+                    String query = "match " +
+                            "$city isa city, has location-name 'Canberra'; " +
+                            "$m (husband: $husband, wife: $wife) isa marriage, has marriage-id $marriage-id; " +
+                            "$husband isa person, has email $husband-email; " +
+                            "$wife isa person, has email $wife-email; " +
+                            "(located: $m, location: $city) isa locates;";
+                    ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(query).asMatch());
+                    assertTrue(!answers.hasNext());
                 }
-            });
-
-            System.out.println(System.currentTimeMillis() - start);
-
-            session.close();
-            grakn.close();
+            }
         }
     }
 }

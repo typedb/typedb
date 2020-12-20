@@ -48,6 +48,7 @@ import java.nio.file.Files;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
@@ -62,6 +63,10 @@ import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 
 
 public class GraknServer implements AutoCloseable {
+
+    static {
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+    }
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();

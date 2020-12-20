@@ -150,9 +150,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     protected void setObjectiveCoefficient(double cost) {
         assert !Double.isNaN(cost);
-        planner.objective().setCoefficient(
-                varIsStartingVertex, cost * Math.pow(planner.branchingFactor, planner.edges().size())
-        );
+        double exp = planner.edges().size() * planner.costExponentUnit;
+        double coeff = cost * Math.pow(planner.branchingFactor, exp);
+        planner.objective().setCoefficient(varIsStartingVertex, coeff);
         costNext = cost;
         planner.updateCostNext(costPrevious, costNext);
     }

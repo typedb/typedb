@@ -35,6 +35,8 @@ import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -45,6 +47,8 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEM
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class QueryManager {
+
+    private static final Logger LOG = LoggerFactory.getLogger(QueryManager.class);
 
     private static final String TRACE_PREFIX = "query.";
     private final LogicManager logicMgr;

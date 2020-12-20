@@ -146,7 +146,7 @@ host_compatible_java_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob([
-        "*",
+        "*", "*/*",
         "TraversalTest8/world2.gql"
     ]),
     exclude = ["TraversalTest8/world2.data"],

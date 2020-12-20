@@ -62,6 +62,7 @@ public class GraphPlanner implements Planner {
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
     static final long TIME_LIMIT_MILLIS = 100;
+    static final double OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT = 3.0;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
@@ -82,6 +83,7 @@ public class GraphPlanner implements Planner {
     volatile double totalCostPrevious;
     double totalCostNext;
     double branchingFactor;
+    double costExponentUnit;
 
     private GraphPlanner() {
         solver = MPSolver.createSolver("SCIP");
@@ -99,6 +101,7 @@ public class GraphPlanner implements Planner {
         totalCostPrevious = 0.01;
         totalCostNext = 0.01;
         branchingFactor = 0.01;
+        costExponentUnit = 0.1;
         snapshot = -1L;
     }
 
@@ -256,6 +259,7 @@ public class GraphPlanner implements Planner {
             snapshot = graph.data().stats().snapshot();
             totalCostNext = 0.1;
             setBranchingFactor(graph);
+            setCostExponentUnit(graph);
             computeTotalCostNext(graph);
 
             assert !Double.isNaN(totalCostNext) && !Double.isNaN(totalCostPrevious) && totalCostPrevious > 0;
@@ -292,6 +296,23 @@ public class GraphPlanner implements Planner {
         if (roles == 0) roles += 1;
         if (entities > 0) branchingFactor = roles / entities;
         assert !Double.isNaN(branchingFactor);
+    }
+
+    private void setCostExponentUnit(GraphManager graph) {
+        double expUnit, expMaxInc, expMax;
+        expUnit = (OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT - 1) / edges.size();
+        expUnit = Math.min(expUnit, 1.0);
+
+        expMaxInc = expUnit * edges.size();
+        expMax = 1 + expMaxInc;
+        long things = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootThingType());
+        double maxCoefficient = Math.pow(things, expMax);
+        if (Double.isNaN(maxCoefficient) || Double.isInfinite(maxCoefficient) || maxCoefficient > Long.MAX_VALUE) {
+            expMax = Math.log(Long.MAX_VALUE) / Math.log(things);
+            expMaxInc = expMax - 1;
+        }
+        assert !Double.isNaN(expMaxInc) && expMaxInc > 0;
+        costExponentUnit =  expMaxInc / edges.size();
     }
 
     private void computeTotalCostNext(GraphManager graph) {
