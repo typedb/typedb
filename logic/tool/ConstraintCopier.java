@@ -133,7 +133,6 @@ public class ConstraintCopier {
         if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
         assert (conjVar.isThing() && thenVar.isThing()) ||
                 (conjVar.isType() && thenVar.isType());
-        Collections.
         return Collections.disjoint(conjVar.resolvedTypes(), thenVar.resolvedTypes());
     }
 }

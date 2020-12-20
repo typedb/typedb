@@ -41,8 +41,9 @@ public class Unifier extends VariableTransformer {
         this.allowedTypes = Collections.unmodifiableMap(allowedTypes);
     }
 
-    public static Unifier of(Map<Reference.Name, Set<Reference.Name>> unifier) {
-        return new Unifier(unifier);
+    public static Unifier of(Map<Reference.Name, Set<Reference.Name>> unifier,
+                             Map<Reference.Name, Set<Label>> allowedTypes) {
+        return new Unifier(unifier, allowedTypes);
     }
 
     public static Unifier empty() {
