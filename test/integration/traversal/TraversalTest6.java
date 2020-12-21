@@ -64,58 +64,26 @@ public class TraversalTest6 {
 
         try (RocksSession session = grakn.session(database, SCHEMA)) {
             try (RocksTransaction transaction = session.transaction(WRITE)) {
-                final String queryString = "define\n" +
-                        "animal sub entity;\n" +
-                        "" +
-                        "mammal sub animal;\n" +
-                        "reptile sub animal;\n" +
-                        "tortoise sub reptile;\n" +
-                        "" +
-                        "person sub mammal,\n" +
-                        "    owns name,\n" +
-                        "    owns email,\n" +
-                        "    plays marriage:spouse;\n" +
-                        "" +
-                        "man sub person,\n" +
-                        "    plays marriage:husband;\n" +
-                        "" +
-                        "woman sub person,\n" +
-                        "    plays marriage:wife;\n" +
-                        "" +
-                        "dog sub mammal,\n" +
-                        "    owns name," +
-                        "    owns tail-length;" +
-                        "" +
-                        "rat sub mammal,\n" +
-                        "   owns tail-length;\n" +
-                        "" +
-                        "name sub attribute, value string;\n" +
-                        "email sub attribute, value string;\n" +
-                        "tail-length sub attribute, value long;\n" +
-                        "" +
-                        "marriage sub relation,\n" +
-                        "    relates husband,\n" +
-                        "    relates wife,\n" +
-                        "    relates spouse;\n";
+                final String queryString =
+                        "define " +
+                                "animal sub entity; " +
+                                "mammal sub animal; " +
+                                "reptile sub animal; " +
+                                "tortoise sub reptile; " +
+                                "person sub mammal, owns name, owns email, plays marriage:spouse; " +
+                                "man sub person, plays marriage:husband; " +
+                                "woman sub person, plays marriage:wife; " +
+                                "dog sub mammal, owns name, owns tail-length;" +
+                                "rat sub mammal, owns tail-length; " +
+                                "name sub attribute, value string; " +
+                                "email sub attribute, value string; " +
+                                "tail-length sub attribute, value long; " +
+                                "marriage sub relation, relates husband, relates wife, relates spouse;";
                 final GraqlDefine query = parseQuery(queryString);
                 transaction.query().define(query);
                 transaction.commit();
             }
         }
-
-        try (RocksSession session = grakn.session(database, DATA)) {
-            try (RocksTransaction transaction = session.transaction(WRITE)) {
-                final String queryString = "insert\n" +
-                        "      $a isa woman, has name 'alice';\n" +
-                        "      $b isa man, has name 'bob';\n" +
-                        "      $c isa man, has name 'charlie';\n" +
-                        "      (wife: $a, husband: $b) isa marriage;\n";
-                final GraqlInsert query = parseQuery(queryString);
-                transaction.query().insert(query);
-                transaction.commit();
-            }
-        }
-
         session = grakn.session(database, DATA);
     }
 
@@ -138,9 +106,9 @@ public class TraversalTest6 {
     }
 
     @Test
-    public void test_owns_inheritance() {
+    public void test_plays_inheritance() {
         try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match $p owns name;";
+            final String queryString = "match $p plays marriage:spouse;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
@@ -148,7 +116,7 @@ public class TraversalTest6 {
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
-                put("p", set("person", "man", "woman", "dog"));
+                put("p", set("person", "man", "woman"));
             }};
 
             assertEquals(expected, result);
@@ -175,8 +143,8 @@ public class TraversalTest6 {
     public void test_relation_concrete_role() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match " +
-                    "   $r sub marriage, relates $role, relates wife;" +
-                    "   $yoko plays $role, plays relation:wife;";
+                    "$r sub marriage, relates $role, relates wife;" +
+                    "$yoko plays $role, plays relation:wife;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
