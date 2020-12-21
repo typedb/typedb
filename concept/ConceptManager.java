@@ -28,7 +28,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
 import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.concept.type.impl.RelationTypeImpl;

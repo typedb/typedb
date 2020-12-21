@@ -177,15 +177,15 @@ public class Rule {
     private void pruneThenTypeHints() {
         then.variables().stream().filter(variable -> variable.identifier().isNamedReference())
                 .forEach(thenVar ->
-                        when.variables().stream()
-                                .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
-                                .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
-                                .findFirst().ifPresent(whenVar -> {
-                            if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
-                                thenVar.addResolvedTypes(whenVar.resolvedTypes());
-                            } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
-                            if (thenVar.resolvedTypes().isEmpty()) thenVar.setSatisfiable(false);
-                        })
+                                 when.variables().stream()
+                                         .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
+                                         .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
+                                         .findFirst().ifPresent(whenVar -> {
+                                     if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
+                                         thenVar.addResolvedTypes(whenVar.resolvedTypes());
+                                     } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
+                                     if (thenVar.resolvedTypes().isEmpty()) thenVar.setSatisfiable(false);
+                                 })
                 );
     }
 

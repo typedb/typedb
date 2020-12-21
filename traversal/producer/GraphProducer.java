@@ -111,7 +111,7 @@ public class GraphProducer implements Producer<VertexMap> {
         if ((next = start.atomicNext()) != null) {
             ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, params).distinct(produced);
             futures.put(iterator,
-                    runAsync(consume(iterator, remaining, sink), forkJoinPool())
+                        runAsync(consume(iterator, remaining, sink), forkJoinPool())
             );
             return;
         }

@@ -47,8 +47,7 @@ public class VertexProducer implements Producer<VertexMap> {
     public void produce(Sink<VertexMap> sink, int count) {
         if (future == null) {
             future = runAsync(consume(count, sink), forkJoinPool());
-        }
-        else future.thenRun(consume(count, sink));
+        } else future.thenRun(consume(count, sink));
     }
 
     private Runnable consume(int count, Sink<VertexMap> sink) {

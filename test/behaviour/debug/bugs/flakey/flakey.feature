@@ -116,20 +116,20 @@ Feature: Graql Match Query
       """
     # Alfred and Barbara are not retrieved, as they aren't subtypes of worker
     Then uniquely identify answer concepts
-      | x         | type                                |
-      | key:ref:2 | label:bricklayer                    |
-      | key:ref:2 | label:construction-worker           |
-      | key:ref:2 | label:worker                        |
-      | key:ref:3 | label:crane-driver                  |
-      | key:ref:3 | label:construction-worker           |
-      | key:ref:3 | label:worker                        |
-      | key:ref:4 | label:mobile-network-researcher     |
-      | key:ref:4 | label:telecoms-worker               |
-      | key:ref:4 | label:worker                        |
-      | key:ref:5 | label:telecoms-business-strategist  |
-      | key:ref:5 | label:telecoms-worker               |
-      | key:ref:5 | label:worker                        |
-      | key:ref:6 | label:worker                        |
+      | x         | type                               |
+      | key:ref:2 | label:bricklayer                   |
+      | key:ref:2 | label:construction-worker          |
+      | key:ref:2 | label:worker                       |
+      | key:ref:3 | label:crane-driver                 |
+      | key:ref:3 | label:construction-worker          |
+      | key:ref:3 | label:worker                       |
+      | key:ref:4 | label:mobile-network-researcher    |
+      | key:ref:4 | label:telecoms-worker              |
+      | key:ref:4 | label:worker                       |
+      | key:ref:5 | label:telecoms-business-strategist |
+      | key:ref:5 | label:telecoms-worker              |
+      | key:ref:5 | label:worker                       |
+      | key:ref:6 | label:worker                       |
 
   Scenario: duplicate role players are retrieved singly when queried doubly
     Given graql define

@@ -18,7 +18,6 @@
 
 package grakn.core.concept.type;
 
-import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 
 import java.util.stream.Stream;

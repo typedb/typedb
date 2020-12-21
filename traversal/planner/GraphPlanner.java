@@ -318,7 +318,7 @@ public class GraphPlanner implements Planner {
             expMaxInc = expMax - 1;
         }
         assert !Double.isNaN(expMaxInc) && expMaxInc > 0;
-        costExponentUnit =  expMaxInc / edges.size();
+        costExponentUnit = expMaxInc / edges.size();
     }
 
     private void computeTotalCostNext(GraphManager graph) {

@@ -199,7 +199,7 @@ public class GraqlSteps {
     public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-                        answerConcepts.size(), answers.size()),
+                              answerConcepts.size(), answers.size()),
                 answerConcepts.size(), answers.size()
         );
 

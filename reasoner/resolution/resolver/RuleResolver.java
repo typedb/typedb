@@ -23,11 +23,11 @@ import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -230,7 +230,10 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         int index = -1;
         for (int i = 0; i < plannedConcludables.size(); i++) {
-            if (actor.equals(plannedConcludables.get(i).first())) { index = i; break; }
+            if (actor.equals(plannedConcludables.get(i).first())) {
+                index = i;
+                break;
+            }
         }
         assert index != -1 && index < plannedConcludables.size() - 1;
         return plannedConcludables.get(index + 1);

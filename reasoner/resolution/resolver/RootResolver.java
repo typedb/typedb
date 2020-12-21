@@ -230,7 +230,10 @@ public class RootResolver extends Resolver<RootResolver> {
     private Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         int index = -1;
         for (int i = 0; i < plannedConcludables.size(); i++) {
-            if (actor.equals(plannedConcludables.get(i).first())) { index = i; break; }
+            if (actor.equals(plannedConcludables.get(i).first())) {
+                index = i;
+                break;
+            }
         }
         assert index != -1 && index < plannedConcludables.size() - 1;
         return plannedConcludables.get(index + 1);

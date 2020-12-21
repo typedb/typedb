@@ -629,8 +629,7 @@ public class SchemaGraph implements Graph {
                 } else {
                     return subTypesDepth.get(type);
                 }
-            }
-            else return maxDepthFn.get();
+            } else return maxDepthFn.get();
         }
     }
 }

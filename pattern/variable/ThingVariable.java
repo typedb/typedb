@@ -217,8 +217,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
         syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
-                .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
-                .collect(Collectors.joining("" + COMMA + SPACE)));
+                              .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
+                              .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 

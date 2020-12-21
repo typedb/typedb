@@ -194,17 +194,17 @@ release:
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
-#    deploy-rpm-release:
-#      machine: graknlabs-ubuntu-20.04-java11
-#      filter:
-#        owner: graknlabs
-#        branch: master
-#      dependencies: [deploy-github]
-#      script: |
-#        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
-#        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-#        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
-#        bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
+    #    deploy-rpm-release:
+    #      machine: graknlabs-ubuntu-20.04-java11
+    #      filter:
+    #        owner: graknlabs
+    #        branch: master
+    #      dependencies: [deploy-github]
+    #      script: |
+    #        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
+    #        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
+    #        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
+    #        bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
     deploy-docker:
       machine: graknlabs-ubuntu-20.04-java11
       filter:

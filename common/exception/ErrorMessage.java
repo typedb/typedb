@@ -25,7 +25,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     }
 
     public static void loadConstants() {
-        for (Class<?> innerClass: ErrorMessage.class.getDeclaredClasses()) {
+        for (Class<?> innerClass : ErrorMessage.class.getDeclaredClasses()) {
             try {
                 Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
             } catch (ClassNotFoundException e) {

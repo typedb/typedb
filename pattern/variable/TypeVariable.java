@@ -140,7 +140,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
             } else if (constraint.isPlays()) {
                 this.plays(constraint.asPlays().relation().orElse(null), constraint.asPlays().role(), constraint.asPlays().overridden().orElse(null));
             } else if (constraint.isRelates()) {
-                this.relates(constraint.asRelates().role(),  constraint.asRelates().overridden().orElse(null));
+                this.relates(constraint.asRelates().role(), constraint.asRelates().overridden().orElse(null));
             } else if (constraint.isIs()) {
                 this.is(constraint.asIs().variable());
             } else throw GraknException.of(ILLEGAL_STATE);
