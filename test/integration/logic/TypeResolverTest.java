@@ -278,17 +278,8 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> result = getHintMap(exhaustiveConjunction);
 
-
-
-        assertTrue(result.entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
 //        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
-
-//        Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
-//            put(new Pair<>("$role", "$yoko"), set("marriage:husband", "marriage:wife", "marriage:spouse"));
-//        }};
-//
-//        assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
     }
 
     @Test
@@ -307,13 +298,25 @@ public class TypeResolverTest {
             put("$m", set("marriage", "relation"));
         }};
 
-//        Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
-//            put(new Pair<>("$yoko", ""), set("marriage:husband", "marriage:wife", "marriage:spouse"));
-//        }};
-//
-//        assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-//        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+    }
+
+    @Test
+    public void temp() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeHinter = transaction.logic().typeResolver();
+
+        String queryString = "match $r (wife: $yoko) isa marriage;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("woman"));
+            put("$r", set("marriage"));
+        }};
+
         assertEquals(expected, getHintMap(exhaustiveConjunction));
 //        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
@@ -333,15 +336,8 @@ public class TypeResolverTest {
             put("$r", set("marriage"));
         }};
 
-//        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
         assertEquals(expected, getHintMap(exhaustiveConjunction));
 //        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
-//        Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
-//            put(new Pair<>("$yoko", ""), set("marriage:husband", "marriage:wife", "marriage:spouse"));
-//        }};
-//
-//        assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-//        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
     }
 
     @Test
