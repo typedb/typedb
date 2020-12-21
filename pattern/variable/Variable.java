@@ -57,12 +57,7 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public void addTo(Traversal traversal) {
-        // TODO: create vertex properties first, then the vertex itself, then edges
-        //       that way, we can make properties to be 'final' objects that are
-        //       included in equality and hashCode of vertices
-        constraints().forEach(constraint -> constraint.addTo(traversal));
-    }
+    public abstract void addTo(Traversal traversal);
 
     public boolean isType() {
         return false;

@@ -70,15 +70,15 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         int roleID = 0;
         for (RolePlayer rp : rolePlayers) {
             if (rp.roleType().isPresent()) {
-                if (rp.roleType().get().reference().isName() || rp.roleTypeHints().isEmpty()) {
+                TypeVariable roleType = rp.roleType().get();
+                if (roleType.reference().isName()) {
                     Identifier.Scoped role = Identifier.Scoped.of(owner.identifier(), roleID++);
                     traversal.relating(owner.identifier(), role);
                     traversal.playing(rp.player().identifier(), role);
-                    traversal.isa(role, rp.roleType().get().identifier());
-                    if (!rp.roleTypeHints.isEmpty()) traversal.types(role, rp.roleTypeHints);
+                    traversal.isa(role, roleType.identifier());
                 } else {
-                    assert rp.roleType().get().reference().isLabel() && !rp.roleTypeHints.isEmpty();
-                    traversal.rolePlayer(owner.identifier(), rp.player().identifier(), rp.roleTypeHints);
+                    assert roleType.reference().isLabel() && !roleType.resolvedTypes().isEmpty();
+                    traversal.rolePlayer(owner.identifier(), rp.player().identifier(), roleType.resolvedTypes());
                 }
             } else {
                 traversal.rolePlayer(owner.identifier(), rp.player().identifier());
@@ -87,14 +87,10 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     @Override
-    public boolean isRelation() {
-        return true;
-    }
+    public boolean isRelation() { return true; }
 
     @Override
-    public RelationConstraint asRelation() {
-        return this;
-    }
+    public RelationConstraint asRelation() { return this; }
 
     @Override
     public boolean equals(Object o) {
@@ -128,9 +124,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                     AlphaEquivalence permutationMap = AlphaEquivalence.valid();
                     while (thisRolePlayersIt.hasNext() && thatRolePlayersIt.hasNext()) {
                         permutationMap = permutationMap.validIfAlphaEqual(thisRolePlayersIt.next(), thatRolePlayersIt.next());
-                        if (!permutationMap.isValid()) {
-                            return permutationMap;
-                        }
+                        if (!permutationMap.isValid()) return permutationMap;
                     }
                     return permutationMap;
                 }).filter(AlphaEquivalence::isValid).findFirst().orElse(AlphaEquivalence.invalid()));
@@ -140,8 +134,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         private final TypeVariable roleType;
         private final ThingVariable player;
+        private final Set<Label> resolvedRoleTypes;
         private final int hash;
-        private Set<Label> roleTypeHints;
 
         public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
             assert roleType == null || roleType.reference().isName() ||
@@ -150,7 +144,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             this.roleType = roleType;
             this.player = player;
             this.hash = Objects.hash(this.roleType, this.player);
-            this.roleTypeHints = new HashSet<>();
+            this.resolvedRoleTypes = new HashSet<>();
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
@@ -169,12 +163,12 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             return player;
         }
 
-        public void addRoleTypeHints(Set<Label> labels) {
-            this.roleTypeHints = labels;
+        public void addResolvedRoleTypes(Set<Label> labels) {
+            this.resolvedRoleTypes.addAll(labels);
         }
 
-        public Set<Label> roleTypeHints() {
-            return roleTypeHints;
+        public Set<Label> resolvedRoleTypes() {
+            return resolvedRoleTypes;
         }
 
         @Override
@@ -198,7 +192,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         @Override
         public AlphaEquivalence alphaEquals(RolePlayer that) {
             return AlphaEquivalence.valid()
-                    .validIf(roleTypeHints.equals(that.roleTypeHints))
+                    .validIf(resolvedRoleTypes.equals(that.resolvedRoleTypes))
                     .validIfAlphaEqual(roleType, that.roleType)
                     .validIfAlphaEqual(player, that.player);
         }

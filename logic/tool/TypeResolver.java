@@ -68,7 +68,7 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public Conjunction resolveNamedVarsExhaustive(Conjunction conjunction) {
+    public Conjunction resolveVariablesExhaustive(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
@@ -91,7 +91,7 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolveNamedVars(Conjunction conjunction) {
+    public Conjunction resolveVariables(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
         Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
@@ -119,10 +119,9 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolveLabeledVars(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(v -> v.reference().isLabel())
+    public Conjunction resolveLabels(Conjunction conjunction) {
+        iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
-                    assert typeVar.isType() && typeVar.asType().label().isPresent();
                     Label label = typeVar.asType().label().get().properLabel();
                     if (label.scope().isPresent()) {
                         Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
@@ -250,7 +249,7 @@ public class TypeResolver {
                 } else {
                     typeVariable = varHints.getConversion(rolePlayer);
                 }
-                rolePlayer.addRoleTypeHints(labels.get(typeVariable.reference()));
+                rolePlayer.addResolvedRoleTypes(labels.get(typeVariable.reference()));
             }
         }
     }

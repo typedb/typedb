@@ -888,7 +888,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     case RELATING:
                         return new Relating(from, to);
                     case ROLEPLAYER:
-                        return new RolePlayer(from, to, structureEdge.asOptimised().types());
+                        return new RolePlayer(from, to, structureEdge.asRolePlayer().types());
                     default:
                         throw GraknException.of(UNRECOGNISED_VALUE);
                 }

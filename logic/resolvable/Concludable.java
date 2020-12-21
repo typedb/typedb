@@ -248,8 +248,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
-            if (!conjRP.roleTypeHints().isEmpty() && !thenRP.roleTypeHints().isEmpty()
-                    && Collections.disjoint(conjRP.roleTypeHints(), thenRP.roleTypeHints())) return true;
+            if (!conjRP.resolvedRoleTypes().isEmpty() && !thenRP.resolvedRoleTypes().isEmpty()
+                    && Collections.disjoint(conjRP.resolvedRoleTypes(), thenRP.resolvedRoleTypes())) return true;
             if (ConstraintCopier.varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
             if (conjRP.roleType().isPresent()) {
                 assert thenRP.roleType().isPresent();
