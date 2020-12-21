@@ -20,7 +20,6 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
-import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
@@ -89,13 +88,7 @@ public class Conjunction implements Pattern {
         return negations;
     }
 
-    public Traversal traversal(TypeResolver typeResolver) {
-        return traversal(typeResolver, true);
-    }
-
-    public Traversal traversal(TypeResolver typeResolver, boolean resolveVariables) {
-        typeResolver.resolveLabels(this);
-        if (resolveVariables) typeResolver.resolveVariables(this);
+    public Traversal traversal() {
         Traversal traversal = new Traversal();
         variables.forEach(variable -> variable.addTo(traversal));
         return traversal;

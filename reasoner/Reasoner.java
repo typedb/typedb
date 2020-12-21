@@ -63,9 +63,9 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> iteratorSingleThreaded(Conjunction conjunction) {
-//        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
+        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
         // conjunction = logicMgr.typeResolver().resolveVariables(conjunction);
-        return traversalEng.iterator(conjunction.traversal(logicMgr.typeResolver())).map(conceptMgr::conceptMap);
+        return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
     }
 
     public ResourceIterator<ConceptMap> iteratorParallel(Disjunction disjunction) {
@@ -83,9 +83,9 @@ public class Reasoner {
 
     public List<Producer<ConceptMap>> producers(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
-        // conjunction = logicMgr.typeResolver().resolveVariables(conjunction);
+//        conjunction = logicMgr.typeResolver().resolveVariables(conjunction);
         Producer<ConceptMap> answers = traversalEng
-                .producer(conjunction.traversal(logicMgr.typeResolver()), PARALLELISATION_FACTOR)
+                .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
 
         // TODO enable reasoner here

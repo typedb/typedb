@@ -76,16 +76,20 @@ public class TypeResolver {
                 retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()));
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
 
+        final Map<Reference, TypeVariable> varHints = variableHints.varHints;
+
+
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
-            Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
+//            Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
+            Set<Label> hintLabels = referenceHintsMapping.get(varHints.get(variable.reference()).reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfTypes) {
-                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(variable.reference()), labelMap);
+                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(varHints.get(variable.reference()).reference()), labelMap);
                 }
-                addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
+//                addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
             } else if (variable.isType() && hintLabels.size() != numOfTypes) {
-                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(variable.reference()), labelMap);
+                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(varHints.get(variable.reference()).reference()), labelMap);
             }
         }
         return conjunction;
@@ -259,7 +263,7 @@ public class TypeResolver {
         varHintsConjunction = resolveLabels(varHintsConjunction);
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(conjunction.traversal(this, false)).forEachRemaining(
+            traversalEng.iterator(conjunction.traversal()).forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
@@ -306,9 +310,15 @@ public class TypeResolver {
                     .filter(variable -> variable.label().get().properLabel().equals(metaLabel))
                     .findAny();
 
-            if (metaType.isPresent()) return varHints.convert(metaType.get());
+            if (metaType.isPresent()) {
+                TypeVariable newMetaType = varHints.convert(metaType.get());
+                neighbours.putIfAbsent(newMetaType, new HashSet<>());
+                return newMetaType;
+            }
+
             TypeVariable newMetaType = new TypeVariable(Identifier.Variable.of(Reference.label(metaLabel.toString())));
             newMetaType.label(metaLabel);
+            neighbours.putIfAbsent(newMetaType, new HashSet<>());
             return newMetaType;
         }
 
@@ -467,20 +477,31 @@ public class TypeResolver {
         }
 
         public TypeVariable convert(Variable key) {
-            if (!varHints.containsKey(key.reference())) {
-                TypeVariable newTypeVar = new TypeVariable(key.identifier());
-                if (key.isType()) key.asType().constraints().forEach(newTypeVar::constrain);
+            if (!varHints.containsKey(key.reference()) || key.reference().isAnonymous()) {
+                TypeVariable newTypeVar;
+                if (key.reference().isAnonymous()) {
+                    newTypeVar = new TypeVariable(Identifier.Variable.of(
+                            new SystemReference("temp" + addAndGetCounter())));
+                } else newTypeVar = new TypeVariable(key.identifier());
+//                TypeVariable newTypeVar = new TypeVariable(key.identifier());
+//                if (key.isType()) key.asType().constraints().forEach(newTypeVar::constrain);
+                if (key.isType()) newTypeVar.copyConstraints(key.asType());
                 varHints.put(key.reference(), newTypeVar);
             }
             return varHints.get(key.reference());
         }
 
         public boolean hasConversion(Variable key) {
+            if (key.reference().isAnonymous()) return false;
             return varHints.containsKey(key.reference());
         }
 
         public Collection<TypeVariable> getVariableHints() {
             return varHints.values();
+        }
+
+        public Map<Reference, TypeVariable> getVarMapping() {
+            return varHints;
         }
 
         private Integer addAndGetCounter() {
