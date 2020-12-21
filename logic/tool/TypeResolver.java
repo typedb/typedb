@@ -71,7 +71,6 @@ public class TypeResolver {
     public Conjunction resolveVariablesExhaustive(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
-        Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
         Map<Reference, Set<Label>> referenceHintsMapping =
                 retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()));
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
@@ -84,10 +83,10 @@ public class TypeResolver {
             Set<Label> hintLabels = referenceHintsMapping.get(varHints.get(variable.identifier()).reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfTypes) {
-                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()), labelMap);
+                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()));
                 }
             } else if (variable.isType() && hintLabels.size() != numOfTypes) {
-                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()), labelMap);
+                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()));
             }
         }
         return conjunction;
@@ -96,7 +95,6 @@ public class TypeResolver {
     public Conjunction resolveVariables(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
         VariableHints variableHints = constraintMapper.getVariableHints();
-        Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
         long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
 
         for (Variable variable : conjunction.variables()) {
@@ -109,11 +107,10 @@ public class TypeResolver {
             Set<Label> hintLabels = localTypeHints.get(variable.reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfThings) {
-                    addInferredIsaLabels(variable.asThing(), hintLabels, labelMap);
+                    addInferredIsaLabels(variable.asThing(), hintLabels);
                 }
-                addInferredRoleLabels(variable.asThing(), localTypeHints, variableHints);
             } else if (variable.isType() && hintLabels.size() != numOfThings) {
-                addInferredSubLabels(variable.asType(), localTypeHints.get(variable.reference()), labelMap);
+                addInferredSubLabels(variable.asType(), localTypeHints.get(variable.reference()));
             }
         }
 
@@ -189,48 +186,14 @@ public class TypeResolver {
         }
     }
 
-    private Map<Label, TypeVariable> labelVarsFromConjunction(Conjunction conjunction) {
-        Map<Label, TypeVariable> labels = new HashMap<>();
-        conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
-                .forEach(variable -> variable.label().ifPresent(labelConstraint -> {
-                    labels.putIfAbsent(labelConstraint.properLabel(), variable);
-                }));
-        return labels;
-    }
-
-    private void addInferredSubLabels(TypeVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
+    private void addInferredSubLabels(TypeVariable variable, Set<Label> hints) {
         variable.addResolvedTypes(hints);
     }
 
-    private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
+    private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints) {
         //TODO: use .getType(label) once ConceptManager can handle labels
         hints.removeIf(label -> conceptMgr.getThingType(label.scopedName()).isAbstract());
         variable.addResolvedTypes(hints);
-    }
-
-    private TypeVariable getOrCreateTypeVariable(Label label, Map<Label, TypeVariable> labelMap) {
-        if (!labelMap.containsKey(label)) {
-            TypeVariable newTypeVar = new TypeVariable(Identifier.Variable.of(Reference.label(label.scopedName())));
-            newTypeVar.label(label);
-            labelMap.put(label, newTypeVar);
-        }
-        return labelMap.get(label);
-    }
-
-    private void addInferredRoleLabels(ThingVariable variable, Map<Reference, Set<Label>> labels, VariableHints varHints) {
-        Set<RelationConstraint> relationConstraints = variable.asThing().relation();
-        for (RelationConstraint constraint : relationConstraints) {
-            List<RelationConstraint.RolePlayer> rolePlayers = constraint.players();
-            for (RelationConstraint.RolePlayer rolePlayer : rolePlayers) {
-                TypeVariable typeVariable;
-                if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().reference().isName()) {
-                    typeVariable = rolePlayer.roleType().get();
-                } else {
-                    typeVariable = varHints.getConversion(rolePlayer);
-                }
-                rolePlayer.addResolvedRoleTypes(labels.get(typeVariable.reference()));
-            }
-        }
     }
 
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints) {
@@ -461,10 +424,6 @@ public class TypeResolver {
 
         public TypeVariable getConversion(Variable key) {
             return varHints.get(key.identifier());
-        }
-
-        public TypeVariable getConversion(RelationConstraint.RolePlayer rolePlayer) {
-            return rolePlayerHints.get(rolePlayer);
         }
     }
 
