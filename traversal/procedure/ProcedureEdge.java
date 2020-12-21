@@ -519,17 +519,30 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD);
                     }
 
+                    private ResourceIterator<TypeVertex> playedRoleTypes(TypeVertex player) {
+                        Set<TypeVertex> overriddens = new HashSet<>();
+                        ResourceIterator<TypeVertex> supertypes, iterator;
+
+                        supertypes = loop(player, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull());
+                        iterator = supertypes.flatMap(o -> o.outs().edge(PLAYS).edge().map(e -> {
+                            if (e.overridden() != null) overriddens.add(e.overridden());
+                            if (!overriddens.contains(e.to())) return e.to();
+                            else return null;
+                        }).noNulls());
+                        return iterator;
+                    }
+
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
-                        return to.filter(fromVertex.asType().outs().edge(PLAYS).to());
+                        return to.filter(playedRoleTypes(fromVertex.asType()));
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return fromVertex.asType().outs().edge(PLAYS, toVertex.asType()) != null;
+                        return playedRoleTypes(fromVertex.asType()).anyMatch(rt -> rt.equals(toVertex.asType()));
                     }
                 }
 
@@ -539,17 +552,23 @@ public abstract class ProcedureEdge<
                         super(from, to, order, BACKWARD);
                     }
 
+                    private ResourceIterator<TypeVertex> playersOfRoleType(TypeVertex roleType) {
+                        return roleType.ins().edge(PLAYS).from().flatMap(owner -> tree(owner, o ->
+                                o.ins().edge(SUB).from().filter(s -> s.outs().edge(PLAYS).overridden()
+                                        .noNulls().noneMatch(ov -> ov.equals(roleType)))));
+                    }
+
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
-                        return to.filter(fromVertex.asType().ins().edge(PLAYS).from());
+                        return to.filter(playersOfRoleType(fromVertex.asType()));
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return fromVertex.asType().ins().edge(PLAYS, toVertex.asType()) != null;
+                        return playersOfRoleType(fromVertex.asType()).anyMatch(p -> p.equals(toVertex.asType()));
                     }
                 }
             }
