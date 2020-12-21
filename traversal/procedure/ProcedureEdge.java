@@ -23,6 +23,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.edge.ThingEdge;
+import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -36,6 +37,7 @@ import grakn.core.traversal.graph.TraversalEdge;
 import grakn.core.traversal.planner.PlannerEdge;
 import graql.lang.common.GraqlToken;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -433,23 +435,35 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD, isKey);
                     }
 
+                    private ResourceIterator<TypeEdge> ownsEdges(TypeVertex owner) {
+                        if (isKey) return owner.outs().edge(OWNS_KEY).edge();
+                        else return link(list(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge()));
+                    }
+
+                    private ResourceIterator<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
+                        Set<TypeVertex> overriddens = new HashSet<>();
+                        ResourceIterator<TypeVertex> supertypes, iterator;
+
+                        supertypes = loop(owner, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull());
+                        iterator = supertypes.flatMap(o -> ownsEdges(o).map(e -> {
+                            if (e.overridden() != null) overriddens.add(e.overridden());
+                            if (!overriddens.contains(e.to())) return e.to();
+                            else return null;
+                        }).noNulls());
+                        return iterator;
+                    }
+
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
-                        final ResourceIterator<TypeVertex> iterator;
-                        if (isKey) iterator = fromVertex.asType().outs().edge(OWNS_KEY).to();
-                        else iterator = link(list(fromVertex.asType().outs().edge(OWNS).to(),
-                                                  fromVertex.asType().outs().edge(OWNS_KEY).to()));
-                        return to.filter(iterator);
+                        return to.filter(ownedAttributeTypes(fromVertex.asType()));
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        boolean ownsKey = fromVertex.asType().outs().edge(OWNS_KEY, toVertex.asType()) != null;
-                        if (isKey) return ownsKey;
-                        else return ownsKey || fromVertex.asType().outs().edge(OWNS, toVertex.asType()) != null;
+                        return ownedAttributeTypes(fromVertex.asType()).anyMatch(at -> at.equals(toVertex.asType()));
                     }
                 }
 
@@ -459,23 +473,35 @@ public abstract class ProcedureEdge<
                         super(from, to, order, BACKWARD, isKey);
                     }
 
+                    private ResourceIterator<TypeVertex> overriddens(TypeVertex owner) {
+                        if (isKey) return owner.outs().edge(OWNS_KEY).overridden().noNulls();
+                        else return link(list(owner.outs().edge(OWNS).overridden().noNulls(),
+                                              owner.outs().edge(OWNS_KEY).overridden().noNulls()));
+                    }
+
+                    private ResourceIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
+                        if (isKey) return attType.ins().edge(OWNS_KEY).from();
+                        else return link(list(attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()));
+                    }
+
+
+                    private ResourceIterator<TypeVertex> ownersOfAttType(TypeVertex attType) {
+                        return declaredOwnersOfAttType(attType).flatMap(owner -> tree(owner, o ->
+                                o.ins().edge(SUB).from().filter(s -> overriddens(s).noneMatch(ov -> ov.equals(attType)))
+                        ));
+                    }
+
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
-                        final ResourceIterator<TypeVertex> iterator;
-                        if (isKey) iterator = fromVertex.asType().ins().edge(OWNS_KEY).from();
-                        else iterator = link(list(fromVertex.asType().ins().edge(OWNS).from(),
-                                                  fromVertex.asType().ins().edge(OWNS_KEY).from()));
-                        return to.filter(iterator);
+                        return to.filter(ownersOfAttType(fromVertex.asType()));
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        boolean isOwnedKey = fromVertex.asType().ins().edge(OWNS_KEY, toVertex.asType()) != null;
-                        if (isKey) return isOwnedKey;
-                        else return isOwnedKey || fromVertex.asType().ins().edge(OWNS, toVertex.asType()) != null;
+                        return ownersOfAttType(fromVertex.asType()).anyMatch(o -> o.equals(toVertex.asType()));
                     }
                 }
             }
