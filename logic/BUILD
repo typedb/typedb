@@ -29,7 +29,7 @@ package(
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(["*.java", "**/*.java"], exclude = ["concludable/ConcludableTest.java"]),
+    srcs = glob(["*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"],),
     deps = [
         # Internal dependencies
         "//common:common",
@@ -56,9 +56,9 @@ native_java_libraries(
 host_compatible_java_test(
     name = "test-concludable",
     srcs = [
-        "concludable/ConcludableTest.java",
+        "resolvable/ConcludableTest.java",
     ],
-    test_class = "grakn.core.logic.concludable.ConcludableTest",
+    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     native_libraries_deps = [
         "//logic:logic",
         "//pattern:pattern",

@@ -35,6 +35,8 @@ import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -45,6 +47,8 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEM
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class QueryManager {
+
+    private static final Logger LOG = LoggerFactory.getLogger(QueryManager.class);
 
     private static final String TRACE_PREFIX = "query.";
     private final LogicManager logicMgr;
@@ -60,14 +64,23 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        return match(query, new Options.Query());
+        return match(query, true, new Options.Query());
+    }
+
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel) {
+        return match(query, isParallel, new Options.Query());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
+        return match(query, true, options);
+    }
+
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel, Options.Query options) {
         // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Disjunction disjunction = Disjunction.create(query.conjunction().normalise());
-            return reasoner.executeSync(disjunction);
+            if (isParallel) return reasoner.iteratorParallel(disjunction);
+            else return reasoner.iteratorSingleThreaded(disjunction);
         } catch (GraknException exception) {
             throw conceptMgr.exception(exception);
         } catch (Exception exception) {
@@ -84,7 +97,7 @@ public class QueryManager {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             if (query.match().isPresent()) {
-                List<ConceptMap> matched = match(query.match().get()).toList();
+                List<ConceptMap> matched = match(query.match().get(), options).toList();
                 return iterate(iterate(matched).map(answer -> Inserter.create(
                         conceptMgr, query.variables(), answer, context
                 ).execute()).toList());
@@ -106,7 +119,7 @@ public class QueryManager {
         if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
-            final List<ConceptMap> matched = match(query.match()).toList();
+            final List<ConceptMap> matched = match(query.match(), options).toList();
             matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
         } catch (GraknException exception) {
             throw conceptMgr.exception(exception);

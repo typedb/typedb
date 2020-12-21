@@ -45,9 +45,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
@@ -62,6 +65,10 @@ import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 
 
 public class GraknServer implements AutoCloseable {
+
+    static {
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+    }
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
@@ -231,13 +238,12 @@ public class GraknServer implements AutoCloseable {
     }
 
     private static void startGraknServer(ServerCommand.Start command) throws IOException {
-        final long start = System.nanoTime();
+        Instant start = Instant.now();
         final GraknServer server = new GraknServer(command);
         server.start();
-        final long end = System.nanoTime();
+        Instant end = Instant.now();
         LOG.info("Grakn Core version: {}", Version.VERSION);
-        LOG.info("Grakn Core Server has been started (in {} ms)",
-                String.format("%.3f", (end - start) / 1_000_000.00));
+        LOG.info("Grakn Core Server has been started (in {} ms)", Duration.between(start, end).toMillis());
         server.serve();
     }
 

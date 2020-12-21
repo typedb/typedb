@@ -287,6 +287,14 @@ public class GraphProcedure implements Procedure {
             return edge;
         }
 
+        public ProcedureEdge.Native.Thing.Relating.Backward backwardRelating(
+                int order, ProcedureVertex.Thing role, ProcedureVertex.Thing relation) {
+            ProcedureEdge.Native.Thing.Relating.Backward edge =
+                    new ProcedureEdge.Native.Thing.Relating.Backward(role, relation, order);
+            registerEdge(edge);
+            return edge;
+        }
+
         public ProcedureEdge.Native.Thing.Playing.Forward forwardPlaying(
                 int order, ProcedureVertex.Thing player, ProcedureVertex.Thing role) {
             ProcedureEdge.Native.Thing.Playing.Forward edge =

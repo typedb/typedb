@@ -15,11 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.concludable;
+package grakn.core.logic.tool;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -36,19 +34,8 @@ import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public abstract class Concludable<C extends Constraint, T extends Concludable<C, T>> {
-
-    final C constraint;
-
-    Concludable(C constraint) {
-        this.constraint = constraint;
-    }
-
-    public C constraint() {
-        return constraint;
-    }
-
-    static RelationConstraint copyConstraint(RelationConstraint relationConstraint) {
+public class ConstraintCopier {
+    public static RelationConstraint copyConstraint(RelationConstraint relationConstraint) {
         ThingVariable ownerCopy = copyIsaAndValues(relationConstraint.owner());
         List<RelationConstraint.RolePlayer> rolePlayersCopy = copyRolePlayers(relationConstraint.players());
         return new RelationConstraint(ownerCopy, rolePlayersCopy);
@@ -59,24 +46,24 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
             TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? copyVariableWithLabelAndValueType(rolePlayer.roleType().get()) : null;
             ThingVariable playerCopy = copyIsaAndValues(rolePlayer.player());
             RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
-            rolePlayerCopy.addRoleTypeHints(rolePlayer.roleTypeHints());
+            rolePlayerCopy.addResolvedRoleTypes(rolePlayer.resolvedRoleTypes());
             return rolePlayerCopy;
         }).collect(Collectors.toList());
     }
 
-    static HasConstraint copyConstraint(HasConstraint hasConstraint) {
+    public static HasConstraint copyConstraint(HasConstraint hasConstraint) {
         ThingVariable ownerCopy = copyIsaAndValues(hasConstraint.owner());
         ThingVariable attributeCopy = copyIsaAndValues(hasConstraint.attribute());
         return ownerCopy.has(attributeCopy);
     }
 
-    static IsaConstraint copyConstraint(IsaConstraint isa) {
+    public static IsaConstraint copyConstraint(IsaConstraint isa) {
         ThingVariable newOwner = ThingVariable.of(isa.owner().identifier());
         copyValuesOntoVariable(isa.owner().value(), newOwner);
         return copyIsaOntoVariable(isa, newOwner);
     }
 
-    static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
+    public static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
         //NOTE: isa can never exist on a Value Concludable (or else it would be a Isa Concludable).
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream()
@@ -118,12 +105,12 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return copy;
     }
 
-    static void copyIsaAndValues(ThingVariable oldOwner, ThingVariable newOwner) {
+    public static void copyIsaAndValues(ThingVariable oldOwner, ThingVariable newOwner) {
         if (oldOwner.isa().isPresent()) copyIsaOntoVariable(oldOwner.isa().get(), newOwner);
         copyValuesOntoVariable(oldOwner.value(), newOwner);
     }
 
-    static void copyLabelSubAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
+    public static void copyLabelSubAndValueType(TypeVariable copyFrom, TypeVariable copyTo) {
         if (copyFrom.label().isPresent()) copyTo.label(copyFrom.label().get().properLabel());
         if (copyFrom.sub().isPresent()) {
             SubConstraint subCopy = copyFrom.sub().get();
@@ -142,11 +129,10 @@ public abstract class Concludable<C extends Constraint, T extends Concludable<C,
         return variable.isSatisfiable() && variable.resolvedTypes().isEmpty();
     }
 
-    static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
+    public static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
         if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
         assert (conjVar.isThing() && thenVar.isThing()) ||
                 (conjVar.isType() && thenVar.isType());
         return Collections.disjoint(conjVar.resolvedTypes(), thenVar.resolvedTypes());
     }
-
 }

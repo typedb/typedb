@@ -32,13 +32,18 @@ public class BaseProducer<T> implements Producer<T> {
     @Override
     public void produce(Sink<T> sink, int count) {
         ExecutorService.forkJoinPool().submit(() -> {
-            for (int i = 0; i < count; i++) {
-                if (iterator.hasNext()) {
-                    sink.put(iterator.next());
-                } else {
-                    sink.done(this);
-                    break;
+            try {
+                for (int i = 0; i < count; i++) {
+                    if (iterator.hasNext()) {
+                        sink.put(iterator.next());
+                    } else {
+                        sink.done(this);
+                        break;
+                    }
                 }
+            }
+            catch (Throwable e) {
+                sink.done(this, e);
             }
         });
     }

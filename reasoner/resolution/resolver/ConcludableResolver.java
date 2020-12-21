@@ -18,21 +18,20 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.common.collection.Either;
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.transformer.Unifier;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.Aggregator;
-import grakn.core.reasoner.resolution.answer.UnifyingAggregator;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
@@ -48,113 +48,215 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final ConjunctionConcludable<?, ?> concludable;
-    private final Map<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> ruleActorSources;
-    private final Set<ConceptMap> receivedConceptMaps;
-    private Actor<ResolutionRecorder> resolutionRecorder;
+    private final Concludable<?> concludable;
+    private final Map<Unifier, Actor<RuleResolver>> availableRules;
+    private final Map<Actor<RootResolver>, IterationState> iterationStates;
+    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final Map<Request, ResponseProducer> responseProducers;
+    private boolean isInitialised;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, ConjunctionConcludable<?, ?> concludable) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")");
+    public ConcludableResolver(Actor<ConcludableResolver> self, Concludable<?> concludable,
+                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                               TraversalEngine traversalEngine) {
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine);
         this.concludable = concludable;
-        ruleActorSources = new HashMap<>();
-        receivedConceptMaps = new HashSet<>();
+        this.resolutionRecorder = resolutionRecorder;
+        this.availableRules = new HashMap<>();
+        this.iterationStates = new HashMap<>();
+        this.responseProducers = new HashMap<>();
+        this.isInitialised = false;
     }
 
     @Override
-    public Either<Request, Response> receiveRequest(Request fromUpstream, ResponseProducer responseProducer) {
-        return messageToSend(fromUpstream, responseProducer);
+    public void receiveRequest(Request fromUpstream, int iteration) {
+        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+
+        if (!isInitialised) {
+            initialiseDownstreamActors();
+            isInitialised = true;
+        }
+
+        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
+        if (iteration < responseProducer.iteration()) {
+            // short circuit if the request came from a prior iteration
+            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+        } else {
+            assert iteration == responseProducer.iteration();
+            tryAnswer(fromUpstream, responseProducer, iteration);
+        }
     }
 
     @Override
-    public Either<Request, Response> receiveAnswer(Request fromUpstream, Response.Answer fromDownstream,
-                                                   ResponseProducer responseProducer) {
-        final ConceptMap conceptMap = fromDownstream.answer().aggregated().conceptMap();
+    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+        LOG.trace("{}: received Answer: {}", name(), fromDownstream);
 
-        LOG.trace("{}: hasProduced: {}", name, conceptMap);
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
+        ConceptMap conceptMap = fromDownstream.answer().derived().map();
         if (!responseProducer.hasProduced(conceptMap)) {
             responseProducer.recordProduced(conceptMap);
 
             // update partial derivation provided from upstream to carry derivations sideways
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
-            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                           concludable.toString(), derivation, self());
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
+                                                           concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
-            return Either.second(new Response.Answer(fromUpstream, answer));
+            respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partialConceptMap().aggregateWith(conceptMap),
-                                                                 concludable.toString(), derivation, self());
-            LOG.debug("Recording deduplicated answer: {}", deduplicated);
+            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
+                                                                 concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
+            LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
-            return messageToSend(fromUpstream, responseProducer);
+            tryAnswer(fromUpstream, responseProducer, iteration);
         }
     }
 
     @Override
-    public Either<Request, Response> receiveExhausted(Request fromUpstream, Response.Exhausted fromDownstream, ResponseProducer responseProducer) {
+    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
+        LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        return messageToSend(fromUpstream, responseProducer);
+        tryAnswer(fromUpstream, responseProducer, iteration);
     }
 
     @Override
-    protected ResponseProducer createResponseProducer(Request request) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partialConceptMap().map());
-        ResponseProducer responseProducer = new ResponseProducer(traversal);
+    protected void initialiseDownstreamActors() {
+        LOG.debug("{}: initialising downstream actors", name());
+        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
+            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
+            availableRules.put(unifier, ruleActor);
+        }));
+    }
 
-        if (!receivedConceptMaps.contains(request.partialConceptMap().map())) {
-            registerDownstreamRules(responseProducer, request.path(), request.partialConceptMap().map());
-            receivedConceptMaps.add(request.partialConceptMap().map());
-        }
+    @Override
+    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
+        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
+        Actor<RootResolver> root = request.path().root();
+        iterationStates.putIfAbsent(root, new IterationState(iteration));
+        IterationState iterationState = iterationStates.get(root);
+
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partial().map());
+        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+        mayRegisterRules(request, iterationState, responseProducer);
         return responseProducer;
     }
 
     @Override
-    protected void initialiseDownstreamActors(ResolverRegistry registry) {
-        resolutionRecorder = registry.resolutionRecorder();
-        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
-            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
-            ruleActorSources.put(unifier, ruleActor);
-        }));
-    }
+    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+        assert newIteration > responseProducerPrevious.iteration();
+        LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-    private Either<Request, Response> messageToSend(Request fromUpstream, ResponseProducer responseProducer) {
-        while (responseProducer.hasTraversalProducer()) {
-            ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            Aggregator.Aggregated aggregated = fromUpstream.partialConceptMap().aggregateWith(conceptMap);
-            if (aggregated == null) {
-                // TODO this should be the only place that aggregation can fail, but can we make this explicit?
-                continue;
-            }
-
-            LOG.trace("{}: hasProduced: {}", name, conceptMap);
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(aggregated, concludable.toString(), new ResolutionAnswer.Derivation(map()), self());
-                return Either.second(new Response.Answer(fromUpstream, answer));
-            }
+        Actor<RootResolver> root = request.path().root();
+        assert iterationStates.containsKey(root);
+        IterationState iterationState = iterationStates.get(root);
+        if (iterationState.iteration() > newIteration) {
+            iterationState.nextIteration(newIteration);
         }
 
-        if (responseProducer.hasDownstreamProducer()) {
-            return Either.first(responseProducer.nextDownstreamProducer());
-        } else {
-            return Either.second(new Response.Exhausted(fromUpstream));
-        }
-    }
-
-    private void registerDownstreamRules(ResponseProducer responseProducer, Request.Path path, ConceptMap partialConceptMap) {
-        for (Map.Entry<Map<Reference.Name, Set<Reference.Name>>, Actor<RuleResolver>> entry : ruleActorSources.entrySet()) {
-            Request toDownstream = new Request(path.append(entry.getValue()), UnifyingAggregator.of(partialConceptMap, entry.getKey()), ResolutionAnswer.Derivation.EMPTY);
-            responseProducer.addDownstreamProducer(toDownstream);
-        }
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.partial().map());
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+        mayRegisterRules(request, iterationState, responseProducerNewIter);
+        return responseProducerNewIter;
     }
 
     @Override
     protected void exception(Exception e) {
         LOG.error("Actor exception", e);
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+    }
+
+    private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+        while (responseProducer.hasTraversalProducer()) {
+            ConceptMap conceptMap = responseProducer.traversalProducer().next();
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.partial().aggregateWith(conceptMap).asMapped().toUpstreamVars();
+            LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
+            if (!responseProducer.hasProduced(conceptMap)) {
+                responseProducer.recordProduced(conceptMap);
+                ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
+                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+            }
+        }
+
+        if (responseProducer.hasDownstreamProducer()) {
+            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+        } else {
+            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+        }
+    }
+
+    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
+        if (!responseProducers.containsKey(fromUpstream)) {
+            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
+        } else {
+            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+            assert responseProducer.iteration() == iteration ||
+                    responseProducer.iteration() + 1 == iteration;
+
+            if (responseProducer.iteration() + 1 == iteration) {
+                // when the same request for the next iteration the first time, re-initialise required state
+                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
+                responseProducers.put(fromUpstream, responseProducerNextIter);
+            }
+        }
+        return responseProducers.get(fromUpstream);
+    }
+
+    private void mayRegisterRules(Request request, IterationState iterationState, ResponseProducer responseProducer) {
+        // loop termination: when receiving a new request, we check if we have seen it before from this root query
+        // if we have, we do not allow rules to be registered as possible downstreams
+        if (!iterationState.hasReceived(request.partial().map())) {
+            for (Map.Entry<Unifier, Actor<RuleResolver>> entry : availableRules.entrySet()) {
+                Optional<AnswerState.DownstreamVars.Partial> unified = AnswerState.UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(entry.getKey());
+                if (unified.isPresent()) {
+                    Request toDownstream = new Request(request.path().append(entry.getValue()), unified.get(),
+                                                       ResolutionAnswer.Derivation.EMPTY);
+                    responseProducer.addDownstreamProducer(toDownstream);
+                }
+            }
+            iterationState.recordReceived(request.partial().map());
+        }
+    }
+
+    /**
+     * Maintain iteration state per root query
+     * This allows us to share actors across different queries
+     * while maintaining the ability to do loop termination within a single query
+     */
+    private static class IterationState {
+        private Set<ConceptMap> receivedMaps;
+        private int iteration;
+
+        IterationState(int iteration) {
+            this.iteration = iteration;
+            this.receivedMaps = new HashSet<>();
+        }
+
+        public int iteration() {
+            return iteration;
+        }
+
+        public void nextIteration(int newIteration) {
+            assert newIteration > iteration;
+            iteration = newIteration;
+            receivedMaps = new HashSet<>();
+        }
+
+        public void recordReceived(ConceptMap conceptMap) {
+            receivedMaps.add(conceptMap);
+        }
+
+        public boolean hasReceived(ConceptMap conceptMap) {
+            return receivedMaps.contains(conceptMap);
+        }
     }
 }
 

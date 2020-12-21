@@ -22,14 +22,15 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.Rule;
-import grakn.core.logic.concludable.ConjunctionConcludable;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.reasoner.resolution.answer.MappingAggregator;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,46 +43,45 @@ public class ResolverRegistry {
 
     private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
 
-    private final HashMap<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> concludableActorsMap;
-    private final HashMap<Rule, Actor<RuleResolver>> rules;
+    private final HashMap<Concludable<?>, Actor<ConcludableResolver>> concludableActors;
     private final Actor<ResolutionRecorder> resolutionRecorder;
+    private TraversalEngine traversalEngine;
+    private final HashMap<Rule, Actor<RuleResolver>> rules;
     private EventLoopGroup elg;
 
-    public ResolverRegistry(EventLoopGroup elg) {
+    public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine) {
         this.elg = elg;
-        concludableActorsMap = new HashMap<>();
+        this.resolutionRecorder = resolutionRecorder;
+        this.traversalEngine = traversalEngine;
         rules = new HashMap<>();
-        resolutionRecorder = Actor.create(elg, ResolutionRecorder::new);
+        concludableActors = new HashMap<>();
     }
 
-    public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(ConjunctionConcludable<?, ?> concludable) {
+    public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<ConjunctionConcludable<?, ?>, Actor<ConcludableResolver>> c: concludableActorsMap.entrySet()) {
+        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
                 return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
-        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable));
-        concludableActorsMap.put(concludable, concludableActor);
-        return new Pair<>(concludableActor, MappingAggregator.identity(concludable));
+        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine));
+        concludableActors.put(concludable, concludableActor);
+        return new Pair<>(concludableActor, Mapping.identity(concludable));
     }
 
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r)));
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine)));
     }
 
-    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Runnable onExhausted) {
+    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted));
+        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine));
     }
 
-    public Actor<ResolutionRecorder> resolutionRecorder() {
-        return resolutionRecorder;
-    }
-
+    // for testing
     public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
         this.elg = eventLoopGroup;
     }
