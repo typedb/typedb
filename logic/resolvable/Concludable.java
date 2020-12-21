@@ -173,6 +173,26 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return null; //TODO Make abstract and implement for all subtypes
     }
 
+    boolean impossibleUnification(TypeVariable typeVar, TypeVariable unifyWithTypeVar) {
+        // TODO
+        return false;
+    }
+
+    boolean impossibleUnification(ThingVariable thingVar, ThingVariable unifyWithThingVar) {
+        // TODO
+        return false;
+    }
+
+    Stream<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
+        if (label.scope().isPresent()) {
+            return conceptMgr.getRelationType(label.scope().get()).getSubtypes()
+                    .map(relType -> relType.getRelates(label.name())).filter(Objects::nonNull)
+                    .map(RoleType::getLabel);
+        } else {
+            return conceptMgr.getThingType(label.name()).getSubtypes().map(Type::getLabel);
+        }
+    }
+
     public static class Relation extends Concludable<RelationConstraint> {
 
         public Relation(final RelationConstraint constraint) {
@@ -200,15 +220,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
                     if (relationType.reference().isLabel()) {
                         // require the unification target type variable satisfies a set of labels
-                        Set<Label> allowedTypes = relationType.resolvedTypes().stream().flatMap(label -> {
-                            if (label.scope().isPresent()) {
-                                return conceptMgr.getRelationType(label.scope().get()).getSubtypes()
-                                        .map(relType -> relType.getRelates(label.name())).filter(Objects::nonNull)
-                                        .map(RoleType::getLabel);
-                            } else {
-                                return conceptMgr.getThingType(label.name()).getSubtypes().map(ThingType::getLabel);
-                            }
-                        }).collect(Collectors.toSet());
+                        Set<Label> allowedTypes = relationType.resolvedTypes().stream()
+                                .flatMap(label -> subtypeLabels(label, conceptMgr)).collect(Collectors.toSet());
                         unifierBuilder.requirements().types(relationType.identifier(), allowedTypes);
                     }
                 } else return Stream.empty();
@@ -240,15 +253,6 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                                                     thenRolePlayers, newMapping));
         }
 
-        private boolean impossibleUnification(TypeVariable typeVar, TypeVariable unifyWithTypeVar) {
-            // TODO
-            return false;
-        }
-
-        private boolean impossibleUnification(ThingVariable thingVar, ThingVariable unifyWithThingVar) {
-            // TODO
-            return false;
-        }
 
         private boolean impossibleUnification(RolePlayer conjRP, RolePlayer unifyWithRolePlayer) {
             // TODO
@@ -267,12 +271,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                      unifierBuilder.add(roleTypeVar.identifier(), thenRP.roleType().get().identifier());
 
                                      if (roleTypeVar.reference().isLabel()) {
-                                         Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream().flatMap(roleLabel -> {
-                                             assert roleLabel.scope().isPresent();
-                                             return conceptMgr.getRelationType(roleLabel.scope().get()).getSubtypes()
-                                                     .map(relType -> relType.getRelates(roleLabel.name()))
-                                                     .filter(Objects::nonNull).map(Type::getLabel);
-                                         }).collect(Collectors.toSet());
+                                         Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream()
+                                                 .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
+                                                 .collect(Collectors.toSet());
                                          unifierBuilder.requirements().types(roleTypeVar.identifier(), allowedTypes);
                                      }
                                  }
@@ -305,12 +306,32 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
-            if (constraint().attribute().reference().isName()) {
-                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().attribute(), unifyWith.constraint().attribute(), u));
-            }
-            return unifier.map(Stream::of).orElseGet(Stream::empty);
+        public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) {
+            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
+                unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
+            } else return Stream.empty();
+
+            ThingVariable attr = constraint().attribute();
+            if (!impossibleUnification(attr, unifyWith.constraint().attribute())) {
+                unifierBuilder.add(attr.identifier(), unifyWith.constraint().attribute().identifier());
+                if (attr.reference().isAnonymous()) {
+                    // form: $x has age 10 -> require ISA age and PREDICATE =10
+                    assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
+                    assert attr.value().size() == 1 && attr.value().iterator().next().isValueIdentity();
+                    Label attrLabel = attr.isa().get().type().label().get().properLabel();
+                    unifierBuilder.requirements().isaExplicit(attr.identifier(),
+                                                              subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
+                    unifierBuilder.requirements().predicates(attr.identifier(), attr.value().iterator().next());
+                } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
+                    // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
+                    Label attrLabel = attr.isa().get().type().label().get().properLabel();
+                    unifierBuilder.requirements().isaExplicit(attr.identifier(),
+                                                              subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
+                }
+            } else return Stream.empty();
+
+            return Stream.of(unifierBuilder.build());
         }
 
         @Override
