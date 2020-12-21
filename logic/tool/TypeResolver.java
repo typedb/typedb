@@ -76,20 +76,20 @@ public class TypeResolver {
                 retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()));
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
 
-        final Map<Reference, TypeVariable> varHints = variableHints.varHints;
+        final Map<Identifier, TypeVariable> varHints = variableHints.varHints;
 
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
 //            Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
-            Set<Label> hintLabels = referenceHintsMapping.get(varHints.get(variable.reference()).reference());
+            Set<Label> hintLabels = referenceHintsMapping.get(varHints.get(variable.identifier()).reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfTypes) {
-                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(varHints.get(variable.reference()).reference()), labelMap);
+                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()), labelMap);
                 }
 //                addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
             } else if (variable.isType() && hintLabels.size() != numOfTypes) {
-                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(varHints.get(variable.reference()).reference()), labelMap);
+                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()), labelMap);
             }
         }
         return conjunction;
@@ -449,7 +449,7 @@ public class TypeResolver {
 
     private static class VariableHints {
 
-        private final Map<Reference, TypeVariable> varHints;
+        private final Map<Identifier, TypeVariable> varHints;
         private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerHints;
 
         private Integer tempCounter;
@@ -463,7 +463,7 @@ public class TypeResolver {
         TypeVariable newHintingVariable() {
             TypeVariable tempVar = new TypeVariable(Identifier.Variable.of(
                     new SystemReference("temp" + addAndGetCounter())));
-            varHints.put(tempVar.reference(), tempVar);
+            varHints.put(tempVar.identifier(), tempVar);
             return tempVar;
         }
 
@@ -477,7 +477,7 @@ public class TypeResolver {
         }
 
         public TypeVariable convert(Variable key) {
-            if (!varHints.containsKey(key.reference()) || key.reference().isAnonymous()) {
+            if (!varHints.containsKey(key.identifier())) {
                 TypeVariable newTypeVar;
                 if (key.reference().isAnonymous()) {
                     newTypeVar = new TypeVariable(Identifier.Variable.of(
@@ -486,21 +486,20 @@ public class TypeResolver {
 //                TypeVariable newTypeVar = new TypeVariable(key.identifier());
 //                if (key.isType()) key.asType().constraints().forEach(newTypeVar::constrain);
                 if (key.isType()) newTypeVar.copyConstraints(key.asType());
-                varHints.put(key.reference(), newTypeVar);
+                varHints.put(key.identifier(), newTypeVar);
             }
-            return varHints.get(key.reference());
+            return varHints.get(key.identifier());
         }
 
         public boolean hasConversion(Variable key) {
-            if (key.reference().isAnonymous()) return false;
-            return varHints.containsKey(key.reference());
+            return varHints.containsKey(key.identifier());
         }
 
         public Collection<TypeVariable> getVariableHints() {
             return varHints.values();
         }
 
-        public Map<Reference, TypeVariable> getVarMapping() {
+        public Map<Identifier, TypeVariable> getVarMapping() {
             return varHints;
         }
 
@@ -509,7 +508,7 @@ public class TypeResolver {
         }
 
         public TypeVariable getConversion(Variable key) {
-            return varHints.get(key.reference());
+            return varHints.get(key.identifier());
         }
 
         public TypeVariable getConversion(RelationConstraint.RolePlayer rolePlayer) {

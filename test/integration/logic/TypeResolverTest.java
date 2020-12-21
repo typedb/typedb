@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
@@ -319,7 +320,8 @@ public class TypeResolverTest {
 //
 //        assertTrue(getRoleHints(exhaustiveConjunction).entrySet().containsAll(expectedRoles.entrySet()));
 //        assertTrue(getRoleHints(simpleConjunction).entrySet().containsAll(expectedRoles.entrySet()));
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
 //        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
@@ -334,11 +336,12 @@ public class TypeResolverTest {
 //        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("person", "man", "woman"));
+            put("$yoko", set("woman"));
             put("$r", set("marriage"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
 //        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
 //        Map<Pair<String, String>, Set<String>> expectedRoles = new HashMap<Pair<String, String>, Set<String>>() {{
 //            put(new Pair<>("$yoko", ""), set("marriage:husband", "marriage:wife", "marriage:spouse"));
@@ -580,6 +583,34 @@ public class TypeResolverTest {
     }
 
     @Test
+    public void branched_isa() throws IOException {
+        define_custom_schema(
+                "define" +
+                        "  person sub entity;" +
+                        "  man sub person, owns man-name;" +
+                        "  woman sub person, owns woman-name;" +
+                        "  man-name sub attribute, value string;" +
+                        "  woman-name sub attribute, value string;" +
+                        ""
+        );
+        TypeResolver typeHinter = transaction.logic().typeResolver();
+
+        String queryString = "match $x isa $t; $y isa $t; $x has man-name'bob'; $y has woman-name 'alice';";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("man"));
+            put("$y", set("woman"));
+            put("$t", set("person", "entity"));
+        }};
+
+        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+    }
+
+    @Test
     public void simple_always_infers_its_supers() {
         define_custom_schema(
                 "define" +
@@ -693,10 +724,13 @@ public class TypeResolverTest {
     @Test
     public void muttplie_anon() throws IOException {
         define_standard_schema("basic-schema");
-        String queryString = "match $a has name 'bob'; $a has email 'bob@bob.com';";
+        String queryString = "match $a has name 'fido'; $a has label 'poodle';";
         TypeResolver typeHinter = transaction.logic().typeResolver();
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        assertTrue(true);
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("dog"));
+        }};
+        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
 
     }
 }

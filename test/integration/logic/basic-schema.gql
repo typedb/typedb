@@ -35,7 +35,8 @@ woman sub person,
     plays marriage:wife;
 
 dog sub mammal,
-    owns name;
+    owns name,
+    owns label;
 
 name sub attribute, value string;
 

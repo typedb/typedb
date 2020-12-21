@@ -220,6 +220,7 @@ public class TraversalTest6 {
                 put("r", set("marriage"));
                 put("yoko", set("woman"));
                 put("role", set("marriage:wife"));
+//                put("rol2", set("marriage:wife", "marriage:husband", "marriage:spouse"));
             }};
 
             assertEquals(expected, result);
