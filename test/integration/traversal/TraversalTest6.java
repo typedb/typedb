@@ -25,7 +25,6 @@ import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -78,7 +77,11 @@ public class TraversalTest6 {
                                 "name sub attribute, value string; " +
                                 "email sub attribute, value string; " +
                                 "tail-length sub attribute, value long; " +
-                                "marriage sub relation, relates husband, relates wife, relates spouse;";
+                                "marriage sub relation, relates husband, relates wife, relates spouse;" +
+                                "nickname sub attribute, value string, owns surname, owns middlename;" +
+                                "surname sub attribute, value string, owns nickname;" +
+                                "middlename sub attribute, value string, owns firstname;" +
+                                "firstname sub attribute, value string, owns surname;";
                 final GraqlDefine query = parseQuery(queryString);
                 transaction.query().define(query);
                 transaction.commit();
@@ -115,7 +118,7 @@ public class TraversalTest6 {
             Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
                 put("p", set("person", "man", "woman"));
             }};
 
@@ -126,34 +129,60 @@ public class TraversalTest6 {
     @Test
     public void test_owns_cycle() {
         try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match $a owns $b; $b owns $a;";
+            final String queryString = "match $a sub attribute, owns $b; $b sub attribute, owns $a;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Map<String, Set<String>> result = retrieveAnswers(answers);
-            assertEquals(1, result.keySet().size());
+            assertEquals(2, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<>();
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+                put("a", set("nickname", "surname"));
+                put("b", set("nickname", "surname"));
+            }};
 
             assertEquals(expected, result);
         }
     }
 
     @Test
-    public void test_relation_concrete_role() {
+    public void test_owns_big_cycle() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match " +
-                    "$r sub marriage, relates $role, relates wife;" +
-                    "$yoko plays $role, plays relation:wife;";
+                    "  $a sub attribute, owns $b;" +
+                    "  $b sub attribute, owns $c;" +
+                    "  $c sub attribute, owns $d;" +
+                    "  $d sub attribute, owns $a;";
+            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
+            assertNotNulls(answers);
+            assertTrue(answers.hasNext());
+            Map<String, Set<String>> result = retrieveAnswers(answers);
+            assertEquals(4, result.keySet().size());
+
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+                put("a", set("firstname", "surname", "nickname", "middlename"));
+                put("b", set("firstname", "surname", "nickname", "middlename"));
+                put("c", set("firstname", "surname", "nickname", "middlename"));
+                put("d", set("firstname", "surname", "nickname", "middlename"));
+            }};
+
+            assertEquals(expected, result);
+        }
+    }
+
+    @Test
+    public void test_relates() {
+        try (RocksTransaction transaction = session.transaction(READ)) {
+            final String queryString = "match " +
+                    "   $r relates wife;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
                 put("r", set("marriage"));
-                put("yoko", set("woman"));
             }};
 
             assertEquals(expected, result);
