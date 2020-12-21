@@ -29,7 +29,7 @@ package(
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(["*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"],),
+    srcs = glob(["*.java", "tool/*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"],),
     deps = [
         # Internal dependencies
         "//common:common",

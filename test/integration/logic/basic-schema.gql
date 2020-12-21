@@ -34,7 +34,9 @@ man sub person,
 woman sub person,
     plays marriage:wife;
 
-dog sub mammal;
+dog sub mammal,
+    owns name,
+    owns label;
 
 name sub attribute, value string;
 
@@ -50,10 +52,18 @@ shape sub entity,
     owns area,
     abstract;
 
-triangle sub shape;
+triangle sub shape,
+    owns label;
+
+right-angled-triangle sub triangle,
+    owns hypotenuse-length;
 
 square sub shape;
 
 perimeter sub attribute, value double;
 
 area sub attribute, value double;
+
+hypotenuse-length sub attribute, value double;
+
+label sub attribute, value string;

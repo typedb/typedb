@@ -30,7 +30,7 @@ public class AbstractConstraint extends TypeConstraint {
 
     private final int hash;
 
-    private AbstractConstraint(TypeVariable owner) {
+    public AbstractConstraint(TypeVariable owner) {
         super(owner, set());
         this.hash = Objects.hash(AbstractConstraint.class, this.owner);
     }

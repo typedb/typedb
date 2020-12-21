@@ -32,7 +32,7 @@ public class RegexConstraint extends TypeConstraint {
     private final java.util.regex.Pattern regex;
     private final int hash;
 
-    private RegexConstraint(TypeVariable owner, java.util.regex.Pattern regex) {
+    public RegexConstraint(TypeVariable owner, java.util.regex.Pattern regex) {
         super(owner, set());
         this.regex = regex;
         this.hash = Objects.hash(RegexConstraint.class, this.owner, this.regex.pattern());

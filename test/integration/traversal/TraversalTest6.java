@@ -189,4 +189,23 @@ public class TraversalTest6 {
             assertEquals(expected, result);
         }
     }
+
+    @Test
+    public void test_relation_meta() {
+        try (RocksTransaction transaction = session.transaction(READ)) {
+            final String queryString = "match " +
+                    "   $m sub relation;";
+            ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
+            assertNotNulls(answers);
+            assertTrue(answers.hasNext());
+            Map<String, Set<String>> result = retrieveAnswers(answers);
+            assertEquals(1, result.keySet().size());
+
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+                put("m", set("relation", "marriage"));
+            }};
+
+            assertEquals(expected, result);
+        }
+    }
 }
