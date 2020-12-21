@@ -21,7 +21,6 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 host_compatible_java_test(
     name = "test-rule",
     srcs = ["RuleTest.java"],
-    test_class = "grakn.core.logic.RuleTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -30,27 +29,27 @@ host_compatible_java_test(
         "//logic:logic",
         "//traversal:traversal",
     ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
+    ],
+    test_class = "grakn.core.logic.RuleTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
+        "//test/integration/util",
+        "//common",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern:pattern",
-        "@graknlabs_graql//java/common:common",
+        "@graknlabs_graql//java/common",
         "@graknlabs_common//:common",
     ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
     name = "test-type-resolver",
     srcs = ["TypeResolverTest.java"],
-    test_class = "grakn.core.logic.TypeResolverTest",
+    data = [":basic-schema.gql"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -58,23 +57,22 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.TypeResolverTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
+        "//test/integration/util",
+        "//common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
+        "@graknlabs_graql//java/query",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
     ],
-    data = [":basic-schema.gql"],
 )
 
 host_compatible_java_test(
     name = "test-unification",
     srcs = ["resolvable/UnificationTest.java"],
-    test_class = "grakn.core.logic.resolvable.UnificationTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -82,6 +80,7 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.resolvable.UnificationTest",
     deps = [
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
