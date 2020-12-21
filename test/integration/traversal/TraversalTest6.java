@@ -70,14 +70,15 @@ public class TraversalTest6 {
                                 "reptile sub animal; " +
                                 "tortoise sub reptile; " +
                                 "person sub mammal, owns name, owns email, plays marriage:spouse; " +
-                                "man sub person, plays marriage:husband; " +
-                                "woman sub person, plays marriage:wife; " +
+                                "man sub person, plays hetero-marriage:husband; " +
+                                "woman sub person, plays hetero-marriage:wife; " +
                                 "dog sub mammal, owns name, owns tail-length;" +
                                 "rat sub mammal, owns tail-length; " +
                                 "name sub attribute, value string; " +
                                 "email sub attribute, value string; " +
                                 "tail-length sub attribute, value long; " +
-                                "marriage sub relation, relates husband, relates wife, relates spouse;" +
+                                "marriage sub relation, relates spouse; " +
+                                "hetero-marriage sub marriage, relates husband, relates wife; " +
                                 "nickname sub attribute, value string, owns surname, owns middlename;" +
                                 "surname sub attribute, value string, owns nickname;" +
                                 "middlename sub attribute, value string, owns firstname;" +
@@ -109,9 +110,9 @@ public class TraversalTest6 {
     }
 
     @Test
-    public void test_plays_inheritance() {
+    public void test_relates_inheritance() {
         try (RocksTransaction transaction = session.transaction(READ)) {
-            final String queryString = "match $p plays marriage:spouse;";
+            String queryString = "match $m relates spouse;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
@@ -119,7 +120,7 @@ public class TraversalTest6 {
             assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-                put("p", set("person", "man", "woman"));
+                put("m", set("marriage", "hetero-marriage"));
             }};
 
             assertEquals(expected, result);
