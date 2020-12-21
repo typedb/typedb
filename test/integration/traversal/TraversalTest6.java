@@ -25,7 +25,6 @@ import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -119,7 +118,7 @@ public class TraversalTest6 {
             Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
                 put("p", set("person", "man", "woman"));
             }};
 
@@ -137,7 +136,7 @@ public class TraversalTest6 {
             Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(2, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
                 put("a", set("nickname", "surname"));
                 put("b", set("nickname", "surname"));
             }};
@@ -160,7 +159,7 @@ public class TraversalTest6 {
             Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(4, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
                 put("a", set("firstname", "surname", "nickname", "middlename"));
                 put("b", set("firstname", "surname", "nickname", "middlename"));
                 put("c", set("firstname", "surname", "nickname", "middlename"));
@@ -170,7 +169,6 @@ public class TraversalTest6 {
             assertEquals(expected, result);
         }
     }
-
 
     @Test
     public void test_relates() {
@@ -183,7 +181,7 @@ public class TraversalTest6 {
             Map<String, Set<String>> result = retrieveAnswers(answers);
             assertEquals(1, result.keySet().size());
 
-            Map<String, Set<String>> expected = new HashMap<String, Set<String>>(){{
+            Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
                 put("r", set("marriage"));
             }};
 
