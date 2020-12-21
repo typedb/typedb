@@ -212,15 +212,15 @@ public class Rule {
         for (Variable variable : variables) {
             if (variable.isThing() && !variable.asThing().has().isEmpty()){
                 if (variable.asThing().has().iterator().next().attribute().reference().isName()) return variables;
-                return nameHasVariable(variable.asThing());
+                return nameHasThenConcludableVars(variable.asThing());
             }
             if (variable.isThing() && !variable.asThing().relation().isEmpty())
-                return nameRelationVar(variable.asThing());
+                return nameRelationThenConcludableVars(variable.asThing());
         }
         throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private Set<Variable> nameRelationVar(ThingVariable oldOwner) {
+    private Set<Variable> nameRelationThenConcludableVars(ThingVariable oldOwner) {
         Set<Variable> namedVariables = new HashSet<>();
         RelationConstraint relationConstraint = oldOwner.relation().iterator().next();
         ThingVariable namedOwner = ThingVariable.createTemp("rel_owner");
@@ -256,8 +256,8 @@ public class Rule {
         return new RolePlayer(namedRoleType, playerVar);
     }
 
-    private Set<Variable> nameHasVariable(ThingVariable hasVariable) {
-        HasConstraint hasConstraint = hasVariable.has().iterator().next();
+    private Set<Variable> nameHasThenConcludableVars(ThingVariable oldOwner) {
+        HasConstraint hasConstraint = oldOwner.has().iterator().next();
         ThingVariable attribute = hasConstraint.attribute();
         Set<Variable> namedVariables = new HashSet<>();
         ThingVariable namedAttribute = nameAttribute(attribute);
@@ -265,7 +265,7 @@ public class Rule {
         namedVariables.add(namedAttribute);
         namedVariables.add(namedAttribute.isa().get().type());
         namedVariables.add(namedAttribute.value().iterator().next().asVariable().value());
-        ThingVariable namedOwner = ThingVariable.of(hasVariable.identifier());
+        ThingVariable namedOwner = ThingVariable.of(oldOwner.identifier());
         namedOwner.has(namedAttribute);
         namedVariables.add(namedOwner);
         return namedVariables;
