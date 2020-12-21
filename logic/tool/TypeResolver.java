@@ -33,7 +33,6 @@ import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
@@ -193,43 +192,20 @@ public class TypeResolver {
     private Map<Label, TypeVariable> labelVarsFromConjunction(Conjunction conjunction) {
         Map<Label, TypeVariable> labels = new HashMap<>();
         conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
-                .forEach(variable -> variable.label().ifPresent(labelConstraint -> labels.putIfAbsent(labelConstraint.properLabel(), variable)));
+                .forEach(variable -> variable.label().ifPresent(labelConstraint -> {
+                    labels.putIfAbsent(labelConstraint.properLabel(), variable);
+                }));
         return labels;
     }
 
     private void addInferredSubLabels(TypeVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
-        if (!variable.sub().isPresent() && !hints.isEmpty()) {
-            variable.sub(lowestCommonSuperType(hints, labelMap), false);
-        }
         variable.addResolvedTypes(hints);
     }
 
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
         //TODO: use .getType(label) once ConceptManager can handle labels
         hints.removeIf(label -> conceptMgr.getThingType(label.scopedName()).isAbstract());
-        if (!variable.isa().isPresent() && !hints.isEmpty()) {
-            variable.isa(lowestCommonSuperType(hints, labelMap), false);
-        }
         variable.addResolvedTypes(hints);
-    }
-
-    private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {
-        Set<Type> types = labels.stream().map(this::getType).collect(Collectors.toSet());
-
-        Type lowestCommonAncestor = null;
-        for (Type type : types) {
-            if (lowestCommonAncestor == null) {
-                lowestCommonAncestor = type;
-                continue;
-            }
-            Set<Type> superTypes = type.getSupertypes().collect(Collectors.toSet());
-            while (!superTypes.contains(lowestCommonAncestor)) {
-                lowestCommonAncestor = lowestCommonAncestor.getSupertype();
-            }
-        }
-
-        assert lowestCommonAncestor != null;
-        return getOrCreateTypeVariable(lowestCommonAncestor.getLabel(), labelMap);
     }
 
     private TypeVariable getOrCreateTypeVariable(Label label, Map<Label, TypeVariable> labelMap) {
@@ -260,7 +236,6 @@ public class TypeResolver {
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
         varHintsConjunction = resolveLabels(varHintsConjunction);
-        Traversal traversal = varHintsConjunction.traversal();
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(conjunction.traversal()).forEachRemaining(
@@ -360,12 +335,6 @@ public class TypeResolver {
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
             if (isMapped(owner)) owner.sub(metaRelation, false);
             ThingVariable ownerThing = relationConstraint.owner();
-//            if (!ownerThing.isa().isPresent()) {
-//                relationTypeVar = varHints.newHintingVariable();
-//                neighbours.put(relationTypeVar, new HashSet<>());
-//            } else {
-//                relationTypeVar = convertVariable(ownerThing.isa().get().type());
-//            }
             if (ownerThing.isa().isPresent()) {
                 TypeVariable relationTypeVar = convertVariable(ownerThing.isa().get().type());
                 if (isMapped(relationTypeVar)) {
@@ -381,7 +350,6 @@ public class TypeResolver {
                     roleTypeVar = convertVariable(roleTypeVar);
                     if (isMapped(roleTypeVar)) roleTypeVar.sub(metaRole, false);
                     addRelatesConstraint(owner, roleTypeVar);
-//                    addRelatesConstraint(relationTypeVar, roleTypeVar);
                     if (roleTypeVar.reference().isLabel()) playerType.plays(metaRelation, roleTypeVar, null);
                 }
 
@@ -390,7 +358,6 @@ public class TypeResolver {
                     neighbours.put(rolePlayerHint, new HashSet<>());
                     if (isMapped(rolePlayerHint)) rolePlayerHint.sub(metaRole, false);
                     addRelatesConstraint(owner, rolePlayerHint);
-//                    addRelatesConstraint(relationTypeVar, rolePlayerHint);
                     playerType.plays(null, rolePlayerHint, null);
                     addNeighbour(playerType, rolePlayerHint);
                 } else {
@@ -458,13 +425,6 @@ public class TypeResolver {
             this.rolePlayerHints = new HashMap<>();
         }
 
-        TypeVariable newHintingVariable() {
-            TypeVariable tempVar = new TypeVariable(Identifier.Variable.of(
-                    new SystemReference("temp" + addAndGetCounter())));
-            varHints.put(tempVar.identifier(), tempVar);
-            return tempVar;
-        }
-
         public TypeVariable convert(RelationConstraint.RolePlayer key) {
             if (!rolePlayerHints.containsKey(key)) {
                 TypeVariable newTypeVar = new TypeVariable(Identifier.Variable.of(
@@ -481,8 +441,6 @@ public class TypeResolver {
                     newTypeVar = new TypeVariable(Identifier.Variable.of(
                             new SystemReference("temp" + addAndGetCounter())));
                 } else newTypeVar = new TypeVariable(key.identifier());
-//                TypeVariable newTypeVar = new TypeVariable(key.identifier());
-//                if (key.isType()) key.asType().constraints().forEach(newTypeVar::constrain);
                 if (key.isType()) newTypeVar.copyConstraints(key.asType());
                 varHints.put(key.identifier(), newTypeVar);
             }
@@ -495,10 +453,6 @@ public class TypeResolver {
 
         public Collection<TypeVariable> getVariableHints() {
             return varHints.values();
-        }
-
-        public Map<Identifier, TypeVariable> getVarMapping() {
-            return varHints;
         }
 
         private Integer addAndGetCounter() {

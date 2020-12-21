@@ -16,10 +16,42 @@
 #
 Feature: Graql Match Query
 
-  Background:
+  Background: Open connection and create a simple extensible schema
     Given connection has been opened
-    Given connection delete all databases
     Given connection does not have any database
+    Given connection create database: grakn
+    Given connection open schema session for database: grakn
+    Given session opens transaction of type: write
+    Given the integrity is validated
+    Given graql define
+      """
+      define
+      person sub entity, plays employment:employee, plays income:earner, owns name, owns email @key;
+      employment sub relation, relates employee, plays income:source, owns start-date, owns employment-reference-code @key;
+      income sub relation, relates earner, relates source;
 
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this f
+      name sub attribute, value string;
+      email sub attribute, value string;
+      start-date sub attribute, value datetime;
+      employment-reference-code sub attribute, value string;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given session opens transaction of type: write
+
+
+  Scenario: new entity types can be defined
+    When graql define
+      """
+      define dog sub entity;
+      """
+    Then transaction commits
+    Then the integrity is validated
+    When session opens transaction of type: read
+    When get answers of graql query
+      """
+      match $x type dog;
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | label:dog |

@@ -140,8 +140,7 @@ public class TypeResolverTest {
             put("$p", set("person", "man", "woman"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -157,8 +156,8 @@ public class TypeResolverTest {
             put("$p", set("person"));
         }};
 
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -179,8 +178,7 @@ public class TypeResolverTest {
             put("$q", set("mammal", "person", "man", "woman", "dog"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-////        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -197,8 +195,7 @@ public class TypeResolverTest {
             put("$p", set("person", "man", "woman", "dog"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -215,8 +212,8 @@ public class TypeResolverTest {
             put("$p", set("person", "man", "woman", "dog"));
             put("$a", set("name"));
         }};
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -235,8 +232,8 @@ public class TypeResolverTest {
             put("$p", set("triangle", "right-angled-triangle"));
             put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
         }};
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -254,9 +251,7 @@ public class TypeResolverTest {
             put("$r", set("marriage"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-
-////        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -278,7 +273,6 @@ public class TypeResolverTest {
         Map<String, Set<String>> result = getHintMap(exhaustiveConjunction);
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -298,7 +292,6 @@ public class TypeResolverTest {
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -316,7 +309,6 @@ public class TypeResolverTest {
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -353,8 +345,7 @@ public class TypeResolverTest {
             put("$r", set("marriage"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -373,8 +364,7 @@ public class TypeResolverTest {
             put("$a", set("name", "email"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -392,8 +382,7 @@ public class TypeResolverTest {
             put("$p", set("person", "man", "woman"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -419,8 +408,7 @@ public class TypeResolverTest {
             put("$q", set("entity", "animal", "person", "man"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -445,8 +433,23 @@ public class TypeResolverTest {
             put("$a", set("name"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void plays_hierarchy() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match (spouse: $john) isa marriage;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+//        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$john", set("person", "man", "woman"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -477,8 +480,6 @@ public class TypeResolverTest {
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
-//        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
     }
 
 
@@ -509,8 +510,7 @@ public class TypeResolverTest {
             put("$b", set("name", "surname"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -547,8 +547,7 @@ public class TypeResolverTest {
 //            put("$a", set("name", "surname", "nickname", "middlename", "measure-system"));
 //        }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expectedExhaustive.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expectedSimple.entrySet()));
+        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -565,8 +564,7 @@ public class TypeResolverTest {
             put("$x", Collections.emptySet());
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -593,8 +591,7 @@ public class TypeResolverTest {
             put("$t", set("person", "entity"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -625,45 +622,7 @@ public class TypeResolverTest {
 //            put("$w", set("man", "greek"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-//        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
-    }
-
-    // It might be assumed that the set of hint labels will have to conform to certain forms.
-    // The tests below show that any structure is possible.
-
-    // When a hint label exists on a variable, none, some or all of its children may be type variables as well
-    // "$x isa person;" and "$x isa! person;" trivially show that all or none of the children are possible.
-    // But getting only some of the children requires a more complicate query, which is shown below.
-    @Test
-    public void can_infer_some_but_not_all_subtypes() throws IOException {
-        define_custom_schema(
-                "define " +
-                        "  animal sub entity;" +
-                        "  person sub animal, owns head-weight, owns arm-weight, owns hand-weight, owns leg-weight, owns weight;" +
-                        "  horse sub animal, owns head-weight, owns tail-weight, owns leg-weight, owns weight;" +
-                        "  weight sub entity;" +
-                        "  head-weight sub weight;" +
-                        "  arm-weight sub weight;" +
-                        "  leg-weight sub weight;" +
-                        "  hand-weight sub weight;" +
-                        "  tail-weight sub weight;"
-        );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match" +
-                "  $a has $c;" +
-                "  $b has $c;" +
-                "  $a isa person;" +
-                "  $b isa worm;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$c", set("weight", "head-weight", "leg-weight"));
-        }};
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     // When a hint label exists, it can "skip" a generation, meaning a hint and the hint's descendent is possible, yet
@@ -702,10 +661,13 @@ public class TypeResolverTest {
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$t", set("thing", "animal", "person"));
+            put("$t", set("animal", "person"));
             put("$a", set("tortoise", "man"));
+            put("$b", set("woman"));
+            put("$rel", set("ownership", "marriage"));
+            put("$c", set("ownership-attr", "marriage-attr"));
         }};
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
     @Test
@@ -718,6 +680,20 @@ public class TypeResolverTest {
             put("$a", set("dog"));
         }};
         assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+
+    }
+
+    @Test
+    public void temp() {
+        define_custom_schema(
+                "define " +
+                        "      person sub entity, owns name;" +
+                        "      person sub entity, owns name;" +
+                        "      person sub entity, owns name;"
+        );
+
+        String queryString = "match  $x type person, owns name";
+
 
     }
 }
