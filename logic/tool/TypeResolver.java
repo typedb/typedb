@@ -256,9 +256,10 @@ public class TypeResolver {
 
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
+        varHintsConjunction = resolveLabels(varHintsConjunction);
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(conjunction.traversal()).forEachRemaining(
+            traversalEng.iterator(conjunction.traversal(this, false)).forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));

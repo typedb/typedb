@@ -52,7 +52,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-test");
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-resolver");
     private static String database = "type-hinter-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
