@@ -431,7 +431,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Owns {
 
-                    private Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isKey) {
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isKey) {
                         super(from, to, order, FORWARD, isKey);
                     }
 
@@ -469,7 +469,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Owns {
 
-                    private Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isKey) {
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isKey) {
                         super(from, to, order, BACKWARD, isKey);
                     }
 

@@ -168,11 +168,11 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
                 ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
                 iterators.put(toID, toIter);
             }
-        } else if (edge.isClosureEdge()) {
-            return computeNextClosure(pos);
         }
 
-        if (iterators.get(toID).hasNext()) {
+        if (edge.isClosureEdge()) {
+            return computeNextClosure(pos);
+        } else if (iterators.get(toID).hasNext()) {
             answer.put(toID, iterators.get(toID).next());
             return true;
         } else {
