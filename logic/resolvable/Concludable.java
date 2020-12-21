@@ -19,7 +19,12 @@ package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.ConceptManager;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.Type;
 import grakn.core.logic.Rule;
 import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.logic.transformer.Unifier;
@@ -32,13 +37,17 @@ import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.traversal.common.Identifier;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -83,10 +92,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     }
 
     private Stream<Unifier> unify(Rule.Conclusion<?> unifyWith) {
-        if (unifyWith instanceof Rule.Conclusion.Relation) return unify((Rule.Conclusion.Relation) unifyWith);
-        else if (unifyWith instanceof Rule.Conclusion.Has) return unify((Rule.Conclusion.Has) unifyWith);
-        else if (unifyWith instanceof Rule.Conclusion.Isa) return unify((Rule.Conclusion.Isa) unifyWith);
-        else if (unifyWith instanceof Rule.Conclusion.Value) return unify((Rule.Conclusion.Value) unifyWith);
+        if (unifyWith.isRelation()) return unify(unifyWith.asRelation());
+        else if (unifyWith.isHas()) return unify(unifyWith.asHas());
+        else if (unifyWith.isIsa()) return unify(unifyWith.asIsa());
+        else if (unifyWith.isValue()) return unify(unifyWith.asValue());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -114,37 +123,21 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    AlphaEquivalence alphaEquals(Concludable.Relation that) {
-        return null;
-    }
+    AlphaEquivalence alphaEquals(Concludable.Relation that) { return null; }
 
-    AlphaEquivalence alphaEquals(Concludable.Has that) {
-        return null;
-    }
+    AlphaEquivalence alphaEquals(Concludable.Has that) { return null; }
 
-    AlphaEquivalence alphaEquals(Concludable.Isa that) {
-        return null;
-    }
+    AlphaEquivalence alphaEquals(Concludable.Isa that) { return null; }
 
-    AlphaEquivalence alphaEquals(Concludable.Value that) {
-        return null;
-    }
+    AlphaEquivalence alphaEquals(Concludable.Value that) { return null; }
 
-    public boolean isRelation() {
-        return false;
-    }
+    public boolean isRelation() { return false; }
 
-    public boolean isHas() {
-        return false;
-    }
+    public boolean isHas() { return false; }
 
-    public boolean isIsa() {
-        return false;
-    }
+    public boolean isIsa() { return false; }
 
-    public boolean isValue() {
-        return false;
-    }
+    public boolean isValue() { return false; }
 
     public Relation asRelation() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
@@ -187,29 +180,45 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
+        public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
-            Optional<Unifier> newUnifier = Optional.empty();
-            if (constraint().owner().reference().isName()) {
-                newUnifier = tryExtendUnifier(this.constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
+            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+
+            if (!constraint().owner().reference().isAnonymous()) {
+                assert constraint().owner().reference().isName();
+                if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
+                    unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
+                } else return Stream.empty();
             }
 
-            if (constraint().owner().isa().isPresent() && constraint().owner().isa().get().type().reference().isName()) {
-                assert unifyWith.constraint().owner().isa().isPresent();
-                newUnifier = newUnifier.flatMap(u -> tryExtendUnifier(this.constraint().owner().isa().get().type(),
-                                                                      unifyWith.constraint().owner().isa().get().type(), u)
-                );
+            if (constraint().owner().isa().isPresent()) {
+                assert unifyWith.constraint().owner().isa().isPresent(); // due to known shapes of rule conclusions
+                TypeVariable relationType = constraint().owner().isa().get().type();
+                TypeVariable unifyWithRelationType = unifyWith.constraint().owner().isa().get().type();
+                if (!impossibleUnification(relationType, unifyWithRelationType)) {
+                    unifierBuilder.add(relationType.identifier(), unifyWithRelationType.identifier());
+
+                    if (relationType.reference().isLabel()) {
+                        // require the unification target type variable satisfies a set of labels
+                        Set<Label> allowedTypes = relationType.resolvedTypes().stream().flatMap(label -> {
+                            if (label.scope().isPresent()) {
+                                return conceptMgr.getRelationType(label.scope().get()).getSubtypes()
+                                        .map(relType -> relType.getRelates(label.name())).filter(Objects::nonNull)
+                                        .map(RoleType::getLabel);
+                            } else {
+                                return conceptMgr.getThingType(label.name()).getSubtypes().map(ThingType::getLabel);
+                            }
+                        }).collect(Collectors.toSet());
+                        unifierBuilder.requirements().types(relationType.identifier(), allowedTypes);
+                    }
+                } else return Stream.empty();
             }
 
             List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint().players());
             List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
 
-            if (!newUnifier.isPresent()) return Stream.empty();
-            else {
-                Unifier unifier = newUnifier.get();
-                return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
-                        .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifier));
-            }
+            return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
+                    .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder, conceptMgr));
         }
 
         private Stream<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
@@ -221,50 +230,56 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
             return IntStream.range(0, thenRolePlayers.size())
                     .filter(thenIdx -> mapping.values().stream().noneMatch(players -> players.contains(thenIdx)))
-                    .mapToObj(thenIdx ->
-                                      tryExtendRolePlayerMapping(conjRP, thenRolePlayers.get(thenIdx), thenIdx, mapping))
-                    .filter(Optional::isPresent).map(Optional::get)
-                    .flatMap(newMapping -> matchRolePlayerIndices(conjRolePlayers.subList(1, conjRolePlayers.size()),
-                                                                  thenRolePlayers, newMapping));
+                    .filter(thenIdx -> !impossibleUnification(conjRP, thenRolePlayers.get(thenIdx)))
+                    .mapToObj(thenIdx -> {
+                        Map<RolePlayer, Set<Integer>> clone = cloneMapping(mapping);
+                        clone.putIfAbsent(conjRP, new HashSet<>());
+                        clone.get(conjRP).add(thenIdx);
+                        return clone;
+                    }).flatMap(newMapping -> matchRolePlayerIndices(conjRolePlayers.subList(1, conjRolePlayers.size()),
+                                                                    thenRolePlayers, newMapping));
+        }
+
+        private boolean impossibleUnification(TypeVariable typeVar, TypeVariable unifyWithTypeVar) {
+            // TODO
+            return false;
+        }
+
+        private boolean impossibleUnification(ThingVariable thingVar, ThingVariable unifyWithThingVar) {
+            // TODO
+            return false;
+        }
+
+        private boolean impossibleUnification(RolePlayer conjRP, RolePlayer unifyWithRolePlayer) {
+            // TODO
+            return false;
         }
 
         private Unifier rolePlayerMappingToUnifier(
                 Map<RolePlayer, Set<Integer>> matchedRolePlayerIndices, List<RolePlayer> thenRolePlayers,
-                Unifier baseUnifier) {
-            Unifier.Builder unifierBuilder = baseUnifier.builder();
+                Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
 
             matchedRolePlayerIndices.forEach((conjRP, thenRPIndices) -> thenRPIndices.stream().map(thenRolePlayers::get)
                     .forEach(thenRP -> {
-                                 if (conjRP.roleType().isPresent() && conjRP.roleType().get().reference().isName()) {
+                                 if (conjRP.roleType().isPresent()) {
                                      assert thenRP.roleType().isPresent();
-                                     Set<Label> allowedTypes = null; // TODO compute
-                                     unifierBuilder.add(conjRP.roleType().get().reference().asName(), thenRP.roleType().get().reference().asName(), allowedTypes);
+                                     TypeVariable roleTypeVar = conjRP.roleType().get();
+                                     unifierBuilder.add(roleTypeVar.identifier(), thenRP.roleType().get().identifier());
+
+                                     if (roleTypeVar.reference().isLabel()) {
+                                         Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream().flatMap(roleLabel -> {
+                                             assert roleLabel.scope().isPresent();
+                                             return conceptMgr.getRelationType(roleLabel.scope().get()).getSubtypes()
+                                                     .map(relType -> relType.getRelates(roleLabel.name()))
+                                                     .filter(Objects::nonNull).map(Type::getLabel);
+                                         }).collect(Collectors.toSet());
+                                         unifierBuilder.requirements().types(roleTypeVar.identifier(), allowedTypes);
+                                     }
                                  }
-                                 Set<Label> allowedTypes = null; // TODO complete
-                                 unifierBuilder.add(conjRP.player().reference().asName(), thenRP.player().reference().asName(), allowedTypes);
+                                 unifierBuilder.add(conjRP.player().identifier(), thenRP.player().identifier());
                              }
                     ));
             return unifierBuilder.build();
-        }
-
-        private boolean roleHintsDisjoint(RolePlayer conjRP, RolePlayer thenRP) {
-            if (!conjRP.roleTypeHints().isEmpty() && !thenRP.roleTypeHints().isEmpty()
-                    && Collections.disjoint(conjRP.roleTypeHints(), thenRP.roleTypeHints())) return true;
-            if (ConstraintCopier.varHintsDisjoint(conjRP.player(), thenRP.player())) return true;
-            if (conjRP.roleType().isPresent()) {
-                assert thenRP.roleType().isPresent();
-                return ConstraintCopier.varHintsDisjoint(conjRP.roleType().get(), thenRP.roleType().get());
-            }
-            return false;
-        }
-
-        private Optional<Map<RolePlayer, Set<Integer>>> tryExtendRolePlayerMapping(
-                RolePlayer conjRP, RolePlayer thenRP, int thenIdx, Map<RolePlayer, Set<Integer>> originalMapping) {
-            if (roleHintsDisjoint(conjRP, thenRP)) return Optional.empty();
-            Map<RolePlayer, Set<Integer>> newMapping = cloneMapping(originalMapping);
-            newMapping.putIfAbsent(conjRP, new HashSet<>());
-            newMapping.get(conjRP).add(thenIdx);
-            return Optional.of(newMapping);
         }
 
         @Override
@@ -356,7 +371,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
             if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {
                 unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().asVariable().value(),
-                                           unifyWith.constraint().asVariable().value(), u));
+                                                                unifyWith.constraint().asVariable().value(), u));
             }
             return unifier.map(Stream::of).orElseGet(Stream::empty);
         }

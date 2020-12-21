@@ -18,7 +18,10 @@
 package grakn.core.logic.transformer;
 
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Predicate;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Collections;
@@ -33,28 +36,54 @@ import static grakn.common.collection.Collections.set;
 
 public class Unifier extends VariableTransformer {
 
-    private final Map<Reference.Name, Set<Reference.Name>> unifier;
-    private final Map<Reference.Name, Set<Label>> allowedTypes;
+    private final Map<Identifier, Set<Identifier>> unifier;
+    private final Map<Identifier, Set<Identifier>> reverseUnifier;
+    private final Requirements requirements;
 
-    Unifier(Map<Reference.Name, Set<Reference.Name>> unifier, Map<Reference.Name, Set<Label>> allowedTypes) {
+    private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements requirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
-        this.allowedTypes = Collections.unmodifiableMap(allowedTypes);
-    }
-
-    public static Unifier of(Map<Reference.Name, Set<Reference.Name>> unifier,
-                             Map<Reference.Name, Set<Label>> allowedTypes) {
-        return new Unifier(unifier, allowedTypes);
+        this.requirements = requirements;
+        this.reverseUnifier = reverse(this.unifier);
     }
 
     public static Unifier empty() {
-        return new Unifier(new HashMap<>(), new HashMap<>());
+        return new Unifier(new HashMap<>(), new Requirements());
     }
 
     public Optional<ConceptMap> unify(ConceptMap toUnify) {
-        return Optional.empty(); // TODO
+        Map<Reference.Name, Concept> unified = new HashMap<>();
+
+        toUnify.concepts().forEach((ref, concept) -> {
+            Identifier.Variable asIdentifier = Identifier.Variable.of(ref);
+            assert unifier.containsKey(asIdentifier);
+            Set<Identifier> unifiedIdentifiers = unifier.get(asIdentifier);
+
+            for (Identifier unifiedIdentifier : unifiedIdentifiers) {
+                if (unifiedIdentifier.isNamedReference()) {
+                    Reference.Name unifiedReference = unifiedIdentifier.asVariable().reference().asName();
+                    assert !unified.containsKey(unifiedReference);
+                    unified.put(unifiedReference, concept);
+                }
+            }
+        });
+
+//        return Optional.empty(); // TODO ... why does this have to be optional? Can it fail?
+        return Optional.of(new ConceptMap(unified));
     }
 
-    public Optional<ConceptMap> unUnify(ConceptMap conceptMap) {
+    /**
+     * Un-unify a map of concepts, with given identifiers. These must include anonymous and labelled concepts,
+     * as they may be mapped to from a named variable, and may have requirements that need to be met.
+     */
+    public Optional<ConceptMap> unUnify(Map<Identifier, Concept> identifiedConcepts) {
+
+        /*
+        1. apply the reverse unifier - if a mapping failure is found (eg. x,y should both become a but are not equal)
+           then return empty optional
+        2. confirm that each unified concept in the map meets the its requirements
+        3. filter down the identified map to a concept map of just named identifiers and their concepts
+         */
+
         return Optional.empty(); // TODO
     }
 
@@ -63,12 +92,12 @@ public class Unifier extends VariableTransformer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Unifier that = (Unifier) o;
-        return unifier.equals(that.unifier) && allowedTypes.equals(that.allowedTypes);
+        return unifier.equals(that.unifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(unifier, allowedTypes);
+        return Objects.hash(unifier);
     }
 
     @Override
@@ -81,51 +110,98 @@ public class Unifier extends VariableTransformer {
         return this;
     }
 
-    public Map<Reference.Name, Set<Reference.Name>> mapping() {
+    public Map<Identifier, Set<Identifier>> mapping() {
         return unifier;
-    }
-
-    public Unifier extend(Reference.Name source, Reference.Name target, Set<Label> allowedSourceTypes) {
-        Map<Reference.Name, Set<Reference.Name>> unifierClone = new HashMap<>();
-        unifier.forEach((ref, unifieds) -> unifierClone.put(ref, set(unifieds)));
-        unifierClone.putIfAbsent(source, new HashSet<>());
-        unifierClone.get(source).add(target);
-        Map<Reference.Name, Set<Label>> typesClone = new HashMap<>();
-        allowedTypes.forEach((ref, types) -> typesClone.put(ref, set(types)));
-        if (typesClone.containsKey(source)) assert typesClone.get(source).equals(allowedSourceTypes);
-        else typesClone.put(source, set(allowedSourceTypes));
-        return new Unifier(unifierClone, typesClone);
     }
 
     public Unifier.Builder builder() {
         return new Builder();
     }
 
+    private Map<Identifier, Set<Identifier>> reverse(Map<Identifier, Set<Identifier>> unifier) {
+        Map<Identifier, Set<Identifier>> reverse = new HashMap<>();
+        unifier.forEach((unify, unifieds) -> {
+            for (Identifier unified : unifieds) {
+                reverse.putIfAbsent(unified, new HashSet<>());
+                reverse.get(unified).add(unify);
+            }
+        });
+        return reverse;
+    }
+
     public class Builder {
-        Map<Reference.Name, Set<Reference.Name>> unifierBuilder;
-        Map<Reference.Name, Set<Label>> allowedTypesBuilder;
+
+        Map<Identifier, Set<Identifier>> unifierExtension;
+        Requirements requirementsExtension;
+
         public Builder() {
-             this.unifierBuilder = new HashMap<>();
-             this.allowedTypesBuilder = new HashMap<>();
+             this.unifierExtension = new HashMap<>();
+             this.requirementsExtension = new Requirements();
         }
 
-        public void add(Reference.Name source, Reference.Name target, Set<Label> types) {
-            unifierBuilder.putIfAbsent(source, new HashSet<>());
-            unifierBuilder.get(source).add(target);
-            if (allowedTypesBuilder.containsKey(source)) assert allowedTypesBuilder.get(source).equals(types);
-            else allowedTypesBuilder.put(source, new HashSet<>(types));
+        public void add(Identifier source, Identifier target) {
+            unifierExtension.putIfAbsent(source, new HashSet<>());
+            unifierExtension.get(source).add(target);
+        }
+
+        public Requirements requirements() {
+            return requirementsExtension;
         }
 
         public Unifier build() {
             unifier.forEach((ref, unifieds) -> {
-                assert !unifierBuilder.containsKey(ref);
-                unifierBuilder.put(ref, set(unifieds));
+                assert !unifierExtension.containsKey(ref);
+                unifierExtension.put(ref, set(unifieds));
             });
-            allowedTypes.forEach((ref, labels) -> {
-                assert !allowedTypesBuilder.containsKey(ref);
-                allowedTypesBuilder.put(ref, set(labels));
+            requirements.types.forEach((identifier, labels) -> {
+                assert !requirementsExtension.types.containsKey(identifier);
+                requirementsExtension.types.put(identifier, labels);
             });
-            return new Unifier(unifier, allowedTypesBuilder);
+            requirements.isaExplicit.forEach((identifier, labels) -> {
+                assert !requirementsExtension.isaExplicit.containsKey(identifier);
+                requirementsExtension.isaExplicit.put(identifier, labels);
+            });
+            requirements.predicates.forEach((identifier, predicates) -> {
+                assert !requirementsExtension.predicates.containsKey(identifier);
+                requirementsExtension.predicates.put(identifier, predicates);
+            });
+            return new Unifier(unifierExtension, requirementsExtension);
+        }
+    }
+
+    /*
+    Record requirements that may be used to fail a unification
+
+    Allowed requirements we may impose:
+    1. a type variable may be required to within a set of allowed types
+    2. a thing variable may be required to be an explicit instance of a set of allowed types
+    3. a thing variable may have to satisfy a specific predicate (ie when it's an attribute)
+
+    Note that in the future we may treat these (and variable equality constraints encoded in unifier)
+     as constraints we can use to rewrite queries that are unified with. This would be more efficient,
+     but query rewriting was designed _out_ of our architecture, and will have to be carefully re-added.
+     */
+    public static class Requirements {
+        Map<Identifier, Set<Label>> types;
+        Map<Identifier, Set<Label>> isaExplicit;
+        Map<Identifier, Set<Predicate<?, ?>>> predicates;
+
+        public Requirements() {
+            this.types = new HashMap<>();
+            this.isaExplicit = new HashMap<>();
+            this.predicates = new HashMap<>();
+        }
+
+        public void types(Identifier identifier, Set<Label> labels) {
+            // TODO
+        }
+
+        public void isaExplicit(Identifier identifier, Set<Label> labels) {
+            // TODO
+        }
+
+        public void predicates(Identifier identifier, Set<Predicate<?, ?>> predicates) {
+            // TODO
         }
     }
 }
