@@ -105,10 +105,10 @@ public class TypeResolverTest {
                                         rolePlayer.roleType().get().reference().syntax(),
                                         rolePlayer.player().reference().syntax()
                                 ),
-                                rolePlayer.roleTypeHints().stream().map(Label::scopedName).collect(Collectors.toSet()));
+                                rolePlayer.resolvedRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet()));
                     } else {
                         ans.put(new Pair<>("", rolePlayer.player().reference().syntax()),
-                                rolePlayer.roleTypeHints().stream().map(Label::scopedName).collect(Collectors.toSet()));
+                                rolePlayer.resolvedRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet()));
                     }
                 });
 
@@ -121,11 +121,11 @@ public class TypeResolverTest {
     }
 
     private Conjunction runExhaustiveHinter(TypeResolver typeHinter, String matchString) {
-        return typeHinter.computeHintsExhaustive(createConjunction(matchString));
+        return typeHinter.resolveVariablesExhaustive(createConjunction(matchString));
     }
 
     private Conjunction runSimpleHinter(TypeResolver typeHinter, String matchString) {
-        return typeHinter.resolveThingTypes(createConjunction(matchString));
+        return typeHinter.resolveVariables(createConjunction(matchString));
     }
 
     @Test

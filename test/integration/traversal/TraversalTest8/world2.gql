@@ -1,0 +1,129 @@
+#
+# Copyright (C) 2020 Grakn Labs
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+define
+
+age sub attribute,
+    value long;
+
+currency sub attribute,
+    value string,
+    regex "^(American Dollar|Great British Pound|Euro|Brazilian Real|South African Rand|Renminbi|Australian Dollar)$",
+    owns currency-code;
+
+currency-code sub attribute,
+    value string,
+    regex "^(USD|GBP|EUR|BRL|ZAR|RMB|AUD)$";
+
+date-of-event sub attribute,
+    value datetime,
+    abstract;
+
+date-of-birth sub date-of-event,
+    value datetime;
+
+date-of-marriage sub date-of-event,
+    value datetime;
+
+email sub attribute,
+    value string;
+
+gender sub attribute,
+    value string;
+
+identifier sub attribute,
+    value long,
+    abstract;
+
+marriage-id sub identifier,
+    value long;
+
+language sub attribute,
+    value string,
+    regex "^(English|German|Portugese|Afrikaans|Mandarin)$";
+
+name sub attribute,
+    value string,
+    abstract;
+
+forename sub name,
+    value string;
+
+location-name sub name,
+    value string;
+
+surname sub name,
+    value string;
+
+locates sub relation,
+    relates located,
+    relates location;
+
+born-in sub locates,
+    relates child as located,
+    relates place-of-birth as location;
+
+location-hierarchy sub relation,
+    relates subordinate,
+    relates superior;
+
+marriage sub relation,
+    owns marriage-id @key,
+    owns date-of-marriage,
+    relates husband,
+    relates wife,
+    plays locates:located;
+
+parentship sub relation,
+    relates child,
+    relates parent;
+
+residency sub relation,
+    relates location,
+    relates resident;
+
+location sub entity,
+    abstract,
+    owns location-name @key,
+    plays born-in:place-of-birth,
+    plays locates:location,
+    plays location-hierarchy:subordinate,
+    plays location-hierarchy:superior;
+
+city sub location,
+    plays residency:location;
+
+continent sub location;
+
+country sub location,
+    owns currency,
+    owns language;
+
+person sub entity,
+    owns email @key,
+    owns age,
+    owns date-of-birth,
+    owns forename,
+    owns gender,
+    owns surname,
+    plays born-in:child,
+    plays marriage:husband,
+    plays marriage:wife,
+    plays parentship:child,
+    plays parentship:parent,
+    plays residency:resident;
+

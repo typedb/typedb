@@ -85,8 +85,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     @Override
     public void addTo(Traversal traversal) {
+        // TODO: create vertex properties first, then the vertex itself, then edges
+        //       that way, we can make properties to be 'final' objects that are
+        //       included in equality and hashCode of vertices
         if (!resolvedTypes().isEmpty()) traversal.types(identifier(), resolvedTypes());
-        super.addTo(traversal);
+        constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
     public static ThingVariable createTemp(String name) {

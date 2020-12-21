@@ -19,7 +19,9 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.Aggregator;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -30,11 +32,11 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final Aggregator partialConceptMap;
+    private final Partial partialConceptMap;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   Aggregator partialConceptMap,
+                   Partial partialConceptMap,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.partialConceptMap = partialConceptMap;
@@ -57,7 +59,7 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public Aggregator partialConceptMap() {
+    public Partial partial() {
         return partialConceptMap;
     }
 
@@ -67,7 +69,7 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialConceptMap, request.partialConceptMap());
+                Objects.equals(partialConceptMap, request.partial());
     }
 
     @Override
@@ -77,7 +79,11 @@ public class Request {
 
     @Override
     public String toString() {
-        return "Req(send=" + (sender() == null ? "<none>" : sender().state.name) + ", pAns=" + partialConceptMap + ")";
+        return "Request{" +
+                "path=" + path +
+                ", partialConceptMap=" + partialConceptMap +
+                ", partialDerivation=" + partialDerivation +
+                '}';
     }
 
     public ResolutionAnswer.Derivation partialResolutions() {
@@ -113,6 +119,11 @@ public class Request {
         @Override
         public int hashCode() {
             return Objects.hash(path);
+        }
+
+        public Actor<RootResolver> root() {
+            assert path.get(0).state instanceof RootResolver;
+            return (Actor<RootResolver>) path.get(0);
         }
     }
 }

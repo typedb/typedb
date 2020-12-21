@@ -226,13 +226,15 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
 
     @Override
     public void addTo(Traversal traversal) {
+        // TODO: create vertex properties first, then the vertex itself, then edges
+        //       that way, we can make properties to be 'final' objects that are
+        //       included in equality and hashCode of vertices
         if (!resolvedTypes().isEmpty()) traversal.labels(identifier(), resolvedTypes());
-        super.addTo(traversal);
+        constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
     @Override
     public String toString() {
-
         StringBuilder syntax = new StringBuilder();
         if (!reference().isLabel()) {
             syntax.append(reference());
@@ -242,12 +244,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         }
 
         if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
-
-        syntax.append(Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
-                                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
-                              .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+        Stream<Set<? extends TypeConstraint>> conStream =
+                Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
+                          playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints);
+        syntax.append(conStream.flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
                               .collect(Collectors.joining("" + COMMA + SPACE)));
-
         return syntax.toString();
     }
 

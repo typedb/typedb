@@ -38,12 +38,12 @@ public class GraknException extends RuntimeException {
         this.errorMessage = error;
     }
 
-    private GraknException(Exception e) {
+    private GraknException(Throwable e) {
         super(e);
         errorMessage = null;
     }
 
-    public static GraknException of(Exception e) {
+    public static GraknException of(Throwable e) {
         return new GraknException(e);
     }
 

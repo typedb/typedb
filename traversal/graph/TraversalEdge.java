@@ -22,10 +22,12 @@ public abstract class TraversalEdge<VERTEX_FROM extends TraversalVertex<?, ?>, V
 
     protected final VERTEX_FROM from;
     protected final VERTEX_TO to;
+    protected final String symbol;
 
-    public TraversalEdge(VERTEX_FROM from, VERTEX_TO to) {
+    public TraversalEdge(VERTEX_FROM from, VERTEX_TO to, String symbol) {
         this.from = from;
         this.to = to;
+        this.symbol = symbol;
     }
 
     public VERTEX_FROM from() {
@@ -38,6 +40,6 @@ public abstract class TraversalEdge<VERTEX_FROM extends TraversalVertex<?, ?>, V
 
     @Override
     public String toString() {
-        return String.format("(%s --> %s)", from.id(), to.id());
+        return String.format("(%s *--[%s]--> %s)", from.id(), symbol, to.id());
     }
 }

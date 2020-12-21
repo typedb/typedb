@@ -147,7 +147,7 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlMatch) {
-            answers = tx().query().match(graqlQuery.asMatch()).toList();
+            answers = tx().query().match(graqlQuery.asMatch(), false).toList();
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {

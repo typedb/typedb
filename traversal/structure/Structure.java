@@ -100,12 +100,12 @@ public class Structure {
         to.in(edge);
     }
 
-    public void optimisedEdge(StructureVertex.Thing from, StructureVertex.Thing to, Encoding.Edge.Thing encoding) {
-        optimisedEdge(from, to, encoding, new HashSet<>());
+    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to) {
+        rolePlayer(from, to, new HashSet<>());
     }
 
-    public void optimisedEdge(StructureVertex.Thing from, StructureVertex.Thing to, Encoding.Edge encoding, Set<Label> types) {
-        StructureEdge.Native.Optimised edge = new StructureEdge.Native.Optimised(from, to, encoding, types);
+    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes) {
+        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes);
         edges.add(edge);
         from.out(edge);
         to.in(edge);

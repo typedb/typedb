@@ -107,7 +107,7 @@ public class TraversalTest {
     public void traversal_isa() {
         try (RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
             GraqlMatch query = Graql.parseQuery("match $x isa $y;");
-            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query, false);
             answers.forEachRemaining(answer -> {
                 System.out.println(answer.get("y").asType().getLabel() + ": " + answer.get("x").asThing().getIIDForPrinting());
             });
@@ -138,7 +138,7 @@ public class TraversalTest {
                     "(friend: $x, friend: $y) isa friendship; ";
             final GraqlMatch query = Graql.parseQuery(queryString);
             Instant start = Instant.now();
-            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query, false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             ConceptMap answer = answers.next();
@@ -189,7 +189,7 @@ public class TraversalTest {
                     "(friend: $x, friend: $y) isa friendship; ";
             final GraqlMatch query = Graql.parseQuery(queryString);
             Instant start = Instant.now();
-            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query, false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             ConceptMap answer = answers.next();
@@ -240,7 +240,7 @@ public class TraversalTest {
                     "(friend: $x, friend: $y) isa friendship; ";
             final GraqlMatch query = Graql.parseQuery(queryString);
             Instant start = Instant.now();
-            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query, false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             ConceptMap answer = answers.next();
@@ -291,7 +291,7 @@ public class TraversalTest {
                     "(friend: $x, friend: $y) isa friendship; ";
             final GraqlMatch query = Graql.parseQuery(queryString);
             Instant start = Instant.now();
-            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query, false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             ConceptMap answer = answers.next();
@@ -345,7 +345,7 @@ public class TraversalTest {
             int count = 0;
             Instant startTotal = Instant.now();
             Instant startIter = startTotal;
-            ResourceIterator<ConceptMap> answers = transaction.query().match(query);
+            ResourceIterator<ConceptMap> answers = transaction.query().match(query, false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Instant endFirst = Instant.now();
@@ -398,7 +398,7 @@ public class TraversalTest {
                     "(friend: $x, friend: $y) isa friendship; ";
             final GraqlMatch query1 = Graql.parseQuery(str1);
 
-            ResourceIterator<ConceptMap> answers1 = transaction.query().match(query1);
+            ResourceIterator<ConceptMap> answers1 = transaction.query().match(query1, false);
             assertNotNulls(answers1);
             answers1.hasNext();
 
@@ -408,7 +408,7 @@ public class TraversalTest {
                     "(friend: $x, friend: $y) isa friendship; ";
             final GraqlMatch query2 = Graql.parseQuery(str2);
 
-            ResourceIterator<ConceptMap> answers2 = transaction.query().match(query2);
+            ResourceIterator<ConceptMap> answers2 = transaction.query().match(query2, false);
             assertNotNulls(answers2);
             answers2.hasNext();
 

@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
@@ -27,6 +28,7 @@ import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
+import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 
@@ -46,25 +48,27 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
+    private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
 
     public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicManager logicMgr) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup());
+        this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
+        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng);
     }
 
-    public ResourceIterator<ConceptMap> iteratorSync(Disjunction disjunction) {
-        return iterate(disjunction.conjunctions()).flatMap(this::iteratorSync);
+    public ResourceIterator<ConceptMap> iteratorSingleThreaded(Disjunction disjunction) {
+        return iterate(disjunction.conjunctions()).flatMap(this::iteratorSingleThreaded);
     }
 
-    public ResourceIterator<ConceptMap> iteratorSync(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveRoleTypes(conjunction);
-        // conjunction = logicMgr.typeResolver().resolveThingTypes(conjunction);
+    public ResourceIterator<ConceptMap> iteratorSingleThreaded(Conjunction conjunction) {
+        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
+        // conjunction = logicMgr.typeResolver().resolveVariables(conjunction);
         return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
     }
 
-    public ResourceIterator<ConceptMap> iteratorAsync(Disjunction disjunction) {
+    public ResourceIterator<ConceptMap> iteratorParallel(Disjunction disjunction) {
         List<Producer<ConceptMap>> producers = disjunction.conjunctions().stream()
                 .flatMap(conjunction -> producers(conjunction).stream())
                 .collect(toList());
@@ -78,8 +82,8 @@ public class Reasoner {
     }
 
     public List<Producer<ConceptMap>> producers(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveRoleTypes(conjunction);
-        // conjunction = logicMgr.typeResolver().resolveThingTypes(conjunction);
+        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
+        // conjunction = logicMgr.typeResolver().resolveVariables(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
@@ -109,7 +113,6 @@ public class Reasoner {
     }
 
     private ReasonerProducer resolve(Conjunction conjunction) {
-        // TODO get onAnswer and onDone callbacks
         return new ReasonerProducer(conjunction, resolverRegistry);
     }
 }

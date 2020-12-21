@@ -65,8 +65,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
 
     @Override
     public void addTo(Traversal traversal) {
-        if (!label.scope().isPresent()) traversal.labels(owner.identifier(), label);
-        else assert !owner.resolvedTypes().isEmpty();
+        assert !owner.resolvedTypes().isEmpty();
     }
 
     @Override

@@ -24,8 +24,10 @@ import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,7 +75,27 @@ public class ProducerBuffer<T> {
         }
     }
 
-    private static class Done {}
+    private static class Done {
+        @Nullable
+        private final Throwable error;
+
+        private Done(Throwable error) {
+            this.error = error;
+        }
+
+        public static Done success() {
+            return new Done(null);
+        }
+
+        public static Done error(Throwable e) {
+            return new Done(e);
+        }
+
+        public Optional<Throwable> error() {
+            return Optional.ofNullable(error);
+        }
+    }
+
     private enum State {EMPTY, FETCHED, COMPLETED}
 
     public class Iterator implements ResourceIterator<T> {
@@ -102,8 +124,12 @@ public class ProducerBuffer<T> {
                 next = result.first();
                 state = State.FETCHED;
             } else {
+                Done done = result.second();
                 recycle();
                 state = State.COMPLETED;
+                if (done.error().isPresent()) {
+                    throw GraknException.of(done.error().get());
+                }
             }
 
             return state == State.FETCHED;
@@ -124,6 +150,7 @@ public class ProducerBuffer<T> {
 
     public class Sink implements Producer.Sink<T> {
 
+        @Override
         public void put(T item) {
             try {
                 queue.put(Either.first(item));
@@ -133,7 +160,13 @@ public class ProducerBuffer<T> {
             }
         }
 
+        @Override
         public void done(Producer<T> caller) {
+            done(caller, null);
+        }
+
+        @Override
+        public void done(Producer<T> caller, @Nullable Throwable error) {
             assert !producers.isEmpty();
             if (producers.peek().equals(caller)) {
                 producers.remove();
@@ -141,7 +174,8 @@ public class ProducerBuffer<T> {
 
                 if (producers.isEmpty()) {
                     try {
-                        queue.put(Either.second(new Done()));
+                        Done done = error == null ? Done.success() : Done.error(error);
+                        queue.put(Either.second(done));
                     } catch (InterruptedException e) {
                         throw GraknException.of(e);
                     }
