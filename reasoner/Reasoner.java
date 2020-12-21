@@ -64,7 +64,7 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> iteratorSingleThreaded(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
-        // conjunction = logicMgr.typeResolver().resolveVariables(conjunction);
+         conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
     }
 

@@ -33,6 +33,7 @@ import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
@@ -81,13 +82,11 @@ public class TypeResolver {
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
-//            Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
             Set<Label> hintLabels = referenceHintsMapping.get(varHints.get(variable.identifier()).reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfTypes) {
                     addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()), labelMap);
                 }
-//                addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
             } else if (variable.isType() && hintLabels.size() != numOfTypes) {
                 addInferredSubLabels(variable.asType(), referenceHintsMapping.get(varHints.get(variable.identifier()).reference()), labelMap);
             }
@@ -261,6 +260,7 @@ public class TypeResolver {
     private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints) {
         Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
         varHintsConjunction = resolveLabels(varHintsConjunction);
+        Traversal traversal = varHintsConjunction.traversal();
         return logicCache.hinter().get(varHintsConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(conjunction.traversal()).forEachRemaining(
@@ -300,7 +300,6 @@ public class TypeResolver {
             this.metaRelation = createMeta(Label.of(RELATION.toString()));
             this.metaRole = createMeta(Label.of(ROLE.toString(), RELATION.toString()));
             conjunction.variables().forEach(this::convertVariable);
-//            varHints.getVariableHints().forEach(this::putSubThingConstraintIfAbsent);
         }
 
         private TypeVariable createMeta(Label metaLabel) {
@@ -328,10 +327,6 @@ public class TypeResolver {
 
         public HashMap<TypeVariable, Set<TypeVariable>> getVariableNeighbours() {
             return neighbours;
-        }
-
-        private void putSubThingConstraintIfAbsent(TypeVariable variable) {
-            if (isMapped(variable)) variable.sub(metaThing, false);
         }
 
         private boolean isMapped(TypeVariable variable) {
@@ -373,7 +368,10 @@ public class TypeResolver {
 //            }
             if (ownerThing.isa().isPresent()) {
                 TypeVariable relationTypeVar = convertVariable(ownerThing.isa().get().type());
-                if (isMapped(relationTypeVar)) relationTypeVar.sub(metaRelation, false);
+                if (isMapped(relationTypeVar)) {
+                    TypeVariable metaRel = varHints.convert(metaRelation);
+                    relationTypeVar.sub(metaRel, false);
+                }
             }
             for (RelationConstraint.RolePlayer rolePlayer : relationConstraint.players()) {
                 TypeVariable playerType = convertVariable(rolePlayer.player());
@@ -387,7 +385,7 @@ public class TypeResolver {
                     if (roleTypeVar.reference().isLabel()) playerType.plays(metaRelation, roleTypeVar, null);
                 }
 
-                if (roleTypeVar == null || roleTypeVar.reference().isLabel()) {
+                if (roleTypeVar == null) {
                     TypeVariable rolePlayerHint = varHints.convert(rolePlayer);
                     neighbours.put(rolePlayerHint, new HashSet<>());
                     if (isMapped(rolePlayerHint)) rolePlayerHint.sub(metaRole, false);

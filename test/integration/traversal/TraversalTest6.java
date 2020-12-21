@@ -190,19 +190,18 @@ public class TraversalTest6 {
     }
 
     @Test
-    public void temp() {
+    public void test_relation_meta() {
         try (RocksTransaction transaction = session.transaction(READ)) {
             final String queryString = "match " +
-                    "   $yoko plays relation:wife;";
-
+                    "   $m sub relation;";
             ResourceIterator<ConceptMap> answers = transaction.query().match(parseQuery(queryString).asMatch(), false);
             assertNotNulls(answers);
             assertTrue(answers.hasNext());
             Map<String, Set<String>> result = retrieveAnswers(answers);
-//            assertEquals(3, result.keySet().size());
+            assertEquals(1, result.keySet().size());
 
             Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-                put("yoko", set("woman"));
+                put("m", set("relation", "marriage"));
             }};
 
             assertEquals(expected, result);
