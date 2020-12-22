@@ -615,7 +615,7 @@ public abstract class ProcedureEdge<
 
                     private ResourceIterator<TypeVertex> relationsOfRoleType(TypeVertex roleType) {
                         return roleType.ins().edge(RELATES).from().flatMap(relation -> tree(relation, r ->
-                                r.ins().edge(SUB).from().filter(s -> s.outs().edge(PLAYS).overridden()
+                                r.ins().edge(SUB).from().filter(s -> s.outs().edge(RELATES).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
                     }
 
