@@ -31,14 +31,14 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final AnswerState.DownstreamVars.Empty initialAnswer;
+    private final AnswerState.DownstreamVars answerBounds;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   AnswerState.DownstreamVars.Empty initialAnswer,
+                   AnswerState.DownstreamVars startingConcept,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
-        this.initialAnswer = initialAnswer;
+        this.answerBounds = startingConcept;
         this.partialDerivation = partialDerivation;
     }
 
@@ -58,8 +58,8 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public AnswerState.DownstreamVars.Empty initialAnswer() {
-        return initialAnswer;
+    public AnswerState.DownstreamVars answerBounds() {
+        return answerBounds;
     }
 
     @Override
@@ -68,19 +68,19 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(initialAnswer, request.initialAnswer());
+                Objects.equals(answerBounds, request.answerBounds());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, initialAnswer);
+        return Objects.hash(path, answerBounds);
     }
 
     @Override
     public String toString() {
         return "Request{" +
                 "path=" + path +
-                ", partialConceptMap=" + initialAnswer +
+                ", answerBounds=" + answerBounds +
                 ", partialDerivation=" + partialDerivation +
                 '}';
     }

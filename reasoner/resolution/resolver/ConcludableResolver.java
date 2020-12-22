@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
@@ -94,22 +93,23 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().map();
+        ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
         if (!responseProducer.hasProduced(conceptMap)) {
             responseProducer.recordProduced(conceptMap);
 
             // update partial derivation provided from upstream to carry derivations sideways
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
-            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.initialAnswer().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
+            assert fromUpstream.answerBounds().isMapped();
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap),
                                                            concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
             respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
         } else {
             ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                                               fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(fromUpstream.initialAnswer().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
-                                                                 concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
+            ResolutionAnswer deduplicated = new ResolutionAnswer(fromDownstream.answer().derived(), concludable.toString(),
+                                                                 derivation, self(), fromDownstream.answer().isInferred());
             LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), deduplicated);
             resolutionRecorder.tell(actor -> actor.record(deduplicated));
 
@@ -144,7 +144,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.initialAnswer().map());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         mayRegisterRules(request, iterationState, responseProducer);
         return responseProducer;
@@ -162,7 +162,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             iterationState.nextIteration(newIteration);
         }
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.initialAnswer().map());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         mayRegisterRules(request, iterationState, responseProducerNewIter);
         return responseProducerNewIter;
@@ -177,7 +177,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.initialAnswer().aggregateWith(conceptMap).asMapped().toUpstreamVars();
+            assert fromUpstream.answerBounds().isMapped();
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap);
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
@@ -213,16 +214,15 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private void mayRegisterRules(Request request, IterationState iterationState, ResponseProducer responseProducer) {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
-        if (!iterationState.hasReceived(request.initialAnswer().map())) {
+        if (!iterationState.hasReceived(request.answerBounds().conceptMap())) {
             for (Map.Entry<Unifier, Actor<RuleResolver>> entry : availableRules.entrySet()) {
-                Optional<AnswerState.DownstreamVars.Empty> unified = AnswerState.UpstreamVars.Initial.of(request.initialAnswer().map()).toDownstreamVars(entry.getKey());
-                if (unified.isPresent()) {
-                    Request toDownstream = new Request(request.path().append(entry.getValue()), unified.get(),
-                                                       ResolutionAnswer.Derivation.EMPTY);
-                    responseProducer.addDownstreamProducer(toDownstream);
-                }
+                AnswerState.DownstreamVars.Unified unified = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                        .toDownstreamVars(entry.getKey());
+                Request toDownstream = new Request(request.path().append(entry.getValue()), unified,
+                                                   ResolutionAnswer.Derivation.EMPTY);
+                responseProducer.addDownstreamProducer(toDownstream);
             }
-            iterationState.recordReceived(request.initialAnswer().map());
+            iterationState.recordReceived(request.answerBounds().conceptMap());
         }
     }
 

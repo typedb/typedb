@@ -42,7 +42,7 @@ public abstract class AnswerState {
         this.conceptMap = conceptMap;
     }
 
-    protected ConceptMap conceptMap() {
+    public ConceptMap conceptMap() {
         return conceptMap;
     }
 
@@ -82,11 +82,17 @@ public abstract class AnswerState {
 
         public static class Derived extends AnswerState {
 
-            private final Initial source;
+            private final Initial initial;
 
             Derived(ConceptMap derivedAnswer, @Nullable UpstreamVars.Initial source) {
                 super(derivedAnswer);
-                this.source = source;
+                this.initial = source;
+            }
+
+            public ConceptMap withInitial() {
+                HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
+                withInitial.putAll(initial.conceptMap().concepts());
+                return new ConceptMap(withInitial);
             }
         }
     }
@@ -97,14 +103,14 @@ public abstract class AnswerState {
             super(conceptMap);
         }
 
-        public boolean isEmpty() { return false; }
+        public boolean isRoot() { return false; }
 
         public boolean isMapped() { return false; }
 
         public boolean isUnified() { return false; }
 
-        public AnswerState.DownstreamVars.Empty asEmpty() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Empty.class));
+        public Root asRoot() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Root.class));
         }
 
         public AnswerState.DownstreamVars.Mapped asMapped() {
@@ -115,15 +121,15 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Unified.class));
         }
 
-        public static class Empty extends DownstreamVars {
+        public static class Root extends DownstreamVars {
 
-            Empty(ConceptMap conceptMap) {
+            Root(ConceptMap conceptMap) {
                 super(conceptMap);
             }
 
-            public static Empty create() {
+            public static Root create() {
                 // This is the entry-point answer state for the request received by the root resolver
-                return new Empty(new ConceptMap());
+                return new Root(new ConceptMap());
             }
 
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap) {
@@ -133,10 +139,10 @@ public abstract class AnswerState {
             }
 
             @Override
-            public boolean isEmpty() { return true; }
+            public boolean isRoot() { return true; }
 
             @Override
-            public Empty asEmpty() { return this; }
+            public Root asRoot() { return this; }
         }
 
         public static class Mapped extends DownstreamVars {

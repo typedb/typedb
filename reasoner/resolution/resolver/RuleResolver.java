@@ -99,15 +99,24 @@ public class RuleResolver extends Resolver<RuleResolver> {
             derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
         }
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().map();
+        ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         if (isLast(sender)) {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.initialAnswer().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
-                                                               conjunction.toString(), derivation, self(), true);
-                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+                assert fromUpstream.answerBounds().isUnified();
+                // TODO undo mock after materialisation is included
+                Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified()
+                        .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
+
+                // A unifier may reject an answer that doesn't meet requirements it imposes for correctness
+                if (unifiedAnswer.isPresent()) {
+                    ResolutionAnswer answer = new ResolutionAnswer(unifiedAnswer.get(), conjunction.toString(), derivation, self(), true);
+                    respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+                } else {
+                    tryAnswer(fromUpstream, responseProducer, iteration);
+                }
             } else {
                 tryAnswer(fromUpstream, responseProducer, iteration);
             }
@@ -155,7 +164,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           AnswerState.UpstreamVars.Initial.of(request.initialAnswer().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
+                                           AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                   .toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -170,7 +180,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           AnswerState.UpstreamVars.Initial.of(request.initialAnswer().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
+                                           AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                   .toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
@@ -188,8 +199,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.initialAnswer()
-                        .aggregateWith(conceptMap).asUnified().toUpstreamVars();
+                assert fromUpstream.answerBounds().isUnified();
+                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified()
+                        .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), conjunction.toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);
