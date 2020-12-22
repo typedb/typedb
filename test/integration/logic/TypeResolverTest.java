@@ -34,6 +34,7 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlMatch;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -679,6 +680,7 @@ public class TypeResolverTest {
     // We show this below on the hint labels of $t
     // We also show on $a that hints can be isolated form each other completely hierarchy-wise.
     @Test
+    @Ignore
     public void hierarchy_hint_gap() throws IOException {
         define_custom_schema(
                 "define " +

@@ -54,7 +54,6 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 import static graql.lang.common.GraqlToken.Type.RELATION;
 import static graql.lang.common.GraqlToken.Type.ROLE;
-import static graql.lang.common.GraqlToken.Type.THING;
 
 public class TypeResolver {
 
@@ -277,7 +276,7 @@ public class TypeResolver {
             if (varHints.hasConversion(variable)) return varHints.getConversion(variable);
             if (variable.isType()) {
                 TypeVariable asTypeVar = varHints.convert(variable);
-                addNeighboursTypeConstraints(variable.asType(), asTypeVar);
+                addNeighboursOfTypeVariable(variable.asType(), asTypeVar);
                 neighbours.putIfAbsent(asTypeVar, new HashSet<>());
             } else convertThingVariable(variable.asThing());
             return varHints.getConversion(variable);
@@ -310,9 +309,9 @@ public class TypeResolver {
 
                 if (roleTypeVar != null) {
                     roleTypeVar = convertVariable(roleTypeVar);
-                    if (isMapped(roleTypeVar)) roleTypeVar.sub(metaRole, false);
+                    if (isMapped(roleTypeVar)) addMetaType(roleTypeVar, metaRole);
                     addRelatesConstraint(owner, roleTypeVar);
-                    if (roleTypeVar.reference().isLabel()) addMetaType(roleTypeVar, metaRelation);
+                    if (roleTypeVar.reference().isLabel()) playerType.plays(metaRelation, roleTypeVar, null);
                 }
 
                 if (roleTypeVar == null) {
@@ -321,32 +320,32 @@ public class TypeResolver {
                     if (isMapped(rolePlayerHint)) addMetaType(rolePlayerHint, metaRelation);
                     addRelatesConstraint(owner, rolePlayerHint);
                     playerType.plays(null, rolePlayerHint, null);
-                    addNeighbour(playerType, rolePlayerHint);
+                    addNeighbours(playerType, rolePlayerHint);
                 } else {
                     playerType.plays(null, roleTypeVar, null);
-                    addNeighbour(playerType, roleTypeVar);
+                    addNeighbours(playerType, roleTypeVar);
                 }
             }
         }
 
         private void addRelatesConstraint(TypeVariable owner, TypeVariable roleType) {
             if (owner != null && !owner.reference().isLabel()) owner.relates(roleType, null);
-            if (owner != null) addNeighbour(owner, roleType);
+            if (owner != null) addNeighbours(owner, roleType);
         }
 
-        private void addMetaType(TypeVariable meta, TypeVariable variable) {
+        private void addMetaType(TypeVariable variable, TypeVariable meta) {
             TypeVariable metaConverted = varHints.convert(meta);
             variable.sub(metaConverted, false);
-            addNeighbour(variable, metaConverted);
+            addNeighbours(variable, metaConverted);
         }
 
         private void convertHas(TypeVariable owner, HasConstraint hasConstraint) {
             TypeVariable attributeTypeVar = convertVariable(hasConstraint.attribute());
             owner.owns(attributeTypeVar, null, false);
             if (isMapped(attributeTypeVar)) addMetaType(attributeTypeVar, metaAttribute);
-            addNeighbour(owner, attributeTypeVar);
+            addNeighbours(owner, attributeTypeVar);
             assert attributeTypeVar.sub().isPresent();
-            addNeighbour(owner, attributeTypeVar.sub().get().type());
+            addNeighbours(owner, attributeTypeVar.sub().get().type());
         }
 
         private void convertIsa(TypeVariable owner, IsaConstraint isaConstraint) {
@@ -356,13 +355,13 @@ public class TypeResolver {
             else if (isaConstraint.type().label().isPresent())
                 owner.label(isaConstraint.type().label().get().properLabel());
             else throw GraknException.of(ILLEGAL_STATE);
-            addNeighbour(owner, isaVar);
+            addNeighbours(owner, isaVar);
         }
 
         private void convertIs(TypeVariable owner, grakn.core.pattern.constraint.thing.IsConstraint isConstraint) {
             TypeVariable isVar = convertVariable(isConstraint.variable());
             owner.is(isVar);
-            addNeighbour(owner, isVar);
+            addNeighbours(owner, isVar);
         }
 
         private void convertValue(TypeVariable owner, ValueConstraint<?> constraint) {
@@ -374,11 +373,11 @@ public class TypeResolver {
             else throw GraknException.of(ILLEGAL_STATE);
             if (isMapped(owner)) {
                 owner.sub(metaAttribute, false);
-                addNeighbour(owner, metaAttribute);
+                addNeighbours(owner, metaAttribute);
             }
         }
 
-        public void addNeighbour(TypeVariable from, TypeVariable to) {
+        public void addNeighbours(TypeVariable from, TypeVariable to) {
             neighbours.putIfAbsent(from, new HashSet<>());
             neighbours.putIfAbsent(to, new HashSet<>());
             neighbours.get(from).add(to);
@@ -386,19 +385,19 @@ public class TypeResolver {
         }
 
         //TODO: rename
-        public void addNeighboursTypeConstraints(TypeVariable fromCopy, TypeVariable toCopy) {
+        public void addNeighboursOfTypeVariable(TypeVariable fromCopy, TypeVariable toCopy) {
             for (TypeConstraint constraint : fromCopy.constraints()) {
                 if (constraint.isSub()) {
-                    addNeighbour(fromCopy, constraint.asSub().type());
+                    addNeighbours(fromCopy, constraint.asSub().type());
                 } else if (constraint.isOwns()) {
-                    addNeighbour(fromCopy, constraint.asOwns().attribute());
+                    addNeighbours(fromCopy, constraint.asOwns().attribute());
                 } else if (constraint.isPlays()) {
-                    addNeighbour(fromCopy, constraint.asPlays().role());
+                    addNeighbours(fromCopy, constraint.asPlays().role());
                 } else if (constraint.isRelates()) {
-                    addNeighbour(fromCopy, constraint.asRelates().role());
+                    addNeighbours(fromCopy, constraint.asRelates().role());
                 } else if (constraint.isIs()) {
-                    addNeighbour(fromCopy, constraint.asIs().variable());
-                } else throw GraknException.of(ILLEGAL_STATE);
+                    addNeighbours(fromCopy, constraint.asIs().variable());
+                }
             }
         }
 
