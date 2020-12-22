@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-resolver");
@@ -144,22 +143,6 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(exhaustiveConjunction));
         assertEquals(expected, getHintMap(simpleConjunction));
     }
-
-//    @Test
-//    public void simple_isa() throws  IOException {
-//        define_standard_schema("basic-schema");
-//        TypeResolver typeResolver = transaction.logic().typeResolver();
-//
-//        String queryString = "match $p isa $q; ";
-//        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-//
-//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-//            put("$p", set("person", "man", "woman"));
-//            put("$q", set("person", "man", "woman"));
-//        }};
-//
-//        assertEquals(expected, getHintMap(exhaustiveConjunction));
-//    }
 
     @Test
     public void isa_explicit_inference() throws IOException {
@@ -348,7 +331,7 @@ public class TypeResolverTest {
         String queryString = "match ($yoko) isa marriage;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-                Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("man", "woman", "person"));
@@ -722,7 +705,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void multiple_anon() throws IOException {
+    public void multiple_anonymous_vars() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $a has name 'fido'; $a has label 'poodle';";
         TypeResolver typeResolver = transaction.logic().typeResolver();
