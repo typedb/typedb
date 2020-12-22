@@ -423,7 +423,7 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("man", "greek", "socrates"));
-            put("$q", set("entity", "animal", "person", "man"));
+            put("$q", set("thing", "entity", "animal", "person", "man"));
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
@@ -614,7 +614,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$x", set("man"));
             put("$y", set("woman"));
-            put("$t", set("person", "entity"));
+            put("$t", set("thing", "entity", "person"));
         }};
 
         Map<String, Set<String>> expectedSimple = new HashMap<String, Set<String>>() {{
