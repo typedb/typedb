@@ -22,7 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.transformer.Mapping;
 import grakn.core.logic.transformer.Unifier;
-import grakn.core.logic.transformer.VariableTransformer;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
@@ -41,6 +41,7 @@ public abstract class AnswerState {
     AnswerState(ConceptMap conceptMap) {
         this.conceptMap = conceptMap;
     }
+
     protected ConceptMap conceptMap() {
         return conceptMap;
     }
@@ -70,134 +71,40 @@ public abstract class AnswerState {
                 return new Initial(conceptMap);
             }
 
-            public DownstreamVars.Initial toDownstreamVars(Mapping mapping) {
-                return new DownstreamVars.Initial(mapping.transform(conceptMap()), mapping);
+            public DownstreamVars.Mapped toDownstreamVars(Mapping mapping) {
+                return new DownstreamVars.Mapped(this, mapping);
             }
 
-            public Optional<DownstreamVars.Initial> toDownstreamVars(Unifier unifier) {
-                return unifier.unify(conceptMap()).map(unified -> new DownstreamVars.Initial(unified, unifier));
+            public DownstreamVars.Unified toDownstreamVars(Unifier unifier) {
+                return new DownstreamVars.Unified(this, unifier);
             }
         }
 
-        public static class Derived extends Aggregated {
+        public static class Derived extends AnswerState {
 
-            Derived(ConceptMap partial, ConceptMap derivedFrom) {
-                super(partial, derivedFrom);
-            }
+            private final Initial source;
 
-            public ConceptMap map() {
-                return new ConceptMap(conceptMap().concepts());
-            }
-
-            @Override
-            public UpstreamVars.Derived asDerived() {
-                return this;
+            Derived(ConceptMap derivedAnswer, @Nullable UpstreamVars.Initial source) {
+                super(derivedAnswer);
+                this.source = source;
             }
         }
     }
 
-    public static class DownstreamVars {
+    public static abstract class DownstreamVars extends AnswerState {
 
-        public static class Initial extends AnswerState {
-            private final VariableTransformer transformer;
-
-            Initial(ConceptMap conceptMap, @Nullable VariableTransformer transformer) {
-                super(conceptMap);
-                this.transformer = transformer;
-            }
-
-            public static Initial empty() {
-                // This is the entry-point answer state for the request received by the root resolver
-                return new Initial(new ConceptMap(), null);
-            }
-
-            public Aggregated aggregateWith(ConceptMap conceptMap) {
-                if (conceptMap == null) return null;
-                if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                Map<Reference.Name, Concept> aggregatedMap = new HashMap<>(this.conceptMap().concepts());
-                aggregatedMap.putAll(conceptMap.concepts());
-                ConceptMap aggregated = new ConceptMap(aggregatedMap);
-                return Aggregated.of(aggregated, this);
-            }
-
-            public VariableTransformer transformer() {
-                return transformer;
-            }
-
-            public ConceptMap map() {
-                return new ConceptMap(conceptMap().concepts());
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                if (!super.equals(o)) return false;
-                final Initial initial = (Initial) o;
-                return Objects.equals(transformer, initial.transformer);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(super.hashCode(), transformer);
-            }
+        DownstreamVars(ConceptMap conceptMap) {
+            super(conceptMap);
         }
 
-        public static class Mapped extends Aggregated {
+        public boolean isEmpty() { return false; }
 
-            private final Mapping transformer;
+        public boolean isMapped() { return false; }
 
-            Mapped(ConceptMap aggregated, ConceptMap conceptMap, Mapping transformer) {
-                super(aggregated, conceptMap);
-                this.transformer = transformer;
-            }
+        public boolean isUnified() { return false; }
 
-            public UpstreamVars.Derived toUpstreamVars() {
-                return new UpstreamVars.Derived(transformer.unTransform(conceptMap()), conceptMap());
-            }
-
-            @Override
-            public Mapped asMapped() {
-                return this;
-            }
-        }
-
-        public static class Unified extends Aggregated {
-
-            private final Unifier transformer;
-
-            Unified(ConceptMap aggregated, ConceptMap conceptMap, Unifier transformer) {
-                super(aggregated, conceptMap);
-                this.transformer = transformer;
-            }
-
-            public Optional<UpstreamVars.Derived> toUpstreamVars() {
-                return transformer.unUnify(conceptMap()).map(t -> new UpstreamVars.Derived(t, conceptMap()));
-            }
-
-            @Override
-            public Unified asUnified() {
-                return this;
-            }
-        }
-    }
-
-    public abstract static class Aggregated extends AnswerState {
-
-        private final ConceptMap derivedFrom;
-
-        Aggregated(ConceptMap aggregated, ConceptMap derivedFrom) {
-            super(aggregated);
-            this.derivedFrom = derivedFrom;
-        }
-
-        public static Aggregated of(ConceptMap aggregated, DownstreamVars.Initial derivedFrom) {
-            if (derivedFrom.transformer() == null) return new UpstreamVars.Derived(aggregated, derivedFrom.map());
-            else if (derivedFrom.transformer().isUnifier())
-                return new DownstreamVars.Unified(aggregated, derivedFrom.map(), derivedFrom.transformer.asUnifier());
-            else if (derivedFrom.transformer().isMapping())
-                return new DownstreamVars.Mapped(aggregated, derivedFrom.map(), derivedFrom.transformer.asMapped());
-            else throw GraknException.of(ILLEGAL_STATE);
+        public AnswerState.DownstreamVars.Empty asEmpty() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Empty.class));
         }
 
         public AnswerState.DownstreamVars.Mapped asMapped() {
@@ -208,22 +115,112 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Unified.class));
         }
 
-        public AnswerState.UpstreamVars.Derived asDerived() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.UpstreamVars.Derived.class));
+        public static class Empty extends DownstreamVars {
+
+            Empty(ConceptMap conceptMap) {
+                super(conceptMap);
+            }
+
+            public static Empty create() {
+                // This is the entry-point answer state for the request received by the root resolver
+                return new Empty(new ConceptMap());
+            }
+
+            public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap) {
+                if (conceptMap == null) return null;
+                if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                return new UpstreamVars.Derived(new ConceptMap(conceptMap().concepts()), null);
+            }
+
+            @Override
+            public boolean isEmpty() { return true; }
+
+            @Override
+            public Empty asEmpty() { return this; }
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            final Aggregated that = (Aggregated) o;
-            return derivedFrom.equals(that.derivedFrom);
+        public static class Mapped extends DownstreamVars {
+
+            private final UpstreamVars.Initial initial;
+            private final Mapping mapping;
+
+            Mapped(UpstreamVars.Initial initial, Mapping mapping) {
+                super(mapping.transform(initial.conceptMap()));
+                this.initial = initial;
+                this.mapping = mapping;
+            }
+
+            public UpstreamVars.Derived aggregateToUpstream(ConceptMap additionalConcepts) {
+                Map<Reference.Name, Concept> merged = new HashMap<>(additionalConcepts.concepts());
+                merged.putAll(conceptMap().concepts());
+                return new UpstreamVars.Derived(mapping.unTransform(new ConceptMap(merged)), initial);
+            }
+
+            @Override
+            public boolean isMapped() { return true; }
+
+            @Override
+            public Mapped asMapped() { return this; }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                if (!super.equals(o)) return false;
+                final Mapped mapped = (Mapped) o;
+                return Objects.equals(initial, mapped.initial) &&
+                        Objects.equals(mapping, mapped.mapping);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(initial, mapping);
+            }
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(super.hashCode(), derivedFrom);
+        public static class Unified extends DownstreamVars {
+
+            private final UpstreamVars.Initial initial;
+            private final Unifier unifier;
+
+            Unified(UpstreamVars.Initial initial, Unifier unifier) {
+                super(unifier.unify(initial.conceptMap()));
+                this.initial = initial;
+                this.unifier = unifier;
+
+            }
+
+            public Optional<UpstreamVars.Derived> aggregateToUpstream(Map<Identifier, Concept> identifiedConcepts) {
+                Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts);
+                if (reversed.isPresent()) {
+                    HashMap<Reference.Name, Concept> merged = new HashMap<>(reversed.get().concepts());
+                    merged.putAll(conceptMap().concepts());
+                    return Optional.of(new UpstreamVars.Derived(new ConceptMap(merged), initial));
+                } else {
+                    return Optional.empty();
+                }
+            }
+
+            @Override
+            public boolean isUnified() { return true; }
+
+            @Override
+            public Unified asUnified() { return this; }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                if (!super.equals(o)) return false;
+                final Unified unified = (Unified) o;
+                return Objects.equals(initial, unified.initial) &&
+                        Objects.equals(unifier, unified.unifier);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(initial, unifier);
+            }
         }
     }
 }

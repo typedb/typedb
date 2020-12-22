@@ -46,7 +46,7 @@ public class Unifier extends VariableTransformer {
         this.reverseUnifier = reverse(this.unifier);
     }
 
-    public Optional<ConceptMap> unify(ConceptMap toUnify) {
+    public ConceptMap unify(ConceptMap toUnify) {
         Map<Reference.Name, Concept> unified = new HashMap<>();
 
         toUnify.concepts().forEach((ref, concept) -> {
@@ -64,7 +64,7 @@ public class Unifier extends VariableTransformer {
         });
 
 //        return Optional.empty(); // TODO ... why does this have to be optional? Can it fail?
-        return Optional.of(new ConceptMap(unified));
+        return new ConceptMap(unified);
     }
 
     /**

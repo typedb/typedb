@@ -31,11 +31,11 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final AnswerState.DownstreamVars.Initial initialAnswer;
+    private final AnswerState.DownstreamVars.Empty initialAnswer;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   AnswerState.DownstreamVars.Initial initialAnswer,
+                   AnswerState.DownstreamVars.Empty initialAnswer,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
         this.initialAnswer = initialAnswer;
@@ -58,7 +58,7 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public AnswerState.DownstreamVars.Initial initialAnswer() {
+    public AnswerState.DownstreamVars.Empty initialAnswer() {
         return initialAnswer;
     }
 
