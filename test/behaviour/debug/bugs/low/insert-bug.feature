@@ -18,7 +18,8 @@
 #noinspection CucumberUndefinedStep
 Feature: Graql Match Query
 
-  Background: Open connection and create a simple extensible schema
+  # TODO recurses infinitely on inserting the self-ownership, good for @alex
+  Scenario: 'has' can match instances that have themselves
     Given connection has been opened
     Given connection does not have any database
     Given connection create database: grakn
@@ -27,38 +28,7 @@ Feature: Graql Match Query
     Given the integrity is validated
     Given graql define
       """
-      define
-      person sub entity,
-        plays friendship:friend,
-        plays employment:employee,
-        owns name,
-        owns age,
-        owns ref @key;
-      company sub entity,
-        plays employment:employer,
-        owns name,
-        owns ref @key;
-      friendship sub relation,
-        relates friend,
-        owns ref @key;
-      employment sub relation,
-        relates employee,
-        relates employer,
-        owns ref @key;
-      name sub attribute, value string;
-      age sub attribute, value long;
-      ref sub attribute, value long;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: write
-
-  # TODO recurses infinitely on inserting the self-ownership, good for @alex
-  Scenario: 'has' can match instances that have themselves
-    Given graql define
-      """
-      define
-      unit sub attribute, value string, owns unit owns ref;
+      define unit sub attribute, value string, owns unit;
       """
     Given transaction commits
     Given the integrity is validated
@@ -67,8 +37,7 @@ Feature: Graql Match Query
     Given session opens transaction of type: write
     Given graql insert
       """
-      insert
-      $x "meter" isa unit, has $x, has ref 0;
+      insert $x "meter" isa unit, has $x;
       """
     Given transaction commits
     Given the integrity is validated

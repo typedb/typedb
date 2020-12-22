@@ -31,52 +31,51 @@ build:
       owner: graknlabs
       branch: master
     build-analysis:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
           bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
           --project-key=graknlabs_grakn_core \
           --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
   correctness:
     build:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         bazel build //...
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
     build-dependency:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
         bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
     test-unit:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         bazel test //common/... --test_output=errors
         bazel test //pattern/... --test_output=errors
         bazel test //reasoner/... --test_output=errors
     test-integration:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         bazel test //test/integration:test-basic --test_output=errors
         bazel test //test/integration:test-query --test_output=errors
         bazel test //test/integration/migrator/... --test_output=errors
-        bazel test //test/integration/logic:test-unification --test_output=errors
+        bazel test //test/integration/logic/... --test_output=errors
       # bazel test //test/integration/traversal/... --test_output=errors
-      # bazel test //test/integration/logic/... --test_output=errors
     test-behaviour:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: |
         bazel test //test/behaviour/connection/... --test_output=errors
         bazel test //test/behaviour/concept/... --test_output=errors
       # bazel test //test/behaviour/graql/language/define/... --test_output=errors
     test-assembly-linux-targz:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -86,7 +85,7 @@ build:
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel test //test/assembly:assembly --test_output=errors
     test-assembly-docker:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -94,7 +93,7 @@ build:
       script: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -106,7 +105,7 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -122,7 +121,7 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     test-deployment-apt:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -131,7 +130,7 @@ build:
         bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
     # TODO: comment out the job until the flakiness has been ironed out
     #    deploy-rpm-snapshot:
-    #      machine: graknlabs-ubuntu-20.04-java11
+    #      image: graknlabs-ubuntu-20.04-java11
     #      filter:
     #        owner: graknlabs
     #        branch: master
@@ -142,7 +141,7 @@ build:
     #        bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
     #        bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
     # test-deployment-rpm:
-    #   machine: graknlabs-centos-8.2
+    #   image: graknlabs-centos-8.2
     #   filter:
     #     owner: graknlabs
     #     branch: master
@@ -155,11 +154,11 @@ release:
     branch: master
   validation:
     validate-dependencies:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       script: bazel test //:release-validate-deps --test_output=streamed
   deployment:
     deploy-github:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -170,7 +169,7 @@ release:
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       dependencies: [deploy-github]
       filter:
         owner: graknlabs
@@ -179,7 +178,7 @@ release:
         export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -195,7 +194,7 @@ release:
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     #    deploy-rpm-release:
-    #      machine: graknlabs-ubuntu-20.04-java11
+    #      image: graknlabs-ubuntu-20.04-java11
     #      filter:
     #        owner: graknlabs
     #        branch: master
@@ -206,7 +205,7 @@ release:
     #        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
     #        bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
     deploy-docker:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master
@@ -215,7 +214,7 @@ release:
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
         bazel run //:deploy-docker
     deploy-artifact-release:
-      machine: graknlabs-ubuntu-20.04-java11
+      image: graknlabs-ubuntu-20.04-java11
       filter:
         owner: graknlabs
         branch: master

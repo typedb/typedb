@@ -302,10 +302,12 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =
                 new TypeRead(3, "The type '%s' does not exist.");
+        public static final TypeRead TYPE_NOT_RESOLVABLE =
+                new TypeRead(4, "The type in variable '%s' is not resolvable.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
-                new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+                new TypeRead(5, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
-                new TypeRead(5, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
+                new TypeRead(6, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
 
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";
