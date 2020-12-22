@@ -79,9 +79,7 @@ public class RetrievableTest {
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p isa person, has name \"Alice\"; }"),
-                         parse("{ $e isa employment; }"),
-                         parse("{ $c isa company; }")
-                     ),
+                         parse("{ $c isa company; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 
@@ -92,9 +90,7 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
         assertEquals(3, concludables.size());
-        assertEquals(set(parse("{ $p has name \"Alice\"; }"),
-                         parse("{ $e isa employment; }") // TODO This will produce missing (incorrect) results
-                     ),
+        assertEquals(set(parse("{ $p has name \"Alice\"; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 
@@ -104,9 +100,7 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name $n; $n \"Alice\"; $c isa company; }"), concludables);
         assertEquals(2, concludables.size());
-        assertEquals(set(parse("{ $e(employee: $p, employer:$c) isa employment; $c isa company; }"),
-                         parse("{ $n \"Alice\" isa name; }") // TODO This will produce missing (incorrect) results. We have this because we don't treat the `isa` constraint in the concludable as a core constraint, so we don't exclude it from building the retrievable
-                     ),
+        assertEquals(set(parse("{ $e(employee: $p, employer:$c) isa employment; $c isa company; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 

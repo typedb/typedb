@@ -97,7 +97,7 @@ public class Retrievable extends Resolvable {
         }
 
         public Set<Retrievable> extract() {
-            concludables.forEach(concludable -> visitedConstraints.add(concludable.constraint()));
+            concludables.forEach(concludable -> visitedConstraints.addAll(concludable.coreConstraints()));
             conjunction.variables().forEach(var -> {
                 if (variablesMap.get(var) == null) {
                     connectedSubgraph = new HashSet<>();
@@ -108,7 +108,10 @@ public class Retrievable extends Resolvable {
                 }
             });
             return connectedSubgraphs.stream()
-//                    .filter(subGraph -> !((subGraph.size() == 1) && !(subGraph.iterator().next().constraints().size() > 0))) // TODO
+                    .filter(subGraph -> !(subGraph.size() == 1 && subGraph.iterator().next().constraints().size() == 0))
+                    .filter(subGraph -> !(subGraph.size() == 1
+                            && subGraph.iterator().next().isType() && subGraph.iterator().next().constraints().size() == 1
+                            && subGraph.iterator().next().asType().constraints().iterator().next().isLabel())) // TODO This filter feels too specific
                     .map(subGraph -> new Retrievable(new Conjunction(subGraph, set()))).collect(Collectors.toSet());
         }
 
