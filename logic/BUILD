@@ -18,31 +18,28 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+
 package(
     default_visibility = [
         "//:__pkg__",
-        "//rocks:__pkg__",
         "//reasoner:__pkg__",
+        "//rocks:__pkg__",
         "//test:__subpackages__",
-    ]
+    ],
 )
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(["*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"],),
-    deps = [
-        # Internal dependencies
-        "//common:common",
-        "//graph:graph",
-
-        # Internal Repository Dependencies
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-    ],
+    srcs = glob(
+        [
+            "*.java",
+            "**/*.java",
+        ],
+        exclude = [
+            "*Test.java",
+            "*/*Test.java",
+        ],
+    ),
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
@@ -50,19 +47,31 @@ native_java_libraries(
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-logic:{pom_version}"],
     visibility = ["//visibility:public"],
-)
+    deps = [
+        # Internal dependencies
+        "//common",
+        "//graph",
 
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common",
+        "@graknlabs_graql//java/pattern",
+
+        # External Maven Dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)
 
 host_compatible_java_test(
     name = "test-concludable",
     srcs = [
         "resolvable/ConcludableTest.java",
     ],
-    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     native_libraries_deps = [
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     deps = [
         # Internal dependencies
 
@@ -79,25 +88,25 @@ host_compatible_java_test(
     srcs = [
         "resolvable/RetrievableTest.java",
     ],
-    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     native_libraries_deps = [
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     deps = [
         # Internal dependencies
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common",
-        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java:graql",
     ],
 )
 
-
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob([
+        "*",
+        "*/*",
+    ]),
     license_type = "agpl",
 )
