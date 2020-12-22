@@ -19,11 +19,9 @@ package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.logic.Rule;
 import grakn.core.logic.tool.ConstraintCopier;
@@ -40,7 +38,6 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 
 import java.util.Collections;
@@ -51,7 +48,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -79,10 +75,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public Stream<Pair<Rule, Unifier>> findUnifiableRules(Stream<Rule> allRules) {
+    public Stream<Pair<Rule, Unifier>> findUnifiableRules(Stream<Rule> allRules, ConceptManager conceptMgr) {
         // TODO Get rules internally
         return allRules.flatMap(rule -> rule.possibleConclusions().stream()
-                .flatMap(this::unify).map(variableMapping -> new Pair<>(rule, variableMapping))
+                .flatMap(conclusion -> unify(conclusion, conceptMgr)).map(variableMapping -> new Pair<>(rule, variableMapping))
         );
     }
 
@@ -94,27 +90,27 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(Rule.Conclusion<?> unifyWith) {
-        if (unifyWith.isRelation()) return unify(unifyWith.asRelation());
-        else if (unifyWith.isHas()) return unify(unifyWith.asHas());
-        else if (unifyWith.isIsa()) return unify(unifyWith.asIsa());
-        else if (unifyWith.isValue()) return unify(unifyWith.asValue());
+    private Stream<Unifier> unify(Rule.Conclusion<?> unifyWith, ConceptManager conceptMgr) {
+        if (unifyWith.isRelation()) return unify(unifyWith.asRelation(), conceptMgr);
+        else if (unifyWith.isHas()) return unify(unifyWith.asHas(), conceptMgr);
+        else if (unifyWith.isIsa()) return unify(unifyWith.asIsa(), conceptMgr);
+        else if (unifyWith.isValue()) return unify(unifyWith.asValue(), conceptMgr);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) {
         return Stream.empty();
     }
 
-    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
+    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) {
         return Stream.empty();
     }
 
@@ -408,7 +404,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
+        Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.empty().builder();
             if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
                 unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
