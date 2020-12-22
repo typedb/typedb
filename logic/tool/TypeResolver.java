@@ -380,7 +380,6 @@ public class TypeResolver {
             neighbours.get(to).add(from);
         }
 
-        //TODO: rename
         public void addNeighboursOfTypeVariable(TypeVariable fromCopy, TypeVariable toCopy) {
             for (TypeConstraint constraint : fromCopy.constraints()) {
                 if (constraint.isSub()) {
