@@ -216,6 +216,14 @@ public class GraphProcedure implements Procedure {
             return typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
         }
 
+        public ProcedureVertex.Type namedType(String name) {
+            return namedType(name, false);
+        }
+
+        public ProcedureVertex.Type namedType(String name, boolean isStart) {
+            return typeVertex(Identifier.Variable.of(Reference.named(name)), isStart);
+        }
+
         public ProcedureVertex.Thing namedThing(String name) {
             return namedThing(name, false);
         }
@@ -263,6 +271,22 @@ public class GraphProcedure implements Procedure {
             return edge;
         }
 
+        public ProcedureEdge.Native.Type.Owns.Forward forwardOwns(
+                int order, ProcedureVertex.Type owner, ProcedureVertex.Type att, boolean isKey) {
+            ProcedureEdge.Native.Type.Owns.Forward edge =
+                    new ProcedureEdge.Native.Type.Owns.Forward(owner, att, order, isKey);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Type.Owns.Backward backwardOwns(
+                int order, ProcedureVertex.Type att, ProcedureVertex.Type owner, boolean isKey) {
+            ProcedureEdge.Native.Type.Owns.Backward edge =
+                    new ProcedureEdge.Native.Type.Owns.Backward(att, owner, order, isKey);
+            registerEdge(edge);
+            return edge;
+        }
+
         public ProcedureEdge.Native.Thing.Has.Forward forwardHas(
                 int order, ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {
             ProcedureEdge.Native.Thing.Has.Forward edge =
@@ -283,6 +307,14 @@ public class GraphProcedure implements Procedure {
                 int order, ProcedureVertex.Thing relation, ProcedureVertex.Thing role) {
             ProcedureEdge.Native.Thing.Relating.Forward edge =
                     new ProcedureEdge.Native.Thing.Relating.Forward(relation, role, order);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Thing.Relating.Backward backwardRelating(
+                int order, ProcedureVertex.Thing role, ProcedureVertex.Thing relation) {
+            ProcedureEdge.Native.Thing.Relating.Backward edge =
+                    new ProcedureEdge.Native.Thing.Relating.Backward(role, relation, order);
             registerEdge(edge);
             return edge;
         }

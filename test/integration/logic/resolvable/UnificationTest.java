@@ -49,7 +49,7 @@ public class UnificationTest {
 
     private Map<String, Set<String>> getStringMapping(Map<Reference.Name, Set<Reference.Name>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().syntax(),
-                e -> e.getValue().stream().map(Reference.Name::syntax).collect(Collectors.toSet()))
+                                                                e -> e.getValue().stream().map(Reference.Name::syntax).collect(Collectors.toSet()))
         );
     }
 

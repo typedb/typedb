@@ -87,8 +87,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     @Override
     public void addTo(Traversal traversal) {
+        // TODO: create vertex properties first, then the vertex itself, then edges
+        //       that way, we can make properties to be 'final' objects that are
+        //       included in equality and hashCode of vertices
         if (!resolvedTypes().isEmpty()) traversal.types(identifier(), resolvedTypes());
-        super.addTo(traversal);
+        constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
     private void constrain(ThingConstraint constraint) {
@@ -233,8 +236,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         if (reference().isName()) syntax.append(reference()).append(SPACE);
 
         syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
-                .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
-                .collect(Collectors.joining("" + COMMA + SPACE)));
+                              .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
+                              .collect(Collectors.joining("" + COMMA + SPACE)));
 
         if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
 

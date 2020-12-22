@@ -44,6 +44,7 @@ native_java_libraries(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api",
     ],
     native_libraries_deps = [
         "//concept:concept",

@@ -232,7 +232,10 @@ public class RootResolver extends Resolver<RootResolver> {
     Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
         int index = -1;
         for (int i = 0; i < plan.size(); i++) {
-            if (actor.equals(plan.get(i).first())) { index = i; break; }
+            if (actor.equals(plan.get(i).first())) {
+                index = i;
+                break;
+            }
         }
         assert index != -1 && index < plan.size() - 1 ;
         return plan.get(index + 1);

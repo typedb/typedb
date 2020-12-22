@@ -147,7 +147,7 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlMatch) {
-            answers = tx().query().match(graqlQuery.asMatch()).toList();
+            answers = tx().query().match(graqlQuery.asMatch(), false).toList();
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
@@ -199,7 +199,7 @@ public class GraqlSteps {
     public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
-                        answerConcepts.size(), answers.size()),
+                              answerConcepts.size(), answers.size()),
                 answerConcepts.size(), answers.size()
         );
 

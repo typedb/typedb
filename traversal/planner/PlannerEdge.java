@@ -227,11 +227,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         protected void setObjectiveCoefficient(double cost) {
             assert !Double.isNaN(cost);
-            int exp = planner.edges().size() - 1;
+            int expMultiplier = planner.edges().size() - 1;
             for (int i = 0; i < planner.edges().size(); i++) {
-                planner.objective().setCoefficient(
-                        varOrderAssignment[i], cost * Math.pow(planner.branchingFactor, exp--)
-                );
+                double exp = 1 + (expMultiplier-- * planner.costExponentUnit);
+                double coeff = cost * Math.pow(planner.branchingFactor, exp);
+                planner.objective().setCoefficient(varOrderAssignment[i], coeff);
             }
             costNext = cost;
             planner.updateCostNext(costPrevious, costNext);
@@ -888,7 +888,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     case RELATING:
                         return new Relating(from, to);
                     case ROLEPLAYER:
-                        return new RolePlayer(from, to, structureEdge.asOptimised().types());
+                        return new RolePlayer(from, to, structureEdge.asRolePlayer().types());
                     default:
                         throw GraknException.of(UNRECOGNISED_VALUE);
                 }

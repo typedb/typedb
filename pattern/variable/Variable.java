@@ -59,12 +59,7 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public void addTo(Traversal traversal) {
-        // TODO: create vertex properties first, then the vertex itself, then edges
-        //       that way, we can make properties to be 'final' objects that are
-        //       included in equality and hashCode of vertices
-        constraints().forEach(constraint -> constraint.addTo(traversal));
-    }
+    public abstract void addTo(Traversal traversal);
 
     public boolean isType() {
         return false;
@@ -80,6 +75,10 @@ public abstract class Variable implements Pattern {
 
     public ThingVariable asThing() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
+    }
+
+    public void addResolvedType(Label label) {
+        resolvedTypes.add(label);
     }
 
     public void addResolvedTypes(Set<Label> labels) {

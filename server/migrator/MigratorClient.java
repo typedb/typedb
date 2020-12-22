@@ -121,7 +121,7 @@ public class MigratorClient {
 
     private static class ProgressPrinter {
 
-        private static final String[] ANIM = new String[] {
+        private static final String[] ANIM = new String[]{
                 "-",
                 "\\",
                 "|",
@@ -172,14 +172,14 @@ public class MigratorClient {
                 final String percent;
                 final String count;
                 if (total > 0) {
-                    percent = String.format("%.1f%%", (double)current / (double)total * 100.0);
+                    percent = String.format("%.1f%%", (double) current / (double) total * 100.0);
                     count = String.format("%,d / %,d", current, total);
                 } else {
                     percent = "?";
                     count = String.format("%,d", current);
                 }
                 builder.append(String.format(",\n    has progress (%s),\n    has count (%s)",
-                        percent, count));
+                                             percent, count));
             }
 
             builder.append(";");

@@ -32,10 +32,11 @@ public class LoopIterator<T> implements ResourceIterator<T> {
     private enum State {EMPTY, FETCHED, COMPLETED}
 
     LoopIterator(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
-        state = State.FETCHED; // because first result is 'seed'
         this.next = seed;
         this.predicate = predicate;
         this.function = function;
+        if (predicate.test(seed)) state = State.FETCHED; // because first result is 'seed'
+        else state = State.COMPLETED;
     }
 
     private boolean fetchAndCheck() {

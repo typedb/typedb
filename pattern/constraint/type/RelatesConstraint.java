@@ -43,6 +43,10 @@ public class RelatesConstraint extends TypeConstraint {
     public RelatesConstraint(TypeVariable owner, TypeVariable roleType, @Nullable TypeVariable overriddenRoleType) {
         super(owner, roleTypes(roleType, overriddenRoleType));
         if (roleType == null) throw new NullPointerException("Null role");
+        assert roleType.reference().isName() ||
+                (roleType.label().isPresent() && roleType.label().get().scope().isPresent());
+        assert overriddenRoleType == null || overriddenRoleType.reference().isName() ||
+                (overriddenRoleType.label().isPresent() && overriddenRoleType.label().get().scope().isPresent());
         this.roleType = roleType;
         this.overriddenRoleType = overriddenRoleType;
         this.hash = Objects.hash(RelatesConstraint.class, this.owner, this.roleType, this.overriddenRoleType);

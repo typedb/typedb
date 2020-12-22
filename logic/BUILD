@@ -30,16 +30,20 @@ package(
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(
-        [
-            "*.java",
-            "**/*.java",
-        ],
-        exclude = [
-            "*Test.java",
-            "*/*Test.java",
-        ],
-    ),
+    srcs = glob(["*.java", "tool/*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"],),
+    deps = [
+        # Internal dependencies
+        "//common:common",
+        "//graph:graph",
+
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common:common",
+        "@graknlabs_graql//java/pattern:pattern",
+
+        # External Maven Dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
@@ -47,19 +51,6 @@ native_java_libraries(
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-logic:{pom_version}"],
     visibility = ["//visibility:public"],
-    deps = [
-        # Internal dependencies
-        "//common",
-        "//graph",
-
-        # Internal Repository Dependencies
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common",
-        "@graknlabs_graql//java/pattern",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-    ],
 )
 
 host_compatible_java_test(

@@ -41,6 +41,7 @@ public abstract class AnswerState {
     AnswerState(ConceptMap conceptMap) {
         this.conceptMap = conceptMap;
     }
+
     protected ConceptMap conceptMap() {
         return conceptMap;
     }

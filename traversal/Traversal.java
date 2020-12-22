@@ -54,7 +54,6 @@ import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
@@ -146,11 +145,11 @@ public class Traversal {
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
-        structure.optimisedEdge(structure.thingVertex(relation), structure.thingVertex(player), ROLEPLAYER);
+        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player));
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes) {
-        structure.optimisedEdge(structure.thingVertex(relation), structure.thingVertex(player), ROLEPLAYER, roleTypes);
+        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {

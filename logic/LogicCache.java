@@ -26,7 +26,7 @@ import graql.lang.pattern.variable.Reference;
 import java.util.Map;
 import java.util.Set;
 
-public class LogicCache  {
+public class LogicCache {
 
     private CommonCache<Conjunction, Map<Reference, Set<Label>>> typeHinterCache;
     private CommonCache<String, Rule> ruleCache;

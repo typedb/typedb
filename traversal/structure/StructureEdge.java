@@ -29,6 +29,7 @@ import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 
 public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -61,9 +62,6 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.class));
     }
 
-    @Override
-    public abstract String toString();
-
     public static class Equal extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
 
         private final int hash;
@@ -78,11 +76,6 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         @Override
         public Equal asEqual() { return this; }
-
-        @Override
-        public String toString() {
-            return String.format("Equal Edge (%s --> %s)", from, to);
-        }
 
         @Override
         public boolean equals(Object o) {
@@ -119,11 +112,6 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         @Override
         public Predicate asPredicate() { return this; }
-
-        @Override
-        public String toString() {
-            return String.format("Predicate Edge (%s --> %s) { predicate: %s }", from, to, predicate);
-        }
 
         @Override
         public boolean equals(Object o) {
@@ -164,24 +152,16 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             return isTransitive;
         }
 
-        public boolean isOptimised() {
-            return false;
-        }
-
-        public Native.Optimised asOptimised() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.Optimised.class));
-        }
-
         @Override
         public boolean isNative() { return true; }
 
         @Override
         public Native<?, ?> asNative() { return this; }
 
-        @Override
-        public String toString() {
-            return String.format("Native Edge (%s --> %s) { encoding: %s, isTransitive: %s }",
-                                 from, to, encoding, isTransitive);
+        public boolean isRolePlayer() { return false; }
+
+        public RolePlayer asRolePlayer() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(RolePlayer.class));
         }
 
         @Override
@@ -201,42 +181,37 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             return hash;
         }
 
-        public static class Optimised extends Native<StructureVertex.Thing, StructureVertex.Thing> {
+        public static class RolePlayer extends Native<StructureVertex.Thing, StructureVertex.Thing> {
 
-            private final Set<Label> types;
+            private final Set<Label> roleTypes;
             private final int hash;
 
-            Optimised(StructureVertex.Thing from, StructureVertex.Thing to, Encoding.Edge encoding, Set<Label> types) {
-                super(from, to, encoding, false);
-                this.types = types;
-                this.hash = Objects.hash(this.getClass(), from, to, encoding, types);
+            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes) {
+                super(from, to, ROLEPLAYER, false);
+                this.roleTypes = roleTypes;
+                this.hash = Objects.hash(this.getClass(), from, to, encoding, roleTypes);
             }
 
             public Set<Label> types() {
-                return types;
+                return roleTypes;
             }
 
             @Override
-            public boolean isOptimised() { return true; }
+            public boolean isRolePlayer() { return true; }
 
             @Override
-            public Optimised asOptimised() { return this; }
-
-            @Override
-            public String toString() {
-                return String.format("Optimised Edge (%s --> %s) { labels: %s }", from, to, types);
-            }
+            public RolePlayer asRolePlayer() { return this; }
 
             @Override
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
 
-                Optimised that = (Optimised) o;
+                RolePlayer that = (RolePlayer) o;
                 return (this.from.equals(that.from) &&
                         this.to.equals(that.to) &&
                         this.encoding.equals(that.encoding) &&
-                        this.types.equals(that.types));
+                        this.roleTypes.equals(that.roleTypes));
             }
 
             @Override

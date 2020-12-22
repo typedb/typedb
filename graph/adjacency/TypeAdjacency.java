@@ -91,6 +91,10 @@ public interface TypeAdjacency {
         public ResourceIterator<TypeVertex> overridden() {
             return edgeIterator.map(TypeEdge::overridden);
         }
+
+        public ResourceIterator<TypeEdge> edge() {
+            return edgeIterator;
+        }
     }
 
 }
