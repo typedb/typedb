@@ -46,10 +46,6 @@ public class Unifier extends VariableTransformer {
         this.reverseUnifier = reverse(this.unifier);
     }
 
-    public static Unifier empty() {
-        return new Unifier(new HashMap<>(), new Requirements());
-    }
-
     public Optional<ConceptMap> unify(ConceptMap toUnify) {
         Map<Reference.Name, Concept> unified = new HashMap<>();
 
@@ -114,7 +110,7 @@ public class Unifier extends VariableTransformer {
         return unifier;
     }
 
-    public Unifier.Builder builder() {
+    public static Unifier.Builder builder() {
         return new Builder();
     }
 
@@ -129,43 +125,38 @@ public class Unifier extends VariableTransformer {
         return reverse;
     }
 
-    public class Builder {
+    public static class Builder {
 
-        Map<Identifier, Set<Identifier>> unifierExtension;
-        Requirements requirementsExtension;
+        Map<Identifier, Set<Identifier>> unifier;
+        Requirements requirements;
 
         public Builder() {
-             this.unifierExtension = new HashMap<>();
-             this.requirementsExtension = new Requirements();
+            this(new HashMap<>(), new Requirements());
+        }
+
+        private Builder(Map<Identifier, Set<Identifier>> unifier, Requirements requirements) {
+            this.unifier = unifier;
+            this.requirements = requirements;
         }
 
         public void add(Identifier source, Identifier target) {
-            unifierExtension.putIfAbsent(source, new HashSet<>());
-            unifierExtension.get(source).add(target);
+            unifier.putIfAbsent(source, new HashSet<>());
+            unifier.get(source).add(target);
         }
 
         public Requirements requirements() {
-            return requirementsExtension;
+            return requirements;
         }
 
         public Unifier build() {
-            unifier.forEach((ref, unifieds) -> {
-                assert !unifierExtension.containsKey(ref);
-                unifierExtension.put(ref, set(unifieds));
-            });
-            requirements.types.forEach((identifier, labels) -> {
-                assert !requirementsExtension.types.containsKey(identifier);
-                requirementsExtension.types.put(identifier, labels);
-            });
-            requirements.isaExplicit.forEach((identifier, labels) -> {
-                assert !requirementsExtension.isaExplicit.containsKey(identifier);
-                requirementsExtension.isaExplicit.put(identifier, labels);
-            });
-            requirements.predicates.forEach((identifier, predicates) -> {
-                assert !requirementsExtension.predicates.containsKey(identifier);
-                requirementsExtension.predicates.put(identifier, predicates);
-            });
-            return new Unifier(unifierExtension, requirementsExtension);
+            return new Unifier(unifier, requirements);
+        }
+
+        public Builder duplicate() {
+            Map<Identifier, Set<Identifier>> unifierCopy = new HashMap<>();
+            unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
+            Requirements requirementsCopy = requirements.duplicate();
+            return new Builder(unifierCopy, requirementsCopy);
         }
     }
 
@@ -187,21 +178,39 @@ public class Unifier extends VariableTransformer {
         Map<Identifier, Set<Predicate<?, ?>>> predicates;
 
         public Requirements() {
-            this.types = new HashMap<>();
-            this.isaExplicit = new HashMap<>();
-            this.predicates = new HashMap<>();
+            this(new HashMap<>(), new HashMap<>(), new HashMap<>());
+        }
+
+        public Requirements(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
+                            Map<Identifier, Set<Predicate<?, ?>>> predicates) {
+            this.types = types;
+            this.isaExplicit = isaExplicit;
+            this.predicates = predicates;
         }
 
         public void types(Identifier identifier, Set<Label> labels) {
-            // TODO
+            assert !types.containsKey(identifier);
+            types.put(identifier, set(labels));
         }
 
         public void isaExplicit(Identifier identifier, Set<Label> labels) {
-            // TODO
+            assert !isaExplicit.containsKey(identifier);
+            isaExplicit.put(identifier, set(labels));
         }
 
-        public void predicates(Identifier identifier, Set<Predicate<?, ?>> predicates) {
-            // TODO
+        public void predicates(Identifier identifier, Set<Predicate<?, ?>> preds) {
+            assert !predicates.containsKey(identifier);
+            predicates.put(identifier, preds);
+        }
+
+        private Requirements duplicate() {
+            Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
+            Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
+            Map<Identifier, Set<Predicate<?, ?>>> predicatesCopy = new HashMap<>();
+            types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
+            isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
+            predicates.forEach(((identifier, preds) -> predicatesCopy.put(identifier, set(preds))));
+            return new Requirements(typesCopy, isaExplicitCopy, predicatesCopy);
         }
     }
 }

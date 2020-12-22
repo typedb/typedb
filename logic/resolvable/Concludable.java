@@ -46,7 +46,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -98,21 +97,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) {
-        return Stream.empty();
-    }
+    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
 
-    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) {
-        return Stream.empty();
-    }
+    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
 
-    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) {
-        return Stream.empty();
-    }
+    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
 
-    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) {
-        return Stream.empty();
-    }
+    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
 
     public AlphaEquivalence alphaEquals(Concludable<?> that) {
         if (that.isRelation()) return alphaEquals(that.asRelation());
@@ -154,20 +145,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
     }
 
-    Optional<Unifier> tryExtendUnifier(Variable conjVar, Variable headVar, Unifier unifier) {
-        if (ConstraintCopier.varHintsDisjoint(headVar, conjVar)) return Optional.empty();
-        // TODO compute set of types
-        Set<Label> allowedTypes = null; // may be able to use conjVar.resolvedTypes(), if they exist. But if not?
-        Unifier clone = unifier.extend(conjVar.reference().asName(), headVar.reference().asName(), allowedTypes);
-        return Optional.of(clone);
-    }
-
     <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
         Map<T, Set<V>> clone = new HashMap<>();
         mapping.forEach((key, set) -> clone.put(key, new HashSet<>(set)));
         return clone;
     }
 
+    @Override
     public Conjunction conjunction() {
         return null; //TODO Make abstract and implement for all subtypes
     }
@@ -206,7 +190,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         @Override
         public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) {
             if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
-            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            Unifier.Builder unifierBuilder = Unifier.builder();
 
             if (!constraint().owner().reference().isAnonymous()) {
                 assert constraint().owner().reference().isName();
@@ -235,7 +219,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
-                    .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder, conceptMgr));
+                    .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));
         }
 
         private Stream<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
@@ -311,7 +295,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) {
-            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            Unifier.Builder unifierBuilder = Unifier.builder();
             if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
                 unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
             } else return Stream.empty();
@@ -362,7 +346,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) {
-            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            Unifier.Builder unifierBuilder = Unifier.builder();
             if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
                 unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
             } else return Stream.empty();
@@ -405,7 +389,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) {
-            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            Unifier.Builder unifierBuilder = Unifier.builder();
             if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
                 unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
             } else return Stream.empty();
