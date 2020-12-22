@@ -27,9 +27,9 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "test/behaviour/debug/bugs/low/query-validation.feature"
+        features = "test/behaviour/debug/bugs/low/insert-bug.feature"
 )
-public class QueryValidationTest {
+public class InsertTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:

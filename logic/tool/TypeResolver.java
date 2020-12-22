@@ -18,6 +18,7 @@
 
 package grakn.core.logic.tool;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_RESOLVABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 import static graql.lang.common.GraqlToken.Type.RELATION;
@@ -80,6 +82,8 @@ public class TypeResolver {
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference());
+            if (resolveLabels == null) throw GraknException.of(TYPE_NOT_RESOLVABLE, variable.toString());
+
             if (variable.isThing()) {
                 if (resolveLabels.size() != numOfTypes) {
                     addInferredIsaLabels(variable.asThing(), referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference()));

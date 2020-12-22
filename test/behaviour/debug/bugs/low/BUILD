@@ -19,11 +19,11 @@ package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "query-validation-test",
+    name = "insert-test",
     srcs = [
-        "QueryValidationTest.java",
+        "InsertTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.low.QueryValidationTest",
+    test_class = "grakn.core.test.behaviour.debug.bugs.low.InsertTest",
     deps = [
         # Internal dependencies
 
@@ -48,7 +48,7 @@ java_test(
         "//test/behaviour/graql:steps",
     ],
     data = [
-        ":query-validation.feature",
+        ":insert-bug.feature",
     ],
     size = "medium",
 )
