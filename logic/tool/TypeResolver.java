@@ -194,7 +194,7 @@ public class TypeResolver {
 
     private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints) {
         //TODO: use .getType(label) once ConceptManager can handle labels
-        hints.removeIf(label -> conceptMgr.getThingType(label.scopedName()).isAbstract());
+        hints.removeIf(label -> traversalEng.graph().schema().getType(label).isAbstract());
         variable.addResolvedTypes(hints);
     }
 
