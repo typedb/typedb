@@ -248,10 +248,7 @@ public abstract class ProcedureEdge<
 
             ResourceIterator<TypeVertex> isaTypes(ThingVertex thing) {
                 if (!isTransitive) return single(thing.type());
-                else return loop(
-                        thing.type(), Objects::nonNull,
-                        v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(thing.type().encoding())).firstOrNull()
-                );
+                else return loop(thing.type(), Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull());
             }
 
             @Override
@@ -269,9 +266,7 @@ public abstract class ProcedureEdge<
                 public ResourceIterator<? extends Vertex<?, ?>> branch(
                         GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                     assert fromVertex.isThing();
-                    Set<Label> fromTypes = from.props().types();
                     ResourceIterator<TypeVertex> iter = isaTypes(fromVertex.asThing());
-                    if (!fromTypes.isEmpty()) iter = iter.filter(t -> fromTypes.contains(t.properLabel()));
                     return to.filter(iter);
                 }
 
@@ -279,7 +274,7 @@ public abstract class ProcedureEdge<
                 public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                          Traversal.Parameters params) {
                     assert fromVertex.isThing() && toVertex.isType();
-                    return isaTypes(fromVertex.asThing()).filter(s -> s.equals(toVertex)).hasNext();
+                    return isaTypes(fromVertex.asThing()).anyMatch(s -> s.equals(toVertex));
                 }
             }
 
@@ -296,8 +291,10 @@ public abstract class ProcedureEdge<
                     TypeVertex type = fromVertex.asType();
                     Set<Label> toTypes = to.props().types();
                     ResourceIterator<TypeVertex> typeIter;
+
                     if (!isTransitive) typeIter = single(type);
                     else typeIter = tree(type, v -> v.ins().edge(SUB).from());
+
                     if (!toTypes.isEmpty()) typeIter = typeIter.filter(t -> toTypes.contains(t.properLabel()));
 
                     ResourceIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t));
@@ -311,7 +308,7 @@ public abstract class ProcedureEdge<
                 public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                          Traversal.Parameters params) {
                     assert fromVertex.isType() && toVertex.isThing();
-                    return isaTypes(toVertex.asThing()).filter(s -> s.equals(fromVertex)).hasNext();
+                    return isaTypes(toVertex.asThing()).anyMatch(s -> s.equals(fromVertex));
                 }
             }
         }
