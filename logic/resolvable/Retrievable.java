@@ -140,9 +140,12 @@ public class Retrievable extends Resolvable {
         }
 
         private Variable copyVariable(Variable toCopy) {
-            if (toCopy.isThing()) return ThingVariable.of(toCopy.identifier());
-            else if (toCopy.isType()) return TypeVariable.of(toCopy.identifier());
+            Variable copy;
+            if (toCopy.isThing()) copy = ThingVariable.of(toCopy.identifier());
+            else if (toCopy.isType()) copy = TypeVariable.of(toCopy.identifier());
             else throw GraknException.of(ILLEGAL_STATE);
+            copy.addResolvedTypes(toCopy.resolvedTypes());
+            return copy;
         }
 
         private void addConstraint(Constraint constraint) {
