@@ -369,6 +369,7 @@ public class TypeResolver {
             else if (constraint.isDateTime()) owner.valueType(GraqlArg.ValueType.DATETIME);
             else if (constraint.isDouble()) owner.valueType(GraqlArg.ValueType.DOUBLE);
             else if (constraint.isLong()) owner.valueType(GraqlArg.ValueType.LONG);
+            else if (constraint.isVariable()) varHints.convert(constraint.asVariable().value());
             else throw GraknException.of(ILLEGAL_STATE);
             if (isMapped(owner)) addMetaType(owner, metaAttribute);
         }
