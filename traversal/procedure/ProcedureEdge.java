@@ -355,10 +355,7 @@ public abstract class ProcedureEdge<
 
                 ResourceIterator<TypeVertex> superTypes(TypeVertex type) {
                     if (!isTransitive) return type.outs().edge(SUB).to();
-                    else return loop(
-                            type, Objects::nonNull,
-                            v -> v.outs().edge(SUB).to().filter(s -> s.encoding().equals(type.encoding())).firstOrNull()
-                    );
+                    else return loop(type, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull());
                 }
 
                 @Override
@@ -382,7 +379,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return superTypes(fromVertex.asType()).filter(v -> v.equals(toVertex.asType())).hasNext();
+                        return superTypes(fromVertex.asType()).anyMatch(v -> v.equals(toVertex.asType()));
                     }
                 }
 
@@ -406,7 +403,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return superTypes(toVertex.asType()).filter(v -> v.equals(fromVertex.asType())).hasNext();
+                        return superTypes(toVertex.asType()).anyMatch(v -> v.equals(fromVertex.asType()));
                     }
                 }
             }
