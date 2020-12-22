@@ -41,6 +41,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.common.Identifier;
+import graql.lang.common.GraqlToken;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,10 +51,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -180,7 +183,12 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     boolean impossibleUnification(ThingVariable thingVar, ThingVariable unifyWithThingVar) {
         // TODO
+        // edge case: check value comparisons (only for constant predicates) including value type comparability
         return false;
+    }
+
+    Stream<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
+        return labels.stream().flatMap(l -> subtypeLabels(l, conceptMgr));
     }
 
     Stream<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
@@ -357,12 +365,24 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
-            if (constraint().type().reference().isName()) {
-                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().type(), unifyWith.constraint().type(), u));
-            }
-            return unifier.map(Stream::of).orElseGet(Stream::empty);
+        Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) {
+            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
+                unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
+            } else return Stream.empty();
+
+            TypeVariable type = constraint().type();
+            if (!impossibleUnification(type, unifyWith.constraint().type())) {
+                unifierBuilder.add(type.identifier(), unifyWith.constraint().type().identifier());
+
+                if (type.reference().isLabel()) {
+                    // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
+                    unifierBuilder.requirements().types(type.identifier(),
+                                                        subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
+                }
+            } else return Stream.empty();
+
+            return Stream.of(unifierBuilder.build());
         }
 
         @Override
@@ -389,12 +409,39 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         Stream<Unifier> unify(Rule.Conclusion.Value unifyWith) {
-            Optional<Unifier> unifier = tryExtendUnifier(constraint().owner(), unifyWith.constraint().owner(), Unifier.empty());
-            if (constraint().isVariable() && constraint().asVariable().value().reference().isName()) {
-                unifier = unifier.flatMap(u -> tryExtendUnifier(constraint().asVariable().value(),
-                                                                unifyWith.constraint().asVariable().value(), u));
+            Unifier.Builder unifierBuilder = Unifier.empty().builder();
+            if (!impossibleUnification(constraint().owner(), unifyWith.constraint().owner())) {
+                unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
+            } else return Stream.empty();
+
+            /*
+            Interesting case:
+            Unifying 'match $x >= $y' with a rule inferring a value: 'then { $x has age 10; }'
+            Conceptually, $x will be 'age 10'. However, for a rule to return a valid answer for this that isn't found
+            via a traversal, we require that $y also be 'age 10'. The correct unification is therefore to map both
+            $x and $y to the same new inferred attribute.
+            Trying to find results for a query 'match $x > $y' will never find any answers, as a rule can only infer
+            an equality, ie. 'then { $x has $_age; $_age = 10; $_age isa age; }
+             */
+            if (constraint().isVariable()) {
+                assert constraint().value() instanceof ThingVariable;
+                ThingVariable value = (ThingVariable) constraint().value();
+                if (!impossibleUnification(constraint().predicate(), unifyWith.constraint().predicate())) {
+                    unifierBuilder.add(value.identifier(), unifyWith.constraint().owner().identifier());
+                } else return Stream.empty();
+            } else {
+                // form: $x > 10 -> require $x to satisfy predicate > 10
+                unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
             }
-            return unifier.map(Stream::of).orElseGet(Stream::empty);
+
+            return Stream.of(unifierBuilder.build());
+        }
+
+        private boolean impossibleUnification(GraqlToken.Predicate predicate, GraqlToken.Predicate unifyWith) {
+            assert unifyWith.equals(GraqlToken.Predicate.Equality.EQ);
+            return predicate.equals(GraqlToken.Predicate.Equality.EQ) ||
+                    predicate.equals(GraqlToken.Predicate.Equality.GTE) ||
+                    predicate.equals(GraqlToken.Predicate.Equality.LTE);
         }
 
         @Override
