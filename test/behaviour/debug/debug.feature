@@ -26,14 +26,56 @@ Feature: Graql Match Query
     Given graql define
       """
       define
-      person sub entity, plays employment:employee, plays income:earner, owns name, owns email @key;
-      employment sub relation, relates employee, plays income:source, owns start-date, owns employment-reference-code @key;
-      income sub relation, relates earner, relates source;
+
+      animal sub entity;
+      mammal sub animal;
+      reptile sub animal;
+      tortoise sub reptile;
+
+      person sub mammal,
+          owns name,
+          owns email,
+          plays marriage:spouse;
+
+      man sub person,
+          plays marriage:husband;
+
+      woman sub person,
+          plays marriage:wife;
+
+      dog sub mammal,
+          owns name,
+          owns label;
 
       name sub attribute, value string;
+
       email sub attribute, value string;
-      start-date sub attribute, value datetime;
-      employment-reference-code sub attribute, value string;
+
+      marriage sub relation,
+          relates husband,
+          relates wife,
+          relates spouse;
+
+      shape sub entity,
+          owns perimeter,
+          owns area,
+          abstract;
+
+      triangle sub shape,
+          owns label;
+
+      right-angled-triangle sub triangle,
+          owns hypotenuse-length;
+
+      square sub shape;
+
+      perimeter sub attribute, value double;
+
+      area sub attribute, value double;
+
+      hypotenuse-length sub attribute, value double;
+
+      label sub attribute, value string;
       """
     Given transaction commits
     Given the integrity is validated
@@ -50,8 +92,11 @@ Feature: Graql Match Query
     When session opens transaction of type: read
     When get answers of graql query
       """
-      match $x type dog;
+      match $p owns perimeter;
       """
     Then uniquely identify answer concepts
-      | x         |
-      | label:dog |
+      | p         |
+      | label:triangle       |
+      | label:right-angled-triangle       |
+      | label:square |
+      | label:shape |

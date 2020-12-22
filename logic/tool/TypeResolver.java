@@ -96,20 +96,23 @@ public class TypeResolver {
         VariableHints variableHints = constraintMapper.getVariableHints();
         long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
 
+        final Map<Identifier, TypeVariable> varHints = variableHints.varHints;
+
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Variable> neighbourhood = new HashSet<>();
             TypeVariable typeVariable = variableHints.getConversion(variable);
             neighbourhood.add(typeVariable);
             neighbourhood.addAll(constraintMapper.getVariableNeighbours().get(typeVariable));
+
             Map<Reference, Set<Label>> localTypeHints = retrieveVariableHints(neighbourhood);
-            Set<Label> hintLabels = localTypeHints.get(variable.reference());
+            Set<Label> hintLabels = localTypeHints.get(varHints.get(variable.identifier()).reference());
             if (variable.isThing()) {
                 if (hintLabels.size() != numOfThings) {
                     addInferredIsaLabels(variable.asThing(), hintLabels);
                 }
             } else if (variable.isType() && hintLabels.size() != numOfThings) {
-                addInferredSubLabels(variable.asType(), localTypeHints.get(variable.reference()));
+                addInferredSubLabels(variable.asType(), hintLabels);
             }
         }
 
