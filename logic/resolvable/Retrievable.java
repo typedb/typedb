@@ -189,9 +189,7 @@ public class Retrievable extends Resolvable {
             return players.stream().map(rolePlayer -> {
                 TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? addTypeVariable(rolePlayer.roleType().get()) : null;
                 ThingVariable playerCopy = addThingVariable(rolePlayer.player());
-                RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
-                rolePlayerCopy.addRoleTypeHints(rolePlayer.roleTypeHints());
-                return rolePlayerCopy;
+                return new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
             }).collect(Collectors.toList());
         }
 
@@ -230,7 +228,7 @@ public class Retrievable extends Resolvable {
         }
 
         private void copyConstraint(AbstractConstraint abstractConstraint) {
-            addTypeVariable(abstractConstraint.owner()).makeAbstract();
+            addTypeVariable(abstractConstraint.owner()).setAbstract();
         }
 
         private void copyConstraint(grakn.core.pattern.constraint.type.IsConstraint constraint) {
