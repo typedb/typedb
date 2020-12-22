@@ -66,9 +66,8 @@ build:
         bazel test //test/integration:test-basic --test_output=errors
         bazel test //test/integration:test-query --test_output=errors
         bazel test //test/integration/migrator/... --test_output=errors
-        bazel test //test/integration/logic:test-unification --test_output=errors
+        bazel test //test/integration/logic/... --test_output=errors
       # bazel test //test/integration/traversal/... --test_output=errors
-      # bazel test //test/integration/logic/... --test_output=errors
     test-behaviour:
       image: graknlabs-ubuntu-20.04-java11
       script: |
