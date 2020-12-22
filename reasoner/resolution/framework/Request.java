@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
 import javax.annotation.Nullable;
@@ -31,14 +31,14 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final Initial initialConceptMap;
+    private final AnswerState.DownstreamVars.Initial initialAnswer;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   Initial initialConceptMap,
+                   AnswerState.DownstreamVars.Initial initialAnswer,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
-        this.initialConceptMap = initialConceptMap;
+        this.initialAnswer = initialAnswer;
         this.partialDerivation = partialDerivation;
     }
 
@@ -58,8 +58,8 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public Initial partial() {
-        return initialConceptMap;
+    public AnswerState.DownstreamVars.Initial initialAnswer() {
+        return initialAnswer;
     }
 
     @Override
@@ -68,19 +68,19 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(initialConceptMap, request.partial());
+                Objects.equals(initialAnswer, request.initialAnswer());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, initialConceptMap);
+        return Objects.hash(path, initialAnswer);
     }
 
     @Override
     public String toString() {
         return "Request{" +
                 "path=" + path +
-                ", partialConceptMap=" + initialConceptMap +
+                ", partialConceptMap=" + initialAnswer +
                 ", partialDerivation=" + partialDerivation +
                 '}';
     }

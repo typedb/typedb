@@ -105,7 +105,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partial().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
+                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.initialAnswer().aggregateWith(conceptMap).asMapped().toUpstreamVars(),
                                                                conjunction.toString(), derivation, self(), true);
                 respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
             } else {
@@ -155,7 +155,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           AnswerState.UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
+                                           AnswerState.UpstreamVars.Initial.of(request.initialAnswer().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -170,7 +170,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
-                                           AnswerState.UpstreamVars.Initial.of(request.partial().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
+                                           AnswerState.UpstreamVars.Initial.of(request.initialAnswer().map()).toDownstreamVars(Mapping.of(plannedConcludables.get(0).second())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
@@ -188,7 +188,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.partial()
+                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.initialAnswer()
                         .aggregateWith(conceptMap).asUnified().toUpstreamVars();
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), conjunction.toString(),

@@ -40,7 +40,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
         this.iteration = 0;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), Initial.root(), ResolutionAnswer.Derivation.EMPTY);
+        this.resolveRequest = new Request(new Request.Path(rootResolver), Initial.empty(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void nextIteration() {
         iteration++;
-        resolveRequest = new Request(new Request.Path(rootResolver), Initial.root(), ResolutionAnswer.Derivation.EMPTY);
+        resolveRequest = new Request(new Request.Path(rootResolver), Initial.empty(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     private boolean mustReiterate() {

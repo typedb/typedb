@@ -77,17 +77,12 @@ public abstract class AnswerState {
             public Optional<DownstreamVars.Initial> toDownstreamVars(Unifier unifier) {
                 return unifier.unify(conceptMap()).map(unified -> new DownstreamVars.Initial(unified, unifier));
             }
-
         }
 
         public static class Derived extends Aggregated {
 
             Derived(ConceptMap partial, ConceptMap derivedFrom) {
                 super(partial, derivedFrom);
-            }
-
-            public ConceptMap from() {
-                return super.derivedFrom;
             }
 
             public ConceptMap map() {
@@ -111,7 +106,7 @@ public abstract class AnswerState {
                 this.transformer = transformer;
             }
 
-            public static Initial root() {
+            public static Initial empty() {
                 // This is the entry-point answer state for the request received by the root resolver
                 return new Initial(new ConceptMap(), null);
             }
@@ -123,10 +118,6 @@ public abstract class AnswerState {
                 aggregatedMap.putAll(conceptMap.concepts());
                 ConceptMap aggregated = new ConceptMap(aggregatedMap);
                 return Aggregated.of(aggregated, this);
-            }
-
-            public UpstreamVars.Initial asUpstream() {
-                return new UpstreamVars.Initial(map());
             }
 
             public VariableTransformer transformer() {

@@ -344,7 +344,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
                     unifierBuilder.requirements().isaExplicit(attr.identifier(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
-                    unifierBuilder.requirements().predicates(attr.identifier(), attr.value().iterator().next());
+
+                    // TODO enable predicates
+//                    unifierBuilder.requirements().predicates(attr.identifier(), attr.value().iterator().next());
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
@@ -386,7 +388,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             } else return Stream.empty();
 
             TypeVariable type = constraint().type();
-            if (unificationSatisfiable(type, unifyWith.constraint().type())) {
+            if (unificationSatisfiable(type, unifyWith.constraint().type(), conceptMgr)) {
                 unifierBuilder.add(type.identifier(), unifyWith.constraint().type().identifier());
 
                 if (type.reference().isLabel()) {
@@ -445,7 +447,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 } else return Stream.empty();
             } else {
                 // form: $x > 10 -> require $x to satisfy predicate > 10
-                unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
+                // TODO enable
+//                unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
             }
 
             return Stream.of(unifierBuilder.build());
