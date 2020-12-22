@@ -216,6 +216,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingRead(4, "The thing with IID '%s' is not found.");
         public static final ThingRead INVALID_ROLE_TYPE_LABEL =
                 new ThingRead(5, "The role type '%s' is not scoped by its relation type.");
+        public static final ThingRead CONTRADICTORY_BOUND_VARIABLE =
+                new ThingRead(6, "The nested variable '%s' contradicts the type of its bound variable.");
 
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";

@@ -114,6 +114,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return Optional.ofNullable(iidConstraint);
     }
 
+    public IIDConstraint iid(byte[] iid) {
+        IIDConstraint iidConstraint = new IIDConstraint(this, iid);
+        constrain(iidConstraint);
+        return iidConstraint;
+    }
+
     public Optional<IsaConstraint> isa() {
         return Optional.ofNullable(isaConstraint);
     }

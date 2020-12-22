@@ -22,9 +22,11 @@ import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.pattern.variable.Reference;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Operator.NOT;
 
@@ -41,7 +43,8 @@ public class Negation implements Pattern {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             Disjunction disjunction = Disjunction.create(graql.normalise().pattern(), bounds);
             disjunction.conjunctions().forEach(conjunction -> {
-                if (conjunction.variables().stream().map(Variable::reference).noneMatch(bounds::contains)) {
+                if (iterate(conjunction.variables()).map(Variable::reference)
+                        .filter(Reference::isName).noneMatch(bounds::contains)) {
                     throw GraknException.of(UNBOUNDED_NEGATION);
                 }
             });
