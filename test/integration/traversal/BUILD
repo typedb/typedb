@@ -18,29 +18,6 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-host_compatible_java_test(
-    name = "test-traversal",
-    srcs = ["TraversalTest.java"],
-    test_class = "grakn.core.traversal.TraversalTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query:query",
-    ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-)
 
 host_compatible_java_test(
     name = "test-traversal-2",
@@ -65,57 +42,6 @@ host_compatible_java_test(
         "//common/test:logback"
     ],
     resource_strip_prefix = "common/test",
-)
-
-host_compatible_java_test(
-    name = "test-traversal-3",
-    srcs = ["TraversalTest3.java"],
-    test_class = "grakn.core.traversal.TraversalTest3",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query:query",
-    ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-)
-
-host_compatible_java_test(
-    name = "test-traversal-8",
-    srcs = ["TraversalTest8.java"],
-    test_class = "grakn.core.traversal.TraversalTest8",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-        "//server:server",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_common//:common",
-    ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-    data = [":TraversalTest8/world2.gql", ":TraversalTest8/world2.data"],
 )
 
 checkstyle_test(
