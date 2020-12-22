@@ -297,7 +297,7 @@ public class TypeResolver {
         }
 
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
-            if (isMapped(owner)) owner.sub(metaRelation, false);
+            if (isMapped(owner)) addMetaType(owner, metaRelation);
             ThingVariable ownerThing = relationConstraint.owner();
             if (ownerThing.isa().isPresent()) {
                 TypeVariable relationTypeVar = convertVariable(ownerThing.isa().get().type());
@@ -311,13 +311,12 @@ public class TypeResolver {
                     roleTypeVar = convertVariable(roleTypeVar);
                     if (isMapped(roleTypeVar)) addMetaType(roleTypeVar, metaRole);
                     addRelatesConstraint(owner, roleTypeVar);
-                    if (roleTypeVar.reference().isLabel()) playerType.plays(metaRelation, roleTypeVar, null);
                 }
 
                 if (roleTypeVar == null) {
                     TypeVariable rolePlayerHint = varHints.convert(rolePlayer);
                     neighbours.put(rolePlayerHint, new HashSet<>());
-                    if (isMapped(rolePlayerHint)) addMetaType(rolePlayerHint, metaRelation);
+                    if (isMapped(rolePlayerHint)) addMetaType(rolePlayerHint, metaRole);
                     addRelatesConstraint(owner, rolePlayerHint);
                     playerType.plays(null, rolePlayerHint, null);
                     addNeighbours(playerType, rolePlayerHint);
@@ -371,10 +370,7 @@ public class TypeResolver {
             else if (constraint.isDouble()) owner.valueType(GraqlArg.ValueType.DOUBLE);
             else if (constraint.isLong()) owner.valueType(GraqlArg.ValueType.LONG);
             else throw GraknException.of(ILLEGAL_STATE);
-            if (isMapped(owner)) {
-                owner.sub(metaAttribute, false);
-                addNeighbours(owner, metaAttribute);
-            }
+            if (isMapped(owner)) addMetaType(owner, metaAttribute);
         }
 
         public void addNeighbours(TypeVariable from, TypeVariable to) {

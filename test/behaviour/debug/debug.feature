@@ -52,34 +52,25 @@ Feature: Graql Match Query
     Given session opens transaction of type: write
 
 
-  Scenario: 'isa' gets any thing for any type
+  Scenario: relations are matchable from roleplayers without specifying any roles
     Given connection close all sessions
     Given connection open data session for database: grakn
     Given session opens transaction of type: write
     Given graql insert
       """
       insert
-      $_ isa person, has ref 0;
-      $_ isa person, has ref 1;
+      $x isa person, has ref 0;
+      $y isa company, has ref 1;
+      $r (employee: $x, employer: $y) isa employment,
+         has ref 2;
       """
     Given transaction commits
     Given the integrity is validated
     Given session opens transaction of type: read
     When get answers of graql query
       """
-      match $x isa $y;
+      match $x isa person; $r ($x) isa relation;
       """
     Then uniquely identify answer concepts
-      | x           | y               |
-      | key:ref:0   | label:person    |
-#      | key:ref:0   | label:entity    |
-#      | key:ref:0   | label:thing     |
-      | key:ref:1   | label:person    |
-#      | key:ref:1   | label:entity    |
-#      | key:ref:1   | label:thing     |
-      | value:ref:0 | label:ref       |
-#      | value:ref:0 | label:attribute |
-#      | value:ref:0 | label:thing     |
-      | value:ref:1 | label:ref       |
-#      | value:ref:1 | label:attribute |
-#      | value:ref:1 | label:thing     |
+      | x         | r         |
+      | key:ref:0 | key:ref:2 |
