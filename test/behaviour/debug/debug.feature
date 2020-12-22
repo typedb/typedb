@@ -26,77 +26,60 @@ Feature: Graql Match Query
     Given graql define
       """
       define
-
-      animal sub entity;
-      mammal sub animal;
-      reptile sub animal;
-      tortoise sub reptile;
-
-      person sub mammal,
-          owns name,
-          owns email,
-          plays marriage:spouse;
-
-      man sub person,
-          plays marriage:husband;
-
-      woman sub person,
-          plays marriage:wife;
-
-      dog sub mammal,
-          owns name,
-          owns label;
-
+      person sub entity,
+        plays friendship:friend,
+        plays employment:employee,
+        owns name,
+        owns age,
+        owns ref @key;
+      company sub entity,
+        plays employment:employer,
+        owns name,
+        owns ref @key;
+      friendship sub relation,
+        relates friend,
+        owns ref @key;
+      employment sub relation,
+        relates employee,
+        relates employer,
+        owns ref @key;
       name sub attribute, value string;
-
-      email sub attribute, value string;
-
-      marriage sub relation,
-          relates husband,
-          relates wife,
-          relates spouse;
-
-      shape sub entity,
-          owns perimeter,
-          owns area,
-          abstract;
-
-      triangle sub shape,
-          owns label;
-
-      right-angled-triangle sub triangle,
-          owns hypotenuse-length;
-
-      square sub shape;
-
-      perimeter sub attribute, value double;
-
-      area sub attribute, value double;
-
-      hypotenuse-length sub attribute, value double;
-
-      label sub attribute, value string;
+      age sub attribute, value long;
+      ref sub attribute, value long;
       """
     Given transaction commits
     Given the integrity is validated
     Given session opens transaction of type: write
 
 
-  Scenario: new entity types can be defined
-    When graql define
+  Scenario: 'isa' gets any thing for any type
+    Given connection close all sessions
+    Given connection open data session for database: grakn
+    Given session opens transaction of type: write
+    Given graql insert
       """
-      define dog sub entity;
+      insert
+      $_ isa person, has ref 0;
+      $_ isa person, has ref 1;
       """
-    Then transaction commits
-    Then the integrity is validated
-    When session opens transaction of type: read
+    Given transaction commits
+    Given the integrity is validated
+    Given session opens transaction of type: read
     When get answers of graql query
       """
-      match $p owns perimeter;
+      match $x isa $y;
       """
     Then uniquely identify answer concepts
-      | p         |
-      | label:triangle       |
-      | label:right-angled-triangle       |
-      | label:square |
-      | label:shape |
+      | x           | y               |
+      | key:ref:0   | label:person    |
+#      | key:ref:0   | label:entity    |
+#      | key:ref:0   | label:thing     |
+      | key:ref:1   | label:person    |
+#      | key:ref:1   | label:entity    |
+#      | key:ref:1   | label:thing     |
+      | value:ref:0 | label:ref       |
+#      | value:ref:0 | label:attribute |
+#      | value:ref:0 | label:thing     |
+      | value:ref:1 | label:ref       |
+#      | value:ref:1 | label:attribute |
+#      | value:ref:1 | label:thing     |
