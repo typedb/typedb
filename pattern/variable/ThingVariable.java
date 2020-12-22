@@ -59,7 +59,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<HasConstraint> hasConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
-    private final Set<Constraint> constrainedBy;
+    private final Set<Constraint> constraining;
 
     public ThingVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -68,7 +68,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
-        this.constrainedBy = new HashSet<>();
+        this.constraining = new HashSet<>();
     }
 
     ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
@@ -111,8 +111,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public void constrainedBy(Constraint constraint) {
-        constrainedBy.add(constraint);
+    public void constraining(Constraint constraint) {
+        constraining.add(constraint);
     }
 
     public Optional<IIDConstraint> iid() {
@@ -211,8 +211,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public Set<Constraint> constrainedBy() {
-        return constrainedBy;
+    public Set<Constraint> constraining() {
+        return constraining;
     }
 
     @Override

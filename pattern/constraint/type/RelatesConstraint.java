@@ -46,8 +46,8 @@ public class RelatesConstraint extends TypeConstraint {
         this.roleType = roleType;
         this.overriddenRoleType = overriddenRoleType;
         this.hash = Objects.hash(RelatesConstraint.class, this.owner, this.roleType, this.overriddenRoleType);
-        roleType.constrainedBy(this);
-        if (overriddenRoleType != null) overriddenRoleType.constrainedBy(this);
+        roleType.constraining(this);
+        if (overriddenRoleType != null) overriddenRoleType.constraining(this);
     }
 
     static RelatesConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Relates constraint,

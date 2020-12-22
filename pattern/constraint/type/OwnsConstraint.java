@@ -48,8 +48,8 @@ public class OwnsConstraint extends TypeConstraint {
         this.overriddenAttributeType = overriddenAttributeType;
         this.isKey = isKey;
         this.hash = Objects.hash(OwnsConstraint.class, this.owner, this.attributeType, this.overriddenAttributeType, this.isKey);
-        attributeType.constrainedBy(this);
-        if (overriddenAttributeType != null) overriddenAttributeType.constrainedBy(this);
+        attributeType.constraining(this);
+        if (overriddenAttributeType != null) overriddenAttributeType.constraining(this);
     }
 
     static OwnsConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Owns constraint,

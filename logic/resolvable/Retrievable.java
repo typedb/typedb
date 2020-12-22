@@ -131,7 +131,7 @@ public class Retrievable extends Resolvable {
                 addToConnected(copy);
                 variablesMap.put(variable, copy);
                 variable.constraints().forEach(this::addConstraint);
-                variable.constrainedBy().forEach(this::addConstraint);
+                variable.constraining().forEach(this::addConstraint);
             }
             return copy;
         }

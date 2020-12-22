@@ -49,7 +49,7 @@ public abstract class Variable implements Pattern {
 
     public abstract Set<? extends Constraint> constraints();
 
-    public abstract Set<Constraint> constrainedBy();
+    public abstract Set<Constraint> constraining();
 
     public Identifier.Variable identifier() {
         return identifier;
@@ -121,5 +121,5 @@ public abstract class Variable implements Pattern {
         return hash;
     }
 
-    public abstract void constrainedBy(Constraint constraint);
+    public abstract void constraining(Constraint constraint);
 }

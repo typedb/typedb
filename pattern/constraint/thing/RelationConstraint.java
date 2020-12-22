@@ -54,8 +54,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         this.rolePlayers = new ArrayList<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
         for (RelationConstraint.RolePlayer rp : rolePlayers) {
-            rp.player().constrainedBy(this);
-            rp.roleType().ifPresent(roleType -> roleType.constrainedBy(this));
+            rp.player().constraining(this);
+            rp.roleType().ifPresent(roleType -> roleType.constraining(this));
         }
     }
 

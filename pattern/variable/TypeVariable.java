@@ -69,7 +69,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     private final Set<RelatesConstraint> relatesConstraints;
     private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
-    private final Set<Constraint> constrainedBy;
+    private final Set<Constraint> constraining;
 
     public TypeVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -78,7 +78,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         relatesConstraints = new HashSet<>();
         isConstraints = new HashSet<>();
         constraints = new HashSet<>();
-        constrainedBy = new HashSet<>();
+        constraining = new HashSet<>();
     }
 
     public static TypeVariable of(Identifier.Variable identifier) {
@@ -126,8 +126,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     }
 
     @Override
-    public void constrainedBy(Constraint constraint) {
-        constrainedBy.add(constraint);
+    public void constraining(Constraint constraint) {
+        constraining.add(constraint);
     }
 
     public Optional<LabelConstraint> label() {
@@ -226,8 +226,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     }
 
     @Override
-    public Set<Constraint> constrainedBy() {
-        return constrainedBy;
+    public Set<Constraint> constraining() {
+        return constraining;
     }
 
     @Override
