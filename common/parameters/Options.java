@@ -26,15 +26,15 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_INFER = true;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final int DEFAULT_BATCH_SIZE = 50;
-    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10000;
-    public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10000;
+    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
+    public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
 
     private PARENT parent;
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
-    private Integer sessionIdlTimeoutMillis = 10000;
-    private Integer schemaLockAcquireTimeoutMillis = 10000;
+    private Integer sessionIdlTimeoutMillis = null;
+    private Integer schemaLockAcquireTimeoutMillis = null;
 
     abstract SELF getThis();
 
