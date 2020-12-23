@@ -197,11 +197,13 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
-        return Conjunction.create(conjunction.normalise().patterns().get(0));
+        return logicManager.typeResolver().resolveLabeledVars(
+                Conjunction.create(conjunction.normalise().patterns().get(0)));
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
-        return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        return logicManager.typeResolver().resolveLabeledVars(
+                new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 
     public abstract static class Conclusion<CONSTRAINT extends Constraint> {
