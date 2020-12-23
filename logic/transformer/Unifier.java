@@ -83,6 +83,11 @@ public class Unifier extends VariableTransformer {
         return Optional.empty(); // TODO
     }
 
+    // visible for testing
+    public Requirements requirements() {
+        return requirements;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -202,6 +207,12 @@ public class Unifier extends VariableTransformer {
             assert !predicates.containsKey(identifier);
             predicates.put(identifier, preds);
         }
+
+        public Map<Identifier, Set<Label>> types() { return types; }
+
+        public Map<Identifier, Set<Label>> isaExplicit() { return isaExplicit; }
+
+        public Map<Identifier, Set<Predicate<?, ?>>> predicates() { return predicates; }
 
         private Requirements duplicate() {
             Map<Identifier, Set<Label>> typesCopy = new HashMap<>();

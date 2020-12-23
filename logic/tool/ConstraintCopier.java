@@ -55,8 +55,10 @@ public class ConstraintCopier {
         return ownerCopy.has(attributeCopy);
     }
 
+    // NOTE: copies resolved types as well
     public static IsaConstraint copyConstraint(IsaConstraint isa) {
         ThingVariable newOwner = ThingVariable.of(isa.owner().identifier());
+        newOwner.addResolvedTypes(isa.owner().resolvedTypes());
         copyValuesOntoVariable(isa.owner().value(), newOwner);
         return copyIsaOntoVariable(isa, newOwner);
     }
@@ -64,6 +66,7 @@ public class ConstraintCopier {
     public static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
         //NOTE: isa can never exist on a Value Concludable (or else it would be a Isa Concludable).
         ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
+        newOwner.addResolvedTypes(value.owner().resolvedTypes());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream()
                 .filter(value1 -> !value.equals(value1)).collect(Collectors.toSet());
         copyValuesOntoVariable(otherValues, newOwner);
@@ -99,6 +102,7 @@ public class ConstraintCopier {
 
     static ThingVariable copyIsaAndValues(ThingVariable copyFrom) {
         ThingVariable copy = ThingVariable.of(copyFrom.identifier());
+        copy.addResolvedTypes(copyFrom.resolvedTypes());
         copyIsaAndValues(copyFrom, copy);
         return copy;
     }
@@ -119,6 +123,7 @@ public class ConstraintCopier {
 
     static TypeVariable copyVariableWithLabelAndValueType(TypeVariable copyFrom) {
         TypeVariable copy = TypeVariable.of(copyFrom.identifier());
+        copy.addResolvedTypes(copyFrom.resolvedTypes());
         copyLabelSubAndValueType(copyFrom, copy);
         return copy;
     }
