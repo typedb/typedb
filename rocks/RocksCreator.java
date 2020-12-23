@@ -14,12 +14,8 @@ public class RocksCreator {
         return new RocksDatabaseManager(rocksGrakn, this);
     }
 
-    public RocksDatabase databaseCreate(RocksGrakn rocksGrakn, String name) {
-        return new RocksDatabase(rocksGrakn, name, true, this);
-    }
-
-    public RocksDatabase databaseLoad(RocksGrakn rocksGrakn, String name) {
-        return new RocksDatabase(rocksGrakn, name, false, this);
+    public RocksDatabase database(RocksGrakn rocksGrakn, String name, boolean isNew) {
+        return new RocksDatabase(rocksGrakn, name, isNew, this);
     }
 
     public RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options) {

@@ -99,11 +99,11 @@ public class RocksDatabase implements Grakn.Database {
         } catch (IOException e) {
             throw GraknException.of(e);
         }
-        return rocksCreator.databaseCreate(rocksGrakn, name);
+        return rocksCreator.database(rocksGrakn, name, true);
     }
 
     static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
-        return rocksCreator.databaseLoad(rocksGrakn, name);
+        return rocksCreator.database(rocksGrakn, name, false);
     }
 
     private void initialise() {
