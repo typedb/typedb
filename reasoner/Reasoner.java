@@ -20,8 +20,11 @@ package grakn.core.reasoner;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.ExecutorService;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
@@ -38,6 +41,8 @@ import java.util.function.Predicate;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.producer.Producers.buffer;
 import static java.util.stream.Collectors.toList;
@@ -58,32 +63,16 @@ public class Reasoner {
         this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng);
     }
 
-    public ResourceIterator<ConceptMap> iteratorSingleThreaded(Disjunction disjunction) {
-        return iterate(disjunction.conjunctions()).flatMap(this::iteratorSingleThreaded);
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, boolean isParallel) {
+        if (!isParallel) return iterate(disjunction.conjunctions()).flatMap(this::iterator);
+        else return buffer(disjunction.conjunctions().stream()
+                                   .flatMap(conjunction -> producers(conjunction).stream())
+                                   .collect(toList())).iterator();
     }
 
-    public ResourceIterator<ConceptMap> iteratorSingleThreaded(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveLabeledVars(conjunction);
-        // conjunction = logicMgr.typeResolver().resolveThingTypes(conjunction);
-        return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
-    }
-
-    public ResourceIterator<ConceptMap> iteratorParallel(Disjunction disjunction) {
-        List<Producer<ConceptMap>> producers = disjunction.conjunctions().stream()
-                .flatMap(conjunction -> producers(conjunction).stream())
-                .collect(toList());
-        return buffer(producers).iterator();
-    }
-
-    public List<Producer<ConceptMap>> producers(Disjunction disjunction, ConceptMap bounds) {
-        return disjunction.conjunctions().stream()
-                .flatMap(conj -> producers(conj, bounds).stream())
-                .collect(toList());
-    }
-
-    public List<Producer<ConceptMap>> producers(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveLabeledVars(conjunction);
-//         conjunction = logicMgr.typeResolver().resolveNamedVars(conjunction);
+    private List<Producer<ConceptMap>> producers(Conjunction conjunction) {
+        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
+        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
@@ -104,8 +93,45 @@ public class Reasoner {
         }
     }
 
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
+        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
+        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
+        ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
+
+        Set<Negation> negations = conjunction.negations();
+        if (negations.isEmpty()) return answers;
+        else return answers.filter(answer -> !iterate(negations).flatMap(
+                negation -> iterator(negation.disjunction(), answer)
+        ).hasNext());
+    }
+
+    private List<Producer<ConceptMap>> producers(Disjunction disjunction, ConceptMap bounds) {
+        return iterate(disjunction.conjunctions()).flatMap(conj -> iterate(producers(conj, bounds))).toList();
+    }
+
+    private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
+        return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
+    }
+
     public List<Producer<ConceptMap>> producers(Conjunction conjunction, ConceptMap bounds) {
-        return null; // TODO
+        return producers(bound(conjunction, bounds));
+    }
+
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
+        return iterator(bound(conjunction, bounds));
+    }
+
+    private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
+        conjunction.forEach(var -> {
+            if (var.identifier().isNamedReference() && bounds.contains(var.identifier().reference().asName())) {
+                Concept boundVar = bounds.get(var.identifier().reference().asName());
+                if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
+                else if (var.isType()) var.asType().label(boundVar.asType().getLabel());
+                else if (var.isThing()) var.asThing().iid(boundVar.asThing().getIID());
+                else throw GraknException.of(ILLEGAL_STATE);
+            }
+        });
+        return conjunction;
     }
 
     ResolverRegistry resolverRegistry() {

@@ -34,7 +34,7 @@ public class IIDConstraint extends ThingConstraint {
     private final byte[] iid;
     private final int hash;
 
-    private IIDConstraint(ThingVariable owner, byte[] iid) {
+    public IIDConstraint(ThingVariable owner, byte[] iid) {
         super(owner, set());
         this.iid = iid;
         this.hash = Objects.hash(IIDConstraint.class, this.owner, Arrays.hashCode(this.iid));

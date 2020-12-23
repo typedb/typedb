@@ -26,9 +26,9 @@ class GraknCore < Formula
   depends_on "openjdk@11"
 
   def setup_directory(dir)
-    grakn_dir = var/name/dir
+    grakn_dir = var / name / dir
     grakn_dir.mkpath
-    orig_dir = libexec/"server"/dir
+    orig_dir = libexec / "server" / dir
     rm_rf orig_dir
     ln_s grakn_dir, orig_dir
   end
@@ -37,7 +37,7 @@ class GraknCore < Formula
     libexec.install Dir["*"]
     setup_directory "data"
     setup_directory "logs"
-    bin.install libexec/"grakn"
+    bin.install libexec / "grakn"
     bin.env_script_all_files(libexec, Language::Java.java_home_env("1.11"))
   end
 end

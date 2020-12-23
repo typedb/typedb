@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-#noinspection CucumberUndefinedStep
 Feature: Graql Match Query
 
   Background: Open connection and create a simple extensible schema
@@ -53,84 +52,91 @@ Feature: Graql Match Query
     Given the integrity is validated
     Given session opens transaction of type: write
 
-  # TODO do we want to allow `match $x 10;` as a query without `isa`?
-  Scenario Outline: '<type>' attributes can be matched by value
-    Given graql define
-      """
-      define <attr> sub attribute, value <type>, owns ref @key;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given connection close all sessions
-    Given connection open data session for database: grakn
-    Given session opens transaction of type: write
-    Given graql insert
-      """
-      insert $n <value> isa <attr>, has ref 0;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $a <value>;
-      """
-    Then uniquely identify answer concepts
-      | a         |
-      | key:ref:0 |
-
-    Examples:
-      | attr        | type     | value      |
-      | colour      | string   | "Green"    |
-      | calories    | long     | 1761       |
-      | grams       | double   | 9.6        |
-      | gluten-free | boolean  | false      |
-      | use-by-date | datetime | 2020-06-16 |
-
-
-  # TODO do we want to allow $x 10 as a query without `isa`?
-  Scenario Outline: when matching a '<type>' attribute by a value that doesn't exist, an empty answer is returned
-    Given graql define
-      """
-      define <attr> sub attribute, value <type>, owns ref @key;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $a <value>;
-      """
-    Then answer size is: 0
-
-    Examples:
-      | attr        | type     | value      |
-      | colour      | string   | "Green"    |
-      | calories    | long     | 1761       |
-      | grams       | double   | 9.6        |
-      | gluten-free | boolean  | false      |
-      | use-by-date | datetime | 2020-06-16 |
-
-   # TODO we are now case sensitive apparently! Must include "isa attribute" else same error as above
-  Scenario: 'contains' performs a case-insensitive match
+  Scenario: relations between distinct concepts are not retrieved when matching concepts that relate to themselves
     Given connection close all sessions
     Given connection open data session for database: grakn
     Given session opens transaction of type: write
     Given graql insert
       """
       insert
-      $x "The Phantom of the Opera" isa name;
-      $y "Pirates of the Caribbean" isa name;
-      $z "Mr. Bean" isa name;
+      $x isa person, has ref 1;
+      $y isa person, has ref 2;
+      (friend: $x, friend: $y) isa friendship, has ref 0;
       """
     Given transaction commits
     Given the integrity is validated
     Given session opens transaction of type: read
     When get answers of graql query
       """
-      match $x contains "Bean";
+      match (friend: $x, friend: $x) isa friendship;
       """
-    Then uniquely identify answer concepts
-      | x                                   |
-      | value:name:Pirates of the Caribbean |
-      | value:name:Mr. Bean                 |
+    Then answer size is: 0
+
+  Scenario: Relations can be queried with pairings of relation and role types that are not directly related to each other
+    Given graql define
+      """
+      define
+      person plays hetero-marriage:husband, plays hetero-marriage:wife;
+      marriage sub relation, relates spouse;
+      hetero-marriage sub marriage, relates husband as spouse, relates wife as spouse;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given connection close all sessions
+    Given connection open data session for database: grakn
+    Given session opens transaction of type: write
+    Given graql insert
+      """
+      insert
+      $a isa person, has ref 1;
+      $b isa person, has ref 2;
+      (wife: $a, husband: $b) isa hetero-marriage;
+      """
+    Given transaction commits
+    Given the integrity is validated
+    Given session opens transaction of type: read
+    When get answers of graql query
+      """
+      match (wife: $x, husband: $y) isa relation;
+      """
+    Then answer size is: 1
+    When get answers of graql query
+      """
+      match (wife: $x, husband: $y) isa marriage;
+      """
+    Then answer size is: 1
+    When get answers of graql query
+      """
+      match (wife: $x, husband: $y) isa hetero-marriage;
+      """
+    Then answer size is: 1
+    When get answers of graql query
+      """
+      match (spouse: $x, spouse: $y) isa hetero-marriage;
+      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (spouse: $x, spouse: $y) isa marriage;
+      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (spouse: $x, spouse: $y) isa relation;
+      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (role: $x, role: $y) isa hetero-marriage;
+      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (role: $x, role: $y) isa marriage;
+      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (role: $x, role: $y) isa relation;
+      """
+    Then answer size is: 2

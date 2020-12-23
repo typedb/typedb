@@ -78,29 +78,30 @@ public class GraphProducer implements Producer<VertexMap> {
                 runningJobs.incrementAndGet(); // TODO: still not right
                 ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
                 futures.computeIfAbsent(iterator, k ->
-                        runAsync(consume(iterator, splitCount, sink), forkJoinPool()).exceptionally(e -> {
-                            sink.done(this, e);
-                            return null;
-                        })
+                        runAsync(consume(iterator, splitCount, sink), forkJoinPool())
                 );
             }
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
         } else {
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
-                futures.computeIfPresent(iterator, (k, v) -> v.thenRun(consume(k, splitCount, sink)));
+                futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(consume(k, splitCount, sink), forkJoinPool()));
             }
         }
     }
 
     private Runnable consume(ResourceIterator<VertexMap> iterator, int count, Sink<VertexMap> sink) {
         return () -> {
-            int i = 0;
-            for (; i < count && iterator.hasNext(); i++) {
-                sink.put(iterator.next());
-            }
-            if (i < count) {
-                futures.remove(iterator);
-                compensate(count - i, sink);
+            try {
+                int i = 0;
+                for (; i < count && iterator.hasNext(); i++) {
+                    sink.put(iterator.next());
+                }
+                if (i < count) {
+                    futures.remove(iterator);
+                    compensate(count - i, sink);
+                }
+            } catch (Throwable e) {
+                sink.done(this, e);
             }
         };
     }
@@ -110,10 +111,7 @@ public class GraphProducer implements Producer<VertexMap> {
         if ((next = start.atomicNext()) != null) {
             ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, params).distinct(produced);
             futures.put(iterator,
-                    runAsync(consume(iterator, remaining, sink), forkJoinPool()).exceptionally(e -> {
-                        sink.done(this, e);
-                        return null;
-                    })
+                        runAsync(consume(iterator, remaining, sink), forkJoinPool())
             );
             return;
         }

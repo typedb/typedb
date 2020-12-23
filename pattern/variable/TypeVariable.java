@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -122,6 +123,30 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
+    public void copyConstraints(TypeVariable toCopy) {
+        for (TypeConstraint constraint : toCopy.constraints) {
+            if (constraint.isLabel()) {
+                this.label(constraint.asLabel().properLabel());
+            } else if (constraint.isValueType()) {
+                this.valueType(constraint.asValueType().valueType());
+            } else if (constraint.isRegex()) {
+                this.regex(constraint.asRegex().regex());
+            } else if (constraint.isAbstract()) {
+                this.setAbstract();
+            } else if (constraint.isSub()) {
+                this.sub(constraint.asSub().type(), constraint.asSub().isExplicit());
+            } else if (constraint.isOwns()) {
+                this.owns(constraint.asOwns().attribute(), constraint.asOwns().overridden().orElse(null), constraint.asOwns().isKey());
+            } else if (constraint.isPlays()) {
+                this.plays(constraint.asPlays().relation().orElse(null), constraint.asPlays().role(), constraint.asPlays().overridden().orElse(null));
+            } else if (constraint.isRelates()) {
+                this.relates(constraint.asRelates().role(), constraint.asRelates().overridden().orElse(null));
+            } else if (constraint.isIs()) {
+                this.is(constraint.asIs().variable());
+            } else throw GraknException.of(ILLEGAL_STATE);
+        }
+    }
+
     public Optional<LabelConstraint> label() {
         return Optional.ofNullable(labelConstraint);
     }
@@ -136,6 +161,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return Optional.ofNullable(abstractConstraint);
     }
 
+    public AbstractConstraint setAbstract() {
+        AbstractConstraint abstractConstraint = new AbstractConstraint(this);
+        constrain(abstractConstraint);
+        return abstractConstraint;
+    }
+
     public Optional<ValueTypeConstraint> valueType() {
         return Optional.ofNullable(valueTypeConstraint);
     }
@@ -148,6 +179,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
 
     public Optional<RegexConstraint> regex() {
         return Optional.ofNullable(regexConstraint);
+    }
+
+    public RegexConstraint regex(Pattern regex) {
+        RegexConstraint regexConstraint = new RegexConstraint(this, regex);
+        constrain(regexConstraint);
+        return regexConstraint;
     }
 
     public Optional<SubConstraint> sub() {
@@ -217,13 +254,15 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
 
     @Override
     public void addTo(Traversal traversal) {
+        // TODO: create vertex properties first, then the vertex itself, then edges
+        //       that way, we can make properties to be 'final' objects that are
+        //       included in equality and hashCode of vertices
         if (!resolvedTypes().isEmpty()) traversal.labels(identifier(), resolvedTypes());
-        super.addTo(traversal);
+        constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
     @Override
     public String toString() {
-
         StringBuilder syntax = new StringBuilder();
         if (!reference().isLabel()) {
             syntax.append(reference());
@@ -233,12 +272,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         }
 
         if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
-
-        syntax.append(Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
-                                playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints)
-                              .flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+        Stream<Set<? extends TypeConstraint>> conStream =
+                Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
+                          playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints);
+        syntax.append(conStream.flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
                               .collect(Collectors.joining("" + COMMA + SPACE)));
-
         return syntax.toString();
     }
 

@@ -335,8 +335,7 @@ public class RocksDatabase implements Grakn.Database {
                 } catch (GraknException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
                         break;
-                    }
-                    else {
+                    } else {
                         // TODO: Add specific code indicating rocksdb conflict to GraknException status code
                         boolean txConflicted = e.getCause() instanceof RocksDBException &&
                                 ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;

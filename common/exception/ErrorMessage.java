@@ -25,7 +25,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     }
 
     public static void loadConstants() {
-        for (Class<?> innerClass: ErrorMessage.class.getDeclaredClasses()) {
+        for (Class<?> innerClass : ErrorMessage.class.getDeclaredClasses()) {
             try {
                 Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
             } catch (ClassNotFoundException e) {
@@ -216,6 +216,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingRead(4, "The thing with IID '%s' is not found.");
         public static final ThingRead INVALID_ROLE_TYPE_LABEL =
                 new ThingRead(5, "The role type '%s' is not scoped by its relation type.");
+        public static final ThingRead CONTRADICTORY_BOUND_VARIABLE =
+                new ThingRead(6, "The nested variable '%s' contradicts the type of its bound variable.");
 
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";
@@ -302,10 +304,12 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =
                 new TypeRead(3, "The type '%s' does not exist.");
+        public static final TypeRead TYPE_NOT_RESOLVABLE =
+                new TypeRead(4, "The type in variable '%s' is not resolvable.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
-                new TypeRead(4, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+                new TypeRead(5, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
-                new TypeRead(5, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
+                new TypeRead(6, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
 
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";

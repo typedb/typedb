@@ -45,6 +45,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -236,13 +238,12 @@ public class GraknServer implements AutoCloseable {
     }
 
     private static void startGraknServer(ServerCommand.Start command) throws IOException {
-        final long start = System.nanoTime();
+        Instant start = Instant.now();
         final GraknServer server = new GraknServer(command);
         server.start();
-        final long end = System.nanoTime();
+        Instant end = Instant.now();
         LOG.info("Grakn Core version: {}", Version.VERSION);
-        LOG.info("Grakn Core Server has been started (in {} ms)",
-                String.format("%.3f", (end - start) / 1_000_000.00));
+        LOG.info("Grakn Core Server has been started (in {} ms)", Duration.between(start, end).toMillis());
         server.serve();
     }
 

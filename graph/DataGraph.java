@@ -513,7 +513,7 @@ public class DataGraph implements Graph {
             attributeVertexCountJobs = new ConcurrentHashMap<>();
             hasEdgeCountJobs = new ConcurrentHashMap<>();
             needsBackgroundCounting = false;
-            snapshot =  bytesToLongOrZero(storage.get(snapshotKey()));
+            snapshot = bytesToLongOrZero(storage.get(snapshotKey()));
             this.schemaGraph = schemaGraph;
             this.storage = storage;
         }

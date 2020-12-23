@@ -153,7 +153,7 @@ public interface ServerCommand {
 
         private final Start startCommand;
 
-        @Parameters(  index = "0", description = "Database to import data into")
+        @Parameters(index = "0", description = "Database to import data into")
         private String database;
 
         @Parameters(index = "1", description = "File containing the data to import")

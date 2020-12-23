@@ -44,10 +44,10 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALU
 import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.iterator.Iterators.link;

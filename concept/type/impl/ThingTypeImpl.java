@@ -64,8 +64,8 @@ import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 

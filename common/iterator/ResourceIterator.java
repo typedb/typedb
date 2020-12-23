@@ -78,6 +78,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return this.filter(predicate).hasNext();
     }
 
+    default boolean noneMatch(Predicate<T> predicate) {
+        return !anyMatch(predicate);
+    }
+
     default T firstOrNull() {
         if (hasNext()) return next();
         else return null;

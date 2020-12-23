@@ -118,10 +118,10 @@ public class Importer implements Migrator {
                     case HEADER:
                         final DataProto.Item.Header header = item.getHeader();
                         LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
-                                header.getOriginalDatabase(),
-                                header.getGraknVersion(),
-                                session.database().name(),
-                                Version.VERSION);
+                                 header.getOriginalDatabase(),
+                                 header.getGraknVersion(),
+                                 session.database().name(),
+                                 Version.VERSION);
                         break;
                     case ENTITY:
                         insertEntity(item.getEntity());
@@ -145,11 +145,11 @@ public class Importer implements Migrator {
         session.close();
 
         LOG.info("Imported {} entities, {} attributes, {} relations ({} players), {} ownerships",
-                entityCount,
-                attributeCount,
-                relationCount,
-                playerCount,
-                ownershipCount);
+                 entityCount,
+                 attributeCount,
+                 relationCount,
+                 playerCount,
+                 ownershipCount);
     }
 
     private void insertEntity(final DataProto.Item.Entity entityMsg) {

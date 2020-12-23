@@ -23,9 +23,9 @@ import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.transformer.Mapping;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.logic.transformer.Mapping;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -59,7 +59,7 @@ public class ResolverRegistry {
 
     public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActors.entrySet()) {
+        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {

@@ -18,6 +18,7 @@
 
 package grakn.core.logic.tool;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
@@ -29,6 +30,7 @@ import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -42,7 +44,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,11 +51,11 @@ import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_RESOLVABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 import static graql.lang.common.GraqlToken.Type.RELATION;
 import static graql.lang.common.GraqlToken.Type.ROLE;
-import static graql.lang.common.GraqlToken.Type.THING;
 
 public class TypeResolver {
 
@@ -68,61 +69,64 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public Conjunction resolveNamedVarsExhaustive(Conjunction conjunction) {
+    public Conjunction resolveVariablesExhaustive(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
-        VariableHints variableHints = constraintMapper.getVariableHints();
-        Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
-        Map<Reference, Set<Label>> referenceHintsMapping =
-                retrieveVariableHints(new HashSet<>(variableHints.getVariableHints()));
+        ResolverVariables resolverVariables = constraintMapper.getResolveVars();
+        Map<Reference, Set<Label>> referenceResolversMapping =
+                retrieveResolveTypes(new HashSet<>(resolverVariables.getResolveVars()));
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
+
+        final Map<Identifier, TypeVariable> resolveeVars = resolverVariables.resolveeVars;
+
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
-            Set<Label> hintLabels = referenceHintsMapping.get(variable.reference());
+            Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference());
+            if (resolveLabels == null) throw GraknException.of(TYPE_NOT_RESOLVABLE, variable.toString());
+
             if (variable.isThing()) {
-                if (hintLabels.size() != numOfTypes) {
-                    addInferredIsaLabels(variable.asThing(), referenceHintsMapping.get(variable.reference()), labelMap);
+                if (resolveLabels.size() != numOfTypes) {
+                    addInferredIsaLabels(variable.asThing(), referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference()));
                 }
-                addInferredRoleLabels(variable.asThing(), referenceHintsMapping, variableHints);
-            } else if (variable.isType() && hintLabels.size() != numOfTypes) {
-                addInferredSubLabels(variable.asType(), referenceHintsMapping.get(variable.reference()), labelMap);
+            } else if (variable.isType() && resolveLabels.size() != numOfTypes) {
+                addInferredSubLabels(variable.asType(), referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference()));
             }
         }
         return conjunction;
     }
 
-    public Conjunction resolveNamedVars(Conjunction conjunction) {
+    public Conjunction resolveVariables(Conjunction conjunction) {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
-        VariableHints variableHints = constraintMapper.getVariableHints();
-        Map<Label, TypeVariable> labelMap = labelVarsFromConjunction(conjunction);
+        ResolverVariables resolverVariables = constraintMapper.getResolveVars();
         long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
+
+        final Map<Identifier, TypeVariable> resolveLabels = resolverVariables.resolveeVars;
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
             Set<Variable> neighbourhood = new HashSet<>();
-            TypeVariable typeVariable = variableHints.getConversion(variable);
+            TypeVariable typeVariable = resolverVariables.getConversion(variable);
             neighbourhood.add(typeVariable);
             neighbourhood.addAll(constraintMapper.getVariableNeighbours().get(typeVariable));
-            Map<Reference, Set<Label>> localTypeHints = retrieveVariableHints(neighbourhood);
-            Set<Label> hintLabels = localTypeHints.get(variable.reference());
+
+            Map<Reference, Set<Label>> localResolveType = retrieveResolveTypes(neighbourhood);
+            Set<Label> resolveTypes = localResolveType.get(resolveLabels.get(variable.identifier()).reference());
             if (variable.isThing()) {
-                if (hintLabels.size() != numOfThings) {
-                    addInferredIsaLabels(variable.asThing(), hintLabels, labelMap);
+                if (resolveTypes.size() != numOfThings) {
+                    addInferredIsaLabels(variable.asThing(), resolveTypes);
                 }
-                addInferredRoleLabels(variable.asThing(), localTypeHints, variableHints);
-            } else if (variable.isType() && hintLabels.size() != numOfThings) {
-                addInferredSubLabels(variable.asType(), localTypeHints.get(variable.reference()), labelMap);
+            } else if (variable.isType() && resolveTypes.size() != numOfThings) {
+                addInferredSubLabels(variable.asType(), resolveTypes);
             }
         }
 
-        ensureHintsConformToTheirSuper(conjunction);
+        ensureResolvedConformToTheirSuper(conjunction);
         return conjunction;
     }
 
-    public Conjunction resolveLabeledVars(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(v -> v.reference().isLabel())
+    public Conjunction resolveLabels(Conjunction conjunction) {
+        iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
-                    assert typeVar.isType() && typeVar.asType().label().isPresent();
                     Label label = typeVar.asType().label().get().properLabel();
                     if (label.scope().isPresent()) {
                         Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
@@ -137,9 +141,9 @@ public class TypeResolver {
         return conjunction;
     }
 
-    private void ensureHintsConformToTheirSuper(Conjunction conjunction) {
+    private void ensureResolvedConformToTheirSuper(Conjunction conjunction) {
         Set<Variable> visited = new HashSet<>();
-        conjunction.variables().forEach(variable -> ensureHintsConformToTheirSuper(variable, visited));
+        conjunction.variables().forEach(variable -> ensureResolvedConformToTheirSuper(variable, visited));
     }
 
     private TypeVariable above(Variable variable) {
@@ -152,14 +156,14 @@ public class TypeResolver {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private void ensureHintsConformToTheirSuper(Variable variable, Set<Variable> visited) {
+    private void ensureResolvedConformToTheirSuper(Variable variable, Set<Variable> visited) {
         if (variable == null || visited.contains(variable) || variable.reference().isLabel()) return;
         visited.add(variable);
-        ensureHintsConformToTheirSuper(above(variable), visited);
-        removeHintsViolatingSuper(variable);
+        ensureResolvedConformToTheirSuper(above(variable), visited);
+        removeVarsViolatingSuper(variable);
     }
 
-    private void removeHintsViolatingSuper(Variable subVar) {
+    private void removeVarsViolatingSuper(Variable subVar) {
         TypeVariable supVar = above(subVar);
         if (supVar == null) return;
         if (supVar.reference().isLabel()) return;
@@ -169,95 +173,39 @@ public class TypeResolver {
         if (supLabels.isEmpty()) return;
 
         if (subLabels.isEmpty()) {
-            Set<Label> subHintsOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
+            Set<Label> subResolvedOfSupLabels = supLabels.stream().flatMap(label -> getType(label).getSubtypes())
                     .map(Type::getLabel).collect(Collectors.toSet());
-            subVar.addResolvedTypes(subHintsOfSupLabels);
+            subVar.addResolvedTypes(subResolvedOfSupLabels);
             return;
         }
 
         Set<Label> temp = new HashSet<>(subLabels);
         for (Label label : temp) {
-            Type hintType = getType(label);
-            while (hintType != null && !supLabels.contains(hintType.getLabel())) {
-                hintType = hintType.getSupertype();
+            Type ResolvedType = getType(label);
+            while (ResolvedType != null && !supLabels.contains(ResolvedType.getLabel())) {
+                ResolvedType = ResolvedType.getSupertype();
             }
-            if (hintType == null) {
+            if (ResolvedType == null) {
                 subVar.removeResolvedType(label);
                 if (subVar.resolvedTypes().isEmpty()) subVar.setSatisfiable(false);
             }
         }
     }
 
-    private Map<Label, TypeVariable> labelVarsFromConjunction(Conjunction conjunction) {
-        Map<Label, TypeVariable> labels = new HashMap<>();
-        conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
-                .forEach(variable -> variable.label().ifPresent(labelConstraint -> labels.putIfAbsent(labelConstraint.properLabel(), variable)));
-        return labels;
+    private void addInferredSubLabels(TypeVariable variable, Set<Label> resolvedLabels) {
+        variable.addResolvedTypes(resolvedLabels);
     }
 
-    private void addInferredSubLabels(TypeVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
-        if (!variable.sub().isPresent()) {
-            variable.sub(lowestCommonSuperType(hints, labelMap), false);
-        }
-        variable.addResolvedTypes(hints);
-    }
-
-    private void addInferredIsaLabels(ThingVariable variable, Set<Label> hints, Map<Label, TypeVariable> labelMap) {
+    private void addInferredIsaLabels(ThingVariable variable, Set<Label> resolveLabels) {
         //TODO: use .getType(label) once ConceptManager can handle labels
-        hints.removeIf(label -> conceptMgr.getThingType(label.scopedName()).isAbstract());
-        if (!variable.isa().isPresent()) {
-            variable.isa(lowestCommonSuperType(hints, labelMap), false);
-        }
-        variable.addResolvedTypes(hints);
+        resolveLabels.removeIf(label -> traversalEng.graph().schema().getType(label).isAbstract());
+        variable.addResolvedTypes(resolveLabels);
     }
 
-    private TypeVariable lowestCommonSuperType(Set<Label> labels, Map<Label, TypeVariable> labelMap) {
-        Set<Type> types = labels.stream().map(this::getType).collect(Collectors.toSet());
-
-        Type lowestCommonAncestor = null;
-        for (Type type : types) {
-            if (lowestCommonAncestor == null) {
-                lowestCommonAncestor = type;
-                continue;
-            }
-            Set<Type> superTypes = type.getSupertypes().collect(Collectors.toSet());
-            while (!superTypes.contains(lowestCommonAncestor)) {
-                lowestCommonAncestor = lowestCommonAncestor.getSupertype();
-            }
-        }
-
-        assert lowestCommonAncestor != null;
-        return getOrCreateTypeVariable(lowestCommonAncestor.getLabel(), labelMap);
-    }
-
-    private TypeVariable getOrCreateTypeVariable(Label label, Map<Label, TypeVariable> labelMap) {
-        if (!labelMap.containsKey(label)) {
-            TypeVariable newTypeVar = new TypeVariable(Identifier.Variable.of(Reference.label(label.scopedName())));
-            newTypeVar.label(label);
-            labelMap.put(label, newTypeVar);
-        }
-        return labelMap.get(label);
-    }
-
-    private void addInferredRoleLabels(ThingVariable variable, Map<Reference, Set<Label>> labels, VariableHints varHints) {
-        Set<RelationConstraint> relationConstraints = variable.asThing().relation();
-        for (RelationConstraint constraint : relationConstraints) {
-            List<RelationConstraint.RolePlayer> rolePlayers = constraint.players();
-            for (RelationConstraint.RolePlayer rolePlayer : rolePlayers) {
-                TypeVariable typeVariable;
-                if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().reference().isName()) {
-                    typeVariable = rolePlayer.roleType().get();
-                } else {
-                    typeVariable = varHints.getConversion(rolePlayer);
-                }
-                rolePlayer.addRoleTypeHints(labels.get(typeVariable.reference()));
-            }
-        }
-    }
-
-    private Map<Reference, Set<Label>> retrieveVariableHints(Set<Variable> varHints) {
-        Conjunction varHintsConjunction = new Conjunction(varHints, Collections.emptySet());
-        return logicCache.hinter().get(varHintsConjunction, conjunction -> {
+    private Map<Reference, Set<Label>> retrieveResolveTypes(Set<Variable> resolveVars) {
+        Conjunction resolveVariableConjunction = new Conjunction(resolveVars, Collections.emptySet());
+        resolveVariableConjunction = resolveLabels(resolveVariableConjunction);
+        return logicCache.resolver().get(resolveVariableConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(conjunction.traversal()).forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
@@ -279,124 +227,128 @@ public class TypeResolver {
     }
 
     private static class ConstraintMapper {
-        private final VariableHints varHints;
+        private final ResolverVariables resolverVariables;
         private final HashMap<TypeVariable, Set<TypeVariable>> neighbours;
-        private final TypeVariable metaThing;
-        private final TypeVariable metaAttribute;
-        private final TypeVariable metaRelation;
-        private final TypeVariable metaRole;
+        private final TypeVariable rootAttributeType;
+        private final TypeVariable rootRelationType;
+        private final TypeVariable rootRoleType;
         private final Conjunction conjunction;
 
         public ConstraintMapper(Conjunction conjunction) {
-            this.varHints = new VariableHints();
+            this.resolverVariables = new ResolverVariables();
             this.neighbours = new HashMap<>();
             this.conjunction = conjunction;
-            this.metaThing = createMeta(Label.of(THING.toString()));
-            this.metaAttribute = createMeta(Label.of(ATTRIBUTE.toString()));
-            this.metaRelation = createMeta(Label.of(RELATION.toString()));
-            this.metaRole = createMeta(Label.of(ROLE.toString(), RELATION.toString()));
+            this.rootAttributeType = createRootTypeVar(Label.of(ATTRIBUTE.toString()));
+            this.rootRelationType = createRootTypeVar(Label.of(RELATION.toString()));
+            this.rootRoleType = createRootTypeVar(Label.of(ROLE.toString(), RELATION.toString()));
             conjunction.variables().forEach(this::convertVariable);
-            varHints.getVariableHints().forEach(this::putSubThingConstraintIfAbsent);
         }
 
-        private TypeVariable createMeta(Label metaLabel) {
+        private TypeVariable createRootTypeVar(Label rootLabel) {
 
-            Optional<TypeVariable> metaType = conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
+            Optional<TypeVariable> rootType = conjunction.variables().stream().filter(Variable::isType).map(Variable::asType)
                     .filter(variable -> variable.label().isPresent())
-                    .filter(variable -> variable.label().get().properLabel().equals(metaLabel))
+                    .filter(variable -> variable.label().get().properLabel().equals(rootLabel))
                     .findAny();
 
-            if (metaType.isPresent()) return varHints.convert(metaType.get());
-            TypeVariable newMetaType = new TypeVariable(Identifier.Variable.of(Reference.label(metaLabel.toString())));
-            newMetaType.label(metaLabel);
-            return newMetaType;
+            if (rootType.isPresent()) {
+                TypeVariable convertedRootType = resolverVariables.convert(rootType.get());
+                neighbours.putIfAbsent(convertedRootType, new HashSet<>());
+                return convertedRootType;
+            }
+
+            TypeVariable newRootType = new TypeVariable(Identifier.Variable.of(Reference.label(rootLabel.toString())));
+            newRootType.label(rootLabel);
+            neighbours.putIfAbsent(newRootType, new HashSet<>());
+            return newRootType;
         }
 
-        public VariableHints getVariableHints() {
-            return varHints;
+        public ResolverVariables getResolveVars() {
+            return resolverVariables;
         }
 
         public HashMap<TypeVariable, Set<TypeVariable>> getVariableNeighbours() {
             return neighbours;
         }
 
-        private void putSubThingConstraintIfAbsent(TypeVariable variable) {
-            if (isMapped(variable)) variable.sub(metaThing, true);
-        }
-
-        private boolean isMapped(TypeVariable variable) {
+        private boolean noInformation(TypeVariable variable) {
             return !variable.reference().isLabel() && !variable.sub().isPresent() &&
                     !variable.label().isPresent() && variable.is().isEmpty();
         }
 
         private TypeVariable convertVariable(Variable variable) {
-            if (varHints.hasConversion(variable)) return varHints.getConversion(variable);
+            if (resolverVariables.hasConversion(variable)) return resolverVariables.getConversion(variable);
             if (variable.isType()) {
-                TypeVariable asTypeVar = varHints.convert(variable);
+                TypeVariable asTypeVar = resolverVariables.convert(variable);
+                addNeighboursOfTypeVariable(variable.asType(), asTypeVar);
                 neighbours.putIfAbsent(asTypeVar, new HashSet<>());
             } else convertThingVariable(variable.asThing());
-            return varHints.getConversion(variable);
+            return resolverVariables.getConversion(variable);
         }
 
         private void convertThingVariable(ThingVariable thingVariable) {
-            TypeVariable varHint = varHints.convert(thingVariable);
-            neighbours.putIfAbsent(varHint, new HashSet<>());
+            TypeVariable resolveVar = resolverVariables.convert(thingVariable);
+            neighbours.putIfAbsent(resolveVar, new HashSet<>());
 
             if (thingVariable.constraints().isEmpty()) return;
 
-            thingVariable.isa().ifPresent(constraint -> convertIsa(varHint, constraint));
-            thingVariable.is().forEach(constraint -> convertIs(varHint, constraint));
-            thingVariable.has().forEach(constraint -> convertHas(varHint, constraint));
-            thingVariable.value().forEach(constraint -> convertValue(varHint, constraint));
-            thingVariable.relation().forEach(constraint -> convertRelation(varHint, constraint));
+            thingVariable.isa().ifPresent(constraint -> convertIsa(resolveVar, constraint));
+            thingVariable.is().forEach(constraint -> convertIs(resolveVar, constraint));
+            thingVariable.has().forEach(constraint -> convertHas(resolveVar, constraint));
+            thingVariable.value().forEach(constraint -> convertValue(resolveVar, constraint));
+            thingVariable.relation().forEach(constraint -> convertRelation(resolveVar, constraint));
+
         }
 
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
-            if (isMapped(owner)) owner.sub(metaRelation, true);
+            if (noInformation(owner)) addRootTypeVar(owner, rootRelationType);
             ThingVariable ownerThing = relationConstraint.owner();
-            TypeVariable relationTypeVar;
-            if (!ownerThing.isa().isPresent()) {
-                relationTypeVar = varHints.newHintingeVariable();
-                neighbours.put(relationTypeVar, new HashSet<>());
-            } else {
-                relationTypeVar = convertVariable(ownerThing.isa().get().type());
+            if (ownerThing.isa().isPresent()) {
+                TypeVariable relationTypeVar = convertVariable(ownerThing.isa().get().type());
+                if (noInformation(relationTypeVar)) addRootTypeVar(relationTypeVar, rootRelationType);
             }
-            if (isMapped(relationTypeVar)) relationTypeVar.sub(metaRelation, true);
             for (RelationConstraint.RolePlayer rolePlayer : relationConstraint.players()) {
                 TypeVariable playerType = convertVariable(rolePlayer.player());
                 TypeVariable roleTypeVar = rolePlayer.roleType().orElse(null);
+
                 if (roleTypeVar != null) {
                     roleTypeVar = convertVariable(roleTypeVar);
-                    if (isMapped(roleTypeVar)) roleTypeVar.sub(metaRole, true);
+                    if (noInformation(roleTypeVar)) addRootTypeVar(roleTypeVar, rootRoleType);
                     addRelatesConstraint(owner, roleTypeVar);
-                    addRelatesConstraint(relationTypeVar, roleTypeVar);
                 }
 
-                if (roleTypeVar == null || roleTypeVar.reference().isLabel()) {
-                    TypeVariable rolePlayerHint = varHints.convert(rolePlayer);
-                    neighbours.put(rolePlayerHint, new HashSet<>());
-                    if (isMapped(rolePlayerHint)) rolePlayerHint.sub(metaRole, true);
-                    addRelatesConstraint(owner, rolePlayerHint);
-                    addRelatesConstraint(relationTypeVar, rolePlayerHint);
-                    playerType.plays(null, rolePlayerHint, null);
-                    addNeighbour(playerType, rolePlayerHint);
+                if (roleTypeVar == null) {
+                    TypeVariable resolveRolePlayer = resolverVariables.convert(rolePlayer);
+                    neighbours.put(resolveRolePlayer, new HashSet<>());
+                    if (noInformation(resolveRolePlayer)) addRootTypeVar(resolveRolePlayer, rootRoleType);
+                    addRelatesConstraint(owner, resolveRolePlayer);
+                    playerType.plays(null, resolveRolePlayer, null);
+                    addNeighbours(playerType, resolveRolePlayer);
                 } else {
                     playerType.plays(null, roleTypeVar, null);
-                    addNeighbour(playerType, roleTypeVar);
+                    addNeighbours(playerType, roleTypeVar);
                 }
             }
         }
 
         private void addRelatesConstraint(TypeVariable owner, TypeVariable roleType) {
             if (owner != null && !owner.reference().isLabel()) owner.relates(roleType, null);
-            if (owner != null) addNeighbour(owner, roleType);
+            if (owner != null) addNeighbours(owner, roleType);
+        }
+
+        private void addRootTypeVar(TypeVariable variable, TypeVariable rootTypeVar) {
+            TypeVariable rootConverted = resolverVariables.convert(rootTypeVar);
+            variable.sub(rootConverted, false);
+            addNeighbours(variable, rootConverted);
         }
 
         private void convertHas(TypeVariable owner, HasConstraint hasConstraint) {
             TypeVariable attributeTypeVar = convertVariable(hasConstraint.attribute());
             owner.owns(attributeTypeVar, null, false);
-            if (isMapped(attributeTypeVar)) attributeTypeVar.sub(metaAttribute, true);
-            addNeighbour(owner, attributeTypeVar);
+            if (noInformation(attributeTypeVar)) addRootTypeVar(attributeTypeVar, rootAttributeType);
+            addNeighbours(owner, attributeTypeVar);
+            assert attributeTypeVar.sub().isPresent();
+            addNeighbours(owner, attributeTypeVar.sub().get().type());
         }
 
         private void convertIsa(TypeVariable owner, IsaConstraint isaConstraint) {
@@ -406,13 +358,13 @@ public class TypeResolver {
             else if (isaConstraint.type().label().isPresent())
                 owner.label(isaConstraint.type().label().get().properLabel());
             else throw GraknException.of(ILLEGAL_STATE);
-            addNeighbour(isaVar, isaVar);
+            addNeighbours(owner, isaVar);
         }
 
         private void convertIs(TypeVariable owner, grakn.core.pattern.constraint.thing.IsConstraint isConstraint) {
             TypeVariable isVar = convertVariable(isConstraint.variable());
             owner.is(isVar);
-            addNeighbour(owner, isVar);
+            addNeighbours(owner, isVar);
         }
 
         private void convertValue(TypeVariable owner, ValueConstraint<?> constraint) {
@@ -421,61 +373,79 @@ public class TypeResolver {
             else if (constraint.isDateTime()) owner.valueType(GraqlArg.ValueType.DATETIME);
             else if (constraint.isDouble()) owner.valueType(GraqlArg.ValueType.DOUBLE);
             else if (constraint.isLong()) owner.valueType(GraqlArg.ValueType.LONG);
+            else if (constraint.isVariable()) resolverVariables.convert(constraint.asVariable().value());
             else throw GraknException.of(ILLEGAL_STATE);
-            if (isMapped(owner)) owner.sub(metaAttribute, true);
+            if (noInformation(owner)) addRootTypeVar(owner, rootAttributeType);
         }
 
-        public void addNeighbour(TypeVariable from, TypeVariable to) {
+        public void addNeighbours(TypeVariable from, TypeVariable to) {
+            neighbours.putIfAbsent(from, new HashSet<>());
+            neighbours.putIfAbsent(to, new HashSet<>());
             neighbours.get(from).add(to);
             neighbours.get(to).add(from);
         }
 
+        public void addNeighboursOfTypeVariable(TypeVariable fromCopy, TypeVariable toCopy) {
+            for (TypeConstraint constraint : fromCopy.constraints()) {
+                if (constraint.isSub()) {
+                    addNeighbours(fromCopy, constraint.asSub().type());
+                } else if (constraint.isOwns()) {
+                    addNeighbours(fromCopy, constraint.asOwns().attribute());
+                } else if (constraint.isPlays()) {
+                    addNeighbours(fromCopy, constraint.asPlays().role());
+                } else if (constraint.isRelates()) {
+                    addNeighbours(fromCopy, constraint.asRelates().role());
+                } else if (constraint.isIs()) {
+                    addNeighbours(fromCopy, constraint.asIs().variable());
+                }
+            }
+        }
+
     }
 
-    private static class VariableHints {
+    private static class ResolverVariables {
 
-        private final Map<Reference, TypeVariable> varHints;
-        private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerHints;
+        private final Map<Identifier, TypeVariable> resolveeVars;
+        private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerResolveVars;
 
         private Integer tempCounter;
 
-        VariableHints() {
+        ResolverVariables() {
             this.tempCounter = 0;
-            this.varHints = new HashMap<>();
-            this.rolePlayerHints = new HashMap<>();
-        }
-
-        TypeVariable newHintingeVariable() {
-            TypeVariable tempVar = new TypeVariable(Identifier.Variable.of(
-                    new SystemReference("temp" + addAndGetCounter())));
-            varHints.put(tempVar.reference(), tempVar);
-            return tempVar;
+            this.resolveeVars = new HashMap<>();
+            this.rolePlayerResolveVars = new HashMap<>();
         }
 
         public TypeVariable convert(RelationConstraint.RolePlayer key) {
-            if (!rolePlayerHints.containsKey(key)) {
+            if (!rolePlayerResolveVars.containsKey(key)) {
                 TypeVariable newTypeVar = new TypeVariable(Identifier.Variable.of(
                         new SystemReference("temp" + addAndGetCounter())));
-                rolePlayerHints.put(key, newTypeVar);
+                rolePlayerResolveVars.put(key, newTypeVar);
             }
-            return rolePlayerHints.get(key);
+            return rolePlayerResolveVars.get(key);
         }
 
         public TypeVariable convert(Variable key) {
-            if (!varHints.containsKey(key.reference())) {
-                TypeVariable newTypeVar = new TypeVariable(key.identifier());
-                if (key.isType()) key.asType().constraints().forEach(newTypeVar::constrain);
-                varHints.put(key.reference(), newTypeVar);
+            if (!resolveeVars.containsKey(key.identifier())) {
+                TypeVariable newTypeVar;
+                if (key.reference().isAnonymous()) {
+                    newTypeVar = new TypeVariable(Identifier.Variable.of(
+                            new SystemReference("temp" + addAndGetCounter())));
+                } else newTypeVar = new TypeVariable(key.identifier());
+                if (key.isType()) {
+                    newTypeVar.copyConstraints(key.asType());
+                }
+                resolveeVars.put(key.identifier(), newTypeVar);
             }
-            return varHints.get(key.reference());
+            return resolveeVars.get(key.identifier());
         }
 
         public boolean hasConversion(Variable key) {
-            return varHints.containsKey(key.reference());
+            return resolveeVars.containsKey(key.identifier());
         }
 
-        public Collection<TypeVariable> getVariableHints() {
-            return varHints.values();
+        public Collection<TypeVariable> getResolveVars() {
+            return resolveeVars.values();
         }
 
         private Integer addAndGetCounter() {
@@ -483,11 +453,7 @@ public class TypeResolver {
         }
 
         public TypeVariable getConversion(Variable key) {
-            return varHints.get(key.reference());
-        }
-
-        public TypeVariable getConversion(RelationConstraint.RolePlayer rolePlayer) {
-            return rolePlayerHints.get(rolePlayer);
+            return resolveeVars.get(key.identifier());
         }
     }
 

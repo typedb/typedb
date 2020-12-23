@@ -19,11 +19,11 @@ package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "insert-test",
+    name = "test-flakey",
     srcs = [
-        "InsertTest.java",
+        "FlakeyTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.low.InsertTest",
+    test_class = "grakn.core.test.behaviour.debug.bugs.flakey.FlakeyTest",
     deps = [
         # Internal dependencies
 
@@ -48,7 +48,7 @@ java_test(
         "//test/behaviour/graql:steps",
     ],
     data = [
-        ":insert-bug.feature",
+        ":flakey.feature",
     ],
     size = "medium",
 )

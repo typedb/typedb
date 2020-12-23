@@ -27,7 +27,6 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
