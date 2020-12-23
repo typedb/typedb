@@ -118,15 +118,13 @@ public class UnificationTest {
 
     // ############## Isa Unification ###############
 
-
     @Test
     public void isa_variable_type_no_pruning() {
         ConceptManager conceptMgr = rocksTransaction.concepts();
 
-        String conjunction = "{ $a isa $b; }";
+        String conjunction = "{ $a isa $t; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
-
 
         // rule: when { $x isa person; } then { $x has name "john"; }
         Conjunction whenHasName = parseConjunction("{$x isa person;}");
@@ -140,7 +138,7 @@ public class UnificationTest {
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
-            put("$b", set("$_name"));
+            put("$t", set("$_name"));
         }};
         assertEquals(expected, result);
 
@@ -156,7 +154,7 @@ public class UnificationTest {
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
-            put("$b", set("$_employment"));
+            put("$t", set("$_employment"));
         }};
         assertEquals(expected, result);
 
@@ -172,10 +170,9 @@ public class UnificationTest {
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
-            put("$b", set("$_employment"));
+            put("$t", set("$_employment"));
         }};
         assertEquals(expected, result);
-
 
         // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
         Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
@@ -189,41 +186,102 @@ public class UnificationTest {
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
-            put("$b", set("$rel-type"));
+            put("$t", set("$rel-type"));
         }};
         assertEquals(expected, result);
     }
 
-/*
-    Rules to test against that should fail unification pruning, possibly requiring type resolution:
+    @Test
+    public void isa_variable_type_pruned() {
+        ConceptManager conceptMgr = rocksTransaction.concepts();
 
-    when { $x isa company; } then { $x has name "john"; }
-    when { $x isa person; } then { (employee: $x) isa employment; }
-    when { $x isa person; $role-type type employment:employee; } then { ($role-type: $x) isa employment; }
-    when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
- */
-//
-//    @Test
-//    public void unify_isa_concrete() {
-//        String conjunction = "{ $x isa person; }";
-//        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
-//        Concludable.Isa conjConcludable = concludables.iterator().next().asIsa();
-//
-//        Conjunction thenConjunction = parseConjunction("{ $a 7; $a isa $person; }");
-//        ThingVariable variable = parseThingVariable("$a isa $person", "a");
-//        assertTrue(variable.isa().isPresent());
-//        IsaConstraint isaConstraint = variable.isa().get();
-//        Rule.Conclusion.Isa isaConcludable = new Rule.Conclusion.Isa(isaConstraint, thenConjunction.variables());
-//
-//        Optional<Unifier> unifier = conjConcludable.unify(isaConcludable, conceptMgr).findFirst();
-//        assertTrue(unifier.isPresent());
-//        Map<String, Set<String>> result = getStringMapping(unifier.get().mapping());
-//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-//            put("$x", set("$a"));
-//        }};
-//        assertTrue(result.entrySet().containsAll(expected.entrySet()));
-//        assertEquals(expected, result);
-//    }
+        String conjunction = "{ $a isa $t; $t type company; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
+
+        // rule: when { $x isa person; } then { $x has name "john"; }
+        Conjunction whenHasName = parseConjunction("{$x isa person;}");
+        Conjunction thenHasNameJohn = parseConjunction("{ $x has name 'john'; }");
+        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
+        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+
+        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
+        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
+        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
+        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
+        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
+        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+
+        // rule: when { $x isa person; $role-type type employment:employee; } then { ($role-type: $x) isa employment; }
+        Conjunction whenVariableRoleType = parseConjunction("{ $x isa person; $role-type type employment:employee; }");
+        Conjunction thenVariableRoleType = parseConjunction("{ ($role-type: $x) isa employment; }");
+        IsaConstraint thenVariableRoleTypeIsa = findIsaConstraint(thenVariableRoleType);
+        Rule.Conclusion.Isa relationIsaVariableRoleType = Rule.Conclusion.Isa.create(thenVariableRoleTypeIsa, whenVariableRoleType.variables());
+        unifiers = queryConcludable.unify(relationIsaVariableRoleType, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+
+        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
+        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
+        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
+        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
+        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
+        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+    }
+
+
+    @Test
+    public void isa_concrete() {
+        ConceptManager conceptMgr = rocksTransaction.concepts();
+
+        String conjunction = "{ $a isa name; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
+
+        // rule: when { $x isa person; } then { $x has name "john"; }
+        Conjunction whenHasName = parseConjunction("{$x isa person;}");
+        Conjunction thenHasNameJohn = parseConjunction("{ $x has name 'john'; }");
+        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
+        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("$_0"));
+            put("$_name", set())
+        }};
+        assertEquals(expected, result);
+
+
+        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
+        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
+        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
+        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
+        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
+        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+
+        // rule: when { $x isa person; $role-type type employment:employee; } then { ($role-type: $x) isa employment; }
+        Conjunction whenVariableRoleType = parseConjunction("{ $x isa person; $role-type type employment:employee; }");
+        Conjunction thenVariableRoleType = parseConjunction("{ ($role-type: $x) isa employment; }");
+        IsaConstraint thenVariableRoleTypeIsa = findIsaConstraint(thenVariableRoleType);
+        Rule.Conclusion.Isa relationIsaVariableRoleType = Rule.Conclusion.Isa.create(thenVariableRoleTypeIsa, whenVariableRoleType.variables());
+        unifiers = queryConcludable.unify(relationIsaVariableRoleType, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+
+        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
+        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
+        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
+        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
+        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
+        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
+    }
 //
 //    @Test
 //    public void unify_value_concrete() {
