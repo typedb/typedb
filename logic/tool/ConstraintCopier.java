@@ -45,9 +45,7 @@ public class ConstraintCopier {
         return players.stream().map(rolePlayer -> {
             TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? copyVariableWithLabelAndValueType(rolePlayer.roleType().get()) : null;
             ThingVariable playerCopy = copyIsaAndValues(rolePlayer.player());
-            RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
-            rolePlayerCopy.addResolvedRoleTypes(rolePlayer.resolvedRoleTypes());
-            return rolePlayerCopy;
+            return new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
         }).collect(Collectors.toList());
     }
 

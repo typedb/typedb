@@ -18,13 +18,11 @@
 
 package grakn.core.logic;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -50,6 +48,7 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-resolver");
@@ -90,28 +89,6 @@ public class TypeResolverTest {
                 variable -> variable.reference().syntax(),
                 variable -> variable.resolvedTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
         ));
-    }
-
-    private Map<Pair<String, String>, Set<String>> getRoleHints(Conjunction conjunction) {
-        Map<Pair<String, String>, Set<String>> ans = new HashMap<>();
-        conjunction.variables().stream().filter(Variable::isThing).map(Variable::asThing)
-                .filter(variable -> !variable.relation().isEmpty())
-                .flatMap(variable -> variable.relation().stream())
-                .flatMap(relationConstraint -> relationConstraint.players().stream())
-                .forEach(rolePlayer -> {
-                    if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().reference().isName()) {
-                        ans.put(new Pair<>(
-                                        rolePlayer.roleType().get().reference().syntax(),
-                                        rolePlayer.player().reference().syntax()
-                                ),
-                                rolePlayer.resolvedRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet()));
-                    } else {
-                        ans.put(new Pair<>("", rolePlayer.player().reference().syntax()),
-                                rolePlayer.resolvedRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet()));
-                    }
-                });
-
-        return ans;
     }
 
     private Conjunction createConjunction(String matchString) {

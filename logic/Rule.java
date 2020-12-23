@@ -197,12 +197,12 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
-        return logicManager.typeResolver().resolveLabeledVars(
+        return logicManager.typeResolver().resolveLabels(
                 Conjunction.create(conjunction.normalise().patterns().get(0)));
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
-        return logicManager.typeResolver().resolveLabeledVars(
+        return logicManager.typeResolver().resolveLabels(
                 new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 

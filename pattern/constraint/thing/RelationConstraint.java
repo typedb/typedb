@@ -134,7 +134,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         private final TypeVariable roleType;
         private final ThingVariable player;
-        private final Set<Label> resolvedRoleTypes;
         private final int hash;
 
         public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
@@ -144,7 +143,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             this.roleType = roleType;
             this.player = player;
             this.hash = Objects.hash(this.roleType, this.player);
-            this.resolvedRoleTypes = new HashSet<>();
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
@@ -161,14 +159,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         public ThingVariable player() {
             return player;
-        }
-
-        public void addResolvedRoleTypes(Set<Label> labels) {
-            this.resolvedRoleTypes.addAll(labels);
-        }
-
-        public Set<Label> resolvedRoleTypes() {
-            return resolvedRoleTypes;
         }
 
         @Override
@@ -192,7 +182,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         @Override
         public AlphaEquivalence alphaEquals(RolePlayer that) {
             return AlphaEquivalence.valid()
-                    .validIf(resolvedRoleTypes.equals(that.resolvedRoleTypes))
                     .validIfAlphaEqual(roleType, that.roleType)
                     .validIfAlphaEqual(player, that.player);
         }
