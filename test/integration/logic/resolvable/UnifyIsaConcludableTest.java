@@ -32,14 +32,12 @@ import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -55,20 +53,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.pattern.variable.VariableRegistry.createFromThings;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class UnifyIsaConcludableTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("unification-test");
-    private static String database = "unification-test";
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("unify-isa-test");
+    private static String database = "unify-isa-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
@@ -93,7 +89,7 @@ public class UnifyIsaConcludableTest {
                                                        "employment sub relation," +
                                                        "    relates employee," +
                                                        "    relates employer;" +
-                                                       "name sub attribute, value string, abstract;"+
+                                                       "name sub attribute, value string, abstract;" +
                                                        "first-name sub name;" +
                                                        "last-name sub name;" +
                                                        "age sub attribute, value long;" +
@@ -120,8 +116,10 @@ public class UnifyIsaConcludableTest {
         ThingType type = conceptMgr.getThingType(label);
         if (type.isEntityType()) return type.asEntityType().create();
         else if (type.isRelationType()) return type.asRelationType().create();
-        else if (type.isAttributeType() && type.asAttributeType().isString()) return type.asAttributeType().asString().put("john");
-        else if (type.isAttributeType() && type.asAttributeType().isLong()) return type.asAttributeType().asLong().put(10L);
+        else if (type.isAttributeType() && type.asAttributeType().isString())
+            return type.asAttributeType().asString().put("john");
+        else if (type.isAttributeType() && type.asAttributeType().isLong())
+            return type.asAttributeType().asLong().put(10L);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -129,10 +127,6 @@ public class UnifyIsaConcludableTest {
         // TODO type resolver should probably run INSIDE the creation of a conclusion or concludable
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
         return logicMgr.typeResolver().resolveLabels(conjunction);
-    }
-
-    private ThingVariable parseThingVariable(String graqlVariable, String variableName) {
-        return createFromThings(list(Graql.parseVariable(graqlVariable).asThing())).get(Reference.Name.named(variableName)).asThing();
     }
 
     private IsaConstraint findIsaConstraint(Conjunction conjunction) {

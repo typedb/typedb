@@ -68,9 +68,33 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-unification",
-    srcs = ["resolvable/UnificationTest.java"],
-    test_class = "grakn.core.logic.resolvable.UnificationTest",
+    name = "test-unification-relation-concludable",
+    srcs = ["resolvable/UnifyRelationConcludableTest.java"],
+    test_class = "grakn.core.logic.resolvable.UnifyRelationConcludableTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-unification-has-concludable",
+    srcs = ["resolvable/UnifyHasConcludableTest.java"],
+    test_class = "grakn.core.logic.resolvable.UnifyHasConcludableTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -95,6 +119,32 @@ host_compatible_java_test(
     name = "test-unification-isa-concludable",
     srcs = ["resolvable/UnifyIsaConcludableTest.java"],
     test_class = "grakn.core.logic.resolvable.UnifyIsaConcludableTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
+    ],
+)
+
+
+
+host_compatible_java_test(
+    name = "test-unification-attribute-concludable",
+    srcs = ["resolvable/UnifyAttributeConcludableTest.java"],
+    test_class = "grakn.core.logic.resolvable.UnifyAttributeConcludableTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
