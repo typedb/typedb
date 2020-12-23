@@ -189,10 +189,10 @@ public class Rule {
                 );
     }
 
-    private Set<Conclusion<?>> buildConclusions(Conjunction then, Set<Variable> constraintContext) {
+    private Set<Conclusion<?>> buildConclusions(Conjunction then, Set<Variable> when) {
         HashSet<Conclusion<?>> conclusions = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> Conclusion.create(constraint, constraintContext)).forEach(conclusions::add);
+                .map(constraint -> Conclusion.create(constraint, when)).forEach(conclusions::add);
         return conclusions;
     }
 
@@ -208,20 +208,20 @@ public class Rule {
 
         private final CONSTRAINT constraint;
 
-        private Conclusion(CONSTRAINT constraint, Set<Variable> constraintContext) {
+        private Conclusion(CONSTRAINT constraint, Set<Variable> whenContext) {
             this.constraint = constraint;
-            copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
+            copyAdditionalConstraints(whenContext, new HashSet<>(this.constraint.variables()));
         }
 
         public CONSTRAINT constraint() {
             return constraint;
         }
 
-        public static Conclusion<?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
-            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
-            else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
-            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
-            else if (constraint.isValue()) return Value.create(constraint.asValue(), constraintContext);
+        public static Conclusion<?> create(ThingConstraint constraint, Set<Variable> whenContext) {
+            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), whenContext);
+            else if (constraint.isHas()) return Has.create(constraint.asHas(), whenContext);
+            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), whenContext);
+            else if (constraint.isValue()) return Value.create(constraint.asValue(), whenContext);
             else throw GraknException.of(ILLEGAL_STATE);
         }
 
@@ -276,13 +276,13 @@ public class Rule {
 
         public static class Relation extends Conclusion<RelationConstraint> {
 
-            public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            public Relation(RelationConstraint constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
 
-            public static Relation create(RelationConstraint constraint, Set<Variable> constraintContext) {
-                return new Relation(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
+                return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -298,12 +298,12 @@ public class Rule {
 
         public static class Has extends Conclusion<HasConstraint> {
 
-            public Has(HasConstraint constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            public Has(HasConstraint constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
-            public static Has create(HasConstraint constraint, Set<Variable> constraintContext) {
-                return new Has(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
+                return new Has(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -319,12 +319,12 @@ public class Rule {
 
         public static class Isa extends Conclusion<IsaConstraint> {
 
-            public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            public Isa(IsaConstraint constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
-            public static Isa create(IsaConstraint constraint, Set<Variable> constraintContext) {
-                return new Isa(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            public static Isa create(IsaConstraint constraint, Set<Variable> whenContext) {
+                return new Isa(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -340,12 +340,12 @@ public class Rule {
 
         public static class Value extends Conclusion<ValueConstraint<?>> {
 
-            Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            Value(ValueConstraint<?> constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
-            public static Value create(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
-                return new Value(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            public static Value create(ValueConstraint<?> constraint, Set<Variable> whenContext) {
+                return new Value(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override

@@ -124,15 +124,4 @@ public class ConstraintCopier {
         copyLabelSubAndValueType(copyFrom, copy);
         return copy;
     }
-
-    static boolean hasNoHints(Variable variable) {
-        return variable.isSatisfiable() && variable.resolvedTypes().isEmpty();
-    }
-
-    public static boolean varHintsDisjoint(Variable conjVar, Variable thenVar) {
-        if (hasNoHints(conjVar) || hasNoHints(thenVar)) return false;
-        assert (conjVar.isThing() && thenVar.isThing()) ||
-                (conjVar.isType() && thenVar.isType());
-        return Collections.disjoint(conjVar.resolvedTypes(), thenVar.resolvedTypes());
-    }
 }
