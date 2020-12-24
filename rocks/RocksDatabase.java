@@ -91,6 +91,11 @@ public class RocksDatabase implements Grakn.Database {
         else load();
         statisticsBackgroundCounterSession = rocksCreator.sessionData(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
+        start();
+    }
+
+    protected void start() {
+        statisticsBackgroundCounter.start();
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
@@ -331,6 +336,10 @@ public class RocksDatabase implements Grakn.Database {
             thread = NamedThreadFactory.create(session.database.name + "::statistics-background-counter")
                     .newThread(this::countFn);
 
+        }
+
+        public void start() {
+            thread.start();
         }
 
         public void needsBackgroundCounting() {
