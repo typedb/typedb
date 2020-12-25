@@ -44,7 +44,7 @@ import static graql.lang.common.GraqlToken.Char.SEMICOLON;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
 
-public class Conjunction implements Pattern {
+public class Conjunction implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "conjunction.";
     private final Set<Variable> variables;
@@ -104,6 +104,11 @@ public class Conjunction implements Pattern {
 
     public void forEach(Consumer<Variable> function) {
         variables.forEach(function);
+    }
+
+    @Override
+    public Conjunction clone() {
+        return null; // TODO
     }
 
     @Override
