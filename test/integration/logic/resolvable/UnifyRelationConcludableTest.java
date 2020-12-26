@@ -262,27 +262,6 @@ public class UnifyRelationConcludableTest {
     }
 
     @Test
-    public void has_duplicate_vars_conj() {
-        String conjunction = "{ $x has name $x; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
-        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
-
-        Conjunction thenConjunction = parseConjunction("{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
-        ThingVariable variable = parseThingVariable("$p has $name", "p");
-        HasConstraint hasConstraint = variable.has().iterator().next();
-        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
-
-        Optional<Unifier> unifier = conjConcludable.unify(hasConcludable, conceptMgr).findFirst();
-        assertTrue(unifier.isPresent());
-        Map<String, Set<String>> result = getStringMapping(unifier.get().mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set("$p", "$name"));
-        }};
-        assertTrue(result.entrySet().containsAll(expected.entrySet()));
-        assertEquals(expected, result);
-    }
-
-    @Test
     public void relation_named_role_duplication() {
         String conjunction = "{ ($role: $x) isa employment; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));

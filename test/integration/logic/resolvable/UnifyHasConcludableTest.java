@@ -24,6 +24,7 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.rocks.RocksGrakn;
@@ -199,6 +200,27 @@ public class UnifyHasConcludableTest {
 //        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
 //            put("$x", set("$a"));
 //            put("$y", set("$a"));
+//        }};
+//        assertTrue(result.entrySet().containsAll(expected.entrySet()));
+//        assertEquals(expected, result);
+//    }
+//
+//    @Test
+//    public void has_duplicate_vars_conj() {
+//        String conjunction = "{ $x has name $x; }";
+//        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+//        Concludable.Has conjConcludable = concludables.iterator().next().asHas();
+//
+//        Conjunction thenConjunction = parseConjunction("{ $p isa $person; $p has $name; $name = 'bob' isa name;}");
+//        ThingVariable variable = parseThingVariable("$p has $name", "p");
+//        HasConstraint hasConstraint = variable.has().iterator().next();
+//        Rule.Conclusion.Has hasConcludable = new Rule.Conclusion.Has(hasConstraint, thenConjunction.variables());
+//
+//        Optional<Unifier> unifier = conjConcludable.unify(hasConcludable, conceptMgr).findFirst();
+//        assertTrue(unifier.isPresent());
+//        Map<String, Set<String>> result = getStringMapping(unifier.get().mapping());
+//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+//            put("$x", set("$p", "$name"));
 //        }};
 //        assertTrue(result.entrySet().containsAll(expected.entrySet()));
 //        assertEquals(expected, result);

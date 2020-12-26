@@ -20,12 +20,20 @@ package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Label;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.logic.LogicManager;
+import grakn.core.logic.Rule;
+import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.constraint.thing.IsaConstraint;
+import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -34,16 +42,26 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.map;
+import static grakn.common.collection.Collections.pair;
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class UnifyAttributeConcludableTest {
 
@@ -108,15 +126,30 @@ public class UnifyAttributeConcludableTest {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
+    private Thing instanceOf(String stringAttributeLabel, String stringValue) {
+        AttributeType type = conceptMgr.getAttributeType(stringAttributeLabel);
+        assert type != null;
+        return type.asString().put(stringValue);
+    }
+
     private Conjunction parseConjunction(String query) {
         // TODO type resolver should probably run INSIDE the creation of a conclusion or concludable
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
+    private IsaConstraint findIsaConstraint(Conjunction conjunction) {
+        List<IsaConstraint> isas = conjunction.variables().stream().flatMap(var -> var.constraints().stream())
+                .filter(constraint -> constraint.isThing() && constraint.asThing().isIsa())
+                .map(constraint -> constraint.asThing().asIsa()).collect(Collectors.toList());
+        assert isas.size() == 1 : "More than 1 isa constraint in conjunction to search";
+        return isas.get(0);
+    }
+
+    @Ignore // TODO enable when we have the final structure of conclusions and concludable in place
     @Test
-    public void variable_with_predicates_unifies_only_isa_rules() {
-        String conjunction = "{ $x < 7; $x > 0; }";
+    public void literal_predicates_unify_and_filter_answers() {
+        String conjunction = "{ $a > 'b'; $a < 'y'; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Value queryConcludable = concludables.iterator().next().asValue();
 
@@ -129,25 +162,54 @@ public class UnifyAttributeConcludableTest {
         satisfying the predicates
          */
 
-//        Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
-//        ThingVariable variable = parseThingVariable("$a > $num", "a");
-//        ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-//        Rule.Conclusion.Value valueConcludable = Rule.Conclusion.Value.create(valueConstraint, thenConjunction.variables());
-//
-//        Optional<Unifier> unifier = conjConcludable.unify(valueConcludable, conceptMgr).findFirst();
-//        assertTrue(unifier.isPresent());
-//        Map<String, Set<String>> result = getStringMapping(unifier.get().mapping());
-//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-//            put("$x", set("$a"));
-//        }};
-//        assertTrue(result.entrySet().containsAll(expected.entrySet()));
-//        assertEquals(expected, result);
+        // rule: when { $x isa person; } then { $x has first-name "john"; }
+        Conjunction whenHasName = parseConjunction("{$x isa person;}");
+        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
+        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
+        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables()); // TODO this will become a Has conclusion
+
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("$_0"));
+        }};
+        assertEquals(expected, result);
+
+        // test filter allows a valid answer
+        Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
+        assertEquals(1, typesRequirements.size());
+        assertEquals(set(Label.of("first-name")), typesRequirements.values().iterator().next());
+        Map<Identifier, Concept> identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
+        );
+        Optional<ConceptMap> unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertTrue(unified.isPresent());
+        assertEquals(1, unified.get().concepts().size());
+
+        // filter out using >
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "abe"))
+        );
+        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
+
+        // filter out using <
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "zack"))
+        );
+        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
+
     }
 
+    @Ignore // TODO enable when new structure of concludables is enforced
     @Test
-    public void variable_with_variable_predicate_unifies_isa_rules() {
+    public void variable_predicates_unify_value_conclusions() {
         String conjunction = "{ $x > $y; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(2, concludables.size());
         Concludable.Value queryConcludable = concludables.iterator().next().asValue();
 
         /*
@@ -156,20 +218,29 @@ public class UnifyAttributeConcludableTest {
         and nothing else
         */
 
-//        Conjunction thenConjunction = parseConjunction("{ $a > $num; $a isa $person; $num = 7; }");
-//        ThingVariable variable = parseThingVariable("$a > $num", "a");
-//        ValueConstraint<?> valueConstraint = variable.value().iterator().next();
-//        Rule.Conclusion.Value valueConcludable = Rule.Conclusion.Value.create(valueConstraint, thenConjunction.variables());
-//
-//        Optional<Unifier> unifier = conjConcludable.unify(valueConcludable, conceptMgr).findFirst();
-//        assertTrue(unifier.isPresent());
-//        Map<String, Set<String>> result = getStringMapping(unifier.get().mapping());
-//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-//            put("$x", set("$a"));
-//            put("$y", set("$num"));
-//        }};
-//        assertTrue(result.entrySet().containsAll(expected.entrySet()));
-//        assertEquals(expected, result);
+        // rule: when { $x isa person; } then { $x has first-name "john"; }
+        Conjunction whenHasName = parseConjunction("{$x isa person;}");
+        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
+        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
+        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("$_0"));
+        }};
+        assertEquals(expected, result);
+
+        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
+        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
+        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
+        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
+        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
+
+        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(0, unifiers.size());
     }
 
 }

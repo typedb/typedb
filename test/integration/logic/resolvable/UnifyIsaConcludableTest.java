@@ -25,6 +25,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
@@ -121,6 +122,12 @@ public class UnifyIsaConcludableTest {
         else if (type.isAttributeType() && type.asAttributeType().isLong())
             return type.asAttributeType().asLong().put(10L);
         else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    private Thing instanceOf(String stringAttributeLabel, String stringValue) {
+        AttributeType type = conceptMgr.getAttributeType(stringAttributeLabel);
+        assert type != null;
+        return type.asString().put(stringValue);
     }
 
     private Conjunction parseConjunction(String query) {
@@ -353,7 +360,7 @@ public class UnifyIsaConcludableTest {
         // test filtering
         Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
         assertEquals(1, typesRequirements.size());
-        assertEquals(set(Label.of("first-name"), Label.of("lastname")), typesRequirements.values().iterator().next());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), typesRequirements.values().iterator().next());
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name"))
         );
@@ -405,6 +412,49 @@ public class UnifyIsaConcludableTest {
     @Ignore // TODO enable when Requirements are active
     @Test
     public void isa_predicates_can_filter_answers() {
-        // TODO
+        String conjunction = "{ $a isa first-name; $a > 'b'; $a < 'y'; $a contains 'j'; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
+
+        // rule: when { $x isa person; } then { $x has first-name "john"; }
+        Conjunction whenHasName = parseConjunction("{$x isa person;}");
+        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
+        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
+        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        assertEquals(1, unifiers.size());
+
+        // test filter allows a valid answer
+        Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
+        assertEquals(1, typesRequirements.size());
+        assertEquals(set(Label.of("first-name")), typesRequirements.values().iterator().next());
+        Map<Identifier, Concept> identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
+        );
+        Optional<ConceptMap> unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertTrue(unified.isPresent());
+        assertEquals(1, unified.get().concepts().size());
+
+        // filter out using >
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "abe"))
+        );
+        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
+
+        // filter out using <
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "zack"))
+        );
+        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
+
+        // filter out using contains
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("first-name", "carol"))
+        );
+        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
+
     }
 }
