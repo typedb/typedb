@@ -114,18 +114,6 @@ public class UnifyAttributeConcludableTest {
         );
     }
 
-    private Thing instanceOf(String label) {
-        ThingType type = conceptMgr.getThingType(label);
-        assert type != null : "Cannot find type " + label;
-        if (type.isEntityType()) return type.asEntityType().create();
-        else if (type.isRelationType()) return type.asRelationType().create();
-        else if (type.isAttributeType() && type.asAttributeType().isString())
-            return type.asAttributeType().asString().put("john");
-        else if (type.isAttributeType() && type.asAttributeType().isLong())
-            return type.asAttributeType().asLong().put(10L);
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
     private Thing instanceOf(String stringAttributeLabel, String stringValue) {
         AttributeType type = conceptMgr.getAttributeType(stringAttributeLabel);
         assert type != null;
@@ -178,13 +166,13 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test filter allows a valid answer
-        Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
+        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
         assertEquals(1, typesRequirements.size());
         assertEquals(set(Label.of("first-name")), typesRequirements.values().iterator().next());
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
         );
-        Optional<ConceptMap> unified = unifiers.get(0).unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
@@ -192,14 +180,14 @@ public class UnifyAttributeConcludableTest {
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "abe"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
         // filter out using <
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "zack"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
     }

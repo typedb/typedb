@@ -115,6 +115,7 @@ public class UnifyIsaConcludableTest {
 
     private Thing instanceOf(String label) {
         ThingType type = conceptMgr.getThingType(label);
+        assert type != null;
         if (type.isEntityType()) return type.asEntityType().create();
         else if (type.isRelationType()) return type.asRelationType().create();
         else if (type.isAttributeType() && type.asAttributeType().isString())
@@ -174,7 +175,7 @@ public class UnifyIsaConcludableTest {
 
         unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifiers.get(0);
+        unifier = unifier;
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
@@ -190,7 +191,7 @@ public class UnifyIsaConcludableTest {
 
         unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifiers.get(0);
+        unifier = unifier;
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
@@ -268,7 +269,7 @@ public class UnifyIsaConcludableTest {
 
         unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifiers.get(0);
+        unifier = unifier;
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
@@ -284,7 +285,7 @@ public class UnifyIsaConcludableTest {
 
         unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifiers.get(0);
+        unifier = unifier;
         result = getStringMapping(unifier.mapping());
         expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
@@ -357,21 +358,24 @@ public class UnifyIsaConcludableTest {
         List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
 
-        // test filtering
-        Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
+        Unifier unifier = unifiers.get(0);
+
+        // test filter allows a valid answer
+        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
         assertEquals(1, typesRequirements.size());
         assertEquals(set(Label.of("first-name"), Label.of("last-name")), typesRequirements.values().iterator().next());
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name"))
         );
-        Optional<ConceptMap> unified = unifiers.get(0).unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
+        // filter out invalid type
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("age"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
     }
@@ -391,21 +395,23 @@ public class UnifyIsaConcludableTest {
         List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
 
-        // test filtering
-        Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
+        Unifier unifier = unifiers.get(0);
+
+        // test filter allows a valid answer
+        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
         assertEquals(1, typesRequirements.size());
         assertEquals(set(Label.of("employment")), typesRequirements.values().iterator().next());
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("employment"))
         );
-        Optional<ConceptMap> unified = unifiers.get(0).unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("age"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
     }
 
@@ -424,14 +430,16 @@ public class UnifyIsaConcludableTest {
         List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
 
+        Unifier unifier = unifiers.get(0);
+
         // test filter allows a valid answer
-        Map<Identifier, Set<Label>> typesRequirements = unifiers.get(0).requirements().types();
+        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
         assertEquals(1, typesRequirements.size());
         assertEquals(set(Label.of("first-name")), typesRequirements.values().iterator().next());
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
         );
-        Optional<ConceptMap> unified = unifiers.get(0).unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
@@ -439,21 +447,21 @@ public class UnifyIsaConcludableTest {
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "abe"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
         // filter out using <
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "zack"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
         // filter out using contains
         identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "carol"))
         );
-        unified = unifiers.get(0).unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
     }
