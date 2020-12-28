@@ -21,7 +21,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.transformer.Mapping;
-import grakn.core.logic.transformer.Unifier;
+import grakn.core.logic.resolvable.Unifier;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 

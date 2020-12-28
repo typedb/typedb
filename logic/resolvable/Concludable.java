@@ -25,7 +25,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.logic.Rule;
 import grakn.core.logic.tool.ConstraintCopier;
-import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;

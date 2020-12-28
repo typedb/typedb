@@ -18,7 +18,6 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -26,14 +25,11 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.ThingType;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -58,7 +54,6 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

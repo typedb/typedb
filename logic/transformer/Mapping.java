@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class Mapping extends VariableTransformer {
+public class Mapping {
 
     private final Map<Reference.Name, Reference.Name> mapping;
     private final Map<Reference.Name, Reference.Name> reverseMapping;
@@ -78,15 +78,5 @@ public class Mapping extends VariableTransformer {
             transformed.put(e.getValue(), conceptMap.get(e.getKey()));
         }
         return new ConceptMap(transformed);
-    }
-
-    @Override
-    public boolean isMapping() {
-        return true;
-    }
-
-    @Override
-    public Mapping asMapped() {
-        return this;
     }
 }

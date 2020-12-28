@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.transformer;
+package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS;
 
-public class Unifier extends VariableTransformer {
+public class Unifier {
 
     private final Map<Identifier, Set<Identifier>> unifier;
     private final Map<Identifier, Set<Identifier>> unUnifier;
@@ -100,8 +100,7 @@ public class Unifier extends VariableTransformer {
         return Optional.of(conceptMap(reversedConcepts));
     }
 
-    // visible for testing
-    public Requirements requirements() {
+    Requirements requirements() {
         return requirements;
     }
 
@@ -116,16 +115,6 @@ public class Unifier extends VariableTransformer {
     @Override
     public int hashCode() {
         return Objects.hash(unifier);
-    }
-
-    @Override
-    public boolean isUnifier() {
-        return true;
-    }
-
-    @Override
-    public Unifier asUnifier() {
-        return this;
     }
 
     @Override

@@ -29,7 +29,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.logic.transformer.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -526,5 +525,4 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().predicates().size());
 
     }
-
 }
