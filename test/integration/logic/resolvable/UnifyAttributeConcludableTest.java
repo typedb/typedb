@@ -136,15 +136,6 @@ public class UnifyAttributeConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Value queryConcludable = concludables.iterator().next().asValue();
 
-        /*
-        TODO build attribute concludable out of the conjunction
-        This should successfully unify with rules that can conclude new concepts
-        and nothing else
-
-        The unifier should also contain the predicates, and reject answers not
-        satisfying the predicates
-         */
-
         // rule: when { $x isa person; } then { $x has first-name "john"; }
         Conjunction whenHasName = parseConjunction("{$x isa person;}");
         Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
@@ -160,10 +151,12 @@ public class UnifyAttributeConcludableTest {
         }};
         assertEquals(expected, result);
 
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().predicates().size());
+
         // test filter allows a valid answer
-        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
-        assertEquals(1, typesRequirements.size());
-        assertEquals(set(Label.of("first-name")), typesRequirements.values().iterator().next());
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
         );
@@ -205,7 +198,7 @@ public class UnifyAttributeConcludableTest {
         Conjunction whenHasName = parseConjunction("{$x isa person;}");
         Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
         IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables()); // TODO refactor in new structure
 
         List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
@@ -215,6 +208,11 @@ public class UnifyAttributeConcludableTest {
             put("$a", set("$_0"));
         }};
         assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // rule: when { $x isa person; } then { (employee: $x) isa employment; }
         Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");

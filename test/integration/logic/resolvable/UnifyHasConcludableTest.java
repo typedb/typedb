@@ -144,8 +144,8 @@ public class UnifyHasConcludableTest {
         assert has.size() == 1 : "More than 1 isa constraint in conjunction to search";
         return has.get(0);
     }
-    //TODO: create more tests when type inference is working. (That is why this is an integration test).
 
+    //TODO: create more tests when type inference is working to test unifier pruning
 
     @Test
     public void has_attribute_exact_unifies_rule_has_exact() {

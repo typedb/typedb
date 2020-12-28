@@ -145,7 +145,7 @@ public class UnifyIsaConcludableTest {
     }
 
     @Test
-    public void isa_variable_unifies() {
+    public void isa_variable_unifies_rule_has_exact() {
         String conjunction = "{ $a isa $t; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
@@ -166,21 +166,45 @@ public class UnifyIsaConcludableTest {
         }};
         assertEquals(expected, result);
 
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
+    }
+
+    @Test
+    public void isa_variable_unifies_rule_relation_exact() {
+        String conjunction = "{ $a isa $t; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
+
         // rule: when { $x isa person; } then { (employee: $x) isa employment; }
         Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
         Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
         IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
         Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
 
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifier;
-        result = getStringMapping(unifier.mapping());
-        expected = new HashMap<String, Set<String>>() {{
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
             put("$t", set("$_employment"));
         }};
         assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
+    }
+
+    @Test
+    public void isa_variable_unifies_relation_variable_type() {
+        String conjunction = "{ $a isa $t; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
         Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
@@ -188,19 +212,27 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
         Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
 
-        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifier;
-        result = getStringMapping(unifier.mapping());
-        expected = new HashMap<String, Set<String>>() {{
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
             put("$t", set("$rel-type"));
         }};
         assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
+    /*
+    Test unifier pruning using type information
+     */
     @Test
-    public void isa_variable_prunes_irrelevant_rules() {
+    public void isa_variable_with_type_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa $t; $t type company; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
@@ -233,9 +265,8 @@ public class UnifyIsaConcludableTest {
 
     }
 
-
     @Test
-    public void isa_concrete_unifies() {
+    public void isa_exact_unifies_rule_has_exact() {
         String conjunction = "{ $a isa name; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
@@ -256,9 +287,36 @@ public class UnifyIsaConcludableTest {
         }};
         assertEquals(expected, result);
 
-        conjunction = "{ $a isa employment; }";
-        concludables = Concludable.create(parseConjunction(conjunction));
-        queryConcludable = concludables.iterator().next().asIsa();
+        // test requirements
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().types().values().iterator().next());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier, Concept> identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), instanceOf("first-name", "john")),
+                pair(Identifier.Variable.label("first-name"), conceptMgr.getThingType("first-name"))
+        );
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        assertTrue(unified.isPresent());
+        assertEquals(1, unified.get().concepts().size());
+
+        // TODO enable after implement requirements
+        // filter out invalid type
+//        identifiedConcepts = map(
+//                pair(Identifier.Variable.anon(0), instanceOf("age")),
+//                pair(Identifier.Variable.label("first-name"), conceptMgr.getThingType("age"))
+//        );
+//        unified = unifier.unUnify(identifiedConcepts);
+//        assertFalse(unified.isPresent());
+    }
+
+    @Test
+    public void isa_exact_unifies_rule_relation_exact() {
+        String conjunction = "{ $a isa relation; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         // rule: when { $x isa person; } then { (employee: $x) isa employment; }
         Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
@@ -266,15 +324,46 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
         Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
 
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifier;
-        result = getStringMapping(unifier.mapping());
-        expected = new HashMap<String, Set<String>>() {{
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
-            put("$_employment", set("$_employment"));
+            put("$_relation", set("$_employment"));
         }};
         assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().types().values().iterator().next());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier, Concept> identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), instanceOf("employment")),
+                pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("employment"))
+        );
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        assertTrue(unified.isPresent());
+        assertEquals(1, unified.get().concepts().size());
+
+        // TODO enable after implement requirements
+        // filter out invalid type
+//        identifiedConcepts = map(
+//                pair(Identifier.Variable.anon(0), instanceOf("age")),
+//                pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("age"))
+//        );
+//        unified = unifier.unUnify(identifiedConcepts);
+//        assertFalse(unified.isPresent());
+    }
+
+    @Test
+    public void isa_exact_unifies_rule_relation_variable() {
+        String conjunction = "{ $a isa relation; }";
+        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
         Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
@@ -282,17 +371,40 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
         Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
 
-        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
         assertEquals(1, unifiers.size());
-        unifier = unifier;
-        result = getStringMapping(unifier.mapping());
-        expected = new HashMap<String, Set<String>>() {{
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("$_0"));
-            put("$_employment", set("$rel-type"));
+            put("$_relation", set("$rel-type"));
         }};
         assertEquals(expected, result);
-    }
 
+        // test requirements
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().types().values().iterator().next());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier, Concept> identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), instanceOf("employment")),
+                pair(Identifier.Variable.name("rel-type"), conceptMgr.getThingType("employment"))
+        );
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        assertTrue(unified.isPresent());
+        assertEquals(1, unified.get().concepts().size());
+
+        // TODO enable after implement requirements
+        // filter out invalid type
+//        identifiedConcepts = map(
+//                pair(Identifier.Variable.anon(0), instanceOf("age")),
+//                pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("age"))
+//        );
+//        unified = unifier.unUnify(identifiedConcepts);
+//        assertFalse(unified.isPresent());
+    }
 
     @Test
     public void isa_concrete_prunes_irrelevant_rules() {
@@ -342,78 +454,6 @@ public class UnifyIsaConcludableTest {
         // TODO
     }
 
-    @Ignore // TODO enable Requirements are active
-    @Test
-    public void isa_type_requirements_can_filter_has_conclusion_answers() {
-        String conjunction = "{ $a isa name; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
-        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
-
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
-        assertEquals(1, unifiers.size());
-
-        Unifier unifier = unifiers.get(0);
-
-        // test filter allows a valid answer
-        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
-        assertEquals(1, typesRequirements.size());
-        assertEquals(set(Label.of("first-name"), Label.of("last-name")), typesRequirements.values().iterator().next());
-        Map<Identifier, Concept> identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("first-name"))
-        );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
-
-        // filter out invalid type
-        identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("age"))
-        );
-        unified = unifier.unUnify(identifiedConcepts);
-        assertFalse(unified.isPresent());
-
-    }
-
-    @Ignore // TODO enable Requirements are active
-    @Test
-    public void isa_type_requirements_can_filter_relation_conclusion_answers() {
-        String conjunction = "{ $a isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
-        Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
-
-        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
-        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
-        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
-        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
-        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
-        assertEquals(1, unifiers.size());
-
-        Unifier unifier = unifiers.get(0);
-
-        // test filter allows a valid answer
-        Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
-        assertEquals(1, typesRequirements.size());
-        assertEquals(set(Label.of("employment")), typesRequirements.values().iterator().next());
-        Map<Identifier, Concept> identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("employment"))
-        );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
-
-        identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("age"))
-        );
-        unified = unifier.unUnify(identifiedConcepts);
-        assertFalse(unified.isPresent());
-    }
-
     @Ignore // TODO enable when Requirements are active
     @Test
     public void isa_predicates_can_filter_answers() {
@@ -430,6 +470,11 @@ public class UnifyIsaConcludableTest {
         assertEquals(1, unifiers.size());
 
         Unifier unifier = unifiers.get(0);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(3, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();
