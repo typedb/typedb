@@ -202,6 +202,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     Stream<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
         // TODO: this is cachable, and is a hot code path - analyse and see impact of cache
         if (label.scope().isPresent()) {
+            // TODO this does NOT work for overrides!!! TODO
             return conceptMgr.getRelationType(label.scope().get()).getSubtypes()
                     .map(relType -> relType.getRelates(label.name())).filter(Objects::nonNull)
                     .map(RoleType::getLabel);

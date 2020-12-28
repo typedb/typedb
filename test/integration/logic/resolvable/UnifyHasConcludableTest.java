@@ -141,7 +141,7 @@ public class UnifyHasConcludableTest {
         List<HasConstraint> has = conjunction.variables().stream().flatMap(var -> var.constraints().stream())
                 .filter(constraint -> constraint.isThing() && constraint.asThing().isHas())
                 .map(constraint -> constraint.asThing().asHas()).collect(Collectors.toList());
-        assert has.size() == 1 : "More than 1 isa constraint in conjunction to search";
+        assert has.size() == 1 : "More than 1 has constraint in conjunction to search";
         return has.get(0);
     }
 

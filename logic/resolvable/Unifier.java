@@ -79,12 +79,6 @@ public class Unifier {
             throw GraknException.of(UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS, this, identifiedConcepts);
         }
 
-        /*
-        1. apply the reverse unifier - if a mapping failure is found (eg. x,y should both become a but are not equal)
-           then return empty optional
-        2. confirm that each unified concept in the map meets the its requirements
-        3. filter down the identified map to a concept map of just named identifiers and their concepts
-         */
         Map<Identifier, Concept> reversedConcepts = new HashMap<>();
         for (Map.Entry<Identifier, Concept> toReverseConcept : identifiedConcepts.entrySet()) {
             Identifier toReverse = toReverseConcept.getKey();
@@ -96,6 +90,8 @@ public class Unifier {
                 if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
             }
         }
+
+        // TODO implement Requirement satisfaction
 
         return Optional.of(conceptMap(reversedConcepts));
     }
