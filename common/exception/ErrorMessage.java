@@ -439,6 +439,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         }
     }
 
+    public static class Reasoner extends ErrorMessage {
+        public static final Reasoner UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS =
+                new Reasoner(1, "Un-unifying '%s' fails using '%s' due the wrong number of concepts being provided");
+
+        private static final String codePrefix = "RSN";
+        private static final String messagePrefix = "Reasoner Error";
+
+        Reasoner(int number, String message) { super (codePrefix, number, messagePrefix, message); }
+    }
+
     public static class Migrator extends ErrorMessage {
         public static final Migrator FILE_NOT_READABLE =
                 new Migrator(1, "The specified file '%s' cannot be opened for read.");

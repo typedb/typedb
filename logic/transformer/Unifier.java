@@ -17,6 +17,7 @@
 
 package grakn.core.logic.transformer;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
@@ -31,19 +32,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS;
 
 public class Unifier extends VariableTransformer {
 
     private final Map<Identifier, Set<Identifier>> unifier;
-    private final Map<Identifier, Set<Identifier>> reverseUnifier;
+    private final Map<Identifier, Set<Identifier>> unUnifier;
     private final Requirements requirements;
 
     private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements requirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
         this.requirements = requirements;
-        this.reverseUnifier = reverse(this.unifier);
+        this.unUnifier = reverse(this.unifier);
     }
 
     public ConceptMap unify(ConceptMap toUnify) {
@@ -72,6 +75,9 @@ public class Unifier extends VariableTransformer {
      * as they may be mapped to from a named variable, and may have requirements that need to be met.
      */
     public Optional<ConceptMap> unUnify(Map<Identifier, Concept> identifiedConcepts) {
+        if (identifiedConcepts.keySet().size() != unUnifier.keySet().size()) {
+            throw GraknException.of(UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS, this, identifiedConcepts);
+        }
 
         /*
         1. apply the reverse unifier - if a mapping failure is found (eg. x,y should both become a but are not equal)
@@ -79,8 +85,19 @@ public class Unifier extends VariableTransformer {
         2. confirm that each unified concept in the map meets the its requirements
         3. filter down the identified map to a concept map of just named identifiers and their concepts
          */
+        Map<Identifier, Concept> reversedConcepts = new HashMap<>();
+        for (Map.Entry<Identifier, Concept> toReverseConcept : identifiedConcepts.entrySet()) {
+            Identifier toReverse = toReverseConcept.getKey();
+            Concept concept = toReverseConcept.getValue();
+            assert unUnifier.containsKey(toReverse);
+            Set<Identifier> reversed = unUnifier.get(toReverse);
+            for (Identifier r : reversed) {
+                if (!reversedConcepts.containsKey(r)) reversedConcepts.put(r, concept);
+                if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
+            }
+        }
 
-        return Optional.empty(); // TODO
+        return Optional.of(conceptMap(reversedConcepts));
     }
 
     // visible for testing
@@ -111,6 +128,19 @@ public class Unifier extends VariableTransformer {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "Unifier{" +
+                "unifier=" + unifierString(unifier) +
+                ", unUnifier=" + unifierString(unUnifier) +
+                ", requirements=" + requirements +
+                '}';
+    }
+
+    private String unifierString(Map<Identifier, Set<Identifier>> unifier) {
+        return "{" + unifier.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).collect(Collectors.joining(",")) + "}";
+    }
+
     public Map<Identifier, Set<Identifier>> mapping() {
         return unifier;
     }
@@ -128,6 +158,17 @@ public class Unifier extends VariableTransformer {
             }
         });
         return reverse;
+    }
+
+    private ConceptMap conceptMap(Map<Identifier, Concept> identifiedConcepts) {
+        Map<Reference.Name, Concept> namedConcepts = new HashMap<>();
+        for (Map.Entry<Identifier, Concept> identifiedConcept : identifiedConcepts.entrySet()) {
+            if (identifiedConcept.getKey().isNamedReference()) {
+                assert identifiedConcept.getKey().asVariable().reference().isName();
+                namedConcepts.put(identifiedConcept.getKey().asVariable().reference().asName(), identifiedConcept.getValue());
+            }
+        }
+        return new ConceptMap(namedConcepts);
     }
 
     public static class Builder {
