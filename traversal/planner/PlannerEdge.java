@@ -75,11 +75,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     protected abstract void initialiseDirectionalEdges();
 
-    static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> structureEdge) {
-        if (structureEdge.isEqual()) return new PlannerEdge.Equal(from, to);
-        else if (structureEdge.isPredicate())
-            return new Predicate(from.asThing(), to.asThing(), structureEdge.asPredicate().predicate());
-        else if (structureEdge.isNative()) return PlannerEdge.Native.of(from, to, structureEdge.asNative());
+    static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> edge) {
+        if (edge.isEqual()) return new PlannerEdge.Equal(from, to);
+        else if (edge.isPredicate()) return new Predicate(from.asThing(), to.asThing(), edge.asPredicate().predicate());
+        else if (edge.isNative()) return PlannerEdge.Native.of(from, to, edge.asNative());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -1199,7 +1198,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
             }
 
-            static class RolePlayer extends Thing {
+            public static class RolePlayer extends Thing {
 
                 private final Set<Label> roleTypes;
                 private Set<TypeVertex> resolvedRoleTypes;

@@ -659,9 +659,9 @@ public abstract class ProcedureEdge<
                     if (isForward) return new Relating.Forward(from, to, orderNumber);
                     else return new Relating.Backward(from, to, orderNumber);
                 } else if (edge.isRolePlayer()) {
-                    if (isForward)
-                        return new RolePlayer.Forward(from, to, orderNumber, edge.asRolePlayer().roleTypes());
-                    else return new RolePlayer.Backward(from, to, orderNumber, edge.asRolePlayer().roleTypes());
+                    PlannerEdge.Native.Thing.RolePlayer.Directional rp = edge.asRolePlayer();
+                    if (isForward) return new RolePlayer.Forward(from, to, orderNumber, rp.roleTypes());
+                    else return new RolePlayer.Backward(from, to, orderNumber, rp.roleTypes());
                 } else {
                     throw GraknException.of(UNRECOGNISED_VALUE);
                 }

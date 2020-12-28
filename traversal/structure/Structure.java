@@ -100,12 +100,12 @@ public class Structure {
         to.in(edge);
     }
 
-    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to) {
-        rolePlayer(from, to, new HashSet<>());
+    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, int repetition) {
+        rolePlayer(from, to, new HashSet<>(), repetition);
     }
 
-    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes) {
-        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes);
+    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
+        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes, repetition);
         edges.add(edge);
         from.out(edge);
         to.in(edge);

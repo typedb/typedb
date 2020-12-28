@@ -45,6 +45,8 @@ import static java.util.stream.Collectors.toList;
 
 public class RelationConstraint extends ThingConstraint implements AlphaEquivalent<RelationConstraint> {
 
+    // TODO: We should not store RolePlayers in a List, as that would render different orders unequal.
+    //       Instead, we should store it in a Set, but make sure the to record 'repetition' id to distinguish
     private final List<RolePlayer> rolePlayers;
     private final int hash;
 
@@ -67,6 +69,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public void addTo(Traversal traversal) {
+        // TODO: we should not use 'rolID' to distinguish repeating roleplayers. Instead, we should use 'repetition' id
         int roleID = 0;
         for (RolePlayer rp : rolePlayers) {
             if (rp.roleType().isPresent()) {
@@ -78,10 +81,10 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                     traversal.isa(role, roleType.identifier());
                 } else {
                     assert roleType.reference().isLabel() && !roleType.resolvedTypes().isEmpty();
-                    traversal.rolePlayer(owner.identifier(), rp.player().identifier(), roleType.resolvedTypes());
+                    traversal.rolePlayer(owner.identifier(), rp.player().identifier(), roleType.resolvedTypes(), roleID++);
                 }
             } else {
-                traversal.rolePlayer(owner.identifier(), rp.player().identifier());
+                traversal.rolePlayer(owner.identifier(), rp.player().identifier(), roleID++);
             }
         }
     }
