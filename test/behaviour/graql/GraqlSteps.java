@@ -198,7 +198,7 @@ public class GraqlSteps {
     @Then("uniquely identify answer concepts")
     public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
-                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
+                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers.",
                               answerConcepts.size(), answers.size()),
                 answerConcepts.size(), answers.size()
         );
@@ -213,7 +213,7 @@ public class GraqlSteps {
                 }
             }
             assertEquals(
-                    String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s",
+                    String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s.",
                                   matchingIdentifiers.size(), answer.concepts().keySet().toString()),
                     1, matchingIdentifiers.size()
             );
@@ -223,7 +223,7 @@ public class GraqlSteps {
     @Then("order of answer concepts is")
     public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
         assertEquals(
-                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers",
+                String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers.",
                               answersIdentifiers.size(), answers.size()),
                 answersIdentifiers.size(), answers.size()
         );
@@ -231,7 +231,7 @@ public class GraqlSteps {
             final ConceptMap answer = answers.get(i);
             final Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
             assertTrue(
-                    String.format("The answer at index %d does not match the identifier entry (row) at index %d", i, i),
+                    String.format("The answer at index %d does not match the identifier entry (row) at index %d.", i, i),
                     matchAnswerConcept(answerIdentifiers, answer)
             );
         }
@@ -240,7 +240,7 @@ public class GraqlSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f", expectedAnswer, numericAnswer.number().doubleValue()),
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.number().doubleValue()),
                      expectedAnswer, numericAnswer.number().doubleValue(), 0.01);
     }
 
@@ -258,7 +258,7 @@ public class GraqlSteps {
                 .map(AnswerIdentifierGroup::new)
                 .collect(Collectors.toSet());
 
-        assertEquals(String.format("Expected [%d] answer groups, but found [%d]",
+        assertEquals(String.format("Expected [%d] answer groups, but found [%d].",
                                    answerIdentifierGroups.size(), answerGroups.size()),
                      answerIdentifierGroups.size(), answerGroups.size()
         );
@@ -283,7 +283,7 @@ public class GraqlSteps {
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
-            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", answerIdentifierGroup.ownerIdentifier), answerGroup);
+            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", answerIdentifierGroup.ownerIdentifier), answerGroup);
 
             List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.answersIdentifiers;
             for (ConceptMap answer : answerGroup.answers()) {
@@ -296,7 +296,7 @@ public class GraqlSteps {
                     }
                 }
                 assertEquals(
-                        String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were [%d] matching identifier entries for answer with variables %s",
+                        String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were [%d] matching identifier entries for answer with variables %s.",
                                       matchingIdentifiers.size(), answer.concepts().keySet().toString()),
                         1, matchingIdentifiers.size()
                 );
@@ -313,7 +313,7 @@ public class GraqlSteps {
             expectations.put(groupOwnerIdentifier, expectedAnswer);
         }
 
-        assertEquals(String.format("Expected [%d] answer groups, but found [%d]", expectations.size(), numericAnswerGroups.size()),
+        assertEquals(String.format("Expected [%d] answer groups, but found [%d].", expectations.size(), numericAnswerGroups.size()),
                      expectations.size(), numericAnswerGroups.size()
         );
 
@@ -338,7 +338,7 @@ public class GraqlSteps {
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
-            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners", expectation.getKey()), answerGroup);
+            assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", expectation.getKey()), answerGroup);
 
             double actualAnswer = answerGroup.answers().get(0).number().doubleValue();
             assertEquals(
@@ -378,7 +378,7 @@ public class GraqlSteps {
             final String identifier = entry.getValue();
 
             if (!identifierChecks.containsKey(identifier)) {
-                throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared", identifier));
+                throw new ScenarioDefinitionException(String.format("Identifier \"%s\" hasn't previously been declared.", identifier));
             }
 
             if (!identifierChecks.get(identifier).check(answer.get(var))) {
@@ -519,7 +519,7 @@ public class GraqlSteps {
                 builder.append(conceptId);
 
             } else {
-                throw new ScenarioDefinitionException(String.format("No IID available for template placeholder: %s", matched));
+                throw new ScenarioDefinitionException(String.format("No IID available for template placeholder: %s.", matched));
             }
             i = matcher.end();
         }
@@ -533,7 +533,7 @@ public class GraqlSteps {
             final String withoutPrefix = stripped.replace("answer.", "");
             return withoutPrefix;
         } else {
-            throw new ScenarioDefinitionException("Cannot replace template not based on ID");
+            throw new ScenarioDefinitionException("Cannot replace template not based on ID.");
         }
     }
 
@@ -573,7 +573,7 @@ public class GraqlSteps {
         AttributeUniquenessCheck(String typeAndValue) {
             final String[] s = typeAndValue.split(":");
             assertEquals(
-                    String.format("A check for attribute uniqueness should be given in the format \"type:value\", but received %s", typeAndValue),
+                    String.format("A check for attribute uniqueness should be given in the format \"type:value\", but received %s.", typeAndValue),
                     2, s.length
             );
             type = s[0];
