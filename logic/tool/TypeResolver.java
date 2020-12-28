@@ -277,31 +277,35 @@ public class TypeResolver {
         }
 
         private TypeVariable convert(Variable variable) {
-            if (resolvers.contains(variable)) return resolvers.resolver(variable);
-
             if (variable.isType()) return convert(variable.asType());
             else if (variable.isThing()) return convert(variable.asThing());
             else throw GraknException.of(ILLEGAL_STATE);
         }
 
         private TypeVariable convert(TypeVariable variable) {
+            if (resolvers.contains(variable)) return resolvers.resolver(variable);
+
             TypeVariable resolver = resolvers.register(variable);
             copyNeighbours(variable, resolver);
+            // TODO: Why do we need `neighbours.putIfAbsent(resolver, new HashSet<>());` ?
+            //       Is this a patch for the fact that we forgot to use `to` variable in `copyNeighbours(from, to)` ?
             neighbours.putIfAbsent(resolver, new HashSet<>());
             return resolver;
         }
 
-        private TypeVariable convert(ThingVariable thingVariable) {
-            TypeVariable resolver = resolvers.register(thingVariable);
+        private TypeVariable convert(ThingVariable variable) {
+            if (resolvers.contains(variable)) return resolvers.resolver(variable);
+
+            TypeVariable resolver = resolvers.register(variable);
             neighbours.putIfAbsent(resolver, new HashSet<>());
 
-            if (thingVariable.constraints().isEmpty()) return resolver;
+            if (variable.constraints().isEmpty()) return resolver;
 
-            thingVariable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
-            thingVariable.is().forEach(constraint -> convertIs(resolver, constraint));
-            thingVariable.has().forEach(constraint -> convertHas(resolver, constraint));
-            thingVariable.value().forEach(constraint -> convertValue(resolver, constraint));
-            thingVariable.relation().forEach(constraint -> convertRelation(resolver, constraint));
+            variable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
+            variable.is().forEach(constraint -> convertIs(resolver, constraint));
+            variable.has().forEach(constraint -> convertHas(resolver, constraint));
+            variable.value().forEach(constraint -> convertValue(resolver, constraint));
+            variable.relation().forEach(constraint -> convertRelation(resolver, constraint));
             return resolver;
         }
 
@@ -395,7 +399,8 @@ public class TypeResolver {
                 else if (constraint.isPlays()) addNeighbours(from, constraint.asPlays().role());
                 else if (constraint.isRelates()) addNeighbours(from, constraint.asRelates().role());
                 else if (constraint.isIs()) addNeighbours(from, constraint.asIs().variable());
-                else throw GraknException.of(ILLEGAL_STATE);
+                // TODO: There are other constraints in a TypeVariable. Are we intentionally ignoring them?
+                //       Why do we not throw GraknException.of(ILLEGAL_STATE); ?
             }
         }
     }
