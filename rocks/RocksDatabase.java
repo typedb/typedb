@@ -57,18 +57,18 @@ import static java.util.Comparator.reverseOrder;
 public class RocksDatabase implements Grakn.Database {
 
     protected final String name;
+    protected final OptimisticTransactionDB rocksSchema;
+    protected final OptimisticTransactionDB rocksData;
+    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+    protected final AtomicBoolean isOpen;
+    protected final StatisticsBackgroundCounter statisticsBackgroundCounter;
+    private final RocksSession.Data statisticsBackgroundCounterSession;
     private final RocksGrakn rocksGrakn;
     private final RocksCreator rocksCreator;
-    protected final OptimisticTransactionDB rocksData;
-    protected final OptimisticTransactionDB rocksSchema;
-    private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
-    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+    private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock dataWriteSchemaLock;
-    protected final AtomicBoolean isOpen;
     private Cache cache;
-    private final RocksSession.Data statisticsBackgroundCounterSession;
-    protected final StatisticsBackgroundCounter statisticsBackgroundCounter;
 
     protected RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew, RocksCreator rocksCreator) {
         this.name = name;
@@ -92,10 +92,6 @@ public class RocksDatabase implements Grakn.Database {
         statisticsBackgroundCounterSession = rocksCreator.sessionData(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
         start();
-    }
-
-    protected void start() {
-        statisticsBackgroundCounter.start();
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
@@ -123,6 +119,10 @@ public class RocksDatabase implements Grakn.Database {
 
     protected void commitInitialise(RocksTransaction.Schema txn) {
         txn.commit();
+    }
+
+    protected void start() {
+        statisticsBackgroundCounter.start();
     }
 
     private void load() {
