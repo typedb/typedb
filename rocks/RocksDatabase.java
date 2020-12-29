@@ -112,12 +112,12 @@ public class RocksDatabase implements Grakn.Database {
             try (RocksTransaction.Schema txn = session.transaction(WRITE).asSchema()) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
-                commitInitialise(txn);
+                initialiseCommit(txn);
             }
         }
     }
 
-    protected void commitInitialise(RocksTransaction.Schema txn) {
+    protected void initialiseCommit(RocksTransaction.Schema txn) {
         txn.commit();
     }
 
