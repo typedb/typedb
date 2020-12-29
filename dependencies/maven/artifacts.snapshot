@@ -18,8 +18,10 @@
 @maven//:com_google_errorprone_error_prone_annotations_2_4_0
 @maven//:com_google_guava_guava
 @maven//:com_google_guava_guava_23_0
+@maven//:com_google_http_client_google_http_client
+@maven//:com_google_http_client_google_http_client_1_34_2
 @maven//:com_google_j2objc_j2objc_annotations
-@maven//:com_google_j2objc_j2objc_annotations_1_1
+@maven//:com_google_j2objc_j2objc_annotations_1_3
 @maven//:com_google_ortools_ortools_darwin
 @maven//:com_google_ortools_ortools_darwin_8_0_8283
 @maven//:com_google_ortools_ortools_darwin_java
@@ -34,8 +36,12 @@
 @maven//:com_google_ortools_ortools_win32_x86_64_java_8_0_8283
 @maven//:com_google_protobuf_protobuf_java
 @maven//:com_google_protobuf_protobuf_java_3_5_1
+@maven//:commons_codec_commons_codec
+@maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io
 @maven//:commons_io_commons_io_2_3
+@maven//:commons_logging_commons_logging
+@maven//:commons_logging_commons_logging_1_2
 @maven//:info_picocli_picocli
 @maven//:info_picocli_picocli_4_3_2
 @maven//:io_cucumber_cucumber_core
@@ -100,6 +106,8 @@
 @maven//:io_netty_netty_transport_4_1_51_Final
 @maven//:io_opencensus_opencensus_api
 @maven//:io_opencensus_opencensus_api_0_24_0
+@maven//:io_opencensus_opencensus_contrib_http_util
+@maven//:io_opencensus_opencensus_contrib_http_util_0_24_0
 @maven//:io_perfmark_perfmark_api
 @maven//:io_perfmark_perfmark_api_0_19_0
 @maven//:javax_annotation_javax_annotation_api
@@ -116,6 +124,10 @@
 @maven//:net_java_dev_jna_jna_platform_5_5_0
 @maven//:org_antlr_antlr4_runtime
 @maven//:org_antlr_antlr4_runtime_4_7_1
+@maven//:org_apache_httpcomponents_httpclient
+@maven//:org_apache_httpcomponents_httpclient_4_5_11
+@maven//:org_apache_httpcomponents_httpcore
+@maven//:org_apache_httpcomponents_httpcore_4_4_13
 @maven//:org_apiguardian_apiguardian_api
 @maven//:org_apiguardian_apiguardian_api_1_1_0
 @maven//:org_checkerframework_checker_qual
