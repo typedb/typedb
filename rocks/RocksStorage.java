@@ -47,6 +47,7 @@ public class RocksStorage implements Storage {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
+    protected final Transaction storageTransaction;
     private final boolean isReadOnly;
     private final Set<RocksIterator<?>> iterators;
     private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
@@ -56,7 +57,6 @@ public class RocksStorage implements Storage {
     private final Snapshot snapshot;
     private final ManagedReadWriteLock readWriteLock;
     private final AtomicBoolean isOpen;
-    protected final Transaction rocksTx;
 
     public RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
@@ -65,8 +65,8 @@ public class RocksStorage implements Storage {
         readWriteLock = new ManagedReadWriteLock();
         writeOptions = new WriteOptions();
         transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
-        rocksTx = rocksDB.beginTransaction(writeOptions, transactionOptions);
-        snapshot = rocksTx.getSnapshot();
+        storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
+        snapshot = storageTransaction.getSnapshot();
         readOptions = new ReadOptions().setSnapshot(snapshot);
 
         isOpen = new AtomicBoolean(true);
@@ -83,7 +83,7 @@ public class RocksStorage implements Storage {
         try {
             // We don't need to check isOpen.get() as tx.commit() does not involve this method
             if (!isReadOnly) readWriteLock.lockRead();
-            return rocksTx.get(readOptions, key);
+            return storageTransaction.get(readOptions, key);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -110,7 +110,7 @@ public class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             if (isOpen.get()) readWriteLock.lockWrite();
-            rocksTx.delete(key);
+            storageTransaction.delete(key);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -128,7 +128,7 @@ public class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             if (isOpen.get()) readWriteLock.lockWrite();
-            rocksTx.put(key, value);
+            storageTransaction.put(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -146,7 +146,7 @@ public class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             readWriteLock.lockWrite();
-            rocksTx.putUntracked(key, value);
+            storageTransaction.putUntracked(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -159,7 +159,7 @@ public class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             readWriteLock.lockWrite();
-            rocksTx.mergeUntracked(key, value);
+            storageTransaction.mergeUntracked(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -196,7 +196,7 @@ public class RocksStorage implements Storage {
             iterators.parallelStream().forEach(RocksIterator::close);
             recycled.forEach(AbstractImmutableNativeReference::close);
             snapshot.close();
-            rocksTx.close();
+            storageTransaction.close();
             transactionOptions.close();
             readOptions.close();
             writeOptions.close();
@@ -212,7 +212,7 @@ public class RocksStorage implements Storage {
             final org.rocksdb.RocksIterator iterator = recycled.poll();
             if (iterator != null) return iterator;
         }
-        return rocksTx.getIterator(readOptions);
+        return storageTransaction.getIterator(readOptions);
     }
 
     public void recycle(org.rocksdb.RocksIterator rocksIterator) {
@@ -251,15 +251,15 @@ public class RocksStorage implements Storage {
         }
 
         public void commit() throws RocksDBException {
-            rocksTx.commit();
+            storageTransaction.commit();
         }
 
         public void disableIndexing() {
-            rocksTx.disableIndexing();
+            storageTransaction.disableIndexing();
         }
 
         public void rollback() throws RocksDBException {
-            rocksTx.rollback();
+            storageTransaction.rollback();
         }
     }
 
