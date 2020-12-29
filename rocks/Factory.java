@@ -27,34 +27,17 @@ public interface Factory {
 
     RocksGrakn grakn(Path directory, Options.Database options);
 
-    interface Database {
+    RocksDatabase database(RocksGrakn grakn, String name);
 
-        RocksDatabase database(RocksGrakn grakn, String name);
-    }
+    RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options);
 
-    interface Session {
+    RocksSession.Data sessionData(RocksDatabase database, Options.Session options);
 
-        RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options);
+    RocksTransaction.Schema transactionSchema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options);
 
-        RocksSession.Data sessionData(RocksDatabase database, Options.Session options);
-    }
+    RocksTransaction.Data transactionData(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options);
 
-    interface TransactionSchema {
+    RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction);
 
-        RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type,
-                                            Options.Transaction options);
-    }
-
-    interface TransactionData {
-
-        RocksTransaction.Data transaction(RocksSession.Data session, Arguments.Transaction.Type type,
-                                          Options.Transaction options);
-    }
-
-    interface Storage {
-
-        RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction);
-
-        RocksStorage.Data storageData(RocksDatabase database, RocksTransaction.Schema transaction);
-    }
+    RocksStorage.Data storageData(RocksDatabase database, RocksTransaction.Schema transaction);
 }

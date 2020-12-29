@@ -33,10 +33,10 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     private final ConcurrentMap<String, RocksDatabase> databases;
-    private final Factory.Database factory;
+    private final Factory factory;
     private RocksGrakn rocksGrakn;
 
-    RocksDatabaseManager(Factory.Database factory) {
+    RocksDatabaseManager(Factory factory) {
         this.factory = factory;
         databases = new ConcurrentHashMap<>();
     }

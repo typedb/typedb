@@ -64,13 +64,13 @@ public class RocksDatabase implements Grakn.Database {
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected RocksSession.Data statisticsBackgroundCounterSession;
     private final RocksGrakn rocksGrakn;
-    private final Factory.Session factory;
+    private final Factory factory;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock dataWriteSchemaLock;
     private Cache cache;
 
-    protected RocksDatabase(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+    protected RocksDatabase(RocksGrakn rocksGrakn, String name, Factory factory) {
         this.rocksGrakn = rocksGrakn;
         this.name = name;
         this.factory = factory;
@@ -88,11 +88,11 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase create(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+    static RocksDatabase create(RocksGrakn rocksGrakn, String name, RocksFactory factory) {
         return new RocksDatabase(rocksGrakn, name, factory);
     }
 
-    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, Factory.Database factory) {
+    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, Factory factory) {
         try {
             Files.createDirectory(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
@@ -105,7 +105,7 @@ public class RocksDatabase implements Grakn.Database {
         return database;
     }
 
-    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, Factory.Database factory) {
+    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, Factory factory) {
         RocksDatabase database = factory.database(rocksGrakn, name);
         database.load();
         database.statisticsBgCounterStart();
@@ -297,7 +297,8 @@ public class RocksDatabase implements Grakn.Database {
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            this.schemaStorage = new RocksStorage(database.rocksSchema(), true);;
+            this.schemaStorage = new RocksStorage(database.rocksSchema(), true);
+            ;
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();

@@ -151,7 +151,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         protected final RocksStorage.Data dataStorage;
 
-        protected Schema(RocksSession.Schema session, Context.Transaction context, Factory.Storage factory) {
+        protected Schema(RocksSession.Schema session, Context.Transaction context, Factory factory) {
             super(session, context);
 
             schemaStorage = factory.storageSchema(session.database(), this);
@@ -165,7 +165,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         public static Schema create(RocksSession.Schema session, Arguments.Transaction.Type type,
-                                    Options.Transaction options, Factory.Storage factory) {
+                                    Options.Transaction options, RocksFactory factory) {
             Context.Transaction context = new Context.Transaction(session.context(), options).type(type);
             return new Schema(session, context, factory);
         }
@@ -247,6 +247,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                 throw GraknException.of(e);
             }
         }
+
         @Override
         void closeStorage() {
             schemaStorage.close();
@@ -258,7 +259,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
-        public Data(RocksSession.Data session, Context.Transaction context, Factory.Storage factory) {
+        public Data(RocksSession.Data session, Context.Transaction context, Factory factory) {
             super(session, context);
 
             cache = session.database().cacheBorrow();
@@ -270,7 +271,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         public static RocksTransaction.Data create(RocksSession.Data session, Arguments.Transaction.Type type,
-                                                   Options.Transaction options, Factory.Storage factory) {
+                                                   Options.Transaction options, RocksFactory factory) {
             Context.Transaction context = new Context.Transaction(session.context(), options).type(type);
             return new RocksTransaction.Data(session, context, factory);
         }
