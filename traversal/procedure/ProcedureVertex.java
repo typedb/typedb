@@ -141,11 +141,26 @@ public abstract class ProcedureVertex<
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else if (!props().types().isEmpty()) return iterateAndFilterFromTypes(graphMgr, parameters);
             else if (mustBeAttribute()) return iterateAndFilterFromAttributes(graphMgr, parameters);
-            else return iterateFromAnything(graphMgr);
+            else if (mustBeRelation()) return iterateFromAll(graphMgr, graphMgr.schema().rootRelationType());
+            else if (mustBeRole()) return iterateFromAll(graphMgr, graphMgr.schema().rootRoleType());
+            else if (mustBeThing()) return iterateFromAll(graphMgr, graphMgr.schema().rootThingType());
+            else throw GraknException.of(ILLEGAL_STATE);
         }
 
         private boolean mustBeAttribute() {
-            return !props().predicates().isEmpty() || iterate(outs()).anyMatch(ProcedureEdge::startsFromAttribute);
+            return !props().predicates().isEmpty() || iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromAttribute);
+        }
+
+        private boolean mustBeRelation() {
+            return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromRelation);
+        }
+
+        private boolean mustBeRole() {
+            return id().isScoped();
+        }
+
+        private boolean mustBeThing() {
+            return id().isVariable();
         }
 
         private ResourceIterator<? extends AttributeVertex<?>> iterateAndFilterFromAttributes(
@@ -169,16 +184,8 @@ public abstract class ProcedureVertex<
             else return filterPredicates(iter, parameters, eq.orElse(null));
         }
 
-        private ResourceIterator<? extends ThingVertex> iterateFromAnything(GraphManager graphMgr) {
-            if (id().isVariable()) {
-                return tree(graphMgr.schema().rootThingType(), t -> t.ins().edge(SUB).from())
-                        .flatMap(t -> graphMgr.data().get(t));
-            } else if (id().isScoped()) {
-                return tree(graphMgr.schema().rootRoleType(), t -> t.ins().edge(SUB).from())
-                        .flatMap(t -> graphMgr.data().get(t));
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
-            }
+        private ResourceIterator<ThingVertex> iterateFromAll(GraphManager graphMgr, TypeVertex rootType) {
+            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().get(t));
         }
 
         ResourceIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
@@ -321,8 +328,30 @@ public abstract class ProcedureVertex<
             if (props().valueType().isPresent()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
             if (props().isAbstract()) iterator = iterateOrFilterAbstract(graphMgr, iterator);
             if (props().regex().isPresent()) iterator = iterateAndFilterRegex(graphMgr, iterator);
-            if (iterator == null) iterator = link(list(graphMgr.schema().thingTypes(), graphMgr.schema().roleTypes()));
+            if (iterator == null) {
+                if (mustBeAttributeType()) return graphMgr.schema().attributeTypes();
+                else if (mustBeRelationType()) return graphMgr.schema().relationTypes();
+                else if (mustBeRoleType()) return graphMgr.schema().roleTypes();
+                else if (mustBeThingType()) return graphMgr.schema().thingTypes();
+                else iterator = link(list(graphMgr.schema().thingTypes(), graphMgr.schema().roleTypes()));
+            }
             return iterator;
+        }
+
+        private boolean mustBeAttributeType() {
+            return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromAttributeType);
+        }
+
+        private boolean mustBeRelationType() {
+            return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromRelationType);
+        }
+
+        private boolean mustBeRoleType() {
+            return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromRoleType);
+        }
+
+        private boolean mustBeThingType() {
+            return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromThingType);
         }
 
         ResourceIterator<TypeVertex> filter(ResourceIterator<TypeVertex> iterator) {

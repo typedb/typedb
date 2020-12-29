@@ -117,7 +117,17 @@ public abstract class ProcedureEdge<
         return order() > to().branchEdge().order();
     }
 
-    public boolean startsFromAttribute() { return false; }
+    public boolean onlyStartsFromAttribute() { return false; }
+
+    public boolean onlyStartsFromRelation() { return false; }
+
+    public boolean onlyStartsFromAttributeType() { return false; }
+
+    public boolean onlyStartsFromRelationType() { return false; }
+
+    public boolean onlyStartsFromRoleType() { return false; }
+
+    public boolean onlyStartsFromThingType() { return false; }
 
     public boolean isRolePlayer() { return false; }
 
@@ -171,7 +181,7 @@ public abstract class ProcedureEdge<
         }
 
         @Override
-        public boolean startsFromAttribute() { return true; }
+        public boolean onlyStartsFromAttribute() { return true; }
 
         @Override
         public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -450,6 +460,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromThingType() { return true; }
+
+                    @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
@@ -486,6 +499,9 @@ public abstract class ProcedureEdge<
                                 o.ins().edge(SUB).from().filter(s -> overriddens(s).noneMatch(ov -> ov.equals(attType)))
                         ));
                     }
+
+                    @Override
+                    public boolean onlyStartsFromAttributeType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -529,6 +545,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromThingType() { return true; }
+
+                    @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
@@ -553,6 +572,9 @@ public abstract class ProcedureEdge<
                                 p.ins().edge(SUB).from().filter(s -> s.outs().edge(PLAYS).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
                     }
+
+                    @Override
+                    public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -596,6 +618,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromRelationType() { return true; }
+
+                    @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
@@ -620,6 +645,9 @@ public abstract class ProcedureEdge<
                                 r.ins().edge(SUB).from().filter(s -> s.outs().edge(RELATES).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
                     }
+
+                    @Override
+                    public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -750,7 +778,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean startsFromAttribute() { return true; }
+                    public boolean onlyStartsFromAttribute() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -855,6 +883,9 @@ public abstract class ProcedureEdge<
                     Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, FORWARD);
                     }
+
+                    @Override
+                    public boolean onlyStartsFromRelation() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -968,6 +999,9 @@ public abstract class ProcedureEdge<
                     Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order, Set<Label> roleTypes) {
                         super(from, to, order, FORWARD, roleTypes);
                     }
+
+                    @Override
+                    public boolean onlyStartsFromRelation() { return true; }
 
                     @Override
                     public ResourceIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
