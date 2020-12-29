@@ -18,10 +18,8 @@
 
 package grakn.core.rocks;
 
-import grakn.core.common.parameters.Context;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.graph.util.KeyGenerator;
-import org.rocksdb.OptimisticTransactionDB;
 
 import java.nio.file.Path;
 
@@ -31,30 +29,32 @@ public interface Factory {
 
     interface Database {
 
-        RocksDatabase database(String name);
+        RocksDatabase database(RocksGrakn grakn, String name);
     }
 
     interface Session {
 
-        RocksSession.Schema sessionSchema(Context.Session context);
+        RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options);
 
-        RocksSession.Data sessionData(Context.Session context);
+        RocksSession.Data sessionData(RocksDatabase database, Options.Session options);
     }
 
     interface TransactionSchema {
 
-        RocksTransaction.Schema transaction(Context.Transaction context);
+        RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type,
+                                            Options.Transaction options);
     }
 
     interface TransactionData {
 
-        RocksTransaction.Data transaction(Context.Transaction context);
+        RocksTransaction.Data transaction(RocksSession.Data session, Arguments.Transaction.Type type,
+                                          Options.Transaction options);
     }
 
     interface Storage {
 
-        RocksStorage.Schema storageSchema(OptimisticTransactionDB rocksDB, KeyGenerator.Schema keyGenerator, boolean isRead);
+        RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction);
 
-        RocksStorage.Data storageData(OptimisticTransactionDB rocksDB, KeyGenerator.Data keyGenerator, boolean isRead);
+        RocksStorage.Data storageData(RocksDatabase database, RocksTransaction.Schema transaction);
     }
 }

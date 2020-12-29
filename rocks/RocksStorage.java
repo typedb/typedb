@@ -225,13 +225,10 @@ public class RocksStorage implements Storage {
 
     static abstract class TransactionBounded extends RocksStorage {
 
-        protected RocksTransaction transaction;
+        private final RocksTransaction transaction;
 
-        TransactionBounded(OptimisticTransactionDB rocksDB, boolean isRead) {
-            super(rocksDB, isRead);
-        }
-
-        protected void transaction(RocksTransaction transaction) {
+        TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
+            super(rocksDB, transaction.type().isRead());
             this.transaction = transaction;
         }
 
@@ -270,15 +267,13 @@ public class RocksStorage implements Storage {
 
         private final KeyGenerator.Schema schemaKeyGenerator;
 
-        public Schema(OptimisticTransactionDB schemaRocksDB, KeyGenerator.Schema schemaKeyGenerator, boolean isRead) {
-            super(schemaRocksDB, isRead);
-            this.schemaKeyGenerator = schemaKeyGenerator;
+        public Schema(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksSchema, transaction);
+            this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
 
-        public static RocksStorage.Schema create(RocksDatabase db, RocksTransaction tx, Factory.Storage factory) {
-            RocksStorage.Schema storage = factory.storageSchema(db.rocksSchema(), db.schemaKeyGenerator(), tx.type().isRead());
-            storage.transaction(tx);
-            return storage;
+        public static RocksStorage.Schema create(RocksDatabase database, RocksTransaction transaction) {
+            return new RocksStorage.Schema(database, transaction);
         }
 
         @Override
@@ -291,15 +286,13 @@ public class RocksStorage implements Storage {
 
         private final KeyGenerator.Data dataKeyGenerator;
 
-        public Data(OptimisticTransactionDB dataRocksDB, KeyGenerator.Data dataKeyGenerator, boolean isRead) {
-            super(dataRocksDB, isRead);
-            this.dataKeyGenerator = dataKeyGenerator;
+        public Data(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksData, transaction);
+            this.dataKeyGenerator = database.dataKeyGenerator();
         }
 
-        public static RocksStorage.Data create(RocksDatabase db, RocksTransaction tx, Factory.Storage factory) {
-            RocksStorage.Data storage = factory.storageData(db.rocksData(), db.dataKeyGenerator(), tx.type().isRead());
-            storage.transaction(tx);
-            return storage;
+        public static RocksStorage.Data create(RocksDatabase database, RocksTransaction transaction) {
+            return new RocksStorage.Data(database, transaction);
         }
 
         @Override
