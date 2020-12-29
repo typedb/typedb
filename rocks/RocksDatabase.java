@@ -96,7 +96,7 @@ public class RocksDatabase implements Grakn.Database {
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
         try {
-            Files.createDirectories(rocksGrakn.directory().resolve(name));
+            Files.createDirectory(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
