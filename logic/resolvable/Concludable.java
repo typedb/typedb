@@ -204,7 +204,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         if (label.scope().isPresent()) {
             assert conceptMgr.getRelationType(label.scope().get()) != null;
             return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name()).getSubtypes()
-                    .filter(Objects::nonNull).map(RoleType::getLabel);
+                    .map(RoleType::getLabel);
         } else {
             return conceptMgr.getThingType(label.name()).getSubtypes().map(Type::getLabel);
         }

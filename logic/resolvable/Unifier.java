@@ -66,6 +66,7 @@ public class Unifier {
             }
         });
 
+        // TODO yes this can fail, as we could try to forward unify a mapping x -> a, y -> a, where x and y are already known
 //        return Optional.empty(); // TODO ... why does this have to be optional? Can it fail?
         return new ConceptMap(unified);
     }

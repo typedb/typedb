@@ -57,6 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
@@ -566,46 +567,49 @@ public class UnifyRelationConcludableTest {
         assertFalse(unified.isPresent());
     }
 
-    // TODO this test does not make sense, how can we map to x twice?
     @Test
-    public void relation_repeated_players_many_to_many() {
+    public void relation_unifies_many_to_many_rule_relation_players() {
         String conjunction = "{ (employee: $p, employer: $p, employee: $q) isa employment; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; $employer type employment:employer; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employer: $x, $employee: $y) isa $employment; }");
+        Conjunction when = parseConjunction("{ $x isa person; $y isa person; }");
+        Conjunction then = parseConjunction("{ (employee: $x, employer: $x, employee: $y) isa employment; }");
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        List<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
+        List<Map<String, Set<String>>> result = unifier.stream().map(u -> getStringMapping(u.mapping())).collect(Collectors.toList());
 
-        Set<Map<String, Set<String>>> expected = set(
+        List<Map<String, Set<String>>> expected = list(
                 new HashMap<String, Set<String>>() {{
                     put("$p", set("$x"));
                     put("$q", set("$y"));
-                    put("$_employment", set("$employer"));
-                    put("$_employment:employee", set("$employee"));
-                    put("$_employment:employer", set("$employer"));
+                    put("$_employment", set("$_employment"));
+                    put("$_employment:employee", set("$_employment:employee"));
+                    put("$_employment:employer", set("$_employment:employer"));
                 }},
                 new HashMap<String, Set<String>>() {{
                     put("$p", set("$x", "$y"));
                     put("$q", set("$x"));
-                    put("$_employment", set("$employer"));
-                    put("$_employment:employee", set("$employee"));
-                    put("$_employment:employer", set("$employer"));
+                    put("$_employment", set("$_employment"));
+                    put("$_employment:employee", set("$_employment:employee"));
+                    put("$_employment:employer", set("$_employment:employer"));
                 }}
         );
         assertEquals(expected, result);
     }
 
-    // TODO revisit this test, how can the same variable be mapped to by two variables?
     @Test
-    public void relation_repeated_players_many_to_many_roles() {
+    public void relation_variable_role_unifies_many_to_many_rule_relation_roles() {
         String conjunction = "{ ($role1: $x, $role2: $y, $role1: $y) isa employment; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
+
+        Conjunction when = parseConjunction("{ $x isa person; $y isa person; }");
+        Conjunction then = parseConjunction("{ (employee: $x, employer: $x, employee: $y) isa employment; }");
+        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
+        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
         Conjunction thenConjunction = parseConjunction("{$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment; }");
         ThingVariable variable = parseThingVariable("$temp ($employee: $a, $boss: $a, $employee: $b) isa $employment", "temp");
@@ -791,7 +795,7 @@ public class UnifyRelationConcludableTest {
     // TODO this throws n the type resolver?
     @Test
     public void relation_more_players_than_rule_relation_fails_unify() {
-        String conjunction = "{ (employee: $r, employer: $p, restriction: $q) isa part-time-employment; }";
+        String conjunction = "{ (part-time-employee: $r, employer: $p, restriction: $q) isa part-time-employment; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
