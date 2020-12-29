@@ -30,9 +30,6 @@ import org.rocksdb.UInt64AddOperator;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
@@ -53,7 +50,7 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
 
-    protected RocksGrakn(Path directory, Options.Database options, RocksCreator rocksCreator) {
+    protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager<RocksGrakn> factory) {
         this.directory = directory;
         this.options = options;
         this.rocksConfig = new org.rocksdb.Options()
@@ -61,21 +58,21 @@ public class RocksGrakn implements Grakn {
                 .setMergeOperator(new UInt64AddOperator());
 
         ExecutorService.init(MAX_THREADS);
-        databaseMgr = rocksCreator.databaseManager(this);
+        databaseMgr = factory.databaseManager(this);
         databaseMgr.loadAll();
         isOpen = new AtomicBoolean(true);
     }
 
     public static RocksGrakn open(Path directory) {
-        return open(directory, new Options.Database(), new RocksCreator());
+        return open(directory, new Options.Database(), new RocksFactory());
     }
 
-    public static RocksGrakn open(Path directory, RocksCreator rocksCreator) {
-        return open(directory, new Options.Database(), rocksCreator);
+    public static RocksGrakn open(Path directory, Factory factory) {
+        return open(directory, new Options.Database(), factory);
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options, RocksCreator rocksCreator) {
-        return rocksCreator.grakn(directory, options);
+    public static RocksGrakn open(Path directory, Options.Database options, Factory factory) {
+        return factory.grakn(directory, options);
     }
 
     public Path directory() {

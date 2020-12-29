@@ -61,19 +61,20 @@ public class RocksDatabase implements Grakn.Database {
     protected final OptimisticTransactionDB rocksData;
     protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     protected final AtomicBoolean isOpen;
+    private final Factory.Session<RocksDatabase> factory;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected RocksSession.Data statisticsBackgroundCounterSession;
     private final RocksGrakn rocksGrakn;
-    private final RocksCreator rocksCreator;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock dataWriteSchemaLock;
     private Cache cache;
 
-    protected RocksDatabase(RocksGrakn rocksGrakn, String name, boolean isNew, RocksCreator rocksCreator) {
+    protected RocksDatabase(RocksGrakn rocksGrakn, String name,
+                            Factory.Session<RocksDatabase> factory) {
         this.name = name;
         this.rocksGrakn = rocksGrakn;
-        this.rocksCreator = rocksCreator;
+        this.factory = factory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
@@ -88,20 +89,20 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
+    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, Factory.Database<RocksGrakn> factory) {
         try {
             Files.createDirectory(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
-        RocksDatabase database = rocksCreator.database(rocksGrakn, name, true);
+        RocksDatabase database = factory.database(rocksGrakn, name);
         database.create();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, RocksCreator rocksCreator) {
-        RocksDatabase database = rocksCreator.database(rocksGrakn, name, false);
+    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, Factory.Database<RocksGrakn> factory) {
+        RocksDatabase database = factory.database(rocksGrakn, name);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -138,9 +139,9 @@ public class RocksDatabase implements Grakn.Database {
 
         if (type.isSchema()) {
             lock = dataWriteSchemaLock().writeLock();
-            session = rocksCreator.sessionSchema(this, options);
+            session = factory.sessionSchema(this, options);
         } else if (type.isData()) {
-            session = rocksCreator.sessionData(this, options);
+            session = factory.sessionData(this, options);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -152,7 +153,7 @@ public class RocksDatabase implements Grakn.Database {
     synchronized Cache cacheBorrow() {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
-        if (cache == null) cache = new Cache(this, rocksCreator);
+        if (cache == null) cache = new Cache(this, factory.storageReadOnlyFactory());
         cache.borrow();
         return cache;
     }
@@ -178,7 +179,7 @@ public class RocksDatabase implements Grakn.Database {
         assert statisticsBackgroundCounterSession == null;
         assert statisticsBackgroundCounter == null;
 
-        statisticsBackgroundCounterSession = rocksCreator.sessionData(this, new Options.Session());
+        statisticsBackgroundCounterSession = factory.sessionData(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
     }
 
@@ -291,8 +292,8 @@ public class RocksDatabase implements Grakn.Database {
         private long borrowerCount;
         private boolean invalidated;
 
-        private Cache(RocksDatabase database, RocksCreator rocksCreator) {
-            schemaStorage = rocksCreator.storageSchemaReadOnly(database);
+        private Cache(RocksDatabase database, Factory.StorageReadOnly<RocksDatabase> factory) {
+            schemaStorage = factory.storageSchemaReadOnly(database);
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();

@@ -33,12 +33,12 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     private final RocksGrakn rocksGrakn;
-    private final RocksCreator rocksCreator;
     private final ConcurrentMap<String, RocksDatabase> databases;
+    private final Factory.Database<RocksGrakn> factory;
 
-    RocksDatabaseManager(RocksGrakn rocksGrakn, RocksCreator rocksCreator) {
+    RocksDatabaseManager(RocksGrakn rocksGrakn, Factory.Database<RocksGrakn> factory) {
         this.rocksGrakn = rocksGrakn;
-        this.rocksCreator = rocksCreator;
+        this.factory = factory;
         databases = new ConcurrentHashMap<>();
     }
 
@@ -47,7 +47,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
                 final String name = directory.getName();
-                final RocksDatabase database = RocksDatabase.loadExistingAndOpen(rocksGrakn, name, rocksCreator);
+                final RocksDatabase database = RocksDatabase.loadExistingAndOpen(rocksGrakn, name, factory);
                 databases.put(name, database);
             });
         }
@@ -62,7 +62,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     public RocksDatabase create(String name) {
         if (databases.containsKey(name)) throw GraknException.of(DATABASE_EXISTS, name);
 
-        final RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name, rocksCreator);
+        final RocksDatabase database = RocksDatabase.createNewAndOpen(rocksGrakn, name, factory);
         databases.put(name, database);
         return database;
     }

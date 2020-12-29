@@ -109,11 +109,11 @@ public abstract class RocksSession implements Grakn.Session {
     }
 
     public static class Schema extends RocksSession {
-        private final RocksCreator rocksCreator;
+        private final Factory.TransactionSchema<Schema> factory;
 
-        public Schema(RocksDatabase database, Options.Session options, RocksCreator rocksCreator) {
+        public Schema(RocksDatabase database, Options.Session options, Factory.TransactionSchema<Schema> factory) {
             super(database, Arguments.Session.Type.SCHEMA, options);
-            this.rocksCreator = rocksCreator;
+            this.factory = factory;
         }
 
         @Override
@@ -134,7 +134,7 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
-            final RocksTransaction.Schema transaction = rocksCreator.transactionSchema(this, type, options);
+            final RocksTransaction.Schema transaction = factory.transactionSchema(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
         }
@@ -147,11 +147,11 @@ public abstract class RocksSession implements Grakn.Session {
 
     public static class Data extends RocksSession {
 
-        private final RocksCreator rocksCreator;
+        private final Factory.TransactionData<Data> factory;
 
-        public Data(RocksDatabase database, Options.Session options, RocksCreator rocksCreator) {
+        public Data(RocksDatabase database, Options.Session options, Factory.TransactionData<Data> factory) {
             super(database, Arguments.Session.Type.DATA, options);
-            this.rocksCreator = rocksCreator;
+            this.factory = factory;
         }
 
         @Override
@@ -174,7 +174,7 @@ public abstract class RocksSession implements Grakn.Session {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock = 0;
             if (type.isWrite()) lock = database.dataWriteSchemaLock().readLock();
-            final RocksTransaction.Data transaction = rocksCreator.transactionData(this, type, options);
+            final RocksTransaction.Data transaction = factory.transactionData(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }

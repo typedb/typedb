@@ -152,13 +152,14 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         protected final RocksStorage.Schema schemaStorage;
         protected final RocksStorage.Data dataStorage;
 
-        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options, RocksCreator rocksCreator) {
+        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options,
+                         Factory.Storage<RocksDatabase, RocksTransaction> factory) {
             super(session, type, options);
 
-            schemaStorage = rocksCreator.storageSchema(session.database(), this);
+            schemaStorage = factory.storageSchema(session.database(), this);
             SchemaGraph schemaGraph = new SchemaGraph(schemaStorage, type.isRead());
 
-            dataStorage = rocksCreator.storageData(session.database(), this);
+            dataStorage = factory.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
@@ -254,11 +255,12 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
-        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options, RocksCreator rocksCreator) {
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options,
+                    Factory.Storage<RocksDatabase, RocksTransaction> factory) {
             super(session, type, options);
 
             cache = session.database.cacheBorrow();
-            dataStorage = rocksCreator.storageData(session.database(), this);
+            dataStorage = factory.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
 
