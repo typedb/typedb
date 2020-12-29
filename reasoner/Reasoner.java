@@ -72,16 +72,12 @@ public class Reasoner {
 
     private List<Producer<ConceptMap>> producers(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
-        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
+        // TODO enable: conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
 
         // TODO enable reasoner here
-        //      ResourceIterator<ConceptMap> answers = link(list(
-        //          traversalEng.execute(conjunctionResolvedTypes.traversal()).map(conceptMgr::conceptMap)
-        //          resolve(conjunctionResolvedTypes)
-        //      ));
 
         Set<Negation> negations = conjunction.negations();
         if (negations.isEmpty()) return list(answers);
@@ -93,10 +89,21 @@ public class Reasoner {
         }
     }
 
+    private List<Producer<ConceptMap>> producers(Disjunction disjunction, ConceptMap bounds) {
+        return iterate(disjunction.conjunctions()).flatMap(conj -> iterate(producers(conj, bounds))).toList();
+    }
+
+    public List<Producer<ConceptMap>> producers(Conjunction conjunction, ConceptMap bounds) {
+        return producers(bound(conjunction, bounds));
+    }
+
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
-        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
+        // TODO enable: conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
+
+        // TODO: enable reasoner here
+        //       ResourceIterator<ConceptMap> answers = link(list(answers, resolve(conjunctionResolvedTypes)));
 
         Set<Negation> negations = conjunction.negations();
         if (negations.isEmpty()) return answers;
@@ -105,16 +112,8 @@ public class Reasoner {
         ).hasNext());
     }
 
-    private List<Producer<ConceptMap>> producers(Disjunction disjunction, ConceptMap bounds) {
-        return iterate(disjunction.conjunctions()).flatMap(conj -> iterate(producers(conj, bounds))).toList();
-    }
-
     private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
         return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
-    }
-
-    public List<Producer<ConceptMap>> producers(Conjunction conjunction, ConceptMap bounds) {
-        return producers(bound(conjunction, bounds));
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
@@ -122,7 +121,9 @@ public class Reasoner {
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
-        conjunction.forEach(var -> {
+        if (true) throw GraknException.of(ErrorMessage.Internal.UNIMPLEMENTED);
+        Conjunction cloned = conjunction.clone();
+        cloned.forEach(var -> {
             if (var.identifier().isNamedReference() && bounds.contains(var.identifier().reference().asName())) {
                 Concept boundVar = bounds.get(var.identifier().reference().asName());
                 if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
@@ -131,7 +132,7 @@ public class Reasoner {
                 else throw GraknException.of(ILLEGAL_STATE);
             }
         });
-        return conjunction;
+        return cloned;
     }
 
     ResolverRegistry resolverRegistry() {

@@ -184,12 +184,14 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         public static class RolePlayer extends Native<StructureVertex.Thing, StructureVertex.Thing> {
 
             private final Set<Label> roleTypes;
+            private final int repetition;
             private final int hash;
 
-            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes) {
+            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
                 super(from, to, ROLEPLAYER, false);
                 this.roleTypes = roleTypes;
-                this.hash = Objects.hash(this.getClass(), from, to, encoding, roleTypes);
+                this.repetition = repetition;
+                this.hash = Objects.hash(this.getClass(), from, to, encoding, roleTypes, repetition);
             }
 
             public Set<Label> types() {
@@ -211,7 +213,8 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
                 return (this.from.equals(that.from) &&
                         this.to.equals(that.to) &&
                         this.encoding.equals(that.encoding) &&
-                        this.roleTypes.equals(that.roleTypes));
+                        this.roleTypes.equals(that.roleTypes) &&
+                        this.repetition == that.repetition);
             }
 
             @Override

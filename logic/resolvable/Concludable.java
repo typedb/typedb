@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
+import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -244,8 +244,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 } else return Stream.empty();
             }
 
-            List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint().players());
-            List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
+            // TODO this will work for now, but we should rewrite using role player `repetition`
+            List<RolePlayer> conjRolePlayers = list(constraint().players());
+            List<RolePlayer> thenRolePlayers = list(unifyWith.constraint().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
                     .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));

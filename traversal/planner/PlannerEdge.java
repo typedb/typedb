@@ -23,6 +23,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.graph.TraversalEdge;
@@ -42,6 +43,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
 import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
@@ -73,11 +75,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     protected abstract void initialiseDirectionalEdges();
 
-    static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> structureEdge) {
-        if (structureEdge.isEqual()) return new PlannerEdge.Equal(from, to);
-        else if (structureEdge.isPredicate())
-            return new Predicate(from.asThing(), to.asThing(), structureEdge.asPredicate().predicate());
-        else if (structureEdge.isNative()) return PlannerEdge.Native.of(from, to, structureEdge.asNative());
+    static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> edge) {
+        if (edge.isEqual()) return new PlannerEdge.Equal(from, to);
+        else if (edge.isPredicate()) return new Predicate(from.asThing(), to.asThing(), edge.asPredicate().predicate());
+        else if (edge.isNative()) return PlannerEdge.Native.of(from, to, edge.asNative());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -1197,9 +1198,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
             }
 
-            static class RolePlayer extends Thing {
+            public static class RolePlayer extends Thing {
 
                 private final Set<Label> roleTypes;
+                private Set<TypeVertex> resolvedRoleTypes;
 
                 RolePlayer(PlannerVertex.Thing from, PlannerVertex.Thing to, Set<Label> roleTypes) {
                     super(from, to, ROLEPLAYER);
@@ -1210,6 +1212,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 protected void initialiseDirectionalEdges() {
                     forward = new Forward(from.asThing(), to.asThing(), this);
                     backward = new Backward(to.asThing(), from.asThing(), this);
+                }
+
+                Set<TypeVertex> resolvedRoleTypes(SchemaGraph graph) {
+                    if (resolvedRoleTypes == null) {
+                        resolvedRoleTypes = iterate(roleTypes).map(graph::getType)
+                                .flatMap(rt -> tree(rt, r -> r.ins().edge(SUB).from())).toSet();
+                    }
+                    return resolvedRoleTypes;
                 }
 
                 public abstract class Directional extends Thing.Directional {
@@ -1242,9 +1252,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = 1;
                         } else if (!roleTypes.isEmpty()) {
                             cost = 0;
-                            for (final Label roleType : roleTypes) {
-                                assert roleType.scope().isPresent();
-                                double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
+                            for (TypeVertex roleType : resolvedRoleTypes(graphMgr.schema())) {
+                                // TODO: roleType.scope() could be made to return the relation type vertex (optionally)
+                                assert roleType.isRoleType() && roleType.properLabel().scope().isPresent();
+                                double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.properLabel().scope().get()));
                                 if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
                             }
                             assert !roleTypes.isEmpty();

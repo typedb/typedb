@@ -56,22 +56,26 @@ public abstract class Identifier {
 
     public static class Scoped extends Identifier {
 
-        private final Variable scope;
-        private final int id;
+        private final Variable relation;
+        private final Variable roleType;
+        private final Variable player;
+        private final int repetition;
         private final int hash;
 
-        private Scoped(Variable scope, int id) {
-            this.scope = scope;
-            this.id = id;
-            this.hash = Objects.hash(Scoped.class, scope, id);
+        private Scoped(Variable relation, Variable roleType, Variable player, int repetition) {
+            this.relation = relation;
+            this.roleType = roleType;
+            this.player = player;
+            this.repetition = repetition;
+            this.hash = Objects.hash(Scoped.class, relation, roleType, player, repetition);
         }
 
-        public static Scoped of(Variable scope, int id) {
-            return new Scoped(scope, id);
+        public static Scoped of(Variable relation, Variable roleType, Variable player, int repetition) {
+            return new Scoped(relation, roleType, player, repetition);
         }
 
         public Identifier.Variable scope() {
-            return scope;
+            return relation;
         }
 
         @Override
@@ -82,7 +86,7 @@ public abstract class Identifier {
 
         @Override
         public String toString() {
-            return scope + ":" + id;
+            return String.format("%s:%s:%s:%s", relation, roleType, player, repetition);
         }
 
         @Override
@@ -91,7 +95,7 @@ public abstract class Identifier {
             else if (o == null || getClass() != o.getClass()) return false;
 
             final Scoped that = (Scoped) o;
-            return this.scope.equals(that.scope) && this.id == that.id;
+            return this.relation.equals(that.relation) && this.repetition == that.repetition;
         }
 
         @Override
