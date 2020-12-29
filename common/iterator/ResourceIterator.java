@@ -18,9 +18,10 @@
 
 package grakn.core.common.iterator;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -99,15 +100,21 @@ public interface ResourceIterator<T> extends Iterator<T> {
     }
 
     default List<T> toList() {
-        final LinkedList<T> list = new LinkedList<>();
-        this.forEachRemaining(list::addLast);
+        ArrayList<T> list = new ArrayList<>();
+        this.forEachRemaining(list::add);
         return list;
     }
 
     default Set<T> toSet() {
-        final Set<T> set = new HashSet<>();
+        HashSet<T> set = new HashSet<>();
         this.forEachRemaining(set::add);
         return set;
+    }
+
+    default LinkedHashSet<T> toLinkedSet() {
+        LinkedHashSet<T> linkedSet = new LinkedHashSet<>();
+        this.forEachRemaining(linkedSet::add);
+        return linkedSet;
     }
 
     default int count() {

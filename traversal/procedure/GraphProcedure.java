@@ -236,8 +236,8 @@ public class GraphProcedure implements Procedure {
             return thingVertex(Identifier.Variable.anon(id), false);
         }
 
-        public ProcedureVertex.Thing scopedThing(ProcedureVertex.Thing scope, int id) {
-            return thingVertex(Identifier.Scoped.of(scope.id().asVariable(), id), false);
+        public ProcedureVertex.Thing scopedThing(ProcedureVertex.Thing relation, ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
+            return thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType.id().asVariable(), player.id().asVariable(), repetition), false);
         }
 
         public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, String label) {

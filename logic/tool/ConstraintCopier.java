@@ -28,27 +28,28 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ConstraintCopier {
     public static RelationConstraint copyConstraint(RelationConstraint relationConstraint) {
         ThingVariable ownerCopy = copyIsaAndValues(relationConstraint.owner());
-        List<RelationConstraint.RolePlayer> rolePlayersCopy = copyRolePlayers(relationConstraint.players());
+        LinkedHashSet<RelationConstraint.RolePlayer> rolePlayersCopy = copyRolePlayers(relationConstraint.players());
         return new RelationConstraint(ownerCopy, rolePlayersCopy);
     }
 
-    static List<RelationConstraint.RolePlayer> copyRolePlayers(List<RelationConstraint.RolePlayer> players) {
-        return players.stream().map(rolePlayer -> {
+    static LinkedHashSet<RelationConstraint.RolePlayer> copyRolePlayers(LinkedHashSet<RelationConstraint.RolePlayer> players) {
+        return iterate(players).map(rolePlayer -> {
             TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? copyVariableWithLabelAndValueType(rolePlayer.roleType().get()) : null;
             ThingVariable playerCopy = copyIsaAndValues(rolePlayer.player());
-            RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
+            RelationConstraint.RolePlayer rolePlayerCopy = new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy, rolePlayer.repetition());
             rolePlayerCopy.addResolvedRoleTypes(rolePlayer.resolvedRoleTypes());
             return rolePlayerCopy;
-        }).collect(Collectors.toList());
+        }).toLinkedSet();
     }
 
     public static HasConstraint copyConstraint(HasConstraint hasConstraint) {

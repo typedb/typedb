@@ -214,7 +214,7 @@ public class ConcludableTest {
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
         assertEquals("$diagnosis", relationIsaConstraint.type().reference().asName().syntax());
         assertEquals("diagnosis-type", relationIsaConstraint.type().label().get().label());
-        assertEquals("person-type", relationConstraint.players().get(0).player().isa().get().type().label()
+        assertEquals("person-type", list(relationConstraint.players()).get(0).player().isa().get().type().label()
                 .get().label());
     }
 
@@ -227,7 +227,7 @@ public class ConcludableTest {
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
         assertEquals("$_diagnosis", relationIsaConstraint.type().reference().asLabel().syntax());
         assertEquals("diagnosis", relationIsaConstraint.type().label().get().label());
-        assertEquals("person", relationConstraint.players().get(0).player().isa().get().type().label().get().label());
+        assertEquals("person", list(relationConstraint.players()).get(0).player().isa().get().type().label().get().label());
     }
 
     @Test
@@ -239,7 +239,7 @@ public class ConcludableTest {
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
         assertEquals("$_diagnosis", relationIsaConstraint.type().reference().asLabel().syntax());
         assertEquals("diagnosis", relationIsaConstraint.type().label().get().label());
-        assertEquals("person", relationConstraint.players().get(0).player().isa().get().type().label().get().label());
+        assertEquals("person", list(relationConstraint.players()).get(0).player().isa().get().type().label().get().label());
     }
 
     @Test
@@ -293,7 +293,7 @@ public class ConcludableTest {
         RelationConstraint relationConstraint = variable.relation().iterator().next();
         Set<Variable> contextVariables = parseConjunction("{ $per isa $person; $person type person-type; }").variables();
         Rule.Conclusion.Relation relationConcludable = new Rule.Conclusion.Relation(relationConstraint, contextVariables);
-        assertEquals("person-type", relationConcludable.constraint().players().get(0).player().isa().get()
+        assertEquals("person-type", list(relationConcludable.constraint().players()).get(0).player().isa().get()
                 .type().label().get().label());
     }
 }

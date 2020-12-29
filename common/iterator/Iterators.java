@@ -93,7 +93,7 @@ public class Iterators {
         return new CartesianIterator<>(iteratorProducers);
     }
 
-    public static <T> PermutationIterator<T> permutation(List<T> list) {
+    public static <T> PermutationIterator<T> permutation(Collection<T> list) {
         return new PermutationIterator<>(list);
     }
 

@@ -213,7 +213,8 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
                 return (this.from.equals(that.from) &&
                         this.to.equals(that.to) &&
                         this.encoding.equals(that.encoding) &&
-                        this.roleTypes.equals(that.roleTypes));
+                        this.roleTypes.equals(that.roleTypes) &&
+                        this.repetition == that.repetition);
             }
 
             @Override
