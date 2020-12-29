@@ -18,52 +18,78 @@
 
 package grakn.core.rocks;
 
-import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 
 import java.nio.file.Path;
 
 public class RocksFactory implements Factory {
 
+    private Database databaseFactory;
+    private Session sessionFactory;
+    private TransactionSchema transactionSchemaFactory;
+    private TransactionData transactionDataFactory;
+    private Storage storageFactory;
+
     @Override
     public RocksGrakn grakn(Path directory, Options.Database options) {
-        return new RocksGrakn(directory, options, this);
+        return new RocksGrakn(directory, options, databaseFactory());
     }
 
-    @Override
-    public RocksDatabase database(RocksGrakn grakn, String name) {
-        return RocksDatabase.create(grakn, name, this);
+    private Factory.Database databaseFactory() {
+        if (databaseFactory == null) {
+            databaseFactory = (rocksGrakn, name) -> RocksDatabase.create(rocksGrakn, name, sessionFactory());
+        }
+        return databaseFactory;
     }
 
-    @Override
-    public RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options) {
-        return RocksSession.Schema.create(database, options, this);
+    private Factory.Session sessionFactory() {
+        if (sessionFactory == null) {
+            sessionFactory = new Session() {
+
+                @Override
+                public RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options) {
+                    return RocksSession.Schema.create(database, options, transactionSchemaFactory());
+                }
+
+                @Override
+                public RocksSession.Data sessionData(RocksDatabase database, Options.Session options) {
+                    return RocksSession.Data.create(database, options, transactionDataFactory());
+                }
+            };
+        }
+        return sessionFactory;
     }
 
-    @Override
-    public RocksSession.Data sessionData(RocksDatabase database, Options.Session options) {
-        return RocksSession.Data.create(database, options, this);
+    private Factory.TransactionSchema transactionSchemaFactory() {
+        if (transactionSchemaFactory == null) {
+            transactionSchemaFactory = (session, type, options) ->
+                    RocksTransaction.Schema.create(session, type, options, storageFactory());
+        }
+        return transactionSchemaFactory;
     }
 
-    @Override
-    public RocksTransaction.Schema transactionSchema(
-            RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
-        return RocksTransaction.Schema.create(session, type, options, this);
+    private Factory.TransactionData transactionDataFactory() {
+        if (transactionDataFactory == null) {
+            transactionDataFactory = (session, type, options) ->
+                    RocksTransaction.Data.create(session, type, options, storageFactory());
+        }
+        return transactionDataFactory;
     }
 
-    @Override
-    public RocksTransaction.Data transactionData(
-            RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
-        return RocksTransaction.Data.create(session, type, options, this);
-    }
+    private Factory.Storage storageFactory() {
+        if (storageFactory == null) {
+            storageFactory = new Storage() {
+                @Override
+                public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction) {
+                    return RocksStorage.Schema.create(database, transaction);
+                }
 
-    @Override
-    public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction) {
-        return RocksStorage.Schema.create(database, transaction);
-    }
-
-    @Override
-    public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction.Schema transaction) {
-        return RocksStorage.Data.create(database, transaction);
+                @Override
+                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction.Schema transaction) {
+                    return RocksStorage.Data.create(database, transaction);
+                }
+            };
+        }
+        return storageFactory;
     }
 }

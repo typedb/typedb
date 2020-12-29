@@ -50,7 +50,7 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
 
-    protected RocksGrakn(Path directory, Options.Database options, RocksFactory factory) {
+    protected RocksGrakn(Path directory, Options.Database options, Factory.Database factory) {
         this.directory = directory;
         this.options = options;
         this.databaseMgr = new RocksDatabaseManager(factory);

@@ -109,15 +109,15 @@ public abstract class RocksSession implements Grakn.Session {
     }
 
     public static class Schema extends RocksSession {
-        private final Factory factory;
+        private final Factory.TransactionSchema factory;
 
-        public Schema(RocksDatabase database, Context.Session context, Factory factory) {
+        public Schema(RocksDatabase database, Context.Session context, Factory.TransactionSchema factory) {
             super(database, context);
             this.factory = factory;
         }
 
         public static RocksSession.Schema create(RocksDatabase database, Options.Session options,
-                                                 RocksFactory factory) {
+                                                 Factory.TransactionSchema factory) {
             Context.Session context = new Context.Session(database.options(), options).type(SCHEMA);
             return new Schema(database, context, factory);
         }
@@ -140,7 +140,7 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
-            final RocksTransaction.Schema transaction = factory.transactionSchema(this, type, options);
+            final RocksTransaction.Schema transaction = factory.transaction(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
         }
@@ -153,15 +153,15 @@ public abstract class RocksSession implements Grakn.Session {
 
     public static class Data extends RocksSession {
 
-        private final Factory factory;
+        private final Factory.TransactionData factory;
 
-        public Data(RocksDatabase database, Context.Session context, Factory factory) {
+        public Data(RocksDatabase database, Context.Session context, Factory.TransactionData factory) {
             super(database, context);
             this.factory = factory;
         }
 
         public static RocksSession.Data create(RocksDatabase database, Options.Session options,
-                                               RocksFactory factory) {
+                                               Factory.TransactionData factory) {
             Context.Session context = new Context.Session(database.options(), options).type(DATA);
             return new Data(database, context, factory);
         }
@@ -187,7 +187,7 @@ public abstract class RocksSession implements Grakn.Session {
             long lock = 0;
             if (type.isWrite()) lock = database().dataWriteSchemaLock().readLock();
 //            final RocksTransaction.Data transaction = RocksTransaction.Data.create(this, type, options, factory);
-            final RocksTransaction.Data transaction = factory.transactionData(this, type, options);
+            final RocksTransaction.Data transaction = factory.transaction(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }
