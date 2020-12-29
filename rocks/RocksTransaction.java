@@ -155,10 +155,10 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options, RocksCreator rocksCreator) {
             super(session, type, options);
 
-            schemaStorage = rocksCreator.schemaStorage(session.database(), this);
+            schemaStorage = rocksCreator.storageSchema(session.database(), this);
             SchemaGraph schemaGraph = new SchemaGraph(schemaStorage, type.isRead());
 
-            dataStorage = rocksCreator.dataStorage(session.database(), this);
+            dataStorage = rocksCreator.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
@@ -258,7 +258,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
             super(session, type, options);
 
             cache = session.database.borrowCache();
-            dataStorage = rocksCreator.dataStorage(session.database(), this);
+            dataStorage = rocksCreator.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
 

@@ -26,16 +26,16 @@ public class RocksCreator {
         return new RocksSession.Data(database, options, this);
     }
 
-    public RocksStorage.Schema schemaStorage(RocksDatabase database, RocksTransaction transaction) {
+    public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction transaction) {
         return new RocksStorage.Schema(database, transaction);
     }
 
-    public RocksStorage.Data dataStorage(RocksDatabase database, RocksTransaction transaction) {
-        return new RocksStorage.Data(database, transaction);
+    public RocksStorage storageSchemaReadOnly(RocksDatabase database) {
+        return new RocksStorage(database.rocksSchema(), true);
     }
 
-    public RocksStorage rocksStorage(RocksDatabase database) {
-        return new RocksStorage(database.rocksSchema(), true);
+    public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction) {
+        return new RocksStorage.Data(database, transaction);
     }
 
     public RocksTransaction.Schema transactionSchema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
