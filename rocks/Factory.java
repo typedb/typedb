@@ -18,8 +18,10 @@
 
 package grakn.core.rocks;
 
-import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
+import grakn.core.graph.util.KeyGenerator;
+import org.rocksdb.OptimisticTransactionDB;
 
 import java.nio.file.Path;
 
@@ -27,44 +29,32 @@ public interface Factory {
 
     RocksGrakn grakn(Path directory, Options.Database options);
 
-    interface DatabaseManager<G extends RocksGrakn> {
+    interface Database {
 
-        RocksDatabaseManager databaseManager(G rocksGrakn);
+        RocksDatabase database(String name);
     }
 
-    interface Database<G extends RocksGrakn> {
+    interface Session {
 
-        RocksDatabase database(G rocksGrakn, String name);
+        RocksSession.Schema sessionSchema(Context.Session context);
+
+        RocksSession.Data sessionData(Context.Session context);
     }
 
-    interface Session<D extends RocksDatabase> {
+    interface TransactionSchema {
 
-        RocksSession.Schema sessionSchema(D database, Options.Session options);
-
-        RocksSession.Data sessionData(D database, Options.Session options);
-
-        StorageReadOnly<D> storageReadOnlyFactory();
+        RocksTransaction.Schema transaction(Context.Transaction context);
     }
 
-    interface TransactionSchema<S extends RocksSession.Schema> {
+    interface TransactionData {
 
-        RocksTransaction.Schema transactionSchema(S session, Arguments.Transaction.Type type, Options.Transaction options);
+        RocksTransaction.Data transaction(Context.Transaction context);
     }
 
-    interface TransactionData<S extends RocksSession.Data> {
+    interface Storage {
 
-        RocksTransaction.Data transactionData(S session, Arguments.Transaction.Type type, Options.Transaction options);
-    }
+        RocksStorage.Schema storageSchema(OptimisticTransactionDB rocksDB, KeyGenerator.Schema keyGenerator, boolean isRead);
 
-    interface Storage<D extends RocksDatabase, T extends RocksTransaction> {
-
-        RocksStorage.Schema storageSchema(D database, T transaction);
-
-        RocksStorage.Data storageData(D database, T transaction);
-    }
-
-    interface StorageReadOnly<D extends RocksDatabase> {
-
-        RocksStorage storageSchemaReadOnly(D database);
+        RocksStorage.Data storageData(OptimisticTransactionDB rocksDB, KeyGenerator.Data keyGenerator, boolean isRead);
     }
 }

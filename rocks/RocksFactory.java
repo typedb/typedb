@@ -18,97 +18,77 @@
 
 package grakn.core.rocks;
 
+import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
+import grakn.core.graph.util.KeyGenerator;
+import org.rocksdb.OptimisticTransactionDB;
 
 import java.nio.file.Path;
 
 public class RocksFactory implements Factory {
 
-    private DatabaseManager<RocksGrakn> databaseManager;
-    private Database<RocksGrakn> database;
-    private Session<RocksDatabase> session;
-    private TransactionSchema<RocksSession.Schema> transactionSchema;
-    private TransactionData<RocksSession.Data> transactionData;
-    private Storage<RocksDatabase, RocksTransaction> storage;
-    private StorageReadOnly<RocksDatabase> storageReadOnly;
+    private Database database;
+    private Session session;
+    private TransactionSchema transactionSchema;
+    private TransactionData transactionData;
+    private Storage storage;
 
     @Override
     public RocksGrakn grakn(Path directory, Options.Database options) {
-        return new RocksGrakn(directory, options, databaseManager());
+        return new RocksGrakn(directory, options, databaseFactory());
     }
 
-    private DatabaseManager<RocksGrakn> databaseManager() {
-        if (databaseManager == null) {
-            databaseManager = rocksGrakn -> new RocksDatabaseManager(rocksGrakn, database());
-        }
-        return databaseManager;
-    }
-
-    private Database<RocksGrakn> database() {
-        if (database == null) {
-            database = (rocksGrakn, name) -> new RocksDatabase(rocksGrakn, name, session());
-        }
+    private Factory.Database databaseFactory() {
+        if (database == null) database = name -> new RocksDatabase(name, sessionFactory());
         return database;
     }
 
-    private Session<RocksDatabase> session() {
+    private Factory.Session sessionFactory() {
         if (session == null) {
-            session = new Session<RocksDatabase>() {
+            session = new Session() {
 
                 @Override
-                public RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options) {
-                    return new RocksSession.Schema(database, options, transactionSchema());
+                public RocksSession.Schema sessionSchema(Context.Session context) {
+                    return new RocksSession.Schema(context, transactionSchemaFactory());
                 }
 
                 @Override
-                public RocksSession.Data sessionData(RocksDatabase database, Options.Session options) {
-                    return new RocksSession.Data(database, options, transactionData());
-                }
-
-                @Override
-                public StorageReadOnly<RocksDatabase> storageReadOnlyFactory() {
-                    return storageReadOnly();
+                public RocksSession.Data sessionData(Context.Session context) {
+                    return new RocksSession.Data(context, transactionDataFactory());
                 }
             };
         }
         return session;
     }
 
-    private TransactionSchema<RocksSession.Schema> transactionSchema() {
+    private Factory.TransactionSchema transactionSchemaFactory() {
         if (transactionSchema == null) {
-            transactionSchema = (session, type, options) -> new RocksTransaction.Schema(session, type, options, storage());
+            transactionSchema = (context) -> new RocksTransaction.Schema(context, storageFactory());
         }
         return transactionSchema;
     }
 
-    private TransactionData<RocksSession.Data> transactionData() {
+    private Factory.TransactionData transactionDataFactory() {
         if (transactionData == null) {
-            transactionData = (session, type, options) -> new RocksTransaction.Data(session, type, options, storage());
+            transactionData = (context) -> new RocksTransaction.Data(context, storageFactory());
         }
         return transactionData;
     }
 
-    private Storage<RocksDatabase, RocksTransaction> storage() {
+    private Factory.Storage storageFactory() {
         if (storage == null) {
-            storage = new Storage<RocksDatabase, RocksTransaction>() {
+            storage = new Storage() {
                 @Override
-                public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction transaction) {
-                    return new RocksStorage.Schema(database, transaction);
+                public RocksStorage.Schema storageSchema(OptimisticTransactionDB rocksDB, KeyGenerator.Schema keyGenerator, boolean isRead) {
+                    return new RocksStorage.Schema(rocksDB, keyGenerator, isRead);
                 }
 
                 @Override
-                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction) {
-                    return new RocksStorage.Data(database, transaction);
+                public RocksStorage.Data storageData(OptimisticTransactionDB rocksDB, KeyGenerator.Data keyGenerator, boolean isRead) {
+                    return new RocksStorage.Data(rocksDB, keyGenerator, isRead);
                 }
             };
         }
         return storage;
-    }
-
-    private StorageReadOnly<RocksDatabase> storageReadOnly() {
-        if (storageReadOnly == null) {
-            storageReadOnly = database -> new RocksStorage(database.rocksSchema(), true);
-        }
-        return storageReadOnly;
     }
 }

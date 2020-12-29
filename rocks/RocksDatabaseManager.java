@@ -32,14 +32,17 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
-    private final RocksGrakn rocksGrakn;
     private final ConcurrentMap<String, RocksDatabase> databases;
-    private final Factory.Database<RocksGrakn> factory;
+    private final Factory.Database factory;
+    private RocksGrakn rocksGrakn;
 
-    RocksDatabaseManager(RocksGrakn rocksGrakn, Factory.Database<RocksGrakn> factory) {
-        this.rocksGrakn = rocksGrakn;
+    RocksDatabaseManager(Factory.Database factory) {
         this.factory = factory;
         databases = new ConcurrentHashMap<>();
+    }
+
+    void parent(RocksGrakn rocksGrakn) {
+        this.rocksGrakn = rocksGrakn;
     }
 
     void loadAll() {
