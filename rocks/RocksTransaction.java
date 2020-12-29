@@ -220,7 +220,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     logicMgr.validateRules();
                     graphMgr.schema().commit();
                     schemaStorage.commit();
-                    session.database.invalidateCache();
+                    session.database.cacheInvalidate();
                 } catch (RocksDBException e) {
                     rollback();
                     throw GraknException.of(e);
@@ -257,7 +257,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options, RocksCreator rocksCreator) {
             super(session, type, options);
 
-            cache = session.database.borrowCache();
+            cache = session.database.cacheBorrow();
             dataStorage = rocksCreator.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
@@ -332,7 +332,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         void closeStorage() {
-            session.database.unborrowCache(cache);
+            session.database.cacheUnborrow(cache);
             dataStorage.close();
         }
     }
