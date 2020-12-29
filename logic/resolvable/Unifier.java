@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.UN_UNIFICATION_MISSING_CONCEPT;
 
 public class Unifier {
 
@@ -75,16 +75,15 @@ public class Unifier {
      * as they may be mapped to from a named variable, and may have requirements that need to be met.
      */
     public Optional<ConceptMap> unUnify(Map<Identifier, Concept> identifiedConcepts) {
-        if (identifiedConcepts.keySet().size() != unUnifier.keySet().size()) {
-            throw GraknException.of(UN_UNIFICATION_WRONG_NUMBER_OF_CONCEPTS, this, identifiedConcepts);
-        }
-
         Map<Identifier, Concept> reversedConcepts = new HashMap<>();
-        for (Map.Entry<Identifier, Concept> toReverseConcept : identifiedConcepts.entrySet()) {
-            Identifier toReverse = toReverseConcept.getKey();
-            Concept concept = toReverseConcept.getValue();
-            assert unUnifier.containsKey(toReverse);
-            Set<Identifier> reversed = unUnifier.get(toReverse);
+
+        for (Map.Entry<Identifier, Set<Identifier>> entry : unUnifier.entrySet()) {
+            Identifier toReverse = entry.getKey();
+            Set<Identifier> reversed = entry.getValue();
+            if (!identifiedConcepts.containsKey(toReverse)) {
+                throw GraknException.of(UN_UNIFICATION_MISSING_CONCEPT, toReverse, identifiedConcepts);
+            }
+            Concept concept = identifiedConcepts.get(toReverse);
             for (Identifier r : reversed) {
                 if (!reversedConcepts.containsKey(r)) reversedConcepts.put(r, concept);
                 if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
@@ -220,17 +219,17 @@ public class Unifier {
         }
 
         public void types(Identifier identifier, Set<Label> labels) {
-            assert !types.containsKey(identifier);
+            assert !types.containsKey(identifier) || types.get(identifier).equals(labels);
             types.put(identifier, set(labels));
         }
 
         public void isaExplicit(Identifier identifier, Set<Label> labels) {
-            assert !isaExplicit.containsKey(identifier);
+            assert !isaExplicit.containsKey(identifier) || isaExplicit.get(identifier).equals(labels);
             isaExplicit.put(identifier, set(labels));
         }
 
         public void predicates(Identifier identifier, Set<Predicate<?, ?>> preds) {
-            assert !predicates.containsKey(identifier);
+            assert !predicates.containsKey(identifier) || predicates.get(identifier).equals(preds);
             predicates.put(identifier, preds);
         }
 
