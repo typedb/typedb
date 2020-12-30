@@ -309,9 +309,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
                     dataStorage.commit();
-                    if (graphMgr.data().stats().needsBackgroundCounting()) {
-                        session.database().statisticsBackgroundCounter.needsBackgroundCounting();
-                    }
+                    triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
                     throw GraknException.of(e);
@@ -338,6 +336,16 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         void closeStorage() {
             session.database().cacheUnborrow(cache);
             dataStorage.close();
+        }
+
+        /**
+         * Responsible for committing the initial schema of a database.
+         * A different implementation of this class may override it.
+         */
+        protected void triggerStatisticBgCounter() {
+            if (graphMgr.data().stats().needsBackgroundCounting()) {
+                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
+            }
         }
     }
 }
