@@ -51,7 +51,6 @@ Feature: Graql Match Query
     Given session opens transaction of type: write
 
 
-
   Scenario: relation subtypes can be matched using inherited and overridden roles
     Given graql insert
       """
