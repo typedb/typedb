@@ -218,11 +218,15 @@ public class SchemaGraph implements Graph {
         Supplier<Set<Label>> fn = () -> {
             TypeVertex relationType = getType(scopedLabel.scope().get());
             if (relationType == null) return set();
-            else return tree(relationType, rel -> rel.ins().edge(SUB).from())
-                    .flatMap(rel -> rel.outs().edge(RELATES).to())
-                    .map(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                            .filter(r -> r.properLabel().name().equals(scopedLabel.name())).firstOrNull())
-                    .noNulls().map(TypeVertex::properLabel).toSet();
+            else return link(list(
+                    loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                            .flatMap(rel -> rel.outs().edge(RELATES).to())
+                            .filter(rol -> rol.properLabel().name().equals(scopedLabel.name())),
+                    tree(relationType, rel -> rel.ins().edge(SUB).from())
+                            .flatMap(rel -> rel.outs().edge(RELATES).to())
+                            .flatMap(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull()))
+                            .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()))
+            )).map(TypeVertex::properLabel).toSet();
         };
         if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();

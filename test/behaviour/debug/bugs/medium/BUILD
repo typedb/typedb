@@ -53,41 +53,6 @@ java_test(
     size = "medium",
 )
 
-java_test(
-    name = "role-inheritance-match-test",
-    srcs = [
-        "RoleInheritanceTest.java",
-    ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.medium.RoleInheritanceTest",
-    deps = [
-        # Internal dependencies
-
-        # Add your additional debugging dependencies here
-        # e.g. "//test/behaviour/connection/session:steps",
-
-        # External Maven Dependencies
-        "@maven//:io_cucumber_cucumber_java",
-        "@maven//:io_cucumber_cucumber_junit",
-    ],
-    runtime_deps = [
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/concept/thing/entity:steps",
-        "//test/behaviour/concept/thing/attribute:steps",
-        "//test/behaviour/concept/thing/relation:steps",
-        "//test/behaviour/concept/type/attributetype:steps",
-        "//test/behaviour/concept/type/relationtype:steps",
-        "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/graql:steps",
-    ],
-    data = [
-        ":role-inheritance.feature",
-    ],
-    size = "medium",
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
