@@ -24,59 +24,106 @@ Feature: Graql Match Query
     Given connection open schema session for database: grakn
     Given session opens transaction of type: write
     Given the integrity is validated
+#    Given graql define
+#      """
+#      define
+#      person sub entity,
+#        plays employment:employee,
+#        plays part-time-employment:part-time-employee,
+#        owns ref @key;
+#      company sub entity,
+#        plays employment:employer,
+#        plays part-time-employment:employer,
+#        owns ref @key;
+#      employment sub relation,
+#        relates employee,
+#        relates employer,
+#        owns ref @key;
+#      part-time-employment sub employment,
+#        relates part-time-employee as employee;
+#        # inherits `employer`
+#      ref sub attribute, value long;
+#      """
+#    Given transaction commits
+#    Given the integrity is validated
+#    Given connection close all sessions
+#
+
+
+  Scenario: Relations can be queried with pairings of relation and role types that are not directly related to each other
     Given graql define
       """
       define
-      person sub entity,
-        plays employment:employee,
-        plays part-time-employment:part-time-employee,
-        owns ref @key;
-      company sub entity,
-        plays employment:employer,
-        plays part-time-employment:employer,
-        owns ref @key;
-      employment sub relation,
-        relates employee,
-        relates employer,
-        owns ref @key;
-      part-time-employment sub employment,
-        relates part-time-employee as employee;
-        # inherits `employer`
+      person sub entity, plays hetero-marriage:husband, plays hetero-marriage:wife, owns ref;
       ref sub attribute, value long;
+      marriage sub relation, relates spouse;
+      hetero-marriage sub marriage, relates husband as spouse, relates wife as spouse;
+      civil-marriage sub marriage;
       """
     Given transaction commits
     Given the integrity is validated
     Given connection close all sessions
     Given connection open data session for database: grakn
     Given session opens transaction of type: write
-
-
-
-  Scenario: relation subtypes can be matched using inherited and overridden roles
     Given graql insert
       """
       insert
-      $x isa person, has ref 0;
-      $y isa company, has ref 1;
-      $r (part-time-employee: $x, employer: $y) isa part-time-employment, has ref 2;
+      $a isa person, has ref 1;
+      $b isa person, has ref 2;
+      (wife: $a, husband: $b) isa hetero-marriage;
+      (spouse: $a, spouse: $b) isa civil-marriage;
       """
     Given transaction commits
     Given the integrity is validated
     Given session opens transaction of type: read
-    # Direct role works:
-    Then get answers of graql query
+    When get answers of graql query
       """
-      match $r (part-time-employee: $x) isa part-time-employment;
-      """
-    Then answer size is: 1
-    # Inherited and Override role works:
-    Then get answers of graql query
-      """
-      match $r (employee: $x) isa part-time-employment;
-      """
-    # Inherited but not overriden does not work:
-    Then get answers of graql query
-      """
-      match $r (employer: $x) isa part-time-employment;
+      match (wife: $x, husband: $y) isa relation;
       """
     Then answer size is: 1
+    When get answers of graql query
+      """
+      match (wife: $x, husband: $y) isa marriage;
+      """
+    Then answer size is: 1
+    When get answers of graql query
+      """
+      match (wife: $x, husband: $y) isa hetero-marriage;
+      """
+    Then answer size is: 1
+    When get answers of graql query
+      """
+      match (spouse: $x, spouse: $y) isa hetero-marriage;
+      """
+    Then answer size is: 2
+#    When get answers of graql query
+#      """
+#      match (spouse: $x, spouse: $y) isa civil-marriage;
+#      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (spouse: $x, spouse: $y) isa marriage;
+      """
+    Then answer size is: 4
+    When get answers of graql query
+      """
+      match (spouse: $x, spouse: $y) isa relation;
+      """
+    Then answer size is: 4
+    When get answers of graql query
+      """
+      match (role: $x, role: $y) isa hetero-marriage;
+      """
+    Then answer size is: 2
+    When get answers of graql query
+      """
+      match (role: $x, role: $y) isa marriage;
+      """
+    Then answer size is: 4
+    When get answers of graql query
+      """
+      match (role: $x, role: $y) isa relation;
+      """
+    Then answer size is: 4
+
