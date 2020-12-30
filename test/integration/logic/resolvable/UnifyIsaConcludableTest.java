@@ -302,14 +302,13 @@ public class UnifyIsaConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
-        // TODO enable after implement requirements
         // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.anon(0), instanceOf("age")),
-//                pair(Identifier.Variable.label("first-name"), conceptMgr.getThingType("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), instanceOf("age")),
+                pair(Identifier.Variable.label("first-name"), conceptMgr.getThingType("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -349,14 +348,13 @@ public class UnifyIsaConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
-        // TODO enable after implement requirements
         // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.anon(0), instanceOf("age")),
-//                pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), instanceOf("age")),
+                pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -396,14 +394,13 @@ public class UnifyIsaConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
-        // TODO enable after implement requirements
         // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.anon(0), instanceOf("age")),
-//                pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), instanceOf("age")),
+                pair(Identifier.Variable.name("rel-type"), conceptMgr.getThingType("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test

@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.UN_UNIFICATION_MISSING_CONCEPT;
 
 public class Unifier {
 
@@ -92,9 +91,8 @@ public class Unifier {
             }
         }
 
-        // TODO implement Requirement satisfaction
-
-        return Optional.of(conceptMap(reversedConcepts));
+        if (requirements().satisfiedBy(reversedConcepts)) return Optional.of(conceptMap(reversedConcepts));
+        else return Optional.empty();
     }
 
     Requirements requirements() {
@@ -218,6 +216,40 @@ public class Unifier {
             this.types = types;
             this.isaExplicit = isaExplicit;
             this.predicates = predicates;
+        }
+
+        public boolean satisfiedBy(Map<Identifier, Concept> concepts) {
+            for (Map.Entry<Identifier, Concept> identifiedConcept : concepts.entrySet()) {
+                Identifier id = identifiedConcept.getKey();
+                Concept concept = identifiedConcept.getValue();
+                if (!(typesSatisfied(id, concept) && isaXSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private boolean typesSatisfied(Identifier id, Concept concept) {
+            if (types.containsKey(id)) {
+                assert concept.isType();
+                return types.get(id).contains(concept.asType().getLabel());
+            } else {
+                return true;
+            }
+        }
+
+        private boolean isaXSatisfied(Identifier id, Concept concept) {
+            if (isaExplicit.containsKey(id)) {
+                assert concept.isThing();
+                return isaExplicit.get(id).contains(concept.asThing().getType().getLabel());
+            } else {
+                return true;
+            }
+        }
+
+        private boolean predicatesSatisfied(Identifier id, Concept concept) {
+            // TODO implement predicates
+            return true;
         }
 
         public void types(Identifier identifier, Set<Label> labels) {

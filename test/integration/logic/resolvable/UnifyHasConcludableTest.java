@@ -184,17 +184,19 @@ public class UnifyHasConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
-        // TODO enable after implementing requirements
-//        // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
-//
+        // filter out invalid type
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.anon(0), instanceOf("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
+
+        // TODO enable after predicate requirements are implemented
 //        // filter out invalid value
 //        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("first-name", "bob"))
+//                pair(Identifier.Variable.name("x"), instanceOf("person")),
+//                pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
 //        );
 //        unified = unifier.unUnify(identifiedConcepts);
 //        assertFalse(unified.isPresent());
@@ -237,18 +239,19 @@ public class UnifyHasConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
+        // filter out invalid type
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
 
-        // TODO enable after implementing requirements
-//        // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
-//
+        // TODO enable after predicate requirements are implemented
 //        // filter out invalid value
 //        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("first-name", "bob"))
+//                pair(Identifier.Variable.name("x"), instanceOf("person")),
+//                pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
 //        );
 //        unified = unifier.unUnify(identifiedConcepts);
 //        assertFalse(unified.isPresent());
@@ -372,15 +375,13 @@ public class UnifyHasConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
-
-        // TODO enable after implementing requirements
-//        // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("person")),
-//                pair(Identifier.Variable.anon(0), instanceOf("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid type
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.anon(0), instanceOf("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -420,14 +421,13 @@ public class UnifyHasConcludableTest {
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
-        // TODO enable after implementing requirements
-//        // filter out invalid type
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("person")),
-//                pair(Identifier.Variable.name("x"), instanceOf("age"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid type
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("age"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -460,7 +460,7 @@ public class UnifyHasConcludableTest {
 
     @Test
     public void has_one_to_many_unifier() {
-        String conjunction = "{ $b has self-owning-attribute $b; }";
+        String conjunction = "{ $b has attribute $b; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
@@ -523,6 +523,5 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.requirements().predicates().size());
-
     }
 }

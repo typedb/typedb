@@ -151,11 +151,6 @@ public class UnifyRelationConcludableTest {
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
-    private ThingVariable parseThingVariable(String blabla, String var) {
-        // TODO placeholder
-        return null;
-    }
-
     private RelationConstraint findRelationConstraint(Conjunction conjunction) {
         List<RelationConstraint> rels = conjunction.variables().stream().flatMap(var -> var.constraints().stream())
                 .filter(constraint -> constraint.isThing() && constraint.asThing().isRelation())
@@ -213,19 +208,18 @@ public class UnifyRelationConcludableTest {
         assertEquals(employment, unified.get().get("r"));
         assertEquals(person, unified.get().get("y"));
 
-        // TODO enable after implement requirements
-//        // filter out invalid types
-//        Relation friendship = instanceOf("friendship").asRelation();
-//        person = instanceOf("person");
-//        addRolePlayer(employment, "friend", person);
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.anon(0), friendship),
-//                pair(Identifier.Variable.name("x"), person),
-//                pair(Identifier.Variable.label("employment"), friendship.getType()),
-//                pair(Identifier.Variable.label("employee"), friendship.getType().getRelates("friend"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid types
+        Relation friendship = instanceOf("friendship").asRelation();
+        person = instanceOf("person");
+        addRolePlayer(friendship, "friend", person);
+        identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), friendship),
+                pair(Identifier.Variable.name("x"), person),
+                pair(Identifier.Variable.label("employment"), friendship.getType()),
+                pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -274,19 +268,18 @@ public class UnifyRelationConcludableTest {
         assertEquals(employment.getType(), unified.get().get("rel"));
         assertEquals(person, unified.get().get("y"));
 
-        // TODO enable after implement requirements
-//        // filter out invalid types
-//        Relation friendship = instanceOf("friendship").asRelation();
-//        person = instanceOf("person");
-//        addRolePlayer(employment, "friend", person);
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.anon(0), friendship),
-//                pair(Identifier.Variable.name("x"), person),
-//                pair(Identifier.Variable.label("employment"), friendship.getType()),
-//                pair(Identifier.Variable.label("employee"), friendship.getType().getRelates("friend"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid types
+        Relation friendship = instanceOf("friendship").asRelation();
+        person = instanceOf("person");
+        addRolePlayer(friendship, "friend", person);
+        identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), friendship),
+                pair(Identifier.Variable.name("x"), person),
+                pair(Identifier.Variable.label("employment"), friendship.getType()),
+                pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -335,22 +328,20 @@ public class UnifyRelationConcludableTest {
         assertEquals(employment.getType().getRelates("employee"), unified.get().get("role"));
         assertEquals(person, unified.get().get("y"));
 
-        // TODO enable after implement requirements
-//        // filter out invalid types
-//        Relation friendship = instanceOf("friendship").asRelation();
-//        person = instanceOf("person");
-//        addRolePlayer(employment, "friend", person);
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.anon(0), friendship),
-//                pair(Identifier.Variable.name("x"), person),
-//                pair(Identifier.Variable.label("employment"), friendship.getType()),
-//                pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid types
+        Relation friendship = instanceOf("friendship").asRelation();
+        person = instanceOf("person");
+        addRolePlayer(friendship, "friend", person);
+        identifiedConcepts = map(
+                pair(Identifier.Variable.anon(0), friendship),
+                pair(Identifier.Variable.name("x"), person),
+                pair(Identifier.Variable.label("employment"), friendship.getType()),
+                pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
-    // TODO relation unification without `isa`
     @Test
     public void relation_without_isa_unifies_rule_relation() {
         String conjunction = "{ (employee: $y); }";
@@ -379,12 +370,6 @@ public class UnifyRelationConcludableTest {
                      unifier.requirements().types().get(Identifier.Variable.label("relation:employee")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
-    }
-
-
-    @Test
-    public void relation_player_type_role_unifies_rule_relation_variable() {
-        // TODO
     }
 
     @Test
@@ -822,8 +807,6 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
     }
 
-    // TODO enable after resolving inherited roles doesn't throw
-    @Ignore
     @Test
     public void relation_more_players_than_rule_relation_fails_unify() {
         String conjunction = "{ (part-time-employee: $r, employer: $p, restriction: $q) isa part-time-employment; }";
