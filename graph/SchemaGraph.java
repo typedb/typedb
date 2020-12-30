@@ -170,7 +170,7 @@ public class SchemaGraph implements Graph {
         Encoding.Prefix index = IndexIID.Rule.prefix();
         ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                 convert(StructureIID.Rule.of(value)));
-        return link(list(iterate(rulesByIID.values()), persistedRules)).distinct();
+        return link(iterate(rulesByIID.values()), persistedRules).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -206,9 +206,9 @@ public class SchemaGraph implements Graph {
     }
 
     public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        final Supplier<Set<TypeVertex>> fn = () -> link(list(
+        final Supplier<Set<TypeVertex>> fn = () -> link(
                 attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
-        )).stream().collect(toSet());
+        ).stream().collect(toSet());
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
         else return fn.get();
     }
@@ -218,7 +218,7 @@ public class SchemaGraph implements Graph {
         Supplier<Set<Label>> fn = () -> {
             TypeVertex relationType = getType(scopedLabel.scope().get());
             if (relationType == null) return set();
-            else return link(list(
+            else return link(
                     loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
                             .flatMap(rel -> rel.outs().edge(RELATES).to())
                             .filter(rol -> rol.properLabel().name().equals(scopedLabel.name())),
@@ -226,7 +226,7 @@ public class SchemaGraph implements Graph {
                             .flatMap(rel -> rel.outs().edge(RELATES).to())
                             .flatMap(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull()))
                             .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()))
-            )).map(TypeVertex::properLabel).toSet();
+            ).map(TypeVertex::properLabel).toSet();
         };
         if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();

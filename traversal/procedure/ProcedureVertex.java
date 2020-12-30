@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -333,7 +332,7 @@ public abstract class ProcedureVertex<
                 else if (mustBeRelationType()) return graphMgr.schema().relationTypes();
                 else if (mustBeRoleType()) return graphMgr.schema().roleTypes();
                 else if (mustBeThingType()) return graphMgr.schema().thingTypes();
-                else iterator = link(list(graphMgr.schema().thingTypes(), graphMgr.schema().roleTypes()));
+                else iterator = link(graphMgr.schema().thingTypes(), graphMgr.schema().roleTypes());
             }
             return iterator;
         }

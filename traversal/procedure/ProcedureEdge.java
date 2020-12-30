@@ -43,7 +43,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
@@ -443,7 +442,7 @@ public abstract class ProcedureEdge<
 
                     private ResourceIterator<TypeEdge> ownsEdges(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).edge();
-                        else return link(list(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge()));
+                        else return link(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge());
                     }
 
                     private ResourceIterator<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
@@ -484,13 +483,13 @@ public abstract class ProcedureEdge<
 
                     private ResourceIterator<TypeVertex> overriddens(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).overridden().noNulls();
-                        else return link(list(owner.outs().edge(OWNS).overridden().noNulls(),
-                                              owner.outs().edge(OWNS_KEY).overridden().noNulls()));
+                        else return link(owner.outs().edge(OWNS).overridden().noNulls(),
+                                         owner.outs().edge(OWNS_KEY).overridden().noNulls());
                     }
 
                     private ResourceIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
                         if (isKey) return attType.ins().edge(OWNS_KEY).from();
-                        else return link(list(attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()));
+                        else return link(attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from());
                     }
 
 

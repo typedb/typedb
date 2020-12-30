@@ -30,6 +30,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
@@ -53,13 +54,21 @@ public class Iterators {
         return new BaseIterator<>(Either.second(iterator));
     }
 
+    public static <T> LinkedIterators<T> link(Iterator<T> iter1, Iterator<T> iter2) {
+        return link(list(iter1, iter2));
+    }
+
+    public static <T> LinkedIterators<T> link(Iterator<T> iter1, Iterator<T> iter2, Iterator<T> iter3) {
+        return link(list(iter1, iter2, iter3));
+    }
+
     public static <T> LinkedIterators<T> link(List<? extends Iterator<T>> iterators) {
         final LinkedList<ResourceIterator<T>> converted = new LinkedList<>();
         iterators.forEach(iterator -> {
             if (iterator instanceof ResourceIterator<?>) {
                 converted.addLast((ResourceIterator<T>) iterator);
             } else {
-                converted.addLast(Iterators.iterate(iterator));
+                converted.addLast(iterate(iterator));
             }
         });
         return new LinkedIterators<>(converted);
