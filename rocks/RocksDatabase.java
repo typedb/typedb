@@ -139,8 +139,8 @@ public class RocksDatabase implements Grakn.Database {
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
 
-        RocksSession session;
         long lock = 0;
+        RocksSession session;
 
         if (type.isSchema()) {
             lock = dataWriteSchemaLock().writeLock();
@@ -302,7 +302,7 @@ public class RocksDatabase implements Grakn.Database {
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            this.schemaStorage = new RocksStorage(database.rocksSchema(), true);;
+            this.schemaStorage = new RocksStorage(database.rocksSchema(), true);
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();
