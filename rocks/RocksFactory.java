@@ -38,7 +38,17 @@ public final class RocksFactory implements Factory {
 
     private synchronized Factory.Database databaseFactory() {
         if (databaseFactory == null) {
-            databaseFactory = (rocksGrakn, name, isNew) -> new RocksDatabase(rocksGrakn, name, isNew, sessionFactory());
+            databaseFactory = new Database() {
+                @Override
+                public RocksDatabase create(RocksGrakn grakn, String name) {
+                    return RocksDatabase.createNewAndOpen(grakn, name, sessionFactory());
+                }
+
+                @Override
+                public RocksDatabase load(RocksGrakn grakn, String name) {
+                    return RocksDatabase.loadExistingAndOpen(grakn, name, sessionFactory());
+                }
+            };
         }
         return databaseFactory;
     }
