@@ -52,7 +52,7 @@ public abstract class RocksSession implements Grakn.Session {
         isOpen = new AtomicBoolean(true);
     }
 
-    Context.Session context() {
+    public Context.Session context() {
         return context;
     }
 
