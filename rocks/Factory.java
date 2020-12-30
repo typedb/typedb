@@ -28,8 +28,10 @@ public interface Factory {
     RocksGrakn grakn(Path directory, Options.Database options);
 
     interface Database {
-        RocksDatabase create(RocksGrakn grakn, String name);
-        RocksDatabase load(RocksGrakn grakn, String name);
+
+        RocksDatabase databaseCreate(RocksGrakn grakn, String name);
+
+        RocksDatabase databaseLoad(RocksGrakn grakn, String name);
     }
 
     interface Session {
