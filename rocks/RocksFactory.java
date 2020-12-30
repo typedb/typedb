@@ -37,7 +37,7 @@ public final class RocksFactory implements Factory {
 
     private synchronized Factory.Database databaseFactory() {
         if (databaseFactory == null) {
-            databaseFactory = (rocksGrakn, name, isNew) -> new RocksDatabase(rocksGrakn, name, true, sessionFactory());
+            databaseFactory = (rocksGrakn, name, isNew) -> new RocksDatabase(rocksGrakn, name, isNew, sessionFactory());
         }
         return databaseFactory;
     }
