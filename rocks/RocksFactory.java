@@ -35,14 +35,14 @@ public class RocksFactory implements Factory {
         return new RocksGrakn(directory, options, databaseFactory());
     }
 
-    private Factory.Database databaseFactory() {
+    private synchronized Factory.Database databaseFactory() {
         if (databaseFactory == null) {
             databaseFactory = (rocksGrakn, name) -> RocksDatabase.create(rocksGrakn, name, sessionFactory());
         }
         return databaseFactory;
     }
 
-    private Factory.Session sessionFactory() {
+    private synchronized Factory.Session sessionFactory() {
         if (sessionFactory == null) {
             sessionFactory = new Session() {
 
@@ -60,7 +60,7 @@ public class RocksFactory implements Factory {
         return sessionFactory;
     }
 
-    private Factory.TransactionSchema transactionSchemaFactory() {
+    private synchronized Factory.TransactionSchema transactionSchemaFactory() {
         if (transactionSchemaFactory == null) {
             transactionSchemaFactory = (session, type, options) ->
                     RocksTransaction.Schema.create(session, type, options, storageFactory());
@@ -68,7 +68,7 @@ public class RocksFactory implements Factory {
         return transactionSchemaFactory;
     }
 
-    private Factory.TransactionData transactionDataFactory() {
+    private synchronized Factory.TransactionData transactionDataFactory() {
         if (transactionDataFactory == null) {
             transactionDataFactory = (session, type, options) ->
                     RocksTransaction.Data.create(session, type, options, storageFactory());
@@ -76,7 +76,7 @@ public class RocksFactory implements Factory {
         return transactionDataFactory;
     }
 
-    private Factory.Storage storageFactory() {
+    private synchronized Factory.Storage storageFactory() {
         if (storageFactory == null) {
             storageFactory = new Storage() {
                 @Override
