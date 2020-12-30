@@ -71,7 +71,7 @@ build:
     test-behaviour:
       image: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test //test/behaviour/connection/... --test_output=errors
+        bazel test //test/behaviour/connection/... --test_output=streamed
         bazel test //test/behaviour/concept/... --test_output=errors
       # bazel test //test/behaviour/graql/language/define/... --test_output=errors
     test-assembly-linux-targz:
