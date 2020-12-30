@@ -29,7 +29,7 @@ public interface Factory {
 
     interface Database {
 
-        RocksDatabase database(RocksGrakn grakn, String name);
+        RocksDatabase database(RocksGrakn grakn, String name, boolean isNew);
     }
 
     interface Session {

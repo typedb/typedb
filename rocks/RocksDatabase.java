@@ -70,7 +70,7 @@ public class RocksDatabase implements Grakn.Database {
     private final Factory.Session factory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session factory) {
+    protected RocksDatabase(RocksGrakn grakn, String name, boolean isNew, Factory.Session factory) {
         this.grakn = grakn;
         this.name = name;
         this.factory = factory;
@@ -86,10 +86,7 @@ public class RocksDatabase implements Grakn.Database {
             throw GraknException.of(e);
         }
         isOpen = new AtomicBoolean(true);
-    }
-
-    static RocksDatabase create(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
-        return new RocksDatabase(rocksGrakn, name, factory);
+        open(isNew);
     }
 
     static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, Factory.Database factory) {
@@ -99,17 +96,22 @@ public class RocksDatabase implements Grakn.Database {
             throw GraknException.of(e);
         }
 
-        RocksDatabase database = factory.database(rocksGrakn, name);
-        database.create();
-        database.statisticsBgCounterStart();
+        RocksDatabase database = factory.database(rocksGrakn, name, true);
         return database;
     }
 
     static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, Factory.Database factory) {
-        RocksDatabase database = factory.database(rocksGrakn, name);
-        database.load();
-        database.statisticsBgCounterStart();
+        RocksDatabase database = factory.database(rocksGrakn, name, false);
         return database;
+    }
+
+    protected void open(boolean isNew) {
+        if (isNew) {
+            create();
+        } else {
+            load();
+        }
+        statisticsBgCounterStart();
     }
 
     protected void create() {
