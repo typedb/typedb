@@ -339,7 +339,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         /**
-         * Responsible for committing the initial schema of a database.
+         * Responsible for triggering {@link RocksDatabase.StatisticsBackgroundCounter}, if necessary.
          * A different implementation of this class may override it.
          */
         protected void triggerStatisticBgCounter() {
