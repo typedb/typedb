@@ -251,11 +251,10 @@ public class RocksStorage implements Storage {
         }
 
         public void commit() throws RocksDBException {
-            storageTransaction.commit();
-        }
-
-        public void disableIndexing() {
+            // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
+            // TODO: We should benchmark this
             storageTransaction.disableIndexing();
+            storageTransaction.commit();
         }
 
         public void rollback() throws RocksDBException {

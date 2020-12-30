@@ -218,9 +218,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     if (type().isRead()) throw GraknException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.data().isModified()) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
 
-                    // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
-                    // TODO: We should benchmark this
-                    schemaStorage.disableIndexing();
                     conceptMgr.validateTypes();
                     logicMgr.validateRules();
                     graphMgr.schema().commit();
@@ -309,9 +306,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     if (type().isRead()) throw GraknException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.schema().isModified()) throw GraknException.of(SESSION_DATA_VIOLATION);
 
-                    // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
-                    // TODO: We should benchmark this
-                    dataStorage.disableIndexing();
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
                     dataStorage.commit();
