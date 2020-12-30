@@ -112,11 +112,12 @@ public class GraphPlanner implements Planner {
     }
 
     static GraphPlanner create(Structure structure) {
+        assert structure.vertices().size() > 1;
         GraphPlanner planner = new GraphPlanner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
-        assert !planner.vertices().isEmpty() && !planner.edges().isEmpty();
+        assert planner.vertices().size() > 1 && !planner.edges().isEmpty();
         planner.initialise();
         return planner;
     }
@@ -229,12 +230,12 @@ public class GraphPlanner implements Planner {
     }
 
     private void initialise() {
-        intialiseVariables();
+        initialiseVariables();
         initialiseConstraintsForVariables();
         initialiseConstraintsForEdges();
     }
 
-    private void intialiseVariables() {
+    private void initialiseVariables() {
         vertices.values().forEach(PlannerVertex::initialiseVariables);
         edges.forEach(PlannerEdge::initialiseVariables);
     }

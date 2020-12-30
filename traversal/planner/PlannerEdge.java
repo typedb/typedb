@@ -33,6 +33,7 @@ import graql.lang.common.GraqlToken;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -69,7 +70,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     PlannerEdge(VERTEX_FROM from, VERTEX_TO to, String symbol) {
         super(from, to, symbol);
         this.planner = from.planner;
-        assert this.planner.equals(to.planner);
+        assert Objects.equals(this.planner, to.planner);
         initialiseDirectionalEdges();
     }
 
@@ -246,6 +247,18 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private void recordValues() {
             valueIsSelected = (int) Math.round(varIsSelected.solutionValue());
             valueOrderNumber = (int) Math.round(varOrderNumber.solutionValue());
+        }
+
+        public void setSelected() {
+            valueIsSelected = 1;
+        }
+
+        public void setUnselected() {
+            valueIsSelected = 0;
+        }
+
+        public void setOrder(int order) {
+            valueOrderNumber = order;
         }
 
         public boolean isEqual() { return false; }

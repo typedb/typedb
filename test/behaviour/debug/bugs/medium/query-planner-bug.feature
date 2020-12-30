@@ -54,29 +54,6 @@ Feature: Graql Match Query
     Given session opens transaction of type: write
 
 
-  ##################
-  # SCHEMA QUERIES #
-  ##################
-
-  # TODO fails with planning exception
-  Scenario: 'owns' can match types that can own themselves
-    Given graql define
-      """
-      define
-      unit sub attribute, value string, owns unit;
-      """
-    Given transaction commits
-    Given the integrity is validated
-    Given session opens transaction of type: read
-    When get answers of graql query
-      """
-      match $x owns $x;
-      """
-    Then uniquely identify answer concepts
-      | x          |
-      | label:unit |
-
-
   # TODO query planning error
   Scenario: when things own attributes of different types but the same value, they match by equality
     Given graql define
