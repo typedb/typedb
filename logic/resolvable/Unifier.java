@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.UN_UNIFICATION_MISSING_CONCEPT;
 
 public class Unifier {
@@ -82,7 +83,7 @@ public class Unifier {
             Identifier toReverse = entry.getKey();
             Set<Identifier> reversed = entry.getValue();
             if (!identifiedConcepts.containsKey(toReverse)) {
-                throw GraknException.of(UN_UNIFICATION_MISSING_CONCEPT, toReverse, identifiedConcepts);
+                throw GraknException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, identifiedConcepts);
             }
             Concept concept = identifiedConcepts.get(toReverse);
             for (Identifier r : reversed) {

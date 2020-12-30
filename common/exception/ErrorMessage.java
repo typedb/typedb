@@ -442,8 +442,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     }
 
     public static class Reasoner extends ErrorMessage {
-        public static final Reasoner UN_UNIFICATION_MISSING_CONCEPT =
-                new Reasoner(1, "Un-unifying because a concept for identifier '%s' was not found in the provided map '%s'");
+        public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
+                new Reasoner(1, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";
