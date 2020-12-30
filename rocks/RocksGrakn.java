@@ -47,14 +47,13 @@ public class RocksGrakn implements Grakn {
     private final Path directory;
     private final Options.Database options;
     private final org.rocksdb.Options rocksConfig;
-    private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
+    private final AtomicBoolean isOpen;
 
     protected RocksGrakn(Path directory, Options.Database options, Factory.Database factory) {
         this.directory = directory;
         this.options = options;
-        this.databaseMgr = new RocksDatabaseManager(factory);
-        this.databaseMgr.parent(this);
+        this.databaseMgr = new RocksDatabaseManager(this, factory);
         this.rocksConfig = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
                 .setMergeOperator(new UInt64AddOperator());

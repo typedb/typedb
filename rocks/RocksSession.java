@@ -38,8 +38,8 @@ import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 public abstract class RocksSession implements Grakn.Session {
 
     private final RocksDatabase database;
-    private final Context.Session context;
     private final UUID uuid;
+    private final Context.Session context;
     final ConcurrentMap<RocksTransaction, Long> transactions;
     final AtomicBoolean isOpen;
 
