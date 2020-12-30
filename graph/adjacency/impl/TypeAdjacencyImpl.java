@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
 
@@ -146,7 +145,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             byte[] iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
             final ResourceIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
             if (edges.get(encoding) == null) return storageIterator;
-            else return link(list(edges.get(encoding).iterator(), storageIterator)).distinct();
+            else return link(edges.get(encoding).iterator(), storageIterator).distinct();
         }
 
         @Override

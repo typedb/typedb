@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Streams.compareSize;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
@@ -225,7 +224,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return Stream.of();
         final ResourceIterator<TypeVertex> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
-        else iterator = link(list(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to()));
+        else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
         return iterator.map(v -> AttributeTypeImpl.of(graphMgr, v)).stream();
     }
 
@@ -236,10 +235,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             overriddenOwns = vertex.outs().edge(OWNS_KEY).overridden().filter(Objects::nonNull)
                     .map(v -> AttributeTypeImpl.of(graphMgr, v)).stream();
         } else {
-            overriddenOwns = link(list(
+            overriddenOwns = link(
                     vertex.outs().edge(OWNS_KEY).overridden(),
                     vertex.outs().edge(OWNS).overridden()
-            )).filter(Objects::nonNull).distinct().map(v -> AttributeTypeImpl.of(graphMgr, v)).stream();
+            ).filter(Objects::nonNull).distinct().map(v -> AttributeTypeImpl.of(graphMgr, v)).stream();
         }
 
         if (transitive) return concat(overriddenOwns, getSupertype().overriddenOwns(onlyKey, true));

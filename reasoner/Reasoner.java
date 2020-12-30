@@ -103,7 +103,7 @@ public class Reasoner {
         ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
 
         // TODO: enable reasoner here
-        //       ResourceIterator<ConceptMap> answers = link(list(answers, resolve(conjunctionResolvedTypes)));
+        //       ResourceIterator<ConceptMap> answers = link(answers, resolve(conjunctionResolvedTypes));
 
         Set<Negation> negations = conjunction.negations();
         if (negations.isEmpty()) return answers;

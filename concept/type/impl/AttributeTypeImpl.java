@@ -37,7 +37,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
@@ -169,7 +168,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (onlyKey) {
             return vertex.ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
         } else {
-            return link(list(vertex.ins().edge(OWNS_KEY).from(), vertex.ins().edge(OWNS).from()))
+            return link(vertex.ins().edge(OWNS_KEY).from(), vertex.ins().edge(OWNS).from())
                     .map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
         }
     }

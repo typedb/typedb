@@ -46,7 +46,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.collection.Bytes.bytesToLong;
@@ -190,7 +189,7 @@ public class DataGraph implements Graph {
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return link(list(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator)).distinct();
+        else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
