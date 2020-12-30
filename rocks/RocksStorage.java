@@ -271,10 +271,6 @@ public class RocksStorage implements Storage {
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
 
-        public static RocksStorage.Schema create(RocksDatabase database, RocksTransaction transaction) {
-            return new RocksStorage.Schema(database, transaction);
-        }
-
         @Override
         public KeyGenerator.Schema schemaKeyGenerator() {
             return schemaKeyGenerator;
@@ -288,10 +284,6 @@ public class RocksStorage implements Storage {
         public Data(RocksDatabase database, RocksTransaction transaction) {
             super(database.rocksData, transaction);
             this.dataKeyGenerator = database.dataKeyGenerator();
-        }
-
-        public static RocksStorage.Data create(RocksDatabase database, RocksTransaction transaction) {
-            return new RocksStorage.Data(database, transaction);
         }
 
         @Override

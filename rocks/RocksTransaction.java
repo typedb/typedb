@@ -56,9 +56,9 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     Reasoner reasoner;
     QueryManager queryMgr;
 
-    private RocksTransaction(RocksSession session, Context.Transaction context) {
+    private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.session = session;
-        this.context = context;
+        this.context = new Context.Transaction(session.context(), options).type(type);
     }
 
     void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {
@@ -151,8 +151,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         protected final RocksStorage.Data dataStorage;
 
-        protected Schema(RocksSession.Schema session, Context.Transaction context, Factory.Storage factory) {
-            super(session, context);
+        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage factory) {
+            super(session, type, options);
 
             schemaStorage = factory.storageSchema(session.database(), this);
             SchemaGraph schemaGraph = new SchemaGraph(schemaStorage, type().isRead());
@@ -162,12 +162,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
             initialise(graphMgr, new TraversalCache(), new LogicCache());
-        }
-
-        public static Schema create(RocksSession.Schema session, Arguments.Transaction.Type type,
-                                    Options.Transaction options, Factory.Storage factory) {
-            Context.Transaction context = new Context.Transaction(session.context(), options).type(type);
-            return new Schema(session, context, factory);
         }
 
         @Override
@@ -255,21 +249,15 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
-        public Data(RocksSession.Data session, Context.Transaction context, Factory.Storage factory) {
-            super(session, context);
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage factory) {
+            super(session, type, options);
 
             cache = session.database().cacheBorrow();
-            dataStorage = RocksStorage.Data.create(session.database(), this);
+            dataStorage = factory.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
 
             initialise(graphMgr, cache.traversal(), cache.logic());
-        }
-
-        public static RocksTransaction.Data create(RocksSession.Data session, Arguments.Transaction.Type type,
-                                                   Options.Transaction options, Factory.Storage factory) {
-            Context.Transaction context = new Context.Transaction(session.context(), options).type(type);
-            return new RocksTransaction.Data(session, context, factory);
         }
 
         @Override

@@ -18,6 +18,7 @@
 
 package grakn.core.rocks;
 
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 
 import java.nio.file.Path;
@@ -48,12 +49,12 @@ public final class RocksFactory implements Factory {
 
                 @Override
                 public RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options) {
-                    return RocksSession.Schema.create(database, options, transactionSchemaFactory());
+                    return new RocksSession.Schema(database, Arguments.Session.Type.SCHEMA, options, transactionSchemaFactory());
                 }
 
                 @Override
                 public RocksSession.Data sessionData(RocksDatabase database, Options.Session options) {
-                    return RocksSession.Data.create(database, options, transactionDataFactory());
+                    return new RocksSession.Data(database, Arguments.Session.Type.DATA, options, transactionDataFactory());
                 }
             };
         }
@@ -63,7 +64,7 @@ public final class RocksFactory implements Factory {
     private synchronized Factory.TransactionSchema transactionSchemaFactory() {
         if (transactionSchemaFactory == null) {
             transactionSchemaFactory = (session, type, options) ->
-                    RocksTransaction.Schema.create(session, type, options, storageFactory());
+                    new RocksTransaction.Schema(session, type, options, storageFactory());
         }
         return transactionSchemaFactory;
     }
@@ -71,7 +72,7 @@ public final class RocksFactory implements Factory {
     private synchronized Factory.TransactionData transactionDataFactory() {
         if (transactionDataFactory == null) {
             transactionDataFactory = (session, type, options) ->
-                    RocksTransaction.Data.create(session, type, options, storageFactory());
+                    new RocksTransaction.Data(session, type, options, storageFactory());
         }
         return transactionDataFactory;
     }
@@ -81,12 +82,12 @@ public final class RocksFactory implements Factory {
             storageFactory = new Storage() {
                 @Override
                 public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction) {
-                    return RocksStorage.Schema.create(database, transaction);
+                    return new RocksStorage.Schema(database, transaction);
                 }
 
                 @Override
-                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction.Schema transaction) {
-                    return RocksStorage.Data.create(database, transaction);
+                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction) {
+                    return new RocksStorage.Data(database, transaction);
                 }
             };
         }
