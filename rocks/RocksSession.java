@@ -108,7 +108,7 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static class Schema extends RocksSession {
+    public static final class Schema extends RocksSession {
         private final Factory.TransactionSchema factory;
 
         public Schema(RocksDatabase database, Context.Session context, Factory.TransactionSchema factory) {
@@ -151,7 +151,7 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static class Data extends RocksSession {
+    public static final class Data extends RocksSession {
 
         private final Factory.TransactionData factory;
 
@@ -186,7 +186,6 @@ public abstract class RocksSession implements Grakn.Session {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock = 0;
             if (type.isWrite()) lock = database().dataWriteSchemaLock().readLock();
-//            final RocksTransaction.Data transaction = RocksTransaction.Data.create(this, type, options, factory);
             final RocksTransaction.Data transaction = factory.transaction(this, type, options);
             transactions.put(transaction, lock);
             return transaction;

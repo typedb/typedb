@@ -239,27 +239,6 @@ public class RocksDatabase implements Grakn.Database {
         return dataWriteSchemaLock;
     }
 
-    void remove(RocksSession session) {
-        if (statisticsBackgroundCounterSession != session) {
-            final long lock = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
-        }
-    }
-
-    void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            closeResources();
-        }
-    }
-
-    protected void closeResources() {
-        sessions.values().forEach(p -> p.first().close());
-        statisticsBgCounterStop();
-        cacheClose();
-        rocksData.close();
-        rocksSchema.close();
-    }
-
     @Override
     public String name() {
         return name;
@@ -279,6 +258,31 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public Stream<Grakn.Session> sessions() {
         return sessions.values().stream().map(Pair::first);
+    }
+
+    void remove(RocksSession session) {
+        if (statisticsBackgroundCounterSession != session) {
+            final long lock = sessions.remove(session.uuid()).second();
+            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
+        }
+    }
+
+    void close() {
+        if (isOpen.compareAndSet(true, false)) {
+            closeResources();
+        }
+    }
+
+    /**
+     * Responsible for committing the initial schema of a database.
+     * A different implementation of this class may override it.
+     */
+    protected void closeResources() {
+        sessions.values().forEach(p -> p.first().close());
+        statisticsBgCounterStop();
+        cacheClose();
+        rocksData.close();
+        rocksSchema.close();
     }
 
     @Override

@@ -22,7 +22,7 @@ import grakn.core.common.parameters.Options;
 
 import java.nio.file.Path;
 
-public class RocksFactory implements Factory {
+public final class RocksFactory implements Factory {
 
     private Database databaseFactory;
     private Session sessionFactory;

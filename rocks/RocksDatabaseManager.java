@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 
-public class RocksDatabaseManager implements Grakn.DatabaseManager {
+public final class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     private final RocksGrakn grakn;
     private final ConcurrentMap<String, RocksDatabase> databases;

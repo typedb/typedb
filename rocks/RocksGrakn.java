@@ -116,6 +116,10 @@ public class RocksGrakn implements Grakn {
         }
     }
 
+    /**
+     * Responsible for committing the initial schema of a database.
+     * A different implementation of this class may override it.
+     */
     protected void closeResources() {
         databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
         rocksConfig.close();
