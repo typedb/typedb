@@ -56,17 +56,18 @@ import static java.util.Comparator.reverseOrder;
 
 public class RocksDatabase implements Grakn.Database {
 
-    private final RocksGrakn grakn;
-    protected final String name;
     protected final OptimisticTransactionDB rocksSchema;
     protected final OptimisticTransactionDB rocksData;
+    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+    protected final String name;
+    protected StatisticsBackgroundCounter statisticsBackgroundCounter;
+    protected RocksSession.Data statisticsBackgroundCounterSession;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock dataWriteSchemaLock;
-    protected StatisticsBackgroundCounter statisticsBackgroundCounter;
-    protected RocksSession.Data statisticsBackgroundCounterSession;
+    private final RocksGrakn grakn;
     private Cache cache;
-    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+
     private final Factory.Session factory;
     protected final AtomicBoolean isOpen;
 
