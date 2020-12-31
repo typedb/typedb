@@ -89,7 +89,7 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createNewAndOpen(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+    static RocksDatabase createAndOpen(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
         try {
             Files.createDirectory(rocksGrakn.directory().resolve(name));
         } catch (IOException e) {
@@ -102,7 +102,7 @@ public class RocksDatabase implements Grakn.Database {
         return database;
     }
 
-    static RocksDatabase loadExistingAndOpen(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+    static RocksDatabase loadAndOpen(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
         RocksDatabase database = new RocksDatabase(rocksGrakn, name, factory);
         database.load();
         database.statisticsBgCounterStart();

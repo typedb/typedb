@@ -34,9 +34,9 @@ public interface Factory {
 
     interface Database {
 
-        RocksDatabase databaseCreate(RocksGrakn grakn, String name);
+        RocksDatabase databaseCreateAndOpen(RocksGrakn grakn, String name);
 
-        RocksDatabase databaseLoad(RocksGrakn grakn, String name);
+        RocksDatabase databaseLoadAndOpen(RocksGrakn grakn, String name);
     }
 
     interface Session {
