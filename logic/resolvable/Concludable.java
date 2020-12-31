@@ -63,8 +63,8 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolvable {
 
-    private final Map<Rule, Set<Unifier>> applicableRules;
     private final CONSTRAINT constraint;
+    private Map<Rule, Set<Unifier>> applicableRules = null;
 
     private Concludable(CONSTRAINT constraint) {
         this.constraint = constraint;
@@ -79,19 +79,29 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public ResourceIterator<Pair<Rule, Unifier>> findUnifiableRules(LogicManager logicManager, ConceptManager conceptMgr) {
-        // TODO Get rules internally
-        return logicManager.rules().flatMap(rule -> Iterators.iterate(rule.possibleConclusions())
-                .flatMap(conclusion -> unify(conclusion, conceptMgr)).map(variableMapping -> new Pair<>(rule, variableMapping))
-        );
-    }
-
     public ResourceIterator<Unifier> getUnifiers(Rule rule) {
+        assert applicableRules != null;
         return Iterators.iterate(applicableRules.get(rule));
     }
 
-    public ResourceIterator<Rule> getApplicableRules() {
+    public ResourceIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        if (applicableRules == null) computeApplicableRules(conceptMgr, logicMgr);
         return Iterators.iterate(applicableRules.keySet());
+    }
+
+    /*
+    TODO this should be improved by indexing rules by possible types, so rather than retrieving all rules
+    TODO and attempting to unify them, we only read rules that are relevant
+     */
+    private void computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        assert applicableRules == null;
+        applicableRules = new HashMap<>();
+        logicMgr.rules().forEachRemaining(rule -> Iterators.iterate(rule.possibleConclusions())
+                .flatMap(conclusion -> unify(conclusion, conceptMgr))
+                .forEachRemaining(unifier -> {
+                    applicableRules.putIfAbsent(rule, new HashSet<>());
+                    applicableRules.get(rule).add(unifier);
+                }));
     }
 
     private ResourceIterator<Unifier> unify(Rule.Conclusion<?> conclusion, ConceptManager conceptMgr) {
@@ -224,7 +234,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
-            if (this.constraint().players().size() > relationConclusion.constraint().players().size()) return Iterators.empty();
+            if (this.constraint().players().size() > relationConclusion.constraint().players().size())
+                return Iterators.empty();
             Unifier.Builder unifierBuilder = Unifier.builder();
 
             if (!constraint().owner().reference().isAnonymous()) {
@@ -358,8 +369,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                     .comparableTo(Encoding.ValueType.LONG)) return false;
 
                             assert a.getType().isDouble() || a.getType().isLong();
-                            if (a.getType().isLong()) return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
-                            else if (a.getType().isDouble()) return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
+                            if (a.getType().isLong())
+                                return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
+                            else if (a.getType().isDouble())
+                                return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
                             else throw GraknException.of(ILLEGAL_STATE);
                         };
                     } else if (value.isDouble()) {
@@ -368,8 +381,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                     .comparableTo(Encoding.ValueType.DOUBLE)) return false;
 
                             assert a.getType().isDouble() || a.getType().isLong();
-                            if (a.getType().isLong()) return Predicate.Argument.Value.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
-                            else if (a.getType().isDouble()) return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
+                            if (a.getType().isLong())
+                                return Predicate.Argument.Value.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
+                            else if (a.getType().isDouble())
+                                return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
                             else throw GraknException.of(ILLEGAL_STATE);
                         };
                     } else if (value.isBoolean()) {

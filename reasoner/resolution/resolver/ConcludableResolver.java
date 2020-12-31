@@ -19,7 +19,9 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.concurrent.actor.Actor;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.reasoner.resolution.MockTransaction;
@@ -48,8 +50,10 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
+    private final Map<Unifier, Actor<RuleResolver>> unifiableRules;
     private final Concludable<?> concludable;
-    private final Map<Unifier, Actor<RuleResolver>> availableRules;
+    private final ConceptManager conceptMgr;
+    private final LogicManager logicMgr;
     private final Map<Actor<RootResolver>, IterationState> iterationStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, ResponseProducer> responseProducers;
@@ -57,11 +61,13 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable<?> concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                               TraversalEngine traversalEngine) {
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
-        this.availableRules = new HashMap<>();
+        this.conceptMgr = conceptMgr;
+        this.logicMgr = logicMgr;
+        this.unifiableRules = new HashMap<>();
         this.iterationStates = new HashMap<>();
         this.responseProducers = new HashMap<>();
         this.isInitialised = false;
@@ -132,11 +138,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void initialiseDownstreamActors() {
         LOG.debug("{}: initialising downstream actors", name());
-        concludable.getApplicableRules().map(rule -> concludable.getUnifiers(rule).map(unifier -> {
-            Actor<RuleResolver> ruleActor = registry.registerRule(rule);
-            availableRules.put(unifier, ruleActor);
-            return null;
-        }));
+        concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
+                .forEachRemaining(unifier -> {
+                    Actor<RuleResolver> ruleActor = registry.registerRule(rule);
+                    unifiableRules.put(unifier, ruleActor);
+                }));
     }
 
     @Override
@@ -217,7 +223,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!iterationState.hasReceived(request.answerBounds().conceptMap())) {
-            for (Map.Entry<Unifier, Actor<RuleResolver>> entry : availableRules.entrySet()) {
+            for (Map.Entry<Unifier, Actor<RuleResolver>> entry : unifiableRules.entrySet()) {
                 Unifier unifier = entry.getKey();
                 AnswerState.UpstreamVars.Initial initial = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap());
                 Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);

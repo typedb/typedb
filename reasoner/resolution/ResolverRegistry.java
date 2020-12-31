@@ -44,17 +44,17 @@ public class ResolverRegistry {
     private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
 
     private final HashMap<Concludable<?>, Actor<ConcludableResolver>> concludableActors;
+    private final HashMap<Rule, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private TraversalEngine traversalEngine;
-    private final HashMap<Rule, Actor<RuleResolver>> rules;
     private EventLoopGroup elg;
 
     public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine) {
         this.elg = elg;
         this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;
-        rules = new HashMap<>();
         concludableActors = new HashMap<>();
+        rules = new HashMap<>();
     }
 
     public Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
