@@ -67,12 +67,12 @@ public class RocksGrakn implements Grakn {
         return open(directory, new Options.Database(), new RocksFactory());
     }
 
-    public static RocksGrakn open(Path directory, Factory factory) {
-        return open(directory, new Options.Database(), factory);
+    public static RocksGrakn open(Path directory, Factory graknFctory) {
+        return open(directory, new Options.Database(), graknFctory);
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options, Factory factory) {
-        return factory.grakn(directory, options);
+    public static RocksGrakn open(Path directory, Options.Database options, Factory graknFactory) {
+        return graknFactory.grakn(directory, options);
     }
 
     public Path directory() {
