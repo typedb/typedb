@@ -170,13 +170,8 @@ public abstract class ProcedureEdge<
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                           Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            super(from, to, order, direction, getPredicate(direction, predicate).toString());
-            this.predicate = getPredicate(direction, predicate);
-        }
-
-        private static grakn.core.traversal.common.Predicate.Variable getPredicate(
-                Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            return direction.isForward() ? predicate : predicate.reflection();
+            super(from, to, order, direction, predicate.toString());
+            this.predicate = predicate;
         }
 
         @Override

@@ -81,7 +81,14 @@ Feature: Graql Match Query
     Then get answers of graql query
       """
       match
-        $x isa person, has graduation-date $date;
-        $r (employee: $x) isa employment, has start-date = $date;
+      $x isa person, has graduation-date $date;
+      $r (employee: $x) isa employment, has start-date = $date;
+      """
+    Then answer size is: 1
+    Then get answers of graql query
+      """
+      match
+      $x isa person, has graduation-date $date;
+      ($x) isa employment, has $date;
       """
     Then answer size is: 1
