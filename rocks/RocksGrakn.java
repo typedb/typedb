@@ -50,10 +50,10 @@ public class RocksGrakn implements Grakn {
     private final RocksDatabaseManager databaseMgr;
     private final AtomicBoolean isOpen;
 
-    protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager factory) {
+    protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
         this.directory = directory;
         this.options = options;
-        this.databaseMgr = factory.databaseManager(this);
+        this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.rocksConfig = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
                 .setMergeOperator(new UInt64AddOperator());

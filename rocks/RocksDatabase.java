@@ -68,13 +68,13 @@ public class RocksDatabase implements Grakn.Database {
     private final RocksGrakn rocksGrakn;
     private Cache cache;
 
-    private final Factory.Session factory;
+    private final Factory.Session sessionFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+    protected RocksDatabase(RocksGrakn rocksGrakn, String name, Factory.Session sessionFactory) {
         this.rocksGrakn = rocksGrakn;
         this.name = name;
-        this.factory = factory;
+        this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
@@ -145,9 +145,9 @@ public class RocksDatabase implements Grakn.Database {
 
         if (type.isSchema()) {
             lock = dataWriteSchemaLock().writeLock();
-            session = factory.sessionSchema(this, options);
+            session = sessionFactory.sessionSchema(this, options);
         } else if (type.isData()) {
-            session = factory.sessionData(this, options);
+            session = sessionFactory.sessionData(this, options);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -185,7 +185,7 @@ public class RocksDatabase implements Grakn.Database {
         assert statisticsBackgroundCounterSession == null;
         assert statisticsBackgroundCounter == null;
 
-        statisticsBackgroundCounterSession = factory.sessionData(this, new Options.Session());
+        statisticsBackgroundCounterSession = sessionFactory.sessionData(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
     }
 
