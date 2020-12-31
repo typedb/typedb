@@ -19,7 +19,6 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;

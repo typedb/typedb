@@ -173,7 +173,7 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertEquals(1, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -192,14 +192,13 @@ public class UnifyHasConcludableTest {
         unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
-        // TODO enable after predicate requirements are implemented
-//        // filter out invalid value
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("person")),
-//                pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid value
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Test
@@ -228,7 +227,7 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertEquals(1, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -247,14 +246,13 @@ public class UnifyHasConcludableTest {
         unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
-        // TODO enable after predicate requirements are implemented
-//        // filter out invalid value
-//        identifiedConcepts = map(
-//                pair(Identifier.Variable.name("x"), instanceOf("person")),
-//                pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
-//        );
-//        unified = unifier.unUnify(identifiedConcepts);
-//        assertFalse(unified.isPresent());
+        // filter out invalid value
+        identifiedConcepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
+        );
+        unified = unifier.unUnify(identifiedConcepts);
+        assertFalse(unified.isPresent());
     }
 
     @Ignore

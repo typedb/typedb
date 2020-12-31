@@ -442,6 +442,7 @@ public class UnifyIsaConcludableTest {
     public void isa_with_attribute_value() {
         String conjunction = "{ $a 'john' isa name; }";
         // TODO
+        // TODO this should be treated is `$a isa name; $a = "john"` until we have query rewriting
     }
 
     @Ignore
@@ -451,7 +452,7 @@ public class UnifyIsaConcludableTest {
         // TODO
     }
 
-    @Ignore // TODO enable when Requirements are active
+    @Ignore // TODO enable when we have query rewriting to handle all predicates at once
     @Test
     public void isa_predicates_can_filter_answers() {
         String conjunction = "{ $a isa first-name; $a > 'b'; $a < 'y'; $a contains 'j'; }";

@@ -21,8 +21,9 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Predicate;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Collections;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
@@ -66,8 +68,9 @@ public class Unifier {
             }
         });
 
+        // TODO ... why does this have to be optional? Can it fail?
         // TODO yes this can fail, as we could try to forward unify a mapping x -> a, y -> a, where x and y are already known
-//        return Optional.empty(); // TODO ... why does this have to be optional? Can it fail?
+//        return Optional.empty();
         return new ConceptMap(unified);
     }
 
@@ -205,14 +208,14 @@ public class Unifier {
     public static class Requirements {
         Map<Identifier, Set<Label>> types;
         Map<Identifier, Set<Label>> isaExplicit;
-        Map<Identifier, Set<Predicate<?, ?>>> predicates;
+        Map<Identifier, Function<Attribute, Boolean>> predicates;
 
         public Requirements() {
             this(new HashMap<>(), new HashMap<>(), new HashMap<>());
         }
 
         public Requirements(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
-                            Map<Identifier, Set<Predicate<?, ?>>> predicates) {
+                            Map<Identifier, Function<Attribute, Boolean>> predicates) {
             this.types = types;
             this.isaExplicit = isaExplicit;
             this.predicates = predicates;
@@ -248,8 +251,12 @@ public class Unifier {
         }
 
         private boolean predicatesSatisfied(Identifier id, Concept concept) {
-            // TODO implement predicates
-            return true;
+            if (predicates.containsKey(id)) {
+                assert concept.isThing() && (concept.asThing() instanceof Attribute);
+                return predicates.get(id).apply(concept.asThing().asAttribute());
+            } else {
+                return true;
+            }
         }
 
         public void types(Identifier identifier, Set<Label> labels) {
@@ -262,24 +269,24 @@ public class Unifier {
             isaExplicit.put(identifier, set(labels));
         }
 
-        public void predicates(Identifier identifier, Set<Predicate<?, ?>> preds) {
-            assert !predicates.containsKey(identifier) || predicates.get(identifier).equals(preds);
-            predicates.put(identifier, preds);
+        public void predicates(Identifier identifier, Function<Attribute, Boolean> predicateFn) {
+            assert !predicates.containsKey(identifier);
+            predicates.put(identifier, predicateFn);
         }
 
         public Map<Identifier, Set<Label>> types() { return types; }
 
         public Map<Identifier, Set<Label>> isaExplicit() { return isaExplicit; }
 
-        public Map<Identifier, Set<Predicate<?, ?>>> predicates() { return predicates; }
+        public Map<Identifier, Function<Attribute, Boolean>> predicates() { return predicates; }
 
         private Requirements duplicate() {
             Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
             Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
-            Map<Identifier, Set<Predicate<?, ?>>> predicatesCopy = new HashMap<>();
+            Map<Identifier, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
             types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
             isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
-            predicates.forEach(((identifier, preds) -> predicatesCopy.put(identifier, set(preds))));
+            predicates.forEach((predicatesCopy::put));
             return new Requirements(typesCopy, isaExplicitCopy, predicatesCopy);
         }
     }

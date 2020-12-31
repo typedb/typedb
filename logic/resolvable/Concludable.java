@@ -21,8 +21,11 @@ import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
+import grakn.core.graph.util.Encoding;
+import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.logic.Rule;
 import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
@@ -37,6 +40,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.traversal.common.Predicate;
 import graql.lang.common.GraqlToken;
 
 import java.util.Collections;
@@ -46,11 +50,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -340,13 +346,55 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 if (attr.reference().isAnonymous()) {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
-                    assert attr.value().size() == 1 && attr.value().iterator().next().isValueIdentity();
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
                     unifierBuilder.requirements().isaExplicit(attr.identifier(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
 
-                    // TODO enable predicates
-//                    unifierBuilder.requirements().predicates(attr.identifier(), attr.value().iterator().next());
+                    ValueConstraint<?> value = attr.value().iterator().next();
+                    Function<Attribute, Boolean> predicateFn;
+                    if (value.isLong()) {
+                        predicateFn = (a) -> {
+                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.ValueType.LONG)) return false;
+
+                            assert a.getType().isDouble() || a.getType().isLong();
+                            if (a.getType().isLong()) return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
+                            else if (a.getType().isDouble()) return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
+                            else throw GraknException.of(ILLEGAL_STATE);
+                        };
+                    } else if (value.isDouble()) {
+                        predicateFn = (a) -> {
+                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.ValueType.DOUBLE)) return false;
+
+                            assert a.getType().isDouble() || a.getType().isLong();
+                            if (a.getType().isLong()) return Predicate.Argument.Value.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
+                            else if (a.getType().isDouble()) return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
+                            else throw GraknException.of(ILLEGAL_STATE);
+                        };
+                    } else if (value.isBoolean()) {
+                        predicateFn = (a) -> {
+                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                            assert a.getType().isBoolean();
+                            return a.asBoolean().getValue().compareTo(value.asBoolean().value()) == 0;
+                        };
+                    } else if (value.isString()) {
+                        predicateFn = (a) -> {
+                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.ValueType.STRING)) return false;
+                            assert a.getType().isString();
+                            return a.asString().getValue().compareTo(value.asString().value()) == 0;
+                        };
+                    } else if (value.isDateTime()) {
+                        predicateFn = (a) -> {
+                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.ValueType.DATETIME)) return false;
+                            assert a.getType().isDateTime();
+                            return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
+                        };
+                    } else throw GraknException.of(ILLEGAL_STATE);
+                    unifierBuilder.requirements().predicates(attr.identifier(), predicateFn);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
@@ -447,7 +495,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 } else return Stream.empty();
             } else {
                 // form: $x > 10 -> require $x to satisfy predicate > 10
-                // TODO enable
+                // TODO after restructuring concludables, we whould revisit requirements on `Value` concludables
 //                unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
             }
 

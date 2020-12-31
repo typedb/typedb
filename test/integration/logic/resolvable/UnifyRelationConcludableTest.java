@@ -34,7 +34,6 @@ import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -43,7 +42,6 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;

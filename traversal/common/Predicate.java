@@ -351,7 +351,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
             public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
 
-            private static int compareDoubles(double first, double second) {
+            public static int compareDoubles(double first, double second) {
                 int res = java.lang.Double.compare(first, second);
                 if (res == 0) return 0;
                 else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
