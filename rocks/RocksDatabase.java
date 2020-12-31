@@ -65,14 +65,14 @@ public class RocksDatabase implements Grakn.Database {
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock dataWriteSchemaLock;
-    private final RocksGrakn grakn;
+    private final RocksGrakn rocksGrakn;
     private Cache cache;
 
     private final Factory.Session factory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session factory) {
-        this.grakn = grakn;
+    protected RocksDatabase(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+        this.rocksGrakn = rocksGrakn;
         this.name = name;
         this.factory = factory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -81,8 +81,8 @@ public class RocksDatabase implements Grakn.Database {
         dataWriteSchemaLock = new StampedLock();
 
         try {
-            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
-            rocksData = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
+            rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
+            rocksData = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
         } catch (RocksDBException e) {
             throw GraknException.of(e);
         }
@@ -200,11 +200,11 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     protected Path directory() {
-        return grakn.directory().resolve(name);
+        return rocksGrakn.directory().resolve(name);
     }
 
     public Options.Database options() {
-        return grakn.options();
+        return rocksGrakn.options();
     }
 
     OptimisticTransactionDB rocksData() {
@@ -285,7 +285,7 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public void delete() {
         close();
-        grakn.databases().remove(this);
+        rocksGrakn.databases().remove(this);
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
