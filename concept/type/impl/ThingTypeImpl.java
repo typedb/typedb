@@ -113,7 +113,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Stream<? extends ThingTypeImpl> getSupertypes() {
+    public Stream<ThingTypeImpl> getSupertypes() {
         return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
                 .map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
     }
