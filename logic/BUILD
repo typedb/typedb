@@ -55,6 +55,7 @@ native_java_libraries(
 
 host_compatible_java_test(
     name = "test-concludable",
+    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     srcs = [
         "resolvable/ConcludableTest.java",
     ],
@@ -62,7 +63,6 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
-    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     deps = [
         # Internal dependencies
 
@@ -76,6 +76,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-retrievable",
+    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     srcs = [
         "resolvable/RetrievableTest.java",
     ],
@@ -83,7 +84,6 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
-    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     deps = [
         # Internal dependencies
 

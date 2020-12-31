@@ -58,7 +58,8 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $p isa $pt; $pt type person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(set(parse("{ $p has $n; $n isa name; }")),
+        assertEquals(set(parse("{ $p has $n; $n isa name; }"),
+                         parse("{ $pt type person; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 
