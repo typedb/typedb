@@ -19,6 +19,7 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -137,9 +138,9 @@ public class UnifyIsaConcludableTest {
     }
 
     private IsaConstraint findIsaConstraint(Conjunction conjunction) {
-        List<IsaConstraint> isas = conjunction.variables().stream().flatMap(var -> var.constraints().stream())
+        List<IsaConstraint> isas = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
                 .filter(constraint -> constraint.isThing() && constraint.asThing().isIsa())
-                .map(constraint -> constraint.asThing().asIsa()).collect(Collectors.toList());
+                .map(constraint -> constraint.asThing().asIsa()).toList();
         assert isas.size() == 1 : "More than 1 isa constraint in conjunction to search";
         return isas.get(0);
     }
@@ -156,7 +157,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
         Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -184,7 +185,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
         Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -212,7 +213,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
         Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -242,7 +243,7 @@ public class UnifyIsaConcludableTest {
         Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
         IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
         Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         // rule: when { $x isa person; } then { (employee: $x) isa employment; }
@@ -250,7 +251,7 @@ public class UnifyIsaConcludableTest {
         Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
         IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
         Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
@@ -258,7 +259,7 @@ public class UnifyIsaConcludableTest {
         Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
         IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
         Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
-        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
 
         // TODO this test can only be enabled after full type resolution runs
 //        assertEquals(0, unifiers.size());
@@ -277,7 +278,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
         Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -323,7 +324,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
         Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -369,7 +370,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
         Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -415,7 +416,7 @@ public class UnifyIsaConcludableTest {
         IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
         Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         // rule: when { $x isa person; } then { (employee: $x) isa employment; }
@@ -423,7 +424,7 @@ public class UnifyIsaConcludableTest {
         Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
         IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
         Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).collect(Collectors.toList());
+        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
@@ -431,7 +432,7 @@ public class UnifyIsaConcludableTest {
         Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
         IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
         Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
-        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).collect(Collectors.toList());
+        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
         // TODO this test can only be enabled after full type resolution runs
 //        assertEquals(0, unifiers.size());
     }
@@ -463,7 +464,7 @@ public class UnifyIsaConcludableTest {
         Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
         IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
         Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
 
         Unifier unifier = unifiers.get(0);

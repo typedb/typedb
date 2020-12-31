@@ -19,6 +19,8 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -49,12 +51,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
@@ -118,9 +119,13 @@ public class UnifyRelationConcludableTest {
     }
 
     private Map<String, Set<String>> getStringMapping(Map<Identifier, Set<Identifier>> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
-                                                                e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet()))
-        );
+        Map<String, Set<String>> mapping = new HashMap<>();
+        map.forEach((id, mapped) -> {
+            HashSet<String> stringified = new HashSet<>();
+            mapped.forEach(m -> stringified.add(m.toString()));
+            mapping.put(id.toString(), stringified);
+        });
+        return mapping;
     }
 
     private Thing instanceOf(String label) {
@@ -150,9 +155,9 @@ public class UnifyRelationConcludableTest {
     }
 
     private RelationConstraint findRelationConstraint(Conjunction conjunction) {
-        List<RelationConstraint> rels = conjunction.variables().stream().flatMap(var -> var.constraints().stream())
+        List<RelationConstraint> rels = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
                 .filter(constraint -> constraint.isThing() && constraint.asThing().isRelation())
-                .map(constraint -> constraint.asThing().asRelation()).collect(Collectors.toList());
+                .map(constraint -> constraint.asThing().asRelation()).toList();
         assert rels.size() == 1 : "More than 1 relation constraint in conjunction to search";
         return rels.get(0);
     }
@@ -169,7 +174,7 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -232,7 +237,7 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -292,7 +297,7 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -352,7 +357,7 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -382,8 +387,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -417,8 +422,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -442,8 +447,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -498,8 +503,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -527,8 +532,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
-        Set<Map<String, Set<String>>> result = unifiers.stream().map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        Set<Map<String, Set<String>>> result = Iterators.iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -595,8 +600,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        List<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
-        List<Map<String, Set<String>>> result = unifier.stream().map(u -> getStringMapping(u.mapping())).collect(Collectors.toList());
+        List<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Map<String, Set<String>>> result = Iterators.iterate(unifier).map(u -> getStringMapping(u.mapping())).toList();
 
         List<Map<String, Set<String>>> expected = list(
                 new HashMap<String, Set<String>>() {{
@@ -628,8 +633,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -676,8 +681,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -716,8 +721,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -740,8 +745,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).collect(Collectors.toList());
-        Set<Map<String, Set<String>>> result = unifiers.stream().map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        Set<Map<String, Set<String>>> result = Iterators.iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -792,8 +797,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
@@ -816,8 +821,8 @@ public class UnifyRelationConcludableTest {
         RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
         Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
 
-        Stream<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
-        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).collect(Collectors.toSet());
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = Collections.emptySet();
         assertEquals(expected, result);

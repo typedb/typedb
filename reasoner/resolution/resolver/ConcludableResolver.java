@@ -132,9 +132,10 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void initialiseDownstreamActors() {
         LOG.debug("{}: initialising downstream actors", name());
-        concludable.getApplicableRules().forEach(rule -> concludable.getUnifiers(rule).forEach(unifier -> {
+        concludable.getApplicableRules().map(rule -> concludable.getUnifiers(rule).map(unifier -> {
             Actor<RuleResolver> ruleActor = registry.registerRule(rule);
             availableRules.put(unifier, ruleActor);
+            return null;
         }));
     }
 

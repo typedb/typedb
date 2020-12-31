@@ -19,13 +19,15 @@ package grakn.core.logic.resolvable;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.util.Encoding;
-import grakn.core.graph.vertex.AttributeVertex;
+import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
@@ -48,7 +50,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -56,7 +57,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -79,36 +79,36 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return new Extractor(conjunction.variables()).concludables();
     }
 
-    public Stream<Pair<Rule, Unifier>> findUnifiableRules(Stream<Rule> allRules, ConceptManager conceptMgr) {
+    public ResourceIterator<Pair<Rule, Unifier>> findUnifiableRules(LogicManager logicManager, ConceptManager conceptMgr) {
         // TODO Get rules internally
-        return allRules.flatMap(rule -> rule.possibleConclusions().stream()
+        return logicManager.rules().flatMap(rule -> Iterators.iterate(rule.possibleConclusions())
                 .flatMap(conclusion -> unify(conclusion, conceptMgr)).map(variableMapping -> new Pair<>(rule, variableMapping))
         );
     }
 
-    public Stream<Unifier> getUnifiers(Rule rule) {
-        return applicableRules.get(rule).stream();
+    public ResourceIterator<Unifier> getUnifiers(Rule rule) {
+        return Iterators.iterate(applicableRules.get(rule));
     }
 
-    public Stream<Rule> getApplicableRules() {
-        return applicableRules.keySet().stream();
+    public ResourceIterator<Rule> getApplicableRules() {
+        return Iterators.iterate(applicableRules.keySet());
     }
 
-    private Stream<Unifier> unify(Rule.Conclusion<?> unifyWith, ConceptManager conceptMgr) {
-        if (unifyWith.isRelation()) return unify(unifyWith.asRelation(), conceptMgr);
-        else if (unifyWith.isHas()) return unify(unifyWith.asHas(), conceptMgr);
-        else if (unifyWith.isIsa()) return unify(unifyWith.asIsa(), conceptMgr);
-        else if (unifyWith.isValue()) return unify(unifyWith.asValue(), conceptMgr);
+    private ResourceIterator<Unifier> unify(Rule.Conclusion<?> conclusion, ConceptManager conceptMgr) {
+        if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
+        else if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
+        else if (conclusion.isIsa()) return unify(conclusion.asIsa(), conceptMgr);
+        else if (conclusion.isValue()) return unify(conclusion.asValue(), conceptMgr);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
+    ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
 
-    Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
+    ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
 
-    Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
+    ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
 
-    Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) { return Stream.empty(); }
+    ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
 
     public AlphaEquivalence alphaEquals(Concludable<?> that) {
         if (that.isRelation()) return alphaEquals(that.asRelation());
@@ -168,11 +168,11 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     Improvements:
     * we could take information such as negated constraints into account.
      */
-    boolean unificationSatisfiable(TypeVariable typeVar, TypeVariable unifyWithTypeVar, ConceptManager conceptMgr) {
+    boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
 
-        if (!typeVar.resolvedTypes().isEmpty() && !unifyWithTypeVar.resolvedTypes().isEmpty()) {
-            return !Collections.disjoint(subtypeLabels(typeVar.resolvedTypes(), conceptMgr).collect(Collectors.toSet()),
-                                         unifyWithTypeVar.resolvedTypes());
+        if (!concludableTypeVar.resolvedTypes().isEmpty() && !conclusionTypeVar.resolvedTypes().isEmpty()) {
+            return !Collections.disjoint(subtypeLabels(concludableTypeVar.resolvedTypes(), conceptMgr).collect(Collectors.toSet()),
+                                         conclusionTypeVar.resolvedTypes());
         } else {
             // if either variable is allowed to be any type (ie empty set), its possible to do unification
             return true;
@@ -189,13 +189,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     * take into account negated constraints
     * take into account if an attribute owned is a key but the unification target requires a different value
      */
-    boolean unificationSatisfiable(ThingVariable thingVar, ThingVariable unifyWithThingVar) {
+    boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
-        if (!thingVar.resolvedTypes().isEmpty() && !unifyWithThingVar.resolvedTypes().isEmpty()) {
-            satisfiable &= Collections.disjoint(thingVar.resolvedTypes(), unifyWithThingVar.resolvedTypes());
+        if (!concludableThingVar.resolvedTypes().isEmpty() && !conclusionThingVar.resolvedTypes().isEmpty()) {
+            satisfiable &= Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
         }
 
-        if (!thingVar.value().isEmpty() && !unifyWithThingVar.value().isEmpty()) {
+        if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
             // TODO detect value contradictions between constant predicates
         }
         return satisfiable;
@@ -223,52 +223,52 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        public Stream<Unifier> unify(Rule.Conclusion.Relation unifyWith, ConceptManager conceptMgr) {
-            if (this.constraint().players().size() > unifyWith.constraint().players().size()) return Stream.empty();
+        public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
+            if (this.constraint().players().size() > relationConclusion.constraint().players().size()) return Iterators.empty();
             Unifier.Builder unifierBuilder = Unifier.builder();
 
             if (!constraint().owner().reference().isAnonymous()) {
                 assert constraint().owner().reference().isName();
-                if (unificationSatisfiable(constraint().owner(), unifyWith.constraint().owner())) {
-                    unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
-                } else return Stream.empty();
+                if (unificationSatisfiable(constraint().owner(), relationConclusion.constraint().owner())) {
+                    unifierBuilder.add(constraint().owner().identifier(), relationConclusion.constraint().owner().identifier());
+                } else return Iterators.empty();
             }
 
             if (constraint().owner().isa().isPresent()) {
-                assert unifyWith.constraint().owner().isa().isPresent(); // due to known shapes of rule conclusions
-                TypeVariable relationType = constraint().owner().isa().get().type();
-                TypeVariable unifyWithRelationType = unifyWith.constraint().owner().isa().get().type();
-                if (unificationSatisfiable(relationType, unifyWithRelationType, conceptMgr)) {
-                    unifierBuilder.add(relationType.identifier(), unifyWithRelationType.identifier());
+                assert relationConclusion.constraint().owner().isa().isPresent(); // due to known shapes of rule conclusions
+                TypeVariable concludableRelationType = constraint().owner().isa().get().type();
+                TypeVariable conclusionRelationType = relationConclusion.constraint().owner().isa().get().type();
+                if (unificationSatisfiable(concludableRelationType, conclusionRelationType, conceptMgr)) {
+                    unifierBuilder.add(concludableRelationType.identifier(), conclusionRelationType.identifier());
 
-                    if (relationType.reference().isLabel()) {
+                    if (concludableRelationType.reference().isLabel()) {
                         // require the unification target type variable satisfies a set of labels
-                        Set<Label> allowedTypes = relationType.resolvedTypes().stream()
+                        Set<Label> allowedTypes = concludableRelationType.resolvedTypes().stream()
                                 .flatMap(label -> subtypeLabels(label, conceptMgr)).collect(Collectors.toSet());
-                        unifierBuilder.requirements().types(relationType.identifier(), allowedTypes);
+                        unifierBuilder.requirements().types(concludableRelationType.identifier(), allowedTypes);
                     }
-                } else return Stream.empty();
+                } else return Iterators.empty();
             }
 
             // TODO this will work for now, but we should rewrite using role player `repetition`
             List<RolePlayer> conjRolePlayers = list(constraint().players());
-            List<RolePlayer> thenRolePlayers = list(unifyWith.constraint().players());
+            List<RolePlayer> thenRolePlayers = list(relationConclusion.constraint().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
                     .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));
         }
 
-        private Stream<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
+        private ResourceIterator<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
                 List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, Set<Integer>> mapping, ConceptManager conceptMgr) {
 
-            if (conjRolePlayers.isEmpty()) return Stream.of(mapping);
+            if (conjRolePlayers.isEmpty()) return Iterators.iterate(list(mapping));
             RolePlayer conjRP = conjRolePlayers.get(0);
 
-            return IntStream.range(0, thenRolePlayers.size())
+            return Iterators.iterate(IntStream.range(0, thenRolePlayers.size()).iterator())
                     .filter(thenIdx -> mapping.values().stream().noneMatch(players -> players.contains(thenIdx)))
                     .filter(thenIdx -> unificationSatisfiable(conjRP, thenRolePlayers.get(thenIdx), conceptMgr))
-                    .mapToObj(thenIdx -> {
+                    .map(thenIdx -> {
                         Map<RolePlayer, Set<Integer>> clone = cloneMapping(mapping);
                         clone.putIfAbsent(conjRP, new HashSet<>());
                         clone.get(conjRP).add(thenIdx);
@@ -277,13 +277,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                                                     thenRolePlayers, newMapping, conceptMgr));
         }
 
-        private boolean unificationSatisfiable(RolePlayer rolePlayer, RolePlayer unifyWithRolePlayer, ConceptManager conceptMgr) {
-            assert unifyWithRolePlayer.roleType().isPresent();
+        private boolean unificationSatisfiable(RolePlayer concludableRolePlayer, RolePlayer conclusionRolePlayer, ConceptManager conceptMgr) {
+            assert conclusionRolePlayer.roleType().isPresent();
             boolean satisfiable = true;
-            if (rolePlayer.roleType().isPresent()) {
-                satisfiable &= unificationSatisfiable(rolePlayer.roleType().get(), unifyWithRolePlayer.roleType().get(), conceptMgr);
+            if (concludableRolePlayer.roleType().isPresent()) {
+                satisfiable &= unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
             }
-            satisfiable &= unificationSatisfiable(rolePlayer.player(), unifyWithRolePlayer.player());
+            satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
             return satisfiable;
         }
 
@@ -334,15 +334,15 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        public Stream<Unifier> unify(Rule.Conclusion.Has unifyWith, ConceptManager conceptMgr) {
+        public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), unifyWith.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
-            } else return Stream.empty();
+            if (unificationSatisfiable(constraint().owner(), hasConclusion.constraint().owner())) {
+                unifierBuilder.add(constraint().owner().identifier(), hasConclusion.constraint().owner().identifier());
+            } else return Iterators.empty();
 
             ThingVariable attr = constraint().attribute();
-            if (unificationSatisfiable(attr, unifyWith.constraint().attribute())) {
-                unifierBuilder.add(attr.identifier(), unifyWith.constraint().attribute().identifier());
+            if (unificationSatisfiable(attr, hasConclusion.constraint().attribute())) {
+                unifierBuilder.add(attr.identifier(), hasConclusion.constraint().attribute().identifier());
                 if (attr.reference().isAnonymous()) {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
@@ -401,9 +401,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                     unifierBuilder.requirements().isaExplicit(attr.identifier(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
                 }
-            } else return Stream.empty();
+            } else return Iterators.empty();
 
-            return Stream.of(unifierBuilder.build());
+            return Iterators.iterate(list(unifierBuilder.build()));
         }
 
         @Override
@@ -429,24 +429,24 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        Stream<Unifier> unify(Rule.Conclusion.Isa unifyWith, ConceptManager conceptMgr) {
+        ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), unifyWith.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
-            } else return Stream.empty();
+            if (unificationSatisfiable(constraint().owner(), isaConclusion.constraint().owner())) {
+                unifierBuilder.add(constraint().owner().identifier(), isaConclusion.constraint().owner().identifier());
+            } else return Iterators.empty();
 
             TypeVariable type = constraint().type();
-            if (unificationSatisfiable(type, unifyWith.constraint().type(), conceptMgr)) {
-                unifierBuilder.add(type.identifier(), unifyWith.constraint().type().identifier());
+            if (unificationSatisfiable(type, isaConclusion.constraint().type(), conceptMgr)) {
+                unifierBuilder.add(type.identifier(), isaConclusion.constraint().type().identifier());
 
                 if (type.reference().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
                     unifierBuilder.requirements().types(type.identifier(),
                                                         subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
                 }
-            } else return Stream.empty();
+            } else return Iterators.empty();
 
-            return Stream.of(unifierBuilder.build());
+            return Iterators.iterate(list(unifierBuilder.build()));
         }
 
         @Override
@@ -472,11 +472,11 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        Stream<Unifier> unify(Rule.Conclusion.Value unifyWith, ConceptManager conceptMgr) {
+        ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), unifyWith.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().identifier(), unifyWith.constraint().owner().identifier());
-            } else return Stream.empty();
+            if (unificationSatisfiable(constraint().owner(), valueConclusion.constraint().owner())) {
+                unifierBuilder.add(constraint().owner().identifier(), valueConclusion.constraint().owner().identifier());
+            } else return Iterators.empty();
 
             /*
             Interesting case:
@@ -490,23 +490,23 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             if (constraint().isVariable()) {
                 assert constraint().value() instanceof ThingVariable;
                 ThingVariable value = (ThingVariable) constraint().value();
-                if (unificationSatisfiable(constraint().predicate(), unifyWith.constraint().predicate())) {
-                    unifierBuilder.add(value.identifier(), unifyWith.constraint().owner().identifier());
-                } else return Stream.empty();
+                if (unificationSatisfiable(constraint().predicate(), valueConclusion.constraint().predicate())) {
+                    unifierBuilder.add(value.identifier(), valueConclusion.constraint().owner().identifier());
+                } else return Iterators.empty();
             } else {
                 // form: $x > 10 -> require $x to satisfy predicate > 10
                 // TODO after restructuring concludables, we whould revisit requirements on `Value` concludables
 //                unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
             }
 
-            return Stream.of(unifierBuilder.build());
+            return Iterators.iterate(list(unifierBuilder.build()));
         }
 
-        private boolean unificationSatisfiable(GraqlToken.Predicate predicate, GraqlToken.Predicate unifyWith) {
-            assert unifyWith.equals(GraqlToken.Predicate.Equality.EQ);
-            return !(predicate.equals(GraqlToken.Predicate.Equality.EQ) ||
-                    predicate.equals(GraqlToken.Predicate.Equality.GTE) ||
-                    predicate.equals(GraqlToken.Predicate.Equality.LTE));
+        private boolean unificationSatisfiable(GraqlToken.Predicate concludablePredicate, GraqlToken.Predicate conclusionPredicate) {
+            assert conclusionPredicate.equals(GraqlToken.Predicate.Equality.EQ);
+            return !(concludablePredicate.equals(GraqlToken.Predicate.Equality.EQ) ||
+                    concludablePredicate.equals(GraqlToken.Predicate.Equality.GTE) ||
+                    concludablePredicate.equals(GraqlToken.Predicate.Equality.LTE));
         }
 
         @Override

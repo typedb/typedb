@@ -19,6 +19,7 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -138,9 +139,9 @@ public class UnifyHasConcludableTest {
     }
 
     private HasConstraint findHasConstraint(Conjunction conjunction) {
-        List<HasConstraint> has = conjunction.variables().stream().flatMap(var -> var.constraints().stream())
+        List<HasConstraint> has = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
                 .filter(constraint -> constraint.isThing() && constraint.asThing().isHas())
-                .map(constraint -> constraint.asThing().asHas()).collect(Collectors.toList());
+                .map(constraint -> constraint.asThing().asHas()).toList();
         assert has.size() == 1 : "More than 1 has constraint in conjunction to search";
         return has.get(0);
     }
@@ -159,7 +160,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasNameIsa = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameIsa, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -213,7 +214,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasNamehas = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNamehas, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -274,7 +275,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasNameHas = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameHas, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -311,7 +312,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasNameHas = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameHas, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -348,7 +349,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -394,7 +395,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasNameHas = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameHas, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -440,7 +441,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -468,7 +469,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -507,7 +508,7 @@ public class UnifyHasConcludableTest {
         HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
         Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).collect(Collectors.toList());
+        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
