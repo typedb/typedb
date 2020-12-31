@@ -26,7 +26,7 @@ import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 
-public class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
+public final class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
 
     private final byte[] prefix;
     private final RocksStorage storage;

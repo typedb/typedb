@@ -47,31 +47,35 @@ public class RocksGrakn implements Grakn {
     private final Path directory;
     private final Options.Database options;
     private final org.rocksdb.Options rocksConfig;
-    private final AtomicBoolean isOpen;
     private final RocksDatabaseManager databaseMgr;
+    private final AtomicBoolean isOpen;
 
-    private RocksGrakn(Path directory, Options.Database options) {
+    protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
         this.directory = directory;
         this.options = options;
+        this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.rocksConfig = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
                 .setMergeOperator(new UInt64AddOperator());
 
         ExecutorService.init(MAX_THREADS);
-        databaseMgr = new RocksDatabaseManager(this);
         databaseMgr.loadAll();
         isOpen = new AtomicBoolean(true);
     }
 
     public static RocksGrakn open(Path directory) {
-        return open(directory, new Options.Database());
+        return open(directory, new Options.Database(), new RocksFactory());
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options) {
-        return new RocksGrakn(directory, options);
+    public static RocksGrakn open(Path directory, Factory graknFactory) {
+        return open(directory, new Options.Database(), graknFactory);
     }
 
-    Path directory() {
+    public static RocksGrakn open(Path directory, Options.Database options, Factory graknFactory) {
+        return graknFactory.grakn(directory, options);
+    }
+
+    public Path directory() {
         return directory;
     }
 
@@ -108,8 +112,16 @@ public class RocksGrakn implements Grakn {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
-            rocksConfig.close();
+            closeResources();
         }
+    }
+
+    /**
+     * Responsible for committing the initial schema of a database.
+     * A different implementation of this class may override it.
+     */
+    protected void closeResources() {
+        databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
+        rocksConfig.close();
     }
 }
