@@ -29,7 +29,7 @@ public interface Factory {
 
     interface DatabaseManager {
 
-        RocksDatabaseManager databaseManager(RocksGrakn rocksGrakn);
+        RocksDatabaseManager databaseManager(RocksGrakn grakn);
     }
 
     interface Database {

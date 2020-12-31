@@ -65,14 +65,14 @@ public class RocksDatabase implements Grakn.Database {
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock dataWriteSchemaLock;
-    private final RocksGrakn rocksGrakn;
+    private final RocksGrakn grakn;
     private Cache cache;
 
     private final Factory.Session sessionFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn rocksGrakn, String name, Factory.Session sessionFactory) {
-        this.rocksGrakn = rocksGrakn;
+    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+        this.grakn = grakn;
         this.name = name;
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -81,29 +81,29 @@ public class RocksDatabase implements Grakn.Database {
         dataWriteSchemaLock = new StampedLock();
 
         try {
-            rocksSchema = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
-            rocksData = OptimisticTransactionDB.open(this.rocksGrakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
+            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
+            rocksData = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
         } catch (RocksDBException e) {
             throw GraknException.of(e);
         }
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createAndOpen(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
+    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
         try {
-            Files.createDirectory(rocksGrakn.directory().resolve(name));
+            Files.createDirectory(grakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(rocksGrakn, name, factory);
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksGrakn rocksGrakn, String name, Factory.Session factory) {
-        RocksDatabase database = new RocksDatabase(rocksGrakn, name, factory);
+    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -122,10 +122,10 @@ public class RocksDatabase implements Grakn.Database {
     /**
      * Responsible for committing the initial schema of a database.
      * A different implementation of this class may override it.
-     * @param txn
+     * @param transaction
      */
-    protected void initialiseCommit(RocksTransaction.Schema txn) {
-        txn.commit();
+    protected void initialiseCommit(RocksTransaction.Schema transaction) {
+        transaction.commit();
     }
 
     protected void load() {
@@ -200,11 +200,11 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     protected Path directory() {
-        return rocksGrakn.directory().resolve(name);
+        return grakn.directory().resolve(name);
     }
 
     public Options.Database options() {
-        return rocksGrakn.options();
+        return grakn.options();
     }
 
     OptimisticTransactionDB rocksData() {
@@ -285,7 +285,7 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public void delete() {
         close();
-        rocksGrakn.databases().remove(this);
+        grakn.databases().remove(this);
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
