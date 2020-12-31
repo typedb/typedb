@@ -20,6 +20,7 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
@@ -34,6 +35,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,16 +56,14 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
     private final Map<Request, ResponseProducer> responseProducers;
-    private final Conjunction conjunction;
-    private final Set<Concludable<?>> concludables;
+    private final Rule rule;
     private final List<Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>>> plannedConcludables;
     private boolean isInitialised;
 
     public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegistry registry, TraversalEngine traversalEngine) {
         super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine);
         this.responseProducers = new HashMap<>();
-        this.conjunction = rule.when();
-        this.concludables = rule.whenConcludables();
+        this.rule = rule;
         this.plannedConcludables = new ArrayList<>();
         this.isInitialised = false;
     }
@@ -99,35 +99,26 @@ public class RuleResolver extends Resolver<RuleResolver> {
             derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
         }
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
+        ConceptMap whenAnswer = fromDownstream.answer().derived().withInitial();
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         if (isLast(sender)) {
-
-            // TODO materialise into a IdentifiedConcept map
+            Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer);
             assert fromUpstream.answerBounds().isUnified();
-            // TODO undo mock after materialisation is included
             Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified()
-                    .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
+                    .aggregateToUpstream(thenMaterialisation);
 
-
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-
-
-                // A unifier may reject an answer that doesn't meet requirements it imposes for correctness
-                if (unifiedAnswer.isPresent()) {
-                    ResolutionAnswer answer = new ResolutionAnswer(unifiedAnswer.get(), conjunction.toString(), derivation, self(), true);
-                    respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
-                } else {
-                    tryAnswer(fromUpstream, responseProducer, iteration);
-                }
+            if (unifiedAnswer.isPresent() && !responseProducer.hasProduced(unifiedAnswer.get().conceptMap())) {
+                responseProducer.recordProduced(unifiedAnswer.get().conceptMap());
+                // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
+                ResolutionAnswer answer = new ResolutionAnswer(unifiedAnswer.get(), rule.when().toString(), derivation, self(), true);
+                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
             } else {
                 tryAnswer(fromUpstream, responseProducer, iteration);
             }
         } else {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
-                                                    AnswerState.UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
+                                                    AnswerState.UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
                                                             Mapping.of(nextPlannedDownstream.second())),
                                                     derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
@@ -156,7 +147,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         // TODO Tell the concludables to extend themselves by traversing all inconcludable constraints
 
         // Plan the order in which to execute the concludables
-        List<Concludable<?>> planned = list(concludables); // TODO Do some actual planning
+        List<Concludable<?>> planned = list(rule.whenConcludables()); // TODO Do some actual planning
         for (Concludable<?> concludable : planned) {
             Pair<Actor<ConcludableResolver>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerConcludable(concludable); // TODO TraversalAnswerCount and Rules?
             plannedConcludables.add(concludableUnifierPair);
@@ -165,7 +156,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     @Override
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
@@ -181,7 +172,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         Request toDownstream = new Request(request.path().append(plannedConcludables.get(0).first()),
                                            AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
@@ -207,7 +198,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified()
                         .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
                 if (derivedAnswer.isPresent()) {
-                    ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), conjunction.toString(),
+                    ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);
                     respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
                 }
@@ -220,7 +211,6 @@ public class RuleResolver extends Resolver<RuleResolver> {
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
         }
     }
-
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
         if (!responseProducers.containsKey(fromUpstream)) {

@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
@@ -58,7 +59,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<Conclusion<?>> possibleConclusions;
+    private final Set<Conclusion<?>> possibleConclusions; // TODO after restructuring Conclusions, we will have a single conclusion
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -109,13 +110,8 @@ public class Rule {
         return possibleConclusions;
     }
 
-    public ResourceIterator<Rule> findApplicableRulesPositive() {
-        // TODO find applicable rules from each non-negated Concludables
-        return null;
-    }
-
-    public ResourceIterator<Rule> findApplicableRulesNegative() {
-        // TODO find applicable rules from negated Concludables
+    public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer) {
+        // TODO
         return null;
     }
 
@@ -288,6 +284,13 @@ public class Rule {
 
             @Override
             public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                /*
+                get Relation Type
+                create instance of relation type
+                get each RolePlayer in the RelationConstraint
+                 */
+
+
                 return null;
             }
 
