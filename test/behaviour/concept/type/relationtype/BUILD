@@ -65,6 +65,10 @@ java_test(
         "@graknlabs_behaviour//concept/type:relationtype.feature",
     ],
     size = "medium",
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

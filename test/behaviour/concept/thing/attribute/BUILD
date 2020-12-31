@@ -65,6 +65,10 @@ java_test(
         "@graknlabs_behaviour//concept/thing:attribute.feature",
     ],
     size = "small",
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

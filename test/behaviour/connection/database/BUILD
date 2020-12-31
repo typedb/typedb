@@ -57,8 +57,10 @@ java_test(
         "@graknlabs_behaviour//connection:database.feature",
     ],
     size = "medium",
-    resources = [ "//server/conf:logback-debug.xml" ],
-    resource_strip_prefix = "server/conf/",
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

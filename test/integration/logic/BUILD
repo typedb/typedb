@@ -65,6 +65,10 @@ host_compatible_java_test(
         "@graknlabs_common//:common",
     ],
     data = [":basic-schema.gql"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -83,6 +87,10 @@ host_compatible_java_test(
         "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/pattern",
     ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
