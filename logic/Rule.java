@@ -20,6 +20,8 @@ package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
+import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.GraphManager;
