@@ -97,7 +97,7 @@ public class RocksDatabase implements Grakn.Database {
         }
 
         RocksDatabase database = new RocksDatabase(rocksGrakn, name, factory);
-        database.create();
+        database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
@@ -109,12 +109,12 @@ public class RocksDatabase implements Grakn.Database {
         return database;
     }
 
-    protected void create() {
+    protected void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
             try (RocksTransaction.Schema txn = session.transaction(WRITE).asSchema()) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
-                createCommit(txn);
+                initialiseCommit(txn);
             }
         }
     }
@@ -124,7 +124,7 @@ public class RocksDatabase implements Grakn.Database {
      * A different implementation of this class may override it.
      * @param txn
      */
-    protected void createCommit(RocksTransaction.Schema txn) {
+    protected void initialiseCommit(RocksTransaction.Schema txn) {
         txn.commit();
     }
 
