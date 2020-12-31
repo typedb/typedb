@@ -51,27 +51,30 @@ public class Unifier {
         this.unUnifier = reverse(this.unifier);
     }
 
-    public ConceptMap unify(ConceptMap toUnify) {
-        Map<Reference.Name, Concept> unified = new HashMap<>();
+    /*
+    Returns a best-effort forward unification. It may produce an empty concept map, or a not-present Optional.
+    An empty concept map means that none of the concepts were required by this unifier.
+    Eg.  unifier { b -> x, c -> y}.unify({a = Attr(0x10}) -> Optional.of({})
+    However, a not-present Optional may be produced:
+    Eg. unifier { b -> x, c -> x}.unify({b = Attr(0x10), c = Attr(0x20)}) -> Optional.empty()
 
-        toUnify.concepts().forEach((ref, concept) -> {
-            Identifier.Variable asIdentifier = Identifier.Variable.of(ref);
-            assert unifier.containsKey(asIdentifier);
-            Set<Identifier> unifiedIdentifiers = unifier.get(asIdentifier);
+    the latter will never be valid as it is a contradiction, the former empty map is the result of the unifier's filtering
+     */
+    public Optional<ConceptMap> unify(ConceptMap conceptMap) {
+        Map<Identifier, Concept> unifiedMap = new HashMap<>();
 
-            for (Identifier unifiedIdentifier : unifiedIdentifiers) {
-                if (unifiedIdentifier.isNamedReference()) {
-                    Reference.Name unifiedReference = unifiedIdentifier.asVariable().reference().asName();
-                    assert !unified.containsKey(unifiedReference);
-                    unified.put(unifiedReference, concept);
+        for (Map.Entry<Identifier, Set<Identifier>> entry : unifier.entrySet()) {
+            Identifier toUnify = entry.getKey();
+            Set<Identifier> unifieds = entry.getValue();
+            if (toUnify.isNamedReference() && conceptMap.contains(toUnify.asVariable().reference().asName())) {
+                Concept concept = conceptMap.get(toUnify.asVariable().reference().asName());
+                for (Identifier unified : unifieds) {
+                    if (!unifiedMap.containsKey(unified)) unifiedMap.put(unified, concept);
+                    if (!unifiedMap.get(unified).equals(concept)) return Optional.empty();
                 }
             }
-        });
-
-        // TODO ... why does this have to be optional? Can it fail?
-        // TODO yes this can fail, as we could try to forward unify a mapping x -> a, y -> a, where x and y are already known
-//        return Optional.empty();
-        return new ConceptMap(unified);
+        }
+        return Optional.of(conceptMap(unifiedMap));
     }
 
     /**

@@ -74,8 +74,9 @@ public abstract class AnswerState {
                 return new DownstreamVars.Mapped(this, mapping);
             }
 
-            public DownstreamVars.Unified toDownstreamVars(Unifier unifier) {
-                return new DownstreamVars.Unified(this, unifier);
+            public Optional<DownstreamVars.Unified> toDownstreamVars(Unifier unifier) {
+                Optional<ConceptMap> unified = unifier.unify(conceptMap());
+                return unified.map(conceptMap -> new DownstreamVars.Unified(this, conceptMap, unifier));
             }
         }
 
@@ -188,11 +189,10 @@ public abstract class AnswerState {
             private final UpstreamVars.Initial initial;
             private final Unifier unifier;
 
-            Unified(UpstreamVars.Initial initial, Unifier unifier) {
-                super(unifier.unify(initial.conceptMap()));
+            Unified(UpstreamVars.Initial initial, ConceptMap unifiedInitial, Unifier unifier) {
+                super(unifiedInitial);
                 this.initial = initial;
                 this.unifier = unifier;
-
             }
 
             public Optional<UpstreamVars.Derived> aggregateToUpstream(Map<Identifier, Concept> identifiedConcepts) {

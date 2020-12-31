@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
@@ -216,11 +217,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!iterationState.hasReceived(request.answerBounds().conceptMap())) {
             for (Map.Entry<Unifier, Actor<RuleResolver>> entry : availableRules.entrySet()) {
-                AnswerState.DownstreamVars.Unified unified = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                        .toDownstreamVars(entry.getKey());
-                Request toDownstream = new Request(request.path().append(entry.getValue()), unified,
-                                                   ResolutionAnswer.Derivation.EMPTY);
-                responseProducer.addDownstreamProducer(toDownstream);
+                Unifier unifier = entry.getKey();
+                AnswerState.UpstreamVars.Initial initial = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap());
+                Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
+                if (unified.isPresent()) {
+                    Request toDownstream = new Request(request.path().append(entry.getValue()), unified.get(),
+                                                       ResolutionAnswer.Derivation.EMPTY);
+                    responseProducer.addDownstreamProducer(toDownstream);
+                }
             }
             iterationState.recordReceived(request.answerBounds().conceptMap());
         }
