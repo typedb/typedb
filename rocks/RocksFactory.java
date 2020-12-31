@@ -24,7 +24,7 @@ import grakn.core.common.parameters.Options;
 import java.nio.file.Path;
 
 public final class RocksFactory implements Factory {
-
+    private DatabaseManager databaseManagerFactory;
     private Database databaseFactory;
     private Session sessionFactory;
     private TransactionSchema transactionSchemaFactory;
@@ -33,7 +33,14 @@ public final class RocksFactory implements Factory {
 
     @Override
     public RocksGrakn grakn(Path directory, Options.Database options) {
-        return new RocksGrakn(directory, options, databaseFactory());
+        return new RocksGrakn(directory, options, databaseManagerFactory());
+    }
+
+    private synchronized DatabaseManager databaseManagerFactory() {
+        if (databaseManagerFactory == null) {
+            databaseManagerFactory = grakn -> new RocksDatabaseManager(grakn, databaseFactory());
+        }
+        return databaseManagerFactory;
     }
 
     private synchronized Factory.Database databaseFactory() {

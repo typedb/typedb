@@ -27,6 +27,11 @@ public interface Factory {
 
     RocksGrakn grakn(Path directory, Options.Database options);
 
+    interface DatabaseManager {
+
+        RocksDatabaseManager databaseManager(RocksGrakn rocksGrakn);
+    }
+
     interface Database {
 
         RocksDatabase databaseCreate(RocksGrakn grakn, String name);

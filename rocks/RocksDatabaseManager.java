@@ -30,13 +30,13 @@ import java.util.concurrent.ConcurrentMap;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 
-public final class RocksDatabaseManager implements Grakn.DatabaseManager {
+public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     private final RocksGrakn grakn;
     private final ConcurrentMap<String, RocksDatabase> databases;
     private final Factory.Database factory;
 
-    RocksDatabaseManager(RocksGrakn grakn, Factory.Database factory) {
+    protected RocksDatabaseManager(RocksGrakn grakn, Factory.Database factory) {
         this.grakn = grakn;
         this.factory = factory;
         databases = new ConcurrentHashMap<>();
