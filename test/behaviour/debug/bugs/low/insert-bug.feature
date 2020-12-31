@@ -47,8 +47,8 @@ Feature: Graql Match Query
       match $x has $x;
       """
     Then uniquely identify answer concepts
-      | x         |
-      | key:ref:0 |
+      | x                |
+      | value:unit:meter |
 
 
   # TODO probably also fails if you try to insert a relation playing a role in itself
