@@ -59,6 +59,7 @@ build:
       script: |
         bazel test //common/... --test_output=errors
         bazel test //pattern/... --test_output=errors
+        bazel test //logic/... --test_output=errors
         bazel test //reasoner/... --test_output=errors
     test-integration:
       image: graknlabs-ubuntu-20.04-java11
