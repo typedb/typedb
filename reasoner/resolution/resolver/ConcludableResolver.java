@@ -50,7 +50,7 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final Map<Unifier, Actor<RuleResolver>> unifiableRules;
+    private final Map<Actor<RuleResolver>, Set<Unifier>> applicableRules;
     private final Concludable<?> concludable;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
@@ -67,7 +67,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.unifiableRules = new HashMap<>();
+        this.applicableRules = new HashMap<>();
         this.iterationStates = new HashMap<>();
         this.responseProducers = new HashMap<>();
         this.isInitialised = false;
@@ -141,7 +141,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
                     Actor<RuleResolver> ruleActor = registry.registerRule(rule);
-                    unifiableRules.put(unifier, ruleActor);
+                    applicableRules.putIfAbsent(ruleActor, new HashSet<>());
+                    applicableRules.get(ruleActor).add(unifier);
                 }));
     }
 
@@ -223,14 +224,16 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!iterationState.hasReceived(request.answerBounds().conceptMap())) {
-            for (Map.Entry<Unifier, Actor<RuleResolver>> entry : unifiableRules.entrySet()) {
-                Unifier unifier = entry.getKey();
-                AnswerState.UpstreamVars.Initial initial = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap());
-                Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
-                if (unified.isPresent()) {
-                    Request toDownstream = new Request(request.path().append(entry.getValue()), unified.get(),
-                                                       ResolutionAnswer.Derivation.EMPTY);
-                    responseProducer.addDownstreamProducer(toDownstream);
+            for (Map.Entry<Actor<RuleResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
+                Actor<RuleResolver> ruleActor = entry.getKey();
+                for (Unifier unifier : entry.getValue()) {
+                    AnswerState.UpstreamVars.Initial initial = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap());
+                    Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
+                    if (unified.isPresent()) {
+                        Request toDownstream = new Request(request.path().append(ruleActor), unified.get(),
+                                                           ResolutionAnswer.Derivation.EMPTY);
+                        responseProducer.addDownstreamProducer(toDownstream);
+                    }
                 }
             }
             iterationState.recordReceived(request.answerBounds().conceptMap());

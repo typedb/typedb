@@ -20,6 +20,7 @@ package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
@@ -34,6 +35,7 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
@@ -227,6 +229,8 @@ public class Rule {
             else throw GraknException.of(ILLEGAL_STATE);
         }
 
+        public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr);
+
         public boolean isRelation() {
             return false;
         }
@@ -282,6 +286,10 @@ public class Rule {
                 super(constraint, whenContext);
             }
 
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
+            }
 
             public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
                 return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
@@ -302,6 +310,11 @@ public class Rule {
 
             public Has(HasConstraint constraint, Set<Variable> whenContext) {
                 super(constraint, whenContext);
+            }
+
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
             }
 
             public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
@@ -325,6 +338,11 @@ public class Rule {
                 super(constraint, whenContext);
             }
 
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
+            }
+
             public static Isa create(IsaConstraint constraint, Set<Variable> whenContext) {
                 return new Isa(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
@@ -344,6 +362,11 @@ public class Rule {
 
             Value(ValueConstraint<?> constraint, Set<Variable> whenContext) {
                 super(constraint, whenContext);
+            }
+
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
             }
 
             public static Value create(ValueConstraint<?> constraint, Set<Variable> whenContext) {

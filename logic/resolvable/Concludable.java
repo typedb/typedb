@@ -17,7 +17,6 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;

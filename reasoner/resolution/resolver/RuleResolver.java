@@ -102,13 +102,17 @@ public class RuleResolver extends Resolver<RuleResolver> {
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         if (isLast(sender)) {
+
+            // TODO materialise into a IdentifiedConcept map
+            assert fromUpstream.answerBounds().isUnified();
+            // TODO undo mock after materialisation is included
+            Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified()
+                    .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
+
+
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
 
-                assert fromUpstream.answerBounds().isUnified();
-                // TODO undo mock after materialisation is included
-                Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified()
-                        .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
 
                 // A unifier may reject an answer that doesn't meet requirements it imposes for correctness
                 if (unifiedAnswer.isPresent()) {

@@ -22,7 +22,6 @@ import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
@@ -103,19 +102,6 @@ public class Unifier {
 
     Requirements requirements() {
         return requirements;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final Unifier that = (Unifier) o;
-        return unifier.equals(that.unifier);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(unifier);
     }
 
     @Override
