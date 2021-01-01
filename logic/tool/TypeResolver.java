@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_RESOLVABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -129,8 +130,9 @@ public class TypeResolver {
                 .forEachRemaining(typeVar -> {
                     Label label = typeVar.asType().label().get().properLabel();
                     if (label.scope().isPresent()) {
+                        String scope = label.scope().get();
                         Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
-                        if (labels.isEmpty()) throw GraknException.of(TYPE_NOT_FOUND, label);
+                        if (labels.isEmpty()) throw GraknException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
                         typeVar.addResolvedTypes(labels);
                     } else {
                         TypeVertex type = traversalEng.graph().schema().getType(label);

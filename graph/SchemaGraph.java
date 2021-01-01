@@ -47,8 +47,8 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
@@ -217,7 +217,7 @@ public class SchemaGraph implements Graph {
         assert scopedLabel.scope().isPresent();
         Supplier<Set<Label>> fn = () -> {
             TypeVertex relationType = getType(scopedLabel.scope().get());
-            if (relationType == null) return set();
+            if (relationType == null) throw GraknException.of(TYPE_NOT_FOUND, scopedLabel.scope().get());
             else return link(
                     loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
                             .flatMap(rel -> rel.outs().edge(RELATES).to())
