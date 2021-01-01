@@ -80,12 +80,9 @@ public class Retrievable extends Resolvable {
     public static class Extractor {
         private final Conjunction conjunction;
         private final Set<Concludable<?>> concludables;
-
-        private final Map<Variable, Variable> variablesMap = new HashMap<>(); // Map from variables in original conjunction to new subConjunction
-        private final Set<Constraint> visitedConstraints = new HashSet<>();
-        private final Set<Set<Variable>> connectedSubgraphs = new HashSet<>();
-        private Set<Variable> connectedSubgraph;
-
+        private final Set<SubgraphRegistry> subgraphs = new HashSet<>();
+        private final Set<Variable> extractedVariables = new HashSet<>();
+        private final Set<Constraint> extractedConstraints = new HashSet<>();
 
         public Extractor(Conjunction conjunction, Set<Concludable<?>> concludables) {
             this.conjunction = conjunction;
@@ -97,175 +94,189 @@ public class Retrievable extends Resolvable {
         }
 
         public Set<Retrievable> extract() {
-            concludables.forEach(concludable -> visitedConstraints.addAll(concludable.coreConstraints()));
+            concludables.forEach(concludable -> extractedConstraints.addAll(concludable.coreConstraints()));
             conjunction.variables().stream().filter(var -> var.identifier().reference().isName()).forEach(var -> {
-                if (variablesMap.get(var) == null) {
-                    connectedSubgraph = new HashSet<>();
-                    if (var.isThing()) registerThingVariable(var.asThing());
-                    else if (var.isType()) registerTypeVariable(var.asType());
+                if (!extractedVariables.contains(var)) {
+                    SubgraphRegistry subgraph = new SubgraphRegistry();
+                    if (var.isThing()) subgraph.registerThingVariable(var.asThing());
+                    else if (var.isType()) subgraph.registerTypeVariable(var.asType());
                     else throw GraknException.of(ILLEGAL_STATE);
-                    connectedSubgraphs.add(connectedSubgraph);
+                    subgraphs.add(subgraph);
+                    extractedVariables.addAll(subgraph.registeredVariables());
+                    extractedConstraints.addAll(subgraph.registeredConstraints());
                 }
             });
-            return connectedSubgraphs.stream()
-                    .filter(subGraph -> !(subGraph.size() == 1 && subGraph.iterator().next().constraints().size() == 0))
-                    .map(subGraph -> new Retrievable(new Conjunction(subGraph, set()))).collect(Collectors.toSet());
+            return subgraphs.stream()
+                    .filter(subGraph -> !(subGraph.variables().size() == 1 && subGraph.variables().iterator().next().constraints().size() == 0))
+                    .map(subGraph -> new Retrievable(new Conjunction(subGraph.variables(), set()))).collect(Collectors.toSet());
         }
 
-        private void addToConnected(Variable copy) {
-            connectedSubgraph.add(copy);
-        }
+        private class SubgraphRegistry {
 
-        private TypeVariable registerTypeVariable(TypeVariable variable) {
-            return registerVariable(variable).asType();
-        }
+            private final Map<Variable, Variable> registeredVariablesMap = new HashMap<>(); // Map from variables in original conjunction to new subgraph
+            private final Set<Constraint> registeredConstraints = new HashSet<>();
 
-        private ThingVariable registerThingVariable(ThingVariable variable) {
-            return registerVariable(variable).asThing();
-        }
-
-        private Variable registerVariable(Variable variable) {
-            Variable copy = variablesMap.get(variable);
-            if (copy == null) {
-                copy = copyVariable(variable);
-                addToConnected(copy);
-                variablesMap.put(variable, copy);
-                variable.constraints().forEach(this::addConstraint);
-                variable.constraining().forEach(this::addConstraint);
+            private Set<Variable> registeredVariables() {
+                return registeredVariablesMap.keySet();
             }
-            return copy;
-        }
 
-        private Variable copyVariable(Variable toCopy) {
-            Variable copy;
-            if (toCopy.isThing()) copy = ThingVariable.of(toCopy.identifier());
-            else if (toCopy.isType()) copy = TypeVariable.of(toCopy.identifier());
-            else throw GraknException.of(ILLEGAL_STATE);
-            copy.addResolvedTypes(toCopy.resolvedTypes());
-            return copy;
-        }
+            private Set<Variable> variables() {
+                return new HashSet<>(registeredVariablesMap.values());
+            }
 
-        private void addConstraint(Constraint constraint) {
-            if (constraint.isThing()) addConstraint(constraint.asThing());
-            else if (constraint.isType()) addConstraint(constraint.asType());
-            else throw GraknException.of(ILLEGAL_STATE);
-        }
+            private Set<Constraint> registeredConstraints() {
+                return registeredConstraints;
+            }
 
-        private void addConstraint(ThingConstraint thingConstraint) {
-            if (!visitedConstraints.contains(thingConstraint)) {
-                visitedConstraints.add(thingConstraint);
-                if (thingConstraint.isRelation()) copyConstraint(thingConstraint.asRelation());
-                else if (thingConstraint.isHas()) copyConstraint(thingConstraint.asHas());
-                else if (thingConstraint.isIs()) copyConstraint(thingConstraint.asIs());
-                else if (thingConstraint.isValue()) copyConstraint(thingConstraint.asValue());
-                else if (thingConstraint.isIsa()) copyConstraint(thingConstraint.asIsa());
-                else if (thingConstraint.isIID()) copyConstraint(thingConstraint.asIID());
+            private TypeVariable registerTypeVariable(TypeVariable variable) {
+                return registerVariable(variable).asType();
+            }
+
+            private ThingVariable registerThingVariable(ThingVariable variable) {
+                return registerVariable(variable).asThing();
+            }
+
+            private Variable registerVariable(Variable variable) {
+                Variable copy = registeredVariablesMap.get(variable);
+                if (copy == null) {
+                    copy = copyVariable(variable);
+                    registeredVariablesMap.put(variable, copy);
+                    variable.constraints().forEach(this::registerConstraint);
+                    variable.constraining().forEach(this::registerConstraint);
+                }
+                return copy;
+            }
+
+            private Variable copyVariable(Variable toCopy) {
+                Variable copy;
+                if (toCopy.isThing()) copy = ThingVariable.of(toCopy.identifier());
+                else if (toCopy.isType()) copy = TypeVariable.of(toCopy.identifier());
+                else throw GraknException.of(ILLEGAL_STATE);
+                copy.addResolvedTypes(toCopy.resolvedTypes());
+                return copy;
+            }
+
+            private void registerConstraint(Constraint constraint) {
+                if (constraint.isThing()) registerConstraint(constraint.asThing());
+                else if (constraint.isType()) registerConstraint(constraint.asType());
                 else throw GraknException.of(ILLEGAL_STATE);
             }
-        }
 
-        private void addConstraint(TypeConstraint typeConstraint) {
-            if (!visitedConstraints.contains(typeConstraint)) {
-                visitedConstraints.add(typeConstraint);
-                // TODO Some constraints such as abstract are not needed as this is only queryable in a schema session?
-                if (typeConstraint.isAbstract()) copyConstraint(typeConstraint.asAbstract());
-                else if (typeConstraint.isIs()) copyConstraint(typeConstraint.asIs());
-                else if (typeConstraint.isLabel()) copyConstraint(typeConstraint.asLabel());
-                else if (typeConstraint.isOwns()) copyConstraint(typeConstraint.asOwns());
-                else if (typeConstraint.isPlays()) copyConstraint(typeConstraint.asPlays());
-                else if (typeConstraint.isRelates()) copyConstraint(typeConstraint.asRelates());
-                else if (typeConstraint.isRegex()) copyConstraint(typeConstraint.asRegex());
-                else if (typeConstraint.isSub()) copyConstraint(typeConstraint.asSub());
-                else if (typeConstraint.isValueType()) copyConstraint(typeConstraint.asValueType());
-                else throw GraknException.of(ILLEGAL_STATE);
+            private void registerConstraint(ThingConstraint thingConstraint) {
+                if (!extractedConstraints.contains(thingConstraint) && !registeredConstraints.contains(thingConstraint)) {
+                    registeredConstraints.add(thingConstraint);
+                    if (thingConstraint.isRelation()) copyConstraint(thingConstraint.asRelation());
+                    else if (thingConstraint.isHas()) copyConstraint(thingConstraint.asHas());
+                    else if (thingConstraint.isIs()) copyConstraint(thingConstraint.asIs());
+                    else if (thingConstraint.isValue()) copyConstraint(thingConstraint.asValue());
+                    else if (thingConstraint.isIsa()) copyConstraint(thingConstraint.asIsa());
+                    else if (thingConstraint.isIID()) copyConstraint(thingConstraint.asIID());
+                    else throw GraknException.of(ILLEGAL_STATE);
+                }
             }
-        }
 
-        private void copyConstraint(RelationConstraint constraint) {
-            registerThingVariable(constraint.owner()).asThing().relation(copyRolePlayers(constraint.players()));
-        }
+            private void registerConstraint(TypeConstraint typeConstraint) {
+                if (!extractedConstraints.contains(typeConstraint) && !registeredConstraints.contains(typeConstraint)) {
+                    registeredConstraints.add(typeConstraint);
+                    if (typeConstraint.isAbstract()) copyConstraint(typeConstraint.asAbstract());
+                    else if (typeConstraint.isIs()) copyConstraint(typeConstraint.asIs());
+                    else if (typeConstraint.isLabel()) copyConstraint(typeConstraint.asLabel());
+                    else if (typeConstraint.isOwns()) copyConstraint(typeConstraint.asOwns());
+                    else if (typeConstraint.isPlays()) copyConstraint(typeConstraint.asPlays());
+                    else if (typeConstraint.isRelates()) copyConstraint(typeConstraint.asRelates());
+                    else if (typeConstraint.isRegex()) copyConstraint(typeConstraint.asRegex());
+                    else if (typeConstraint.isSub()) copyConstraint(typeConstraint.asSub());
+                    else if (typeConstraint.isValueType()) copyConstraint(typeConstraint.asValueType());
+                    else throw GraknException.of(ILLEGAL_STATE);
+                }
+            }
 
-        private List<RelationConstraint.RolePlayer> copyRolePlayers(List<RelationConstraint.RolePlayer> players) {
-            return players.stream().map(rolePlayer -> {
-                TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? registerTypeVariable(rolePlayer.roleType().get()) : null;
-                ThingVariable playerCopy = registerThingVariable(rolePlayer.player());
-                return new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
-            }).collect(Collectors.toList());
-        }
+            private void copyConstraint(RelationConstraint constraint) {
+                registerThingVariable(constraint.owner()).asThing().relation(copyRolePlayers(constraint.players()));
+            }
 
-        private void copyConstraint(HasConstraint constraint) {
-            registerThingVariable(constraint.owner()).has(registerThingVariable(constraint.attribute()));
-        }
+            private List<RelationConstraint.RolePlayer> copyRolePlayers(List<RelationConstraint.RolePlayer> players) {
+                return players.stream().map(rolePlayer -> {
+                    TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? registerTypeVariable(rolePlayer.roleType().get()) : null;
+                    ThingVariable playerCopy = registerThingVariable(rolePlayer.player());
+                    return new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
+                }).collect(Collectors.toList());
+            }
 
-        private void copyConstraint(IsConstraint constraint) {
-            registerThingVariable(constraint.owner()).is(registerThingVariable(constraint.variable()));
-        }
+            private void copyConstraint(HasConstraint constraint) {
+                registerThingVariable(constraint.owner()).has(registerThingVariable(constraint.attribute()));
+            }
 
-        private void copyConstraint(ValueConstraint<?> constraint) {
-            ThingVariable var = registerThingVariable(constraint.owner());
-            if (constraint.isLong())
-                var.valueLong(constraint.asLong().predicate().asEquality(), constraint.asLong().value());
-            else if (constraint.isDouble())
-                var.valueDouble(constraint.asDouble().predicate().asEquality(), constraint.asDouble().value());
-            else if (constraint.isBoolean())
-                var.valueBoolean(constraint.asBoolean().predicate().asEquality(), constraint.asBoolean().value());
-            else if (constraint.isString())
-                var.valueString(constraint.asString().predicate(), constraint.asString().value());
-            else if (constraint.isDateTime())
-                var.valueDateTime(constraint.asDateTime().predicate().asEquality(), constraint.asDateTime().value());
-            else if (constraint.isVariable()) {
-                ThingVariable attributeVarCopy = registerThingVariable(constraint.asVariable().value());
-                var.valueVariable(constraint.asValue().predicate().asEquality(), attributeVarCopy);
-            } else throw GraknException.of(ILLEGAL_STATE);
-        }
+            private void copyConstraint(IsConstraint constraint) {
+                registerThingVariable(constraint.owner()).is(registerThingVariable(constraint.variable()));
+            }
 
-        private void copyConstraint(IsaConstraint constraint) {
-            registerThingVariable(constraint.owner()).isa(registerTypeVariable(constraint.type()), constraint.isExplicit());
-        }
+            private void copyConstraint(ValueConstraint<?> constraint) {
+                ThingVariable var = registerThingVariable(constraint.owner());
+                if (constraint.isLong())
+                    var.valueLong(constraint.asLong().predicate().asEquality(), constraint.asLong().value());
+                else if (constraint.isDouble())
+                    var.valueDouble(constraint.asDouble().predicate().asEquality(), constraint.asDouble().value());
+                else if (constraint.isBoolean())
+                    var.valueBoolean(constraint.asBoolean().predicate().asEquality(), constraint.asBoolean().value());
+                else if (constraint.isString())
+                    var.valueString(constraint.asString().predicate(), constraint.asString().value());
+                else if (constraint.isDateTime())
+                    var.valueDateTime(constraint.asDateTime().predicate().asEquality(), constraint.asDateTime().value());
+                else if (constraint.isVariable()) {
+                    ThingVariable attributeVarCopy = registerThingVariable(constraint.asVariable().value());
+                    var.valueVariable(constraint.asValue().predicate().asEquality(), attributeVarCopy);
+                } else throw GraknException.of(ILLEGAL_STATE);
+            }
 
-        private void copyConstraint(IIDConstraint constraint) {
-            registerThingVariable(constraint.owner()).iid(constraint.iid());
-        }
+            private void copyConstraint(IsaConstraint constraint) {
+                registerThingVariable(constraint.owner()).isa(registerTypeVariable(constraint.type()), constraint.isExplicit());
+            }
 
-        private void copyConstraint(AbstractConstraint abstractConstraint) {
-            registerTypeVariable(abstractConstraint.owner()).setAbstract();
-        }
+            private void copyConstraint(IIDConstraint constraint) {
+                registerThingVariable(constraint.owner()).iid(constraint.iid());
+            }
 
-        private void copyConstraint(grakn.core.pattern.constraint.type.IsConstraint constraint) {
-            registerTypeVariable(constraint.owner()).is(registerTypeVariable(constraint.variable()));
-        }
+            private void copyConstraint(AbstractConstraint abstractConstraint) {
+                registerTypeVariable(abstractConstraint.owner()).setAbstract();
+            }
 
-        private void copyConstraint(LabelConstraint constraint) {
-            registerTypeVariable(constraint.owner()).label(constraint.properLabel());
-        }
+            private void copyConstraint(grakn.core.pattern.constraint.type.IsConstraint constraint) {
+                registerTypeVariable(constraint.owner()).is(registerTypeVariable(constraint.variable()));
+            }
 
-        private void copyConstraint(OwnsConstraint constraint) {
-            registerTypeVariable(constraint.owner()).owns(registerTypeVariable(constraint.attribute()),
-                                                          constraint.overridden().map(this::registerTypeVariable).orElse(null),
-                                                          constraint.isKey());
-        }
+            private void copyConstraint(LabelConstraint constraint) {
+                registerTypeVariable(constraint.owner()).label(constraint.properLabel());
+            }
 
-        private void copyConstraint(PlaysConstraint constraint) {
-            registerTypeVariable(constraint.owner()).plays(constraint.relation().map(this::registerTypeVariable).orElse(null),
-                                                           registerTypeVariable(constraint.role()),
-                                                           constraint.overridden().map(this::registerTypeVariable).orElse(null));
-        }
+            private void copyConstraint(OwnsConstraint constraint) {
+                registerTypeVariable(constraint.owner()).owns(registerTypeVariable(constraint.attribute()),
+                                                              constraint.overridden().map(this::registerTypeVariable).orElse(null),
+                                                              constraint.isKey());
+            }
 
-        private void copyConstraint(RelatesConstraint constraint) {
-            registerTypeVariable(constraint.owner()).relates(registerTypeVariable(constraint.role()),
-                                                             constraint.overridden().map(this::registerTypeVariable).orElse(null));
-        }
+            private void copyConstraint(PlaysConstraint constraint) {
+                registerTypeVariable(constraint.owner()).plays(constraint.relation().map(this::registerTypeVariable).orElse(null),
+                                                               registerTypeVariable(constraint.role()),
+                                                               constraint.overridden().map(this::registerTypeVariable).orElse(null));
+            }
 
-        private void copyConstraint(RegexConstraint constraint) {
-            registerTypeVariable(constraint.owner()).regex(constraint.regex());
-        }
+            private void copyConstraint(RelatesConstraint constraint) {
+                registerTypeVariable(constraint.owner()).relates(registerTypeVariable(constraint.role()),
+                                                                 constraint.overridden().map(this::registerTypeVariable).orElse(null));
+            }
 
-        private void copyConstraint(SubConstraint constraint) {
-            registerTypeVariable(constraint.owner()).sub(registerTypeVariable(constraint.type()), constraint.isExplicit());
-        }
+            private void copyConstraint(RegexConstraint constraint) {
+                registerTypeVariable(constraint.owner()).regex(constraint.regex());
+            }
 
-        private void copyConstraint(ValueTypeConstraint constraint) {
-            registerTypeVariable(constraint.owner()).valueType(constraint.valueType());
+            private void copyConstraint(SubConstraint constraint) {
+                registerTypeVariable(constraint.owner()).sub(registerTypeVariable(constraint.type()), constraint.isExplicit());
+            }
+
+            private void copyConstraint(ValueTypeConstraint constraint) {
+                registerTypeVariable(constraint.owner()).valueType(constraint.valueType());
+            }
         }
     }
 }
