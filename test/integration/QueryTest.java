@@ -127,7 +127,7 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schma.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }

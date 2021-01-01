@@ -206,6 +206,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
             // TODO detect value contradictions between constant predicates
+            satisfiable &= true;
         }
         return satisfiable;
     }
@@ -507,10 +508,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 if (unificationSatisfiable(constraint().predicate(), valueConclusion.constraint().predicate())) {
                     unifierBuilder.add(value.identifier(), valueConclusion.constraint().owner().identifier());
                 } else return Iterators.empty();
-            } else {
+                // } else {
                 // form: $x > 10 -> require $x to satisfy predicate > 10
                 // TODO after restructuring concludables, we whould revisit requirements on `Value` concludables
-//                unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
+                // unifierBuilder.requirements().predicates(constraint().owner(), set(constraint()));
             }
 
             return Iterators.iterate(list(unifierBuilder.build()));
