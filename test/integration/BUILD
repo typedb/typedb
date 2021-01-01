@@ -63,6 +63,10 @@ host_compatible_java_test(
         "@graknlabs_graql//java:graql",
     ],
     data = [":schema.gql"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

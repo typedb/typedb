@@ -113,8 +113,10 @@ public abstract class ProcedureVertex<
 
     @Override
     public String toString() {
-        if (isStartingVertex) return super.toString() + " (start)";
-        else return super.toString();
+        String str = super.toString();
+        if (isStartingVertex) str += " (start)";
+        if (outs().isEmpty()) str += " (end)";
+        return str;
     }
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {

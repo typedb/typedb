@@ -112,11 +112,12 @@ public class GraphPlanner implements Planner {
     }
 
     static GraphPlanner create(Structure structure) {
+        assert structure.vertices().size() > 1;
         GraphPlanner planner = new GraphPlanner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
-        assert !planner.vertices().isEmpty() && !planner.edges().isEmpty();
+        assert planner.vertices().size() > 1 && !planner.edges().isEmpty();
         planner.initialise();
         return planner;
     }
@@ -229,18 +230,18 @@ public class GraphPlanner implements Planner {
     }
 
     private void initialise() {
-        intialiseVariables();
+        initialiseVariables();
         initialiseConstraintsForVariables();
         initialiseConstraintsForEdges();
     }
 
-    private void intialiseVariables() {
+    private void initialiseVariables() {
         vertices.values().forEach(PlannerVertex::initialiseVariables);
         edges.forEach(PlannerEdge::initialiseVariables);
     }
 
     private void initialiseConstraintsForVariables() {
-        String conPrefix = "planner::vertex::con::";
+        String conPrefix = "planner_vertex_con_";
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
         MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
@@ -249,10 +250,10 @@ public class GraphPlanner implements Planner {
     }
 
     private void initialiseConstraintsForEdges() {
-        String conPrefix = "planner::edge::con::";
+        String conPrefix = "planner_edge_con_";
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
-            MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
+            MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i + 1);
             for (PlannerEdge<?, ?> edge : edges) {
                 conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
                 conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);

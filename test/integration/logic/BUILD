@@ -46,25 +46,29 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-type-resolver",
     srcs = ["TypeResolverTest.java"],
-    data = [":basic-schema.gql"],
+    test_class = "grakn.core.logic.TypeResolverTest",
     native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
         "//concept:concept",
+        "//:grakn",
         "//logic:logic",
         "//pattern:pattern",
+        "//rocks:rocks",
     ],
-    test_class = "grakn.core.logic.TypeResolverTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util",
         "//common",
+        "//test/integration/util",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java/query",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
     ],
+    data = [":basic-schema.gql"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -134,6 +138,10 @@ host_compatible_java_test(
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -157,6 +165,10 @@ host_compatible_java_test(
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

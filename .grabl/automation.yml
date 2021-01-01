@@ -47,7 +47,7 @@ build:
       script: |
         bazel build //...
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
-        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
       image: graknlabs-ubuntu-20.04-java11
       script: |
@@ -57,23 +57,23 @@ build:
     test-unit:
       image: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test //common/... --test_output=errors
-        bazel test //pattern/... --test_output=errors
-        bazel test //reasoner/... --test_output=errors
+        bazel test //common/... --test_output=streamed
+        bazel test //pattern/... --test_output=streamed
+        bazel test //reasoner/... --test_output=streamed
     test-integration:
       image: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test //test/integration:test-basic --test_output=errors
-        bazel test //test/integration:test-query --test_output=errors
-        bazel test //test/integration/migrator/... --test_output=errors
-        bazel test //test/integration/logic/... --test_output=errors
-      # bazel test //test/integration/traversal/... --test_output=errors
+        bazel test //test/integration:test-basic --test_output=streamed
+        bazel test //test/integration:test-query --test_output=streamed
+        bazel test //test/integration/migrator/... --test_output=streamed
+        bazel test //test/integration/logic/... --test_output=streamed
+      # bazel test //test/integration/traversal/... --test_output=streamed
     test-behaviour:
       image: graknlabs-ubuntu-20.04-java11
       script: |
-        bazel test //test/behaviour/connection/... --test_output=errors
-        bazel test //test/behaviour/concept/... --test_output=errors
-      # bazel test //test/behaviour/graql/language/define/... --test_output=errors
+        bazel test //test/behaviour/connection/... --test_output=streamed
+        bazel test //test/behaviour/concept/... --test_output=streamed
+      # bazel test //test/behaviour/graql/language/define/... --test_output=streamed
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04-java11
       filter:
@@ -83,7 +83,7 @@ build:
       script: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel test //test/assembly:assembly --test_output=errors
+        bazel test //test/assembly:assembly --test_output=streamed
     test-assembly-docker:
       image: graknlabs-ubuntu-20.04-java11
       filter:

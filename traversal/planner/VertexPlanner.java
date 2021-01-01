@@ -20,19 +20,47 @@ package grakn.core.traversal.planner;
 
 import grakn.core.traversal.procedure.VertexProcedure;
 import grakn.core.traversal.structure.Structure;
+import grakn.core.traversal.structure.StructureEdge;
 import grakn.core.traversal.structure.StructureVertex;
 
 public class VertexPlanner implements Planner {
 
     private final VertexProcedure procedure;
 
-    private VertexPlanner(StructureVertex<?> vertex) {
-        procedure = VertexProcedure.create(vertex);
+    private VertexPlanner(VertexProcedure procedure) {
+        this.procedure = procedure;
     }
 
     static VertexPlanner create(Structure structure) {
         assert structure.vertices().size() == 1;
-        return new VertexPlanner(structure.vertices().iterator().next());
+        PlannerVertex<?> plannerVertex = toPlanner(structure.vertices().iterator().next());
+        VertexProcedure proc = VertexProcedure.create(plannerVertex);
+        return new VertexPlanner(proc);
+    }
+
+    private static PlannerVertex<?> toPlanner(StructureVertex<?> structureVertex) {
+        PlannerVertex<?> plannerVertex = structureVertex.isType()
+                ? new PlannerVertex.Type(structureVertex.id())
+                : new PlannerVertex.Thing(structureVertex.id());
+        if (plannerVertex.isType()) plannerVertex.asType().props(structureVertex.asType().props());
+        else plannerVertex.asThing().props(structureVertex.asThing().props());
+        plannerVertex.setStartingVertex();
+
+        int order = 0;
+        for (StructureEdge<?, ?> structureEdge : structureVertex.outs()) {
+            PlannerEdge<?, ?> plannerEdge = PlannerEdge.of(plannerVertex, plannerVertex, structureEdge);
+            plannerEdge.backward().setUnselected();
+            plannerEdge.forward().setSelected();
+            plannerEdge.forward().setOrder(++order);
+            plannerVertex.out(plannerEdge);
+            plannerVertex.in(plannerEdge);
+        }
+        if (!structureVertex.outs().isEmpty()) {
+            plannerVertex.setHasOutGoingEdges();
+            plannerVertex.setHasIncomingEdges();
+        }
+
+        return plannerVertex;
     }
 
     @Override

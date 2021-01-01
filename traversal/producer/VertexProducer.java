@@ -17,17 +17,12 @@
 
 package grakn.core.traversal.producer;
 
-import grakn.common.collection.Collections;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
-import grakn.core.graph.GraphManager;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.procedure.ProcedureVertex;
 
 import java.util.concurrent.CompletableFuture;
 
-import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
@@ -36,11 +31,8 @@ public class VertexProducer implements Producer<VertexMap> {
     private final ResourceIterator<VertexMap> iterator;
     private CompletableFuture<Void> future;
 
-    public VertexProducer(GraphManager graphMgr, ProcedureVertex<?, ?> vertex, Traversal.Parameters parameters) {
-        assert vertex.id().isNamedReference();
-        this.iterator = vertex.iterator(graphMgr, parameters).map(
-                v -> VertexMap.of(Collections.map(pair(vertex.id().asVariable().reference(), v)))
-        );
+    public VertexProducer(ResourceIterator<VertexMap> iterator) {
+        this.iterator = iterator;
     }
 
     @Override

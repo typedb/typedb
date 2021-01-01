@@ -27,6 +27,8 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 
+import javax.annotation.Nullable;
+
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -37,8 +39,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     final GraphPlanner planner;
 
-    private final String varPrefix = "vertex::var::" + id() + "::";
-    private final String conPrefix = "vertex::con::" + id() + "::";
+    private final String varPrefix = "vertex_var_" + id() + "_";
+    private final String conPrefix = "vertex_con_" + id() + "_";
     private int valueIsStartingVertex;
     private int valueIsEndingVertex;
     private int valueHasIncomingEdges;
@@ -52,7 +54,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     MPVariable varHasIncomingEdges;
     MPVariable varHasOutgoingEdges;
 
-    PlannerVertex(Identifier identifier, GraphPlanner planner) {
+    PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
         this.planner = planner;
         isInitialisedVariables = false;
@@ -101,6 +103,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void initialiseVariables() {
+        assert planner != null;
         varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
         varIsEndingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_ending_vertex");
         varHasIncomingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_incoming_edges");
@@ -113,29 +116,23 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         assert ins().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         assert outs().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         initialiseConstraintsForIncomingEdges();
-        initialiseConstraintsForOutGoingEdges();
+        initialiseConstraintsForOutgoingEdges();
         initialiseConstraintsForVertexFlow();
         isInitialisedConstraints = true;
     }
 
     private void initialiseConstraintsForIncomingEdges() {
-        MPVariable varUnselectedIncomingEdges = planner.solver().makeIntVar(0, ins().size(), varPrefix + "unselected_incoming_edges");
-        MPConstraint conUnSelectedIncomingEdges = planner.solver().makeConstraint(ins().size(), ins().size(), conPrefix + "unselected_incoming_edges");
-        conUnSelectedIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
-        ins().forEach(edge -> conUnSelectedIncomingEdges.setCoefficient(edge.varIsSelected, 1));
-        MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(1, ins().size(), conPrefix + "has_incoming_edges");
-        conHasIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
-        conHasIncomingEdges.setCoefficient(varHasIncomingEdges, 1);
+        assert !ins().isEmpty();
+        MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
+        conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
+        ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
-    private void initialiseConstraintsForOutGoingEdges() {
-        MPVariable varUnselectedOutgoingEdges = planner.solver().makeIntVar(0, outs().size(), varPrefix + "unselected_outgoing_edges");
-        MPConstraint conUnselectedOutgoingEdges = planner.solver().makeConstraint(outs().size(), outs().size(), conPrefix + "unselected_outgoing_edges");
-        conUnselectedOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
-        outs().forEach(edge -> conUnselectedOutgoingEdges.setCoefficient(edge.varIsSelected, 1));
-        MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(1, outs().size(), conPrefix + "has_outgoing_edges");
-        conHasOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
-        conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, 1);
+    private void initialiseConstraintsForOutgoingEdges() {
+        assert !outs().isEmpty();
+        MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
+        conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
+        outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForVertexFlow() {
@@ -167,6 +164,22 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         valueIsEndingVertex = (int) Math.round(varIsEndingVertex.solutionValue());
         valueHasIncomingEdges = (int) Math.round(varHasIncomingEdges.solutionValue());
         valueHasOutgoingEdges = (int) Math.round(varHasOutgoingEdges.solutionValue());
+        assert !(isStartingVertex() && isEndingVertex());
+        assert (isStartingVertex() ^ hasIncomingEdges());
+        assert (isEndingVertex() ^ hasOutgoingEdges());
+    }
+
+    public void setStartingVertex() {
+        valueIsStartingVertex = 1;
+        valueIsEndingVertex = 0;
+    }
+
+    public void setHasOutGoingEdges() {
+        valueHasOutgoingEdges = 1;
+    }
+
+    public void setHasIncomingEdges() {
+        valueHasIncomingEdges = 1;
     }
 
     public PlannerVertex.Thing asThing() {
@@ -187,7 +200,11 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     public static class Thing extends PlannerVertex<Properties.Thing> {
 
-        Thing(Identifier identifier, GraphPlanner planner) {
+        Thing(Identifier id) {
+            this(id, null);
+        }
+
+        Thing(Identifier identifier, @Nullable GraphPlanner planner) {
             super(identifier, planner);
         }
 
@@ -229,7 +246,11 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     public static class Type extends PlannerVertex<Properties.Type> {
 
-        Type(Identifier identifier, GraphPlanner planner) {
+        Type(Identifier id) {
+            this(id, null);
+        }
+
+        Type(Identifier identifier, @Nullable GraphPlanner planner) {
             super(identifier, planner);
         }
 
