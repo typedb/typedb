@@ -127,7 +127,7 @@ public class QueryTest {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    final GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schma.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -135,6 +135,12 @@ public class QueryTest {
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String queryString = "undefine analysis abstract, owns created, plays commit-analysis:analysis;";
                     GraqlUndefine query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+
+                    // undefine `performance-tracker-rule` first because it depends on an undefined role performance-tracker:tracker
+                    // else would throw -- TODO write a test to prevent undefining types used in rules
+                    queryString = "undefine rule performance-tracker-rule;";
+                    query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine performance-tracker relates tracker;";
@@ -163,11 +169,6 @@ public class QueryTest {
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
-                    // undefine `performance-tracker-rule` because it depends on an undefined role performance-tracker:tracker
-                    // else the commit would throw
-                    queryString = "undefine rule performance-tracker-rule;";
-                    query = Graql.parseQuery(queryString);
-                    transaction.query().undefine(query);
 
                     transaction.commit();
                 }
