@@ -97,6 +97,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(9, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
                 new Internal(10, "Unexpected error during traversal plan optimisation.");
+        public static final Internal UNIMPLEMENTED =
+                new Internal(11, "This functionality is not yet implemented.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -216,6 +218,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingRead(4, "The thing with IID '%s' is not found.");
         public static final ThingRead INVALID_ROLE_TYPE_LABEL =
                 new ThingRead(5, "The role type '%s' is not scoped by its relation type.");
+        public static final ThingRead CONTRADICTORY_BOUND_VARIABLE =
+                new ThingRead(6, "The nested variable '%s' contradicts the type of its bound variable.");
 
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";
@@ -302,12 +306,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(2, "Attempted to retrieve '%s' as '%s', while it is actually a(n) '%s'.");
         public static final TypeRead TYPE_NOT_FOUND =
                 new TypeRead(3, "The type '%s' does not exist.");
+        public static final TypeRead ROLE_TYPE_NOT_FOUND =
+                new TypeRead(4, "There are no role types of label '%s' in the scope of '%s'");
         public static final TypeRead TYPE_NOT_RESOLVABLE =
-                new TypeRead(4, "The type in variable '%s' is not resolvable.");
+                new TypeRead(5, "The type in variable '%s' is not resolvable.");
+        public static final TypeRead TYPE_NOT_ATTRIBUTE_TYPE =
+                new TypeRead(6, "The type '%s' is not a valid attribute type.");
         public static final TypeRead VALUE_TYPE_MISMATCH =
-                new TypeRead(5, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
+                new TypeRead(7, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
-                new TypeRead(6, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
+                new TypeRead(8, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
 
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";

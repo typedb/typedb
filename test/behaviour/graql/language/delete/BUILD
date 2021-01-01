@@ -38,9 +38,12 @@ java_test(
     data = [
         "@graknlabs_behaviour//graql/language:delete.feature",
     ],
-    classpath_resources = ["//common/test:logback"],
     size = "small",
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

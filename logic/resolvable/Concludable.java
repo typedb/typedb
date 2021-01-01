@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -216,8 +217,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             }
 
             Map<Reference.Name, Set<Reference.Name>> baseVariableMapping = variableMapping;
-            List<RolePlayer> conjRolePlayers = Collections.unmodifiableList(constraint().players());
-            List<RolePlayer> thenRolePlayers = Collections.unmodifiableList(unifyWith.constraint().players());
+            List<RolePlayer> conjRolePlayers = list(constraint().players());
+            List<RolePlayer> thenRolePlayers = list(unifyWith.constraint().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>())
                     .map(indexMap -> Unifier.of(mapRolePlayerMatchingToMapping(indexMap, thenRolePlayers, baseVariableMapping)));

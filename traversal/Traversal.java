@@ -144,12 +144,12 @@ public class Traversal {
         structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
     }
 
-    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player) {
-        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player));
+    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, int repetition) {
+        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), repetition);
     }
 
-    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes) {
-        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes);
+    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {
+        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes, repetition);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
@@ -337,7 +337,11 @@ public class Traversal {
 
             public Long getLong() { return longVal; }
 
-            public Double getDouble() { return doubleVal; }
+            public Double getDouble() {
+                if (isDouble()) return doubleVal;
+                else if (isLong()) return longVal.doubleValue();
+                else return null;
+            }
 
             public LocalDateTime getDateTime() { return dateTimeVal; }
 

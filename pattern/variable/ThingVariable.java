@@ -36,6 +36,7 @@ import graql.lang.common.GraqlToken;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -123,7 +124,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     public IIDConstraint iid(byte[] iid) {
-        iidConstraint = new IIDConstraint(this, iid);
+        IIDConstraint iidConstraint = new IIDConstraint(this, iid);
         constrain(iidConstraint);
         return iidConstraint;
     }
@@ -192,7 +193,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return relationConstraints;
     }
 
-    public RelationConstraint relation(List<RelationConstraint.RolePlayer> rolePlayers) {
+    // TODO: why is this method never called?
+    public RelationConstraint relation(LinkedHashSet<RelationConstraint.RolePlayer> rolePlayers) {
         RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
         constrain(relationConstraint);
         return relationConstraint;

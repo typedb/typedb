@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
@@ -180,7 +179,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     public int outOwnsCount(boolean isKey) {
         Supplier<Integer> function = () -> {
             if (isKey) return toIntExact(outs.edge(OWNS_KEY).to().stream().count());
-            else return toIntExact(link(list(outs.edge(OWNS).to(), outs.edge(OWNS_KEY).to())).stream().count());
+            else return toIntExact(link(outs.edge(OWNS).to(), outs.edge(OWNS_KEY).to()).stream().count());
         };
         if (graph.isReadOnly()) {
             if (outOwnsCount == UNSET_COUNT) outOwnsCount = function.get();
@@ -194,7 +193,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     public int inOwnsCount(boolean isKey) {
         Supplier<Integer> function = () -> {
             if (isKey) return toIntExact(ins.edge(OWNS_KEY).from().stream().count());
-            else return toIntExact(link(list(ins.edge(OWNS).from(), ins.edge(OWNS_KEY).from())).stream().count());
+            else return toIntExact(link(ins.edge(OWNS).from(), ins.edge(OWNS_KEY).from()).stream().count());
         };
         if (graph.isReadOnly()) {
             if (inOwnsCount == UNSET_COUNT) inOwnsCount = function.get();

@@ -334,7 +334,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             final ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;
             return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
-                    this.toIID.equals(that.toIID));
+                    this.toIID.equals(that.toIID) &&
+                    Objects.equals(this.optimisedIID, that.optimisedIID));
         }
 
         /**

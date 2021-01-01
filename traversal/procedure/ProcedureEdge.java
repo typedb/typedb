@@ -19,9 +19,11 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.BaseIterator;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.PrefixIID;
@@ -41,7 +43,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
@@ -67,6 +68,7 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 
 public abstract class ProcedureEdge<
@@ -115,7 +117,17 @@ public abstract class ProcedureEdge<
         return order() > to().branchEdge().order();
     }
 
-    public boolean startsFromAttribute() { return false; }
+    public boolean onlyStartsFromAttribute() { return false; }
+
+    public boolean onlyStartsFromRelation() { return false; }
+
+    public boolean onlyStartsFromAttributeType() { return false; }
+
+    public boolean onlyStartsFromRelationType() { return false; }
+
+    public boolean onlyStartsFromRoleType() { return false; }
+
+    public boolean onlyStartsFromThingType() { return false; }
 
     public boolean isRolePlayer() { return false; }
 
@@ -159,17 +171,12 @@ public abstract class ProcedureEdge<
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                           Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            super(from, to, order, direction, getPredicate(direction, predicate).toString());
-            this.predicate = getPredicate(direction, predicate);
-        }
-
-        private static grakn.core.traversal.common.Predicate.Variable getPredicate(
-                Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            return direction.isForward() ? predicate : predicate.reflection();
+            super(from, to, order, direction, predicate.toString());
+            this.predicate = predicate;
         }
 
         @Override
-        public boolean startsFromAttribute() { return true; }
+        public boolean onlyStartsFromAttribute() { return true; }
 
         @Override
         public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -431,7 +438,7 @@ public abstract class ProcedureEdge<
 
                     private ResourceIterator<TypeEdge> ownsEdges(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).edge();
-                        else return link(list(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge()));
+                        else return link(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge());
                     }
 
                     private ResourceIterator<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
@@ -446,6 +453,9 @@ public abstract class ProcedureEdge<
                         }).noNulls());
                         return iterator;
                     }
+
+                    @Override
+                    public boolean onlyStartsFromThingType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -469,13 +479,13 @@ public abstract class ProcedureEdge<
 
                     private ResourceIterator<TypeVertex> overriddens(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).overridden().noNulls();
-                        else return link(list(owner.outs().edge(OWNS).overridden().noNulls(),
-                                              owner.outs().edge(OWNS_KEY).overridden().noNulls()));
+                        else return link(owner.outs().edge(OWNS).overridden().noNulls(),
+                                         owner.outs().edge(OWNS_KEY).overridden().noNulls());
                     }
 
                     private ResourceIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
                         if (isKey) return attType.ins().edge(OWNS_KEY).from();
-                        else return link(list(attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()));
+                        else return link(attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from());
                     }
 
 
@@ -484,6 +494,9 @@ public abstract class ProcedureEdge<
                                 o.ins().edge(SUB).from().filter(s -> overriddens(s).noneMatch(ov -> ov.equals(attType)))
                         ));
                     }
+
+                    @Override
+                    public boolean onlyStartsFromAttributeType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -527,6 +540,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromThingType() { return true; }
+
+                    @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
@@ -551,6 +567,9 @@ public abstract class ProcedureEdge<
                                 p.ins().edge(SUB).from().filter(s -> s.outs().edge(PLAYS).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
                     }
+
+                    @Override
+                    public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -594,6 +613,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromRelationType() { return true; }
+
+                    @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
@@ -618,6 +640,9 @@ public abstract class ProcedureEdge<
                                 r.ins().edge(SUB).from().filter(s -> s.outs().edge(RELATES).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
                     }
+
+                    @Override
+                    public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -657,9 +682,9 @@ public abstract class ProcedureEdge<
                     if (isForward) return new Relating.Forward(from, to, orderNumber);
                     else return new Relating.Backward(from, to, orderNumber);
                 } else if (edge.isRolePlayer()) {
-                    if (isForward)
-                        return new RolePlayer.Forward(from, to, orderNumber, edge.asRolePlayer().roleTypes());
-                    else return new RolePlayer.Backward(from, to, orderNumber, edge.asRolePlayer().roleTypes());
+                    PlannerEdge.Native.Thing.RolePlayer.Directional rp = edge.asRolePlayer();
+                    if (isForward) return new RolePlayer.Forward(from, to, orderNumber, rp.roleTypes());
+                    else return new RolePlayer.Backward(from, to, orderNumber, rp.roleTypes());
                 } else {
                     throw GraknException.of(UNRECOGNISED_VALUE);
                 }
@@ -717,9 +742,9 @@ public abstract class ProcedureEdge<
                             if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
                             else return empty();
                         } else if (!to.props().types().isEmpty()) {
-                            if ((eq = iterate(to.props().predicates())
-                                    .filter(p -> p.operator().equals(grakn.core.traversal.common.Predicate.Operator.Equality.EQ)).firstOrNull()) != null) {
-                                iter = to.iteratorOfAttributes(graphMgr, params, eq)
+                            eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                            if (eq != null) {
+                                iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
                                 iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
@@ -748,7 +773,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean startsFromAttribute() { return true; }
+                    public boolean onlyStartsFromAttribute() { return true; }
 
                     @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -855,6 +880,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromRelation() { return true; }
+
+                    @Override
                     public ResourceIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
@@ -905,11 +933,25 @@ public abstract class ProcedureEdge<
             public static abstract class RolePlayer extends Thing {
 
                 final Set<Label> roleTypes;
+                Set<TypeVertex> resolvedRoleTypes;
 
                 private RolePlayer(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                                    Encoding.Direction.Edge direction, Set<Label> roleTypes) {
                     super(from, to, order, direction, ROLEPLAYER);
                     this.roleTypes = roleTypes;
+                }
+
+                Set<TypeVertex> resolvedRoleTypes(SchemaGraph graph) {
+                    // TODO: a duplicate of this code exists in PlannerEdge.Native.Thing.RolePlayer,
+                    //       which is another indicator that we should:
+                    // TODO: Merge PlannerVertex, PlannerEdge, ProcedureVertex, and ProcedureEdge into some
+                    //       Vertex and Edge data structure (in `//traversal/fragment`) that aggregate their
+                    //       'planner' and 'procedure' logic for each class following the variable //pattern data structure.
+                    if (resolvedRoleTypes == null) {
+                        resolvedRoleTypes = iterate(roleTypes).map(graph::getType)
+                                .flatMap(rt -> tree(rt, r -> r.ins().edge(SUB).from())).toSet();
+                    }
+                    return resolvedRoleTypes;
                 }
 
                 public abstract ResourceIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
@@ -954,6 +996,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromRelation() { return true; }
+
+                    @Override
                     public ResourceIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                   Traversal.Parameters params) {
                         assert fromVertex.isThing();
@@ -962,22 +1007,25 @@ public abstract class ProcedureEdge<
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
+                            BaseIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
                                 ThingVertex player = graphMgr.data().get(params.getIID(to.id().asVariable()));
                                 if (player == null) return empty();
-                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls().flatMap(
+                                // TODO: the following code can be optimised if we have an API to directly get the
+                                //       roleplayer edge when we have the roleplayer vertex
+                                iter = resolveRoleTypesIter.flatMap(
                                         rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
                                 ).filter(e -> e.to().equals(player));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
-                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                        .flatMap(rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> rel.outs().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()));
+                                iter = resolveRoleTypesIter.flatMap(
+                                        rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                                .flatMap(t -> rel.outs().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get())
+                                );
                             } else {
-                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                        .flatMap(rt -> rel.outs().edge(ROLEPLAYER, rt.iid()).get());
+                                iter = resolveRoleTypesIter.flatMap(rt -> rel.outs().edge(ROLEPLAYER, rt.iid()).get());
                             }
                         } else {
                             iter = rel.outs().edge(ROLEPLAYER).get();
@@ -994,7 +1042,7 @@ public abstract class ProcedureEdge<
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
                         if (!roleTypes.isEmpty()) {
-                            return iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).anyMatch(
+                            return iterate(resolvedRoleTypes(graphMgr.schema())).anyMatch(
                                     rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
                                             .anyMatch(e -> e.to().equals(player) && !withinScope.contains(e.optimised().get())));
                         } else {
@@ -1020,22 +1068,22 @@ public abstract class ProcedureEdge<
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
+                            BaseIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
                                 ThingVertex relation = graphMgr.data().get(params.getIID(to.id().asVariable()));
                                 if (relation == null) return empty();
-                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls().flatMap(
+                                iter = resolveRoleTypesIter.flatMap(
                                         rt -> player.ins().edge(ROLEPLAYER, rt.iid(), relation.iid().prefix(), relation.iid().type())
                                                 .get().filter(r -> r.from().equals(relation)));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
-                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                        .flatMap(rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                iter = resolveRoleTypesIter.flatMap(
+                                        rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                                 .flatMap(t -> player.ins().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()));
                             } else {
-                                iter = iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                        .flatMap(rt -> player.ins().edge(ROLEPLAYER, rt.iid()).get());
+                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edge(ROLEPLAYER, rt.iid()).get());
                             }
                         } else {
                             iter = player.ins().edge(ROLEPLAYER).get();
@@ -1051,7 +1099,7 @@ public abstract class ProcedureEdge<
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
                         if (!roleTypes.isEmpty()) {
-                            return iterate(roleTypes).map(l -> graphMgr.schema().getType(l)).anyMatch(
+                            return iterate(resolvedRoleTypes(graphMgr.schema())).anyMatch(
                                     rt -> player.ins().edge(ROLEPLAYER, rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
                                             .anyMatch(e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())));
                         } else {

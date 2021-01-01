@@ -137,10 +137,8 @@ public class Inserter {
             else if (variable.iid().isPresent()) thing = getThing(variable.iid().get());
             else if (variable.isa().isPresent()) thing = insertIsa(variable.isa().get(), variable);
             else throw GraknException.of(THING_ISA_MISSING, variable.reference());
-
-            if (!variable.has().isEmpty()) insertHas(thing, variable.has());
-
             if (!variable.reference().isAnonymous()) inserted.put(variable.reference(), thing);
+            if (!variable.has().isEmpty()) insertHas(thing, variable.has());
             return thing;
         }
     }

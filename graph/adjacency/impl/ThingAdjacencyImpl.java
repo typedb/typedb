@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
@@ -260,7 +259,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             ResourceIterator<ThingEdge> storageIterator =
                     owner.graph().storage().iterate(iid, (key, value) -> cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))));
             ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
-            return link(list(bufferedIterator, storageIterator)).distinct();
+            return link(bufferedIterator, storageIterator).distinct();
         }
 
         @Override

@@ -217,7 +217,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
 
     private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
         if (edge.isRolePlayer()) {
-            Set<ThingVertex> withinScope = scoped.get(edge.asRolePlayer().scope());
+            Set<ThingVertex> withinScope = scoped.computeIfAbsent(edge.asRolePlayer().scope(), id -> new HashSet<>());
             return edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, parameters, withinScope);
         } else {
             return edge.isClosure(graphMgr, fromVertex, toVertex, parameters);
@@ -269,13 +269,14 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         Identifier toId = edge.to().id();
         if (roles.containsKey(toId)) {
             if (edge.isRolePlayer()) removePreviousScopedRole(edge.asRolePlayer().scope(), toId);
-            else removePreviousScopedRole(toId.asScoped().scope(), toId);
+            else if (toId.isScoped()) removePreviousScopedRole(toId.asScoped().scope(), toId);
         }
     }
 
     private void removePreviousScopedRole(Identifier.Variable scope, Identifier toId) {
         ThingVertex previousRole = roles.remove(toId);
         if (previousRole != null) {
+            assert scoped.containsKey(scope);
             scoped.get(scope).remove(previousRole);
         }
     }

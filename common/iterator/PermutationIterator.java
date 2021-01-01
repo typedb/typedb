@@ -19,6 +19,7 @@ package grakn.core.common.iterator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -30,7 +31,7 @@ public class PermutationIterator<T> implements ResourceIterator<List<T>> {
     final int[] directions;
     private State state;
 
-    public PermutationIterator(List<T> list) {
+    public PermutationIterator(Collection<T> list) {
         this.list = new ArrayList<>(list);
         int n = list.size();
         visitCounters = new int[n];

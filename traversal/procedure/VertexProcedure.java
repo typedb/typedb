@@ -21,13 +21,18 @@ package grakn.core.traversal.procedure;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
+import grakn.core.traversal.planner.PlannerVertex;
 import grakn.core.traversal.producer.VertexProducer;
-import grakn.core.traversal.structure.StructureVertex;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
@@ -37,23 +42,56 @@ public class VertexProcedure implements Procedure {
     private static final Logger LOG = LoggerFactory.getLogger(VertexProcedure.class);
     private final ProcedureVertex<?, ?> vertex;
 
-    private VertexProcedure(StructureVertex<?> structureVertex) {
-        vertex = structureVertex.isType()
-                ? new ProcedureVertex.Type(structureVertex.id(), true)
-                : new ProcedureVertex.Thing(structureVertex.id(), true);
-        if (vertex.isType()) vertex.asType().props(structureVertex.asType().props());
-        else vertex.asThing().props(structureVertex.asThing().props());
+    private VertexProcedure(ProcedureVertex<?, ?> vertex) {
+        this.vertex = vertex;
     }
 
-    public static VertexProcedure create(StructureVertex<?> stuctureVertex) {
-        return new VertexProcedure(stuctureVertex);
+    public static VertexProcedure create(PlannerVertex<?> plannerVertex) {
+        assert plannerVertex.id().isNamedReference();
+        return new VertexProcedure(toProcedure(plannerVertex));
+    }
+
+    private static ProcedureVertex<?, ?> toProcedure(PlannerVertex<?> plannerVertex) {
+        assert plannerVertex.isStartingVertex();
+        ProcedureVertex<?, ?> procedureVertex = plannerVertex.isType()
+                ? new ProcedureVertex.Type(plannerVertex.id(), true)
+                : new ProcedureVertex.Thing(plannerVertex.id(), true);
+        if (procedureVertex.isType()) procedureVertex.asType().props(plannerVertex.asType().props());
+        else procedureVertex.asThing().props(plannerVertex.asThing().props());
+
+        plannerVertex.outs().forEach(plannerEdge -> {
+            if (plannerEdge.isSelected()) {
+                ProcedureEdge<?, ?> procedureEdge = ProcedureEdge.of(procedureVertex, procedureVertex, plannerEdge);
+                procedureVertex.out(procedureEdge);
+                procedureVertex.in(procedureEdge);
+            }
+        });
+
+        return procedureVertex;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append("Vertex Procedure: {");
+        List<ProcedureEdge<?, ?>> procedureEdges = new ArrayList<>(vertex.outs());
+        procedureEdges.sort(Comparator.comparing(ProcedureEdge::order));
+
+        str.append("\n\tvertex:");
+        str.append("\n\t\t").append(vertex);
+        str.append("\n\tedges:");
+        for (ProcedureEdge<?, ?> e : procedureEdges) {
+            str.append("\n\t\t").append(e);
+        }
+        str.append("\n}");
+        return str.toString();
     }
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        return new VertexProducer(graphMgr, vertex, params);
+        return new VertexProducer(iterator(graphMgr, params));
     }
 
     @Override
@@ -61,6 +99,10 @@ public class VertexProcedure implements Procedure {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         Reference ref = vertex.id().asVariable().reference();
-        return vertex.iterator(graphMgr, params).map(v -> VertexMap.of(map(pair(ref, v))));
+        ResourceIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
+        for (ProcedureEdge<?, ?> e : vertex.outs()) {
+            iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
+        }
+        return iterator.map(v -> VertexMap.of(map(pair(ref, v))));
     }
 }

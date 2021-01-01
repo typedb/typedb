@@ -47,8 +47,8 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
@@ -170,7 +170,7 @@ public class SchemaGraph implements Graph {
         Encoding.Prefix index = IndexIID.Rule.prefix();
         ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                 convert(StructureIID.Rule.of(value)));
-        return link(list(iterate(rulesByIID.values()), persistedRules)).distinct();
+        return link(iterate(rulesByIID.values()), persistedRules).distinct();
     }
 
     public ResourceIterator<TypeVertex> thingTypes() {
@@ -206,9 +206,9 @@ public class SchemaGraph implements Graph {
     }
 
     public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        final Supplier<Set<TypeVertex>> fn = () -> link(list(
+        final Supplier<Set<TypeVertex>> fn = () -> link(
                 attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
-        )).stream().collect(toSet());
+        ).stream().collect(toSet());
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
         else return fn.get();
     }
@@ -217,12 +217,16 @@ public class SchemaGraph implements Graph {
         assert scopedLabel.scope().isPresent();
         Supplier<Set<Label>> fn = () -> {
             TypeVertex relationType = getType(scopedLabel.scope().get());
-            if (relationType == null) return set();
-            else return tree(relationType, rel -> rel.ins().edge(SUB).from())
-                    .flatMap(rel -> rel.outs().edge(RELATES).to())
-                    .map(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                            .filter(r -> r.properLabel().name().equals(scopedLabel.name())).firstOrNull())
-                    .noNulls().map(TypeVertex::properLabel).toSet();
+            if (relationType == null) throw GraknException.of(TYPE_NOT_FOUND, scopedLabel.scope().get());
+            else return link(
+                    loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                            .flatMap(rel -> rel.outs().edge(RELATES).to())
+                            .filter(rol -> rol.properLabel().name().equals(scopedLabel.name())),
+                    tree(relationType, rel -> rel.ins().edge(SUB).from())
+                            .flatMap(rel -> rel.outs().edge(RELATES).to())
+                            .flatMap(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull()))
+                            .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()))
+            ).map(TypeVertex::properLabel).toSet();
         };
         if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();

@@ -386,8 +386,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                     assert (vertex.isLong() || vertex.isDouble());
 
                     if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value));
-                    else if (vertex.isDouble())
-                        return operator.apply(Value.compareDoubles(vertex.asDouble().value(), value));
+                    else if (vertex.isDouble()) return operator.apply(compareDoubles(vertex.asDouble().value(), value));
                     else throw GraknException.of(ILLEGAL_STATE);
                 }
             };

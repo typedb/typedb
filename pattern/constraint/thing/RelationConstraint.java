@@ -30,28 +30,27 @@ import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.PARAN_CLOSE;
 import static graql.lang.common.GraqlToken.Char.PARAN_OPEN;
-import static java.util.stream.Collectors.toList;
 
 public class RelationConstraint extends ThingConstraint implements AlphaEquivalent<RelationConstraint> {
 
-    private final List<RolePlayer> rolePlayers;
+    private final LinkedHashSet<RolePlayer> rolePlayers;
     private final int hash;
 
-    public RelationConstraint(ThingVariable owner, List<RolePlayer> rolePlayers) {
+    public RelationConstraint(ThingVariable owner, LinkedHashSet<RolePlayer> rolePlayers) {
         super(owner, rolePlayerVariables(rolePlayers));
         assert rolePlayers != null && !rolePlayers.isEmpty();
-        this.rolePlayers = new ArrayList<>(rolePlayers);
+        this.rolePlayers = new LinkedHashSet<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
         for (RelationConstraint.RolePlayer rp : rolePlayers) {
             rp.player().constraining(this);
@@ -61,31 +60,31 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     static RelationConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
                                  VariableRegistry register) {
-        return new RelationConstraint(owner, constraint.players().stream()
-                .map(rp -> RolePlayer.of(rp, register)).collect(toList()));
+        return new RelationConstraint(owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet());
     }
 
-    public List<RolePlayer> players() {
+    public LinkedHashSet<RolePlayer> players() {
         return rolePlayers;
     }
 
     @Override
     public void addTo(Traversal traversal) {
-        int roleID = 0;
-        for (RolePlayer rp : rolePlayers) {
-            if (rp.roleType().isPresent()) {
-                TypeVariable roleType = rp.roleType().get();
+        for (RolePlayer rolePlayer : rolePlayers) {
+            ThingVariable player = rolePlayer.player();
+            int rep = rolePlayer.repetition();
+            if (rolePlayer.roleType().isPresent()) {
+                TypeVariable roleType = rolePlayer.roleType().get();
                 if (roleType.reference().isName()) {
-                    Identifier.Scoped role = Identifier.Scoped.of(owner.identifier(), roleID++);
+                    Identifier.Scoped role = Identifier.Scoped.of(owner.identifier(), roleType.identifier(), player.identifier(), rep);
                     traversal.relating(owner.identifier(), role);
-                    traversal.playing(rp.player().identifier(), role);
+                    traversal.playing(player.identifier(), role);
                     traversal.isa(role, roleType.identifier());
                 } else {
                     assert roleType.reference().isLabel() && !roleType.resolvedTypes().isEmpty();
-                    traversal.rolePlayer(owner.identifier(), rp.player().identifier(), roleType.resolvedTypes());
+                    traversal.rolePlayer(owner.identifier(), player.identifier(), roleType.resolvedTypes(), rep);
                 }
             } else {
-                traversal.rolePlayer(owner.identifier(), rp.player().identifier());
+                traversal.rolePlayer(owner.identifier(), player.identifier(), rep);
             }
         }
     }
@@ -109,7 +108,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         return hash;
     }
 
-    private static Set<Variable> rolePlayerVariables(List<RolePlayer> rolePlayers) {
+    private static Set<Variable> rolePlayerVariables(Set<RolePlayer> rolePlayers) {
         final Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
         rolePlayers.forEach(player -> {
             variables.add(player.player());
@@ -139,15 +138,17 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         private final TypeVariable roleType;
         private final ThingVariable player;
         private final Set<Label> resolvedRoleTypes;
+        private final int repetition;
         private final int hash;
 
-        public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player) {
+        public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player, int repetition) {
             assert roleType == null || roleType.reference().isName() ||
                     (roleType.label().isPresent() && roleType.label().get().scope().isPresent());
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
-            this.hash = Objects.hash(this.roleType, this.player);
+            this.repetition = repetition;
+            this.hash = Objects.hash(this.roleType, this.player, this.repetition);
             this.resolvedRoleTypes = new HashSet<>();
         }
 
@@ -155,8 +156,13 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                                     VariableRegistry registry) {
             return new RolePlayer(
                     constraint.roleType().map(registry::register).orElse(null),
-                    registry.register(constraint.player())
+                    registry.register(constraint.player()),
+                    constraint.repetition()
             );
+        }
+
+        public int repetition() {
+            return repetition;
         }
 
         public Optional<TypeVariable> roleType() {
@@ -180,7 +186,9 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final RolePlayer that = (RolePlayer) o;
-            return (Objects.equals(this.roleType, that.roleType)) && (this.player.equals(that.player));
+            return (Objects.equals(this.roleType, that.roleType) &&
+                    this.player.equals(that.player) &&
+                    this.repetition == that.repetition);
         }
 
         @Override

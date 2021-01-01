@@ -35,7 +35,7 @@ public interface Planner {
     }
 
     static Planner create(Structure structure) {
-        if (structure.edges().isEmpty()) return VertexPlanner.create(structure);
+        if (structure.vertices().size() == 1) return VertexPlanner.create(structure);
         else return GraphPlanner.create(structure);
     }
 

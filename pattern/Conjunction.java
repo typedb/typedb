@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,7 +44,7 @@ import static graql.lang.common.GraqlToken.Char.SEMICOLON;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
 
-public class Conjunction implements Pattern {
+public class Conjunction implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "conjunction.";
     private final Set<Variable> variables;
@@ -99,6 +100,15 @@ public class Conjunction implements Pattern {
         if (variable.isThing()) return !variable.asThing().relation().isEmpty() && !variable.asThing().has().isEmpty();
         if (variable.isType() && variable.reference().isLabel()) return variable.constraints().size() > 1;
         throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public void forEach(Consumer<Variable> function) {
+        variables.forEach(function);
+    }
+
+    @Override
+    public Conjunction clone() {
+        return null; // TODO
     }
 
     @Override

@@ -84,7 +84,7 @@ public class GraphProducer implements Producer<VertexMap> {
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
         } else {
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
-                futures.computeIfPresent(iterator, (k, v) -> v.thenRun(consume(k, splitCount, sink)));
+                futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(consume(k, splitCount, sink), forkJoinPool()));
             }
         }
     }

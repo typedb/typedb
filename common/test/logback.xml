@@ -15,34 +15,44 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<configuration>
+<configuration debug="true" scan="true" scanPeriod="10 seconds" packagingData="true">
+
+    <property resource="grakn.properties"/>
+    <property name="directory" value="${grakn.dir}/${server.logs}"/>
+    <property name="filename" value="grakn.log"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="ERROR">
-        <appender-ref ref="STDOUT"/>
-    </root>
+    <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${directory}/${filename}</file>
+        <encoder>
+            <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>120</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
 
-    <logger name="grakn.core" level="DEBUG" additivity="false">
+    <root level="DEBUG"/>
+
+    <!--    <logger name="grakn.core.server.rpc" level="DEBUG" />-->
+
+    <!--
+    TRACE: (Extremely verbose reporting events that gives complete traceability of a server operation)
+    DEBUG: (Verbose reporting events that gives a deeper understanding of server operations)
+    INFO:  (Reporting events that identifies the progress of server operations)
+    WARN:  (Unexpected events that are not recommended to have happened)
+    ERROR: (Incorrect events that disrupts the server operation, against user expectation)
+    -->
+    <logger name="grakn.core" level="DEBUG">
+        <appender-ref ref="LOGFILE"/>
         <appender-ref ref="STDOUT"/>
     </logger>
-
-    <!-- Use this to suppress excess JanusGraph logging -->
-    <logger name="grakn.core.graph" level="INFO" additivity="false">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-
-    <logger name="server.Server" level="DEBUG">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-
-    <!-- Increase this if wanting to see more verbose reasoner output -->
-    <logger name="grakn.core.graql.reasoner" level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-
-
 </configuration>

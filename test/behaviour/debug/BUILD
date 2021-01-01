@@ -51,6 +51,10 @@ java_test(
         ":debug.feature",
     ],
     size = "medium",
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
