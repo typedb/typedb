@@ -27,9 +27,9 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "test/behaviour/debug/bugs/async-bugs.feature"
+        features = "test/behaviour/debug/bugs/type-resolver-bugs.feature"
 )
-public class AsyncTest {
+public class TypeResolverTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
