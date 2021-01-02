@@ -309,7 +309,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeRead ROLE_TYPE_NOT_FOUND =
                 new TypeRead(4, "There are no role types of label '%s' in the scope of '%s'");
         public static final TypeRead TYPE_NOT_RESOLVABLE =
-                new TypeRead(5, "The type in variable '%s' is not resolvable.");
+                new TypeRead(5, "The type for variable '%s' is not resolvable.");
         public static final TypeRead TYPE_NOT_ATTRIBUTE_TYPE =
                 new TypeRead(6, "The type '%s' is not a valid attribute type.");
         public static final TypeRead VALUE_TYPE_MISMATCH =

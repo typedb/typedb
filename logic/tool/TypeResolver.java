@@ -82,6 +82,9 @@ public class TypeResolver {
             if (variable.reference().isLabel()) continue;
             Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference());
             if (resolveLabels == null) {
+                // TODO: Can the error message be improved by saying more explicitly that the provided type did not make sense somehow?
+                // TODO: The error message is not quite accurate when querying a relation using an entity type,
+                //       e.g.: match ($x) isa person;
                 throw GraknException.of(TYPE_NOT_RESOLVABLE, variable.toString());
             }
 
