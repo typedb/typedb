@@ -20,6 +20,7 @@ package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.type.AbstractConstraint;
 import grakn.core.pattern.constraint.type.IsConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
@@ -69,6 +70,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     private final Set<RelatesConstraint> relatesConstraints;
     private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
+    private final Set<Constraint> constraining;
 
     public TypeVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -77,6 +79,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         relatesConstraints = new HashSet<>();
         isConstraints = new HashSet<>();
         constraints = new HashSet<>();
+        constraining = new HashSet<>();
     }
 
     public static TypeVariable of(Identifier.Variable identifier) {
@@ -121,6 +124,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
         else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    @Override
+    public void constraining(Constraint constraint) {
+        constraining.add(constraint);
     }
 
     public void copyConstraints(TypeVariable toCopy) {
@@ -240,6 +248,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public Set<TypeConstraint> constraints() {
         return constraints;
+    }
+
+    @Override
+    public Set<Constraint> constraining() {
+        return constraining;
     }
 
     @Override

@@ -56,7 +56,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<Conclusion<?, ?>> possibleConclusions;
+    private final Set<Conclusion<?>> possibleConclusions;
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -103,7 +103,7 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Set<Conclusion<?, ?>> possibleConclusions() {
+    public Set<Conclusion<?>> possibleConclusions() {
         return possibleConclusions;
     }
 
@@ -189,8 +189,8 @@ public class Rule {
                 );
     }
 
-    private Set<Conclusion<?, ?>> buildConclusions(Conjunction then, Set<Variable> constraintContext) {
-        HashSet<Conclusion<?, ?>> conclusions = new HashSet<>();
+    private Set<Conclusion<?>> buildConclusions(Conjunction then, Set<Variable> constraintContext) {
+        HashSet<Conclusion<?>> conclusions = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
                 .map(constraint -> Conclusion.create(constraint, constraintContext)).forEach(conclusions::add);
         return conclusions;
@@ -204,7 +204,7 @@ public class Rule {
         return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
     }
 
-    public abstract static class Conclusion<CONSTRAINT extends Constraint, U extends Conclusion<CONSTRAINT, U>> {
+    public abstract static class Conclusion<CONSTRAINT extends Constraint> {
 
         private final CONSTRAINT constraint;
 
@@ -217,7 +217,7 @@ public class Rule {
             return constraint;
         }
 
-        public static Conclusion<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
+        public static Conclusion<?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
             if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
             else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
             else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
@@ -274,7 +274,7 @@ public class Rule {
                     });
         }
 
-        public static class Relation extends Conclusion<RelationConstraint, Conclusion.Relation> {
+        public static class Relation extends Conclusion<RelationConstraint> {
 
             public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
                 super(constraint, constraintContext);
@@ -296,7 +296,7 @@ public class Rule {
             }
         }
 
-        public static class Has extends Conclusion<HasConstraint, Conclusion.Has> {
+        public static class Has extends Conclusion<HasConstraint> {
 
             public Has(HasConstraint constraint, Set<Variable> constraintContext) {
                 super(constraint, constraintContext);
@@ -317,7 +317,7 @@ public class Rule {
             }
         }
 
-        public static class Isa extends Conclusion<IsaConstraint, Conclusion.Isa> {
+        public static class Isa extends Conclusion<IsaConstraint> {
 
             public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
                 super(constraint, constraintContext);
@@ -338,7 +338,7 @@ public class Rule {
             }
         }
 
-        public static class Value extends Conclusion<ValueConstraint<?>, Conclusion.Value> {
+        public static class Value extends Conclusion<ValueConstraint<?>> {
 
             Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
                 super(constraint, constraintContext);

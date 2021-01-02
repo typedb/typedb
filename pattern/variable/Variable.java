@@ -49,6 +49,8 @@ public abstract class Variable implements Pattern {
 
     public abstract Set<? extends Constraint> constraints();
 
+    public abstract Set<Constraint> constraining();
+
     public Identifier.Variable identifier() {
         return identifier;
     }
@@ -117,4 +119,6 @@ public abstract class Variable implements Pattern {
     public int hashCode() {
         return hash;
     }
+
+    public abstract void constraining(Constraint constraint);
 }

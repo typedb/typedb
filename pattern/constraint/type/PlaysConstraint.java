@@ -50,6 +50,9 @@ public class PlaysConstraint extends TypeConstraint {
         this.roleType = roleType;
         this.overriddenRoleType = overriddenRoleType;
         this.hash = Objects.hash(PlaysConstraint.class, this.owner, this.relationType, this.roleType, this.overriddenRoleType);
+        if (relationType != null) relationType.constraining(this);
+        roleType.constraining(this);
+        if (overriddenRoleType != null) overriddenRoleType.constraining(this);
     }
 
     static PlaysConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Plays constraint,

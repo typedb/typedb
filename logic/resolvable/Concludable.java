@@ -34,6 +34,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.Variable;
 import graql.lang.pattern.variable.Reference;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +47,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -54,14 +56,22 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     private final Map<Rule, Set<Unifier>> applicableRules;
     private final CONSTRAINT constraint;
+    private final Set<Constraint> coreConstraints;
 
-    private Concludable(CONSTRAINT constraint) {
+    private Concludable(CONSTRAINT constraint, Set<Constraint> otherCoreConstraints) {
         this.constraint = constraint;
+        HashSet<Constraint> c = new HashSet<>(otherCoreConstraints);
+        c.add(this.constraint);
+        this.coreConstraints = set(c);
         applicableRules = new HashMap<>(); // TODO Implement
     }
 
     public CONSTRAINT constraint() {
         return constraint;
+    }
+
+    public Set<Constraint> coreConstraints() {
+        return coreConstraints;
     }
 
     public static Set<Concludable<?>> create(grakn.core.pattern.Conjunction conjunction) {
@@ -83,7 +93,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         return applicableRules.keySet().stream();
     }
 
-    private Stream<Unifier> unify(Rule.Conclusion<?, ?> unifyWith) {
+    private Stream<Unifier> unify(Rule.Conclusion<?> unifyWith) {
         if (unifyWith instanceof Rule.Conclusion.Relation) return unify((Rule.Conclusion.Relation) unifyWith);
         else if (unifyWith instanceof Rule.Conclusion.Has) return unify((Rule.Conclusion.Has) unifyWith);
         else if (unifyWith instanceof Rule.Conclusion.Isa) return unify((Rule.Conclusion.Isa) unifyWith);
@@ -183,8 +193,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     public static class Relation extends Concludable<RelationConstraint> {
 
-        public Relation(final RelationConstraint constraint) {
-            super(ConstraintCopier.copyConstraint(constraint));
+        public Relation(final RelationConstraint constraint, @Nullable IsaConstraint isaConstraint) {
+            super(ConstraintCopier.copyConstraint(constraint), isaConstraint == null ? set() : set(isaConstraint));
         }
 
         @Override
@@ -286,8 +296,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     public static class Has extends Concludable<HasConstraint> {
 
-        public Has(final HasConstraint constraint) {
-            super(ConstraintCopier.copyConstraint(constraint));
+        public Has(final HasConstraint constraint, @Nullable IsaConstraint isaConstraint, Set<ValueConstraint<?>> valueConstraints) {
+            super(ConstraintCopier.copyConstraint(constraint), core(isaConstraint, valueConstraints));
         }
 
         @Override
@@ -315,12 +325,18 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         AlphaEquivalence alphaEquals(Concludable.Has that) {
             return constraint().alphaEquals(that.constraint());
         }
+
+        private static Set<Constraint> core(@Nullable IsaConstraint isaConstraint, Set<ValueConstraint<?>> valueConstraints) {
+            Set<Constraint> c = new HashSet<>(valueConstraints);
+            if (isaConstraint != null) c.add(isaConstraint);
+            return c;
+        }
     }
 
     public static class Isa extends Concludable<IsaConstraint> {
 
-        public Isa(final IsaConstraint constraint) {
-            super(ConstraintCopier.copyConstraint(constraint));
+        public Isa(final IsaConstraint constraint, Set<ValueConstraint<?>> value) {
+            super(ConstraintCopier.copyConstraint(constraint), new HashSet<>(value));
         }
 
         @Override
@@ -353,7 +369,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     public static class Value extends Concludable<ValueConstraint<?>> {
 
         public Value(final ValueConstraint<?> constraint) {
-            super(ConstraintCopier.copyConstraint(constraint));
+            super(ConstraintCopier.copyConstraint(constraint), set());
         }
 
         @Override
@@ -405,19 +421,19 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            concludables.add(new Concludable.Relation(relationConstraint));
+            concludables.add(new Concludable.Relation(relationConstraint, relationConstraint.owner().isa().orElse(null)));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            concludables.add(new Concludable.Has(hasConstraint));
+            concludables.add(new Concludable.Has(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value()));
             isaOwnersToSkip.add(hasConstraint.attribute());
             if (hasConstraint.attribute().isa().isPresent()) valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         public void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(new Concludable.Isa(isaConstraint));
+            concludables.add(new Concludable.Isa(isaConstraint, isaConstraint.owner().value()));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }

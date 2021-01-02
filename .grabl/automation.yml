@@ -59,6 +59,7 @@ build:
       script: |
         bazel test //common/... --test_output=streamed
         bazel test //pattern/... --test_output=streamed
+        bazel test //logic/... --test_output=streamed
         bazel test //reasoner/... --test_output=streamed
     test-integration:
       image: graknlabs-ubuntu-20.04
