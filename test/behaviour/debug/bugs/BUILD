@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "AsyncTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.medium.AsyncTest",
+    test_class = "grakn.core.test.behaviour.debug.bugs.AsyncTest",
     deps = [
         # Internal dependencies
 
