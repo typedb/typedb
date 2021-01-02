@@ -42,7 +42,7 @@ import grakn.core.pattern.variable.Variable;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -195,12 +195,12 @@ public class Retrievable extends Resolvable {
                 registerThingVariable(constraint.owner()).asThing().relation(copyRolePlayers(constraint.players()));
             }
 
-            private List<RelationConstraint.RolePlayer> copyRolePlayers(List<RelationConstraint.RolePlayer> players) {
+            private LinkedHashSet<RelationConstraint.RolePlayer> copyRolePlayers(LinkedHashSet<RelationConstraint.RolePlayer> players) {
                 return players.stream().map(rolePlayer -> {
                     TypeVariable roleTypeCopy = rolePlayer.roleType().isPresent() ? registerTypeVariable(rolePlayer.roleType().get()) : null;
                     ThingVariable playerCopy = registerThingVariable(rolePlayer.player());
-                    return new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy);
-                }).collect(Collectors.toList());
+                    return new RelationConstraint.RolePlayer(roleTypeCopy, playerCopy, rolePlayer.repetition());
+                }).collect(Collectors.toCollection(LinkedHashSet::new));
             }
 
             private void copyConstraint(HasConstraint constraint) {
