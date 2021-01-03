@@ -445,6 +445,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         }
     }
 
+    public static class Reasoner extends ErrorMessage {
+        public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
+                new Reasoner(1, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'");
+
+        private static final String codePrefix = "RSN";
+        private static final String messagePrefix = "Reasoner Error";
+
+        Reasoner(int number, String message) { super (codePrefix, number, messagePrefix, message); }
+    }
+
     public static class Migrator extends ErrorMessage {
         public static final Migrator FILE_NOT_READABLE =
                 new Migrator(1, "The specified file '%s' cannot be opened for read.");

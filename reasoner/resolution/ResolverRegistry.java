@@ -22,6 +22,8 @@ import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.ConceptManager;
+import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
@@ -52,18 +54,23 @@ public class ResolverRegistry {
 
     private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
 
+    private final ConceptManager conceptMgr;
     private final HashMap<Concludable<?>, Actor<ConcludableResolver>> concludableActors;
-    private final Actor<ResolutionRecorder> resolutionRecorder;
-    private TraversalEngine traversalEngine;
+    private final LogicManager logicMgr;
     private final HashMap<Rule, Actor<RuleResolver>> rules;
+    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
 
-    public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine) {
+    public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
+                            ConceptManager conceptMgr, LogicManager logicMgr) {
         this.elg = elg;
         this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;
-        rules = new HashMap<>();
+        this.conceptMgr = conceptMgr;
+        this.logicMgr = logicMgr;
         concludableActors = new HashMap<>();
+        rules = new HashMap<>();
     }
 
     public Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerResolvable(Resolvable resolvable) {
@@ -76,12 +83,12 @@ public class ResolverRegistry {
 
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine)));
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine, conceptMgr, logicMgr)));
     }
 
     public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine));
+        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr));
     }
 
     // for testing
@@ -104,7 +111,8 @@ public class ResolverRegistry {
                 return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
-        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self -> new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine));
+        Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
+                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr));
         concludableActors.put(concludable, concludableActor);
         return new Pair<>(concludableActor, identity(concludable));
     }

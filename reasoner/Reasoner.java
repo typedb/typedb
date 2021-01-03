@@ -55,12 +55,12 @@ public class Reasoner {
     private final ResolverRegistry resolverRegistry;
     private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
 
-    public Reasoner(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicManager logicMgr) {
+    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
         this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng);
+        this.resolverRegistry = new ResolverRegistry(ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr);
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, boolean isParallel) {

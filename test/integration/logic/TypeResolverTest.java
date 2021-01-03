@@ -18,13 +18,11 @@
 
 package grakn.core.logic;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -50,6 +48,7 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-resolver");
@@ -90,28 +89,6 @@ public class TypeResolverTest {
                 variable -> variable.reference().syntax(),
                 variable -> variable.resolvedTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
         ));
-    }
-
-    private Map<Pair<String, String>, Set<String>> getRoleHints(Conjunction conjunction) {
-        Map<Pair<String, String>, Set<String>> ans = new HashMap<>();
-        conjunction.variables().stream().filter(Variable::isThing).map(Variable::asThing)
-                .filter(variable -> !variable.relation().isEmpty())
-                .flatMap(variable -> variable.relation().stream())
-                .flatMap(relationConstraint -> relationConstraint.players().stream())
-                .forEach(rolePlayer -> {
-                    if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().reference().isName()) {
-                        ans.put(new Pair<>(
-                                        rolePlayer.roleType().get().reference().syntax(),
-                                        rolePlayer.player().reference().syntax()
-                                ),
-                                rolePlayer.resolvedRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet()));
-                    } else {
-                        ans.put(new Pair<>("", rolePlayer.player().reference().syntax()),
-                                rolePlayer.resolvedRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet()));
-                    }
-                });
-
-        return ans;
     }
 
     private Conjunction createConjunction(String matchString) {
@@ -404,7 +381,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void up_down_hierarchy_isa() throws IOException {
+    public void up_down_hierarchy_isa() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity;" +
@@ -431,7 +408,25 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void infer_from_value_type() throws IOException {
+    public void test_type_var_with_label() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeHinter = transaction.logic().typeResolver();
+
+        String queryString = "match $t type shape;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
+        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$t", set("shape"));
+        }};
+
+        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
+    }
+
+    @Test
+    public void infer_from_value_type() {
         define_custom_schema(
                 "define" +
                         "  dog sub entity, owns weight;" +
@@ -474,7 +469,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_hierarchy() throws IOException {
+    public void has_hierarchy() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity, owns weight;" +
@@ -537,7 +532,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_with_big_cycle() throws IOException {
+    public void has_with_big_cycle() {
         define_custom_schema(
                 "define" +
                         "  person sub entity, owns name, owns height;" +
@@ -576,7 +571,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void you_know_the_thing() throws IOException {
+    public void all_things_is_empty_set() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 

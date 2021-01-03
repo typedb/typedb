@@ -137,6 +137,12 @@ public class QueryTest {
                     GraqlUndefine query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
+                    // undefine `performance-tracker-rule` first because it depends on an undefined role performance-tracker:tracker
+                    // else would throw -- TODO write a test to prevent undefining types used in rules
+                    queryString = "undefine rule performance-tracker-rule;";
+                    query = Graql.parseQuery(queryString);
+                    transaction.query().undefine(query);
+
                     queryString = "undefine performance-tracker relates tracker;";
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
@@ -163,11 +169,6 @@ public class QueryTest {
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
-                    // undefine `performance-tracker-rule` because it depends on an undefined role performance-tracker:tracker
-                    // else the commit would throw
-                    queryString = "undefine rule performance-tracker-rule;";
-                    query = Graql.parseQuery(queryString);
-                    transaction.query().undefine(query);
 
                     transaction.commit();
                 }
