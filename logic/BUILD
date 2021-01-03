@@ -18,13 +18,14 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+
 package(
     default_visibility = [
         "//:__pkg__",
-        "//rocks:__pkg__",
         "//reasoner:__pkg__",
+        "//rocks:__pkg__",
         "//test:__subpackages__",
-    ]
+    ],
 )
 
 native_java_libraries(
@@ -52,13 +53,12 @@ native_java_libraries(
     visibility = ["//visibility:public"],
 )
 
-
 host_compatible_java_test(
     name = "test-concludable",
+    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     srcs = [
         "resolvable/ConcludableTest.java",
     ],
-    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     native_libraries_deps = [
         "//logic:logic",
         "//pattern:pattern",
@@ -74,9 +74,30 @@ host_compatible_java_test(
     ],
 )
 
+host_compatible_java_test(
+    name = "test-retrievable",
+    test_class = "grakn.core.logic.resolvable.RetrievableTest",
+    srcs = [
+        "resolvable/RetrievableTest.java",
+    ],
+    native_libraries_deps = [
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    deps = [
+        # Internal dependencies
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob([
+        "*",
+        "*/*",
+    ]),
     license_type = "agpl",
 )

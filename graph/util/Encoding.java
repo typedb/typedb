@@ -432,6 +432,14 @@ public class Encoding {
         public static final int STRING_MAX_SIZE = Bytes.SHORT_UNSIGNED_MAX_VALUE;
         public static final double DOUBLE_PRECISION = 0.0000000000000001;
 
+        private static final Map<ValueType, Set<ValueType>> ASSIGNABLES = map(
+                pair(OBJECT, set(OBJECT)),
+                pair(BOOLEAN, set(BOOLEAN)),
+                pair(LONG, set(LONG, DOUBLE)),
+                pair(DOUBLE, set(DOUBLE)),
+                pair(STRING, set(STRING)),
+                pair(DATETIME, set(DATETIME))
+        );
         private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
@@ -491,6 +499,10 @@ public class Encoding {
 
         public boolean isKeyable() {
             return isKeyable;
+        }
+
+        public Set<ValueType> assignables() {
+            return ASSIGNABLES.get(this);
         }
 
         public Set<ValueType> comparables() {

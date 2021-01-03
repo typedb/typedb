@@ -290,7 +290,6 @@ public class Rule {
                 get each RolePlayer in the RelationConstraint
                  */
 
-
                 return null;
             }
 

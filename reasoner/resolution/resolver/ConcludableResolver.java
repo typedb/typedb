@@ -47,7 +47,7 @@ import java.util.Set;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 
-public class ConcludableResolver extends Resolver<ConcludableResolver> {
+public class ConcludableResolver extends ResolvableResolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final Map<Actor<RuleResolver>, Set<Unifier>> applicableRules;

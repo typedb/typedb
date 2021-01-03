@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.behaviour.debug.bugs.medium;
+package grakn.core.test.behaviour.debug.bugs;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "test/behaviour/debug/bugs/medium/async-bugs.feature"
+        features = "test/behaviour/debug/bugs/async-bugs.feature"
 )
 public class AsyncTest {
     // ATTENTION:
