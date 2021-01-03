@@ -30,7 +30,7 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Operator.NOT;
 
-public class Negation implements Pattern {
+public class Negation implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "negation.";
     private final Disjunction disjunction;
@@ -53,6 +53,11 @@ public class Negation implements Pattern {
     }
 
     public Disjunction disjunction() { return disjunction; }
+
+    @Override
+    public Negation clone() {
+        return new Negation(disjunction.clone());
+    }
 
     @Override
     public String toString() {

@@ -21,6 +21,7 @@ package grakn.core.pattern.constraint.thing;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -46,6 +47,10 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
     static HasConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Has constraint,
                             VariableRegistry register) {
         return new HasConstraint(owner, register.register(constraint.attribute()));
+    }
+
+    static HasConstraint of(ThingVariable owner, HasConstraint clone, VariableCloner cloner) {
+        return new HasConstraint(owner, cloner.clone(clone.attribute()));
     }
 
     public ThingVariable attribute() {

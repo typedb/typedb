@@ -22,6 +22,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -49,6 +50,10 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     public static IsaConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Isa constraint,
                                    VariableRegistry registry) {
         return new IsaConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
+    }
+
+    public static IsaConstraint of(ThingVariable owner, IsaConstraint clone, VariableCloner cloner) {
+        return new IsaConstraint(owner, cloner.clone(clone.type()), clone.isExplicit());
     }
 
     public TypeVariable type() {

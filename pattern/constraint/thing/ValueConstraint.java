@@ -21,6 +21,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlToken;
@@ -70,6 +71,22 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             return new DateTime(owner, valueConstraint.predicate().asEquality(), valueConstraint.asDateTime().value());
         } else if (valueConstraint.isVariable()) {
             return new Variable(owner, valueConstraint.predicate().asEquality(), register.register(valueConstraint.asVariable().value()));
+        } else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    static ValueConstraint<?> of(ThingVariable owner, ValueConstraint<?> clone, VariableCloner cloner) {
+        if (clone.isLong()) {
+            return new Long(owner, clone.predicate().asEquality(), clone.asLong().value());
+        } else if (clone.isDouble()) {
+            return new Double(owner, clone.predicate().asEquality(), clone.asDouble().value());
+        } else if (clone.isBoolean()) {
+            return new Boolean(owner, clone.predicate().asEquality(), clone.asBoolean().value());
+        } else if (clone.isString()) {
+            return new String(owner, clone.predicate(), clone.asString().value());
+        } else if (clone.isDateTime()) {
+            return new DateTime(owner, clone.predicate().asEquality(), clone.asDateTime().value());
+        } else if (clone.isVariable()) {
+            return new Variable(owner, clone.predicate().asEquality(), cloner.clone(clone.asVariable().value()));
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 

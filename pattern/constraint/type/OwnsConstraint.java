@@ -20,6 +20,7 @@ package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -42,12 +43,14 @@ public class OwnsConstraint extends TypeConstraint {
     private final boolean isKey;
     private final int hash;
 
-    public OwnsConstraint(TypeVariable owner, TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
+    public OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
+                          @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
         super(owner, attributeTypes(attributeType, overriddenAttributeType));
         this.attributeType = attributeType;
         this.overriddenAttributeType = overriddenAttributeType;
         this.isKey = isKey;
-        this.hash = Objects.hash(OwnsConstraint.class, this.owner, this.attributeType, this.overriddenAttributeType, this.isKey);
+        this.hash = Objects.hash(OwnsConstraint.class, this.owner, this.attributeType,
+                                 this.overriddenAttributeType, this.isKey);
         attributeType.constraining(this);
         if (overriddenAttributeType != null) overriddenAttributeType.constraining(this);
     }
@@ -57,6 +60,12 @@ public class OwnsConstraint extends TypeConstraint {
         final TypeVariable attributeType = registry.register(constraint.attribute());
         final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
         return new OwnsConstraint(owner, attributeType, overriddenType, constraint.isKey());
+    }
+
+    static OwnsConstraint of(TypeVariable owner, OwnsConstraint clone, VariableCloner cloner) {
+        final TypeVariable attributeType = cloner.clone(clone.attribute());
+        final TypeVariable overriddenType = clone.overridden().map(cloner::clone).orElse(null);
+        return new OwnsConstraint(owner, attributeType, overriddenType, clone.isKey());
     }
 
     public TypeVariable attribute() {

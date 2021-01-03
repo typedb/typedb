@@ -44,6 +44,10 @@ public class IIDConstraint extends ThingConstraint {
         return new IIDConstraint(owner, Bytes.hexStringToBytes(constraint.iid()));
     }
 
+    static IIDConstraint of(ThingVariable owner, IIDConstraint clone) {
+        return new IIDConstraint(owner, clone.iid());
+    }
+
     public byte[] iid() {
         return iid;
     }

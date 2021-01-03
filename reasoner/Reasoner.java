@@ -20,7 +20,6 @@ package grakn.core.reasoner;
 
 import grakn.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.ExecutorService;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
@@ -121,9 +120,8 @@ public class Reasoner {
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
-        if (true) throw GraknException.of(ErrorMessage.Internal.UNIMPLEMENTED);
-        Conjunction cloned = conjunction.clone();
-        cloned.forEach(var -> {
+        Conjunction newClone = conjunction.clone();
+        newClone.forEach(var -> {
             if (var.identifier().isNamedReference() && bounds.contains(var.identifier().reference().asName())) {
                 Concept boundVar = bounds.get(var.identifier().reference().asName());
                 if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
@@ -132,7 +130,7 @@ public class Reasoner {
                 else throw GraknException.of(ILLEGAL_STATE);
             }
         });
-        return cloned;
+        return newClone;
     }
 
     ResolverRegistry resolverRegistry() {

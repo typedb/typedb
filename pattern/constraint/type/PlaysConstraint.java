@@ -20,6 +20,7 @@ package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -49,7 +50,8 @@ public class PlaysConstraint extends TypeConstraint {
         this.relationType = relationType;
         this.roleType = roleType;
         this.overriddenRoleType = overriddenRoleType;
-        this.hash = Objects.hash(PlaysConstraint.class, this.owner, this.relationType, this.roleType, this.overriddenRoleType);
+        this.hash = Objects.hash(PlaysConstraint.class, this.owner, this.relationType,
+                                 this.roleType, this.overriddenRoleType);
         if (relationType != null) relationType.constraining(this);
         roleType.constraining(this);
         if (overriddenRoleType != null) overriddenRoleType.constraining(this);
@@ -60,6 +62,13 @@ public class PlaysConstraint extends TypeConstraint {
         final TypeVariable roleType = registry.register(constraint.role());
         final TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
         final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+        return new PlaysConstraint(owner, relationType, roleType, overriddenType);
+    }
+
+    static PlaysConstraint of(TypeVariable owner, PlaysConstraint role, VariableCloner cloner) {
+        final TypeVariable roleType = cloner.clone(role.role());
+        final TypeVariable relationType = role.relation().map(cloner::clone).orElse(null);
+        final TypeVariable overriddenType = role.overridden().map(cloner::clone).orElse(null);
         return new PlaysConstraint(owner, relationType, roleType, overriddenType);
     }
 

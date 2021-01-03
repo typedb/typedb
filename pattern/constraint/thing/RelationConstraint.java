@@ -19,12 +19,12 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.parameters.Label;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
@@ -60,7 +60,15 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     static RelationConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
                                  VariableRegistry register) {
-        return new RelationConstraint(owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet());
+        return new RelationConstraint(
+                owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet()
+        );
+    }
+
+    static RelationConstraint of(ThingVariable owner, RelationConstraint clone, VariableCloner cloner) {
+        return new RelationConstraint(
+                owner, iterate(clone.players()).map(rp -> RolePlayer.of(rp, cloner)).toLinkedSet()
+        );
     }
 
     public LinkedHashSet<RolePlayer> players() {
@@ -156,6 +164,14 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                     constraint.roleType().map(registry::register).orElse(null),
                     registry.register(constraint.player()),
                     constraint.repetition()
+            );
+        }
+
+        public static RolePlayer of(RolePlayer clone, VariableCloner cloner) {
+            return new RolePlayer(
+                    clone.roleType().map(cloner::clone).orElse(null),
+                    cloner.clone(clone.player()),
+                    clone.repetition()
             );
         }
 

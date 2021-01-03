@@ -82,6 +82,10 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return this;
     }
 
+    void constrainClone(ThingVariable clone, VariableCloner cloner) {
+        clone.constraints().forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, cloner)));
+    }
+
     public static ThingVariable of(Identifier.Variable identifier) {
         return new ThingVariable(identifier);
     }
@@ -192,8 +196,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public Set<RelationConstraint> relation() {
         return relationConstraints;
     }
-
     // TODO: why is this method never called?
+
     public RelationConstraint relation(LinkedHashSet<RelationConstraint.RolePlayer> rolePlayers) {
         RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
         constrain(relationConstraint);
@@ -256,5 +260,4 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
                 .validIfAlphaEqual(this.valueConstraints, that.valueConstraints)
                 .addMapping(this, that);
     }
-
 }

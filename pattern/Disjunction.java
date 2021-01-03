@@ -23,9 +23,11 @@ import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.Conjunctable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
 import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
@@ -33,13 +35,15 @@ import static graql.lang.common.GraqlToken.Operator.OR;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-public class Disjunction implements Pattern {
+public class Disjunction implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "disjunction.";
     private final Set<Conjunction> conjunctions;
+    private final int hash;
 
     public Disjunction(Set<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
+        this.hash = Objects.hash(conjunctions);
     }
 
     public static Disjunction create(
@@ -62,9 +66,28 @@ public class Disjunction implements Pattern {
     }
 
     @Override
+    public Disjunction clone() {
+        return new Disjunction(iterate(conjunctions).map(Conjunction::clone).toSet());
+    }
+
+    @Override
     public String toString() {
         return conjunctions.stream().map(Conjunction::toString)
                 .collect(joining("" + CURLY_CLOSE + NEW_LINE + OR + NEW_LINE + CURLY_OPEN,
                                  "" + CURLY_OPEN, "" + CURLY_CLOSE));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Disjunction that = (Disjunction) o;
+        return this.conjunctions.equals(that.conjunctions);
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
     }
 }

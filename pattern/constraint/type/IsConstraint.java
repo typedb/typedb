@@ -19,6 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.constraint.ConceptConstraint;
@@ -43,6 +44,10 @@ public class IsConstraint extends TypeConstraint {
 
     static IsConstraint of(TypeVariable owner, ConceptConstraint.Is constraint, VariableRegistry registry) {
         return new IsConstraint(owner, registry.register(constraint.variable()).asType());
+    }
+
+    static IsConstraint of(TypeVariable owner, IsConstraint clone, VariableCloner cloner) {
+        return new IsConstraint(owner, cloner.clone(clone.variable()).asType());
     }
 
     public TypeVariable variable() {

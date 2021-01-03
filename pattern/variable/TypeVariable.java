@@ -86,14 +86,18 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return new TypeVariable(identifier);
     }
 
+    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
+        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
+        return this;
+    }
+
     TypeVariable constrainType(List<graql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
     }
 
-    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
-        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
-        return this;
+    void constrainClone(TypeVariable clone, VariableCloner cloner) {
+        clone.constraints().forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, cloner)));
     }
 
     public void constrain(TypeConstraint constraint) {
@@ -131,8 +135,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraining.add(constraint);
     }
 
-    public void copyConstraints(TypeVariable toCopy) {
-        for (TypeConstraint constraint : toCopy.constraints) {
+    // TODO: This method is erroneous. It copies constraints from another variable,
+    //       which includes other variables that the constraints contain,
+    //       however these other variables are no longer part of the same graph as the variable that owns the constraints.
+    //       Should the usage of this method be replaced with VariableCloner?
+    public void copyConstraints(TypeVariable copyFrom) {
+        for (TypeConstraint constraint : copyFrom.constraints) {
             if (constraint.isLabel()) {
                 this.label(constraint.asLabel().properLabel());
             } else if (constraint.isValueType()) {
