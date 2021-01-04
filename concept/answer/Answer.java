@@ -19,6 +19,8 @@
 package grakn.core.concept.answer;
 
 /**
+ * TODO: Dissolve this class
+ *
  * An empty interface that in the future will contain a proper API that all answer types should share
  */
 public interface Answer {}

@@ -220,7 +220,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.predicate(owner.identifier(), predicate.asEquality(), value);
+            traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
     }
 
@@ -247,7 +247,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.predicate(owner.identifier(), predicate.asEquality(), value);
+            traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
     }
 
@@ -274,7 +274,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.predicate(owner.identifier(), predicate.asEquality(), value);
+            traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
     }
 
@@ -296,7 +296,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.predicate(owner.identifier(), predicate, value);
+            traversal.predicate(owner.id(), predicate, value);
         }
 
         @Override
@@ -328,7 +328,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.predicate(owner.identifier(), predicate.asEquality(), value);
+            traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
     }
 
@@ -356,7 +356,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public void addTo(Traversal traversal) {
-            traversal.predicate(owner.identifier(), predicate.asEquality(), value.identifier());
+            traversal.predicate(owner.id(), predicate.asEquality(), value.id());
         }
 
         @Override

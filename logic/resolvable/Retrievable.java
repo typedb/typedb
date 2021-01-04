@@ -95,7 +95,7 @@ public class Retrievable extends Resolvable {
 
         public Set<Retrievable> extract() {
             concludables.forEach(concludable -> extractedConstraints.addAll(concludable.coreConstraints()));
-            conjunction.variables().stream().filter(var -> var.identifier().reference().isName()).forEach(var -> {
+            conjunction.variables().stream().filter(var -> var.id().reference().isName()).forEach(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();
                     if (var.isThing()) subgraph.registerThingVariable(var.asThing());
@@ -149,8 +149,8 @@ public class Retrievable extends Resolvable {
 
             private Variable copyVariable(Variable toCopy) {
                 Variable copy;
-                if (toCopy.isThing()) copy = ThingVariable.of(toCopy.identifier());
-                else if (toCopy.isType()) copy = TypeVariable.of(toCopy.identifier());
+                if (toCopy.isThing()) copy = ThingVariable.of(toCopy.id());
+                else if (toCopy.isType()) copy = TypeVariable.of(toCopy.id());
                 else throw GraknException.of(ILLEGAL_STATE);
                 copy.addResolvedTypes(toCopy.resolvedTypes());
                 return copy;

@@ -54,7 +54,7 @@ public class IIDConstraint extends ThingConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.iid(owner.identifier(), iid);
+        traversal.iid(owner.id(), iid);
     }
 
     @Override

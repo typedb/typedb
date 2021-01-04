@@ -56,7 +56,7 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.valueType(owner.identifier(), valueType);
+        traversal.valueType(owner.id(), valueType);
     }
 
     @Override

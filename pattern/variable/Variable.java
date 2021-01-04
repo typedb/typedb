@@ -53,7 +53,7 @@ public abstract class Variable implements Pattern {
 
     public abstract void constraining(Constraint constraint);
 
-    public Identifier.Variable identifier() {
+    public Identifier.Variable id() {
         return identifier;
     }
 

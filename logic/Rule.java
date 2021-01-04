@@ -19,7 +19,6 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -173,10 +172,10 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenTypeHints() {
-        then.variables().stream().filter(variable -> variable.identifier().isNamedReference())
+        then.variables().stream().filter(variable -> variable.id().isNamedReference())
                 .forEach(thenVar ->
                                  when.variables().stream()
-                                         .filter(whenVar -> whenVar.identifier().equals(thenVar.identifier()))
+                                         .filter(whenVar -> whenVar.id().equals(thenVar.id()))
                                          .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
                                          .findFirst().ifPresent(whenVar -> {
                                      if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
@@ -261,9 +260,9 @@ public class Rule {
 
         private void copyAdditionalConstraints(Set<Variable> fromVars, Set<Variable> toVars) {
             Map<Variable, Variable> nonAnonFromVarsMap = fromVars.stream()
-                    .filter(variable -> !variable.identifier().reference().isAnonymous())
+                    .filter(variable -> !variable.id().reference().isAnonymous())
                     .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
-            toVars.stream().filter(variable -> !variable.identifier().reference().isAnonymous())
+            toVars.stream().filter(variable -> !variable.id().reference().isAnonymous())
                     .forEach(copyTo -> {
                         if (nonAnonFromVarsMap.containsKey(copyTo)) {
                             Variable copyFrom = nonAnonFromVarsMap.get(copyTo);

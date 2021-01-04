@@ -87,7 +87,7 @@ public class PlaysConstraint extends TypeConstraint {
     @Override
     public void addTo(Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
-        traversal.plays(owner.identifier(), roleType.identifier());
+        traversal.plays(owner.id(), roleType.id());
     }
 
     @Override

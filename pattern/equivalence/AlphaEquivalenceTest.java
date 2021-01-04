@@ -55,15 +55,15 @@ public class AlphaEquivalenceTest {
                         .map(graqlVariable -> Graql.parseVariable(graqlVariable).asThing())
                         .collect(Collectors.toList()), null)
                 .variables().stream()
-                .filter(variable -> !variable.identifier().isNamedReference())
+                .filter(variable -> !variable.id().isNamedReference())
                 .collect(Collectors.toSet());
     }
 
     private Map<String, String> alphaMapToStringMap(AlphaEquivalence.Valid alphaEq) {
         return alphaEq.variableMapping().entrySet().stream()
                 .map(e -> new AbstractMap.SimpleEntry<>(
-                        e.getKey().identifier().reference().toString(),
-                        e.getValue().identifier().reference().toString()
+                        e.getKey().id().reference().toString(),
+                        e.getValue().id().reference().toString()
                 )).collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue

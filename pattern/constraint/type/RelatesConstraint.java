@@ -79,7 +79,7 @@ public class RelatesConstraint extends TypeConstraint {
     @Override
     public void addTo(Traversal traversal) {
         if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
-        traversal.relates(owner.identifier(), roleType.identifier());
+        traversal.relates(owner.id(), roleType.id());
     }
 
     @Override

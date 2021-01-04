@@ -49,7 +49,7 @@ public class MockTransaction {
         Map<String, Long> variableSeeds = new HashMap<>();
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isName()) {
-                String name = variable.identifier().reference().asName().toString().substring(1);
+                String name = variable.id().reference().asName().toString().substring(1);
                 Long seed = new Random(variable.hashCode()).nextLong();
                 variableSeeds.put(name, seed);
             }

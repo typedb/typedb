@@ -95,7 +95,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices
-        if (!resolvedTypes().isEmpty()) traversal.types(identifier(), resolvedTypes());
+        if (!resolvedTypes().isEmpty()) traversal.types(id(), resolvedTypes());
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
@@ -103,12 +103,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         constraints.add(constraint);
         if (constraint.isIID()) {
             if (iidConstraint != null && !iidConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID, identifier());
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID, id());
             }
             iidConstraint = constraint.asIID();
         } else if (constraint.isIsa()) {
             if (isaConstraint != null && !isaConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, identifier());
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, id());
             }
             isaConstraint = constraint.asIsa();
         } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
@@ -252,7 +252,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     @Override
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
-                .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
+                .validIf(id().isNamedReference() == that.id().isNamedReference())
                 .validIf(this.resolvedTypes().equals(that.resolvedTypes()))
                 .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
                 .validIfAlphaEqual(this.relationConstraints, that.relationConstraints)

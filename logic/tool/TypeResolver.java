@@ -80,7 +80,7 @@ public class TypeResolver {
 
         for (Variable variable : conjunction.variables()) {
             if (variable.reference().isLabel()) continue;
-            Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference());
+            Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.id()).reference());
             if (resolveLabels == null) {
                 // TODO: Can the error message be improved by saying more explicitly that the provided type did not make sense somehow?
                 // TODO: The error message is not quite accurate when querying a relation using an entity type,
@@ -90,10 +90,10 @@ public class TypeResolver {
 
             if (variable.isThing()) {
                 if (resolveLabels.size() != numOfTypes) {
-                    addInferredIsaLabels(variable.asThing(), referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference()));
+                    addInferredIsaLabels(variable.asThing(), referenceResolversMapping.get(resolveeVars.get(variable.id()).reference()));
                 }
             } else if (variable.isType() && resolveLabels.size() != numOfTypes) {
-                addInferredSubLabels(variable.asType(), referenceResolversMapping.get(resolveeVars.get(variable.identifier()).reference()));
+                addInferredSubLabels(variable.asType(), referenceResolversMapping.get(resolveeVars.get(variable.id()).reference()));
             }
         }
         return conjunction;
@@ -114,7 +114,7 @@ public class TypeResolver {
             neighbourhood.addAll(constraintMapper.neighbours().get(typeVariable));
 
             Map<Reference, Set<Label>> localResolveType = retrieveResolveTypes(neighbourhood);
-            Set<Label> resolveTypes = localResolveType.get(resolveLabels.get(variable.identifier()).reference());
+            Set<Label> resolveTypes = localResolveType.get(resolveLabels.get(variable.id()).reference());
             if (variable.isThing()) {
                 if (resolveTypes.size() != numOfThings) {
                     addInferredIsaLabels(variable.asThing(), resolveTypes);
@@ -430,10 +430,10 @@ public class TypeResolver {
         }
 
         TypeVariable register(Variable variable) {
-            return typeResolvers.computeIfAbsent(variable.identifier(), id -> {
+            return typeResolvers.computeIfAbsent(variable.id(), id -> {
                 TypeVariable newTypeVar;
                 if (variable.reference().isAnonymous()) newTypeVar = new TypeVariable(newSystemVariable());
-                else newTypeVar = new TypeVariable(variable.identifier());
+                else newTypeVar = new TypeVariable(variable.id());
                 if (variable.isType()) newTypeVar.copyConstraints(variable.asType());
                 return newTypeVar;
             });
@@ -444,7 +444,7 @@ public class TypeResolver {
         }
 
         boolean contains(Variable variable) {
-            return typeResolvers.containsKey(variable.identifier());
+            return typeResolvers.containsKey(variable.id());
         }
 
         Collection<TypeVariable> resolvers() {
@@ -452,7 +452,7 @@ public class TypeResolver {
         }
 
         TypeVariable resolver(Variable variable) {
-            return typeResolvers.get(variable.identifier());
+            return typeResolvers.get(variable.id());
         }
     }
 }

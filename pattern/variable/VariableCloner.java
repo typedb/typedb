@@ -50,15 +50,15 @@ public class VariableCloner {
     }
 
     public ThingVariable clone(ThingVariable variable) {
-        assert variable.identifier().isVariable();
-        ThingVariable newClone = variables.computeIfAbsent(variable.identifier().asVariable(), ThingVariable::new).asThing();
+        assert variable.id().isVariable();
+        ThingVariable newClone = variables.computeIfAbsent(variable.id().asVariable(), ThingVariable::new).asThing();
         newClone.constrainClone(variable, this);
         return newClone;
     }
 
     public TypeVariable clone(TypeVariable variable) {
-        assert variable.identifier().isVariable();
-        TypeVariable newClone = variables.computeIfAbsent(variable.identifier().asVariable(), TypeVariable::new).asType();
+        assert variable.id().isVariable();
+        TypeVariable newClone = variables.computeIfAbsent(variable.id().asVariable(), TypeVariable::new).asType();
         newClone.constrainClone(variable, this);
         return newClone;
     }
