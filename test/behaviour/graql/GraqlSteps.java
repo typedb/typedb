@@ -594,7 +594,7 @@ public class GraqlSteps {
                 return false;
             }
 
-            final Attribute attribute = concept.asThing().asAttribute();
+            final Attribute attribute = concept.asAttribute();
 
             if (!type.equals(attribute.getType().getLabel().toString())) {
                 return false;

@@ -19,12 +19,16 @@
 package grakn.core.concept;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 
 public interface Concept {
 
@@ -32,17 +36,45 @@ public interface Concept {
 
     void delete();
 
-    default Type asType() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(Type.class)));
-    }
+    boolean isType();
 
-    default Thing asThing() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Thing.class)));
-    }
+    boolean isThingType();
 
-    default boolean isType() { return false; }
+    boolean isEntityType();
 
-    default boolean isThing() { return false; }
+    boolean isAttributeType();
+
+    boolean isRelationType();
+
+    boolean isRoleType();
+
+    boolean isThing();
+
+    boolean isEntity();
+
+    boolean isAttribute();
+
+    boolean isRelation();
+
+    Type asType();
+
+    ThingType asThingType();
+
+    EntityType asEntityType();
+
+    AttributeType asAttributeType();
+
+    RelationType asRelationType();
+
+    RoleType asRoleType();
+
+    Thing asThing();
+
+    Entity asEntity();
+
+    Attribute asAttribute();
+
+    Relation asRelation();
 
     GraknException exception(GraknException exception);
 }

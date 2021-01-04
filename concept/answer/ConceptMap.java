@@ -24,6 +24,8 @@ import graql.lang.pattern.variable.Reference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ConceptMap implements Answer {
 
@@ -56,6 +58,13 @@ public class ConceptMap implements Answer {
     }
 
     public Map<Reference.Name, ? extends Concept> concepts() { return concepts; }
+
+    public ConceptMap filter(Set<Reference.Name> vars) {
+        Map<Reference.Name, ? extends Concept> filtered = concepts.entrySet().stream()
+                .filter(e -> vars.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new ConceptMap(filtered);
+    }
 
     @Override
     public boolean equals(final Object o) {

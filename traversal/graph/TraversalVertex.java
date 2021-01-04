@@ -176,11 +176,12 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean isAbstract;
             private final Set<Label> labels;
-            private Encoding.ValueType valueType;
+            private final Set<Encoding.ValueType> valueTypes;
             private String regex;
 
             public Type() {
                 labels = new HashSet<>();
+                valueTypes = new HashSet<>();
             }
 
             public Set<Label> labels() {
@@ -204,13 +205,12 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.isAbstract = true;
             }
 
-            public Optional<Encoding.ValueType> valueType() {
-                return Optional.ofNullable(valueType);
+            public Set<Encoding.ValueType> valueTypes() {
+                return valueTypes;
             }
 
             public void valueType(Encoding.ValueType valueType) {
-                assert this.valueType == null;
-                this.valueType = valueType;
+                this.valueTypes.add(valueType);
             }
 
             public Optional<String> regex() {
@@ -224,7 +224,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             @Override
             public String toString() {
                 return String.format("[type] { labels: %s, abstract: %s, value: %s, regex: %s }",
-                                     labels, isAbstract, valueType, regex);
+                                     labels, isAbstract, valueTypes, regex);
             }
 
             @Override
@@ -235,13 +235,13 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 Properties.Type that = (Properties.Type) o;
                 return (this.isAbstract == that.isAbstract &&
                         this.labels.equals(that.labels) &&
-                        Objects.equals(this.valueType, that.valueType) &&
+                        this.valueTypes.equals(that.valueTypes) &&
                         Objects.equals(this.regex, that.regex));
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(this.isAbstract, this.labels, this.valueType, this.regex);
+                return Objects.hash(this.isAbstract, this.labels, this.valueTypes, this.regex);
             }
         }
     }

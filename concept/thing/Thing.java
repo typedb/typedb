@@ -150,10 +150,4 @@ public interface Thing extends Concept {
      * Validates and throws an exception if there is any violation.
      */
     void validate();
-
-    Entity asEntity();
-
-    Attribute asAttribute();
-
-    Relation asRelation();
 }

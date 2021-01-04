@@ -23,6 +23,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
@@ -260,8 +261,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 setObjectiveCoefficient(props().labels().size());
             } else if (props().isAbstract()) {
                 setObjectiveCoefficient(graph.schema().stats().abstractTypeCount());
-            } else if (props().valueType().isPresent()) {
-                setObjectiveCoefficient(graph.schema().stats().attTypesWithValueType(props().valueType().get()));
+            } else if (!props().valueTypes().isEmpty()) {
+                int count = 0;
+                for (Encoding.ValueType valueType : props().valueTypes()) {
+                    count += graph.schema().stats().attTypesWithValueType(valueType);
+                }
+                setObjectiveCoefficient(count);
             } else if (props().regex().isPresent()) {
                 setObjectiveCoefficient(1);
             } else {

@@ -20,11 +20,8 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
+import grakn.core.concept.ConceptImpl;
+import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
@@ -40,12 +37,11 @@ import java.util.stream.Stream;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
-public abstract class TypeImpl implements grakn.core.concept.type.Type {
+public abstract class TypeImpl extends ConceptImpl implements Type {
 
     protected final GraphManager graphMgr;
     public final TypeVertex vertex;
@@ -134,11 +130,11 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
         }
     }
 
-    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
         return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor).stream();
     }
 
-    <TYPE extends grakn.core.concept.type.Type> Stream<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends Type> Stream<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
         return vertex.ins().edge(SUB).from().map(typeConstructor).stream();
     }
 
@@ -152,46 +148,6 @@ public abstract class TypeImpl implements grakn.core.concept.type.Type {
 
     @Override
     public TypeImpl asType() { return this; }
-
-    @Override
-    public boolean isThingType() { return false; }
-
-    @Override
-    public boolean isEntityType() { return false; }
-
-    @Override
-    public boolean isAttributeType() { return false; }
-
-    @Override
-    public boolean isRelationType() { return false; }
-
-    @Override
-    public boolean isRoleType() { return false; }
-
-    @Override
-    public ThingTypeImpl asThingType() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(ThingType.class)));
-    }
-
-    @Override
-    public EntityTypeImpl asEntityType() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(EntityType.class)));
-    }
-
-    @Override
-    public AttributeTypeImpl asAttributeType() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(AttributeType.class)));
-    }
-
-    @Override
-    public RelationTypeImpl asRelationType() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(RelationType.class)));
-    }
-
-    @Override
-    public RoleTypeImpl asRoleType() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(RoleType.class)));
-    }
 
     void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
