@@ -97,11 +97,15 @@ class SessionRPC {
     }
 
     private void triggerIdleTimeout() {
+        if (!transactionRPCs.isEmpty()) {
+            keepAlive();
+            return;
+        }
         close();
         LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
     }
 
-    void keepAlive() {
+    synchronized void keepAlive() {
         setIdleTimeout();
     }
 
