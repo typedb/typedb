@@ -119,7 +119,6 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final ConceptManager conceptMgr = txn.concepts();
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 

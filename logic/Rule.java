@@ -39,11 +39,9 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
@@ -71,7 +69,7 @@ public class Rule {
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
         pruneThenTypeHints();
-        this.conclusion = Conclusion.create(this.then, this.when);
+        this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
@@ -88,7 +86,7 @@ public class Rule {
         validateSatisfiable();
         pruneThenTypeHints();
 
-        this.conclusion = Conclusion.create(this.then, this.when);
+        this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
     }
@@ -173,6 +171,7 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenTypeHints() {
+        // TODO name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isNamedReference())
                 .forEach(thenVar ->
                                  when.variables().stream()
@@ -197,29 +196,22 @@ public class Rule {
                 new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 
-    public abstract static class Conclusion<CONSTRAINT extends Constraint> {
-
-        private final CONSTRAINT constraint;
-
-        private Conclusion(CONSTRAINT constraint, Set<Variable> whenContext) {
-            this.constraint = constraint;
-            copyAdditionalConstraints(whenContext, new HashSet<>(this.constraint.variables()));
-        }
+    public static abstract class Conclusion<CONSTRAINT extends Constraint> {
 
         public CONSTRAINT constraint() {
-            return constraint;
+            return null; // TODO
         }
 
-        public static Conclusion<?> create(Conjunction then, Conjunction when) {
+        public static Conclusion<?> create(Conjunction then) {
             return Iterators.iterate(then.variables()).filter(Variable::isThing).map(Variable::asThing)
                     .flatMap(variable -> Iterators.iterate(variable.constraints()).map(constraint -> {
                         if (constraint.isRelation()) {
-                            return Relation.create(constraint.asRelation(), variable.isa().get(), when);
+                            return Relation.create(constraint.asRelation(), variable.isa().get());
                         } else if (constraint.isHas()) {
                             if (variable.isa().isPresent()) {
-                                return Has.create(constraint.asHas(), variable.isa().get(), when);
+                                return Has.create(constraint.asHas(), variable.isa().get());
                             } else {
-                                return Has.create(constraint.asHas(), when);
+                                return Has.create(constraint.asHas());
                             }
                         }
                         return null;
@@ -244,6 +236,14 @@ public class Rule {
             return false;
         }
 
+        public boolean isExplicitHas() {
+            return false; // TODO Implement in subclass
+        }
+
+        public boolean isVariableHas() {
+            return false; // TODO Implement in subclass
+        }
+
         public Relation asRelation() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
         }
@@ -260,40 +260,22 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
         }
 
-        private void copyAdditionalConstraints(Set<Variable> fromVars, Set<Variable> toVars) {
-            // TODO We don't want to do this any more, we only want to copy the resolvedTypes from the variables in the `when`
-            Map<Variable, Variable> nonAnonFromVarsMap = fromVars.stream()
-                    .filter(variable -> !variable.id().reference().isAnonymous())
-                    .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
-            toVars.stream().filter(variable -> !variable.id().reference().isAnonymous())
-                    .forEach(copyTo -> {
-                        if (nonAnonFromVarsMap.containsKey(copyTo)) {
-                            Variable copyFrom = nonAnonFromVarsMap.get(copyTo);
-                            if (copyTo.isThing() && copyFrom.isThing()) {
-                                ConstraintCopier.copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
-                            } else if (copyTo.isType() && copyFrom.isType()) {
-                                ConstraintCopier.copyLabelSubAndValueType(copyFrom.asType(), copyTo.asType());
-                            } else throw GraknException.of(ILLEGAL_STATE);
-                        }
-                    });
-        }
-
-        public boolean isExplicitHas() {
-            return false; // TODO Implement in subclass
-        };
-
-        public boolean isVariableHas() {
-            return false; // TODO Implement in subclass
-        }
-
         public static class Relation extends Conclusion<RelationConstraint> {
 
-            public Relation(RelationConstraint constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
+            private final RelationConstraint relation;
+            private final IsaConstraint isa;
+
+            public Relation(RelationConstraint relation, IsaConstraint isa) {
+                this.relation = relation;
+                this.isa = isa;
             }
 
-            public static Relation create(RelationConstraint relation, IsaConstraint isa, Conjunction when) {
-                return null; // TODO create a Relation
+            public static Relation create(RelationConstraint relation, IsaConstraint isa) {
+                return new Relation(relation, isa);
+            }
+
+            public RelationConstraint constraint() {
+                return relation;
             }
 
             @Override
@@ -305,10 +287,6 @@ public class Rule {
                  */
 
                 return null;
-            }
-
-            public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
-                return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -325,14 +303,13 @@ public class Rule {
         public static class Has extends Conclusion<HasConstraint> {
 
             public Has(HasConstraint constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
             }
 
-            public static Has create(HasConstraint has, IsaConstraint isa, Conjunction when) {
+            public static Has create(HasConstraint has, IsaConstraint isa) {
                 return null; // TODO Create an ExplicitHas
             }
 
-            public static Has create(HasConstraint has, Conjunction when) {
+            public static Has create(HasConstraint has) {
                 return null; // TODO create a VariableHas
             }
 
@@ -359,7 +336,6 @@ public class Rule {
         public static class Isa extends Conclusion<IsaConstraint> {
 
             public Isa(IsaConstraint constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
             }
 
             @Override
@@ -385,7 +361,6 @@ public class Rule {
         public static class Value extends Conclusion<ValueConstraint<?>> {
 
             Value(ValueConstraint<?> constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
             }
 
             @Override
