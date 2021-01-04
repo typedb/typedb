@@ -23,6 +23,8 @@ import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -48,6 +50,7 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
@@ -816,5 +819,54 @@ public class TypeResolverTest {
         }};
         assertEquals(expected, getHintMap(exhaustiveConjunction));
 
+    }
+
+    @Test
+    public void converts_root_types() throws IOException {
+        define_standard_schema("test-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String relationString = "match $x isa relation;";
+
+        Conjunction relationConjunction = runExhaustiveHinter(typeResolver, relationString);
+        Map<String, Set<String>> relationExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set("friendship", "employment"));
+        }};
+        assertEquals(relationExpected, getHintMap(relationConjunction));
+
+        String attributeString = "match $x isa attribute;";
+        Conjunction attributeConjunction = runExhaustiveHinter(typeResolver, attributeString);
+        Map<String, Set<String>> attributeExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set("name", "age", "ref"));
+        }};
+
+        assertEquals(attributeExpected, getHintMap(attributeConjunction));
+
+        String entityString = "match $x isa entity;";
+        Conjunction entityConjunction = runExhaustiveHinter(typeResolver, entityString);
+        Map<String, Set<String>> entityExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person", "company"));
+        }};
+        assertEquals(entityExpected, getHintMap(entityConjunction));
+
+    }
+
+    @Test
+    public void impossble_queries_make_variables_unsatisfiable() throws IOException {
+        define_standard_schema("test-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String relationString = "match " +
+                "$r (employee: $x) isa $m; " +
+                "$m sub friendship; ";
+
+        Conjunction conjunction = runExhaustiveHinter(typeResolver, relationString);
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$r", set());
+            put("$x", set());
+            put("$m", set());
+        }};
+        assertEquals(expected, getHintMap(conjunction));
+        for (Variable variable: conjunction.variables()) {
+            if (!variable.reference().isLabel()) assertFalse(variable.isSatisfiable());
+        }
     }
 }
