@@ -66,7 +66,7 @@ public class SubConstraint extends TypeConstraint {
     @Override
     public void addTo(Traversal traversal) {
         // TODO: is there a scenario where we are able to skip this edge with the help of TypeResolver?
-        traversal.sub(owner.identifier(), type.identifier(), !isExplicit);
+        traversal.sub(owner.id(), type.id(), !isExplicit);
     }
 
     @Override

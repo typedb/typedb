@@ -124,8 +124,8 @@ public class Reasoner {
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
         Conjunction newClone = conjunction.clone();
         newClone.forEach(var -> {
-            if (var.identifier().isNamedReference() && bounds.contains(var.identifier().reference().asName())) {
-                Concept boundVar = bounds.get(var.identifier().reference().asName());
+            if (var.id().isNamedReference() && bounds.contains(var.id().reference().asName())) {
+                Concept boundVar = bounds.get(var.id().reference().asName());
                 if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
                 else if (var.isType()) var.asType().label(boundVar.asType().getLabel());
                 else if (var.isThing()) var.asThing().iid(boundVar.asThing().getIID());

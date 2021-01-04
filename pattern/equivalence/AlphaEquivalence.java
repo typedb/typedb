@@ -125,8 +125,8 @@ public abstract class AlphaEquivalence {
         public Map<Reference.Name, Reference.Name> namedVariableMapping() {
             return variableMapping().entrySet().stream()
                     .map(e -> new AbstractMap.SimpleEntry<>(
-                            e.getKey().identifier().reference(),
-                            e.getValue().identifier().reference()))
+                            e.getKey().id().reference(),
+                            e.getValue().id().reference()))
                     .filter(e -> e.getKey().isName() && e.getValue().isName())
                     .map(e -> new AbstractMap.SimpleEntry<>(
                             e.getKey().asName(),

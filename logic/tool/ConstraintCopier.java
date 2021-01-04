@@ -25,9 +25,7 @@ import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
 
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -58,7 +56,7 @@ public class ConstraintCopier {
 
     // NOTE: copies resolved types as well
     public static IsaConstraint copyConstraint(IsaConstraint isa) {
-        ThingVariable newOwner = ThingVariable.of(isa.owner().identifier());
+        ThingVariable newOwner = ThingVariable.of(isa.owner().id());
         newOwner.addResolvedTypes(isa.owner().resolvedTypes());
         copyValuesOntoVariable(isa.owner().value(), newOwner);
         return copyIsaOntoVariable(isa, newOwner);
@@ -66,7 +64,7 @@ public class ConstraintCopier {
 
     public static ValueConstraint<?> copyConstraint(ValueConstraint<?> value) {
         //NOTE: isa can never exist on a Value Concludable (or else it would be a Isa Concludable).
-        ThingVariable newOwner = ThingVariable.of(value.owner().identifier());
+        ThingVariable newOwner = ThingVariable.of(value.owner().id());
         newOwner.addResolvedTypes(value.owner().resolvedTypes());
         Set<ValueConstraint<?>> otherValues = value.owner().value().stream()
                 .filter(value1 -> !value.equals(value1)).collect(Collectors.toSet());
@@ -102,7 +100,7 @@ public class ConstraintCopier {
     }
 
     static ThingVariable copyIsaAndValues(ThingVariable copyFrom) {
-        ThingVariable copy = ThingVariable.of(copyFrom.identifier());
+        ThingVariable copy = ThingVariable.of(copyFrom.id());
         copy.addResolvedTypes(copyFrom.resolvedTypes());
         copyIsaAndValues(copyFrom, copy);
         return copy;
@@ -123,7 +121,7 @@ public class ConstraintCopier {
     }
 
     static TypeVariable copyVariableWithLabelAndValueType(TypeVariable copyFrom) {
-        TypeVariable copy = TypeVariable.of(copyFrom.identifier());
+        TypeVariable copy = TypeVariable.of(copyFrom.id());
         copy.addResolvedTypes(copyFrom.resolvedTypes());
         copyLabelSubAndValueType(copyFrom, copy);
         return copy;

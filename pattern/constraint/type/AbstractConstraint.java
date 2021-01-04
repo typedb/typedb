@@ -41,7 +41,7 @@ public class AbstractConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.isAbstract(owner.identifier());
+        traversal.isAbstract(owner.id());
     }
 
     @Override

@@ -251,7 +251,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             if (!constraint().owner().reference().isAnonymous()) {
                 assert constraint().owner().reference().isName();
                 if (unificationSatisfiable(constraint().owner(), relationConclusion.constraint().owner())) {
-                    unifierBuilder.add(constraint().owner().identifier(), relationConclusion.constraint().owner().identifier());
+                    unifierBuilder.add(constraint().owner().id(), relationConclusion.constraint().owner().id());
                 } else return Iterators.empty();
             }
 
@@ -260,13 +260,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 TypeVariable concludableRelationType = constraint().owner().isa().get().type();
                 TypeVariable conclusionRelationType = relationConclusion.constraint().owner().isa().get().type();
                 if (unificationSatisfiable(concludableRelationType, conclusionRelationType, conceptMgr)) {
-                    unifierBuilder.add(concludableRelationType.identifier(), conclusionRelationType.identifier());
+                    unifierBuilder.add(concludableRelationType.id(), conclusionRelationType.id());
 
                     if (concludableRelationType.reference().isLabel()) {
                         // require the unification target type variable satisfies a set of labels
                         Set<Label> allowedTypes = concludableRelationType.resolvedTypes().stream()
                                 .flatMap(label -> subtypeLabels(label, conceptMgr)).collect(Collectors.toSet());
-                        unifierBuilder.requirements().types(concludableRelationType.identifier(), allowedTypes);
+                        unifierBuilder.requirements().types(concludableRelationType.id(), allowedTypes);
                     }
                 } else return Iterators.empty();
             }
@@ -317,16 +317,16 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                  if (conjRP.roleType().isPresent()) {
                                      assert thenRP.roleType().isPresent();
                                      TypeVariable roleTypeVar = conjRP.roleType().get();
-                                     unifierBuilder.add(roleTypeVar.identifier(), thenRP.roleType().get().identifier());
+                                     unifierBuilder.add(roleTypeVar.id(), thenRP.roleType().get().id());
 
                                      if (roleTypeVar.reference().isLabel()) {
                                          Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream()
                                                  .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
                                                  .collect(Collectors.toSet());
-                                         unifierBuilder.requirements().types(roleTypeVar.identifier(), allowedTypes);
+                                         unifierBuilder.requirements().types(roleTypeVar.id(), allowedTypes);
                                      }
                                  }
-                                 unifierBuilder.add(conjRP.player().identifier(), thenRP.player().identifier());
+                        unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
                              }
                     ));
             return unifierBuilder.build();
@@ -358,17 +358,17 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(constraint().owner(), hasConclusion.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().identifier(), hasConclusion.constraint().owner().identifier());
+                unifierBuilder.add(constraint().owner().id(), hasConclusion.constraint().owner().id());
             } else return Iterators.empty();
 
             ThingVariable attr = constraint().attribute();
             if (unificationSatisfiable(attr, hasConclusion.constraint().attribute())) {
-                unifierBuilder.add(attr.identifier(), hasConclusion.constraint().attribute().identifier());
+                unifierBuilder.add(attr.id(), hasConclusion.constraint().attribute().id());
                 if (attr.reference().isAnonymous()) {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    unifierBuilder.requirements().isaExplicit(attr.identifier(),
+                    unifierBuilder.requirements().isaExplicit(attr.id(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
 
                     ValueConstraint<?> value = attr.value().iterator().next();
@@ -419,11 +419,11 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                             return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
                         };
                     } else throw GraknException.of(ILLEGAL_STATE);
-                    unifierBuilder.requirements().predicates(attr.identifier(), predicateFn);
+                    unifierBuilder.requirements().predicates(attr.id(), predicateFn);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    unifierBuilder.requirements().isaExplicit(attr.identifier(),
+                    unifierBuilder.requirements().isaExplicit(attr.id(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
                 }
             } else return Iterators.empty();
@@ -463,16 +463,16 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(constraint().owner(), isaConclusion.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().identifier(), isaConclusion.constraint().owner().identifier());
+                unifierBuilder.add(constraint().owner().id(), isaConclusion.constraint().owner().id());
             } else return Iterators.empty();
 
             TypeVariable type = constraint().type();
             if (unificationSatisfiable(type, isaConclusion.constraint().type(), conceptMgr)) {
-                unifierBuilder.add(type.identifier(), isaConclusion.constraint().type().identifier());
+                unifierBuilder.add(type.id(), isaConclusion.constraint().type().id());
 
                 if (type.reference().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
-                    unifierBuilder.requirements().types(type.identifier(),
+                    unifierBuilder.requirements().types(type.id(),
                                                         subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
                 }
             } else return Iterators.empty();
@@ -506,7 +506,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(constraint().owner(), valueConclusion.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().identifier(), valueConclusion.constraint().owner().identifier());
+                unifierBuilder.add(constraint().owner().id(), valueConclusion.constraint().owner().id());
             } else return Iterators.empty();
 
             /*
@@ -522,7 +522,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 assert constraint().value() instanceof ThingVariable;
                 ThingVariable value = (ThingVariable) constraint().value();
                 if (unificationSatisfiable(constraint().predicate(), valueConclusion.constraint().predicate())) {
-                    unifierBuilder.add(value.identifier(), valueConclusion.constraint().owner().identifier());
+                    unifierBuilder.add(value.id(), valueConclusion.constraint().owner().id());
                 } else return Iterators.empty();
                 // } else {
                 // form: $x > 10 -> require $x to satisfy predicate > 10

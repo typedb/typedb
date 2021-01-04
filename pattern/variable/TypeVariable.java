@@ -104,23 +104,23 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraints.add(constraint);
         if (constraint.isLabel()) {
             if (labelConstraint != null && !labelConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL, identifier());
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL, id());
             }
             labelConstraint = constraint.asLabel();
         } else if (constraint.isValueType()) {
             if (valueTypeConstraint != null && !valueTypeConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE, identifier());
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE, id());
             }
             valueTypeConstraint = constraint.asValueType();
         } else if (constraint.isRegex()) {
             if (regexConstraint != null && !regexConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX, identifier());
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX, id());
             }
             regexConstraint = constraint.asRegex();
         } else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
         else if (constraint.isSub()) {
             if (subConstraint != null && !subConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, identifier());
+                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, id());
             }
             subConstraint = constraint.asSub();
         } else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
@@ -278,7 +278,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices
-        if (!resolvedTypes().isEmpty()) traversal.labels(identifier(), resolvedTypes());
+        if (!resolvedTypes().isEmpty()) traversal.labels(id(), resolvedTypes());
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
@@ -310,7 +310,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public AlphaEquivalence alphaEquals(TypeVariable that) {
         return AlphaEquivalence.valid()
-                .validIf(identifier().isNamedReference() == that.identifier().isNamedReference())
+                .validIf(id().isNamedReference() == that.id().isNamedReference())
                 .validIfAlphaEqual(labelConstraint, that.labelConstraint)
                 .validIfAlphaEqual(valueTypeConstraint, that.valueTypeConstraint)
                 .addMapping(this, that);

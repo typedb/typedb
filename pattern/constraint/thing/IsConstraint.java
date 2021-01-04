@@ -56,7 +56,7 @@ public class IsConstraint extends ThingConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        traversal.equalThings(owner.identifier(), variable.identifier());
+        traversal.equalThings(owner.id(), variable.id());
     }
 
     @Override
