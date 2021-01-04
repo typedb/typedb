@@ -292,7 +292,6 @@ public class TypeResolver {
 
             if (variable.constraints().isEmpty()) return resolver;
 
-
             resolver = cloneVariable(variable);
             neighbours.putIfAbsent(resolver, new HashSet<>());
             return resolver;
@@ -323,7 +322,6 @@ public class TypeResolver {
                 TypeVariable roleTypeVar = rolePlayer.roleType().orElse(null);
 
                 if (roleTypeVar != null) {
-//                    TypeVariable roleTypeVarSub = new TypeVariable(resolvers.newSystemVariable());
                     TypeVariable roleTypeVarSub = resolvers.register(new TypeVariable(resolvers.newSystemVariable()));
 
                     roleTypeVar = convert(roleTypeVar);
@@ -496,7 +494,5 @@ public class TypeResolver {
         TypeVariable resolver(Variable variable) {
             return typeResolvers.get(variable.id());
         }
-
-
     }
 }
