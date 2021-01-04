@@ -289,10 +289,14 @@ public class TypeResolver {
 
         private TypeVariable convert(TypeVariable variable) {
             if (resolvers.contains(variable)) return resolvers.resolver(variable);
-            TypeVariable resolver = resolvers.register(variable);
-            resolver = cloneVariable(variable);
 
-//            copyNeighbours(variable, resolver);
+            TypeVariable resolver = resolvers.register(variable);
+            neighbours.putIfAbsent(resolver, new HashSet<>());
+
+            if (variable.constraints().isEmpty()) return resolver;
+
+
+            resolver = cloneVariable(variable);
             // TODO: Why do we need `neighbours.putIfAbsent(resolver, new HashSet<>());` ?
             //       Is this a patch for the fact that we forgot to use `to` variable in `copyNeighbours(from, to)` ?
             //This is correct. There is no guarantee that cloning the variable
@@ -354,7 +358,7 @@ public class TypeResolver {
         }
 
         private void addRootTypeVar(TypeVariable variable, TypeVariable rootTypeVar) {
-            TypeVariable rootConverted = resolvers.register(rootTypeVar);
+            TypeVariable rootConverted = convert(rootTypeVar);
             variable.sub(rootConverted, false);
             addNeighbours(variable, rootConverted);
         }
@@ -388,10 +392,8 @@ public class TypeResolver {
             if (constraint.isBoolean()) owner.valueType(GraqlArg.ValueType.BOOLEAN);
             else if (constraint.isString()) owner.valueType(GraqlArg.ValueType.STRING);
             else if (constraint.isDateTime()) owner.valueType(GraqlArg.ValueType.DATETIME);
-            else if (constraint.isDouble()) owner.valueType(GraqlArg.ValueType.DOUBLE);
-            else if (constraint.isLong()) owner.valueType(GraqlArg.ValueType.LONG);
             else if (constraint.isVariable()) convert(constraint.asVariable().value());
-            else throw GraknException.of(ILLEGAL_STATE);
+            else if (!(constraint.isDouble() || constraint.isLong())) throw GraknException.of(ILLEGAL_STATE);
             if (hasNoInfo(owner)) addRootTypeVar(owner, rootAttributeType);
         }
 

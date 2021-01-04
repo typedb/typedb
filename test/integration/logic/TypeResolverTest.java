@@ -765,12 +765,13 @@ public class TypeResolverTest {
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match " +
-                " $x >= 1;";
+                "$x isa house-number; " +
+                "$x = 1.0;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set("house-number"));
+            put("$x", set("house-number", "length"));
         }};
         assertEquals(expected, getHintMap(exhaustiveConjunction));
 
@@ -847,6 +848,16 @@ public class TypeResolverTest {
             put("$x", set("person", "company"));
         }};
         assertEquals(entityExpected, getHintMap(entityConjunction));
+
+        String thingString = "match $x isa thing;";
+        Conjunction thingConjunction = runExhaustiveHinter(typeResolver, thingString);
+        Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set());
+        }};
+        assertEquals(thingExpected, getHintMap(thingConjunction));
+        for (Variable variable : thingConjunction.variables()) {
+            assertTrue(variable.isSatisfiable());
+        }
 
     }
 
