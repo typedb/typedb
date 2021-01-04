@@ -19,11 +19,13 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
@@ -37,12 +39,19 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -226,7 +235,7 @@ public class Rule {
             else throw GraknException.of(ILLEGAL_STATE);
         }
 
-        public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr);
+        public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer);
 
         public boolean isRelation() {
             return false;
@@ -284,13 +293,51 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
-                /*
-                get Relation Type
-                create instance of relation type
-                get each RolePlayer in the RelationConstraint
-                 */
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer, ConceptManager conceptMgr) {
+                // all named variables in this conclusion must be in the provided concept map
+                assert !Iterators.iterate(constraint().variables())
+                        .filter(v -> !v.reference().isName() && whenAnswer.contains(v.reference().asName()))
+                        .hasNext(); // TODO include check for `isa` variable
 
+
+                RelationType relationType = relationType(whenAnswer, conceptMgr);
+                Set<RolePlayer> players = new HashSet<>();
+                constraint().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenAnswer)));
+
+                Optional<Relation> relationInstance = lookup(relationType, players);
+
+
+                /*
+                I think its the most "correct" to use a the traversal engine to look up the relation instance, if it exists
+                Then use label lookups to fill in the remaining concepts...
+
+                a PUT should always be done with concept manager
+                 */
+                return null;
+            }
+
+            private static class RolePlayer {
+                private final RoleType roleType;
+                private final Thing player;
+
+                public RolePlayer(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenAnswer) {
+                    assert rp.roleType().isPresent();
+                    if (rp.roleType().get().reference().isName()) {
+                        roleType = whenAnswer.get(rp.roleType().get().reference().asName()).asRoleType();
+                    } else {
+                        assert rp.roleType().get().reference().isLabel();
+                        roleType = scope.getRelates(rp.roleType().get().label().get().properLabel().name());
+                    }
+                    assert whenAnswer.contains(rp.player().reference().asName());
+                    player = whenAnswer.get(rp.player().reference().asName()).asThing();
+                }
+
+                public long roleInstances() {
+                    return roleType.getDirectInstancesCount();
+                }
+            }
+
+            private RelationType relationType(ConceptMap whenAnswer, ConceptManager conceptMgr) {
                 return null;
             }
 
@@ -316,7 +363,7 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer) {
                 return null;
             }
 
@@ -342,7 +389,7 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer) {
                 return null;
             }
 
@@ -368,7 +415,7 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer) {
                 return null;
             }
 
