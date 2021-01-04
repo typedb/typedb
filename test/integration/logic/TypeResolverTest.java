@@ -275,7 +275,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
-            put("$m", set("marriage", "relation"));
+            put("$m", set("marriage", "relation", "thing"));
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
@@ -531,6 +531,26 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
+    //TODO: re-enable when 1-cycle attribute bug is fixed
+    @Ignore
+    @Test
+    public void has_with_minimal_cycle() {
+        define_custom_schema("define " +
+                                     "unit sub attribute, value string, owns unit, owns ref;" +
+                                     "ref sub attribute, value long;");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $a has $a;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+            put("$a", set("unit"));
+        }};
+
+
+        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+    }
+
     @Test
     public void has_with_big_cycle() {
         define_custom_schema(
@@ -715,7 +735,7 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
-//    Scenario: when matching a roleplayer in a relation that can't actually play that role, an empty result is returned
+    //    Scenario: when matching a roleplayer in a relation that can't actually play that role, an empty result is returned
     @Test
     public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
         define_standard_schema("test-schema");
@@ -733,17 +753,68 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
-//    @Test
-//    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
-//        define_standard_schema("test-schema");
-//
-//        TypeResolver typeResolver = transaction.logic().typeResolver();
-//        String queryString = "match ";
-//        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-//
-//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-//            put("$x", set());
-//        }};
-//        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    @Test
+    public void value_comparision_between_double_long() throws IOException {
+        define_custom_schema("define" +
+                                     " house-number sub attribute, value long;" +
+                                     " length sub attribute, value double;"
+        );
 
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " $x >= 1;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("house-number"));
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
+    }
+
+    @Test
+    public void overridden_relates_are_valid()  {
+        define_custom_schema("define" +
+                                     " marriage sub relation, relates spouse;" +
+                                     " hetero-marriage sub marriage," +
+                                     "   relates husband as spouse, relates wife as spouse;" +
+                                     " person sub entity, plays marriage:spouse, plays hetero-marriage:husband," +
+                                     "   plays hetero-marriage:wife;"
+        );
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person"));
+            put("$y", set("person"));
+            put("$m", set("marriage", "hetero-marriage"));
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
+    }
+
+    @Test
+    public void thing_is_valid_answer()  {
+        define_custom_schema("define " +
+                                     "marriage sub relation, relates spouse;" +
+                                     "person sub entity, plays marriage:spouse;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " ($x, $y) isa $type;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person"));
+            put("$y", set("person"));
+            put("$type", set("marriage", "relation", "thing"));
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
+    }
 }

@@ -62,6 +62,8 @@ Feature: Graql Match Query
       """
     Then answer size is: 0
 
+#      TODO: fix '$x relates _role' where _role is overridden in schema
+#  TODO: spouse is not seen as anonymous. Why?
   Scenario: Relations can be queried with pairings of relation and role types that are not directly related to each other
     Given graql define
       """
@@ -147,6 +149,7 @@ Feature: Graql Match Query
       """
     Then answer size is: 4
 
+#    TODO: need to fix '$x owns $x' in traversal
   Scenario: 'has' can match instances that have themselves
     Given graql define
       """
@@ -181,6 +184,7 @@ Feature: Graql Match Query
       """
     Then answer size is: 0
 
+#    TODO: how to we deal with valueType of {double or long}?
   Scenario: value comparisons can be performed between a 'double' and a 'long'
     Given graql define
       """
@@ -245,6 +249,7 @@ Feature: Graql Match Query
       """
     Then answer size is: 1
 
+    #    TODO: how to we deal with valueType of {double or long}?
   Scenario: when the answers of a value comparison include both a 'double' and a 'long', both answers are returned
     Given graql define
       """

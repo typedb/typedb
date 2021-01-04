@@ -319,18 +319,24 @@ public class TypeResolver {
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
             if (hasNoInfo(owner)) addRootTypeVar(owner, rootRelationType);
             ThingVariable ownerThing = relationConstraint.owner();
-            if (ownerThing.isa().isPresent()) {
-                TypeVariable relationTypeVar = convert(ownerThing.isa().get().type());
-                if (hasNoInfo(relationTypeVar)) addRootTypeVar(relationTypeVar, rootRelationType);
-            }
+            if (ownerThing.isa().isPresent()) convert(ownerThing.isa().get().type());
             for (RelationConstraint.RolePlayer rolePlayer : relationConstraint.players()) {
                 TypeVariable playerType = convert(rolePlayer.player());
                 TypeVariable roleTypeVar = rolePlayer.roleType().orElse(null);
+//                rolePlayer.roleType().flatMap(var -> Optional.of(convert(var))).orElse(null);
+//                TypeVariable roleTypeVar;
+//                if (rolePlayer.roleType().isPresent()) roleTypeVar = convert(rolePlayer.roleType().get());
+//                else roleTypeVar = null;
+
+
 
                 if (roleTypeVar != null) {
+                    TypeVariable roleTypeVarSub = new TypeVariable(resolvers.newSystemVariable());
+
                     roleTypeVar = convert(roleTypeVar);
+                    roleTypeVarSub.sub(roleTypeVar, false);
                     if (hasNoInfo(roleTypeVar)) addRootTypeVar(roleTypeVar, rootRoleType);
-                    addRelatesConstraint(owner, roleTypeVar);
+                    addRelatesConstraint(owner, roleTypeVarSub);
                 }
 
                 if (roleTypeVar == null) {
@@ -345,6 +351,10 @@ public class TypeResolver {
                     addNeighbours(playerType, roleTypeVar);
                 }
             }
+        }
+
+        private void convertRolePlayer(RelationConstraint.RolePlayer rolePlayer) {
+
         }
 
         private void addRelatesConstraint(TypeVariable owner, TypeVariable roleType) {
