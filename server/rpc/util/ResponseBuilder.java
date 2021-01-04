@@ -265,30 +265,6 @@ public class ResponseBuilder {
      */
     public static class Answer {
 
-//        public static AnswerProto.Answer answer(Object object) {
-//            final AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
-//
-//            if (object instanceof AnswerGroup) {
-//                answer.setAnswerGroup(answerGroup((AnswerGroup<?>) object));
-//            } else if (object instanceof ConceptMap) {
-//                answer.setConceptMap(conceptMap((ConceptMap) object));
-//            } else if (object instanceof Number) {
-//                answer.setNumber(number((Number) object));
-//            } else {
-//                throw GraknException.of(UNKNOWN_ANSWER_TYPE, className(object.getClass()));
-//            }
-//
-//            return answer.build();
-//        }
-//
-//        public static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
-//            final AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()
-//                    .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
-//                    .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
-//
-//            return answerGroupProto.build();
-//        }
-
         public static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             final AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
