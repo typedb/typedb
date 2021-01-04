@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
 import javax.annotation.Nullable;
@@ -31,14 +31,14 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
     private final Path path;
-    private final Partial partialConceptMap;
+    private final AnswerState.DownstreamVars answerBounds;
     private final ResolutionAnswer.Derivation partialDerivation;
 
     public Request(Path path,
-                   Partial partialConceptMap,
+                   AnswerState.DownstreamVars startingConcept,
                    ResolutionAnswer.Derivation partialDerivation) {
         this.path = path;
-        this.partialConceptMap = partialConceptMap;
+        this.answerBounds = startingConcept;
         this.partialDerivation = partialDerivation;
     }
 
@@ -58,8 +58,8 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public Partial partial() {
-        return partialConceptMap;
+    public AnswerState.DownstreamVars answerBounds() {
+        return answerBounds;
     }
 
     @Override
@@ -68,19 +68,19 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialConceptMap, request.partial());
+                Objects.equals(answerBounds, request.answerBounds());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialConceptMap);
+        return Objects.hash(path, answerBounds);
     }
 
     @Override
     public String toString() {
         return "Request{" +
                 "path=" + path +
-                ", partialConceptMap=" + partialConceptMap +
+                ", answerBounds=" + answerBounds +
                 ", partialDerivation=" + partialDerivation +
                 '}';
     }

@@ -39,8 +39,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     final GraphPlanner planner;
 
-    private final String varPrefix = "vertex::var::" + id() + "::";
-    private final String conPrefix = "vertex::con::" + id() + "::";
+    private final String varPrefix = "vertex_var_" + id() + "_";
+    private final String conPrefix = "vertex_con_" + id() + "_";
     private int valueIsStartingVertex;
     private int valueIsEndingVertex;
     private int valueHasIncomingEdges;
@@ -116,29 +116,23 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         assert ins().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         assert outs().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         initialiseConstraintsForIncomingEdges();
-        initialiseConstraintsForOutGoingEdges();
+        initialiseConstraintsForOutgoingEdges();
         initialiseConstraintsForVertexFlow();
         isInitialisedConstraints = true;
     }
 
     private void initialiseConstraintsForIncomingEdges() {
-        MPVariable varUnselectedIncomingEdges = planner.solver().makeIntVar(0, ins().size(), varPrefix + "unselected_incoming_edges");
-        MPConstraint conUnSelectedIncomingEdges = planner.solver().makeConstraint(ins().size(), ins().size(), conPrefix + "unselected_incoming_edges");
-        conUnSelectedIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
-        ins().forEach(edge -> conUnSelectedIncomingEdges.setCoefficient(edge.varIsSelected, 1));
-        MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(1, ins().size(), conPrefix + "has_incoming_edges");
-        conHasIncomingEdges.setCoefficient(varUnselectedIncomingEdges, 1);
-        conHasIncomingEdges.setCoefficient(varHasIncomingEdges, 1);
+        assert !ins().isEmpty();
+        MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
+        conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
+        ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
-    private void initialiseConstraintsForOutGoingEdges() {
-        MPVariable varUnselectedOutgoingEdges = planner.solver().makeIntVar(0, outs().size(), varPrefix + "unselected_outgoing_edges");
-        MPConstraint conUnselectedOutgoingEdges = planner.solver().makeConstraint(outs().size(), outs().size(), conPrefix + "unselected_outgoing_edges");
-        conUnselectedOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
-        outs().forEach(edge -> conUnselectedOutgoingEdges.setCoefficient(edge.varIsSelected, 1));
-        MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(1, outs().size(), conPrefix + "has_outgoing_edges");
-        conHasOutgoingEdges.setCoefficient(varUnselectedOutgoingEdges, 1);
-        conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, 1);
+    private void initialiseConstraintsForOutgoingEdges() {
+        assert !outs().isEmpty();
+        MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
+        conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
+        outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForVertexFlow() {
@@ -170,6 +164,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         valueIsEndingVertex = (int) Math.round(varIsEndingVertex.solutionValue());
         valueHasIncomingEdges = (int) Math.round(varHasIncomingEdges.solutionValue());
         valueHasOutgoingEdges = (int) Math.round(varHasOutgoingEdges.solutionValue());
+        assert !(isStartingVertex() && isEndingVertex());
+        assert (isStartingVertex() ^ hasIncomingEdges());
+        assert (isEndingVertex() ^ hasOutgoingEdges());
     }
 
     public void setStartingVertex() {

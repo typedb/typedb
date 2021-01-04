@@ -46,28 +46,26 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_C
 
 public abstract class RocksTransaction implements Grakn.Transaction {
 
-    final RocksSession session;
-    final Arguments.Transaction.Type type;
-    final Context.Transaction context;
-    GraphManager graphMgr;
+    protected final RocksSession session;
+    protected final Context.Transaction context;
+    protected GraphManager graphMgr;
+    protected ConceptManager conceptMgr;
+    protected AtomicBoolean isOpen;
     TraversalEngine traversalEng;
-    AtomicBoolean isOpen;
-    ConceptManager conceptMgr;
     LogicManager logicMgr;
     Reasoner reasoner;
     QueryManager queryMgr;
 
     private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
-        this.type = type;
         this.session = session;
-        context = new Context.Transaction(session.context(), options).type(type);
+        this.context = new Context.Transaction(session.context(), options).type(type);
     }
 
     void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {
         traversalEng = new TraversalEngine(graphMgr, traversalCache);
         conceptMgr = new ConceptManager(graphMgr);
         logicMgr = new LogicManager(graphMgr, conceptMgr, traversalEng, logicCache);
-        reasoner = new Reasoner(conceptMgr, traversalEng, logicMgr);
+        reasoner = new Reasoner(traversalEng, conceptMgr, logicMgr);
         queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
     }
@@ -82,7 +80,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
     @Override
     public Arguments.Transaction.Type type() {
-        return type;
+        return context.transactionType();
     }
 
     @Override
@@ -124,7 +122,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         return reasoner;
     }
 
-    void closeResources() {
+    protected void closeResources() {
         closeStorage();
         session.remove(this);
     }
@@ -149,16 +147,17 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
     public static class Schema extends RocksTransaction {
 
-        private final RocksStorage.Schema schemaStorage;
-        private final RocksStorage.Data dataStorage;
+        protected final RocksStorage.Schema schemaStorage;
 
-        Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
+        protected final RocksStorage.Data dataStorage;
+
+        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
-            schemaStorage = new RocksStorage.Schema(session.database, this);
-            SchemaGraph schemaGraph = new SchemaGraph(schemaStorage, type.isRead());
+            schemaStorage = storageFactory.storageSchema(session.database(), this);
+            SchemaGraph schemaGraph = new SchemaGraph(schemaStorage, type().isRead());
 
-            dataStorage = new RocksStorage.Data(session.database, this);
+            dataStorage = storageFactory.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
 
             graphMgr = new GraphManager(schemaGraph, dataGraph);
@@ -210,17 +209,14 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
                 try {
-                    if (type.isRead()) throw GraknException.of(ILLEGAL_COMMIT);
+                    if (type().isRead()) throw GraknException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.data().isModified()) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
 
-                    // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
-                    // TODO: We should benchmark this
-                    schemaStorage.rocksTx.disableIndexing();
                     conceptMgr.validateTypes();
                     logicMgr.validateRules();
                     graphMgr.schema().commit();
-                    schemaStorage.rocksTx.commit();
-                    session.database.invalidateCache();
+                    schemaStorage.commit();
+                    session.database().cacheInvalidate();
                 } catch (RocksDBException e) {
                     rollback();
                     throw GraknException.of(e);
@@ -237,12 +233,11 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public void rollback() {
             try {
                 graphMgr.clear();
-                schemaStorage.rocksTx.rollback();
+                schemaStorage.rollback();
             } catch (RocksDBException e) {
                 throw GraknException.of(e);
             }
         }
-
         @Override
         void closeStorage() {
             schemaStorage.close();
@@ -251,14 +246,14 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     public static class Data extends RocksTransaction {
-        private final RocksStorage.Data dataStorage;
+        protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
-        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options) {
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
-            cache = session.database.borrowCache();
-            dataStorage = new RocksStorage.Data(session.database, this);
+            cache = session.database().cacheBorrow();
+            dataStorage = storageFactory.storageData(session.database(), this);
             DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
             graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
 
@@ -296,18 +291,13 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
                 try {
-                    if (type.isRead()) throw GraknException.of(ILLEGAL_COMMIT);
+                    if (type().isRead()) throw GraknException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.schema().isModified()) throw GraknException.of(SESSION_DATA_VIOLATION);
 
-                    // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
-                    // TODO: We should benchmark this
-                    dataStorage.rocksTx.disableIndexing();
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
-                    dataStorage.rocksTx.commit();
-                    if (graphMgr.data().stats().needsBackgroundCounting()) {
-                        session.database.statisticsBackgroundCounter.needsBackgroundCounting();
-                    }
+                    dataStorage.commit();
+                    triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
                     throw GraknException.of(e);
@@ -324,7 +314,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public void rollback() {
             try {
                 graphMgr.clear();
-                dataStorage.rocksTx.rollback();
+                dataStorage.rollback();
             } catch (RocksDBException e) {
                 throw GraknException.of(e);
             }
@@ -332,8 +322,18 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         @Override
         void closeStorage() {
-            session.database.unborrowCache(cache);
+            session.database().cacheUnborrow(cache);
             dataStorage.close();
+        }
+
+        /**
+         * Responsible for triggering {@link RocksDatabase.StatisticsBackgroundCounter}, if necessary.
+         * A different implementation of this class may override it.
+         */
+        protected void triggerStatisticBgCounter() {
+            if (graphMgr.data().stats().needsBackgroundCounting()) {
+                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
+            }
         }
     }
 }

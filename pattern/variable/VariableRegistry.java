@@ -61,7 +61,7 @@ public class VariableRegistry {
 
     public static VariableRegistry createFromTypes(List<graql.lang.pattern.variable.TypeVariable> variables) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "types")) {
-            final VariableRegistry registry = new VariableRegistry(null);
+            VariableRegistry registry = new VariableRegistry(null);
             variables.forEach(registry::register);
             return registry;
         }
@@ -76,8 +76,8 @@ public class VariableRegistry {
     public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
                                                        @Nullable VariableRegistry bounds) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
-            final List<ConceptVariable> unboundedVariables = new ArrayList<>();
-            final VariableRegistry registry = new VariableRegistry(bounds);
+            List<ConceptVariable> unboundedVariables = new ArrayList<>();
+            VariableRegistry registry = new VariableRegistry(bounds);
             variables.forEach(graqlVar -> {
                 if (graqlVar.isConcept()) unboundedVariables.add(graqlVar.asConcept());
                 else registry.register(graqlVar);
@@ -122,7 +122,7 @@ public class VariableRegistry {
     }
 
     public ThingVariable register(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
-        final ThingVariable graknVar;
+        ThingVariable graknVar;
         if (graqlVar.reference().isAnonymous()) {
             graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymous.size()));
             anonymous.add(graknVar);
@@ -141,7 +141,7 @@ public class VariableRegistry {
     }
 
     public Set<Variable> variables() {
-        final Set<Variable> output = new HashSet<>();
+        Set<Variable> output = new HashSet<>();
         output.addAll(types.values());
         output.addAll(things.values());
         output.addAll(anonymous);

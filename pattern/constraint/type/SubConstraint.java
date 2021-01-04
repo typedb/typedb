@@ -20,6 +20,7 @@ package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.parameters.Label;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -46,11 +47,16 @@ public class SubConstraint extends TypeConstraint {
         this.isExplicit = isExplicit;
         this.hash = Objects.hash(SubConstraint.class, this.owner, this.type, this.isExplicit);
         this.typeHints = new HashSet<>();
+        type.constraining(this);
     }
 
     static SubConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
                             VariableRegistry registry) {
         return new SubConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
+    }
+
+    static SubConstraint of(TypeVariable owner, SubConstraint clone, VariableCloner cloner) {
+        return new SubConstraint(owner, cloner.clone(clone.type()), clone.isExplicit());
     }
 
     public TypeVariable type() {

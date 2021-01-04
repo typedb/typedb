@@ -21,6 +21,7 @@ package grakn.core.pattern.constraint.type;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 
 import java.util.Collections;
@@ -55,10 +56,22 @@ public abstract class TypeConstraint extends Constraint {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public static TypeConstraint of(TypeVariable owner,
-                                    graql.lang.pattern.constraint.ConceptConstraint constraint,
+    public static TypeConstraint of(TypeVariable owner, graql.lang.pattern.constraint.ConceptConstraint constraint,
                                     VariableRegistry registry) {
         if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public static TypeConstraint of(TypeVariable owner, TypeConstraint clone, VariableCloner cloner) {
+        if (clone.isLabel()) return LabelConstraint.of(owner, clone.asLabel());
+        else if (clone.isSub()) return SubConstraint.of(owner, clone.asSub(), cloner);
+        else if (clone.isAbstract()) return AbstractConstraint.of(owner);
+        else if (clone.isValueType()) return ValueTypeConstraint.of(owner, clone.asValueType());
+        else if (clone.isRegex()) return RegexConstraint.of(owner, clone.asRegex());
+        else if (clone.isOwns()) return OwnsConstraint.of(owner, clone.asOwns(), cloner);
+        else if (clone.isPlays()) return PlaysConstraint.of(owner, clone.asPlays(), cloner);
+        else if (clone.isRelates()) return RelatesConstraint.of(owner, clone.asRelates(), cloner);
+        else if (clone.isIs()) return IsConstraint.of(owner, clone.asIs(), cloner);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 

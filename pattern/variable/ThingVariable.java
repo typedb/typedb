@@ -19,6 +19,7 @@
 package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
@@ -59,6 +60,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private final Set<HasConstraint> hasConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
+    private final Set<Constraint> constraining;
 
     public ThingVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -67,6 +69,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
+        this.constraining = new HashSet<>();
     }
 
     ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
@@ -77,6 +80,10 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     ThingVariable constrainConcept(List<graql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
+    }
+
+    void constrainClone(ThingVariable clone, VariableCloner cloner) {
+        clone.constraints().forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, cloner)));
     }
 
     public static ThingVariable of(Identifier.Variable identifier) {
@@ -109,6 +116,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
         else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
         else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    @Override
+    public void constraining(Constraint constraint) {
+        constraining.add(constraint);
     }
 
     public Optional<IIDConstraint> iid() {
@@ -184,8 +196,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public Set<RelationConstraint> relation() {
         return relationConstraints;
     }
-
     // TODO: why is this method never called?
+
     public RelationConstraint relation(LinkedHashSet<RelationConstraint.RolePlayer> rolePlayers) {
         RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
         constrain(relationConstraint);
@@ -208,6 +220,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
+    public Set<Constraint> constraining() {
+        return constraining;
+    }
+
+    @Override
     public boolean isThing() {
         return true;
     }
@@ -220,17 +237,16 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     @Override
     public String toString() {
 
-        StringBuilder syntax = new StringBuilder();
+        StringBuilder head = new StringBuilder();
+        StringBuilder tail = new StringBuilder();
 
-        if (reference().isName()) syntax.append(reference()).append(SPACE);
-
-        syntax.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
+        if (reference().isName()) head.append(reference());
+        tail.append(Stream.of(relationConstraints, set(isaConstraint), hasConstraints, valueConstraints, isConstraints)
                               .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
                               .collect(Collectors.joining("" + COMMA + SPACE)));
-
-        if (iidConstraint != null) syntax.append(COMMA).append(SPACE).append(iidConstraint);
-
-        return syntax.toString();
+        if (iidConstraint != null) tail.append(COMMA).append(SPACE).append(iidConstraint);
+        if (head.length() > 0 && tail.length() > 0) head.append(SPACE);
+        return head.append(tail.toString()).toString();
     }
 
     @Override
@@ -244,5 +260,4 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
                 .validIfAlphaEqual(this.valueConstraints, that.valueConstraints)
                 .addMapping(this, that);
     }
-
 }

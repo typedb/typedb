@@ -35,16 +35,14 @@ import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 
 public abstract class RocksSession implements Grakn.Session {
 
-    private final Arguments.Session.Type type;
-    private final Context.Session context;
+    private final RocksDatabase database;
     private final UUID uuid;
-    final RocksDatabase database;
+    private final Context.Session context;
     final ConcurrentMap<RocksTransaction, Long> transactions;
     final AtomicBoolean isOpen;
 
     private RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
-        this.type = type;
         this.context = new Context.Session(database.options(), options).type(type);
 
         uuid = UUID.randomUUID();
@@ -52,7 +50,7 @@ public abstract class RocksSession implements Grakn.Session {
         isOpen = new AtomicBoolean(true);
     }
 
-    Context.Session context() {
+    public Context.Session context() {
         return context;
     }
 
@@ -76,7 +74,7 @@ public abstract class RocksSession implements Grakn.Session {
 
     @Override
     public Arguments.Session.Type type() {
-        return type;
+        return context.sessionType();
     }
 
     @Override
@@ -104,14 +102,16 @@ public abstract class RocksSession implements Grakn.Session {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             transactions.keySet().parallelStream().forEach(RocksTransaction::close);
-            database.remove(this);
+            database().remove(this);
         }
     }
 
-    public static class Schema extends RocksSession {
+    public static final class Schema extends RocksSession {
+        private final Factory.TransactionSchema txSchemaFactory;
 
-        public Schema(RocksDatabase database, Options.Session options) {
-            super(database, Arguments.Session.Type.SCHEMA, options);
+        public Schema(RocksDatabase database, Arguments.Session.Type type, Options.Session options, Factory.TransactionSchema txSchemaFactory) {
+            super(database, type, options);
+            this.txSchemaFactory = txSchemaFactory;
         }
 
         @Override
@@ -132,7 +132,7 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
-            final RocksTransaction.Schema transaction = new RocksTransaction.Schema(this, type, options);
+            final RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
         }
@@ -143,10 +143,13 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static class Data extends RocksSession {
+    public static final class Data extends RocksSession {
 
-        public Data(RocksDatabase database, Options.Session options) {
-            super(database, Arguments.Session.Type.DATA, options);
+        private final Factory.TransactionData txDataFactory;
+
+        public Data(RocksDatabase database, Arguments.Session.Type type, Options.Session options, Factory.TransactionData txDataFactory) {
+            super(database, type, options);
+            this.txDataFactory = txDataFactory;
         }
 
         @Override
@@ -168,8 +171,8 @@ public abstract class RocksSession implements Grakn.Session {
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock = 0;
-            if (type.isWrite()) lock = database.dataWriteSchemaLock().readLock();
-            final RocksTransaction.Data transaction = new RocksTransaction.Data(this, type, options);
+            if (type.isWrite()) lock = database().dataWriteSchemaLock().readLock();
+            final RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }
@@ -177,7 +180,7 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         void remove(RocksTransaction transaction) {
             final long lock = transactions.remove(transaction);
-            if (transaction.type().isWrite()) database.dataWriteSchemaLock().unlockRead(lock);
+            if (transaction.type().isWrite()) database().dataWriteSchemaLock().unlockRead(lock);
         }
     }
 }

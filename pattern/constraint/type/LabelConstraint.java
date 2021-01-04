@@ -47,6 +47,10 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
         return new LabelConstraint(owner, Label.of(constraint.label(), constraint.scope().orElse(null)));
     }
 
+    static LabelConstraint of(TypeVariable owner, LabelConstraint clone) {
+        return new LabelConstraint(owner, Label.of(clone.label(), clone.scope().orElse(null)));
+    }
+
     public Optional<String> scope() {
         return label.scope();
     }

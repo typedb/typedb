@@ -43,6 +43,7 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_ATTRIBUTE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
@@ -52,7 +53,6 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
-import static java.util.Collections.emptyIterator;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
@@ -113,8 +113,10 @@ public abstract class ProcedureVertex<
 
     @Override
     public String toString() {
-        if (isStartingVertex) return super.toString() + " (start)";
-        else return super.toString();
+        String str = super.toString();
+        if (isStartingVertex) str += " (start)";
+        if (outs().isEmpty()) str += " (end)";
+        return str;
     }
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
@@ -167,17 +169,22 @@ public abstract class ProcedureVertex<
             ResourceIterator<? extends AttributeVertex<?>> iter;
             ResourceIterator<TypeVertex> attTypes;
 
-            if (!props().predicates().isEmpty()) {
-                attTypes = iterate(props().predicates())
-                        .flatMap(p -> iterate(p.valueType().comparables()))
-                        .flatMap(vt -> graph.schema().attributeTypes(vt));
-            } else {
-                attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
-            }
+            Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
 
-            Optional<Predicate.Value<?>> eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst();
-            if (eq.isPresent()) iter = iteratorOfAttributes(graph, attTypes, parameters, eq.get());
-            else iter = attTypes.flatMap(t -> graph.data().get(t)).map(ThingVertex::asAttribute);
+            if (eq.isPresent()) {
+                attTypes = iterate(eq.get().valueType().assignables())
+                        .flatMap(vt -> graph.schema().attributeTypes(vt));
+                iter = iteratorOfAttributes(graph, attTypes, parameters, eq.get());
+            } else {
+                if (!props().predicates().isEmpty()) {
+                    attTypes = iterate(props().predicates())
+                            .flatMap(p -> iterate(p.valueType().comparables()))
+                            .flatMap(vt -> graph.schema().attributeTypes(vt));
+                } else {
+                    attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
+                }
+                iter = attTypes.flatMap(t -> graph.data().get(t)).map(ThingVertex::asAttribute);
+            }
 
             if (props().predicates().isEmpty()) return iter;
             else return filterPredicates(iter, parameters, eq.orElse(null));
@@ -200,15 +207,11 @@ public abstract class ProcedureVertex<
                                                                           Traversal.Parameters parameters) {
             assert !props().types().isEmpty();
             ResourceIterator<? extends ThingVertex> iter;
-            Optional<Predicate.Value<?>> eq;
-
-            if ((eq = props().predicates().stream().filter(p -> p.operator().equals(EQ)).findFirst()).isPresent()) {
-                iter = iteratorOfAttributes(graphMgr, parameters, eq.get());
-            } else {
-                iter = iterate(props().types().iterator())
-                        .map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l))
-                        .flatMap(t -> graphMgr.data().get(t));
-            }
+            Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
+            if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get());
+            else iter = iterate(props().types().iterator())
+                    .map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l))
+                    .flatMap(t -> graphMgr.data().get(t));
 
             if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
@@ -252,7 +255,7 @@ public abstract class ProcedureVertex<
             // TODO: should we throw an exception if the user assert a value non-comparable value types?
             assert id().isVariable();
             for (Predicate.Value<?> predicate : props().predicates()) {
-                if (Objects.equals(predicate, exclude)) break;
+                if (Objects.equals(predicate, exclude)) continue;
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(a -> predicate.apply(a, value));
                 }
@@ -273,11 +276,14 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributes(
+        ResourceIterator<? extends AttributeVertex<?>> iteratorOfAttributesWithTypes(
                 GraphManager graphMgr, Traversal.Parameters params, Predicate.Value<?> eq) {
             ResourceIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l)).noNulls()
-                    .filter(TypeVertex::isAttributeType);
+                    .map(t -> {
+                        if (t.isAttributeType()) return t;
+                        else throw GraknException.of(TYPE_NOT_ATTRIBUTE_TYPE, t.properLabel());
+                    }).filter(t -> eq.valueType().assignables().contains(t.valueType()));
             return iteratorOfAttributes(graphMgr, attributeTypes, params, eq);
         }
 
@@ -287,19 +293,27 @@ public abstract class ProcedureVertex<
             // TODO: should we throw an exception if the user asserts 2 values for a given vertex?
             assert id().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
-            if (values.size() > 1) return iterate(emptyIterator());
+            assert values.size() == 1;
             return attributeTypes.map(t -> attributeVertex(graphMgr, t, values.iterator().next())).noNulls();
         }
 
         private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type,
                                                    Traversal.Parameters.Value value) {
             assert type.isAttributeType();
-            if (value.isBoolean()) return graphMgr.data().get(type, value.getBoolean());
-            else if (value.isLong()) return graphMgr.data().get(type, value.getLong());
-            else if (value.isDouble()) return graphMgr.data().get(type, value.getDouble());
-            else if (value.isString()) return graphMgr.data().get(type, value.getString());
-            else if (value.isDateTime()) return graphMgr.data().get(type, value.getDateTime());
-            else throw GraknException.of(ILLEGAL_STATE);
+            switch (type.valueType()) {
+                case BOOLEAN:
+                    return graphMgr.data().get(type, value.getBoolean());
+                case LONG:
+                    return graphMgr.data().get(type, value.getLong());
+                case DOUBLE:
+                    return graphMgr.data().get(type, value.getDouble());
+                case STRING:
+                    return graphMgr.data().get(type, value.getString());
+                case DATETIME:
+                    return graphMgr.data().get(type, value.getDateTime());
+                default:
+                    throw GraknException.of(ILLEGAL_STATE);
+            }
         }
 
         static ResourceIterator<? extends AttributeVertex<?>> filterAttributes(ResourceIterator<? extends ThingVertex> iterator) {

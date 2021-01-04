@@ -15,29 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.transformer;
+package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
+import grakn.common.concurrent.actor.Actor;
+import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.traversal.TraversalEngine;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-
-public abstract class VariableTransformer {
-
-    public boolean isUnifier() {
-        return false;
+public abstract class ResolvableResolver<T extends ResolvableResolver<T>> extends Resolver<T> {
+    public ResolvableResolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine) {
+        super(self, name, registry, traversalEngine);
     }
-
-    public Unifier asUnifier() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Unifier.class));
-    }
-
-    public boolean isMapping() {
-        return false;
-    }
-
-    public Mapping asMapped() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Mapping.class));
-    }
-
 }

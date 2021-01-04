@@ -20,6 +20,7 @@ package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 
@@ -50,12 +51,20 @@ public class RelatesConstraint extends TypeConstraint {
         this.roleType = roleType;
         this.overriddenRoleType = overriddenRoleType;
         this.hash = Objects.hash(RelatesConstraint.class, this.owner, this.roleType, this.overriddenRoleType);
+        roleType.constraining(this);
+        if (overriddenRoleType != null) overriddenRoleType.constraining(this);
     }
 
     static RelatesConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
                                 VariableRegistry registry) {
         final TypeVariable roleType = registry.register(constraint.role());
         final TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
+        return new RelatesConstraint(owner, roleType, overriddenRoleType);
+    }
+
+    static RelatesConstraint of(TypeVariable owner, RelatesConstraint constraint, VariableCloner cloner) {
+        final TypeVariable roleType = cloner.clone(constraint.role());
+        final TypeVariable overriddenRoleType = constraint.overridden().map(cloner::clone).orElse(null);
         return new RelatesConstraint(owner, roleType, overriddenRoleType);
     }
 

@@ -68,6 +68,7 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 
 public abstract class ProcedureEdge<
@@ -170,13 +171,8 @@ public abstract class ProcedureEdge<
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
                           Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            super(from, to, order, direction, getPredicate(direction, predicate).toString());
-            this.predicate = getPredicate(direction, predicate);
-        }
-
-        private static grakn.core.traversal.common.Predicate.Variable getPredicate(
-                Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
-            return direction.isForward() ? predicate : predicate.reflection();
+            super(from, to, order, direction, predicate.toString());
+            this.predicate = predicate;
         }
 
         @Override
@@ -746,9 +742,9 @@ public abstract class ProcedureEdge<
                             if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
                             else return empty();
                         } else if (!to.props().types().isEmpty()) {
-                            if ((eq = iterate(to.props().predicates())
-                                    .filter(p -> p.operator().equals(grakn.core.traversal.common.Predicate.Operator.Equality.EQ)).firstOrNull()) != null) {
-                                iter = to.iteratorOfAttributes(graphMgr, params, eq)
+                            eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                            if (eq != null) {
+                                iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
                                 iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()

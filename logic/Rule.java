@@ -20,7 +20,9 @@ package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
@@ -34,6 +36,7 @@ import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
@@ -56,7 +59,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<Conclusion<?, ?>> possibleConclusions;
+    private final Set<Conclusion<?>> possibleConclusions; // TODO after restructuring Conclusions, we will have a single conclusion
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -103,17 +106,12 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Set<Conclusion<?, ?>> possibleConclusions() {
+    public Set<Conclusion<?>> possibleConclusions() {
         return possibleConclusions;
     }
 
-    public ResourceIterator<Rule> findApplicableRulesPositive() {
-        // TODO find applicable rules from each non-negated Concludables
-        return null;
-    }
-
-    public ResourceIterator<Rule> findApplicableRulesNegative() {
-        // TODO find applicable rules from negated Concludables
+    public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer) {
+        // TODO
         return null;
     }
 
@@ -189,41 +187,45 @@ public class Rule {
                 );
     }
 
-    private Set<Conclusion<?, ?>> buildConclusions(Conjunction then, Set<Variable> constraintContext) {
-        HashSet<Conclusion<?, ?>> conclusions = new HashSet<>();
+    private Set<Conclusion<?>> buildConclusions(Conjunction then, Set<Variable> when) {
+        HashSet<Conclusion<?>> conclusions = new HashSet<>();
         then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> Conclusion.create(constraint, constraintContext)).forEach(conclusions::add);
+                .map(constraint -> Conclusion.create(constraint, when)).forEach(conclusions::add);
         return conclusions;
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
-        return Conjunction.create(conjunction.normalise().patterns().get(0));
+        return logicManager.typeResolver().resolveLabels(
+                Conjunction.create(conjunction.normalise().patterns().get(0)));
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable) {
-        return new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        return logicManager.typeResolver().resolveLabels(
+                new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 
-    public abstract static class Conclusion<CONSTRAINT extends Constraint, U extends Conclusion<CONSTRAINT, U>> {
+    public abstract static class Conclusion<CONSTRAINT extends Constraint> {
 
         private final CONSTRAINT constraint;
 
-        private Conclusion(CONSTRAINT constraint, Set<Variable> constraintContext) {
+        private Conclusion(CONSTRAINT constraint, Set<Variable> whenContext) {
             this.constraint = constraint;
-            copyAdditionalConstraints(constraintContext, new HashSet<>(this.constraint.variables()));
+            copyAdditionalConstraints(whenContext, new HashSet<>(this.constraint.variables()));
         }
 
         public CONSTRAINT constraint() {
             return constraint;
         }
 
-        public static Conclusion<?, ?> create(ThingConstraint constraint, Set<Variable> constraintContext) {
-            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), constraintContext);
-            else if (constraint.isHas()) return Has.create(constraint.asHas(), constraintContext);
-            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), constraintContext);
-            else if (constraint.isValue()) return Value.create(constraint.asValue(), constraintContext);
+        public static Conclusion<?> create(ThingConstraint constraint, Set<Variable> whenContext) {
+            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), whenContext);
+            else if (constraint.isHas()) return Has.create(constraint.asHas(), whenContext);
+            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), whenContext);
+            else if (constraint.isValue()) return Value.create(constraint.asValue(), whenContext);
             else throw GraknException.of(ILLEGAL_STATE);
         }
+
+        public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr);
 
         public boolean isRelation() {
             return false;
@@ -274,15 +276,25 @@ public class Rule {
                     });
         }
 
-        public static class Relation extends Conclusion<RelationConstraint, Conclusion.Relation> {
+        public static class Relation extends Conclusion<RelationConstraint> {
 
-            public Relation(RelationConstraint constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            public Relation(RelationConstraint constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                /*
+                get Relation Type
+                create instance of relation type
+                get each RolePlayer in the RelationConstraint
+                 */
 
-            public static Relation create(RelationConstraint constraint, Set<Variable> constraintContext) {
-                return new Relation(ConstraintCopier.copyConstraint(constraint), constraintContext);
+                return null;
+            }
+
+            public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
+                return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -296,14 +308,19 @@ public class Rule {
             }
         }
 
-        public static class Has extends Conclusion<HasConstraint, Conclusion.Has> {
+        public static class Has extends Conclusion<HasConstraint> {
 
-            public Has(HasConstraint constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            public Has(HasConstraint constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
-            public static Has create(HasConstraint constraint, Set<Variable> constraintContext) {
-                return new Has(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
+            }
+
+            public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
+                return new Has(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -317,14 +334,19 @@ public class Rule {
             }
         }
 
-        public static class Isa extends Conclusion<IsaConstraint, Conclusion.Isa> {
+        public static class Isa extends Conclusion<IsaConstraint> {
 
-            public Isa(IsaConstraint constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            public Isa(IsaConstraint constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
-            public static Isa create(IsaConstraint constraint, Set<Variable> constraintContext) {
-                return new Isa(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
+            }
+
+            public static Isa create(IsaConstraint constraint, Set<Variable> whenContext) {
+                return new Isa(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -338,14 +360,19 @@ public class Rule {
             }
         }
 
-        public static class Value extends Conclusion<ValueConstraint<?>, Conclusion.Value> {
+        public static class Value extends Conclusion<ValueConstraint<?>> {
 
-            Value(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
-                super(constraint, constraintContext);
+            Value(ValueConstraint<?> constraint, Set<Variable> whenContext) {
+                super(constraint, whenContext);
             }
 
-            public static Value create(ValueConstraint<?> constraint, Set<Variable> constraintContext) {
-                return new Value(ConstraintCopier.copyConstraint(constraint), constraintContext);
+            @Override
+            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
+                return null;
+            }
+
+            public static Value create(ValueConstraint<?> constraint, Set<Variable> whenContext) {
+                return new Value(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override

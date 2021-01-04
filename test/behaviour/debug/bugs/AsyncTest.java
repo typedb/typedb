@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.behaviour.debug.bugs.low;
+package grakn.core.test.behaviour.debug.bugs;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,9 +27,9 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "test/behaviour/debug/bugs/low/insert-bug.feature"
+        features = "test/behaviour/debug/bugs/async-bugs.feature"
 )
-public class InsertTest {
+public class AsyncTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:

@@ -21,6 +21,7 @@ package grakn.core.pattern;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import graql.lang.pattern.Conjunctable;
@@ -39,6 +40,7 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
 import static java.util.Collections.unmodifiableSet;
@@ -108,7 +110,8 @@ public class Conjunction implements Pattern, Cloneable {
 
     @Override
     public Conjunction clone() {
-        return null; // TODO
+        return new Conjunction(VariableCloner.cloneFromConjunction(this).variables(),
+                               iterate(this.negations).map(Negation::clone).toSet());
     }
 
     @Override

@@ -41,8 +41,13 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
         this.hash = Objects.hash(ValueTypeConstraint.class, this.owner, this.valueType);
     }
 
-    static ValueTypeConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
+    static ValueTypeConstraint of(TypeVariable owner,
+                                  graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
         return new ValueTypeConstraint(owner, constraint.valueType());
+    }
+
+    static ValueTypeConstraint of(TypeVariable owner, ValueTypeConstraint clone) {
+        return new ValueTypeConstraint(owner, clone.valueType());
     }
 
     public GraqlArg.ValueType valueType() {

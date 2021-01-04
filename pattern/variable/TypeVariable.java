@@ -20,6 +20,7 @@ package grakn.core.pattern.variable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.type.AbstractConstraint;
 import grakn.core.pattern.constraint.type.IsConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
@@ -69,6 +70,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     private final Set<RelatesConstraint> relatesConstraints;
     private final Set<IsConstraint> isConstraints;
     private final Set<TypeConstraint> constraints;
+    private final Set<Constraint> constraining;
 
     public TypeVariable(Identifier.Variable identifier) {
         super(identifier);
@@ -77,10 +79,16 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         relatesConstraints = new HashSet<>();
         isConstraints = new HashSet<>();
         constraints = new HashSet<>();
+        constraining = new HashSet<>();
     }
 
     public static TypeVariable of(Identifier.Variable identifier) {
         return new TypeVariable(identifier);
+    }
+
+    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
+        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
+        return this;
     }
 
     TypeVariable constrainType(List<graql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
@@ -88,9 +96,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return this;
     }
 
-    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
-        constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
-        return this;
+    void constrainClone(TypeVariable clone, VariableCloner cloner) {
+        clone.constraints().forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, cloner)));
     }
 
     public void constrain(TypeConstraint constraint) {
@@ -123,8 +130,17 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public void copyConstraints(TypeVariable toCopy) {
-        for (TypeConstraint constraint : toCopy.constraints) {
+    @Override
+    public void constraining(Constraint constraint) {
+        constraining.add(constraint);
+    }
+
+    // TODO: This method is erroneous. It copies constraints from another variable,
+    //       which includes other variables that the constraints contain,
+    //       however these other variables are no longer part of the same graph as the variable that owns the constraints.
+    //       Should the usage of this method be replaced with VariableCloner?
+    public void copyConstraints(TypeVariable copyFrom) {
+        for (TypeConstraint constraint : copyFrom.constraints) {
             if (constraint.isLabel()) {
                 this.label(constraint.asLabel().properLabel());
             } else if (constraint.isValueType()) {
@@ -240,6 +256,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public Set<TypeConstraint> constraints() {
         return constraints;
+    }
+
+    @Override
+    public Set<Constraint> constraining() {
+        return constraining;
     }
 
     @Override

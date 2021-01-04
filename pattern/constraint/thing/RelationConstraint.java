@@ -19,12 +19,12 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.parameters.Label;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
@@ -52,11 +52,23 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         assert rolePlayers != null && !rolePlayers.isEmpty();
         this.rolePlayers = new LinkedHashSet<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
+        for (RelationConstraint.RolePlayer rp : rolePlayers) {
+            rp.player().constraining(this);
+            rp.roleType().ifPresent(roleType -> roleType.constraining(this));
+        }
     }
 
     static RelationConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
                                  VariableRegistry register) {
-        return new RelationConstraint(owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet());
+        return new RelationConstraint(
+                owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet()
+        );
+    }
+
+    static RelationConstraint of(ThingVariable owner, RelationConstraint clone, VariableCloner cloner) {
+        return new RelationConstraint(
+                owner, iterate(clone.players()).map(rp -> RolePlayer.of(rp, cloner)).toLinkedSet()
+        );
     }
 
     public LinkedHashSet<RolePlayer> players() {
@@ -133,7 +145,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         private final TypeVariable roleType;
         private final ThingVariable player;
-        private final Set<Label> resolvedRoleTypes;
         private final int repetition;
         private final int hash;
 
@@ -145,7 +156,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             this.player = player;
             this.repetition = repetition;
             this.hash = Objects.hash(this.roleType, this.player, this.repetition);
-            this.resolvedRoleTypes = new HashSet<>();
         }
 
         public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
@@ -154,6 +164,14 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                     constraint.roleType().map(registry::register).orElse(null),
                     registry.register(constraint.player()),
                     constraint.repetition()
+            );
+        }
+
+        public static RolePlayer of(RolePlayer clone, VariableCloner cloner) {
+            return new RolePlayer(
+                    clone.roleType().map(cloner::clone).orElse(null),
+                    cloner.clone(clone.player()),
+                    clone.repetition()
             );
         }
 
@@ -167,14 +185,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         public ThingVariable player() {
             return player;
-        }
-
-        public void addResolvedRoleTypes(Set<Label> labels) {
-            this.resolvedRoleTypes.addAll(labels);
-        }
-
-        public Set<Label> resolvedRoleTypes() {
-            return resolvedRoleTypes;
         }
 
         @Override
@@ -200,7 +210,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         @Override
         public AlphaEquivalence alphaEquals(RolePlayer that) {
             return AlphaEquivalence.valid()
-                    .validIf(resolvedRoleTypes.equals(that.resolvedRoleTypes))
                     .validIfAlphaEqual(roleType, that.roleType)
                     .validIfAlphaEqual(player, that.player);
         }

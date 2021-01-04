@@ -389,7 +389,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
                                               0)
                     );
                     ResolutionAnswer answer = responses.take();
@@ -453,7 +453,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
                                               iteration[0])
                     );
                 }
@@ -475,7 +475,7 @@ public class ResolutionTest {
                 for (int i = 0; i < 2; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                              new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
                                               iteration[0])
                     );
                 }
@@ -492,7 +492,7 @@ public class ResolutionTest {
                 // confirm there are no more answers
                 root.tell(actor ->
                                   actor.receiveRequest(
-                                          new Request(new Request.Path(root), DownstreamVars.Partial.root(), null),
+                                          new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
                                           iteration[0])
                 );
                 Thread.sleep(1000); // allow Exhausted message to propagate to top level
@@ -540,7 +540,7 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.receiveRequest(
-                                      new Request(new Request.Path(root), DownstreamVars.Partial.root(), ResolutionAnswer.Derivation.EMPTY),
+                                      new Request(new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY),
                                       0)
             );
         }

@@ -337,7 +337,11 @@ public class Traversal {
 
             public Long getLong() { return longVal; }
 
-            public Double getDouble() { return doubleVal; }
+            public Double getDouble() {
+                if (isDouble()) return doubleVal;
+                else if (isLong()) return longVal.doubleValue();
+                else return null;
+            }
 
             public LocalDateTime getDateTime() { return dateTimeVal; }
 

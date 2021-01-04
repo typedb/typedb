@@ -38,6 +38,9 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -607,7 +610,13 @@ public class GraqlSteps {
                 case STRING:
                     return value.equals(attribute.asString().getValue());
                 case DATETIME:
-                    return value.equals(attribute.asDateTime().getValue().toString());
+                    LocalDateTime dateTime;
+                    try {
+                        dateTime = LocalDateTime.parse(value);
+                    } catch (DateTimeParseException e) {
+                        dateTime = LocalDate.parse(value).atStartOfDay();
+                    }
+                    return dateTime.equals(attribute.asDateTime().getValue());
                 case OBJECT:
                 default:
                     throw new GraqlSteps.ScenarioDefinitionException("Unrecognised value type " + attribute.getType().getValueType());

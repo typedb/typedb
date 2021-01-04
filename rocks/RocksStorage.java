@@ -43,10 +43,11 @@ import java.util.function.BiFunction;
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
-class RocksStorage implements Storage {
+public class RocksStorage implements Storage {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
+    protected final Transaction storageTransaction;
     private final boolean isReadOnly;
     private final Set<RocksIterator<?>> iterators;
     private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
@@ -56,17 +57,16 @@ class RocksStorage implements Storage {
     private final Snapshot snapshot;
     private final ManagedReadWriteLock readWriteLock;
     private final AtomicBoolean isOpen;
-    final Transaction rocksTx;
 
-    RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
+    public RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
         iterators = ConcurrentHashMap.newKeySet();
         recycled = new ConcurrentLinkedQueue<>();
         readWriteLock = new ManagedReadWriteLock();
         writeOptions = new WriteOptions();
         transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
-        rocksTx = rocksDB.beginTransaction(writeOptions, transactionOptions);
-        snapshot = rocksTx.getSnapshot();
+        storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
+        snapshot = storageTransaction.getSnapshot();
         readOptions = new ReadOptions().setSnapshot(snapshot);
 
         isOpen = new AtomicBoolean(true);
@@ -83,7 +83,7 @@ class RocksStorage implements Storage {
         try {
             // We don't need to check isOpen.get() as tx.commit() does not involve this method
             if (!isReadOnly) readWriteLock.lockRead();
-            return rocksTx.get(readOptions, key);
+            return storageTransaction.get(readOptions, key);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -110,7 +110,7 @@ class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             if (isOpen.get()) readWriteLock.lockWrite();
-            rocksTx.delete(key);
+            storageTransaction.delete(key);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -128,7 +128,7 @@ class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             if (isOpen.get()) readWriteLock.lockWrite();
-            rocksTx.put(key, value);
+            storageTransaction.put(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -146,7 +146,7 @@ class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             readWriteLock.lockWrite();
-            rocksTx.putUntracked(key, value);
+            storageTransaction.putUntracked(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -159,7 +159,7 @@ class RocksStorage implements Storage {
         validateTransactionIsOpen();
         try {
             readWriteLock.lockWrite();
-            rocksTx.mergeUntracked(key, value);
+            storageTransaction.mergeUntracked(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
@@ -196,7 +196,7 @@ class RocksStorage implements Storage {
             iterators.parallelStream().forEach(RocksIterator::close);
             recycled.forEach(AbstractImmutableNativeReference::close);
             snapshot.close();
-            rocksTx.close();
+            storageTransaction.close();
             transactionOptions.close();
             readOptions.close();
             writeOptions.close();
@@ -212,7 +212,7 @@ class RocksStorage implements Storage {
             final org.rocksdb.RocksIterator iterator = recycled.poll();
             if (iterator != null) return iterator;
         }
-        return rocksTx.getIterator(readOptions);
+        return storageTransaction.getIterator(readOptions);
     }
 
     public void recycle(org.rocksdb.RocksIterator rocksIterator) {
@@ -250,14 +250,24 @@ class RocksStorage implements Storage {
             return exception;
         }
 
+        public void commit() throws RocksDBException {
+            // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
+            // TODO: We should benchmark this
+            storageTransaction.disableIndexing();
+            storageTransaction.commit();
+        }
+
+        public void rollback() throws RocksDBException {
+            storageTransaction.rollback();
+        }
     }
 
-    static class Schema extends TransactionBounded implements Storage.Schema {
+    public static class Schema extends TransactionBounded implements Storage.Schema {
 
         private final KeyGenerator.Schema schemaKeyGenerator;
 
-        Schema(RocksDatabase database, RocksTransaction transaction) {
-            super(database.rocksSchema(), transaction);
+        public Schema(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksSchema, transaction);
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
 
@@ -267,12 +277,12 @@ class RocksStorage implements Storage {
         }
     }
 
-    static class Data extends TransactionBounded implements Storage.Data {
+    public static class Data extends TransactionBounded implements Storage.Data {
 
         private final KeyGenerator.Data dataKeyGenerator;
 
-        Data(RocksDatabase database, RocksTransaction transaction) {
-            super(database.rocksData(), transaction);
+        public Data(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksData, transaction);
             this.dataKeyGenerator = database.dataKeyGenerator();
         }
 

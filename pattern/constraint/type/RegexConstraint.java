@@ -42,6 +42,10 @@ public class RegexConstraint extends TypeConstraint {
         return new RegexConstraint(owner, constraint.regex());
     }
 
+    static RegexConstraint of(TypeVariable owner, RegexConstraint clone) {
+        return new RegexConstraint(owner, clone.regex());
+    }
+
     public java.util.regex.Pattern regex() {
         return regex;
     }

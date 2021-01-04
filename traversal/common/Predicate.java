@@ -351,7 +351,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
             public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
 
-            private static int compareDoubles(double first, double second) {
+            public static int compareDoubles(double first, double second) {
                 int res = java.lang.Double.compare(first, second);
                 if (res == 0) return 0;
                 else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
@@ -386,8 +386,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                     assert (vertex.isLong() || vertex.isDouble());
 
                     if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value));
-                    else if (vertex.isDouble())
-                        return operator.apply(Value.compareDoubles(vertex.asDouble().value(), value));
+                    else if (vertex.isDouble()) return operator.apply(compareDoubles(vertex.asDouble().value(), value));
                     else throw GraknException.of(ILLEGAL_STATE);
                 }
             };

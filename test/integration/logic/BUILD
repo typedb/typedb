@@ -21,7 +21,6 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 host_compatible_java_test(
     name = "test-rule",
     srcs = ["RuleTest.java"],
-    test_class = "grakn.core.logic.RuleTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -29,12 +28,114 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
     ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
+    ],
+    test_class = "grakn.core.logic.RuleTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
+        "//test/integration/util",
+        "//common",
 
         # External dependencies from Grakn Labs
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-type-resolver",
+    srcs = ["TypeResolverTest.java"],
+    test_class = "grakn.core.logic.TypeResolverTest",
+    native_libraries_deps = [
+        "//concept:concept",
+        "//:grakn",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//rocks:rocks",
+    ],
+    deps = [
+        # Internal dependencies
+        "//common",
+        "//test/integration/util",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java/query",
+        "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
+    ],
+    data = [":basic-schema.gql"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+)
+
+host_compatible_java_test(
+    name = "test-unification-relation-concludable",
+    srcs = ["resolvable/UnifyRelationConcludableTest.java"],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    test_class = "grakn.core.logic.resolvable.UnifyRelationConcludableTest",
+    deps = [
+        # Internal dependencies
+        "//test/integration/util",
+        "//common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-unification-has-concludable",
+    srcs = ["resolvable/UnifyHasConcludableTest.java"],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    test_class = "grakn.core.logic.resolvable.UnifyHasConcludableTest",
+    deps = [
+        # Internal dependencies
+        "//test/integration/util",
+        "//common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-unification-isa-concludable",
+    srcs = ["resolvable/UnifyIsaConcludableTest.java"],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    test_class = "grakn.core.logic.resolvable.UnifyIsaConcludableTest",
+    deps = [
+        # Internal dependencies
+        "//test/integration/util",
+        "//common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
     resources = [
@@ -44,45 +145,30 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-type-resolver",
-    srcs = ["TypeResolverTest.java"],
-    test_class = "grakn.core.logic.TypeResolverTest",
+    name = "test-unification-attribute-concludable",
+    srcs = ["resolvable/UnifyAttributeConcludableTest.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
+        "//traversal:traversal",
     ],
+    test_class = "grakn.core.logic.resolvable.UnifyAttributeConcludableTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
+        "//test/integration/util",
+        "//common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
-    ],
-    data = [":basic-schema.gql"],
-)
-
-host_compatible_java_test(
-    name = "test-unification",
-    srcs = ["resolvable/UnificationTest.java"],
-    test_class = "grakn.core.logic.resolvable.UnificationTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//concept:concept",
-        "//logic:logic",
-        "//pattern:pattern",
-    ],
-    deps = [
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern",
     ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

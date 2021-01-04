@@ -279,11 +279,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public void setSupertype(AttributeType superType) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        public Stream<AttributeTypeImpl> getSupertypes() {
-            return Stream.of(this);
-        }
-
-        @Override
         public Stream<AttributeTypeImpl> getSubtypes() {
             return getSubtypes(v -> {
                 switch (v.valueType()) {

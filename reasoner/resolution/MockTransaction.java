@@ -22,6 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
@@ -78,6 +79,13 @@ public class MockTransaction {
                 return conceptMap;
             }
         };
+    }
+
+    // TODO get rid of this after we have materialisation returning it natively
+    public static Map<Identifier, Concept> asIdentifiedMap(ConceptMap conceptMap) {
+        Map<Identifier, Concept> concepts = new HashMap<>();
+        conceptMap.concepts().forEach((ref, concept) -> concepts.put(Identifier.Variable.of(ref), concept));
+        return concepts;
     }
 
 

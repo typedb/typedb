@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 
 import java.util.Collections;
@@ -55,6 +56,16 @@ public abstract class ThingConstraint extends Constraint {
     public static ThingConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ConceptConstraint constraint,
                                      VariableRegistry registry) {
         if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public static ThingConstraint of(ThingVariable owner, ThingConstraint clone, VariableCloner cloner) {
+        if (clone.isIID()) return IIDConstraint.of(owner, clone.asIID());
+        else if (clone.isIsa()) return IsaConstraint.of(owner, clone.asIsa(), cloner);
+        else if (clone.isValue()) return ValueConstraint.of(owner, clone.asValue(), cloner);
+        else if (clone.isRelation()) return RelationConstraint.of(owner, clone.asRelation(), cloner);
+        else if (clone.isHas()) return HasConstraint.of(owner, clone.asHas(), cloner);
+        else if (clone.isIs()) return IsConstraint.of(owner, clone.asIs(), cloner);
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
