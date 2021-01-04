@@ -81,9 +81,6 @@ public class TypeResolver {
             if (variable.reference().isLabel()) continue;
             Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.id()).reference());
             if (resolveLabels == null) {
-                // TODO: Can the error message be improved by saying more explicitly that the provided type did not make sense somehow?
-                // TODO: The error message is not quite accurate when querying a relation using an entity type,
-                //       e.g.: match ($x) isa person;
                 variable.setSatisfiable(false);
                 continue;
             }
@@ -297,9 +294,6 @@ public class TypeResolver {
 
 
             resolver = cloneVariable(variable);
-            // TODO: Why do we need `neighbours.putIfAbsent(resolver, new HashSet<>());` ?
-            //       Is this a patch for the fact that we forgot to use `to` variable in `copyNeighbours(from, to)` ?
-            //This is correct. There is no guarantee that cloning the variable
             neighbours.putIfAbsent(resolver, new HashSet<>());
             return resolver;
         }
@@ -408,20 +402,13 @@ public class TypeResolver {
                 else if (constraint.isOwns()) {
                     addNeighbours(to, constraint.asOwns().attribute());
                     constraint.asOwns().overridden().ifPresent(typeVariable -> addNeighbours(to, typeVariable));
-                }
-                else if (constraint.isPlays()) {
+                } else if (constraint.isPlays()) {
                     addNeighbours(to, constraint.asPlays().role());
                     constraint.asPlays().overridden().ifPresent(typeVariable -> addNeighbours(to, typeVariable));
-                }
-                else if (constraint.isRelates()) {
+                } else if (constraint.isRelates()) {
                     addNeighbours(to, constraint.asRelates().role());
                     constraint.asRelates().overridden().ifPresent(typeVariable -> addNeighbours(to, typeVariable));
-                }
-                else if (constraint.isIs()) addNeighbours(to, constraint.asIs().variable());
-                // TODO: There are other constraints in a TypeVariable. Are we intentionally ignoring them?
-                //       Why do we not throw GraknException.of(ILLEGAL_STATE); ?
-                //This is correct: we are adding the neighbours that are adjacent via constraints. These are the
-                //ony Constraints that can contain another  variable
+                } else if (constraint.isIs()) addNeighbours(to, constraint.asIs().variable());
             }
         }
 
@@ -490,7 +477,6 @@ public class TypeResolver {
                 TypeVariable newTypeVar;
                 if (variable.reference().isAnonymous()) newTypeVar = new TypeVariable(newSystemVariable());
                 else newTypeVar = new TypeVariable(variable.id());
-                if (variable.isType()) newTypeVar.copyConstraints(variable.asType());
                 return newTypeVar;
             });
         }
@@ -510,9 +496,6 @@ public class TypeResolver {
         TypeVariable resolver(Variable variable) {
             return typeResolvers.get(variable.id());
         }
-
-
-
 
 
     }

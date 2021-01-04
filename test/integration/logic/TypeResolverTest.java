@@ -23,7 +23,6 @@ import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -764,9 +763,7 @@ public class TypeResolverTest {
         );
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match " +
-                "$x isa house-number; " +
-                "$x = 1.0;";
+        String queryString = "match $x = 1.0;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
 
