@@ -85,7 +85,8 @@ public class TypeResolver {
                 // TODO: Can the error message be improved by saying more explicitly that the provided type did not make sense somehow?
                 // TODO: The error message is not quite accurate when querying a relation using an entity type,
                 //       e.g.: match ($x) isa person;
-                throw GraknException.of(TYPE_NOT_RESOLVABLE, variable.toString());
+//                throw GraknException.of(TYPE_NOT_RESOLVABLE, variable.toString());
+                continue;
             }
 
             if (variable.isThing()) {
@@ -210,6 +211,7 @@ public class TypeResolver {
     private Map<Reference, Set<Label>> retrieveResolveTypes(Set<Variable> resolveVars) {
         Conjunction resolveVariableConjunction = new Conjunction(resolveVars, Collections.emptySet());
         resolveVariableConjunction = resolveLabels(resolveVariableConjunction);
+        //TODO: if
         return logicCache.resolver().get(resolveVariableConjunction, conjunction -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(conjunction.traversal()).forEachRemaining(
@@ -397,15 +399,17 @@ public class TypeResolver {
             neighbours.computeIfAbsent(to, k -> new HashSet<>()).add(from);
         }
 
-        private void copyNeighbours(TypeVariable from, TypeVariable to) { // TODO: why is 'to' variable never used?
+        private void copyNeighbours(TypeVariable from, TypeVariable to) {
             for (TypeConstraint constraint : from.constraints()) {
-                if (constraint.isSub()) addNeighbours(from, constraint.asSub().type());
-                else if (constraint.isOwns()) addNeighbours(from, constraint.asOwns().attribute());
-                else if (constraint.isPlays()) addNeighbours(from, constraint.asPlays().role());
-                else if (constraint.isRelates()) addNeighbours(from, constraint.asRelates().role());
-                else if (constraint.isIs()) addNeighbours(from, constraint.asIs().variable());
+                if (constraint.isSub()) addNeighbours(to, constraint.asSub().type());
+                else if (constraint.isOwns()) addNeighbours(to, constraint.asOwns().attribute());
+                else if (constraint.isPlays()) addNeighbours(to, constraint.asPlays().role());
+                else if (constraint.isRelates()) addNeighbours(to, constraint.asRelates().role());
+                else if (constraint.isIs()) addNeighbours(to, constraint.asIs().variable());
                 // TODO: There are other constraints in a TypeVariable. Are we intentionally ignoring them?
                 //       Why do we not throw GraknException.of(ILLEGAL_STATE); ?
+                //This is correct: we are adding the neighbours that are adjacent via constraints. These are the
+                //ony Constraints that can contain another  variable
             }
         }
     }

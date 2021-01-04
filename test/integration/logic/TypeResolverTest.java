@@ -715,4 +715,35 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
+//    Scenario: when matching a roleplayer in a relation that can't actually play that role, an empty result is returned
+    @Test
+    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
+        define_standard_schema("test-schema");
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " $x isa company;" +
+                " ($x) isa friendship;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set());
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+//    @Test
+//    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
+//        define_standard_schema("test-schema");
+//
+//        TypeResolver typeResolver = transaction.logic().typeResolver();
+//        String queryString = "match ";
+//        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+//
+//        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+//            put("$x", set());
+//        }};
+//        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
 }

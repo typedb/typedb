@@ -72,6 +72,7 @@ public class Reasoner {
     private List<Producer<ConceptMap>> producers(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
         // TODO enable: conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
+        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
@@ -99,6 +100,7 @@ public class Reasoner {
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
         conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
         // TODO enable: conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
+        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
 
         // TODO: enable reasoner here
