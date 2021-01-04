@@ -155,14 +155,6 @@ public class UnifyRelationConcludableTest {
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
-    private RelationConstraint findRelationConstraint(Conjunction conjunction) {
-        List<RelationConstraint> rels = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
-                .filter(constraint -> constraint.isThing() && constraint.asThing().isRelation())
-                .map(constraint -> constraint.asThing().asRelation()).toList();
-        assert rels.size() == 1 : "More than 1 relation constraint in conjunction to search";
-        return rels.get(0);
-    }
-
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
         try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
             Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),

@@ -198,20 +198,18 @@ public class Rule {
 
     public static abstract class Conclusion<CONSTRAINT extends Constraint> {
 
-        public CONSTRAINT constraint() {
-            return null; // TODO
-        }
+        public abstract CONSTRAINT constraint();
 
         public static Conclusion<?> create(Conjunction then) {
             return Iterators.iterate(then.variables()).filter(Variable::isThing).map(Variable::asThing)
                     .flatMap(variable -> Iterators.iterate(variable.constraints()).map(constraint -> {
                         if (constraint.isRelation()) {
-                            return Relation.create(constraint.asRelation(), variable.isa().get());
+                            return new Relation(constraint.asRelation(), variable.isa().get());
                         } else if (constraint.isHas()) {
-                            if (variable.isa().isPresent()) {
-                                return Has.create(constraint.asHas(), variable.isa().get());
+                            if (constraint.asHas().attribute().isa().isPresent()) {
+                                return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get());
                             } else {
-                                return Has.create(constraint.asHas());
+                                return new Has.Variable(constraint.asHas());
                             }
                         }
                         return null;
@@ -270,10 +268,6 @@ public class Rule {
                 this.isa = isa;
             }
 
-            public static Relation create(RelationConstraint relation, IsaConstraint isa) {
-                return new Relation(relation, isa);
-            }
-
             public RelationConstraint constraint() {
                 return relation;
             }
@@ -300,26 +294,22 @@ public class Rule {
             }
         }
 
-        public static class Has extends Conclusion<HasConstraint> {
+        public static abstract class Has extends Conclusion<HasConstraint> {
 
-            public Has(HasConstraint constraint, Set<Variable> whenContext) {
+            private HasConstraint hasConstraint;
+
+            Has(HasConstraint hasConstraint) {
+                this.hasConstraint = hasConstraint;
             }
 
-            public static Has create(HasConstraint has, IsaConstraint isa) {
-                return null; // TODO Create an ExplicitHas
-            }
-
-            public static Has create(HasConstraint has) {
-                return null; // TODO create a VariableHas
+            @Override
+            public HasConstraint constraint() {
+                return hasConstraint;
             }
 
             @Override
             public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
                 return null;
-            }
-
-            public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
-                return new Has(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
@@ -331,11 +321,47 @@ public class Rule {
             public Has asHas() {
                 return this;
             }
+
+            public static class Explicit extends Has {
+
+                private final IsaConstraint isaConstraint;
+
+                Explicit(HasConstraint hasConstraint, IsaConstraint isaConstraint) {
+                    super(hasConstraint);
+                    this.isaConstraint = isaConstraint;
+                }
+
+
+                @Override
+                public boolean isExplicitHas() {
+                    return true;
+                }
+            }
+
+            public static class Variable extends Has {
+                Variable(HasConstraint hasConstraint) {
+                    super(hasConstraint);
+                }
+
+                @Override
+                public boolean isVariableHas() {
+                    return true;
+                }
+            }
+
         }
 
         public static class Isa extends Conclusion<IsaConstraint> {
 
-            public Isa(IsaConstraint constraint, Set<Variable> whenContext) {
+            private final IsaConstraint isa;
+
+            public Isa(IsaConstraint isa, Set<Variable> whenContext) {
+                this.isa = isa;
+            }
+
+            @Override
+            public IsaConstraint constraint() {
+                return isa;
             }
 
             @Override
@@ -360,16 +386,20 @@ public class Rule {
 
         public static class Value extends Conclusion<ValueConstraint<?>> {
 
-            Value(ValueConstraint<?> constraint, Set<Variable> whenContext) {
+            private final ValueConstraint<?> value;
+
+            Value(ValueConstraint<?> value, Set<Variable> whenContext) {
+                this.value = value;
+            }
+
+            @Override
+            public ValueConstraint<?> constraint() {
+                return value;
             }
 
             @Override
             public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
                 return null;
-            }
-
-            public static Value create(ValueConstraint<?> constraint, Set<Variable> whenContext) {
-                return new Value(ConstraintCopier.copyConstraint(constraint), whenContext);
             }
 
             @Override
