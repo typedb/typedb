@@ -218,7 +218,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void initialiseConstraintsForOrderSequence() {
-            Set<Directional<?, ?>> previousEdges = iterate(from.ins()).filter(e -> !e.equals(this.opposite)).toSet();
+            Set<Directional<?, ?>> previousEdges = iterate(from.ins()).filter(
+                    edge -> !edge.isSelfClosure() && !edge.equals(this.opposite)
+            ).toSet();
             int i = 0;
             for (Directional<?, ?> previousEdge : previousEdges) {
                 String name = conPrefix + "order_sequence_" + i++;
@@ -228,6 +230,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 conOrderSequence.setCoefficient(previousEdge.varOrderNumber, -1);
                 conOrderSequence.setCoefficient(previousEdge.varIsSelected, -1);
             }
+        }
+
+        protected boolean isSelfClosure() {
+            return from.equals(to);
         }
 
         protected void setObjectiveCoefficient(double cost) {
@@ -360,7 +366,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             @Override
             void updateObjective(GraphManager graphMgr) {
                 long cost;
-                if (to().props().hasIID()) {
+                if (isSelfClosure() || to().props().hasIID()) {
                     cost = 1;
                 } else if (predicate.operator().equals(grakn.core.traversal.common.Predicate.Operator.Equality.EQ)) {
                     if (!to.props().types().isEmpty()) {
@@ -634,7 +640,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         long cost;
-                        if (!isTransitive) {
+                        if (isSelfClosure() || !isTransitive) {
                             cost = 1;
                         } else if (!to.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().subTypesDepth(to.props().labels());
@@ -655,7 +661,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         double cost;
-                        if (!to.props().labels().isEmpty()) {
+                        if (isSelfClosure()) {
+                            cost = 1;
+                        } else if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().subTypesMean(from.props().labels(), isTransitive);
@@ -713,7 +721,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         double cost;
-                        if (!to.props().labels().isEmpty()) {
+                        if (isSelfClosure()) {
+                            cost = 1;
+                        } else if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().outOwnsMean(from.props().labels(), isKey);
@@ -736,7 +746,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     void updateObjective(GraphManager graphMgr) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
                         double cost;
-                        if (!to.props().labels().isEmpty()) {
+                        if (isSelfClosure()) {
+                            cost = 1;
+                        } else if (!to.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().inOwnsMean(from.props().labels(), isKey) *
@@ -997,10 +1009,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> ownerToAttributeTypes = new HashMap<>();
 
-                        if (to().props().hasIID()) {
+                        if (isSelfClosure() || to().props().hasIID()) {
                             setObjectiveCoefficient(1);
                             return;
                         }
+
                         if (!from.props().types().isEmpty()) {
                             ownerTypes = from.props().types().stream()
                                     .map(l -> graphMgr.schema().getType(l)).collect(toSet());
@@ -1052,7 +1065,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
 
-                        if (to().props().hasIID()) {
+                        if (isSelfClosure() || to().props().hasIID()) {
                             setObjectiveCoefficient(1);
                             return;
                         }
@@ -1275,7 +1288,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         double cost = 0;
-                        if (to.props().hasIID()) {
+                        if (isSelfClosure() || to.props().hasIID()) {
                             cost = 1;
                         } else if (!roleTypes.isEmpty()) {
                             cost = 0;
@@ -1307,7 +1320,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void updateObjective(GraphManager graphMgr) {
                         double cost = 0;
-                        if (to.props().hasIID()) {
+                        if (isSelfClosure() || to.props().hasIID()) {
                             cost = 1;
                         } else if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
                             double div = graphMgr.data().stats().thingVertexSum(from.props().types());
