@@ -42,6 +42,16 @@ public interface Attribute extends Thing {
 
     Stream<? extends Thing> getOwners(ThingType ownerType);
 
+    boolean isBoolean();
+
+    boolean isLong();
+
+    boolean isDouble();
+
+    boolean isString();
+
+    boolean isDateTime();
+
     Attribute.Boolean asBoolean();
 
     Attribute.Long asLong();

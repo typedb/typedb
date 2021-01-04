@@ -24,8 +24,11 @@ import graql.lang.common.GraqlArg;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public interface AttributeType extends ThingType {
 
@@ -100,6 +103,15 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
+        public static ValueType of(Encoding.ValueType encoding) {
+            for (ValueType vt : ValueType.values()) {
+                if (vt.encoding.equals(encoding)) {
+                    return vt;
+                }
+            }
+            return null;
+        }
+
         public Class<?> getValueClass() {
             return encoding.valueClass();
         }
@@ -110,6 +122,10 @@ public interface AttributeType extends ThingType {
 
         public boolean isKeyable() {
             return encoding.isKeyable();
+        }
+
+        public Set<ValueType> comparables() {
+            return iterate(encoding.comparables()).map(ValueType::of).toSet();
         }
     }
 

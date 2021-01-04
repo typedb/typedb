@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -242,7 +241,7 @@ public class Unifier {
         private boolean predicatesSatisfied(Identifier id, Concept concept) {
             if (predicates.containsKey(id)) {
                 assert concept.isThing() && (concept.asThing() instanceof Attribute);
-                return predicates.get(id).apply(concept.asThing().asAttribute());
+                return predicates.get(id).apply(concept.asAttribute());
             } else {
                 return true;
             }

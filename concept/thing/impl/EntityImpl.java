@@ -46,6 +46,11 @@ public class EntityImpl extends ThingImpl implements Entity {
     }
 
     @Override
+    public boolean isEntity() {
+        return true;
+    }
+
+    @Override
     public EntityImpl asEntity() {
         return this;
     }

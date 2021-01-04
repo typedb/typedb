@@ -19,6 +19,7 @@ package grakn.core.reasoner.resolution;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
@@ -89,7 +90,7 @@ public class MockTransaction {
     }
 
 
-    public static class MockConcept implements Concept {
+    public static class MockConcept extends ConceptImpl implements Concept {
         private final long id;
 
         public MockConcept(long id) {

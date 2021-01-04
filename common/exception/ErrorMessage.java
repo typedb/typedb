@@ -220,6 +220,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingRead(5, "The role type '%s' is not scoped by its relation type.");
         public static final ThingRead CONTRADICTORY_BOUND_VARIABLE =
                 new ThingRead(6, "The nested variable '%s' contradicts the type of its bound variable.");
+        public static final ThingRead SORT_VARIABLE_NOT_ATTRIBUTE =
+                new ThingRead(7, "The variable '%s' cannot be used to sort, as it is not an attribute.");
+        public static final ThingRead SORT_ATTRIBUTE_NOT_COMPARABLE =
+                new ThingRead(8, "The variable '%s' does not contain attributes of are always comparable to each other, such as %s and %s.");
 
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";

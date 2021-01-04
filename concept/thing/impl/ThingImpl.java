@@ -19,9 +19,8 @@
 package grakn.core.concept.thing.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
@@ -42,7 +41,6 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_OWN_ATTRIBUTE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
@@ -55,7 +53,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 
-public abstract class ThingImpl implements Thing {
+public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     final ThingVertex vertex;
 
@@ -212,21 +210,6 @@ public abstract class ThingImpl implements Thing {
 
     @Override
     public boolean isThing() { return true; }
-
-    @Override
-    public EntityImpl asEntity() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Entity.class)));
-    }
-
-    @Override
-    public AttributeImpl<?> asAttribute() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.class)));
-    }
-
-    @Override
-    public RelationImpl asRelation() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Relation.class)));
-    }
 
     private String printTypeSet(Set<? extends Type> types) {
         final Type[] array = types.toArray(new Type[0]);

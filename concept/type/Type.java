@@ -46,24 +46,4 @@ public interface Type extends Concept {
     Stream<? extends Type> getSubtypesExplicit();
 
     List<GraknException> validate();
-
-    boolean isThingType();
-
-    boolean isEntityType();
-
-    boolean isAttributeType();
-
-    boolean isRelationType();
-
-    boolean isRoleType();
-
-    ThingType asThingType();
-
-    EntityType asEntityType();
-
-    AttributeType asAttributeType();
-
-    RelationType asRelationType();
-
-    RoleType asRoleType();
 }

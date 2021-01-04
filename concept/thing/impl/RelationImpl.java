@@ -124,6 +124,11 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
+    public boolean isRelation() {
+        return true;
+    }
+
+    @Override
     public RelationImpl asRelation() {
         return this;
     }

@@ -90,8 +90,38 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
+    public boolean isAttribute() {
+        return true;
+    }
+
+    @Override
     public AttributeImpl<?> asAttribute() {
         return this;
+    }
+
+    @Override
+    public boolean isBoolean() {
+        return false;
+    }
+
+    @Override
+    public boolean isLong() {
+        return false;
+    }
+
+    @Override
+    public boolean isDouble() {
+        return false;
+    }
+
+    @Override
+    public boolean isString() {
+        return false;
+    }
+
+    @Override
+    public boolean isDateTime() {
+        return false;
     }
 
     @Override
@@ -132,6 +162,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
+        public boolean isBoolean() {
+            return true;
+        }
+
+        @Override
         public AttributeImpl.Boolean asBoolean() {
             return this;
         }
@@ -147,6 +182,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         @Override
         public java.lang.Long getValue() {
             return attributeVertex.value();
+        }
+
+        @Override
+        public boolean isLong() {
+            return true;
         }
 
         @Override
@@ -168,6 +208,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
+        public boolean isDouble() {
+            return true;
+        }
+
+        @Override
         public AttributeImpl.Double asDouble() {
             return this;
         }
@@ -186,6 +231,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         }
 
         @Override
+        public boolean isString() {
+            return true;
+        }
+
+        @Override
         public AttributeImpl.String asString() {
             return this;
         }
@@ -201,6 +251,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
         @Override
         public java.time.LocalDateTime getValue() {
             return attributeVertex.value();
+        }
+
+        @Override
+        public boolean isDateTime() {
+            return true;
         }
 
         @Override
