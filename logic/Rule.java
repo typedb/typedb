@@ -19,6 +19,7 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -31,7 +32,6 @@ import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -41,6 +41,7 @@ import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,7 +59,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<Conclusion<?>> possibleConclusions; // TODO after restructuring Conclusions, we will have a single conclusion
+    private final Conclusion<?> conclusion;
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -70,7 +71,7 @@ public class Rule {
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
         pruneThenTypeHints();
-        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
+        this.conclusion = Conclusion.create(this.then, this.when);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
@@ -87,7 +88,7 @@ public class Rule {
         validateSatisfiable();
         pruneThenTypeHints();
 
-        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
+        this.conclusion = Conclusion.create(this.then, this.when);
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
     }
@@ -105,8 +106,8 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Set<Conclusion<?>> possibleConclusions() {
-        return possibleConclusions;
+    public Conclusion<?> conclusion() {
+        return conclusion;
     }
 
     public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer) {
@@ -186,13 +187,6 @@ public class Rule {
                 );
     }
 
-    private Set<Conclusion<?>> buildConclusions(Conjunction then, Set<Variable> when) {
-        HashSet<Conclusion<?>> conclusions = new HashSet<>();
-        then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> Conclusion.create(constraint, when)).forEach(conclusions::add);
-        return conclusions;
-    }
-
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
         return logicManager.typeResolver().resolveLabels(
                 Conjunction.create(conjunction.normalise().patterns().get(0)));
@@ -216,12 +210,20 @@ public class Rule {
             return constraint;
         }
 
-        public static Conclusion<?> create(ThingConstraint constraint, Set<Variable> whenContext) {
-            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), whenContext);
-            else if (constraint.isHas()) return Has.create(constraint.asHas(), whenContext);
-            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), whenContext);
-            else if (constraint.isValue()) return Value.create(constraint.asValue(), whenContext);
-            else throw GraknException.of(ILLEGAL_STATE);
+        public static Conclusion<?> create(Conjunction then, Conjunction when) {
+            return Iterators.iterate(then.variables()).filter(Variable::isThing).map(Variable::asThing)
+                    .flatMap(variable -> Iterators.iterate(variable.constraints()).map(constraint -> {
+                        if (constraint.isRelation()) {
+                            return Relation.create(constraint.asRelation(), variable.isa().get(), when);
+                        } else if (constraint.isHas()) {
+                            if (variable.isa().isPresent()) {
+                                return Has.create(constraint.asHas(), variable.isa().get(), when);
+                            } else {
+                                return Has.create(constraint.asHas(), when);
+                            }
+                        }
+                        return null;
+                    })).filter(Objects::nonNull).first().orElseThrow(() -> GraknException.of(ILLEGAL_STATE));
         }
 
         public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr);
@@ -259,6 +261,7 @@ public class Rule {
         }
 
         private void copyAdditionalConstraints(Set<Variable> fromVars, Set<Variable> toVars) {
+            // TODO We don't want to do this any more, we only want to copy the resolvedTypes from the variables in the `when`
             Map<Variable, Variable> nonAnonFromVarsMap = fromVars.stream()
                     .filter(variable -> !variable.id().reference().isAnonymous())
                     .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
@@ -275,10 +278,22 @@ public class Rule {
                     });
         }
 
+        public boolean isExplicitHas() {
+            return false; // TODO Implement in subclass
+        };
+
+        public boolean isVariableHas() {
+            return false; // TODO Implement in subclass
+        }
+
         public static class Relation extends Conclusion<RelationConstraint> {
 
             public Relation(RelationConstraint constraint, Set<Variable> whenContext) {
                 super(constraint, whenContext);
+            }
+
+            public static Relation create(RelationConstraint relation, IsaConstraint isa, Conjunction when) {
+                return null; // TODO create a Relation
             }
 
             @Override
@@ -311,6 +326,14 @@ public class Rule {
 
             public Has(HasConstraint constraint, Set<Variable> whenContext) {
                 super(constraint, whenContext);
+            }
+
+            public static Has create(HasConstraint has, IsaConstraint isa, Conjunction when) {
+                return null; // TODO Create an ExplicitHas
+            }
+
+            public static Has create(HasConstraint has, Conjunction when) {
+                return null; // TODO create a VariableHas
             }
 
             @Override

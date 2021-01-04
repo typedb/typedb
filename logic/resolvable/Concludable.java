@@ -105,8 +105,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     private void computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
         assert applicableRules == null;
         applicableRules = new HashMap<>();
-        logicMgr.rules().forEachRemaining(rule -> Iterators.iterate(rule.possibleConclusions())
-                .flatMap(conclusion -> unify(conclusion, conceptMgr))
+        logicMgr.rules().forEachRemaining(rule -> Iterators.iterate(unify(rule.conclusion(), conceptMgr))
                 .forEachRemaining(unifier -> {
                     applicableRules.putIfAbsent(rule, new HashSet<>());
                     applicableRules.get(rule).add(unifier);
