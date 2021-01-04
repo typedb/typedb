@@ -23,6 +23,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.edge.ThingEdge;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -33,6 +34,8 @@ import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.graph.TraversalVertex;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -338,7 +341,7 @@ public abstract class ProcedureVertex<
             ResourceIterator<TypeVertex> iterator = null;
 
             if (!props().labels().isEmpty()) iterator = iterateLabels(graphMgr);
-            if (props().valueType().isPresent()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
+            if (!props().valueTypes().isEmpty()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
             if (props().isAbstract()) iterator = iterateOrFilterAbstract(graphMgr, iterator);
             if (props().regex().isPresent()) iterator = iterateAndFilterRegex(graphMgr, iterator);
             if (iterator == null) {
@@ -369,7 +372,7 @@ public abstract class ProcedureVertex<
 
         ResourceIterator<TypeVertex> filter(ResourceIterator<TypeVertex> iterator) {
             if (!props().labels().isEmpty()) iterator = filterLabels(iterator);
-            if (props().valueType().isPresent()) iterator = filterValueTypes(iterator);
+            if (!props().valueTypes().isEmpty()) iterator = filterValueTypes(iterator);
             if (props().isAbstract()) iterator = filterAbstract(iterator);
             if (props().regex().isPresent()) iterator = filterRegex(iterator);
             return iterator;
@@ -386,14 +389,19 @@ public abstract class ProcedureVertex<
 
         private ResourceIterator<TypeVertex> iterateOrFilterValueTypes(GraphManager graphMgr,
                                                                        ResourceIterator<TypeVertex> iterator) {
-            assert props().valueType().isPresent();
-            if (iterator == null) return graphMgr.schema().attributeTypes(props().valueType().get());
-            else return filterValueTypes(iterator);
+            assert !props().valueTypes().isEmpty();
+            if (iterator == null) {
+                List<ResourceIterator<TypeVertex>> iterators = new ArrayList<>();
+                for (Encoding.ValueType valueType : props().valueTypes()) {
+                    iterators.add(graphMgr.schema().attributeTypes(valueType));
+                }
+                return link(iterators);
+            } else return filterValueTypes(iterator);
         }
 
         private ResourceIterator<TypeVertex> filterValueTypes(ResourceIterator<TypeVertex> iterator) {
-            assert props().valueType().isPresent();
-            return iterator.filter(t -> Objects.equals(t.valueType(), props().valueType().get()));
+            assert !props().valueTypes().isEmpty();
+            return iterator.filter(t -> props().valueTypes().contains(t.valueType()));
         }
 
         private ResourceIterator<TypeVertex> iterateOrFilterAbstract(GraphManager graphMgr,
