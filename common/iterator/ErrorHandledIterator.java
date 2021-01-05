@@ -34,11 +34,7 @@ public class ErrorHandledIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        try {
-            this.iterator.recycle();
-        } catch (Exception e) {
-            throw this.exceptionFn.apply(e);
-        }
+        this.iterator.recycle();
     }
 
     @Override
