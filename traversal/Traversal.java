@@ -218,9 +218,14 @@ public class Traversal {
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Double value) {
-        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.DOUBLE);
-        parameters.pushValue(attribute, predicate, new Parameters.Value(value));
-        structure.thingVertex(attribute).props().predicate(predicate);
+        long longValue = Math.round(value);
+        if (Predicate.compareDoubles(value, longValue) == 0) {
+            predicate(attribute, token, longValue);
+        } else {
+            Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.DOUBLE);
+            parameters.pushValue(attribute, predicate, new Parameters.Value(value));
+            structure.thingVertex(attribute).props().predicate(predicate);
+        }
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
