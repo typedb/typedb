@@ -20,9 +20,10 @@ package grakn.core.server.rpc.query;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.NumericGroup;
 import grakn.core.query.QueryManager;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.core.server.rpc.util.ResponseBuilder;
@@ -104,13 +105,13 @@ public class QueryHandler {
         final Numeric answer = queryManager.match(query, options);
         transactionRPC.respond(
                 response(request, QueryProto.Query.Res.newBuilder().setMatchAggregateRes(
-                        QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(ResponseBuilder.Answer.number(answer.asNumber()))))
+                        QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(ResponseBuilder.Answer.numeric(answer))))
         );
     }
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroup.Req req, Options.Query options) {
         final GraqlMatch.Group query = Graql.parseQuery(req.getQuery()).asMatchGroup();
-        ResourceIterator<AnswerGroup<ConceptMap>> answers = queryManager.match(query, options);
+        ResourceIterator<ConceptMapGroup> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupRes(
@@ -122,12 +123,12 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroupAggregate.Req req, Options.Query options) {
         final GraqlMatch.Group.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchGroupAggregate();
-        ResourceIterator<AnswerGroup<Numeric>> answers = queryManager.match(query, options);
+        ResourceIterator<NumericGroup> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupAggregateRes(
                         QueryProto.Query.MatchGroupAggregate.Res.newBuilder().addAllAnswers(
-                                as.stream().map(ResponseBuilder.Answer::numberGroup).collect(toList())
+                                as.stream().map(ResponseBuilder.Answer::numericGroup).collect(toList())
                         )
                 ))
         );

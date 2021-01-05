@@ -58,6 +58,10 @@ public class Numeric implements Answer {
         return doubleValue != null;
     }
 
+    public boolean isNan() {
+        return !isLong() && !isDouble();
+    }
+
     public long asLong() {
         if (isLong()) return longValue;
         else throw GraknException.of(ILLEGAL_CAST);

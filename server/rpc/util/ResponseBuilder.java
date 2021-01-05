@@ -20,9 +20,10 @@ package grakn.core.server.rpc.util;
 import com.google.protobuf.ByteString;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -282,20 +283,29 @@ public class ResponseBuilder {
             return conceptMapProto.build();
         }
 
-        public static AnswerProto.ConceptMapGroup conceptMapGroup(AnswerGroup<ConceptMap> answer) {
+        public static AnswerProto.ConceptMapGroup conceptMapGroup(ConceptMapGroup answer) {
             return AnswerProto.ConceptMapGroup.newBuilder()
                     .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
                     .addAllConceptMaps(answer.answers().stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))
                     .build();
         }
 
-        public static AnswerProto.Number number(Number number) {
-            return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
+        public static AnswerProto.Numeric numeric(Numeric answer) {
+            AnswerProto.Numeric.Builder builder = AnswerProto.Numeric.newBuilder();
+            if (answer.isLong()) {
+                builder.setLongValue(answer.asLong());
+            } else if (answer.isDouble()) {
+                builder.setDoubleValue(answer.asDouble());
+            } else if (answer.isNan()) {
+                builder.setNanValue(AnswerProto.NaN.newBuilder().build());
+            }
+            return builder.build();
         }
 
-        public static AnswerProto.NumberGroup numberGroup(AnswerGroup<Numeric> a) {
-            return AnswerProto.NumberGroup.newBuilder().setOwner(ResponseBuilder.Concept.concept(a.owner()))
-                    .addAllNumbers(a.answers().stream().map(n -> ResponseBuilder.Answer.number(n.asNumber())).collect(toList()))
+        public static AnswerProto.NumericGroup numericGroup(NumericGroup answer) {
+            return AnswerProto.NumericGroup.newBuilder()
+                    .setOwner(Concept.concept(answer.owner()))
+                    .setNumber(numeric(answer.numeric()))
                     .build();
         }
     }

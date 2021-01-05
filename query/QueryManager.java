@@ -24,9 +24,10 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Disjunction;
@@ -171,35 +172,35 @@ public class QueryManager {
         throw GraknException.of(UNIMPLEMENTED);
     }
 
-    public ResourceIterator<AnswerGroup<ConceptMap>> match(GraqlMatch.Group query) {
+    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
         return match(query, true, new Options.Query());
     }
 
-    public ResourceIterator<AnswerGroup<ConceptMap>> match(GraqlMatch.Group query, boolean isParallel) {
+    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel) {
         return match(query, isParallel, new Options.Query());
     }
 
-    public ResourceIterator<AnswerGroup<ConceptMap>> match(GraqlMatch.Group query, Options.Query options) {
+    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, Options.Query options) {
         return match(query, true, options);
     }
 
-    public ResourceIterator<AnswerGroup<ConceptMap>> match(GraqlMatch.Group query, boolean isParallel, Options.Query options) {
+    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel, Options.Query options) {
         throw GraknException.of(UNIMPLEMENTED);
     }
 
-    public ResourceIterator<AnswerGroup<Numeric>> match(GraqlMatch.Group.Aggregate query) {
+    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
         return match(query, true, new Options.Query());
     }
 
-    public ResourceIterator<AnswerGroup<Numeric>> match(GraqlMatch.Group.Aggregate query, boolean isParallel) {
+    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel) {
         return match(query, isParallel, new Options.Query());
     }
 
-    public ResourceIterator<AnswerGroup<Numeric>> match(GraqlMatch.Group.Aggregate query, Options.Query options) {
+    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Options.Query options) {
         return match(query, true, options);
     }
 
-    public ResourceIterator<AnswerGroup<Numeric>> match(GraqlMatch.Group.Aggregate query, boolean isParallel, Options.Query options) {
+    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel, Options.Query options) {
         throw GraknException.of(UNIMPLEMENTED);
     }
 

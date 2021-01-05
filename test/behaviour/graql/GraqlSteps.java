@@ -20,9 +20,10 @@ package grakn.core.test.behaviour.graql;
 
 import grakn.common.collection.Bytes;
 import grakn.core.concept.Concept;
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
@@ -62,8 +63,8 @@ public class GraqlSteps {
 
     private static List<ConceptMap> answers;
     private static Numeric numericAnswer;
-    private static List<AnswerGroup<ConceptMap>> answerGroups;
-    private static List<AnswerGroup<Numeric>> numericAnswerGroups;
+    private static List<ConceptMapGroup> answerGroups;
+    private static List<NumericGroup> numericAnswerGroups;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     HashMap<String, String> groupOwnerIdentifiers = new HashMap<>();
     private Map<String, Map<String, String>> rules;
@@ -243,8 +244,8 @@ public class GraqlSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
-                     expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.01);
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asDouble()),
+                     expectedAnswer, numericAnswer.asDouble(), 0.01);
     }
 
     @Then("aggregate answer is empty")
@@ -282,7 +283,7 @@ public class GraqlSteps {
                 default:
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
-            AnswerGroup<ConceptMap> answerGroup = answerGroups.stream()
+            ConceptMapGroup answerGroup = answerGroups.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
@@ -337,13 +338,13 @@ public class GraqlSteps {
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
             double expectedAnswer = expectation.getValue();
-            AnswerGroup<Numeric> answerGroup = numericAnswerGroups.stream()
+            NumericGroup answerGroup = numericAnswerGroups.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", expectation.getKey()), answerGroup);
 
-            double actualAnswer = answerGroup.answers().get(0).asNumber().doubleValue();
+            double actualAnswer = answerGroup.numeric().asDouble();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
                                   expectedAnswer, expectation.getKey(), actualAnswer),
