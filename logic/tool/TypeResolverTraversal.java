@@ -162,9 +162,10 @@ public class TypeResolverTraversal {
         }
 
         private void convertRelation(TypeVariable owner, RelationConstraint constraint) {
-            //TODO: renaming of this
-            ThingVariable ownerThing = constraint.owner();
-
+            //TODO: renaming of ownerThing. Also, do we even need it?
+//            ThingVariable ownerThing = constraint.owner();
+//            convert(ownerThing);
+//
 
         }
 
