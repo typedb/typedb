@@ -243,8 +243,8 @@ public class GraqlSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.number().doubleValue()),
-                     expectedAnswer, numericAnswer.number().doubleValue(), 0.01);
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
+                     expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.01);
     }
 
     @Then("aggregate answer is empty")
@@ -343,7 +343,7 @@ public class GraqlSteps {
                     .orElse(null);
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", expectation.getKey()), answerGroup);
 
-            double actualAnswer = answerGroup.answers().get(0).number().doubleValue();
+            double actualAnswer = answerGroup.answers().get(0).asNumber().doubleValue();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
                                   expectedAnswer, expectation.getKey(), actualAnswer),

@@ -37,18 +37,14 @@ import grakn.core.logic.Rule;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.LogicProto;
-import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
 import java.time.ZoneOffset;
-import java.util.stream.Collectors;
 
-import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYPE;
 import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
@@ -299,7 +295,7 @@ public class ResponseBuilder {
 
         public static AnswerProto.NumberGroup numberGroup(AnswerGroup<Numeric> a) {
             return AnswerProto.NumberGroup.newBuilder().setOwner(ResponseBuilder.Concept.concept(a.owner()))
-                    .addAllNumbers(a.answers().stream().map(n -> ResponseBuilder.Answer.number(n.number())).collect(toList()))
+                    .addAllNumbers(a.answers().stream().map(n -> ResponseBuilder.Answer.number(n.asNumber())).collect(toList()))
                     .build();
         }
     }

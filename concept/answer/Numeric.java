@@ -18,18 +18,59 @@
 
 package grakn.core.concept.answer;
 
+import grakn.core.common.exception.GraknException;
+
+import javax.annotation.Nullable;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+
 /**
  * A type of Answer object that contains a Number. Will either be a long or a double
  */
 public class Numeric implements Answer {
 
-    private final Number number;
+    private final Long longValue;
+    private final Double doubleValue;
 
-    public Numeric(Number number) {
-        this.number = number;
+    public Numeric(@Nullable Long longValue, @Nullable Double doubleValue) {
+        this.longValue = longValue;
+        this.doubleValue = doubleValue;
     }
 
-    public Number number() {
-        return number;
+    public static Numeric ofLong(long value) {
+        return new Numeric(value, null);
+    }
+
+    public static Numeric ofDouble(double value) {
+        return new Numeric(null, value);
+    }
+
+    public static Numeric ofNan() {
+        return new Numeric(null, null);
+    }
+
+    public boolean isLong() {
+        return longValue != null;
+    }
+
+    public boolean isDouble() {
+        return doubleValue != null;
+    }
+
+    public long asLong() {
+        if (isLong()) return longValue;
+        else throw GraknException.of(ILLEGAL_CAST);
+    }
+
+    public Double asDouble() {
+        if (isDouble()) return doubleValue;
+        else throw GraknException.of(ILLEGAL_CAST);
+    }
+
+    public Number asNumber() {
+        if (isLong()) return longValue;
+        else if (isDouble()) return doubleValue;
+        else throw GraknException.of(ILLEGAL_STATE);
     }
 }

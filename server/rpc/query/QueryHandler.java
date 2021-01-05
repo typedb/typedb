@@ -26,8 +26,6 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.query.QueryManager;
 import grakn.core.server.rpc.TransactionRPC;
 import grakn.core.server.rpc.util.ResponseBuilder;
-import grakn.protocol.AnswerProto;
-import grakn.protocol.ConceptProto;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
@@ -106,7 +104,7 @@ public class QueryHandler {
         final Numeric answer = queryManager.match(query, options);
         transactionRPC.respond(
                 response(request, QueryProto.Query.Res.newBuilder().setMatchAggregateRes(
-                        QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(ResponseBuilder.Answer.number(answer.number()))))
+                        QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(ResponseBuilder.Answer.number(answer.asNumber()))))
         );
     }
 
