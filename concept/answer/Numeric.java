@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 
 import javax.annotation.Nullable;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 /**
@@ -66,12 +66,12 @@ public class Numeric implements Answer {
 
     public long asLong() {
         if (isLong()) return longValue;
-        else throw GraknException.of(ILLEGAL_CAST);
+        else throw GraknException.of(ILLEGAL_OPERATION);
     }
 
     public Double asDouble() {
         if (isDouble()) return doubleValue;
-        else throw GraknException.of(ILLEGAL_CAST);
+        else throw GraknException.of(ILLEGAL_OPERATION);
     }
 
     public Number asNumber() {
