@@ -222,10 +222,6 @@ public class Rule {
             return false;
         }
 
-        public boolean isHas() {
-            return false;
-        }
-
         public boolean isIsa() {
             return false;
         }
@@ -235,19 +231,15 @@ public class Rule {
         }
 
         public boolean isExplicitHas() {
-            return false; // TODO Implement in subclass
+            return false;
         }
 
         public boolean isVariableHas() {
-            return false; // TODO Implement in subclass
+            return false;
         }
 
         public Relation asRelation() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
-        }
-
-        public Has asHas() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
         }
 
         public Isa asIsa() {
@@ -256,6 +248,14 @@ public class Rule {
 
         public Value asValue() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
+        }
+
+        public Has.Variable asVariableHas() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Variable.class));
+        }
+
+        public Has.Explicit asExplicitHas() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
         }
 
         public static class Relation extends Conclusion<RelationConstraint> {
@@ -312,16 +312,6 @@ public class Rule {
                 return null;
             }
 
-            @Override
-            public boolean isHas() {
-                return true;
-            }
-
-            @Override
-            public Has asHas() {
-                return this;
-            }
-
             public static class Explicit extends Has {
 
                 private final IsaConstraint isaConstraint;
@@ -336,6 +326,11 @@ public class Rule {
                 public boolean isExplicitHas() {
                     return true;
                 }
+
+                @Override
+                public Has.Explicit asExplicitHas() {
+                    return this;
+                }
             }
 
             public static class Variable extends Has {
@@ -346,6 +341,11 @@ public class Rule {
                 @Override
                 public boolean isVariableHas() {
                     return true;
+                }
+
+                @Override
+                public Variable asVariableHas() {
+                    return this;
                 }
             }
 

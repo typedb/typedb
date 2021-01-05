@@ -114,7 +114,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     private ResourceIterator<Unifier> unify(Rule.Conclusion<?> conclusion, ConceptManager conceptMgr) {
         if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
-        else if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
+        else if (conclusion.isExplicitHas()) return unify(conclusion.asExplicitHas(), conceptMgr);
+        else if (conclusion.isVariableHas()) return unify(conclusion.asVariableHas(), conceptMgr);
         else if (conclusion.isIsa()) return unify(conclusion.asIsa(), conceptMgr);
         else if (conclusion.isValue()) return unify(conclusion.asValue(), conceptMgr);
         else throw GraknException.of(ILLEGAL_STATE);
