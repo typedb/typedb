@@ -21,6 +21,7 @@ package grakn.core.logic;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
+import grakn.core.logic.tool.TypeResolverTraversal;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.rocks.RocksGrakn;
@@ -102,6 +103,10 @@ public class TypeResolverTest {
 
     private Conjunction runSimpleHinter(TypeResolver typeResolver, String matchString) {
         return typeResolver.resolveVariables(createConjunction(matchString));
+    }
+
+    private Conjunction runTraversalResolver(TypeResolverTraversal typeResolverTraversal, String matchString) {
+        return typeResolverTraversal.resolveVariables(createConjunction(matchString));
     }
 
     @Test
@@ -713,6 +718,181 @@ public class TypeResolverTest {
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
         assertEquals(expected, getHintMap(simpleConjunction));
+    }
+
+
+    //#############################//
+    //TRAVERSAL TYPE RESOLVER TESTS//
+    //#############################//
+
+    @Test
+    public void traversal_type_resolver() throws IOException {
+        define_standard_schema("basic-schema");
+        String queryString = "match $p isa person;";
+        TypeResolverTraversal typeResolverTraversal = transaction.logic().typeResolverTraversal();
+
+        Conjunction conjunction = runTraversalResolver(typeResolverTraversal, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person", "man", "woman"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void isa_explicit_inference_traversal() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+
+        String queryString = "match $p isa! person; ";
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void is_inference_traversal() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+
+        String queryString = "match" +
+                "  $p isa entity;" +
+                "  $p is $q;" +
+                "  $q isa mammal;";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+            put("$p", set("mammal", "person", "man", "woman", "dog"));
+            put("$q", set("mammal", "person", "man", "woman", "dog"));
+        }};
+
+        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void has_inference_traversal() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+
+        String queryString = "match $p has name 'bob';";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person", "man", "woman", "dog"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+
+    @Test
+    public void has_with_cycle_traversal() throws IOException {
+        define_custom_schema(
+                "define" +
+                        "  person sub entity, owns name, owns height;" +
+                        "  name sub attribute, value string, owns nickname;" +
+                        "  nickname sub attribute, value string, owns name;" +
+                        "  surname sub attribute, value string, owns name;" +
+                        "  name sub attribute, value string;" +
+                        "  surname sub attribute, value string;" +
+                        "  nickname sub attribute, value string;" +
+                        "  height sub attribute, value double;" +
+                        "  "
+        );
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+        String queryString = "match" +
+                "  $a has $b;" +
+                "  $b has $a;";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("nickname", "name"));
+            put("$b", set("nickname", "name"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void has_with_big_cycle_traversal() {
+        define_custom_schema(
+                "define" +
+                        "  person sub entity, owns name, owns height;" +
+                        "  name sub attribute, value string, owns nickname;" +
+                        "  nickname sub attribute, value string, owns surname;" +
+                        "  surname sub attribute, value string, owns middlename;" +
+                        "  middlename sub attribute, value string, owns name;" +
+                        "  weight sub attribute, value double, owns measure-system;" +
+                        "  measure-system sub attribute, value string, owns conversion-rate;" +
+                        "  conversion-rate sub attribute, value double;" +
+                        "  height sub attribute, value double;"
+        );
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+        String queryString = "match" +
+                "  $a has $b;" +
+                "  $b has $c;" +
+                "  $c has $d;" +
+                "  $d has $a;";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+            put("$a", set("name", "surname", "nickname", "middlename"));
+            put("$b", set("name", "surname", "nickname", "middlename"));
+            put("$c", set("name", "surname", "nickname", "middlename"));
+            put("$d", set("name", "surname", "nickname", "middlename"));
+        }};
+
+        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void has_inference_variable_with_attribute_type_traversal() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+
+        String queryString = "match $p has name $a;";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person", "man", "woman", "dog"));
+            put("$a", set("name"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void infer_from_value_type_traversal() {
+        define_custom_schema(
+                "define" +
+                        "  dog sub entity, owns weight;" +
+                        "  person sub entity, owns name;" +
+                        "  weight sub attribute, value double;" +
+                        "  name sub attribute, value string;"
+        );
+        TypeResolverTraversal typeResolver = transaction.logic().typeResolverTraversal();
+        String queryString = "match" +
+                "  $p has $a;" +
+                "  $a = 'bob';";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person"));
+            put("$a", set("name"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
 }

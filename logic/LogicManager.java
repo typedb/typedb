@@ -27,6 +27,7 @@ import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import grakn.core.logic.tool.TypeResolver;
+import grakn.core.logic.tool.TypeResolverTraversal;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
@@ -49,6 +50,7 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final GraphManager graphMgr;
     private final TypeResolver typeResolver;
+    private final TypeResolverTraversal typeResolverTraversal;
     private LogicCache logicCache;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
@@ -56,6 +58,7 @@ public class LogicManager {
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
+        this.typeResolverTraversal = new TypeResolverTraversal(conceptMgr, traversalEng, logicCache);
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
@@ -104,6 +107,10 @@ public class LogicManager {
 
     public TypeResolver typeResolver() {
         return typeResolver;
+    }
+
+    public TypeResolverTraversal typeResolverTraversal() {
+        return typeResolverTraversal;
     }
 
     static void validateRuleStructureLabels(ConceptManager conceptMgr, RuleStructure ruleStructure) {
