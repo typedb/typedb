@@ -533,8 +533,6 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
-    //TODO: re-enable when 1-cycle attribute bug is fixed
-    @Ignore
     @Test
     public void has_with_minimal_cycle() {
         define_custom_schema("define " +
@@ -737,7 +735,6 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
-    //    Scenario: when matching a roleplayer in a relation that can't actually play that role, an empty result is returned
     @Test
     public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
         define_standard_schema("test-type-resolution");
@@ -775,7 +772,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void overridden_relates_are_valid()  {
+    public void overridden_relates_are_valid() {
         define_custom_schema("define" +
                                      " marriage sub relation, relates spouse;" +
                                      " hetero-marriage sub marriage," +
@@ -798,7 +795,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void thing_is_valid_answer()  {
+    public void thing_is_valid_answer() {
         define_custom_schema("define " +
                                      "marriage sub relation, relates spouse;" +
                                      "person sub entity, plays marriage:spouse;"
@@ -872,7 +869,7 @@ public class TypeResolverTest {
             put("$m", set());
         }};
         assertEquals(expected, getHintMap(conjunction));
-        for (Variable variable: conjunction.variables()) {
+        for (Variable variable : conjunction.variables()) {
             if (!variable.reference().isLabel()) assertFalse(variable.isSatisfiable());
         }
     }
