@@ -26,6 +26,7 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
+import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
@@ -69,7 +70,7 @@ public class TypeResolver {
     }
 
     public Conjunction resolveVariablesExhaustive(Conjunction conjunction) {
-        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
+        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         Resolvers resolverVariables = constraintMapper.resolvers();
         Map<Reference, Set<Label>> referenceResolversMapping =
                 retrieveResolveTypes(new HashSet<>(resolverVariables.resolvers()));
@@ -97,7 +98,7 @@ public class TypeResolver {
     }
 
     public Conjunction resolveVariables(Conjunction conjunction) {
-        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
+        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         Resolvers resolverVariables = constraintMapper.resolvers();
         long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
 
@@ -235,18 +236,20 @@ public class TypeResolver {
         private final TypeVariable rootRelationType;
         private final TypeVariable rootRoleType;
         private final Conjunction conjunction;
+        private final ConceptManager conceptMgr;
 
-        ConstraintMapper(Conjunction conjunction) {
+        ConstraintMapper(Conjunction conjunction, ConceptManager conceptMgr) {
+            this.conceptMgr = conceptMgr;
             this.resolvers = new Resolvers();
             this.neighbours = new HashMap<>();
             this.conjunction = conjunction;
-            this.rootAttributeType = createRootTypeVar(Label.of(ATTRIBUTE.toString()));
-            this.rootRelationType = createRootTypeVar(Label.of(RELATION.toString()));
-            this.rootRoleType = createRootTypeVar(Label.of(ROLE.toString(), RELATION.toString()));
+            this.rootAttributeType = retrieveTypeFromLabel(Label.of(ATTRIBUTE.toString()));
+            this.rootRelationType = retrieveTypeFromLabel(Label.of(RELATION.toString()));
+            this.rootRoleType = retrieveTypeFromLabel(Label.of(ROLE.toString(), RELATION.toString()));
             conjunction.variables().forEach(this::convert);
         }
 
-        private TypeVariable createRootTypeVar(Label rootLabel) {
+        private TypeVariable retrieveTypeFromLabel(Label rootLabel) {
             Optional<TypeVariable> rootType = iterate(conjunction.variables())
                     .filter(Variable::isType).map(Variable::asType)
                     .filter(v -> v.label().isPresent() && v.label().get().properLabel().equals(rootLabel)).first();
@@ -305,6 +308,7 @@ public class TypeResolver {
 
             if (variable.constraints().isEmpty()) return resolver;
 
+            variable.iid().ifPresent(constraint -> convertIID(resolver, constraint));
             variable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
             variable.is().forEach(constraint -> convertIs(resolver, constraint));
             variable.has().forEach(constraint -> convertHas(resolver, constraint));
@@ -380,6 +384,18 @@ public class TypeResolver {
             addNeighbours(owner, isVar);
         }
 
+        private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
+            owner.is(getTypeFromIID(iidConstraint.iid()));
+            TypeVariable iidVar = getTypeFromIID(iidConstraint.iid());
+            addNeighbours(owner, iidVar);
+        }
+
+        private TypeVariable getTypeFromIID(byte[] iid) {
+            assert conceptMgr.getThing(iid) != null;
+            Type type = conceptMgr.getThing(iid).getType();
+            return convert(retrieveTypeFromLabel(type.getLabel()));
+        }
+
         private void convertValue(TypeVariable owner, ValueConstraint<?> constraint) {
             if (constraint.isBoolean()) owner.valueType(GraqlArg.ValueType.BOOLEAN);
             else if (constraint.isString()) owner.valueType(GraqlArg.ValueType.STRING);
@@ -392,22 +408,6 @@ public class TypeResolver {
         private void addNeighbours(TypeVariable from, TypeVariable to) {
             neighbours.computeIfAbsent(from, k -> new HashSet<>()).add(to);
             neighbours.computeIfAbsent(to, k -> new HashSet<>()).add(from);
-        }
-
-        private void copyNeighbours(TypeVariable from, TypeVariable to) {
-            for (TypeConstraint constraint : from.constraints()) {
-                if (constraint.isSub()) addNeighbours(to, constraint.asSub().type());
-                else if (constraint.isOwns()) {
-                    addNeighbours(to, constraint.asOwns().attribute());
-                    constraint.asOwns().overridden().ifPresent(typeVariable -> addNeighbours(to, typeVariable));
-                } else if (constraint.isPlays()) {
-                    addNeighbours(to, constraint.asPlays().role());
-                    constraint.asPlays().overridden().ifPresent(typeVariable -> addNeighbours(to, typeVariable));
-                } else if (constraint.isRelates()) {
-                    addNeighbours(to, constraint.asRelates().role());
-                    constraint.asRelates().overridden().ifPresent(typeVariable -> addNeighbours(to, typeVariable));
-                } else if (constraint.isIs()) addNeighbours(to, constraint.asIs().variable());
-            }
         }
 
         public TypeVariable cloneVariable(TypeVariable copyFrom) {

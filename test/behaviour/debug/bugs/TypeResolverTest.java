@@ -27,7 +27,8 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "test/behaviour/debug/bugs/type-resolver-bugs.feature"
+        features = "test/behaviour/debug/bugs/type-resolver-bugs.feature",
+        tags = "not @ignore and not @ignore-grakn-core"
 )
 public class TypeResolverTest {
     // ATTENTION:

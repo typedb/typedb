@@ -763,7 +763,7 @@ public class TypeResolverTest {
         );
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match $x = 1.0;";
+        String queryString = "match $x isa house-number; $x = 1.0;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
 
@@ -855,11 +855,10 @@ public class TypeResolverTest {
         for (Variable variable : thingConjunction.variables()) {
             assertTrue(variable.isSatisfiable());
         }
-
     }
 
     @Test
-    public void impossble_queries_make_variables_unsatisfiable() throws IOException {
+    public void impossible_queries_make_variables_unsatisfiable() throws IOException {
         define_standard_schema("test-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match " +
