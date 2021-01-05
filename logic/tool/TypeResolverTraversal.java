@@ -18,10 +18,21 @@
 
 package grakn.core.logic.tool;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.TypeVariable;
+import grakn.core.pattern.variable.Variable;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 //TODO: here we remake Type Resolver, using a Traversal Structure instead of a Pattern to move on the graph and find out answers.
 public class TypeResolverTraversal {
@@ -38,8 +49,37 @@ public class TypeResolverTraversal {
 
     public Conjunction resolveVariables(Conjunction conjunction) {
         //TODO: main API
+        return conjunction;
     }
 
+
+    private static class ConstraintMapper {
+
+        private Conjunction conjunction;
+        private Map<Identifier, Traversal> resolvers;
+
+        ConstraintMapper(Conjunction conjunction) {
+            this.conjunction = conjunction;
+            this.resolvers = new HashMap<>();
+        }
+
+        private Traversal convert(Variable variable) {
+            if (variable.isType()) return convert(variable.asType());
+            else if(variable.isThing()) return convert(variable.asThing());
+            else throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        private Traversal convert(TypeVariable variable) {
+            if (resolvers.containsKey(variable.id())) return resolvers.get(variable.id());
+//            Traversal resolver = resolvers.
+            //TODO
+        }
+
+        private Traversal convert(ThingVariable variable) {
+            //TODO
+        }
+
+    }
 
 
 }
