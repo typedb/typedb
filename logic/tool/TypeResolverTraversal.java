@@ -27,6 +27,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
+import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.SystemReference;
@@ -130,7 +131,7 @@ public class TypeResolverTraversal {
             variable.is().forEach(constraint -> convertIs(resolver, constraint));
             variable.has().forEach(constraint -> convertHas(resolver, constraint));
             variable.value().forEach(constraint -> convertValue(resolver, constraint));
-//            variable.relation().forEach(constraint -> convertRelation(resolver, constraint));
+            variable.relation().forEach(constraint -> convertRelation(resolver, constraint));
             return resolver;
         }
 
@@ -156,9 +157,15 @@ public class TypeResolverTraversal {
                 traversal.valueType(owner.id(), GraqlArg.ValueType.DOUBLE);
                 traversal.valueType(owner.id(), GraqlArg.ValueType.LONG);
             }
-//            else if (constraint.isLong()) traversal.valueType(owner.id(), GraqlArg.ValueType.LONG);
             else if (constraint.isVariable()) convert(constraint.asVariable().value()); //TODO: how to capture ValueType of other Var
             else throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        private void convertRelation(TypeVariable owner, RelationConstraint constraint) {
+            //TODO: renaming of this
+            ThingVariable ownerThing = constraint.owner();
+
+
         }
 
     }
