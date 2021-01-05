@@ -53,8 +53,6 @@ public interface Storage {
 
     GraknException exception(Exception exception);
 
-    GraknException exception(GraknException exception);
-
     void close();
 
     default boolean isSchema() { return false; }

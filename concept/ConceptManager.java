@@ -187,8 +187,4 @@ public final class ConceptManager {
     public GraknException exception(Exception exception) {
         return graphMgr.exception(exception);
     }
-
-    public GraknException exception(GraknException exception) {
-        return graphMgr.exception(exception);
-    }
 }

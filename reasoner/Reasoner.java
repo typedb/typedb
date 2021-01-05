@@ -37,6 +37,7 @@ import grakn.core.traversal.TraversalEngine;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
@@ -63,15 +64,18 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, boolean isParallel) {
-        if (!isParallel) return iterate(disjunction.conjunctions()).flatMap(this::iterator);
-        else return buffer(disjunction.conjunctions().stream()
+        Set<Conjunction> conjunctions = disjunction.conjunctions().stream()
+                .map(conjunction -> logicMgr.typeResolver().resolveLabels(conjunction))
+                .map(conjunction -> logicMgr.typeResolver().resolveVariablesExhaustive(conjunction))
+                .collect(Collectors.toSet());
+        // TODO enable: conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
+        if (!isParallel) return iterate(conjunctions).flatMap(this::iterator);
+        else return buffer(conjunctions.stream()
                                    .flatMap(conjunction -> producers(conjunction).stream())
                                    .collect(toList())).iterator();
     }
 
     private List<Producer<ConceptMap>> producers(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
-        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         Producer<ConceptMap> answers = traversalEng
                 .producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                 .map(conceptMgr::conceptMap);
@@ -97,8 +101,6 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
-        conjunction = logicMgr.typeResolver().resolveLabels(conjunction);
-        conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap);
 
         // TODO: enable reasoner here

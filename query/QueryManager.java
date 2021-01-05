@@ -91,9 +91,7 @@ public class QueryManager {
         // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             Disjunction disjunction = Disjunction.create(query.conjunction().normalise());
-            return filter(reasoner.execute(disjunction, isParallel), query);
-        } catch (GraknException exception) {
-            throw conceptMgr.exception(exception);
+            return filter(reasoner.execute(disjunction, isParallel), query).onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
