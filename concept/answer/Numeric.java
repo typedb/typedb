@@ -48,7 +48,7 @@ public class Numeric implements Answer {
         return new Numeric(null, value);
     }
 
-    public static Numeric ofNan() {
+    public static Numeric ofNaN() {
         return new Numeric(null, null);
     }
 
@@ -60,7 +60,7 @@ public class Numeric implements Answer {
         return doubleValue != null;
     }
 
-    public boolean isNan() {
+    public boolean isNaN() {
         return !isLong() && !isDouble();
     }
 

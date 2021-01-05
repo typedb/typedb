@@ -296,7 +296,7 @@ public class ResponseBuilder {
                 builder.setLongValue(answer.asLong());
             } else if (answer.isDouble()) {
                 builder.setDoubleValue(answer.asDouble());
-            } else if (answer.isNan()) {
+            } else if (answer.isNaN()) {
                 builder.setNan(true);
             }
             return builder.build();
