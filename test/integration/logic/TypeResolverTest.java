@@ -740,7 +740,7 @@ public class TypeResolverTest {
     //    Scenario: when matching a roleplayer in a relation that can't actually play that role, an empty result is returned
     @Test
     public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
-        define_standard_schema("test-schema");
+        define_standard_schema("test-type-resolution");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match " +
@@ -763,7 +763,7 @@ public class TypeResolverTest {
         );
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match $x isa house-number; $x = 1.0;";
+        String queryString = "match $x = 1.0;";
 
         Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
 
@@ -821,7 +821,7 @@ public class TypeResolverTest {
 
     @Test
     public void converts_root_types() throws IOException {
-        define_standard_schema("test-schema");
+        define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match $x isa relation;";
 
@@ -859,7 +859,7 @@ public class TypeResolverTest {
 
     @Test
     public void impossible_queries_make_variables_unsatisfiable() throws IOException {
-        define_standard_schema("test-schema");
+        define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match " +
                 "$r (employee: $x) isa $m; " +
