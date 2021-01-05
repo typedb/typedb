@@ -18,6 +18,8 @@
 
 package grakn.core.common.iterator;
 
+import grakn.core.common.exception.GraknException;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -123,6 +125,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     default int count() {
         return this.toList().size();
+    }
+
+    default ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn) {
+        return new ErrorHandledIterator<>(this, exceptionFn);
     }
 
     void recycle();
