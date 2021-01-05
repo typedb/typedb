@@ -20,13 +20,17 @@ package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
 
+import java.util.Objects;
+
 public class NumericGroup implements Answer {
     private final Concept owner;
     private final Numeric numeric;
+    private final int hash;
 
     public NumericGroup(Concept owner, Numeric numeric) {
         this.owner = owner;
         this.numeric = numeric;
+        this.hash = Objects.hash(this.owner, this.numeric);
     }
 
     public Concept owner() {
@@ -48,9 +52,6 @@ public class NumericGroup implements Answer {
 
     @Override
     public int hashCode() {
-        int hash = owner.hashCode();
-        hash = 31 * hash + numeric.hashCode();
-
         return hash;
     }
 }

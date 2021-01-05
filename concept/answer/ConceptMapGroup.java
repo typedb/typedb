@@ -21,14 +21,17 @@ package grakn.core.concept.answer;
 import grakn.core.concept.Concept;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ConceptMapGroup implements Answer {
     private final Concept owner;
     private final List<ConceptMap> conceptMaps;
+    private final int hash;
 
     public ConceptMapGroup(Concept owner, List<ConceptMap> conceptMaps) {
         this.owner = owner;
         this.conceptMaps = conceptMaps;
+        this.hash = Objects.hash(this.owner, this.conceptMaps);
     }
 
     public Concept owner() {
@@ -50,9 +53,6 @@ public class ConceptMapGroup implements Answer {
 
     @Override
     public int hashCode() {
-        int hash = owner.hashCode();
-        hash = 31 * hash + conceptMaps.hashCode();
-
         return hash;
     }
 }
