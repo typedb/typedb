@@ -290,7 +290,7 @@ public class GraqlSteps {
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", answerIdentifierGroup.ownerIdentifier), answerGroup);
 
             List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.answersIdentifiers;
-            for (ConceptMap answer : answerGroup.answers()) {
+            for (ConceptMap answer : answerGroup.conceptMaps()) {
                 List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
 
                 for (Map<String, String> answerIdentifiers : answersIdentifiers) {

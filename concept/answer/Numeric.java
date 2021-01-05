@@ -30,10 +30,12 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
  */
 public class Numeric implements Answer {
 
+    @Nullable
     private final Long longValue;
+    @Nullable
     private final Double doubleValue;
 
-    public Numeric(@Nullable Long longValue, @Nullable Double doubleValue) {
+    private Numeric(@Nullable Long longValue, @Nullable Double doubleValue) {
         this.longValue = longValue;
         this.doubleValue = doubleValue;
     }

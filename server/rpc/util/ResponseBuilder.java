@@ -286,7 +286,7 @@ public class ResponseBuilder {
         public static AnswerProto.ConceptMapGroup conceptMapGroup(ConceptMapGroup answer) {
             return AnswerProto.ConceptMapGroup.newBuilder()
                     .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
-                    .addAllConceptMaps(answer.answers().stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))
+                    .addAllConceptMaps(answer.conceptMaps().stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))
                     .build();
         }
 

@@ -4,11 +4,11 @@ import grakn.core.concept.Concept;
 
 public class NumericGroup implements Answer {
     private final Concept owner;
-    private final Numeric answers;
+    private final Numeric numeric;
 
-    public NumericGroup(Concept owner, Numeric answers) {
+    public NumericGroup(Concept owner, Numeric numeric) {
         this.owner = owner;
-        this.answers = answers;
+        this.numeric = numeric;
     }
 
     public Concept owner() {
@@ -16,7 +16,7 @@ public class NumericGroup implements Answer {
     }
 
     public Numeric numeric() {
-        return this.answers;
+        return this.numeric;
     }
 
     @Override
@@ -25,13 +25,13 @@ public class NumericGroup implements Answer {
         if (obj == null || getClass() != obj.getClass()) return false;
         final NumericGroup a2 = (NumericGroup) obj;
         return this.owner.equals(a2.owner) &&
-                this.answers.equals(a2.answers);
+                this.numeric.equals(a2.numeric);
     }
 
     @Override
     public int hashCode() {
         int hash = owner.hashCode();
-        hash = 31 * hash + answers.hashCode();
+        hash = 31 * hash + numeric.hashCode();
 
         return hash;
     }

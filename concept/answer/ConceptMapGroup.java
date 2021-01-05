@@ -6,19 +6,19 @@ import java.util.List;
 
 public class ConceptMapGroup implements Answer {
     private final Concept owner;
-    private final List<ConceptMap> answers;
+    private final List<ConceptMap> conceptMaps;
 
-    public ConceptMapGroup(Concept owner, List<ConceptMap> answers) {
+    public ConceptMapGroup(Concept owner, List<ConceptMap> conceptMaps) {
         this.owner = owner;
-        this.answers = answers;
+        this.conceptMaps = conceptMaps;
     }
 
     public Concept owner() {
         return this.owner;
     }
 
-    public List<ConceptMap> answers() {
-        return this.answers;
+    public List<ConceptMap> conceptMaps() {
+        return this.conceptMaps;
     }
 
     @Override
@@ -27,13 +27,13 @@ public class ConceptMapGroup implements Answer {
         if (obj == null || getClass() != obj.getClass()) return false;
         final ConceptMapGroup a2 = (ConceptMapGroup) obj;
         return this.owner.equals(a2.owner) &&
-                this.answers.equals(a2.answers);
+                this.conceptMaps.equals(a2.conceptMaps);
     }
 
     @Override
     public int hashCode() {
         int hash = owner.hashCode();
-        hash = 31 * hash + answers.hashCode();
+        hash = 31 * hash + conceptMaps.hashCode();
 
         return hash;
     }
