@@ -26,6 +26,7 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
+import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
@@ -51,7 +52,6 @@ import java.util.stream.Collectors;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_RESOLVABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 import static graql.lang.common.GraqlToken.Type.RELATION;
@@ -70,7 +70,7 @@ public class TypeResolver {
     }
 
     public Conjunction resolveVariablesExhaustive(Conjunction conjunction) {
-        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
+        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         Resolvers resolverVariables = constraintMapper.resolvers();
         Map<Reference, Set<Label>> referenceResolversMapping =
                 retrieveResolveTypes(new HashSet<>(resolverVariables.resolvers()));
@@ -82,10 +82,8 @@ public class TypeResolver {
             if (variable.reference().isLabel()) continue;
             Set<Label> resolveLabels = referenceResolversMapping.get(resolveeVars.get(variable.id()).reference());
             if (resolveLabels == null) {
-                // TODO: Can the error message be improved by saying more explicitly that the provided type did not make sense somehow?
-                // TODO: The error message is not quite accurate when querying a relation using an entity type,
-                //       e.g.: match ($x) isa person;
-                throw GraknException.of(TYPE_NOT_RESOLVABLE, variable.toString());
+                variable.setSatisfiable(false);
+                continue;
             }
 
             if (variable.isThing()) {
@@ -100,7 +98,7 @@ public class TypeResolver {
     }
 
     public Conjunction resolveVariables(Conjunction conjunction) {
-        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
+        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         Resolvers resolverVariables = constraintMapper.resolvers();
         long numOfThings = traversalEng.graph().schema().stats().thingTypeCount();
 
@@ -238,24 +236,26 @@ public class TypeResolver {
         private final TypeVariable rootRelationType;
         private final TypeVariable rootRoleType;
         private final Conjunction conjunction;
+        private final ConceptManager conceptMgr;
 
-        ConstraintMapper(Conjunction conjunction) {
+        ConstraintMapper(Conjunction conjunction, ConceptManager conceptMgr) {
+            this.conceptMgr = conceptMgr;
             this.resolvers = new Resolvers();
             this.neighbours = new HashMap<>();
             this.conjunction = conjunction;
-            this.rootAttributeType = createRootTypeVar(Label.of(ATTRIBUTE.toString()));
-            this.rootRelationType = createRootTypeVar(Label.of(RELATION.toString()));
-            this.rootRoleType = createRootTypeVar(Label.of(ROLE.toString(), RELATION.toString()));
+            this.rootAttributeType = retrieveTypeFromLabel(Label.of(ATTRIBUTE.toString()));
+            this.rootRelationType = retrieveTypeFromLabel(Label.of(RELATION.toString()));
+            this.rootRoleType = retrieveTypeFromLabel(Label.of(ROLE.toString(), RELATION.toString()));
             conjunction.variables().forEach(this::convert);
         }
 
-        private TypeVariable createRootTypeVar(Label rootLabel) {
+        private TypeVariable retrieveTypeFromLabel(Label rootLabel) {
             Optional<TypeVariable> rootType = iterate(conjunction.variables())
                     .filter(Variable::isType).map(Variable::asType)
                     .filter(v -> v.label().isPresent() && v.label().get().properLabel().equals(rootLabel)).first();
 
             if (rootType.isPresent()) {
-                TypeVariable convertedRootType = resolvers.register(rootType.get());
+                TypeVariable convertedRootType = convert(rootType.get());
                 neighbours.putIfAbsent(convertedRootType, new HashSet<>());
                 return convertedRootType;
             }
@@ -291,9 +291,11 @@ public class TypeResolver {
             if (resolvers.contains(variable)) return resolvers.resolver(variable);
 
             TypeVariable resolver = resolvers.register(variable);
-            copyNeighbours(variable, resolver);
-            // TODO: Why do we need `neighbours.putIfAbsent(resolver, new HashSet<>());` ?
-            //       Is this a patch for the fact that we forgot to use `to` variable in `copyNeighbours(from, to)` ?
+            neighbours.putIfAbsent(resolver, new HashSet<>());
+
+            if (variable.constraints().isEmpty()) return resolver;
+
+            resolver = cloneVariable(variable);
             neighbours.putIfAbsent(resolver, new HashSet<>());
             return resolver;
         }
@@ -306,6 +308,7 @@ public class TypeResolver {
 
             if (variable.constraints().isEmpty()) return resolver;
 
+            variable.iid().ifPresent(constraint -> convertIID(resolver, constraint));
             variable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
             variable.is().forEach(constraint -> convertIs(resolver, constraint));
             variable.has().forEach(constraint -> convertHas(resolver, constraint));
@@ -317,18 +320,18 @@ public class TypeResolver {
         private void convertRelation(TypeVariable owner, RelationConstraint relationConstraint) {
             if (hasNoInfo(owner)) addRootTypeVar(owner, rootRelationType);
             ThingVariable ownerThing = relationConstraint.owner();
-            if (ownerThing.isa().isPresent()) {
-                TypeVariable relationTypeVar = convert(ownerThing.isa().get().type());
-                if (hasNoInfo(relationTypeVar)) addRootTypeVar(relationTypeVar, rootRelationType);
-            }
+            if (ownerThing.isa().isPresent()) convert(ownerThing.isa().get().type());
             for (RelationConstraint.RolePlayer rolePlayer : relationConstraint.players()) {
                 TypeVariable playerType = convert(rolePlayer.player());
                 TypeVariable roleTypeVar = rolePlayer.roleType().orElse(null);
 
                 if (roleTypeVar != null) {
+                    TypeVariable roleTypeVarSub = resolvers.register(new TypeVariable(resolvers.newSystemVariable()));
+
                     roleTypeVar = convert(roleTypeVar);
+                    roleTypeVarSub.sub(roleTypeVar, false);
                     if (hasNoInfo(roleTypeVar)) addRootTypeVar(roleTypeVar, rootRoleType);
-                    addRelatesConstraint(owner, roleTypeVar);
+                    addRelatesConstraint(owner, roleTypeVarSub);
                 }
 
                 if (roleTypeVar == null) {
@@ -351,7 +354,7 @@ public class TypeResolver {
         }
 
         private void addRootTypeVar(TypeVariable variable, TypeVariable rootTypeVar) {
-            TypeVariable rootConverted = resolvers.register(rootTypeVar);
+            TypeVariable rootConverted = convert(rootTypeVar);
             variable.sub(rootConverted, false);
             addNeighbours(variable, rootConverted);
         }
@@ -381,14 +384,24 @@ public class TypeResolver {
             addNeighbours(owner, isVar);
         }
 
+        private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
+            owner.is(getTypeFromIID(iidConstraint.iid()));
+            TypeVariable iidVar = getTypeFromIID(iidConstraint.iid());
+            addNeighbours(owner, iidVar);
+        }
+
+        private TypeVariable getTypeFromIID(byte[] iid) {
+            assert conceptMgr.getThing(iid) != null;
+            Type type = conceptMgr.getThing(iid).getType();
+            return convert(retrieveTypeFromLabel(type.getLabel()));
+        }
+
         private void convertValue(TypeVariable owner, ValueConstraint<?> constraint) {
             if (constraint.isBoolean()) owner.valueType(GraqlArg.ValueType.BOOLEAN);
             else if (constraint.isString()) owner.valueType(GraqlArg.ValueType.STRING);
             else if (constraint.isDateTime()) owner.valueType(GraqlArg.ValueType.DATETIME);
-            else if (constraint.isDouble()) owner.valueType(GraqlArg.ValueType.DOUBLE);
-            else if (constraint.isLong()) owner.valueType(GraqlArg.ValueType.LONG);
-            else if (constraint.isVariable()) resolvers.register(constraint.asVariable().value());
-            else throw GraknException.of(ILLEGAL_STATE);
+            else if (constraint.isVariable()) convert(constraint.asVariable().value());
+            else if (!(constraint.isDouble() || constraint.isLong())) throw GraknException.of(ILLEGAL_STATE);
             if (hasNoInfo(owner)) addRootTypeVar(owner, rootAttributeType);
         }
 
@@ -397,17 +410,45 @@ public class TypeResolver {
             neighbours.computeIfAbsent(to, k -> new HashSet<>()).add(from);
         }
 
-        private void copyNeighbours(TypeVariable from, TypeVariable to) { // TODO: why is 'to' variable never used?
-            for (TypeConstraint constraint : from.constraints()) {
-                if (constraint.isSub()) addNeighbours(from, constraint.asSub().type());
-                else if (constraint.isOwns()) addNeighbours(from, constraint.asOwns().attribute());
-                else if (constraint.isPlays()) addNeighbours(from, constraint.asPlays().role());
-                else if (constraint.isRelates()) addNeighbours(from, constraint.asRelates().role());
-                else if (constraint.isIs()) addNeighbours(from, constraint.asIs().variable());
-                // TODO: There are other constraints in a TypeVariable. Are we intentionally ignoring them?
-                //       Why do we not throw GraknException.of(ILLEGAL_STATE); ?
+        public TypeVariable cloneVariable(TypeVariable copyFrom) {
+            TypeVariable newVar = resolvers.register(copyFrom);
+
+            for (TypeConstraint constraint : copyFrom.constraints()) {
+                if (constraint.isLabel()) {
+                    newVar.label(constraint.asLabel().properLabel());
+                } else if (constraint.isValueType()) {
+                    newVar.valueType(constraint.asValueType().valueType());
+                } else if (constraint.isRegex()) {
+                    newVar.regex(constraint.asRegex().regex());
+                } else if (constraint.isAbstract()) {
+                    newVar.setAbstract();
+                } else if (constraint.isSub()) {
+                    newVar.sub(convert(constraint.asSub().type()), constraint.asSub().isExplicit());
+                    addNeighbours(newVar, constraint.asSub().type());
+                } else if (constraint.isOwns()) {
+                    newVar.owns(convert(constraint.asOwns().attribute()),
+                                constraint.asOwns().overridden().flatMap(var -> Optional.of(convert(var))).orElse(null),
+                                constraint.asOwns().isKey());
+                    addNeighbours(newVar, constraint.asOwns().attribute());
+                    constraint.asOwns().overridden().ifPresent(typeVariable -> addNeighbours(newVar, typeVariable));
+                } else if (constraint.isPlays()) {
+                    newVar.plays(constraint.asPlays().relation().flatMap(var -> Optional.of(convert(var))).orElse(null),
+                                 convert(constraint.asPlays().role()),
+                                 constraint.asPlays().overridden().flatMap(var -> Optional.of(convert(var))).orElse(null));
+                    addNeighbours(newVar, constraint.asPlays().role());
+                    constraint.asPlays().overridden().ifPresent(typeVariable -> addNeighbours(newVar, typeVariable));
+                } else if (constraint.isRelates()) {
+                    newVar.relates(convert(constraint.asRelates().role()),
+                                   constraint.asRelates().overridden().flatMap(var -> Optional.of(convert(var))).orElse(null));
+                    addNeighbours(newVar, constraint.asRelates().role());
+                    constraint.asRelates().overridden().ifPresent(typeVariable -> addNeighbours(newVar, typeVariable));
+                } else if (constraint.isIs()) {
+                    newVar.is(convert(constraint.asIs().variable()));
+                } else throw GraknException.of(ILLEGAL_STATE);
             }
+            return newVar;
         }
+
     }
 
     private static class Resolvers {
@@ -434,7 +475,6 @@ public class TypeResolver {
                 TypeVariable newTypeVar;
                 if (variable.reference().isAnonymous()) newTypeVar = new TypeVariable(newSystemVariable());
                 else newTypeVar = new TypeVariable(variable.id());
-                if (variable.isType()) newTypeVar.copyConstraints(variable.asType());
                 return newTypeVar;
             });
         }

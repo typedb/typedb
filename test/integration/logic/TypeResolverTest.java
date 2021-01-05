@@ -23,6 +23,7 @@ import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.set;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
@@ -275,7 +277,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
-            put("$m", set("marriage", "relation"));
+            put("$m", set("marriage", "relation", "thing"));
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
@@ -532,6 +534,24 @@ public class TypeResolverTest {
     }
 
     @Test
+    public void has_with_minimal_cycle() {
+        define_custom_schema("define " +
+                                     "unit sub attribute, value string, owns unit, owns ref;" +
+                                     "ref sub attribute, value long;");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $a has $a;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+            put("$a", set("unit"));
+        }};
+
+
+        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
     public void has_with_big_cycle() {
         define_custom_schema(
                 "define" +
@@ -715,4 +735,142 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
+    @Test
+    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
+        define_standard_schema("test-type-resolution");
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " $x isa company;" +
+                " ($x) isa friendship;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set());
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
+    @Test
+    public void value_comparision_between_double_long() throws IOException {
+        define_custom_schema("define" +
+                                     " house-number sub attribute, value long;" +
+                                     " length sub attribute, value double;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $x = 1.0;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("house-number", "length"));
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
+    }
+
+    @Test
+    public void overridden_relates_are_valid() {
+        define_custom_schema("define" +
+                                     " marriage sub relation, relates spouse;" +
+                                     " hetero-marriage sub marriage," +
+                                     "   relates husband as spouse, relates wife as spouse;" +
+                                     " person sub entity, plays marriage:spouse, plays hetero-marriage:husband," +
+                                     "   plays hetero-marriage:wife;"
+        );
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person"));
+            put("$y", set("person"));
+            put("$m", set("marriage", "hetero-marriage"));
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
+    }
+
+    @Test
+    public void thing_is_valid_answer() {
+        define_custom_schema("define " +
+                                     "marriage sub relation, relates spouse;" +
+                                     "person sub entity, plays marriage:spouse;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " ($x, $y) isa $type;";
+
+        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person"));
+            put("$y", set("person"));
+            put("$type", set("marriage", "relation", "thing"));
+        }};
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+
+    }
+
+    @Test
+    public void converts_root_types() throws IOException {
+        define_standard_schema("test-type-resolution");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String relationString = "match $x isa relation;";
+
+        Conjunction relationConjunction = runExhaustiveHinter(typeResolver, relationString);
+        Map<String, Set<String>> relationExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set("friendship", "employment"));
+        }};
+        assertEquals(relationExpected, getHintMap(relationConjunction));
+
+        String attributeString = "match $x isa attribute;";
+        Conjunction attributeConjunction = runExhaustiveHinter(typeResolver, attributeString);
+        Map<String, Set<String>> attributeExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set("name", "age", "ref"));
+        }};
+
+        assertEquals(attributeExpected, getHintMap(attributeConjunction));
+
+        String entityString = "match $x isa entity;";
+        Conjunction entityConjunction = runExhaustiveHinter(typeResolver, entityString);
+        Map<String, Set<String>> entityExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person", "company"));
+        }};
+        assertEquals(entityExpected, getHintMap(entityConjunction));
+
+        String thingString = "match $x isa thing;";
+        Conjunction thingConjunction = runExhaustiveHinter(typeResolver, thingString);
+        Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
+            put("$x", set());
+        }};
+        assertEquals(thingExpected, getHintMap(thingConjunction));
+        for (Variable variable : thingConjunction.variables()) {
+            assertTrue(variable.isSatisfiable());
+        }
+    }
+
+    @Test
+    public void impossible_queries_make_variables_unsatisfiable() throws IOException {
+        define_standard_schema("test-type-resolution");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String relationString = "match " +
+                "$r (employee: $x) isa $m; " +
+                "$m sub friendship; ";
+
+        Conjunction conjunction = runExhaustiveHinter(typeResolver, relationString);
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$r", set());
+            put("$x", set());
+            put("$m", set());
+        }};
+        assertEquals(expected, getHintMap(conjunction));
+        for (Variable variable : conjunction.variables()) {
+            if (!variable.reference().isLabel()) assertFalse(variable.isSatisfiable());
+        }
+    }
 }
