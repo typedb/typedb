@@ -18,8 +18,27 @@
 
 package grakn.core.logic.tool;
 
+import grakn.core.concept.ConceptManager;
+import grakn.core.logic.LogicCache;
+import grakn.core.pattern.Conjunction;
+import grakn.core.traversal.TraversalEngine;
+
 //TODO: here we remake Type Resolver, using a Traversal Structure instead of a Pattern to move on the graph and find out answers.
 public class TypeResolverTraversal {
+
+    private final ConceptManager conceptMgr;
+    private final TraversalEngine traversalEng;
+    private final LogicCache logicCache;
+
+    public TypeResolverTraversal(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
+        this.conceptMgr = conceptMgr;
+        this.traversalEng = traversalEng;
+        this.logicCache = logicCache;
+    }
+
+    public Conjunction resolveVariables(Conjunction conjunction) {
+        //TODO: main API
+    }
 
 
 
