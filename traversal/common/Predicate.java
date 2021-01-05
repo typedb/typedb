@@ -47,6 +47,13 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
         this.hash = Objects.hash(operator, argument);
     }
 
+    public static int compareDoubles(double first, double second) {
+        int res = Double.compare(first, second);
+        if (res == 0) return 0;
+        else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
+        else return res;
+    }
+
     public PRED_OP operator() {
         return operator;
     }
@@ -351,13 +358,6 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
             public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
 
-            public static int compareDoubles(double first, double second) {
-                int res = java.lang.Double.compare(first, second);
-                if (res == 0) return 0;
-                else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
-                else return res;
-            }
-
             public static Value<Operator.Equality, Boolean> BOOLEAN = new Value<Operator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
@@ -407,7 +407,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                     if (vertex.isLong()) vertexValue = vertex.asLong().value();
                     else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
                     else throw GraknException.of(ILLEGAL_STATE);
-                    return operator.apply(Value.compareDoubles(vertexValue, value));
+                    return operator.apply(compareDoubles(vertexValue, value));
                 }
             };
 
