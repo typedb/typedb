@@ -25,5 +25,5 @@ def graknlabs_console_artifact():
         artifact_name = "console-artifact.tgz",
         tag_source = deployment["artifact.release"],
         commit_source = deployment["artifact.snapshot"],
-        commit = "2a740e144b445f469aa2d650051f2bfa67bc3c0b"
+        commit = "70147b4758a01d41fffb4d0d0c08a22821336d49"
     )
