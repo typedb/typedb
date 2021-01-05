@@ -207,7 +207,9 @@ public class Rule {
                             return new Relation(constraint.asRelation(), variable.isa().get());
                         } else if (constraint.isHas()) {
                             if (constraint.asHas().attribute().isa().isPresent()) {
-                                return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get());
+                                assert constraint.asHas().attribute().value().size() == 1;
+                                return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
+                                                        constraint.asHas().attribute().value().iterator().next());
                             } else {
                                 return new Has.Variable(constraint.asHas());
                             }
@@ -258,7 +260,15 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
         }
 
-        public static class Relation extends Conclusion<RelationConstraint> {
+        interface IsaInterface {
+            IsaConstraint isa();
+        }
+
+        interface ValueInterface {
+            ValueConstraint<?> value();
+        }
+
+        public static class Relation extends Conclusion<RelationConstraint> implements IsaInterface {
 
             private final RelationConstraint relation;
             private final IsaConstraint isa;
@@ -283,6 +293,15 @@ public class Rule {
                 return null;
             }
 
+            public RelationConstraint relation() {
+                return relation;
+            }
+
+            @Override
+            public IsaConstraint isa() {
+                return isa;
+            }
+
             @Override
             public boolean isRelation() {
                 return true;
@@ -296,15 +315,19 @@ public class Rule {
 
         public static abstract class Has extends Conclusion<HasConstraint> {
 
-            private HasConstraint hasConstraint;
+            private HasConstraint has;
 
-            Has(HasConstraint hasConstraint) {
-                this.hasConstraint = hasConstraint;
+            Has(HasConstraint has) {
+                this.has = has;
             }
 
             @Override
             public HasConstraint constraint() {
-                return hasConstraint;
+                return has;
+            }
+
+            public HasConstraint has() {
+                return has;
             }
 
             @Override
@@ -312,13 +335,15 @@ public class Rule {
                 return null;
             }
 
-            public static class Explicit extends Has {
+            public static class Explicit extends Has implements IsaInterface, ValueInterface {
 
-                private final IsaConstraint isaConstraint;
+                private final IsaConstraint isa;
+                private final ValueConstraint<?> value;
 
-                Explicit(HasConstraint hasConstraint, IsaConstraint isaConstraint) {
-                    super(hasConstraint);
-                    this.isaConstraint = isaConstraint;
+                Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
+                    super(has);
+                    this.isa = isa;
+                    this.value = value;
                 }
 
 
@@ -330,6 +355,16 @@ public class Rule {
                 @Override
                 public Has.Explicit asExplicitHas() {
                     return this;
+                }
+
+                @Override
+                public IsaConstraint isa() {
+                    return isa;
+                }
+
+                @Override
+                public ValueConstraint<?> value() {
+                    return value;
                 }
             }
 
