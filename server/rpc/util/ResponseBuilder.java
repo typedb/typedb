@@ -297,7 +297,7 @@ public class ResponseBuilder {
             } else if (answer.isDouble()) {
                 builder.setDoubleValue(answer.asDouble());
             } else if (answer.isNan()) {
-                builder.setNanValue(AnswerProto.NaN.newBuilder().build());
+                builder.setNan(true);
             }
             return builder.build();
         }
