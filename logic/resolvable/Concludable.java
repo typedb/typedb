@@ -244,21 +244,21 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
-            if (this.constraint().players().size() > relationConclusion.constraint().players().size())
+            if (this.constraint().players().size() > relationConclusion.relation().players().size())
                 return Iterators.empty();
             Unifier.Builder unifierBuilder = Unifier.builder();
 
             if (!constraint().owner().reference().isAnonymous()) {
                 assert constraint().owner().reference().isName();
-                if (unificationSatisfiable(constraint().owner(), relationConclusion.constraint().owner())) {
-                    unifierBuilder.add(constraint().owner().id(), relationConclusion.constraint().owner().id());
+                if (unificationSatisfiable(constraint().owner(), relationConclusion.relation().owner())) {
+                    unifierBuilder.add(constraint().owner().id(), relationConclusion.relation().owner().id());
                 } else return Iterators.empty();
             }
 
             if (constraint().owner().isa().isPresent()) {
-                assert relationConclusion.constraint().owner().isa().isPresent(); // due to known shapes of rule conclusions
+                assert relationConclusion.relation().owner().isa().isPresent(); // due to known shapes of rule conclusions
                 TypeVariable concludableRelationType = constraint().owner().isa().get().type();
-                TypeVariable conclusionRelationType = relationConclusion.constraint().owner().isa().get().type();
+                TypeVariable conclusionRelationType = relationConclusion.relation().owner().isa().get().type();
                 if (unificationSatisfiable(concludableRelationType, conclusionRelationType, conceptMgr)) {
                     unifierBuilder.add(concludableRelationType.id(), conclusionRelationType.id());
 
@@ -273,7 +273,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
             // TODO this will work for now, but we should rewrite using role player `repetition`
             List<RolePlayer> conjRolePlayers = list(constraint().players());
-            List<RolePlayer> thenRolePlayers = list(relationConclusion.constraint().players());
+            List<RolePlayer> thenRolePlayers = list(relationConclusion.relation().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
                     .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));
@@ -357,13 +357,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), hasConclusion.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().id(), hasConclusion.constraint().owner().id());
+            if (unificationSatisfiable(constraint().owner(), hasConclusion.has().owner())) {
+                unifierBuilder.add(constraint().owner().id(), hasConclusion.has().owner().id());
             } else return Iterators.empty();
 
             ThingVariable attr = constraint().attribute();
-            if (unificationSatisfiable(attr, hasConclusion.constraint().attribute())) {
-                unifierBuilder.add(attr.id(), hasConclusion.constraint().attribute().id());
+            if (unificationSatisfiable(attr, hasConclusion.has().attribute())) {
+                unifierBuilder.add(attr.id(), hasConclusion.has().attribute().id());
                 if (attr.reference().isAnonymous()) {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
@@ -462,13 +462,13 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), isaConclusion.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().id(), isaConclusion.constraint().owner().id());
+            if (unificationSatisfiable(constraint().owner(), isaConclusion.isa().owner())) {
+                unifierBuilder.add(constraint().owner().id(), isaConclusion.isa().owner().id());
             } else return Iterators.empty();
 
             TypeVariable type = constraint().type();
-            if (unificationSatisfiable(type, isaConclusion.constraint().type(), conceptMgr)) {
-                unifierBuilder.add(type.id(), isaConclusion.constraint().type().id());
+            if (unificationSatisfiable(type, isaConclusion.isa().type(), conceptMgr)) {
+                unifierBuilder.add(type.id(), isaConclusion.isa().type().id());
 
                 if (type.reference().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
@@ -505,8 +505,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), valueConclusion.constraint().owner())) {
-                unifierBuilder.add(constraint().owner().id(), valueConclusion.constraint().owner().id());
+            if (unificationSatisfiable(constraint().owner(), valueConclusion.value().owner())) {
+                unifierBuilder.add(constraint().owner().id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
 
             /*
@@ -521,8 +521,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             if (constraint().isVariable()) {
                 assert constraint().value() instanceof ThingVariable;
                 ThingVariable value = (ThingVariable) constraint().value();
-                if (unificationSatisfiable(constraint().predicate(), valueConclusion.constraint().predicate())) {
-                    unifierBuilder.add(value.id(), valueConclusion.constraint().owner().id());
+                if (unificationSatisfiable(constraint().predicate(), valueConclusion.value().predicate())) {
+                    unifierBuilder.add(value.id(), valueConclusion.value().owner().id());
                 } else return Iterators.empty();
                 // } else {
                 // form: $x > 10 -> require $x to satisfy predicate > 10

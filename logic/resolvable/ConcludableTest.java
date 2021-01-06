@@ -17,14 +17,11 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.Variable;
 import graql.lang.Graql;
 import graql.lang.pattern.variable.Reference;
 import org.junit.Test;
@@ -33,7 +30,6 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.pattern.variable.VariableRegistry.createFromThings;
-import static graql.lang.common.GraqlToken.Predicate.Equality.GT;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 

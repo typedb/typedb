@@ -198,8 +198,6 @@ public class Rule {
 
     public static abstract class Conclusion<CONSTRAINT extends Constraint> {
 
-        public abstract CONSTRAINT constraint();
-
         public static Conclusion<?> create(Conjunction then) {
             return Iterators.iterate(then.variables()).filter(Variable::isThing).map(Variable::asThing)
                     .flatMap(variable -> Iterators.iterate(variable.constraints()).map(constraint -> {
@@ -278,10 +276,6 @@ public class Rule {
                 this.isa = isa;
             }
 
-            public RelationConstraint constraint() {
-                return relation;
-            }
-
             @Override
             public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
                 /*
@@ -321,11 +315,6 @@ public class Rule {
                 this.has = has;
             }
 
-            @Override
-            public HasConstraint constraint() {
-                return has;
-            }
-
             public HasConstraint has() {
                 return has;
             }
@@ -342,6 +331,7 @@ public class Rule {
 
                 Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
                     super(has);
+                    assert isa.type().label().isPresent();
                     this.isa = isa;
                     this.value = value;
                 }
@@ -394,8 +384,7 @@ public class Rule {
                 this.isa = isa;
             }
 
-            @Override
-            public IsaConstraint constraint() {
+            public IsaConstraint isa() {
                 return isa;
             }
 
@@ -427,8 +416,7 @@ public class Rule {
                 this.value = value;
             }
 
-            @Override
-            public ValueConstraint<?> constraint() {
+            public ValueConstraint<?> value() {
                 return value;
             }
 
