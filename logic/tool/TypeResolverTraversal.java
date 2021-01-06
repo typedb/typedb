@@ -20,6 +20,7 @@ package grakn.core.logic.tool;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
@@ -67,14 +68,16 @@ public class TypeResolverTraversal {
         resolveLabels(conjunction);
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         if (constraintMapper.isSatisfiable) runTraversalEngine(constraintMapper);
-        conjunction.variables().stream().filter(variable -> variable.resolvedTypes().isEmpty())
-                .forEach(variable -> variable.setSatisfiable(false));
+
+        iterate(conjunction.variables()).filter(variable -> variable.resolvedTypes().isEmpty())
+                .forEachRemaining(variable -> variable.setSatisfiable(false));
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
-        conjunction.variables().stream().filter(variable -> (
+
+        iterate(conjunction.variables()).filter(variable -> (
                 variable.isType() && variable.resolvedTypes().size() == numOfTypes ||
                         variable.isThing() && variable.resolvedTypes().size() == numOfConcreteTypes
-        )).forEach(Variable::clearResolvedTypes);
+        )).forEachRemaining(Variable::clearResolvedTypes);
         return conjunction;
     }
 
