@@ -515,6 +515,17 @@ public class SchemaGraph implements Graph {
             }
         }
 
+        public long concreteThingTypeCount() {
+            Supplier<Integer> fn = () ->
+                    toIntExact(thingTypes().stream().filter(typeVertex -> !typeVertex.isAbstract()).count());
+            if (isReadOnly) {
+                if (thingTypeCount == UNSET_COUNT) thingTypeCount = fn.get();
+                return thingTypeCount;
+            } else {
+                return fn.get();
+            }
+        }
+
         public long relationTypeCount() {
             Supplier<Integer> fn = () -> toIntExact(relationTypes().stream().count());
             if (isReadOnly) {
@@ -624,6 +635,9 @@ public class SchemaGraph implements Graph {
         }
 
         public long subTypesDepth(TypeVertex type) {
+            if (type == null) {
+                System.out.println("j");
+            }
             Supplier<Long> maxDepthFn =
                     () -> 1 + type.ins().edge(SUB).from().stream().mapToLong(this::subTypesDepth).max().orElse(0);
             if (isReadOnly) {
