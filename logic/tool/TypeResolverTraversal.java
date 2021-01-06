@@ -31,7 +31,14 @@ import grakn.core.pattern.constraint.thing.IsConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.AbstractConstraint;
 import grakn.core.pattern.constraint.type.LabelConstraint;
+import grakn.core.pattern.constraint.type.OwnsConstraint;
+import grakn.core.pattern.constraint.type.PlaysConstraint;
+import grakn.core.pattern.constraint.type.RegexConstraint;
+import grakn.core.pattern.constraint.type.RelatesConstraint;
+import grakn.core.pattern.constraint.type.SubConstraint;
+import grakn.core.pattern.constraint.type.ValueTypeConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -49,6 +56,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
 
 //TODO: here we remake Type Resolver, using a Traversal Structure instead of a Pattern to move on the graph and find out answers.
 public class TypeResolverTraversal {
@@ -110,19 +118,55 @@ public class TypeResolverTraversal {
         }
 
         private TypeVariable convert(TypeVariable variable) {
-            //TODO
             if (resolvers.containsKey(variable.id())) return resolvers.get(variable.id());
             TypeVariable resolver;
             if (variable.reference().isAnonymous()) resolver = new TypeVariable(newSystemId());
             else resolver = new TypeVariable(variable.id());
-//            if (resolvers.containsKey(variable.id())) return resolvers.get(variable.id());
-//            Structure resolver = resolvers.
-            variable.label().ifPresent(constraint -> convertLabel(variable, constraint));
+            variable.label().ifPresent(constraint -> convertLabel(resolver, constraint));
+            variable.valueType().ifPresent(constraint ->  convertValueType(resolver, constraint));
+            variable.regex().ifPresent(constraint -> convertRegex(resolver, constraint));
+            if (variable.abstractConstraint().isPresent()) traversal.isAbstract(resolver.id());
+            variable.sub().ifPresent(constraint -> convertSub(resolver, constraint));
+            variable.owns().forEach(constraint -> convertOwns(resolver, constraint));
+            variable.plays().forEach(constraint -> convertPlays(resolver, constraint));
+            variable.relates().forEach(constraint -> convertRelates(resolver, constraint));
+            variable.is().forEach(constraint -> convertIsType(resolver, constraint));
             return resolver;
         }
 
         private void convertLabel(TypeVariable owner, LabelConstraint constraint) {
             traversal.labels(owner.id(), constraint.properLabel());
+        }
+
+        private void convertValueType(TypeVariable owner, ValueTypeConstraint constraint) {
+            traversal.valueType(owner.id(), constraint.valueType());
+        }
+
+        private void convertRegex(TypeVariable owner, RegexConstraint constraint) {
+            traversal.regex(owner.id(), constraint.regex().pattern());
+        }
+
+        private void convertSub(TypeVariable owner, SubConstraint constraint) {
+            traversal.sub(owner.id(), constraint.type().id(), !constraint.isExplicit());
+        }
+
+        private void convertOwns(TypeVariable owner, OwnsConstraint constraint) {
+            if (constraint.overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
+            traversal.owns(owner.id(), constraint.attribute().id(), constraint.isKey());
+        }
+
+        private void convertPlays(TypeVariable owner, PlaysConstraint constraint) {
+            if (constraint.overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
+            traversal.plays(owner.id(), constraint.role().id());
+        }
+
+        private void convertRelates(TypeVariable owner, RelatesConstraint constraint) {
+            if (constraint.overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
+            traversal.relates(owner.id(), constraint.role().id());
+        }
+
+        private void convertIsType(TypeVariable owner, grakn.core.pattern.constraint.type.IsConstraint constraint) {
+            traversal.equalTypes(owner.id(), constraint.variable().id());
         }
 
         private TypeVariable convert(ThingVariable variable) {
