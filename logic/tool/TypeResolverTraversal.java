@@ -25,6 +25,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
+import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -43,6 +44,7 @@ import graql.lang.pattern.variable.Reference;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -121,7 +123,6 @@ public class TypeResolverTraversal {
         }
 
         private TypeVariable convert(ThingVariable variable) {
-            //TODO
             if (resolvers.containsKey(variable.id())) return resolvers.get(variable.id());
 
             TypeVariable resolver = new TypeVariable(variable.id());
@@ -132,7 +133,12 @@ public class TypeResolverTraversal {
             variable.has().forEach(constraint -> convertHas(resolver, constraint));
             variable.value().forEach(constraint -> convertValue(resolver, constraint));
             variable.relation().forEach(constraint -> convertRelation(resolver, constraint));
+            variable.iid().ifPresent(constraint -> convertIID(resolver, constraint));
             return resolver;
+        }
+
+        private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
+
         }
 
         private void convertIsa(TypeVariable owner, IsaConstraint isaConstraint) {
@@ -163,9 +169,24 @@ public class TypeResolverTraversal {
 
         private void convertRelation(TypeVariable owner, RelationConstraint constraint) {
             //TODO: renaming of ownerThing. Also, do we even need it?
-//            ThingVariable ownerThing = constraint.owner();
-//            convert(ownerThing);
-//
+            ThingVariable ownerThing = constraint.owner();
+            convert(ownerThing);
+
+            for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
+                TypeVariable playerType = convert(rolePlayer.player());
+                TypeVariable roleTypeVar = rolePlayer.roleType()
+                        .flatMap(typeVariable -> Optional.of(convert(typeVariable))).orElse(null);
+                if (roleTypeVar != null) {
+                    TypeVariable roleTypeVarSub = new TypeVariable(newSystemId());
+                    traversal.sub(roleTypeVarSub.id(), roleTypeVar.id(), true);
+                    traversal.relates(owner.id(), roleTypeVarSub.id());
+                    traversal.plays(playerType.id(), roleTypeVarSub.id());
+                } else {
+                    roleTypeVar = new TypeVariable(newSystemId());
+                    traversal.relates(owner.id(), roleTypeVar.id());
+                    traversal.plays(playerType.id(), roleTypeVar.id());
+                }
+            }
 
         }
 
