@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -64,7 +65,7 @@ public class TypeResolverTraversal {
 
     public Conjunction resolveVariables(Conjunction conjunction) {
         //TODO: main API
-        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction);
+        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
 
         runTraversalEngine(constraintMapper);
         return conjunction;
@@ -79,15 +80,17 @@ public class TypeResolverTraversal {
         );
     }
 
-
+    //TODO: renaming to reflect Traversal Structure
     private static class ConstraintMapper {
 
         private Map<Reference, Variable> referenceVariableMap;
         private Map<Identifier, TypeVariable> resolvers;
         private Traversal traversal;
         private int sysVarCounter;
+        private ConceptManager conceptMgr;
 
-        ConstraintMapper(Conjunction conjunction) {
+        ConstraintMapper(Conjunction conjunction, ConceptManager conceptMgr) {
+            this.conceptMgr = conceptMgr;
             this.traversal = new Traversal();
             this.referenceVariableMap = new HashMap<>();
             this.resolvers = new HashMap<>();
@@ -138,7 +141,9 @@ public class TypeResolverTraversal {
         }
 
         private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
-
+            //TODO: implement as 'retrival' in case the label has already appeared.
+            assert conceptMgr.getThing(iidConstraint.iid()) != null;
+            traversal.labels(owner.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
         }
 
         private void convertIsa(TypeVariable owner, IsaConstraint isaConstraint) {
