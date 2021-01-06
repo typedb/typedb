@@ -49,9 +49,9 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
 > Note: You don't need to compile Grakn Core from source if you just want to use Grakn. See the _"Download and Running Grakn Core"_ section above.
 
 1. Make sure you have the following dependencies installed on your machine:
-    - Java 8
-    - Python >= 2.7 and Pip >= 18.1
-    - [Bazel](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/graknlabs/grakn/blob/master/.bazelversion). In order to install it, follow platform-specific guide:
+    - Java 8 or higher
+    - Python 3 and Pip 18.1 or higher
+    - [Bazel 3.3.1 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/graknlabs/grakn/blob/master/.bazelversion). In order to install it, follow platform-specific guide:
         - macOS (Darwin): `brew install bazelbuild/tap/bazelisk`
         - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 1. Depending on your Operating System, you can build Grakn with either one of the following commands: 
@@ -70,10 +70,10 @@ Outputs to: `bazel-bin/grakn-core-all-windows.zip`
 
 ## Contributions
 
-Grakn Core is built using various state-of-the-art open-source Graph and Distributed Computing frameworks: [ANTLR](http://www.antlr.org), [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io) and [JanusGraph](http://janusgraph.org). Thank you!
+Grakn & Graql has been built using various open-source Graph and Distributed Computing frameworks throughout its evolution. Today Grakn & Graql is built using [RocksDB](https://rocksdb.org), [ANTLR](http://www.antlr.org), [SCIP](https://www.scipopt.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), and [ZeroMQ](https://zeromq.org), and [Caffeine](https://github.com/ben-manes/caffeine). In the past, Grakn was enabled by various open-source technologies and communities that we are hugely thankful to: [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), and [JanusGraph](http://janusgraph.org). Thank you!
 
 ## Licensing
 
-This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KGMS - get in touch with our team at enterprise@grakn.ai.
+This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Cluster - get in touch with our team at enterprise@grakn.ai.
 
 Copyright (C) 2020 Grakn Labs
