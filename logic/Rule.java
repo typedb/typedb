@@ -296,13 +296,15 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                          ConceptManager conceptMgr) {
                 Identifier relationTypeIdentifier = constraint().owner().isa().get().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
                 constraint().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
 
-                Optional<grakn.core.concept.thing.Relation> relationInstance = relationExists(relationType, players, traversalEng, conceptMgr);
+                Optional<grakn.core.concept.thing.Relation> relationInstance = relationExists(relationType, players,
+                                                                                              traversalEng, conceptMgr);
                 Map<Identifier, Concept> thenConcepts = new HashMap<>();
                 if (relationInstance.isPresent()) {
                     thenConcepts.put(relationTypeIdentifier, relationInstance.get());
@@ -317,6 +319,20 @@ public class Rule {
                 return thenConcepts;
             }
 
+            public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
+                return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
+            }
+
+            @Override
+            public boolean isRelation() {
+                return true;
+            }
+
+            @Override
+            public Relation asRelation() {
+                return this;
+            }
+
             private grakn.core.concept.thing.Relation insertConclusion(RelationType relationType, Set<RolePlayer> players) {
                 grakn.core.concept.thing.Relation relation = relationType.create(true);
                 players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player, true));
@@ -326,7 +342,8 @@ public class Rule {
             private Optional<grakn.core.concept.thing.Relation> relationExists(RelationType relationType, Set<RolePlayer> players,
                                                                                TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
-                Identifier.Variable relationId = Identifier.Variable.of(SystemReference.of(0));
+                SystemReference relationRef = SystemReference.of(0);
+                Identifier.Variable relationId = Identifier.Variable.of(relationRef);
                 traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
                 players.forEach(rp -> {
                     // note: NON-transitive role player types - we require an exact role being played
@@ -334,8 +351,21 @@ public class Rule {
                     traversal.iid(rp.playerIdentifier, rp.player.getIID());
                 });
                 ResourceIterator<ConceptMap> iterator = traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
-                if (iterator.hasNext()) return Optional.of(iterator.next().get(SystemReference.of(0)).asRelation());
+                if (iterator.hasNext()) return Optional.of(iterator.next().get(relationRef).asRelation());
                 else return Optional.empty();
+            }
+
+            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                assert constraint().owner().isa().isPresent();
+                TypeVariable type = constraint().owner().isa().get().type();
+                if (type.reference().isName()) {
+                    Reference.Name typeReference = type.reference().asName();
+                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
+                    return whenConcepts.get(typeReference).asRelationType();
+                } else {
+                    assert type.reference().isLabel();
+                    return conceptMgr.getRelationType(type.label().get().label());
+                }
             }
 
             private static class RolePlayer {
@@ -359,33 +389,6 @@ public class Rule {
                     player = whenConcepts.get(rp.player().reference().asName()).asThing();
                     repetition = rp.repetition();
                 }
-            }
-
-            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
-                assert constraint().owner().isa().isPresent();
-                TypeVariable type = constraint().owner().isa().get().type();
-                if (type.reference().isName()) {
-                    Reference.Name typeReference = type.reference().asName();
-                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
-                    return whenConcepts.get(typeReference).asRelationType();
-                } else {
-                    assert type.reference().isLabel();
-                    return conceptMgr.getRelationType(type.label().get().label());
-                }
-            }
-
-            public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
-                return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
-            }
-
-            @Override
-            public boolean isRelation() {
-                return true;
-            }
-
-            @Override
-            public Relation asRelation() {
-                return this;
             }
         }
 
