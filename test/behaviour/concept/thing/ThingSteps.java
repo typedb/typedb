@@ -75,12 +75,12 @@ public class ThingSteps {
 
     @When("entity/attribute/relation {var} set has: {var}")
     public void thing_set_has(String var1, String var2) {
-        get(var1).setHas(get(var2).asAttribute());
+        get(var1).setHas(get(var2).asAttribute(), false);
     }
 
     @Then("entity/attribute/relation {var} set has: {var}; throws exception")
     public void thing_set_has_throws_exception(String var1, String var2) {
-        assertThrows(() -> get(var1).setHas(get(var2).asAttribute()));
+        assertThrows(() -> get(var1).setHas(get(var2).asAttribute(), false));
     }
 
     @When("entity/attribute/relation {var} unset has: {var}")

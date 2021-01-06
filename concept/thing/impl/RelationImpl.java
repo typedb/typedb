@@ -61,16 +61,17 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public void addPlayer(RoleType roleType, Thing player) {
+    public void addPlayer(RoleType roleType, Thing player, boolean isInferred) {
+        assert isInferred() == isInferred;
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw exception(GraknException.of(RELATION_ROLE_UNRELATED, this.getType().getLabel(), roleType.getLabel()));
         } else if (player.getType().getPlays().noneMatch(t -> t.equals(roleType))) {
             throw exception(GraknException.of(THING_ROLE_UNPLAYED, player.getType().getLabel(), roleType.getLabel().toString()));
         }
 
-        final RoleImpl role = ((RoleTypeImpl) roleType).create();
-        vertex.outs().put(RELATING, role.vertex);
-        ((ThingImpl) player).vertex.outs().put(PLAYING, role.vertex);
+        final RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
+        vertex.outs().put(RELATING, role.vertex, isInferred);
+        ((ThingImpl) player).vertex.outs().put(PLAYING, role.vertex, isInferred);
         role.optimise();
     }
 

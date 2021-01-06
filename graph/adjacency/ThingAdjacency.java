@@ -81,9 +81,10 @@ public interface ThingAdjacency {
      *
      * @param encoding of the edge that will connect the owner to the adjacent vertex
      * @param adjacent the adjacent vertex
+     * @param isInferred
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, boolean isInferred);
 
     /**
      * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
@@ -99,7 +100,7 @@ public interface ThingAdjacency {
      * @param optimised vertex that this optimised edge is compressing
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised, boolean isInferred);
 
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.

@@ -21,6 +21,7 @@ package grakn.core.reasoner.resolution;
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.actor.Actor;
 import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.concept.ConceptManager;

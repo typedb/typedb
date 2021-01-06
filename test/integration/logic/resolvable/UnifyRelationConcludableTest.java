@@ -144,7 +144,7 @@ public class UnifyRelationConcludableTest {
         RelationType relationType = relation.getType();
         RoleType roleType = relationType.getRelates(role);
         assert roleType != null : "Role type " + role + " does not exist in relation type " + relation.getType().getLabel();
-        relation.addPlayer(roleType, player);
+        relation.addPlayer(roleType, player, false);
     }
 
 

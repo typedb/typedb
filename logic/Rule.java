@@ -319,7 +319,7 @@ public class Rule {
 
             private grakn.core.concept.thing.Relation insertConclusion(RelationType relationType, Set<RolePlayer> players) {
                 grakn.core.concept.thing.Relation relation = relationType.create(true);
-                players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player));
+                players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player, true));
                 return relation;
             }
 
@@ -397,8 +397,22 @@ public class Rule {
 
             @Override
             public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Identifier.Variable ownerId = constraint().owner().id();
+                assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
+                Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
+                if (constraint().attribute().reference().isName()) {
+                    Reference.Name attrRef = constraint().attribute().reference().asName();
+                    assert whenConcepts.contains(attrRef) && whenConcepts.get(attrRef).isAttribute();
+                    Attribute attribute = whenConcepts.get(constraint().attribute().reference().asName()).asAttribute();
+                    owner.setHas(attribute, true);
+                } else {
+                    assert constraint().attribute().reference().isAnonymous();
+                    Attribute attribute = getOrCreateAttribute(conceptMgr);
+                    owner.setHas(attribute, true);
+                }
                 return null;
             }
+
 
             public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
                 return new Has(ConstraintCopier.copyConstraint(constraint), whenContext);
@@ -412,6 +426,23 @@ public class Rule {
             @Override
             public Has asHas() {
                 return this;
+            }
+
+            private Attribute getOrCreateAttribute(ConceptManager conceptMgr) {
+                assert constraint().attribute().isa().isPresent()
+                        && constraint().attribute().isa().get().type().label().isPresent()
+                        && constraint().attribute().value().size() == 1
+                        && constraint().attribute().value().iterator().next().isValueIdentity();
+                Label attributeTypeLabel = constraint().attribute().isa().get().type().label().get().properLabel();
+                AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                assert attributeType != null;
+                ValueConstraint<?> value = constraint().attribute().value().iterator().next();
+                if (value.isBoolean()) return attributeType.asBoolean().put(value.asBoolean().value(), true);
+                else if (value.isDateTime()) return attributeType.asDateTime().put(value.asDateTime().value(), true);
+                else if (value.isDouble()) return attributeType.asDouble().put(value.asDouble().value(), true);
+                else if (value.isLong()) return attributeType.asLong().put(value.asLong().value(), true);
+                else if (value.isString()) return attributeType.asString().put(value.asString().value(), true);
+                else throw GraknException.of(ILLEGAL_STATE);
             }
         }
 

@@ -40,7 +40,7 @@ public class RoleImpl {
     void optimise() {
         final ThingVertex relation = vertex.ins().edge(RELATING).from().next();
         final ThingVertex player = vertex.ins().edge(PLAYING).from().next();
-        relation.outs().put(ROLEPLAYER, player, vertex);
+        relation.outs().put(ROLEPLAYER, player, vertex, vertex.isInferred());
     }
 
     public void delete() {

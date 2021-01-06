@@ -181,7 +181,7 @@ public class Importer implements Migrator {
                     for (final DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
                         final Thing player = getThing(playerMessage.getId());
                         if (player != null) {
-                            relation.addPlayer(role, player);
+                            relation.addPlayer(role, player, false);
                             playerCount++;
                         } else {
                             missingPlayers.add(playerMessage.getId());
@@ -240,7 +240,7 @@ public class Importer implements Migrator {
         for (final DataProto.Item.OwnedAttribute ownedMsg : ownedMsgs) {
             final Thing attrThing = getThing(ownedMsg.getId());
             if (attrThing != null) {
-                thing.setHas(attrThing.asAttribute());
+                thing.setHas(attrThing.asAttribute(), false);
                 ownershipCount++;
             } else {
                 missingOwnerships.add(ownedMsg.getId());
@@ -256,7 +256,7 @@ public class Importer implements Migrator {
             for (final String originalAttributeId : ownership.second()) {
                 final Thing attrThing = getThing(originalAttributeId);
                 assert thing != null && attrThing != null;
-                thing.setHas(attrThing.asAttribute());
+                thing.setHas(attrThing.asAttribute(), false);
                 ownershipCount++;
             }
             mayCommit();
@@ -275,7 +275,7 @@ public class Importer implements Migrator {
                 assert role != null;
                 for (final String originalPlayerId : pair.second()) {
                     final Thing player = getThing(originalPlayerId);
-                    relation.addPlayer(role, player);
+                    relation.addPlayer(role, player, false);
                     playerCount++;
                 }
             }

@@ -32,4 +32,6 @@ import java.util.Optional;
 public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
 
     Optional<ThingVertex> optimised();
+
+    boolean isInferred();
 }

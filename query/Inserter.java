@@ -273,7 +273,7 @@ public class Inserter {
                         throw GraknException.of(ROLE_TYPE_MISSING, rolePlayer.player().reference());
                     }
 
-                    relation.addPlayer(roleType, player);
+                    relation.addPlayer(roleType, player, false);
                 });
                 return relation;
             } else if (variable.relation().size() > 1) {
@@ -286,7 +286,7 @@ public class Inserter {
 
     private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "inserthas")) {
-            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
+            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute(), false));
         }
     }
 }

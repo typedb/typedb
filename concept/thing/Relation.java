@@ -35,7 +35,7 @@ public interface Relation extends Thing {
     @Override
     RelationType getType();
 
-    void addPlayer(RoleType roleType, Thing player);
+    void addPlayer(RoleType roleType, Thing player, boolean isInferred);
 
     void removePlayer(RoleType roleType, Thing player);
 

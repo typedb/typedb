@@ -48,7 +48,7 @@ public class EntitySteps {
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
         final Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
         final Entity entity = tx().concepts().getEntityType(type).create();
-        entity.setHas(key);
+        entity.setHas(key, false);
         put(var, entity);
     }
 
@@ -56,7 +56,7 @@ public class EntitySteps {
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
         final Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
         final Entity entity = tx().concepts().getEntityType(type).create();
-        entity.setHas(key);
+        entity.setHas(key, false);
         put(var, entity);
     }
 
@@ -64,7 +64,7 @@ public class EntitySteps {
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
         final Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
         final Entity entity = tx().concepts().getEntityType(type).create();
-        entity.setHas(key);
+        entity.setHas(key, false);
         put(var, entity);
     }
 

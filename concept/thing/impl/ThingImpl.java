@@ -95,7 +95,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public void setHas(Attribute attribute) {
+    public void setHas(Attribute attribute, boolean isInferred) {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(GraknException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
@@ -105,7 +105,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(GraknException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
         }
-        vertex.outs().put(HAS, ((AttributeImpl<?>) attribute).vertex);
+        vertex.outs().put(HAS, ((AttributeImpl<?>) attribute).vertex, isInferred);
     }
 
     @Override
