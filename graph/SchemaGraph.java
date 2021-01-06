@@ -635,9 +635,6 @@ public class SchemaGraph implements Graph {
         }
 
         public long subTypesDepth(TypeVertex type) {
-            if (type == null) {
-                System.out.println("j");
-            }
             Supplier<Long> maxDepthFn =
                     () -> 1 + type.ins().edge(SUB).from().stream().mapToLong(this::subTypesDepth).max().orElse(0);
             if (isReadOnly) {

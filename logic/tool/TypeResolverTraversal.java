@@ -20,7 +20,6 @@ package grakn.core.logic.tool;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
@@ -57,11 +56,15 @@ public class TypeResolverTraversal {
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
+    private final long numOfTypes;
+    private final long numOfConcreteTypes;
 
     public TypeResolverTraversal(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
+        this.numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
+        this.numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
     }
 
     public Conjunction resolveVariables(Conjunction conjunction) {
@@ -69,16 +72,21 @@ public class TypeResolverTraversal {
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         if (constraintMapper.isSatisfiable) runTraversalEngine(constraintMapper);
 
+        findUnsatisfiableVariables(conjunction);
+        findVariablesWithNoHints(conjunction);
+        return conjunction;
+    }
+
+    private void findUnsatisfiableVariables(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(variable -> variable.resolvedTypes().isEmpty())
                 .forEachRemaining(variable -> variable.setSatisfiable(false));
-        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
-        long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
+    }
 
+    private void findVariablesWithNoHints(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(variable -> (
                 variable.isType() && variable.resolvedTypes().size() == numOfTypes ||
                         variable.isThing() && variable.resolvedTypes().size() == numOfConcreteTypes
         )).forEachRemaining(Variable::clearResolvedTypes);
-        return conjunction;
     }
 
     public Conjunction resolveLabels(Conjunction conjunction) {
@@ -101,7 +109,6 @@ public class TypeResolverTraversal {
 
     private void runTraversalEngine(ConstraintMapper constraintMapper) {
         traversalEng.iterator(constraintMapper.traversal).forEachRemaining(
-                //TODO: take this logic into its own method.
                 result -> result.forEach((ref, vertex) -> {
                     Variable variable = constraintMapper.referenceVariableMap.get(ref);
                     if ((variable.isType() || !vertex.asType().isAbstract()))
@@ -130,7 +137,6 @@ public class TypeResolverTraversal {
             this.isSatisfiable = true;
             this.valueTypeRegister = new HashMap<>();
             conjunction.variables().forEach(this::convert);
-//            conjunction.variables().forEach(variable -> referenceVariableMap.putIfAbsent(variable.reference(), variable));
         }
 
         private void convert(Variable variable) {
@@ -188,7 +194,7 @@ public class TypeResolverTraversal {
         }
 
         private void convertValue(TypeVariable owner, ValueConstraint<?> constraint) {
-            Set<ValueType> valueTypes = comparableValue(constraint);
+            Set<ValueType> valueTypes = findComparableValueTypes(constraint);
             if (valueTypeRegister.get(owner.id()).isEmpty()) {
                 valueTypes.forEach(valueType -> traversal.valueType(owner.id(), valueType));
                 valueTypeRegister.put(owner.id(), valueTypes);
@@ -196,7 +202,7 @@ public class TypeResolverTraversal {
             subAttribute(owner.id());
         }
 
-        private Set<ValueType> comparableValue(ValueConstraint<?> constraint) {
+        private Set<ValueType> findComparableValueTypes(ValueConstraint<?> constraint) {
             if (constraint.isBoolean()) return set(ValueType.BOOLEAN);
             else if (constraint.isString()) return set(ValueType.STRING);
             else if (constraint.isDateTime()) return set(ValueType.DATETIME);
