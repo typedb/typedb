@@ -78,6 +78,7 @@ public class GraphProducer implements Producer<VertexMap> {
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
         } else {
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
+                // TODO: It's possible that futures.remove() happens here which causes not calling consume() when we should
                 futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(consume(k, splitCount, sink), forkJoinPool()));
             }
         }
@@ -108,6 +109,7 @@ public class GraphProducer implements Producer<VertexMap> {
             return;
         }
 
+        // TODO: It's possible that we're just about to call futures.put() in another thread, which means we shouldn't call done() here
         if (futures.size() == 0) {
             done(sink);
         } else {
