@@ -6,7 +6,7 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-grakn-796de3.svg)](https://stackoverflow.com/questions/tagged/grakn)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-graql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/graql)
 
-Building intelligent systems starts at the database. Grakn is an intelligent database: a knowledge graph engine to organise complex networks of data and make it queryable.
+Grakn is a distributed knowledge graph: a logical database to organise large and complex networks of data as one body of knowledge.
 
 | Get Started | Documentation | Discussion |
 |:------------|:--------------|:-----------|
