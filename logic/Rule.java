@@ -400,17 +400,25 @@ public class Rule {
                 Identifier.Variable ownerId = constraint().owner().id();
                 assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
                 Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
+                Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                Attribute attribute;
                 if (constraint().attribute().reference().isName()) {
-                    Reference.Name attrRef = constraint().attribute().reference().asName();
-                    assert whenConcepts.contains(attrRef) && whenConcepts.get(attrRef).isAttribute();
-                    Attribute attribute = whenConcepts.get(constraint().attribute().reference().asName()).asAttribute();
-                    owner.setHas(attribute, true);
+                    assert whenConcepts.contains(constraint().attribute().reference().asName()) &&
+                            whenConcepts.get(constraint().attribute().reference().asName()).isAttribute();
+                    attribute = whenConcepts.get(constraint().attribute().reference().asName()).asAttribute();
                 } else {
                     assert constraint().attribute().reference().isAnonymous();
-                    Attribute attribute = getOrCreateAttribute(conceptMgr);
-                    owner.setHas(attribute, true);
+                    attribute = getOrCreateAttribute(conceptMgr);
+                    TypeVariable declaredType = constraint().attribute().isa().get().type();
+                    Identifier declaredTypeIdentifier = declaredType.id();
+                    AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
+                    assert attrType.equals(attribute.getType());
+                    thenConcepts.put(declaredTypeIdentifier, attrType);
                 }
-                return null;
+                owner.setHas(attribute, true);
+                thenConcepts.put(constraint().attribute().id(), attribute);
+                thenConcepts.put(constraint().owner().id(), owner);
+                return thenConcepts;
             }
 
 
