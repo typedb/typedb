@@ -19,11 +19,14 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
@@ -37,19 +40,19 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.variable.SystemReference;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -120,7 +123,7 @@ public class Rule {
         return possibleConclusions;
     }
 
-    public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer) {
+    public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts) {
         // TODO
         return null;
     }
@@ -235,7 +238,7 @@ public class Rule {
             else throw GraknException.of(ILLEGAL_STATE);
         }
 
-        public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer);
+        public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
 
         public boolean isRelation() {
             return false;
@@ -293,52 +296,82 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer, ConceptManager conceptMgr) {
-                // all named variables in this conclusion must be in the provided concept map
-                assert !Iterators.iterate(constraint().variables())
-                        .filter(v -> !v.reference().isName() && whenAnswer.contains(v.reference().asName()))
-                        .hasNext(); // TODO include check for `isa` variable
-
-
-                RelationType relationType = relationType(whenAnswer, conceptMgr);
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Identifier relationTypeIdentifier = constraint().owner().isa().get().type().id();
+                RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
-                constraint().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenAnswer)));
+                constraint().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
 
-                Optional<Relation> relationInstance = lookup(relationType, players);
+                Optional<grakn.core.concept.thing.Relation> relationInstance = relationExists(relationType, players, traversalEng, conceptMgr);
+                Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                if (relationInstance.isPresent()) {
+                    thenConcepts.put(relationTypeIdentifier, relationInstance.get());
+                } else {
+                    grakn.core.concept.thing.Relation relation = insertConclusion(relationType, players);
+                    thenConcepts.put(relationTypeIdentifier, relation);
+                }
+                players.forEach(rp -> {
+                    thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
+                    thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
+                });
+                return thenConcepts;
+            }
 
+            private grakn.core.concept.thing.Relation insertConclusion(RelationType relationType, Set<RolePlayer> players) {
+                grakn.core.concept.thing.Relation relation = relationType.create(true);
+                players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player));
+                return relation;
+            }
 
-                /*
-                I think its the most "correct" to use a the traversal engine to look up the relation instance, if it exists
-                Then use label lookups to fill in the remaining concepts...
-
-                a PUT should always be done with concept manager
-                 */
-                return null;
+            private Optional<grakn.core.concept.thing.Relation> relationExists(RelationType relationType, Set<RolePlayer> players,
+                                                                               TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Traversal traversal = new Traversal();
+                Identifier.Variable relationId = Identifier.Variable.of(SystemReference.of(0));
+                traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
+                players.forEach(rp -> {
+                    // note: NON-transitive role player types - we require an exact role being played
+                    traversal.rolePlayer(relationId, rp.playerIdentifier, set(rp.roleType.getLabel()), rp.repetition);
+                    traversal.iid(rp.playerIdentifier, rp.player.getIID());
+                });
+                ResourceIterator<ConceptMap> iterator = traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
+                if (iterator.hasNext()) return Optional.of(iterator.next().get(SystemReference.of(0)).asRelation());
+                else return Optional.empty();
             }
 
             private static class RolePlayer {
+                private final Identifier roleTypeIdentifier;
                 private final RoleType roleType;
+                private final Identifier.Variable playerIdentifier;
                 private final Thing player;
+                private final int repetition;
 
-                public RolePlayer(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenAnswer) {
+                public RolePlayer(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
                     assert rp.roleType().isPresent();
+                    roleTypeIdentifier = rp.roleType().get().id();
                     if (rp.roleType().get().reference().isName()) {
-                        roleType = whenAnswer.get(rp.roleType().get().reference().asName()).asRoleType();
+                        roleType = whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
                     } else {
                         assert rp.roleType().get().reference().isLabel();
                         roleType = scope.getRelates(rp.roleType().get().label().get().properLabel().name());
                     }
-                    assert whenAnswer.contains(rp.player().reference().asName());
-                    player = whenAnswer.get(rp.player().reference().asName()).asThing();
-                }
-
-                public long roleInstances() {
-                    return roleType.getDirectInstancesCount();
+                    assert whenConcepts.contains(rp.player().reference().asName());
+                    playerIdentifier = Identifier.Variable.of(rp.player().reference().asName());
+                    player = whenConcepts.get(rp.player().reference().asName()).asThing();
+                    repetition = rp.repetition();
                 }
             }
 
-            private RelationType relationType(ConceptMap whenAnswer, ConceptManager conceptMgr) {
-                return null;
+            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                assert constraint().owner().isa().isPresent();
+                TypeVariable type = constraint().owner().isa().get().type();
+                if (type.reference().isName()) {
+                    Reference.Name typeReference = type.reference().asName();
+                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
+                    return whenConcepts.get(typeReference).asRelationType();
+                } else {
+                    assert type.reference().isLabel();
+                    return conceptMgr.getRelationType(type.label().get().label());
+                }
             }
 
             public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
@@ -363,7 +396,7 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer) {
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 return null;
             }
 
@@ -389,7 +422,7 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer) {
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 return null;
             }
 
@@ -415,7 +448,7 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr, ConceptMap whenAnswer) {
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 return null;
             }
 
