@@ -195,32 +195,29 @@ public class Matcher {
         }
 
         static Collector<ConceptMap, ?, Numeric> count() {
-            return new Collector<ConceptMap, OptionalAccumulator<Long>, Numeric>() {
+            return new Collector<ConceptMap, Accumulator<Long>, Numeric>() {
 
                 @Override
-                public Supplier<OptionalAccumulator<Long>> supplier() {
-                    return () -> new OptionalAccumulator<>(Long::sum);
+                public Supplier<Accumulator<Long>> supplier() {
+                    return () -> new Accumulator<>(0L, Long::sum);
                 }
 
                 @Override
-                public BiConsumer<OptionalAccumulator<Long>, ConceptMap> accumulator() {
+                public BiConsumer<Accumulator<Long>, ConceptMap> accumulator() {
                     return (sum, answer) -> sum.accept(1L);
                 }
 
                 @Override
-                public BinaryOperator<OptionalAccumulator<Long>> combiner() {
+                public BinaryOperator<Accumulator<Long>> combiner() {
                     return (sum1, sum2) -> {
-                        if (sum2.present) sum1.accept(sum2.value);
+                        sum1.accept(sum2.value);
                         return sum1;
                     };
                 }
 
                 @Override
-                public Function<OptionalAccumulator<Long>, Numeric> finisher() {
-                    return sum -> {
-                        if (sum.present) return Numeric.ofLong(sum.value);
-                        else return Numeric.ofLong(0);
-                    };
+                public Function<Accumulator<Long>, Numeric> finisher() {
+                    return sum -> Numeric.ofLong(sum.value);
                 }
 
                 @Override
@@ -519,6 +516,21 @@ public class Matcher {
             @Override
             public int compare(Numeric a, Numeric b) {
                 return Double.compare(a.asNumber().doubleValue(), b.asNumber().doubleValue());
+            }
+        }
+
+        private static class Accumulator<T> implements Consumer<T> {
+            T value;
+            private BinaryOperator<T> op;
+
+            Accumulator(T init, BinaryOperator<T> op) {
+                value = init;
+                this.op = op;
+            }
+
+            @Override
+            public void accept(T t) {
+                value = op.apply(value, t);
             }
         }
 
