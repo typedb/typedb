@@ -421,7 +421,6 @@ public class Rule {
                 return thenConcepts;
             }
 
-
             public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
                 return new Has(ConstraintCopier.copyConstraint(constraint), whenContext);
             }

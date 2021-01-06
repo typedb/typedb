@@ -50,12 +50,14 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     final Encoding.Direction.Adjacency direction;
     final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
     final ConcurrentMap<InfixIID.Thing, Set<ThingEdge>> edges;
+    final ConcurrentHashMap.KeySetView<ThingEdge, Boolean> inferredEdges;
 
     ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
         this.direction = direction;
         this.infixes = new ConcurrentHashMap<>();
         this.edges = new ConcurrentHashMap<>();
+        this.inferredEdges = ConcurrentHashMap.newKeySet();
     }
 
     InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID... lookAhead) {
@@ -138,7 +140,22 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                     infixIID = infixIID(encoding, copyOfRange(infixes, 0, i + 1))
             );
         }
-        edges.computeIfAbsent(infixIID, iid -> newKeySet()).add(edge);
+
+        // TODO how is this thread safe between operations in the same tx?
+        Set<ThingEdge> edgeSet = edges.computeIfAbsent(infixIID, iid -> newKeySet());
+        if (edgeSet.contains(edge) && inferredEdges.contains(edge) && !edge.isInferred()) {
+            // promote inferred edge to the non-inferred instance provided and remove it from inferred edges
+            edgeSet.remove(edge);
+            inferredEdges.remove(edge);
+            edgeSet.add(edge); // as the `isInferred` flag may differ, we re-add the newer, equivalent object
+        } else if (!edge.isInferred()) {
+            edgeSet.add(edge);
+        } else {
+            // record edge in edge set and inferred edges set
+            edgeSet.add(edge);
+            inferredEdges.add(edge);
+        }
+
         if (isModified) owner.isModified();
         if (symmetricPut) {
             if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonSymmetric(edge);
