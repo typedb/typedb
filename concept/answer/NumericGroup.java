@@ -20,47 +20,38 @@ package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
 
-import java.util.List;
+import java.util.Objects;
 
-/**
- * A type of Answer object that contains a List of Answers as the members and a Concept
- * as the owner.
- *
- * @param <T> the type of Answer being grouped
- */
-public class AnswerGroup<T extends Answer> implements Answer {
-
+public class NumericGroup implements Answer {
     private final Concept owner;
-    private final List<T> answers;
+    private final Numeric numeric;
+    private final int hash;
 
-
-    public AnswerGroup(Concept owner, List<T> answers) {
+    public NumericGroup(Concept owner, Numeric numeric) {
         this.owner = owner;
-        this.answers = answers;
+        this.numeric = numeric;
+        this.hash = Objects.hash(this.owner, this.numeric);
     }
 
     public Concept owner() {
         return this.owner;
     }
 
-    public List<T> answers() {
-        return this.answers;
+    public Numeric numeric() {
+        return this.numeric;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        final AnswerGroup<?> a2 = (AnswerGroup<?>) obj;
+        final NumericGroup a2 = (NumericGroup) obj;
         return this.owner.equals(a2.owner) &&
-                this.answers.equals(a2.answers);
+                this.numeric.equals(a2.numeric);
     }
 
     @Override
     public int hashCode() {
-        int hash = owner.hashCode();
-        hash = 31 * hash + answers.hashCode();
-
         return hash;
     }
 }

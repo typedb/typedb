@@ -538,8 +538,6 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(simpleConjunction));
     }
 
-    //TODO: re-enable when 1-cycle attribute bug is fixed
-    @Ignore
     @Test
     public void has_with_minimal_cycle() {
         define_custom_schema("define " +
@@ -861,27 +859,6 @@ public class TypeResolverTest {
             assertTrue(variable.isSatisfiable());
         }
     }
-
-    @Test
-    public void impossible_queries_make_variables_unsatisfiable() throws IOException {
-        define_standard_schema("test-type-resolution");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String relationString = "match " +
-                "$r (employee: $x) isa $m; " +
-                "$m sub friendship; ";
-
-        Conjunction conjunction = runExhaustiveHinter(typeResolver, relationString);
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$r", set());
-            put("$x", set());
-            put("$m", set());
-        }};
-        assertEquals(expected, getHintMap(conjunction));
-        for (Variable variable: conjunction.variables()) {
-            if (!variable.reference().isLabel()) assertFalse(variable.isSatisfiable());
-        }
-    }
-
 
     //#############################//
     //TRAVERSAL TYPE RESOLVER TESTS//

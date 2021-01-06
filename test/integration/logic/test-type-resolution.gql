@@ -15,15 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_bazel_distribution//artifact:rules.bzl", "artifact_file")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
+define
 
-def graknlabs_console_artifact():
-    artifact_file(
-        name = "graknlabs_console_artifact",
-        group_name = "graknlabs_console",
-        artifact_name = "console-artifact.tgz",
-        tag_source = deployment["artifact.release"],
-        commit_source = deployment["artifact.snapshot"],
-        commit = "70147b4758a01d41fffb4d0d0c08a22821336d49"
-    )
+person sub entity,
+  plays friendship:friend,
+  plays employment:employee,
+  owns name,
+  owns age,
+  owns ref @key;
+
+company sub entity,
+  plays employment:employer,
+  owns name,
+  owns ref @key;
+
+friendship sub relation,
+  relates friend,
+  owns ref @key;
+
+employment sub relation,
+  relates employee,
+  relates employer,
+  owns ref @key;
+
+name sub attribute, value string;
+
+age sub attribute, value long;
+
+ref sub attribute, value long;
