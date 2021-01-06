@@ -33,8 +33,10 @@ import graql.lang.pattern.variable.Reference;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.builder.Sortable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.OptionalDouble;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -48,6 +50,8 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_
 import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static java.lang.Math.sqrt;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 public class Matcher {
 
@@ -88,15 +92,9 @@ public class Matcher {
             Set<Reference.Name> vars = iterate(query.filter()).map(f -> f.reference().asName()).toSet();
             answers = answers.map(a -> a.filter(vars)).distinct();
         }
-        if (query.sort().isPresent()) {
-            answers = sort(answers, query.sort().get());
-        }
-        if (query.offset().isPresent()) {
-            answers = answers.offset(query.offset().get());
-        }
-        if (query.limit().isPresent()) {
-            answers = answers.limit(query.limit().get());
-        }
+        if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
+        if (query.offset().isPresent()) answers = answers.offset(query.offset().get());
+        if (query.limit().isPresent()) answers = answers.limit(query.limit().get());
         return answers;
     }
 
@@ -291,7 +289,10 @@ public class Matcher {
         }
 
         public ResourceIterator<ConceptMapGroup> execute(boolean isParallel) {
-            throw GraknException.of(UNIMPLEMENTED);
+            List<ConceptMapGroup> answerGroups = new ArrayList<>();
+            Matcher.this.execute(isParallel).stream().collect(groupingBy(a -> a.get(query.var()), toList()))
+                    .forEach((o, cm) -> answerGroups.add(new ConceptMapGroup(o, cm)));
+            return iterate(answerGroups);
         }
 
         public class Aggregator {
