@@ -22,13 +22,15 @@ import grakn.core.common.exception.GraknException;
 
 import javax.annotation.Nullable;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.NUMERIC_IS_NOT_NUMBER;
 
 /**
  * A type of Answer object that contains a Number. Will either be a long or a double
  */
-public class Numeric implements Answer {
+public class Numeric implements Answer, Comparable<Numeric> {
 
     @Nullable
     private final Long longValue;
@@ -66,17 +68,32 @@ public class Numeric implements Answer {
 
     public long asLong() {
         if (isLong()) return longValue;
-        else throw GraknException.of(ILLEGAL_OPERATION);
+        else throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Long.class));
     }
 
-    public Double asDouble() {
+    public double asDouble() {
         if (isDouble()) return doubleValue;
-        else throw GraknException.of(ILLEGAL_OPERATION);
+        else throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Double.class));
     }
 
     public Number asNumber() {
         if (isLong()) return longValue;
         else if (isDouble()) return doubleValue;
+        else if (isNaN()) throw GraknException.of(NUMERIC_IS_NOT_NUMBER);
         else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public Class<?> getValueClass() {
+        if (isLong()) return Long.class;
+        else if (isDouble()) return Double.class;
+        else if (isNaN()) return null;
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    @Override
+    public int compareTo(Numeric o) {
+        if (isNaN() || o.isNaN()) throw GraknException.of(NUMERIC_IS_NOT_NUMBER);
+        if (isLong() && o.isLong()) return longValue.compareTo(o.longValue);
+        else return doubleValue.compareTo(o.doubleValue);
     }
 }

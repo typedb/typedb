@@ -244,13 +244,13 @@ public class GraqlSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asDouble()),
-                     expectedAnswer, numericAnswer.asDouble(), 0.01);
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
+                     expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.0001);
     }
 
-    @Then("aggregate answer is empty")
-    public void aggregate_answer_is_empty() {
-        assertNull(numericAnswer);
+    @Then("aggregate answer is not a number")
+    public void aggregate_answer_is_not_a_number() {
+        assertTrue(numericAnswer.isNaN());
     }
 
     @Then("answer groups are")

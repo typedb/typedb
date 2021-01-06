@@ -123,8 +123,13 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return linkedSet;
     }
 
-    default int count() {
-        return this.toList().size();
+    default long count() {
+        long count = 0;
+        while (this.hasNext()) {
+            this.next();
+            count++;
+        }
+        return count;
     }
 
     default ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn) {
