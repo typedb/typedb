@@ -209,9 +209,7 @@ public class TypeHandler {
     private void getSupertype(Transaction.Req request, Type type) {
         ConceptProto.Type.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.Type.GetSupertype.Res.newBuilder();
         Type superType = type.getSupertype();
-        if (superType != null) {
-            getSupertypeRes.setType(type(superType));
-        }
+        if (superType != null) getSupertypeRes.setType(type(superType));
         final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
                 .setTypeGetSupertypeRes(getSupertypeRes);
         transactionRPC.respond(response(request, response));
