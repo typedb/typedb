@@ -98,6 +98,7 @@ public interface ThingAdjacency {
      * @param encoding  type of the edge
      * @param adjacent  the adjacent vertex
      * @param optimised vertex that this optimised edge is compressing
+     * @param isInferred
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
     ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised, boolean isInferred);

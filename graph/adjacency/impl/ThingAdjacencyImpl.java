@@ -31,7 +31,10 @@ import grakn.core.graph.iid.SuffixIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -49,7 +52,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     final ThingVertex owner;
     final Encoding.Direction.Adjacency direction;
     final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
-    final ConcurrentMap<InfixIID.Thing, Set<ThingEdge>> edges;
+    final ConcurrentMap<InfixIID.Thing, Map<EdgeIID.Thing, ThingEdge>> edges;
     final ConcurrentHashMap.KeySetView<ThingEdge, Boolean> inferredEdges;
 
     ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
@@ -79,10 +82,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     ResourceIterator<ThingEdge> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
-        Set<ThingEdge> result;
+        Map<EdgeIID.Thing, ThingEdge> result;
         InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
         if (lookAhead.length == encoding.lookAhead()) {
-            return iterate((result = edges.get(infixIID)) != null ? result.iterator() : emptyIterator());
+            return iterate((result = edges.get(infixIID)) != null ? result.values().iterator() : emptyIterator());
         }
 
         assert lookAhead.length < encoding.lookAhead();
@@ -97,7 +100,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             iids = newIIDs;
         }
 
-        return iterate(iids).flatMap(iid -> iterate(edges.get(iid)));
+        return iterate(iids).flatMap(iid -> iterate(edges.get(iid).values()));
     }
 
     @Override
@@ -141,19 +144,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             );
         }
 
-        // TODO how is this thread safe between operations in the same tx?
-        Set<ThingEdge> edgeSet = edges.computeIfAbsent(infixIID, iid -> newKeySet());
-        if (edgeSet.contains(edge) && inferredEdges.contains(edge) && !edge.isInferred()) {
-            // promote inferred edge to the non-inferred instance provided and remove it from inferred edges
-            edgeSet.remove(edge);
-            inferredEdges.remove(edge);
-            edgeSet.add(edge); // as the `isInferred` flag may differ, we re-add the newer, equivalent object
-        } else if (!edge.isInferred()) {
-            edgeSet.add(edge);
+        Map<EdgeIID.Thing, ThingEdge> edgesByOutIID = edges.computeIfAbsent(infixIID, iid -> new HashMap<>());
+        if (edgesByOutIID.containsKey(edge.outIID())) {
+            ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
+            if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
         } else {
-            // record edge in edge set and inferred edges set
-            edgeSet.add(edge);
-            inferredEdges.add(edge);
+            edgesByOutIID.put(edge.outIID(), edge);
         }
 
         if (isModified) owner.isModified();
@@ -212,7 +208,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     @Override
     public void commit() {
-        Iterators.iterate(edges.values()).flatMap(Iterators::iterate).filter(e -> !e.isInferred())
+        Iterators.iterate(edges.values()).flatMap(edgeMap -> Iterators.iterate(edgeMap.values())).filter(e -> !e.isInferred())
                 .forEachRemaining(Edge::commit);
     }
 

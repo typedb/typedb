@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
@@ -44,8 +45,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
     final DataGraph graph;
     final Encoding.Edge.Thing encoding;
-    private boolean isInferred;
     final AtomicBoolean deleted;
+    boolean isInferred;
 
     ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding, boolean isInferred) {
         this.graph = graph;
@@ -135,6 +136,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public Optional<ThingVertex> optimised() {
             return Optional.ofNullable(optimised);
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            this.isInferred = isInferred;
         }
 
         /**
@@ -293,6 +299,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (optimised != null) return Optional.of(optimised);
             if (optimisedIID != null) optimised = graph.convert(optimisedIID);
             return Optional.ofNullable(optimised);
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            throw GraknException.of(ILLEGAL_OPERATION);
         }
 
         /**

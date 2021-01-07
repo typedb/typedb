@@ -33,5 +33,7 @@ public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, Thin
 
     Optional<ThingVertex> optimised();
 
+    void isInferred(boolean isInferred);
+
     boolean isInferred();
 }

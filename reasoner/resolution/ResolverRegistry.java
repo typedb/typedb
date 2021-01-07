@@ -24,8 +24,6 @@ import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
-import grakn.core.concept.ConceptManager;
-import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
