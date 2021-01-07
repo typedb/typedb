@@ -361,7 +361,6 @@ public class Rule {
                     this.value = value;
                 }
 
-
                 @Override
                 public boolean isExplicitHas() {
                     return true;
