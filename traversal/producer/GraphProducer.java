@@ -19,7 +19,6 @@
 package grakn.core.traversal.producer;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.iterator.SynchronisedIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
@@ -27,13 +26,15 @@ import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
-import static grakn.core.common.iterator.Iterators.synchronised;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 public class GraphProducer implements Producer<VertexMap> {
@@ -42,10 +43,11 @@ public class GraphProducer implements Producer<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final SynchronisedIterator<? extends Vertex<?, ?>> start;
-    private final ConcurrentMap<ResourceIterator<VertexMap>, CompletableFuture<Void>> futures;
+    private final ResourceIterator<? extends Vertex<?, ?>> start;
     private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
     private final AtomicBoolean isDone;
+    private final Map<ResourceIterator<VertexMap>, Semaphore> jobs;
+    private final List<ResourceIterator<VertexMap>> toRecycle;
 
     public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, int parallelisation) {
         assert parallelisation > 0;
@@ -54,78 +56,64 @@ public class GraphProducer implements Producer<VertexMap> {
         this.params = params;
         this.parallelisation = parallelisation;
         this.isDone = new AtomicBoolean(false);
-        this.futures = new ConcurrentHashMap<>();
         this.produced = ConcurrentHashMap.newKeySet();
-        this.start = synchronised(procedure.startVertex().iterator(graphMgr, params));
+        this.start = procedure.startVertex().iterator(graphMgr, params);
+        this.jobs = new HashMap<>();
+        this.toRecycle = new ArrayList<>();
+    }
+
+    private synchronized void assign(Sink<VertexMap> sink, int count) {
+        if (jobs.size() < parallelisation) {
+            for (int i = jobs.size(); i < parallelisation && start.hasNext(); i++) {
+                ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
+                jobs.put(iterator, new Semaphore(0));
+                runAsync(() -> consume(sink, iterator), forkJoinPool());
+            }
+        }
+        if (jobs.size() == 0) {
+            if (isDone.compareAndSet(false, true)) {
+                sink.done(this);
+                return;
+            }
+        }
+        int splitCount = (int) Math.ceil((double) count / jobs.size());
+        for (ResourceIterator<VertexMap> iterator : jobs.keySet()) {
+            jobs.get(iterator).release(splitCount);
+        }
+    }
+
+    private synchronized void unassign(ResourceIterator<VertexMap> iterator) {
+        jobs.remove(iterator);
+        toRecycle.add(iterator);
+    }
+
+    private void consume(Sink<VertexMap> sink, ResourceIterator<VertexMap> iterator) {
+        try {
+            Semaphore sema = jobs.get(iterator);
+            while (iterator.hasNext()) {
+                sema.acquire();
+                sink.put(iterator.next());
+            }
+            unassign(iterator);
+            if (sema.availablePermits() > 0) {
+                assign(sink, sema.availablePermits());
+            }
+        } catch (Throwable e) {
+            if (isDone.compareAndSet(false, true)) {
+                sink.done(this, e);
+            }
+        }
     }
 
     @Override
     public void produce(Sink<VertexMap> sink, int count) {
-        int p = futures.isEmpty() ? parallelisation : futures.size();
-        int splitCount = (int) Math.ceil((double) count / p);
-
-        if (futures.size() == 0) {
-            if (!start.hasNext()) {
-                done(sink);
-                return;
-            }
-
-            int i = 0;
-            for (; i < parallelisation && start.hasNext(); i++) {
-                ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
-                futures.put(iterator, runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
-            }
-            if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
-        } else {
-            for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
-                // TODO: It's possible that futures.remove() happens here which causes not calling consume() when we should
-                futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(consume(k, splitCount, sink), forkJoinPool()));
-            }
-        }
-    }
-
-    private Runnable consume(ResourceIterator<VertexMap> iterator, int count, Sink<VertexMap> sink) {
-        return () -> {
-            try {
-                int i = 0;
-                for (; i < count && iterator.hasNext(); i++) {
-                    sink.put(iterator.next());
-                }
-                if (i < count) {
-                    futures.remove(iterator);
-                    compensate(count - i, sink);
-                }
-            } catch (Throwable e) {
-                sink.done(this, e);
-            }
-        };
-    }
-
-    private void compensate(int remaining, Sink<VertexMap> sink) {
-        Vertex<?, ?> next;
-        if ((next = start.atomicNext()) != null) {
-            ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, params).distinct(produced);
-            futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
-            return;
-        }
-
-        // TODO: It's possible that we're just about to call futures.put() in another thread, which means we shouldn't call done() here
-        if (futures.size() == 0) {
-            done(sink);
-        } else {
-            produce(sink, remaining);
-        }
-    }
-
-    private void done(Sink<VertexMap> sink) {
-        if (isDone.compareAndSet(false, true)) {
-            sink.done(this);
-        }
+        assign(sink, count);
     }
 
     @Override
     public void recycle() {
         start.recycle();
-        futures.keySet().forEach(ResourceIterator::recycle);
+        toRecycle.forEach(iterator -> iterator.recycle());
+        toRecycle.clear();
     }
 }
