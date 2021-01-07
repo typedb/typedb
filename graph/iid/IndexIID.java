@@ -63,13 +63,13 @@ public abstract class IndexIID extends IID {
          * @return a byte array representing the index address of a {@code TypeVertex}
          */
         public static Type of(String label, @Nullable String scope) {
-            return new Type(join(Encoding.Index.TYPE.prefix().bytes(), Encoding.Graph.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
+            return new Type(join(Encoding.Index.Prefix.TYPE.prefix().bytes(), Encoding.Graph.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
         }
 
         @Override
         public String toString() {
             if (readableString == null) {
-                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.TYPE.toString() + "]" +
+                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]" +
                         "[" + (bytes.length - PrefixIID.LENGTH) + ": " + new String(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
             }
             return readableString;
@@ -91,13 +91,13 @@ public abstract class IndexIID extends IID {
         }
 
         public static Encoding.Prefix prefix() {
-            return Encoding.Index.RULE.prefix();
+            return Encoding.Index.Prefix.RULE.prefix();
         }
 
         @Override
         public String toString() {
             if (readableString == null) {
-                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.RULE.toString() + "]" +
+                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.RULE.toString() + "]" +
                         "[" + (bytes.length - PrefixIID.LENGTH) + ": " + new String(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
             }
             return readableString;
@@ -113,7 +113,7 @@ public abstract class IndexIID extends IID {
         }
 
         private static Attribute newAttributeIndex(byte[] valueType, byte[] value, byte[] typeIID) {
-            return new Attribute(join(Encoding.Index.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
+            return new Attribute(join(Encoding.Index.Prefix.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
         }
 
         public static Attribute of(boolean value, VertexIID.Type typeIID) {
@@ -168,7 +168,7 @@ public abstract class IndexIID extends IID {
                         break;
                 }
 
-                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.ATTRIBUTE.toString() + "]" +
+                readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
                         "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length)).toString() + "]";

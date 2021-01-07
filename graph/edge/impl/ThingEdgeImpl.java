@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
-import static grakn.core.graph.util.Encoding.Status.BUFFERED;
+import static grakn.core.graph.util.Encoding.Graph.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {

@@ -31,7 +31,7 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
 
     void iid(VERTEX_IID iid);
 
-    Encoding.Status status();
+    Encoding.Graph.Status status();
 
     VERTEX_ENCODING encoding();
 

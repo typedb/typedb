@@ -449,10 +449,10 @@ public class SchemaGraph implements Graph {
     @Override
     public void commit() {
         assert storage.isSchema();
-        typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
+        typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Graph.Status.BUFFERED)).forEach(
                 typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
+        rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Graph.Status.BUFFERED)).forEach(
                 ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);

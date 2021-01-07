@@ -154,6 +154,23 @@ public class Encoding {
             }
         }
 
+        enum Status {
+            BUFFERED(0),
+            COMMITTED(1),
+            PERSISTED(2),
+            IMMUTABLE(3);
+
+            private int status;
+
+            Status(int status) {
+                this.status = status;
+            }
+
+            public int status() {
+                return status;
+            }
+        }
+
         interface Direction {
 
             enum Adjacency implements Direction {
@@ -193,17 +210,6 @@ public class Encoding {
                     return !isForward;
                 }
             }
-        }
-
-        enum InfixType {
-            PROPERTY(0),
-            EDGE(1);
-
-            private final int key;
-            InfixType(int key) {
-                this.key = key;
-            }
-
         }
 
         /**
@@ -292,6 +298,7 @@ public class Encoding {
             Property(Infix infix) {
                 this.infix = infix;
             }
+
             public Infix infix() {
                 return infix;
             }
@@ -712,114 +719,101 @@ public class Encoding {
         }
     }
 
+    public interface Statistics {
 
-    public enum StatisticsCountJobType {
-        ATTRIBUTE_VERTEX(0),
-        HAS_EDGE(1);
+        enum CountJobType {
+            ATTRIBUTE_VERTEX(0),
+            HAS_EDGE(1);
 
-        private final byte key;
+            private final byte key;
 
-        StatisticsCountJobType(int key) {
-            this.key = (byte) key;
-        }
-
-        public static StatisticsCountJobType of(byte[] key) {
-            if (key.length == 1) {
-                for (StatisticsCountJobType i : StatisticsCountJobType.values()) {
-                    if (i.key == key[0]) return i;
-                }
+            CountJobType(int key) {
+                this.key = (byte) key;
             }
-            throw GraknException.of(UNRECOGNISED_VALUE);
-        }
 
-        public byte key() {
-            return key;
-        }
-
-        public byte[] bytes() {
-            return new byte[]{key};
-        }
-    }
-
-    public enum StatisticsCountJobValue {
-        CREATED(0),
-        DELETED(1);
-
-        private final byte key;
-
-        StatisticsCountJobValue(int key) {
-            this.key = (byte) key;
-        }
-
-        public static StatisticsCountJobValue of(byte[] key) {
-            if (key.length == 1) {
-                for (StatisticsCountJobValue i : StatisticsCountJobValue.values()) {
-                    if (i.key == key[0]) return i;
+            public static CountJobType of(byte[] key) {
+                if (key.length == 1) {
+                    for (CountJobType i : CountJobType.values()) {
+                        if (i.key == key[0]) return i;
+                    }
                 }
+                throw GraknException.of(UNRECOGNISED_VALUE);
             }
-            throw GraknException.of(UNRECOGNISED_VALUE);
+
+            public byte key() {
+                return key;
+            }
+
+            public byte[] bytes() {
+                return new byte[]{key};
+            }
         }
 
-        public byte key() {
-            return key;
+        enum CountJobOperation {
+            CREATED(0),
+            DELETED(1);
+
+            private final byte key;
+
+            CountJobOperation(int key) {
+                this.key = (byte) key;
+            }
+
+            public static CountJobOperation of(byte[] key) {
+                if (key.length == 1) {
+                    for (CountJobOperation i : CountJobOperation.values()) {
+                        if (i.key == key[0]) return i;
+                    }
+                }
+                throw GraknException.of(UNRECOGNISED_VALUE);
+            }
+
+            public byte key() {
+                return key;
+            }
+
+            public byte[] bytes() {
+                return new byte[]{key};
+            }
         }
 
-        public byte[] bytes() {
-            return new byte[]{key};
+        enum Infix {
+            VERTEX_COUNT(0),
+            VERTEX_TRANSITIVE_COUNT(1),
+            HAS_EDGE_COUNT(2),
+            HAS_EDGE_TOTAL_COUNT(3);
+
+            private final byte key;
+
+            Infix(int key) {
+                this.key = (byte) key;
+            }
+
+            public byte key() {
+                return key;
+            }
+
+            public byte[] bytes() {
+                return new byte[]{key};
+            }
         }
     }
 
-    public enum StatisticsInfix {
-        VERTEX_COUNT(0),
-        VERTEX_TRANSITIVE_COUNT(1),
-        HAS_EDGE_COUNT(2),
-        HAS_EDGE_TOTAL_COUNT(3);
+    public interface Index {
+        enum Prefix {
+            TYPE(Encoding.Prefix.INDEX_TYPE),
+            RULE(Encoding.Prefix.INDEX_RULE),
+            ATTRIBUTE(Encoding.Prefix.INDEX_ATTRIBUTE);
 
-        private final byte key;
+            private final Encoding.Prefix prefix;
 
-        StatisticsInfix(int key) {
-            this.key = (byte) key;
-        }
+            Prefix(Encoding.Prefix prefix) {
+                this.prefix = prefix;
+            }
 
-        public byte key() {
-            return key;
-        }
-
-        public byte[] bytes() {
-            return new byte[]{key};
-        }
-    }
-
-    public enum Index {
-        TYPE(Prefix.INDEX_TYPE),
-        RULE(Prefix.INDEX_RULE),
-        ATTRIBUTE(Prefix.INDEX_ATTRIBUTE);
-
-        private final Prefix prefix;
-
-        Index(Prefix prefix) {
-            this.prefix = prefix;
-        }
-
-        public Prefix prefix() {
-            return prefix;
-        }
-    }
-
-    public enum Status {
-        BUFFERED(0),
-        COMMITTED(1),
-        PERSISTED(2),
-        IMMUTABLE(3);
-
-        private int status;
-
-        Status(int status) {
-            this.status = status;
-        }
-
-        public int status() {
-            return status;
+            public Encoding.Prefix prefix() {
+                return prefix;
+            }
         }
     }
 

@@ -79,8 +79,8 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public Encoding.Status status() {
-        return Encoding.Status.IMMUTABLE;
+    public Encoding.Graph.Status status() {
+        return Encoding.Graph.Status.IMMUTABLE;
     }
 
     @Override

@@ -61,8 +61,8 @@ import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ENTITY_TYPE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_RELATION_TYPE;
-import static grakn.core.graph.util.Encoding.StatisticsCountJobValue.CREATED;
-import static grakn.core.graph.util.Encoding.StatisticsCountJobValue.DELETED;
+import static grakn.core.graph.util.Encoding.Statistics.CountJobOperation.CREATED;
+import static grakn.core.graph.util.Encoding.Statistics.CountJobOperation.DELETED;
 import static grakn.core.graph.util.Encoding.Graph.ValueType.STRING_MAX_SIZE;
 import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ATTRIBUTE;
 import static grakn.core.graph.util.StatisticsBytes.attributeCountJobKey;
@@ -409,7 +409,7 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
+        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Graph.Status.BUFFERED) && !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
@@ -496,8 +496,8 @@ public class DataGraph implements Graph {
         private final ConcurrentMap<VertexIID.Type, Long> deltaVertexCount;
         private final ConcurrentMap<Pair<VertexIID.Type, VertexIID.Type>, Long> persistedHasEdgeCount;
         private final ConcurrentMap<VertexIID.Type, Long> persistedHasEdgeTotalCount;
-        private final ConcurrentMap<VertexIID.Attribute<?>, Encoding.StatisticsCountJobValue> attributeVertexCountJobs;
-        private final ConcurrentMap<Pair<VertexIID.Thing, VertexIID.Attribute<?>>, Encoding.StatisticsCountJobValue> hasEdgeCountJobs;
+        private final ConcurrentMap<VertexIID.Attribute<?>, Encoding.Statistics.CountJobOperation> attributeVertexCountJobs;
+        private final ConcurrentMap<Pair<VertexIID.Thing, VertexIID.Attribute<?>>, Encoding.Statistics.CountJobOperation> hasEdgeCountJobs;
         private boolean needsBackgroundCounting;
         private final SchemaGraph schemaGraph;
         private final Storage storage;
@@ -795,26 +795,26 @@ public class DataGraph implements Graph {
         }
 
         public abstract static class CountJob {
-            private final Encoding.StatisticsCountJobValue value;
+            private final Encoding.Statistics.CountJobOperation value;
             private final byte[] key;
 
-            private CountJob(byte[] key, Encoding.StatisticsCountJobValue value) {
+            private CountJob(byte[] key, Encoding.Statistics.CountJobOperation value) {
                 this.key = key;
                 this.value = value;
             }
 
             public static CountJob of(byte[] key, byte[] value) {
                 byte[] countJobKey = stripPrefix(key, PrefixIID.LENGTH);
-                Encoding.StatisticsCountJobType countJobType = Encoding.StatisticsCountJobType.of(new byte[]{countJobKey[0]});
-                Encoding.StatisticsCountJobValue countJobValue = Encoding.StatisticsCountJobValue.of(value);
+                Encoding.Statistics.CountJobType countJobType = Encoding.Statistics.CountJobType.of(new byte[]{countJobKey[0]});
+                Encoding.Statistics.CountJobOperation countJobOperation = Encoding.Statistics.CountJobOperation.of(value);
                 byte[] countJobIID = stripPrefix(countJobKey, PrefixIID.LENGTH);
-                if (countJobType == Encoding.StatisticsCountJobType.ATTRIBUTE_VERTEX) {
+                if (countJobType == Encoding.Statistics.CountJobType.ATTRIBUTE_VERTEX) {
                     VertexIID.Attribute<?> attIID = VertexIID.Attribute.of(countJobIID);
-                    return new Attribute(key, attIID, countJobValue);
-                } else if (countJobType == Encoding.StatisticsCountJobType.HAS_EDGE) {
+                    return new Attribute(key, attIID, countJobOperation);
+                } else if (countJobType == Encoding.Statistics.CountJobType.HAS_EDGE) {
                     VertexIID.Thing thingIID = VertexIID.Thing.extract(countJobIID, 0);
                     VertexIID.Attribute<?> attIID = VertexIID.Attribute.extract(countJobIID, thingIID.bytes().length);
-                    return new HasEdge(key, thingIID, attIID, countJobValue);
+                    return new HasEdge(key, thingIID, attIID, countJobOperation);
                 } else {
                     assert false;
                     return null;
@@ -825,7 +825,7 @@ public class DataGraph implements Graph {
                 return key;
             }
 
-            public Encoding.StatisticsCountJobValue value() {
+            public Encoding.Statistics.CountJobOperation value() {
                 return value;
             }
 
@@ -840,7 +840,7 @@ public class DataGraph implements Graph {
             public static class Attribute extends CountJob {
                 private final VertexIID.Attribute<?> attIID;
 
-                private Attribute(byte[] key, VertexIID.Attribute<?> attIID, Encoding.StatisticsCountJobValue value) {
+                private Attribute(byte[] key, VertexIID.Attribute<?> attIID, Encoding.Statistics.CountJobOperation value) {
                     super(key, value);
                     this.attIID = attIID;
                 }
@@ -860,7 +860,7 @@ public class DataGraph implements Graph {
                 private final VertexIID.Attribute<?> attIID;
 
                 private HasEdge(byte[] key, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID,
-                                Encoding.StatisticsCountJobValue value) {
+                                Encoding.Statistics.CountJobOperation value) {
                     super(key, value);
                     this.thingIID = thingIID;
                     this.attIID = attIID;

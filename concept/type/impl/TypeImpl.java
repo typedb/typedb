@@ -150,7 +150,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public TypeImpl asType() { return this; }
 
     void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
-        if (vertex.status().equals(Encoding.Status.BUFFERED)) {
+        if (vertex.status().equals(Encoding.Graph.Status.BUFFERED)) {
             throw exception(GraknException.of(SESSION_SCHEMA_VIOLATION));
         } else if (isAbstract()) {
             throw exception(GraknException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));

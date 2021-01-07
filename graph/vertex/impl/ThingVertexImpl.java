@@ -173,8 +173,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public Encoding.Status status() {
-            return Encoding.Status.BUFFERED;
+        public Encoding.Graph.Status status() {
+            return Encoding.Graph.Status.BUFFERED;
         }
 
         @Override
@@ -215,8 +215,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public Encoding.Status status() {
-            return Encoding.Status.PERSISTED;
+        public Encoding.Graph.Status status() {
+            return Encoding.Graph.Status.PERSISTED;
         }
 
         @Override

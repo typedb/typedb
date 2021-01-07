@@ -116,8 +116,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public Encoding.Status status() {
-            return isCommitted.get() ? Encoding.Status.COMMITTED : Encoding.Status.BUFFERED;
+        public Encoding.Graph.Status status() {
+            return isCommitted.get() ? Encoding.Graph.Status.COMMITTED : Encoding.Graph.Status.BUFFERED;
         }
 
         @Override
@@ -176,8 +176,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public Encoding.Status status() {
-            return Encoding.Status.PERSISTED;
+        public Encoding.Graph.Status status() {
+            return Encoding.Graph.Status.PERSISTED;
         }
 
         @Override
