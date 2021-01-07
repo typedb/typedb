@@ -123,7 +123,7 @@ public class Rule {
         return possibleConclusions;
     }
 
-    public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts) {
+    public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
         // TODO
         return null;
     }

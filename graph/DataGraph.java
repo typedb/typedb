@@ -170,7 +170,7 @@ public class DataGraph implements Graph {
         final ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
         thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new HashSet<>()).add(vertex);
-        statistics.vertexCreated(typeVertex.iid());
+        if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
 
@@ -269,11 +269,15 @@ public class DataGraph implements Graph {
                 iid -> {
                     final AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        statistics.attributeVertexCreated(vertex.iid());
+        if (!isInferred && vertex.isInferred()) {
+            // promote inferred attribute to non-inferred attribute
+            vertex.isInferred(false);
+            statistics.attributeVertexCreated(vertex.iid());
+        }
         return vertex;
     }
 
@@ -287,11 +291,15 @@ public class DataGraph implements Graph {
                 iid -> {
                     final AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        statistics.attributeVertexCreated(vertex.iid());
+        if (!isInferred && vertex.isInferred()) {
+            // promote inferred attribute to non-inferred attribute
+            vertex.isInferred(false);
+            statistics.attributeVertexCreated(vertex.iid());
+        }
         return vertex;
     }
 
@@ -305,11 +313,15 @@ public class DataGraph implements Graph {
                 iid -> {
                     final AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        statistics.attributeVertexCreated(vertex.iid());
+        if (!isInferred && vertex.isInferred()) {
+            // promote inferred attribute to non-inferred attribute
+            vertex.isInferred(false);
+            statistics.attributeVertexCreated(vertex.iid());
+        }
         return vertex;
     }
 
@@ -334,11 +346,15 @@ public class DataGraph implements Graph {
                 attIID, iid -> {
                     final AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        statistics.attributeVertexCreated(vertex.iid());
+        if (!isInferred && vertex.isInferred()) {
+            // promote inferred attribute to non-inferred attribute
+            vertex.isInferred(false);
+            statistics.attributeVertexCreated(vertex.iid());
+        }
         return vertex;
     }
 
@@ -352,11 +368,15 @@ public class DataGraph implements Graph {
                 iid -> {
                     final AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
-        statistics.attributeVertexCreated(vertex.iid());
+        if (!isInferred && vertex.isInferred()) {
+            // promote inferred attribute to non-inferred attribute
+            vertex.isInferred(false);
+            statistics.attributeVertexCreated(vertex.iid());
+        }
         return vertex;
     }
 
@@ -366,7 +386,7 @@ public class DataGraph implements Graph {
         if (thingsByTypeIID.containsKey(vertex.type().iid())) {
             thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
         }
-        statistics.attributeVertexDeleted(vertex.iid());
+        if (!vertex.isInferred()) statistics.attributeVertexDeleted(vertex.iid());
     }
 
     public void delete(ThingVertex vertex) {
@@ -376,7 +396,7 @@ public class DataGraph implements Graph {
             if (thingsByTypeIID.containsKey(vertex.type().iid())) {
                 thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
             }
-            statistics.vertexDeleted(vertex.type().iid());
+            if (!vertex.isInferred()) statistics.vertexDeleted(vertex.type().iid());
         } else delete(vertex.asAttribute());
     }
 
