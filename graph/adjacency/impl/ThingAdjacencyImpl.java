@@ -31,7 +31,6 @@ import grakn.core.graph.iid.SuffixIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -53,14 +52,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     final Encoding.Direction.Adjacency direction;
     final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
     final ConcurrentMap<InfixIID.Thing, Map<EdgeIID.Thing, ThingEdge>> edges;
-    final ConcurrentHashMap.KeySetView<ThingEdge, Boolean> inferredEdges;
 
     ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
         this.direction = direction;
         this.infixes = new ConcurrentHashMap<>();
         this.edges = new ConcurrentHashMap<>();
-        this.inferredEdges = ConcurrentHashMap.newKeySet();
     }
 
     InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID... lookAhead) {
