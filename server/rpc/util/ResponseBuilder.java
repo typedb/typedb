@@ -20,8 +20,10 @@ package grakn.core.server.rpc.util;
 import com.google.protobuf.ByteString;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMapGroup;
+import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -41,12 +43,10 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
 import java.time.ZoneOffset;
-import java.util.stream.Collectors;
 
-import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_ANSWER_TYPE;
+import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
 
@@ -262,30 +262,6 @@ public class ResponseBuilder {
      */
     public static class Answer {
 
-        public static AnswerProto.Answer answer(Object object) {
-            final AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
-
-            if (object instanceof AnswerGroup) {
-                answer.setAnswerGroup(answerGroup((AnswerGroup<?>) object));
-            } else if (object instanceof ConceptMap) {
-                answer.setConceptMap(conceptMap((ConceptMap) object));
-            } else if (object instanceof Number) {
-                answer.setNumber(number((Number) object));
-            } else {
-                throw GraknException.of(UNKNOWN_ANSWER_TYPE, className(object.getClass()));
-            }
-
-            return answer.build();
-        }
-
-        public static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
-            final AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()
-                    .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
-                    .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
-
-            return answerGroupProto.build();
-        }
-
         public static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             final AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
@@ -307,8 +283,30 @@ public class ResponseBuilder {
             return conceptMapProto.build();
         }
 
-        public static AnswerProto.Number number(Number number) {
-            return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
+        public static AnswerProto.ConceptMapGroup conceptMapGroup(ConceptMapGroup answer) {
+            return AnswerProto.ConceptMapGroup.newBuilder()
+                    .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
+                    .addAllConceptMaps(answer.conceptMaps().stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))
+                    .build();
+        }
+
+        public static AnswerProto.Numeric numeric(Numeric answer) {
+            AnswerProto.Numeric.Builder builder = AnswerProto.Numeric.newBuilder();
+            if (answer.isLong()) {
+                builder.setLongValue(answer.asLong());
+            } else if (answer.isDouble()) {
+                builder.setDoubleValue(answer.asDouble());
+            } else if (answer.isNaN()) {
+                builder.setNan(true);
+            }
+            return builder.build();
+        }
+
+        public static AnswerProto.NumericGroup numericGroup(NumericGroup answer) {
+            return AnswerProto.NumericGroup.newBuilder()
+                    .setOwner(Concept.concept(answer.owner()))
+                    .setNumber(numeric(answer.numeric()))
+                    .build();
         }
     }
 }

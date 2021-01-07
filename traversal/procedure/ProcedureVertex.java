@@ -151,6 +151,14 @@ public abstract class ProcedureVertex<
             else throw GraknException.of(ILLEGAL_STATE);
         }
 
+        ResourceIterator<? extends ThingVertex> filter(ResourceIterator<? extends ThingVertex> iterator,
+                                                       Traversal.Parameters params) {
+            if (props().hasIID()) iterator = filterIID(iterator, params);
+            if (!props().types().isEmpty()) iterator = filterTypes(iterator);
+            if (!props().predicates().isEmpty()) iterator = filterPredicates(filterAttributes(iterator), params);
+            return iterator;
+        }
+
         private boolean mustBeAttribute() {
             return !props().predicates().isEmpty() || iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromAttribute);
         }
@@ -354,6 +362,14 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
+        ResourceIterator<TypeVertex> filter(ResourceIterator<TypeVertex> iterator) {
+            if (!props().labels().isEmpty()) iterator = filterLabels(iterator);
+            if (!props().valueTypes().isEmpty()) iterator = filterValueTypes(iterator);
+            if (props().isAbstract()) iterator = filterAbstract(iterator);
+            if (props().regex().isPresent()) iterator = filterRegex(iterator);
+            return iterator;
+        }
+
         private boolean mustBeAttributeType() {
             return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromAttributeType);
         }
@@ -368,14 +384,6 @@ public abstract class ProcedureVertex<
 
         private boolean mustBeThingType() {
             return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromThingType);
-        }
-
-        ResourceIterator<TypeVertex> filter(ResourceIterator<TypeVertex> iterator) {
-            if (!props().labels().isEmpty()) iterator = filterLabels(iterator);
-            if (!props().valueTypes().isEmpty()) iterator = filterValueTypes(iterator);
-            if (props().isAbstract()) iterator = filterAbstract(iterator);
-            if (props().regex().isPresent()) iterator = filterRegex(iterator);
-            return iterator;
         }
 
         private ResourceIterator<TypeVertex> iterateLabels(GraphManager graphMgr) {

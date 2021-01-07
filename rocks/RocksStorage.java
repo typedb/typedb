@@ -182,12 +182,8 @@ public class RocksStorage implements Storage {
 
     @Override
     public GraknException exception(Exception exception) {
-        return GraknException.of(exception);
-    }
-
-    @Override
-    public GraknException exception(GraknException exception) {
-        return exception;
+        if (exception instanceof GraknException) return (GraknException) exception;
+        else return GraknException.of(exception);
     }
 
     @Override
@@ -233,21 +229,15 @@ public class RocksStorage implements Storage {
         }
 
         @Override
-        public GraknException exception(ErrorMessage error) {
+        public GraknException exception(ErrorMessage errorMessage) {
             transaction.close();
-            return GraknException.of(error);
+            return super.exception(errorMessage);
         }
 
         @Override
         public GraknException exception(Exception exception) {
             transaction.close();
-            return GraknException.of(exception);
-        }
-
-        @Override
-        public GraknException exception(GraknException exception) {
-            transaction.close();
-            return exception;
+            return super.exception(exception);
         }
 
         public void commit() throws RocksDBException {

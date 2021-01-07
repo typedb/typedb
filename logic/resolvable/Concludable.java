@@ -382,7 +382,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                             if (a.getType().isLong())
                                 return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
                             else if (a.getType().isDouble())
-                                return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
+                                return Predicate.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
                             else throw GraknException.of(ILLEGAL_STATE);
                         };
                     } else if (value.isDouble()) {
@@ -392,9 +392,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
                             assert a.getType().isDouble() || a.getType().isLong();
                             if (a.getType().isLong())
-                                return Predicate.Argument.Value.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
+                                return Predicate.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
                             else if (a.getType().isDouble())
-                                return Predicate.Argument.Value.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
+                                return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
                             else throw GraknException.of(ILLEGAL_STATE);
                         };
                     } else if (value.isBoolean()) {

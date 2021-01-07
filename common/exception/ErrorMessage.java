@@ -223,7 +223,11 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final ThingRead SORT_VARIABLE_NOT_ATTRIBUTE =
                 new ThingRead(7, "The variable '%s' cannot be used to sort, as it is not an attribute.");
         public static final ThingRead SORT_ATTRIBUTE_NOT_COMPARABLE =
-                new ThingRead(8, "The variable '%s' does not contain attributes of are always comparable to each other, such as %s and %s.");
+                new ThingRead(8, "The variable '%s' cannot be used to sort, as it contains attributes that are not comparable.");
+        public static final ThingRead AGGREGATE_ATTRIBUTE_NOT_NUMBER =
+                new ThingRead(9, "The variable '%s' cannot be used to calculate aggregate functions, as it contains non-numeric values.");
+        public static final ThingRead NUMERIC_IS_NOT_NUMBER =
+                new ThingRead(10, "The numeric value is not a valid number (NaN).");
 
         private static final String codePrefix = "THR";
         private static final String messagePrefix = "Invalid Thing Read";

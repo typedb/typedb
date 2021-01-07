@@ -297,31 +297,31 @@ deploy_apt(
     release = deployment['apt.release']
 )
 
-assemble_rpm(
-    name = "assemble-linux-rpm",
-    package_name = "grakn-core-server",
-    installation_dir = "/opt/grakn/core/",
-    spec_file = "//config/rpm:grakn-core-server.spec",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
-    archives = [":server-deps-dev", ":server-deps-linux"],
-    empty_dirs = [
-        "var/lib/grakn/db/",
-     ],
-    files = assemble_files,
-    permissions = {
-        "var/lib/grakn/db/": "0777",
-    },
-    symlinks = {
-        "opt/grakn/core/server/data": "/var/lib/grakn/db/",
-    },
-)
+# assemble_rpm(
+#     name = "assemble-linux-rpm",
+#     package_name = "grakn-core-server",
+#     installation_dir = "/opt/grakn/core/",
+#     spec_file = "//config/rpm:grakn-core-server.spec",
+#     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+#     archives = [":server-deps-dev", ":server-deps-linux"],
+#     empty_dirs = [
+#         "var/lib/grakn/db/",
+#      ],
+#     files = assemble_files,
+#     permissions = {
+#         "var/lib/grakn/db/": "0777",
+#     },
+#     symlinks = {
+#         "opt/grakn/core/server/data": "/var/lib/grakn/db/",
+#     },
+# )
 
-deploy_rpm(
-    name = "deploy-rpm",
-    target = ":assemble-linux-rpm",
-    snapshot = deployment['rpm.snapshot'],
-    release = deployment['rpm.release']
-)
+# deploy_rpm(
+#     name = "deploy-rpm",
+#     target = ":assemble-linux-rpm",
+#     snapshot = deployment['rpm.snapshot'],
+#     release = deployment['rpm.release']
+# )
 
 checkstyle_test(
     name = "checkstyle",

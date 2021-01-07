@@ -135,34 +135,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraining.add(constraint);
     }
 
-    // TODO: This method is erroneous. It copies constraints from another variable,
-    //       which includes other variables that the constraints contain,
-    //       however these other variables are no longer part of the same graph as the variable that owns the constraints.
-    //       Should the usage of this method be replaced with VariableCloner?
-    public void copyConstraints(TypeVariable copyFrom) {
-        for (TypeConstraint constraint : copyFrom.constraints) {
-            if (constraint.isLabel()) {
-                this.label(constraint.asLabel().properLabel());
-            } else if (constraint.isValueType()) {
-                this.valueType(constraint.asValueType().valueType());
-            } else if (constraint.isRegex()) {
-                this.regex(constraint.asRegex().regex());
-            } else if (constraint.isAbstract()) {
-                this.setAbstract();
-            } else if (constraint.isSub()) {
-                this.sub(constraint.asSub().type(), constraint.asSub().isExplicit());
-            } else if (constraint.isOwns()) {
-                this.owns(constraint.asOwns().attribute(), constraint.asOwns().overridden().orElse(null), constraint.asOwns().isKey());
-            } else if (constraint.isPlays()) {
-                this.plays(constraint.asPlays().relation().orElse(null), constraint.asPlays().role(), constraint.asPlays().overridden().orElse(null));
-            } else if (constraint.isRelates()) {
-                this.relates(constraint.asRelates().role(), constraint.asRelates().overridden().orElse(null));
-            } else if (constraint.isIs()) {
-                this.is(constraint.asIs().variable());
-            } else throw GraknException.of(ILLEGAL_STATE);
-        }
-    }
-
     public Optional<LabelConstraint> label() {
         return Optional.ofNullable(labelConstraint);
     }

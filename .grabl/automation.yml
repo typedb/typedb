@@ -32,38 +32,38 @@ build:
       branch: master
     build-analysis:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
           bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
           --project-key=graknlabs_grakn_core \
           --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
   correctness:
     build:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         bazel build //...
         bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
         bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
     test-unit:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         bazel test //common/... --test_output=streamed
         bazel test //pattern/... --test_output=streamed
         bazel test //logic/... --test_output=streamed
         bazel test //reasoner/... --test_output=streamed
     test-integration:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         bazel test //test/integration:test-basic --test_output=streamed
         bazel test //test/integration:test-query --test_output=streamed
         bazel test //test/integration/migrator/... --test_output=streamed
@@ -71,10 +71,11 @@ build:
       # bazel test //test/integration/traversal/... --test_output=streamed
     test-behaviour:
       image: graknlabs-ubuntu-20.04
-      script: |
+      command: |
         bazel test //test/behaviour/connection/... --test_output=streamed
         bazel test //test/behaviour/concept/... --test_output=streamed
         bazel test //test/behaviour/graql/language/match/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/get/... --test_output=streamed
       # bazel test //test/behaviour/graql/language/define/... --test_output=streamed
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
@@ -82,7 +83,7 @@ build:
         owner: graknlabs
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
-      script: |
+      command: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel test //test/assembly:assembly --test_output=streamed
@@ -92,7 +93,7 @@ build:
         owner: graknlabs
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
-      script: |
+      command: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       image: graknlabs-ubuntu-20.04
@@ -100,7 +101,7 @@ build:
         owner: graknlabs
         branch: master
       dependencies: [test-assembly-linux-targz]
-      script: |
+      command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
@@ -112,7 +113,7 @@ build:
         owner: graknlabs
         branch: master
       dependencies: [test-assembly-linux-targz]
-      script: |
+      command: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         pyenv install 3.7.9
@@ -128,7 +129,7 @@ build:
         owner: graknlabs
         branch: master
       dependencies: [deploy-apt-snapshot]
-      script: |
+      command: |
         bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
     # TODO: comment out the job until the flakiness has been ironed out
     #    deploy-rpm-snapshot:
@@ -137,7 +138,7 @@ build:
     #        owner: graknlabs
     #        branch: master
     #      dependencies: [test-assembly-linux-targz]
-    #      script: |
+    #      command: |
     #        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
     #        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
     #        bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
@@ -148,7 +149,7 @@ build:
     #     owner: graknlabs
     #     branch: master
     #   dependencies: [deploy-rpm-snapshot]
-    #   script: |
+    #   command: |
     #     bazel test //test/deployment:rpm --action_env=GRABL_COMMIT --test_output=streamed
 release:
   filter:
@@ -157,17 +158,17 @@ release:
   validation:
     validate-dependencies:
       image: graknlabs-ubuntu-20.04
-      script: bazel test //:release-validate-deps --test_output=streamed
+      command: bazel test //:release-validate-deps --test_output=streamed
   deployment:
     deploy-github:
       image: graknlabs-ubuntu-20.04
       filter:
         owner: graknlabs
         branch: master
-      script: |
+      command: |
         pip install certifi
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn (cat VERSION) ./RELEASE_TEMPLATE.md
+        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:
@@ -176,7 +177,7 @@ release:
       filter:
         owner: graknlabs
         branch: master
-      script: |
+      command: |
         export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
@@ -185,7 +186,7 @@ release:
         owner: graknlabs
         branch: master
       dependencies: [deploy-github]
-      script: |
+      command: |
         pyenv install 3.7.9
         pyenv global 3.7.9
         sudo unlink /usr/bin/python3
@@ -201,7 +202,7 @@ release:
     #        owner: graknlabs
     #        branch: master
     #      dependencies: [deploy-github]
-    #      script: |
+    #      command: |
     #        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
     #        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
     #        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
@@ -212,7 +213,7 @@ release:
         owner: graknlabs
         branch: master
       dependencies: [deploy-github]
-      script: |
+      command: |
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
         bazel run //:deploy-docker
     deploy-artifact-release:
@@ -221,7 +222,7 @@ release:
         owner: graknlabs
         branch: master
       dependencies: [deploy-github]
-      script: |
+      command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-linux-targz -- release

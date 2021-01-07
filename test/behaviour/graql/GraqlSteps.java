@@ -20,9 +20,10 @@ package grakn.core.test.behaviour.graql;
 
 import grakn.common.collection.Bytes;
 import grakn.core.concept.Concept;
-import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
@@ -62,8 +63,8 @@ public class GraqlSteps {
 
     private static List<ConceptMap> answers;
     private static Numeric numericAnswer;
-    private static List<AnswerGroup<ConceptMap>> answerGroups;
-    private static List<AnswerGroup<Numeric>> numericAnswerGroups;
+    private static List<ConceptMapGroup> answerGroups;
+    private static List<NumericGroup> numericAnswerGroups;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     HashMap<String, String> groupOwnerIdentifiers = new HashMap<>();
     private Map<String, Map<String, String>> rules;
@@ -154,11 +155,11 @@ public class GraqlSteps {
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
-            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate());
+            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate(), false);
         } else if (graqlQuery instanceof GraqlMatch.Group) {
-            answerGroups = tx().query().match(graqlQuery.asMatchGroup()).toList();
+            answerGroups = tx().query().match(graqlQuery.asMatchGroup(), false).toList();
         } else if (graqlQuery instanceof GraqlMatch.Group.Aggregate) {
-            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate()).toList();
+            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate(), false).toList();
         } else {
             throw new ScenarioDefinitionException("Only match and insert supported for now");
         }
@@ -243,13 +244,13 @@ public class GraqlSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.number().doubleValue()),
-                     expectedAnswer, numericAnswer.number().doubleValue(), 0.01);
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
+                     expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.001);
     }
 
-    @Then("aggregate answer is empty")
-    public void aggregate_answer_is_empty() {
-        assertNull(numericAnswer);
+    @Then("aggregate answer is not a number")
+    public void aggregate_answer_is_not_a_number() {
+        assertTrue(numericAnswer.isNaN());
     }
 
     @Then("answer groups are")
@@ -282,14 +283,14 @@ public class GraqlSteps {
                 default:
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
-            AnswerGroup<ConceptMap> answerGroup = answerGroups.stream()
+            ConceptMapGroup answerGroup = answerGroups.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", answerIdentifierGroup.ownerIdentifier), answerGroup);
 
             List<Map<String, String>> answersIdentifiers = answerIdentifierGroup.answersIdentifiers;
-            for (ConceptMap answer : answerGroup.answers()) {
+            for (ConceptMap answer : answerGroup.conceptMaps()) {
                 List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
 
                 for (Map<String, String> answerIdentifiers : answersIdentifiers) {
@@ -337,17 +338,17 @@ public class GraqlSteps {
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
             double expectedAnswer = expectation.getValue();
-            AnswerGroup<Numeric> answerGroup = numericAnswerGroups.stream()
+            NumericGroup answerGroup = numericAnswerGroups.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", expectation.getKey()), answerGroup);
 
-            double actualAnswer = answerGroup.answers().get(0).number().doubleValue();
+            double actualAnswer = answerGroup.numeric().asNumber().doubleValue();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
                                   expectedAnswer, expectation.getKey(), actualAnswer),
-                    expectedAnswer, actualAnswer, 0.01
+                    expectedAnswer, actualAnswer, 0.001
             );
         }
     }
@@ -496,7 +497,7 @@ public class GraqlSteps {
         for (ConceptMap answer : answers) {
             final String query = applyQueryTemplate(templatedQuery, answer);
             final GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
-            final long answerSize = tx().query().match(graqlQuery).toList().size();
+            final long answerSize = tx().query().match(graqlQuery, false).toList().size();
             assertEquals(1, answerSize);
         }
     }
