@@ -50,16 +50,16 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.util.Encoding.ValueType.LONG;
-import static grakn.core.graph.util.Encoding.ValueType.STRING;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.BOOLEAN;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.DATETIME;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.DOUBLE;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.LONG;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.STRING;
+import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.ATTRIBUTE;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
@@ -74,7 +74,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     private AttributeTypeImpl(GraphManager graphMgr, java.lang.String label, Class<?> valueType) {
         super(graphMgr, label, ATTRIBUTE_TYPE);
-        vertex.valueType(Encoding.ValueType.of(valueType));
+        vertex.valueType(Encoding.Graph.ValueType.of(valueType));
     }
 
     public static AttributeTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
@@ -121,11 +121,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
-    ResourceIterator<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
+    ResourceIterator<TypeVertex> getSubtypeVertices(Encoding.Graph.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
     }
 
-    ResourceIterator<TypeVertex> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
+    ResourceIterator<TypeVertex> getSubtypeVerticesDirect(Encoding.Graph.ValueType valueType) {
         return vertex.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
     }
 
@@ -245,7 +245,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private Root(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
-            assert vertex.valueType().equals(Encoding.ValueType.OBJECT);
+            assert vertex.valueType().equals(Encoding.Graph.ValueType.OBJECT);
             assert vertex.label().equals(ATTRIBUTE.label());
         }
 

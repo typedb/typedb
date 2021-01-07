@@ -31,9 +31,9 @@ import graql.lang.pattern.variable.ThingVariable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.graph.util.Encoding.Property.LABEL;
-import static grakn.core.graph.util.Encoding.Property.THEN;
-import static grakn.core.graph.util.Encoding.Property.WHEN;
+import static grakn.core.graph.util.Encoding.Graph.Property.LABEL;
+import static grakn.core.graph.util.Encoding.Graph.Property.THEN;
+import static grakn.core.graph.util.Encoding.Graph.Property.WHEN;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 
@@ -91,7 +91,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         return isDeleted.get();
     }
 
-    public Encoding.Structure encoding() {
+    public Encoding.Graph.Structure encoding() {
         return iid.encoding();
     }
 

@@ -25,7 +25,7 @@ import java.util.Arrays;
 import static grakn.core.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;
 
-public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
+public abstract class InfixIID<EDGE_ENCODING extends Encoding.Graph.Edge> extends IID {
 
     static final int LENGTH = 1;
 
@@ -36,7 +36,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
     abstract EDGE_ENCODING encoding();
 
     boolean isOutwards() {
-        return Encoding.Edge.isOut(bytes[0]);
+        return Encoding.Graph.Edge.isOut(bytes[0]);
     }
 
     public int length() {
@@ -46,7 +46,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
     @Override
     public String toString() { // TODO
         if (readableString == null) {
-            readableString = "[1:" + Encoding.Infix.of(bytes[0]).toString() + "]";
+            readableString = "[1:" + Encoding.Graph.Infix.of(bytes[0]).toString() + "]";
             if (bytes.length > 1) {
                 readableString += "[" + (bytes.length - 1) + ": " +
                         Arrays.toString(copyOfRange(bytes, 1, bytes.length)) + "]";
@@ -55,14 +55,14 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         return readableString;
     }
 
-    public static class Type extends InfixIID<Encoding.Edge.Type> {
+    public static class Type extends InfixIID<Encoding.Graph.Edge.Type> {
 
         private Type(byte[] bytes) {
             super(bytes);
             assert bytes.length == LENGTH;
         }
 
-        static Type of(Encoding.Infix infix) {
+        static Type of(Encoding.Graph.Infix infix) {
             return new Type(infix.bytes());
         }
 
@@ -71,42 +71,42 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         @Override
-        Encoding.Edge.Type encoding() {
-            return Encoding.Edge.Type.of(bytes[0]);
+        Encoding.Graph.Edge.Type encoding() {
+            return Encoding.Graph.Edge.Type.of(bytes[0]);
         }
     }
 
-    public static class Thing extends InfixIID<Encoding.Edge.Thing> {
+    public static class Thing extends InfixIID<Encoding.Graph.Edge.Thing> {
 
         private Thing(byte[] bytes) {
             super(bytes);
         }
 
         static InfixIID.Thing extract(byte[] bytes, int from) {
-            final Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes[from]);
-            if ((encoding.equals(Encoding.Edge.Thing.ROLEPLAYER))) {
+            final Encoding.Graph.Edge.Thing encoding = Encoding.Graph.Edge.Thing.of(bytes[from]);
+            if ((encoding.equals(Encoding.Graph.Edge.Thing.ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
                 return new InfixIID.Thing(new byte[]{bytes[from]});
             }
         }
 
-        public static InfixIID.Thing of(Encoding.Infix infix) {
-            if (Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER)) {
+        public static InfixIID.Thing of(Encoding.Graph.Infix infix) {
+            if (Encoding.Graph.Edge.Thing.of(infix).equals(Encoding.Graph.Edge.Thing.ROLEPLAYER)) {
                 return new InfixIID.RolePlayer(infix.bytes());
             } else {
                 return new InfixIID.Thing(infix.bytes());
             }
         }
 
-        public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
+        public static InfixIID.Thing of(Encoding.Graph.Infix infix, IID... tail) {
             final byte[][] iidBytes = new byte[tail.length + 1][];
             iidBytes[0] = infix.bytes();
             for (int i = 0; i < tail.length; i++) {
                 iidBytes[i + 1] = tail[i].bytes();
             }
 
-            if (Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER)) {
+            if (Encoding.Graph.Edge.Thing.of(infix).equals(Encoding.Graph.Edge.Thing.ROLEPLAYER)) {
                 return new InfixIID.RolePlayer(join(iidBytes));
             } else {
                 return new InfixIID.Thing(join(iidBytes));
@@ -114,8 +114,8 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         @Override
-        Encoding.Edge.Thing encoding() {
-            return Encoding.Edge.Thing.of(bytes[0]);
+        Encoding.Graph.Edge.Thing encoding() {
+            return Encoding.Graph.Edge.Thing.of(bytes[0]);
         }
 
         public InfixIID.Thing outwards() {
@@ -145,8 +145,8 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             super(bytes);
         }
 
-        public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
-            assert type != null && Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER);
+        public static RolePlayer of(Encoding.Graph.Infix infix, VertexIID.Type type) {
+            assert type != null && Encoding.Graph.Edge.Thing.of(infix).equals(Encoding.Graph.Edge.Thing.ROLEPLAYER);
             return new RolePlayer(join(infix.bytes(), type.bytes()));
         }
 

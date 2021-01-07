@@ -61,10 +61,10 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTAN
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 
@@ -74,7 +74,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         super(graphMgr, vertex);
     }
 
-    ThingTypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
+    ThingTypeImpl(GraphManager graphMgr, String label, Encoding.Graph.Vertex.Type encoding) {
         super(graphMgr, label, encoding);
     }
 
@@ -157,7 +157,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
     }
 
-    private <T extends grakn.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
+    private <T extends grakn.core.concept.type.Type> void override(Encoding.Graph.Edge.Type encoding, T type, T overriddenType,
                                                                    Stream<? extends TypeImpl> overridable, Stream<? extends TypeImpl> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw exception(GraknException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
@@ -308,19 +308,19 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
             throw exception(GraknException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
-        vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        vertex.outs().put(Encoding.Graph.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
 
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         setPlays(roleType);
-        override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream());
+        override(Encoding.Graph.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
+                 vertex.outs().edge(Encoding.Graph.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream());
     }
 
     @Override
     public void unsetPlays(RoleType roleType) {
-        final TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        final TypeEdge edge = vertex.outs().edge(Encoding.Graph.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) return;
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
             throw GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString());
@@ -333,10 +333,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return Stream.of();
 
         final Set<TypeVertex> overridden = new HashSet<>();
-        vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
+        vertex.outs().edge(Encoding.Graph.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
         assert getSupertype() != null;
         return concat(
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream(),
+                vertex.outs().edge(Encoding.Graph.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream(),
                 getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
         );
     }
@@ -344,7 +344,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public Stream<RoleTypeImpl> getPlaysExplicit() {
         if (isRoot()) return Stream.of();
-        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
+        return vertex.outs().edge(Encoding.Graph.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override
@@ -401,7 +401,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         public Root(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
-            assert vertex.label().equals(Encoding.Vertex.Type.Root.THING.label());
+            assert vertex.label().equals(Encoding.Graph.Vertex.Type.Root.THING.label());
         }
 
         @Override

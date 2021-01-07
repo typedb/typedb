@@ -33,7 +33,7 @@ public class PrefixIID extends IID {
         return new PrefixIID(prefix.bytes());
     }
 
-    public static PrefixIID of(Encoding.Vertex encoding) {
+    public static PrefixIID of(Encoding.Graph.Vertex encoding) {
         return new PrefixIID(encoding.prefix().bytes());
     }
 

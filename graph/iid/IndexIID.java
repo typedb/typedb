@@ -38,8 +38,8 @@ import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.stringToBytes;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.graph.util.Encoding.ValueType.STRING_ENCODING;
-import static grakn.core.graph.util.Encoding.ValueType.TIME_ZONE_ID;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.STRING_ENCODING;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
@@ -63,7 +63,7 @@ public abstract class IndexIID extends IID {
          * @return a byte array representing the index address of a {@code TypeVertex}
          */
         public static Type of(String label, @Nullable String scope) {
-            return new Type(join(Encoding.Index.TYPE.prefix().bytes(), Encoding.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
+            return new Type(join(Encoding.Index.TYPE.prefix().bytes(), Encoding.Graph.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
         }
 
         @Override
@@ -117,15 +117,15 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(boolean value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
+            return newAttributeIndex(Encoding.Graph.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.Graph.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.Graph.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
@@ -135,17 +135,17 @@ public abstract class IndexIID extends IID {
             } catch (Exception e) {
                 throw GraknException.of(ILLEGAL_STATE);
             }
-            return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringBytes, typeIID.bytes);
+            return newAttributeIndex(Encoding.Graph.ValueType.STRING.bytes(), stringBytes, typeIID.bytes);
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.Graph.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
         public String toString() {
             if (readableString == null) {
-                final Encoding.ValueType valueType = Encoding.ValueType.of(bytes[PrefixIID.LENGTH]);
+                final Encoding.Graph.ValueType valueType = Encoding.Graph.ValueType.of(bytes[PrefixIID.LENGTH]);
                 final String value;
                 switch (valueType) {
                     case BOOLEAN:

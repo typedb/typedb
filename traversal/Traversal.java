@@ -50,20 +50,20 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.producer.Producers.buffer;
 import static grakn.core.common.producer.Producers.produce;
-import static grakn.core.graph.util.Encoding.Edge.ISA;
-import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.util.Encoding.ValueType.LONG;
-import static grakn.core.graph.util.Encoding.ValueType.STRING;
+import static grakn.core.graph.util.Encoding.Graph.Edge.ISA;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.HAS;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.RELATING;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.RELATES;
+import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.BOOLEAN;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.DATETIME;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.DOUBLE;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.LONG;
+import static grakn.core.graph.util.Encoding.Graph.ValueType.STRING;
 import static graql.lang.common.GraqlToken.Predicate.SubString.LIKE;
 import static java.util.stream.Collectors.toList;
 
@@ -195,7 +195,7 @@ public class Traversal {
     }
 
     public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
-        structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
+        structure.typeVertex(attributeType).props().valueType(Encoding.Graph.ValueType.of(valueType));
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
@@ -277,7 +277,7 @@ public class Traversal {
 
         public static class Value {
 
-            private final Encoding.ValueType valueType;
+            private final Encoding.Graph.ValueType valueType;
             private final Boolean booleanVal;
             private final Long longVal;
             private final Double doubleVal;
@@ -310,7 +310,7 @@ public class Traversal {
                 this(STRING, null, null, null, null, null, regex);
             }
 
-            private Value(Encoding.ValueType valueType, Boolean booleanVal, Long longVal, Double doubleVal,
+            private Value(Encoding.Graph.ValueType valueType, Boolean booleanVal, Long longVal, Double doubleVal,
                           LocalDateTime dateTimeVal, String stringVal, Pattern regexPattern) {
                 this.valueType = valueType;
                 this.booleanVal = booleanVal;
@@ -322,7 +322,7 @@ public class Traversal {
                 this.hash = Objects.hash(valueType, booleanVal, longVal, doubleVal, dateTimeVal, stringVal, regexPattern);
             }
 
-            public Encoding.ValueType valueType() {
+            public Encoding.Graph.ValueType valueType() {
                 return valueType;
             }
 

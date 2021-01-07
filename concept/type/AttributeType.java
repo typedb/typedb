@@ -72,16 +72,16 @@ public interface AttributeType extends ThingType {
     AttributeType.DateTime asDateTime();
 
     enum ValueType {
-        OBJECT(Encoding.ValueType.OBJECT),
-        BOOLEAN(Encoding.ValueType.BOOLEAN),
-        LONG(Encoding.ValueType.LONG),
-        DOUBLE(Encoding.ValueType.DOUBLE),
-        STRING(Encoding.ValueType.STRING),
-        DATETIME(Encoding.ValueType.DATETIME);
+        OBJECT(Encoding.Graph.ValueType.OBJECT),
+        BOOLEAN(Encoding.Graph.ValueType.BOOLEAN),
+        LONG(Encoding.Graph.ValueType.LONG),
+        DOUBLE(Encoding.Graph.ValueType.DOUBLE),
+        STRING(Encoding.Graph.ValueType.STRING),
+        DATETIME(Encoding.Graph.ValueType.DATETIME);
 
-        private final Encoding.ValueType encoding;
+        private final Encoding.Graph.ValueType encoding;
 
-        ValueType(Encoding.ValueType encoding) {
+        ValueType(Encoding.Graph.ValueType encoding) {
             this.encoding = encoding;
         }
 
@@ -103,7 +103,7 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
-        public static ValueType of(Encoding.ValueType encoding) {
+        public static ValueType of(Encoding.Graph.ValueType encoding) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.encoding.equals(encoding)) {
                     return vt;

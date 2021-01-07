@@ -42,10 +42,10 @@ import static grakn.core.common.iterator.Iterators.link;
 public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     final TypeVertex owner;
-    final Encoding.Direction.Adjacency direction;
-    final ConcurrentMap<Encoding.Edge.Type, Set<TypeEdge>> edges;
+    final Encoding.Graph.Direction.Adjacency direction;
+    final ConcurrentMap<Encoding.Graph.Edge.Type, Set<TypeEdge>> edges;
 
-    TypeAdjacencyImpl(TypeVertex owner, Encoding.Direction.Adjacency direction) {
+    TypeAdjacencyImpl(TypeVertex owner, Encoding.Graph.Direction.Adjacency direction) {
         this.owner = owner;
         this.direction = direction;
         this.edges = new ConcurrentHashMap<>();
@@ -57,7 +57,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
     }
 
     @Override
-    public TypeEdge put(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+    public TypeEdge put(Encoding.Graph.Edge.Type encoding, TypeVertex adjacent) {
         final TypeVertex from = direction.isOut() ? owner : adjacent;
         final TypeVertex to = direction.isOut() ? adjacent : owner;
         final TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(encoding, from, to);
@@ -84,7 +84,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     @Override
     public void deleteAll() {
-        for (Encoding.Edge.Type encoding : Encoding.Edge.Type.values()) delete(encoding);
+        for (Encoding.Graph.Edge.Type encoding : Encoding.Graph.Edge.Type.values()) delete(encoding);
     }
 
     @Override
@@ -95,12 +95,12 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     public static class Buffered extends TypeAdjacencyImpl implements TypeAdjacency {
 
-        public Buffered(TypeVertex owner, Encoding.Direction.Adjacency direction) {
+        public Buffered(TypeVertex owner, Encoding.Graph.Direction.Adjacency direction) {
             super(owner, direction);
         }
 
         @Override
-        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
+        public TypeIteratorBuilder edge(Encoding.Graph.Edge.Type encoding) {
             final Set<TypeEdge> t = edges.get(encoding);
             if (t != null) return new TypeIteratorBuilder(Iterators.iterate(t.iterator()));
             return new TypeIteratorBuilder(Iterators.iterate(Collections.emptyIterator()));
@@ -108,7 +108,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
 
         @Override
-        public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+        public TypeEdge edge(Encoding.Graph.Edge.Type encoding, TypeVertex adjacent) {
             if (edges.containsKey(encoding)) {
                 final Predicate<TypeEdge> predicate = direction.isOut()
                         ? e -> e.to().equals(adjacent)
@@ -119,18 +119,18 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         }
 
         @Override
-        public void delete(Encoding.Edge.Type encoding) {
+        public void delete(Encoding.Graph.Edge.Type encoding) {
             if (edges.containsKey(encoding)) edges.get(encoding).forEach(Edge::delete);
         }
     }
 
     public static class Persisted extends TypeAdjacencyImpl implements TypeAdjacency {
 
-        public Persisted(TypeVertex owner, Encoding.Direction.Adjacency direction) {
+        public Persisted(TypeVertex owner, Encoding.Graph.Direction.Adjacency direction) {
             super(owner, direction);
         }
 
-        private byte[] edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+        private byte[] edgeIID(Encoding.Graph.Edge.Type encoding, TypeVertex adjacent) {
             return join(owner.iid().bytes(),
                         direction.isOut() ? encoding.out().bytes() : encoding.in().bytes(),
                         adjacent.iid().bytes());
@@ -141,7 +141,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             return new TypeEdgeImpl.Persisted(owner.graph(), EdgeIID.Type.of(key), overridden);
         }
 
-        private ResourceIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
+        private ResourceIterator<TypeEdge> edgeIterator(Encoding.Graph.Edge.Type encoding) {
             byte[] iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
             final ResourceIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
             if (edges.get(encoding) == null) return storageIterator;
@@ -149,12 +149,12 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         }
 
         @Override
-        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
+        public TypeIteratorBuilder edge(Encoding.Graph.Edge.Type encoding) {
             return new TypeIteratorBuilder(edgeIterator(encoding));
         }
 
         @Override
-        public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+        public TypeEdge edge(Encoding.Graph.Edge.Type encoding, TypeVertex adjacent) {
             final Optional<TypeEdge> container;
             final Predicate<TypeEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent)
@@ -174,13 +174,13 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         }
 
         @Override
-        public void delete(Encoding.Edge.Type encoding) {
+        public void delete(Encoding.Graph.Edge.Type encoding) {
             edgeIterator(encoding).forEachRemaining(Edge::delete);
         }
 
         @Override
         public void deleteAll() {
-            for (Encoding.Edge.Type type : Encoding.Edge.Type.values()) delete(type);
+            for (Encoding.Graph.Edge.Type type : Encoding.Graph.Edge.Type.values()) delete(type);
         }
     }
 }

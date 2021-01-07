@@ -22,7 +22,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.graph.vertex.ThingVertex;
 
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
+import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ENTITY;
 
 public class EntityImpl extends ThingImpl implements Entity {
 

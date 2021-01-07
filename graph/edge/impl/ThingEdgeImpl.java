@@ -40,10 +40,10 @@ import static java.util.Objects.hash;
 public abstract class ThingEdgeImpl implements ThingEdge {
 
     final DataGraph graph;
-    final Encoding.Edge.Thing encoding;
+    final Encoding.Graph.Edge.Thing encoding;
     final AtomicBoolean deleted;
 
-    ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding) {
+    ThingEdgeImpl(DataGraph graph, Encoding.Graph.Edge.Thing encoding) {
         this.graph = graph;
         this.encoding = encoding;
         deleted = new AtomicBoolean(false);
@@ -64,7 +64,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param from     the tail vertex
          * @param to       the head vertex
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
+        public Buffered(Encoding.Graph.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
             this(encoding, from, to, null);
         }
 
@@ -76,7 +76,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised) {
+        public Buffered(Encoding.Graph.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised) {
             super(from.graph(), encoding);
             assert this.graph == to.graph();
             assert encoding.isOptimisation() || optimised == null;
@@ -88,7 +88,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Encoding.Edge.Thing encoding() {
+        public Encoding.Graph.Edge.Thing encoding() {
             return encoding;
         }
 
@@ -142,7 +142,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                     graph.storage().delete(outIID().bytes());
                     graph.storage().delete(inIID().bytes());
                 }
-                if (encoding == Encoding.Edge.Thing.HAS) {
+                if (encoding == Encoding.Graph.Edge.Thing.HAS) {
                     graph.stats().hasEdgeDeleted(from.iid(), to.iid().asAttribute());
                 }
             }
@@ -247,7 +247,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Encoding.Edge.Thing encoding() {
+        public Encoding.Graph.Edge.Thing encoding() {
             return encoding;
         }
 
@@ -300,7 +300,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 to().ins().remove(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
-                if (encoding == Encoding.Edge.Thing.HAS) {
+                if (encoding == Encoding.Graph.Edge.Thing.HAS) {
                     graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());
                 }
             }

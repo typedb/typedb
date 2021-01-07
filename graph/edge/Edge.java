@@ -23,7 +23,7 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 
 public interface Edge<
-        EDGE_ENCODING extends Encoding.Edge,
+        EDGE_ENCODING extends Encoding.Graph.Edge,
         EDGE_IID extends EdgeIID<EDGE_ENCODING, ?, ?, ?>,
         VERTEX extends Vertex<?, ?>> {
 

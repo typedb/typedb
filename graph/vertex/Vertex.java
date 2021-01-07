@@ -25,7 +25,7 @@ import grakn.core.graph.util.Encoding;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Vertex> {
+public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Graph.Vertex> {
 
     VERTEX_IID iid();
 

@@ -375,8 +375,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                     Function<Attribute, Boolean> predicateFn;
                     if (value.isLong()) {
                         predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.LONG)) return false;
+                            if (!Encoding.Graph.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.Graph.ValueType.LONG)) return false;
 
                             assert a.getType().isDouble() || a.getType().isLong();
                             if (a.getType().isLong())
@@ -387,8 +387,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                         };
                     } else if (value.isDouble()) {
                         predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.DOUBLE)) return false;
+                            if (!Encoding.Graph.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.Graph.ValueType.DOUBLE)) return false;
 
                             assert a.getType().isDouble() || a.getType().isLong();
                             if (a.getType().isLong())
@@ -399,22 +399,22 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                         };
                     } else if (value.isBoolean()) {
                         predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                            if (!Encoding.Graph.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.Graph.ValueType.BOOLEAN)) return false;
                             assert a.getType().isBoolean();
                             return a.asBoolean().getValue().compareTo(value.asBoolean().value()) == 0;
                         };
                     } else if (value.isString()) {
                         predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.STRING)) return false;
+                            if (!Encoding.Graph.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.Graph.ValueType.STRING)) return false;
                             assert a.getType().isString();
                             return a.asString().getValue().compareTo(value.asString().value()) == 0;
                         };
                     } else if (value.isDateTime()) {
                         predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.DATETIME)) return false;
+                            if (!Encoding.Graph.ValueType.of(a.getType().getValueType().getValueClass())
+                                    .comparableTo(Encoding.Graph.ValueType.DATETIME)) return false;
                             assert a.getType().isDateTime();
                             return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
                         };

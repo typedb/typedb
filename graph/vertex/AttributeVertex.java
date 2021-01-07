@@ -38,7 +38,7 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      *
      * @return the {@code ValueType} of this {@code Attribute}
      */
-    Encoding.ValueType valueType();
+    Encoding.Graph.ValueType valueType();
 
     /**
      * Returns the literal value stored in the vertex, if it represents an attribute.
