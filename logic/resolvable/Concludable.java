@@ -22,7 +22,6 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.util.Encoding;
@@ -112,10 +111,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 }));
     }
 
-    private ResourceIterator<Unifier> unify(Rule.Conclusion<?> conclusion, ConceptManager conceptMgr) {
+    private ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
         if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
-        else if (conclusion.isExplicitHas()) return unify(conclusion.asExplicitHas(), conceptMgr);
-        else if (conclusion.isVariableHas()) return unify(conclusion.asVariableHas(), conceptMgr);
+        else if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
         else if (conclusion.isIsa()) return unify(conclusion.asIsa(), conceptMgr);
         else if (conclusion.isValue()) return unify(conclusion.asValue(), conceptMgr);
         else throw GraknException.of(ILLEGAL_STATE);
@@ -133,7 +131,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         if (that.isRelation()) return alphaEquals(that.asRelation());
         else if (that.isHas()) return alphaEquals(that.asHas());
         else if (that.isIsa()) return alphaEquals(that.asIsa());
-        else if (that.isValue()) return alphaEquals(that.asValue());
+        else if (that.isAttribute()) return alphaEquals(that.asAttribute());
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -141,9 +139,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     AlphaEquivalence alphaEquals(Concludable.Has that) { return null; }
 
-    AlphaEquivalence alphaEquals(Concludable.Isa that) { return null; }
+    AlphaEquivalence alphaEquals(Isa that) { return null; }
 
-    AlphaEquivalence alphaEquals(Concludable.Value that) { return null; }
+    AlphaEquivalence alphaEquals(Attribute that) { return null; }
 
     public boolean isRelation() { return false; }
 
@@ -151,7 +149,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     public boolean isIsa() { return false; }
 
-    public boolean isValue() { return false; }
+    public boolean isAttribute() { return false; }
 
     public Relation asRelation() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
@@ -165,8 +163,8 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
     }
 
-    public Value asValue() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
+    public Attribute asAttribute() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Attribute.class));
     }
 
     <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
@@ -372,7 +370,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
 
                     ValueConstraint<?> value = attr.value().iterator().next();
-                    Function<Attribute, Boolean> predicateFn;
+                    Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn;
                     if (value.isLong()) {
                         predicateFn = (a) -> {
                             if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
@@ -491,14 +489,14 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Concludable.Isa that) {
+        AlphaEquivalence alphaEquals(Isa that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
 
-    public static class Value extends Concludable<ValueConstraint<?>> {
+    public static class Attribute extends Concludable<ValueConstraint<?>> {
 
-        public Value(final ValueConstraint<?> constraint) {
+        public Attribute(final ValueConstraint<?> constraint) {
             super(ConstraintCopier.copyConstraint(constraint), set());
         }
 
@@ -541,17 +539,17 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        public boolean isValue() {
+        public boolean isAttribute() {
             return true;
         }
 
         @Override
-        public Value asValue() {
+        public Attribute asAttribute() {
             return this;
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Concludable.Value that) {
+        AlphaEquivalence alphaEquals(Attribute that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
@@ -589,14 +587,14 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         public void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(new Concludable.Isa(isaConstraint, isaConstraint.owner().value()));
+            concludables.add(new Isa(isaConstraint, isaConstraint.owner().value()));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }
 
         private void fromConstraint(ValueConstraint<?> valueConstraint) {
             if (valueOwnersToSkip.contains(valueConstraint.owner())) return;
-            concludables.add(new Concludable.Value(valueConstraint));
+            concludables.add(new Attribute(valueConstraint));
         }
 
         public Set<Concludable<?>> concludables() {

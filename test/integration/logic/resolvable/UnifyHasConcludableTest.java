@@ -156,7 +156,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name 'john'");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asExplicitHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -206,7 +206,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asVariableHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -263,7 +263,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asExplicitHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -296,7 +296,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asVariableHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -329,7 +329,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asExplicitHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -371,7 +371,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asVariableHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -413,7 +413,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asVariableHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -437,7 +437,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asExplicitHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -472,7 +472,7 @@ public class UnifyHasConcludableTest {
 
         Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asVariableHas(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());

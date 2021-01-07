@@ -18,8 +18,8 @@
 
 package grakn.core.logic.resolvable;
 
+import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -32,7 +32,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -137,12 +136,13 @@ public class UnifyIsaConcludableTest {
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
-    private IsaConstraint findIsaConstraint(Conjunction conjunction) {
-        List<IsaConstraint> isas = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
-                .filter(constraint -> constraint.isThing() && constraint.asThing().isIsa())
-                .map(constraint -> constraint.asThing().asIsa()).toList();
-        assert isas.size() == 1 : "More than 1 isa constraint in conjunction to search";
-        return isas.get(0);
+    private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
+        try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
+                                         Graql.parseVariable(thenThingPattern).asThing());
+            txn.commit();
+            return rule;
+        }
     }
 
     @Test
@@ -151,13 +151,10 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+        Rule rule = createRule("isa-rule", "{ $x isa person; }",
+                               "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -179,13 +176,10 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
-        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
+        Rule rule = createRule("isa-rule", "{ $x isa person; }",
+                               "(employee: $x) isa employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -207,13 +201,11 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
-        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
-        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
-        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
-        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
+        Rule rule = createRule("isa-rule",
+                               "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                               "($role-type: $x) isa $rel-type");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -238,28 +230,18 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
-        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
+        Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }", "(employee: $x) isa employment");
+        unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
-        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
-        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
-        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
-        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
-        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
-        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
+        Rule rule3 = createRule("isa-rule-3",
+                                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                                "($role-type: $x) isa $rel-type");
+        unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
 
         // TODO this test can only be enabled after full type resolution runs
 //        assertEquals(0, unifiers.size());
@@ -272,13 +254,10 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+        Rule rule = createRule("isa-rule", "{ $x isa person; }",
+                               "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -290,7 +269,8 @@ public class UnifyIsaConcludableTest {
 
         // test requirements
         assertEquals(1, unifier.requirements().types().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().types().values().iterator().next());
+        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")),
+                     unifier.requirements().types().values().iterator().next());
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
@@ -318,13 +298,9 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
-        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
+        Rule rule = createRule("isa-rule", "{ $x isa person; }", "(employee: $x) isa employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -364,13 +340,11 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
-        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
-        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
-        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
-        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
+        Rule rule = createRule("isa-rule",
+                               "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                               "($role-type: $x) isa $rel-type");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -410,29 +384,21 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
+        Rule rule = createRule("isa-rule", "{ $x isa person; }",
+                               "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
-        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
+        Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }",
+                                "(employee: $x) isa employment");
+        unifiers = queryConcludable.unify(rule2.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
-        // rule: when { $x isa person; $role-type type employment:employee; $rel-type relates $role-type;} then { ($role-type: $x) isa $rel-type; }
-        Conjunction whenVariableRelType = parseConjunction("{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }");
-        Conjunction thenVariableRelType = parseConjunction("{ ($role-type: $x) isa $rel-type; }");
-        IsaConstraint thenVariableRelTypeIsa = findIsaConstraint(thenVariableRelType);
-        Rule.Conclusion.Isa relationIsaVariableRelType = Rule.Conclusion.Isa.create(thenVariableRelTypeIsa, whenVariableRelType.variables());
-        unifiers = queryConcludable.unify(relationIsaVariableRelType, conceptMgr).toList();
+        Rule rule3 = createRule("isa-rule-3",
+                                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                                "($role-type: $x) isa $rel-type");
+        unifiers = queryConcludable.unify(rule3.conclusion().asIsa(), conceptMgr).toList();
         // TODO this test can only be enabled after full type resolution runs
 //        assertEquals(0, unifiers.size());
     }
@@ -459,12 +425,8 @@ public class UnifyIsaConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables());
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
 
         Unifier unifier = unifiers.get(0);

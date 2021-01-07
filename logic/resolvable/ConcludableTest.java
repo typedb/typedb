@@ -56,7 +56,7 @@ public class ConcludableTest {
     }
 
     private long valueConcludablesCount(Set<Concludable<?>> concludables) {
-        return concludables.stream().filter(Concludable::isValue).count();
+        return concludables.stream().filter(Concludable::isAttribute).count();
     }
 
     @Test

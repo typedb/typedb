@@ -26,9 +26,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -57,7 +55,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Conclusion<?> conclusion;
+    private final Conclusion conclusion;
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -104,7 +102,7 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Conclusion<?> conclusion() {
+    public Conclusion conclusion() {
         return conclusion;
     }
 
@@ -196,9 +194,9 @@ public class Rule {
                 new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 
-    public static abstract class Conclusion<CONSTRAINT extends Constraint> {
+    public static abstract class Conclusion {
 
-        public static Conclusion<?> create(Conjunction then) {
+        public static Conclusion create(Conjunction then) {
             return Iterators.iterate(then.variables()).filter(Variable::isThing).map(Variable::asThing)
                     .flatMap(variable -> Iterators.iterate(variable.constraints()).map(constraint -> {
                         if (constraint.isRelation()) {
@@ -222,6 +220,10 @@ public class Rule {
             return false;
         }
 
+        public boolean isHas() {
+            return false;
+        }
+
         public boolean isIsa() {
             return false;
         }
@@ -242,6 +244,10 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
         }
 
+        public Has asHas() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
+        }
+
         public Isa asIsa() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
         }
@@ -258,15 +264,15 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
         }
 
-        interface IsaInterface {
+        public interface Isa {
             IsaConstraint isa();
         }
 
-        interface ValueInterface {
+        public interface Value {
             ValueConstraint<?> value();
         }
 
-        public static class Relation extends Conclusion<RelationConstraint> implements IsaInterface {
+        public static class Relation extends Conclusion implements Isa {
 
             private final RelationConstraint relation;
             private final IsaConstraint isa;
@@ -297,8 +303,17 @@ public class Rule {
             }
 
             @Override
+            public boolean isIsa() {
+                return true;
+            }
+
+            @Override
             public boolean isRelation() {
                 return true;
+            }
+
+            public Isa asIsa() {
+                return this;
             }
 
             @Override
@@ -307,9 +322,9 @@ public class Rule {
             }
         }
 
-        public static abstract class Has extends Conclusion<HasConstraint> {
+        public static abstract class Has extends Conclusion {
 
-            private HasConstraint has;
+            private final HasConstraint has;
 
             Has(HasConstraint has) {
                 this.has = has;
@@ -320,11 +335,21 @@ public class Rule {
             }
 
             @Override
+            public Has asHas() {
+                return this;
+            }
+
+            @Override
+            public boolean isHas() {
+                return true;
+            }
+
+            @Override
             public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
                 return null;
             }
 
-            public static class Explicit extends Has implements IsaInterface, ValueInterface {
+            public static class Explicit extends Has implements Isa, Value {
 
                 private final IsaConstraint isa;
                 private final ValueConstraint<?> value;
@@ -353,6 +378,16 @@ public class Rule {
                 }
 
                 @Override
+                public boolean isIsa() {
+                    return true;
+                }
+
+                @Override
+                public Isa asIsa() {
+                    return this;
+                }
+
+                @Override
                 public ValueConstraint<?> value() {
                     return value;
                 }
@@ -375,66 +410,5 @@ public class Rule {
             }
 
         }
-
-        public static class Isa extends Conclusion<IsaConstraint> {
-
-            private final IsaConstraint isa;
-
-            public Isa(IsaConstraint isa, Set<Variable> whenContext) {
-                this.isa = isa;
-            }
-
-            public IsaConstraint isa() {
-                return isa;
-            }
-
-            @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
-                return null;
-            }
-
-            public static Isa create(IsaConstraint constraint, Set<Variable> whenContext) {
-                return new Isa(ConstraintCopier.copyConstraint(constraint), whenContext);
-            }
-
-            @Override
-            public boolean isIsa() {
-                return true;
-            }
-
-            @Override
-            public Isa asIsa() {
-                return this;
-            }
-        }
-
-        public static class Value extends Conclusion<ValueConstraint<?>> {
-
-            private final ValueConstraint<?> value;
-
-            Value(ValueConstraint<?> value, Set<Variable> whenContext) {
-                this.value = value;
-            }
-
-            public ValueConstraint<?> value() {
-                return value;
-            }
-
-            @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
-                return null;
-            }
-
-            @Override
-            public boolean isValue() {
-                return true;
-            }
-
-            @Override
-            public Value asValue() {
-                return this;
-            }
-        }
-
     }
 }
