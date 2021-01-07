@@ -75,6 +75,7 @@ build:
         bazel test //test/behaviour/connection/... --test_output=streamed
         bazel test //test/behaviour/concept/... --test_output=streamed
         bazel test //test/behaviour/graql/language/match/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/get/... --test_output=streamed
       # bazel test //test/behaviour/graql/language/define/... --test_output=streamed
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
@@ -167,7 +168,7 @@ release:
       command: |
         pip install certifi
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn (cat VERSION) ./RELEASE_TEMPLATE.md
+        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:

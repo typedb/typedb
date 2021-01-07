@@ -20,6 +20,7 @@ package grakn.core.concept.answer;
 
 import grakn.core.concept.Concept;
 import graql.lang.pattern.variable.Reference;
+import graql.lang.pattern.variable.UnboundVariable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +52,11 @@ public class ConceptMap implements Answer {
 
     public Concept get(String variable) {
         return get(Reference.named(variable));
+    }
+
+    public Concept get(UnboundVariable variable) {
+        if (!variable.reference().isName()) return null;
+        else return get(variable.reference().asName());
     }
 
     public Concept get(Reference.Name variable) {

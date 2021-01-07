@@ -28,33 +28,33 @@ def graknlabs_common():
     git_repository(
         name = "graknlabs_common",
         remote = "https://github.com/graknlabs/common",
-        commit = "8ce1d1d9a014965260b93f8407be2631f0aa950b" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
+        tag = "2.0.0-alpha-4" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
     )
 
 def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
         remote = "https://github.com/graknlabs/graql",
-        commit = "c499b1b069dda49f5d88a78f16b3e3f25976c366" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+        tag = "2.0.0-alpha-2" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
         remote = "https://github.com/graknlabs/protocol",
-        commit = "f477994ec05da71f50c8035c10f6fe3da88027d5", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        tag = "2.0.0-alpha-5", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_grabl_tracing():
     git_repository(
         name = "graknlabs_grabl_tracing",
         remote = "https://github.com/graknlabs/grabl-tracing",
-        commit = "44826c1bb3574e1594d3f4b22ad3473f7ccbc449"  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_grabl_tracing
+        tag = "2.0.0-alpha"  # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_grabl_tracing
     )
 
 def graknlabs_behaviour():
     git_repository(
         name = "graknlabs_behaviour",
         remote = "https://github.com/graknlabs/behaviour",
-        commit = "46a954910a0797c0a2d1d45f5196c24bbe46f066", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
+        commit = "d1554c4a1038fbf51c71f460fedec230bdec57f3", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
     )

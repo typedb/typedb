@@ -19,11 +19,11 @@ package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "async-test",
+    name = "type-resolver-test",
     srcs = [
-        "AsyncTest.java",
+        "TypeResolverTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.debug.bugs.AsyncTest",
+    test_class = "grakn.core.test.behaviour.debug.bugs.TypeResolverTest",
     deps = [
         # Internal dependencies
 
@@ -48,7 +48,7 @@ java_test(
         "//test/behaviour/graql:steps",
     ],
     data = [
-        ":async-bugs.feature",
+        ":type-resolver-bugs.feature",
     ],
     size = "medium",
 )

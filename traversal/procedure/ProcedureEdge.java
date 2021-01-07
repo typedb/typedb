@@ -46,6 +46,7 @@ import java.util.Set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.iterator.Iterators.empty;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -154,7 +155,15 @@ public abstract class ProcedureEdge<
         @Override
         public ResourceIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                Traversal.Parameters params) {
-            return single(fromVertex);
+            if (fromVertex.isThing()) {
+                if (to.isType()) return empty();
+                else return to.asThing().filter(single(fromVertex.asThing()), params);
+            } else if (fromVertex.isType()) {
+                if (to.isThing()) return empty();
+                else return to.asType().filter(single(fromVertex.asType()));
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
         }
 
         @Override

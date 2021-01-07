@@ -155,11 +155,11 @@ public class GraqlSteps {
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
-            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate());
+            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate(), false);
         } else if (graqlQuery instanceof GraqlMatch.Group) {
-            answerGroups = tx().query().match(graqlQuery.asMatchGroup()).toList();
+            answerGroups = tx().query().match(graqlQuery.asMatchGroup(), false).toList();
         } else if (graqlQuery instanceof GraqlMatch.Group.Aggregate) {
-            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate()).toList();
+            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate(), false).toList();
         } else {
             throw new ScenarioDefinitionException("Only match and insert supported for now");
         }
@@ -244,13 +244,13 @@ public class GraqlSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asDouble()),
-                     expectedAnswer, numericAnswer.asDouble(), 0.01);
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
+                     expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.001);
     }
 
-    @Then("aggregate answer is empty")
-    public void aggregate_answer_is_empty() {
-        assertNull(numericAnswer);
+    @Then("aggregate answer is not a number")
+    public void aggregate_answer_is_not_a_number() {
+        assertTrue(numericAnswer.isNaN());
     }
 
     @Then("answer groups are")
@@ -344,11 +344,11 @@ public class GraqlSteps {
                     .orElse(null);
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", expectation.getKey()), answerGroup);
 
-            double actualAnswer = answerGroup.numeric().asDouble();
+            double actualAnswer = answerGroup.numeric().asNumber().doubleValue();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
                                   expectedAnswer, expectation.getKey(), actualAnswer),
-                    expectedAnswer, actualAnswer, 0.01
+                    expectedAnswer, actualAnswer, 0.001
             );
         }
     }
@@ -497,7 +497,7 @@ public class GraqlSteps {
         for (ConceptMap answer : answers) {
             final String query = applyQueryTemplate(templatedQuery, answer);
             final GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
-            final long answerSize = tx().query().match(graqlQuery).toList().size();
+            final long answerSize = tx().query().match(graqlQuery, false).toList().size();
             assertEquals(1, answerSize);
         }
     }
