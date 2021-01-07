@@ -30,6 +30,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
+import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -38,7 +39,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
@@ -197,21 +198,13 @@ public class Rule {
     public static abstract class Conclusion {
 
         public static Conclusion create(Conjunction then) {
-            return Iterators.iterate(then.variables()).filter(Variable::isThing).map(Variable::asThing)
-                    .flatMap(variable -> Iterators.iterate(variable.constraints()).map(constraint -> {
-                        if (constraint.isRelation()) {
-                            return new Relation(constraint.asRelation(), variable.isa().get());
-                        } else if (constraint.isHas()) {
-                            if (constraint.asHas().attribute().isa().isPresent()) {
-                                assert constraint.asHas().attribute().value().size() == 1;
-                                return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
-                                                        constraint.asHas().attribute().value().iterator().next());
-                            } else {
-                                return new Has.Variable(constraint.asHas());
-                            }
-                        }
-                        return null;
-                    })).filter(Objects::nonNull).first().orElseThrow(() -> GraknException.of(ILLEGAL_STATE));
+            Optional<Relation> r = Relation.of(then);
+            if ((r).isPresent()) return r.get();
+            Optional<Has.Explicit> e = Has.Explicit.of(then);
+            if (e.isPresent()) return e.get();
+            Optional<Has.Variable> v = Has.Variable.of(then);
+            if (v.isPresent()) return v.get();
+            throw GraknException.of(ILLEGAL_STATE);
         }
 
         public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr);
@@ -276,6 +269,16 @@ public class Rule {
 
             private final RelationConstraint relation;
             private final IsaConstraint isa;
+
+            public static Optional<Relation> of(Conjunction conjunction) {
+                return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
+                        .flatMap(variable -> Iterators.iterate(variable.constraints())
+                                .filter(ThingConstraint::isRelation)
+                                .map(constraint -> {
+                                    assert constraint.owner().isa().isPresent();
+                                    return new Relation(constraint.asRelation(), variable.isa().get());
+                                })).first();
+            }
 
             public Relation(RelationConstraint relation, IsaConstraint isa) {
                 this.relation = relation;
@@ -354,9 +357,22 @@ public class Rule {
                 private final IsaConstraint isa;
                 private final ValueConstraint<?> value;
 
+                public static Optional<Explicit> of(Conjunction conjunction) {
+                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                            .map(grakn.core.pattern.variable.Variable::asThing)
+                            .flatMap(variable -> Iterators.iterate(variable.constraints())
+                                    .filter(ThingConstraint::isRelation)
+                                    .map(constraint -> {
+                                        assert constraint.asHas().attribute().isa().isPresent();
+                                        assert constraint.asHas().attribute().isa().get().type().label().isPresent();
+                                        assert constraint.asHas().attribute().value().size() == 1;
+                                        return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
+                                                                constraint.asHas().attribute().value().iterator().next());
+                                    })).first();
+                }
+
                 Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
                     super(has);
-                    assert isa.type().label().isPresent();
                     this.isa = isa;
                     this.value = value;
                 }
@@ -393,6 +409,19 @@ public class Rule {
             }
 
             public static class Variable extends Has {
+
+                public static Optional<Variable> of(Conjunction conjunction) {
+                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                            .map(grakn.core.pattern.variable.Variable::asThing)
+                            .flatMap(variable -> Iterators.iterate(variable.constraints())
+                                    .filter(ThingConstraint::isRelation)
+                                    .map(constraint -> {
+                                        assert !constraint.asHas().attribute().isa().isPresent();
+                                        assert constraint.asHas().attribute().value().size() == 0;
+                                        return new Has.Variable(constraint.asHas());
+                                    })).first();
+                }
+
                 Variable(HasConstraint hasConstraint) {
                     super(hasConstraint);
                 }

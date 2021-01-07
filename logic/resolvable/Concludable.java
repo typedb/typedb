@@ -254,7 +254,6 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             }
 
             if (constraint().owner().isa().isPresent()) {
-                assert relationConclusion.relation().owner().isa().isPresent(); // due to known shapes of rule conclusions
                 TypeVariable concludableRelationType = constraint().owner().isa().get().type();
                 TypeVariable conclusionRelationType = relationConclusion.relation().owner().isa().get().type();
                 if (unificationSatisfiable(concludableRelationType, conclusionRelationType, conceptMgr)) {
