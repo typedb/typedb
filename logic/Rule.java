@@ -171,8 +171,9 @@ public class Rule {
     }
 
     void validateSatisfiable() {
-        // TODO check that the rule has a set of satisfiable type hints. We may want to use the stream of combinations of types
-        // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
+        // TODO: check that the rule has a set of satisfiable types. This includes strictly for the `when` of the rule
+        // TODO: and also checking that each combinations of types from the `when` is a valid insertable answer in the `then`
+        // TODO: we may want to use the stream of combinations of types directly from type inferences, without collapsing them
     }
 
     void validateCycles() {
