@@ -18,7 +18,7 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.core.Grakn;
+import grakn.core.Grakn.Transaction;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
@@ -138,7 +138,7 @@ public class UnifyHasConcludableTest {
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
-        try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
             Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
                                          Graql.parseVariable(thenThingPattern).asThing());
             txn.commit();
@@ -487,5 +487,4 @@ public class UnifyHasConcludableTest {
         assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.requirements().predicates().size());
     }
-
 }

@@ -18,7 +18,7 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.core.Grakn;
+import grakn.core.Grakn.Transaction;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
@@ -36,7 +36,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -156,7 +155,7 @@ public class UnifyRelationConcludableTest {
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
-        try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
             Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
                                     Graql.parseVariable(thenThingPattern).asThing());
             txn.commit();

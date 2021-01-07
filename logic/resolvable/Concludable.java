@@ -135,9 +135,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    AlphaEquivalence alphaEquals(Concludable.Relation that) { return null; }
+    AlphaEquivalence alphaEquals(Relation that) { return null; }
 
-    AlphaEquivalence alphaEquals(Concludable.Has that) { return null; }
+    AlphaEquivalence alphaEquals(Has that) { return null; }
 
     AlphaEquivalence alphaEquals(Isa that) { return null; }
 
@@ -341,7 +341,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Concludable.Relation that) {
+        AlphaEquivalence alphaEquals(Relation that) {
             return constraint().alphaEquals(that.constraint());
         }
     }
@@ -440,7 +440,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Concludable.Has that) {
+        AlphaEquivalence alphaEquals(Has that) {
             return constraint().alphaEquals(that.constraint());
         }
 
@@ -575,12 +575,12 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            concludables.add(new Concludable.Relation(relationConstraint, relationConstraint.owner().isa().orElse(null)));
+            concludables.add(new Relation(relationConstraint, relationConstraint.owner().isa().orElse(null)));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            concludables.add(new Concludable.Has(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value()));
+            concludables.add(new Has(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value()));
             isaOwnersToSkip.add(hasConstraint.attribute());
             if (hasConstraint.attribute().isa().isPresent()) valueOwnersToSkip.add(hasConstraint.attribute());
         }
