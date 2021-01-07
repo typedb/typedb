@@ -56,24 +56,28 @@ public class TypeResolverTraversal {
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
-    private final long numOfTypes;
-    private final long numOfConcreteTypes;
+//    private final long numOfTypes;
+//    private final long numOfConcreteTypes;
 
     public TypeResolverTraversal(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
-        this.numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
-        this.numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
+//        this.numOfTypes = 1000;
+//        this.numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
+//        this.numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
     }
 
     public Conjunction resolveVariables(Conjunction conjunction) {
+
         resolveLabels(conjunction);
         ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
         if (constraintMapper.isSatisfiable) runTraversalEngine(constraintMapper);
 
+
         findUnsatisfiableVariables(conjunction);
-        findVariablesWithNoHints(conjunction);
+        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
+        findVariablesWithNoHints(conjunction, numOfTypes);
         return conjunction;
     }
 
@@ -82,10 +86,10 @@ public class TypeResolverTraversal {
                 .forEachRemaining(variable -> variable.setSatisfiable(false));
     }
 
-    private void findVariablesWithNoHints(Conjunction conjunction) {
+    private void findVariablesWithNoHints(Conjunction conjunction, long numOfTypes) {
         iterate(conjunction.variables()).filter(variable -> (
                 variable.isType() && variable.resolvedTypes().size() == numOfTypes ||
-                        variable.isThing() && variable.resolvedTypes().size() == numOfConcreteTypes
+                        variable.isThing() && variable.resolvedTypes().size() == numOfTypes
         )).forEachRemaining(Variable::clearResolvedTypes);
     }
 

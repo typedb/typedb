@@ -49,7 +49,7 @@ public class LogicManager {
 
     private final ConceptManager conceptMgr;
     private final GraphManager graphMgr;
-    private final TypeResolver typeResolver;
+//    private final TypeResolver typeResolver;
     private final TypeResolverTraversal typeResolverTraversal;
     private LogicCache logicCache;
 
@@ -57,7 +57,7 @@ public class LogicManager {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
-        this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
+//        this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
         this.typeResolverTraversal = new TypeResolverTraversal(conceptMgr, traversalEng, logicCache);
     }
 
@@ -105,11 +105,11 @@ public class LogicManager {
                 .forEach(structure -> getRule(structure.label()).validateCycles());
     }
 
-    public TypeResolver typeResolver() {
-        return typeResolver;
-    }
+//    public TypeResolver typeResolver() {
+//        return typeResolver;
+//    }
 
-    public TypeResolverTraversal typeResolverTraversal() {
+    public TypeResolverTraversal typeResolver() {
         return typeResolverTraversal;
     }
 

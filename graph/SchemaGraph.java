@@ -515,16 +515,16 @@ public class SchemaGraph implements Graph {
             }
         }
 
-        public long concreteThingTypeCount() {
-            Supplier<Integer> fn = () ->
-                    toIntExact(thingTypes().stream().filter(typeVertex -> !typeVertex.isAbstract()).count());
-            if (isReadOnly) {
-                if (thingTypeCount == UNSET_COUNT) thingTypeCount = fn.get();
-                return thingTypeCount;
-            } else {
-                return fn.get();
-            }
-        }
+//        public long concreteThingTypeCount() {
+//            Supplier<Integer> fn = () ->
+//                    toIntExact(thingTypes().stream().filter(typeVertex -> !typeVertex.isAbstract()).count());
+//            if (isReadOnly) {
+//                if (thingTypeCount == UNSET_COUNT) thingTypeCount = fn.get();
+//                return thingTypeCount;
+//            } else {
+//                return fn.get();
+//            }
+//        }
 
         public long relationTypeCount() {
             Supplier<Integer> fn = () -> toIntExact(relationTypes().stream().count());
