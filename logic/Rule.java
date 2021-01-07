@@ -124,7 +124,14 @@ public class Rule {
     }
 
     public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-        // TODO
+        for (Conclusion<?> conclusion : possibleConclusions) {
+            if (conclusion.isRelation()) {
+                return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
+            } else if (conclusion.isHas()) {
+                return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
+            }
+        }
+        // TODO this needs to be simplified after refactor
         return null;
     }
 
