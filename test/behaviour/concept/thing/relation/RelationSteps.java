@@ -52,7 +52,7 @@ public class RelationSteps {
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
         final Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
         final Relation relation = tx().concepts().getRelationType(type).create();
-        relation.setHas(key, false);
+        relation.setHas(key);
         put(var, relation);
     }
 
@@ -60,7 +60,7 @@ public class RelationSteps {
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
         final Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
         final Relation relation = tx().concepts().getRelationType(type).create();
-        relation.setHas(key, false);
+        relation.setHas(key);
         put(var, relation);
     }
 
@@ -68,7 +68,7 @@ public class RelationSteps {
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
         final Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
         final Relation relation = tx().concepts().getRelationType(type).create();
-        relation.setHas(key, false);
+        relation.setHas(key);
         put(var, relation);
     }
 
@@ -110,7 +110,7 @@ public class RelationSteps {
 
     @When("relation {var} add player for role\\( ?{type_label} ?): {var}")
     public void relation_add_player_for_role(String var1, String roleTypeLabel, String var2) {
-        get(var1).asRelation().addPlayer(get(var1).asRelation().getType().getRelates(roleTypeLabel), get(var2), false);
+        get(var1).asRelation().addPlayer(get(var1).asRelation().getType().getRelates(roleTypeLabel), get(var2));
     }
 
     @When("relation {var} remove player for role\\( ?{type_label} ?): {var}")

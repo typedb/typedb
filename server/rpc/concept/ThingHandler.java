@@ -193,7 +193,7 @@ public class ThingHandler {
 
     private void setHas(Transaction.Req request, Thing thing, ConceptProto.Thing protoAttribute) {
         final Attribute attribute = getThing(protoAttribute).asAttribute();
-        thing.setHas(attribute, false);
+        thing.setHas(attribute);
         transactionRPC.respond(response(request, ConceptProto.Thing.Res.newBuilder().setThingSetHasRes(
                 ConceptProto.Thing.SetHas.Res.getDefaultInstance()
         )));
@@ -242,7 +242,7 @@ public class ThingHandler {
     private void addPlayer(Transaction.Req request, Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq) {
         final RoleType roleType = getRoleType(addPlayerReq.getRoleType());
         final Thing player = getThing(addPlayerReq.getPlayer()).asThing();
-        relation.addPlayer(roleType, player, false);
+        relation.addPlayer(roleType, player);
         transactionRPC.respond(response(request, ConceptProto.Thing.Res.newBuilder().setRelationAddPlayerRes(
                 ConceptProto.Relation.AddPlayer.Res.getDefaultInstance()
         )));

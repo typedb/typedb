@@ -61,6 +61,11 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
+    public void addPlayer(RoleType roleType, Thing player) {
+        addPlayer(roleType, player, false);
+    }
+
+    @Override
     public void addPlayer(RoleType roleType, Thing player, boolean isInferred) {
         assert isInferred() == isInferred;
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {

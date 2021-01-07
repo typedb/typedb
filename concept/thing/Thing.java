@@ -68,6 +68,8 @@ public interface Thing extends Concept {
      *
      * @param attribute that will be owned by this {@code Thing}
      */
+    void setHas(Attribute attribute);
+
     void setHas(Attribute attribute, boolean isInferred);
 
     /**
