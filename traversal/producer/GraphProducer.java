@@ -31,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 import static grakn.core.common.iterator.Iterators.synchronised;
@@ -47,7 +46,6 @@ public class GraphProducer implements Producer<VertexMap> {
     private final ConcurrentMap<ResourceIterator<VertexMap>, CompletableFuture<Void>> futures;
     private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
     private final AtomicBoolean isDone;
-    private final AtomicInteger runningJobs;
 
     public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, int parallelisation) {
         assert parallelisation > 0;
@@ -59,7 +57,6 @@ public class GraphProducer implements Producer<VertexMap> {
         this.futures = new ConcurrentHashMap<>();
         this.produced = ConcurrentHashMap.newKeySet();
         this.start = synchronised(procedure.startVertex().iterator(graphMgr, params));
-        this.runningJobs = new AtomicInteger(0);
     }
 
     @Override
@@ -67,7 +64,7 @@ public class GraphProducer implements Producer<VertexMap> {
         int p = futures.isEmpty() ? parallelisation : futures.size();
         int splitCount = (int) Math.ceil((double) count / p);
 
-        if (runningJobs.get() == 0) {
+        if (futures.size() == 0) {
             if (!start.hasNext()) {
                 done(sink);
                 return;
@@ -75,15 +72,13 @@ public class GraphProducer implements Producer<VertexMap> {
 
             int i = 0;
             for (; i < parallelisation && start.hasNext(); i++) {
-                runningJobs.incrementAndGet(); // TODO: still not right
                 ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
-                futures.computeIfAbsent(iterator, k ->
-                        runAsync(consume(iterator, splitCount, sink), forkJoinPool())
-                );
+                futures.put(iterator, runAsync(consume(iterator, splitCount, sink), forkJoinPool()));
             }
             if (i < parallelisation) produce(sink, (parallelisation - i) * splitCount);
         } else {
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
+                // TODO: It's possible that futures.remove() happens here which causes not calling consume() when we should
                 futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(consume(k, splitCount, sink), forkJoinPool()));
             }
         }
@@ -110,13 +105,12 @@ public class GraphProducer implements Producer<VertexMap> {
         Vertex<?, ?> next;
         if ((next = start.atomicNext()) != null) {
             ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, next, procedure, params).distinct(produced);
-            futures.put(iterator,
-                        runAsync(consume(iterator, remaining, sink), forkJoinPool())
-            );
+            futures.put(iterator, runAsync(consume(iterator, remaining, sink), forkJoinPool()));
             return;
         }
 
-        if (runningJobs.decrementAndGet() == 0) {
+        // TODO: It's possible that we're just about to call futures.put() in another thread, which means we shouldn't call done() here
+        if (futures.size() == 0) {
             done(sink);
         } else {
             produce(sink, remaining);
