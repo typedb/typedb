@@ -200,4 +200,76 @@ public class RuleTest {
             }
         }
     }
+
+    @Test
+    public void rule_relation_materialises_when_missing() {
+
+    }
+
+    @Test
+    public void rule_relation_does_not_materialise_when_present() {
+
+    }
+
+    @Test
+    public void rule_has_variable_materialises_when_missing() {
+
+    }
+
+    @Test
+    public void rule_has_variable_does_not_materialise_when_present() {
+
+    }
+
+    @Test
+    public void rule_has_explicit_materialises_when_missing() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType milk = conceptMgr.putEntityType("milk");
+                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    milk.setOwns(ageInDays);
+                    milk.setOwns(isStillGood);
+                    logicMgr.putRule(
+                            "old-milk-is-not-good",
+                            Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+                            Graql.parseVariable("$x has is-still-good false").asThing());
+                    txn.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_has_explicit_does_not_materialise_when_present() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (Grakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType milk = conceptMgr.putEntityType("milk");
+                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    milk.setOwns(ageInDays);
+                    milk.setOwns(isStillGood);
+                    logicMgr.putRule(
+                            "old-milk-is-not-good",
+                            Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+                            Graql.parseVariable("$x has is-still-good false").asThing());
+                    txn.commit();
+                }
+            }
+        }
+    }
 }
