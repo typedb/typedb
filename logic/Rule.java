@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,7 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -32,9 +33,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -56,7 +55,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
@@ -72,7 +70,7 @@ public class Rule {
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
-    private final Set<Conclusion<?>> possibleConclusions; // TODO after restructuring Conclusions, we will have a single conclusion
+    private final Conclusion conclusion;
     private final Set<Concludable<?>> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
@@ -83,8 +81,8 @@ public class Rule {
 //        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
-        pruneThenTypeHints();
-        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
+        pruneThenResolvedTypes();
+        this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
@@ -99,9 +97,9 @@ public class Rule {
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
         validateSatisfiable();
-        pruneThenTypeHints();
+        pruneThenResolvedTypes();
 
-        this.possibleConclusions = buildConclusions(this.then, this.when.variables());
+        this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
     }
@@ -119,20 +117,12 @@ public class Rule {
         return requiredWhenConcludables;
     }
 
-    public Set<Conclusion<?>> possibleConclusions() {
-        return possibleConclusions;
+    public Conclusion conclusion() {
+        return conclusion;
     }
 
     public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-        for (Conclusion<?> conclusion : possibleConclusions) {
-            if (conclusion.isRelation()) {
-                return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
-            } else if (conclusion.isHas()) {
-                return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
-            }
-        }
-        // TODO this needs to be simplified after refactor
-        return null;
+        return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
     }
 
     public Conjunction when() {
@@ -179,6 +169,7 @@ public class Rule {
 
     void validateSatisfiable() {
         // TODO: check that the rule has a set of satisfiable types. This includes strictly for the `when` of the rule
+        // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
         // TODO: and also checking that each combinations of types from the `when` is a valid insertable answer in the `then`
         // TODO: we may want to use the stream of combinations of types directly from type inferences, without collapsing them
     }
@@ -193,7 +184,8 @@ public class Rule {
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
-    private void pruneThenTypeHints() {
+    private void pruneThenResolvedTypes() {
+        // TODO name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isNamedReference())
                 .forEach(thenVar ->
                                  when.variables().stream()
@@ -208,13 +200,6 @@ public class Rule {
                 );
     }
 
-    private Set<Conclusion<?>> buildConclusions(Conjunction then, Set<Variable> when) {
-        HashSet<Conclusion<?>> conclusions = new HashSet<>();
-        then.variables().stream().flatMap(var -> var.constraints().stream()).filter(Constraint::isThing).map(Constraint::asThing)
-                .map(constraint -> Conclusion.create(constraint, when)).forEach(conclusions::add);
-        return conclusions;
-    }
-
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
         return logicManager.typeResolver().resolveLabels(
                 Conjunction.create(conjunction.normalise().patterns().get(0)));
@@ -225,25 +210,16 @@ public class Rule {
                 new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 
-    public abstract static class Conclusion<CONSTRAINT extends Constraint> {
+    public static abstract class Conclusion {
 
-        private final CONSTRAINT constraint;
-
-        private Conclusion(CONSTRAINT constraint, Set<Variable> whenContext) {
-            this.constraint = constraint;
-            copyAdditionalConstraints(whenContext, new HashSet<>(this.constraint.variables()));
-        }
-
-        public CONSTRAINT constraint() {
-            return constraint;
-        }
-
-        public static Conclusion<?> create(ThingConstraint constraint, Set<Variable> whenContext) {
-            if (constraint.isRelation()) return Relation.create(constraint.asRelation(), whenContext);
-            else if (constraint.isHas()) return Has.create(constraint.asHas(), whenContext);
-            else if (constraint.isIsa()) return Isa.create(constraint.asIsa(), whenContext);
-            else if (constraint.isValue()) return Value.create(constraint.asValue(), whenContext);
-            else throw GraknException.of(ILLEGAL_STATE);
+        public static Conclusion create(Conjunction then) {
+            Optional<Relation> r = Relation.of(then);
+            if ((r).isPresent()) return r.get();
+            Optional<Has.Explicit> e = Has.Explicit.of(then);
+            if (e.isPresent()) return e.get();
+            Optional<Has.Variable> v = Has.Variable.of(then);
+            if (v.isPresent()) return v.get();
+            throw GraknException.of(ILLEGAL_STATE);
         }
 
         public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
@@ -264,6 +240,14 @@ public class Rule {
             return false;
         }
 
+        public boolean isExplicitHas() {
+            return false;
+        }
+
+        public boolean isVariableHas() {
+            return false;
+        }
+
         public Relation asRelation() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
         }
@@ -280,39 +264,50 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
         }
 
-        private void copyAdditionalConstraints(Set<Variable> fromVars, Set<Variable> toVars) {
-            Map<Variable, Variable> nonAnonFromVarsMap = fromVars.stream()
-                    .filter(variable -> !variable.id().reference().isAnonymous())
-                    .collect(Collectors.toMap(e -> e, e -> e)); // Create a map for efficient lookups
-            toVars.stream().filter(variable -> !variable.id().reference().isAnonymous())
-                    .forEach(copyTo -> {
-                        if (nonAnonFromVarsMap.containsKey(copyTo)) {
-                            Variable copyFrom = nonAnonFromVarsMap.get(copyTo);
-                            if (copyTo.isThing() && copyFrom.isThing()) {
-                                ConstraintCopier.copyIsaAndValues(copyFrom.asThing(), copyTo.asThing());
-                            } else if (copyTo.isType() && copyFrom.isType()) {
-                                ConstraintCopier.copyLabelSubAndValueType(copyFrom.asType(), copyTo.asType());
-                            } else throw GraknException.of(ILLEGAL_STATE);
-                        }
-                    });
+        public Has.Variable asVariableHas() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Variable.class));
         }
 
-        public static class Relation extends Conclusion<RelationConstraint> {
+        public Has.Explicit asExplicitHas() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
+        }
 
-            public Relation(RelationConstraint constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
+        public interface Isa {
+            IsaConstraint isa();
+        }
+
+        public interface Value {
+            ValueConstraint<?> value();
+        }
+
+        public static class Relation extends Conclusion implements Isa {
+
+            private final RelationConstraint relation;
+            private final IsaConstraint isa;
+
+            public static Optional<Relation> of(Conjunction conjunction) {
+                return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
+                        .flatMap(variable -> Iterators.iterate(variable.constraints())
+                                .filter(ThingConstraint::isRelation)
+                                .map(constraint -> {
+                                    assert constraint.owner().isa().isPresent();
+                                    return new Relation(constraint.asRelation(), variable.isa().get());
+                                })).first();
+            }
+
+            public Relation(RelationConstraint relation, IsaConstraint isa) {
+                this.relation = relation;
+                this.isa = isa;
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                          ConceptManager conceptMgr) {
-                Identifier relationTypeIdentifier = constraint().owner().isa().get().type().id();
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Identifier relationTypeIdentifier = isa().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
-                constraint().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
+                relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
+                Optional<grakn.core.concept.thing.Relation> relationInstance = relationExists(relationType, players, traversalEng, conceptMgr);
 
-                Optional<grakn.core.concept.thing.Relation> relationInstance = relationExists(relationType, players,
-                                                                                              traversalEng, conceptMgr);
                 Map<Identifier, Concept> thenConcepts = new HashMap<>();
                 if (relationInstance.isPresent()) {
                     thenConcepts.put(relationTypeIdentifier, relationInstance.get());
@@ -325,20 +320,6 @@ public class Rule {
                     thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
                 });
                 return thenConcepts;
-            }
-
-            public static Relation create(RelationConstraint constraint, Set<Variable> whenContext) {
-                return new Relation(ConstraintCopier.copyConstraint(constraint), whenContext);
-            }
-
-            @Override
-            public boolean isRelation() {
-                return true;
-            }
-
-            @Override
-            public Relation asRelation() {
-                return this;
             }
 
             private grakn.core.concept.thing.Relation insertConclusion(RelationType relationType, Set<RolePlayer> players) {
@@ -364,15 +345,13 @@ public class Rule {
             }
 
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
-                assert constraint().owner().isa().isPresent();
-                TypeVariable type = constraint().owner().isa().get().type();
-                if (type.reference().isName()) {
-                    Reference.Name typeReference = type.reference().asName();
+                if (isa().type().reference().isName()) {
+                    Reference.Name typeReference = isa().type().reference().asName();
                     assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
                     return whenConcepts.get(typeReference).asRelationType();
                 } else {
-                    assert type.reference().isLabel();
-                    return conceptMgr.getRelationType(type.label().get().label());
+                    assert isa().type().reference().isLabel();
+                    return conceptMgr.getRelationType(isa().type().label().get().label());
                 }
             }
 
@@ -398,85 +377,14 @@ public class Rule {
                     repetition = rp.repetition();
                 }
             }
-        }
 
-        public static class Has extends Conclusion<HasConstraint> {
-
-            public Has(HasConstraint constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
+            public RelationConstraint relation() {
+                return relation;
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                Identifier.Variable ownerId = constraint().owner().id();
-                assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
-                Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                Map<Identifier, Concept> thenConcepts = new HashMap<>();
-                Attribute attribute;
-                if (constraint().attribute().reference().isName()) {
-                    assert whenConcepts.contains(constraint().attribute().reference().asName()) &&
-                            whenConcepts.get(constraint().attribute().reference().asName()).isAttribute();
-                    attribute = whenConcepts.get(constraint().attribute().reference().asName()).asAttribute();
-                } else {
-                    assert constraint().attribute().reference().isAnonymous();
-                    attribute = getOrCreateAttribute(conceptMgr);
-                    TypeVariable declaredType = constraint().attribute().isa().get().type();
-                    Identifier declaredTypeIdentifier = declaredType.id();
-                    AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
-                    assert attrType.equals(attribute.getType());
-                    thenConcepts.put(declaredTypeIdentifier, attrType);
-                }
-                owner.setHas(attribute, true);
-                thenConcepts.put(constraint().attribute().id(), attribute);
-                thenConcepts.put(constraint().owner().id(), owner);
-                return thenConcepts;
-            }
-
-            public static Has create(HasConstraint constraint, Set<Variable> whenContext) {
-                return new Has(ConstraintCopier.copyConstraint(constraint), whenContext);
-            }
-
-            @Override
-            public boolean isHas() {
-                return true;
-            }
-
-            @Override
-            public Has asHas() {
-                return this;
-            }
-
-            private Attribute getOrCreateAttribute(ConceptManager conceptMgr) {
-                assert constraint().attribute().isa().isPresent()
-                        && constraint().attribute().isa().get().type().label().isPresent()
-                        && constraint().attribute().value().size() == 1
-                        && constraint().attribute().value().iterator().next().isValueIdentity();
-                Label attributeTypeLabel = constraint().attribute().isa().get().type().label().get().properLabel();
-                AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
-                assert attributeType != null;
-                ValueConstraint<?> value = constraint().attribute().value().iterator().next();
-                if (value.isBoolean()) return attributeType.asBoolean().put(value.asBoolean().value(), true);
-                else if (value.isDateTime()) return attributeType.asDateTime().put(value.asDateTime().value(), true);
-                else if (value.isDouble()) return attributeType.asDouble().put(value.asDouble().value(), true);
-                else if (value.isLong()) return attributeType.asLong().put(value.asLong().value(), true);
-                else if (value.isString()) return attributeType.asString().put(value.asString().value(), true);
-                else throw GraknException.of(ILLEGAL_STATE);
-            }
-        }
-
-        public static class Isa extends Conclusion<IsaConstraint> {
-
-            public Isa(IsaConstraint constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
-            }
-
-            @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                return null;
-            }
-
-            public static Isa create(IsaConstraint constraint, Set<Variable> whenContext) {
-                return new Isa(ConstraintCopier.copyConstraint(constraint), whenContext);
+            public IsaConstraint isa() {
+                return isa;
             }
 
             @Override
@@ -485,36 +393,169 @@ public class Rule {
             }
 
             @Override
-            public Isa asIsa() {
-                return this;
-            }
-        }
-
-        public static class Value extends Conclusion<ValueConstraint<?>> {
-
-            Value(ValueConstraint<?> constraint, Set<Variable> whenContext) {
-                super(constraint, whenContext);
-            }
-
-            @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                return null;
-            }
-
-            public static Value create(ValueConstraint<?> constraint, Set<Variable> whenContext) {
-                return new Value(ConstraintCopier.copyConstraint(constraint), whenContext);
-            }
-
-            @Override
-            public boolean isValue() {
+            public boolean isRelation() {
                 return true;
             }
 
+            public Isa asIsa() {
+                return this;
+            }
+
             @Override
-            public Value asValue() {
+            public Relation asRelation() {
                 return this;
             }
         }
 
+        public static abstract class Has extends Conclusion {
+
+            private final HasConstraint has;
+
+            Has(HasConstraint has) {
+                this.has = has;
+            }
+
+            public HasConstraint has() {
+                return has;
+            }
+
+            @Override
+            public Has asHas() {
+                return this;
+            }
+
+            @Override
+            public boolean isHas() {
+                return true;
+            }
+
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Identifier.Variable ownerId = has().owner().id();
+                assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
+                Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
+                Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                Attribute attribute;
+                if (has().attribute().reference().isName()) {
+                    assert whenConcepts.contains(has().attribute().reference().asName()) &&
+                            whenConcepts.get(has().attribute().reference().asName()).isAttribute();
+                    attribute = whenConcepts.get(has().attribute().reference().asName()).asAttribute();
+                } else {
+                    assert has().attribute().reference().isAnonymous();
+                    attribute = getOrCreateAttribute(conceptMgr);
+                    TypeVariable declaredType = has().attribute().isa().get().type();
+                    Identifier declaredTypeIdentifier = declaredType.id();
+                    AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
+                    assert attrType.equals(attribute.getType());
+                    thenConcepts.put(declaredTypeIdentifier, attrType);
+                }
+                owner.setHas(attribute, true);
+                thenConcepts.put(has().attribute().id(), attribute);
+                thenConcepts.put(has().owner().id(), owner);
+                return thenConcepts;
+            }
+
+            private Attribute getOrCreateAttribute(ConceptManager conceptMgr) {
+                assert has().attribute().isa().isPresent()
+                        && has().attribute().isa().get().type().label().isPresent()
+                        && has().attribute().value().size() == 1
+                        && has().attribute().value().iterator().next().isValueIdentity();
+                Label attributeTypeLabel = has().attribute().isa().get().type().label().get().properLabel();
+                AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                assert attributeType != null;
+                ValueConstraint<?> value = has().attribute().value().iterator().next();
+                if (value.isBoolean()) return attributeType.asBoolean().put(value.asBoolean().value(), true);
+                else if (value.isDateTime()) return attributeType.asDateTime().put(value.asDateTime().value(), true);
+                else if (value.isDouble()) return attributeType.asDouble().put(value.asDouble().value(), true);
+                else if (value.isLong()) return attributeType.asLong().put(value.asLong().value(), true);
+                else if (value.isString()) return attributeType.asString().put(value.asString().value(), true);
+                else throw GraknException.of(ILLEGAL_STATE);
+            }
+
+            public static class Explicit extends Has implements Isa, Value {
+
+                private final IsaConstraint isa;
+                private final ValueConstraint<?> value;
+
+                public static Optional<Explicit> of(Conjunction conjunction) {
+                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                            .map(grakn.core.pattern.variable.Variable::asThing)
+                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                                    .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
+                                    .map(constraint -> {
+                                        assert constraint.asHas().attribute().isa().isPresent();
+                                        assert constraint.asHas().attribute().isa().get().type().label().isPresent();
+                                        assert constraint.asHas().attribute().value().size() == 1;
+                                        return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
+                                                                constraint.asHas().attribute().value().iterator().next());
+                                    })).first();
+                }
+
+                Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
+                    super(has);
+                    this.isa = isa;
+                    this.value = value;
+                }
+
+                @Override
+                public boolean isExplicitHas() {
+                    return true;
+                }
+
+                @Override
+                public Has.Explicit asExplicitHas() {
+                    return this;
+                }
+
+                @Override
+                public IsaConstraint isa() {
+                    return isa;
+                }
+
+                @Override
+                public boolean isIsa() {
+                    return true;
+                }
+
+                @Override
+                public Isa asIsa() {
+                    return this;
+                }
+
+                @Override
+                public ValueConstraint<?> value() {
+                    return value;
+                }
+            }
+
+            public static class Variable extends Has {
+
+                public static Optional<Variable> of(Conjunction conjunction) {
+                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                            .map(grakn.core.pattern.variable.Variable::asThing)
+                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                                    .filter(constraint -> constraint.asHas().attribute().id().isNamedReference())
+                                    .map(constraint -> {
+                                        assert !constraint.asHas().attribute().isa().isPresent();
+                                        assert constraint.asHas().attribute().value().size() == 0;
+                                        return new Has.Variable(constraint.asHas());
+                                    })).first();
+                }
+
+                Variable(HasConstraint hasConstraint) {
+                    super(hasConstraint);
+                }
+
+                @Override
+                public boolean isVariableHas() {
+                    return true;
+                }
+
+                @Override
+                public Variable asVariableHas() {
+                    return this;
+                }
+            }
+
+        }
     }
 }

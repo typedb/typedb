@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
@@ -163,8 +164,11 @@ public class Definer {
             assert label.scope().isPresent();
             final ThingType thingType;
             final RoleType roleType;
-            if ((thingType = conceptMgr.getThingType(label.scope().get())) == null ||
-                    (roleType = thingType.asRelationType().getRelates(label.label())) == null) {
+            if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
+                throw GraknException.of(TYPE_NOT_FOUND, label.scope().get());
+            } else if (!thingType.isRelationType()) {
+                throw GraknException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
+            } else if ((roleType = thingType.asRelationType().getRelates(label.label())) == null) {
                 throw GraknException.of(TYPE_NOT_FOUND, label.scopedLabel());
             }
             return roleType;

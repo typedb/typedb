@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -18,6 +18,7 @@
 
 package grakn.core.logic.resolvable;
 
+import grakn.core.Grakn.Transaction;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
@@ -35,7 +36,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -154,12 +154,13 @@ public class UnifyRelationConcludableTest {
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
-    private RelationConstraint findRelationConstraint(Conjunction conjunction) {
-        List<RelationConstraint> rels = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
-                .filter(constraint -> constraint.isThing() && constraint.asThing().isRelation())
-                .map(constraint -> constraint.asThing().asRelation()).toList();
-        assert rels.size() == 1 : "More than 1 relation constraint in conjunction to search";
-        return rels.get(0);
+    private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
+        try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
+                                    Graql.parseVariable(thenThingPattern).asThing());
+            txn.commit();
+            return rule;
+        }
     }
 
     @Test
@@ -168,13 +169,10 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
+        Rule rule = createRule("people-are-employed", "{ $x isa person; }",
+                               " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -231,13 +229,10 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
+        Rule rule = createRule("people-are-employed", "{ $x isa person; }",
+                               " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -291,13 +286,10 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
+        Rule rule = createRule("people-are-employed", "{ $x isa person; }",
+                               " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -351,13 +343,10 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
+        Rule rule = createRule("people-are-employed", "{ $x isa person; }",
+                               " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -381,13 +370,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        // rule: when { $x isa person; $y isa person; $z isa person; } then { (employee: $x, employee: $y, employee: $z) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; $y isa person; $z isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x, employee: $y, employee: $z) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
+        Rule rule = createRule("three-people-are-employed",
+                               "{ $x isa person; $y isa person; $z isa person; }",
+                               "(employee: $x, employee: $y, employee: $z) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -410,19 +397,17 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
     }
 
-
     @Test
     public void relation_variable_multiple_identical_unifiers() {
         String conjunction = "{ (employee: $p) isa employment; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employee: $x) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("the-same-person-is-employed-twice",
+                               "{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }",
+                               "($employee: $x, $employee: $x) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -441,13 +426,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        // rule: when { $x isa person; $y isa person; $z isa person; } then { (employee: $x, employee: $y, employee: $z) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; $y isa person; $z isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x, employee: $y, employee: $z) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(thenExactRelation);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, whenExactRelation.variables());
+        Rule rule = createRule("three-people-are-employed",
+                               "{ $x isa person; $y isa person; $z isa person; }",
+                               "(employee: $x, employee: $y, employee: $z) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -497,13 +480,12 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; $employment type employment; " +
-                                                    "$employee type employment:employee; $employer type employment:employer; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employee: $y) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("two-people-are-employed",
+                               "{ $x isa person; $y isa person; $employment type employment; " +
+                                       "$employee type employment:employee; $employer type employment:employer; }",
+                               "($employee: $x, $employee: $y) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -527,12 +509,12 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employee: $y) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("two-people-are-employed",
+                               "{ $x isa person; $y isa person; $employment type employment; " +
+                                       "$employee type employment:employee; }",
+                               "($employee: $x, $employee: $y) isa $employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         Set<Map<String, Set<String>>> result = Iterators.iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -595,12 +577,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; }");
-        Conjunction then = parseConjunction("{ (employee: $x, employer: $x, employee: $y) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("two-people-are-employed-one-is-also-the-employer",
+                               "{ $x isa person; $y isa person; }",
+                               "(employee: $x, employer: $x, employee: $y) isa employment");
 
-        List<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         List<Map<String, Set<String>>> result = Iterators.iterate(unifier).map(u -> getStringMapping(u.mapping())).toList();
 
         List<Map<String, Set<String>>> expected = list(
@@ -628,12 +609,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; }");
-        Conjunction then = parseConjunction("{ (employee: $x, employer: $x, employee: $y) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("two-people-are-employed-one-is-also-the-employer",
+                               "{ $x isa person; $y isa person; }",
+                               "(employee: $x, employer: $x, employee: $y) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -676,12 +656,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; }");
-        Conjunction then = parseConjunction("{ (employee: $x, employer: $x, employee: $y) isa employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("two-people-are-employed-one-is-also-the-employer",
+                               "{ $x isa person; $y isa person; }",
+                               "(employee: $x, employer: $x, employee: $y) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -716,12 +695,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employee: $y) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("two-people-are-employed",
+                               "{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }",
+                               "($employee: $x, $employee: $y) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -740,12 +718,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $employment type employment; $employee type employment:employee; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employee: $x) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("a-person-is-employed-twice",
+                               "{ $x isa person; $employment type employment; $employee type employment:employee; }",
+                               "($employee: $x, $employee: $x) isa $employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(relationConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
         Set<Map<String, Set<String>>> result = Iterators.iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -792,12 +769,11 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $employment type employment; $employee type employment:employee; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employee: $x) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("a-person-is-employed-twice",
+                               "{ $x isa person; $employment type employment; $employee type employment:employee; }",
+                               "($employee: $x, $employee: $x) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -816,12 +792,12 @@ public class UnifyRelationConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
-        Conjunction when = parseConjunction("{ $x isa person; $y isa company; $employment sub employment; $employee sub employment:employee; $employer sub employment:employer; }");
-        Conjunction then = parseConjunction("{ ($employee: $x, $employer: $y) isa $employment; }");
-        RelationConstraint thenEmploymentRelation = findRelationConstraint(then);
-        Rule.Conclusion.Relation relationConclusion = Rule.Conclusion.Relation.create(thenEmploymentRelation, when.variables());
+        Rule rule = createRule("one-employee-one-employer",
+                               "{ $x isa person; $y isa company; $employment sub employment; " +
+                                       "$employee sub employment:employee; $employer sub employment:employer; }",
+                               "($employee: $x, $employer: $y) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(relationConclusion, conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = Collections.emptySet();

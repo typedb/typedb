@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -97,11 +97,15 @@ class SessionRPC {
     }
 
     private void triggerIdleTimeout() {
+        if (!transactionRPCs.isEmpty()) {
+            keepAlive();
+            return;
+        }
         close();
         LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
     }
 
-    void keepAlive() {
+    synchronized void keepAlive() {
         setIdleTimeout();
     }
 

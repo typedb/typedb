@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -52,6 +52,7 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 public class RuleTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
@@ -69,24 +70,8 @@ public class RuleTest {
         return concludables.stream().filter(Concludable::isRelation).count();
     }
 
-    private long valueConcludablesCount(Set<Concludable<?>> concludables) {
-        return concludables.stream().filter(Concludable::isValue).count();
-    }
-
-    private long isaHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
-        return concludables.stream().filter(Rule.Conclusion::isIsa).count();
-    }
-
-    private long hasHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
-        return concludables.stream().filter(Rule.Conclusion::isHas).count();
-    }
-
-    private long relationHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
-        return concludables.stream().filter(Rule.Conclusion::isRelation).count();
-    }
-
-    private long valueHeadConcludablesCount(Set<Rule.Conclusion<?>> concludables) {
-        return concludables.stream().filter(Rule.Conclusion::isValue).count();
+    private long attributeConcludablesCount(Set<Concludable<?>> concludables) {
+        return concludables.stream().filter(Concludable::isAttribute).count();
     }
 
     @Test
@@ -117,17 +102,12 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
-                    Set<Rule.Conclusion<?>> conclusions = rule.possibleConclusions();
-                    assertEquals(1, isaHeadConcludablesCount(conclusions));
-                    assertEquals(0, hasHeadConcludablesCount(conclusions));
-                    assertEquals(1, relationHeadConcludablesCount(conclusions));
-                    assertEquals(0, valueHeadConcludablesCount(conclusions));
-
+                    assertTrue(rule.conclusion().isRelation());
                     Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
                     assertEquals(2, isaConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConcludablesCount(bodyConcludables));
                     assertEquals(1, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
                 }
             }
         }
@@ -156,21 +136,15 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final ConceptManager conceptMgr = txn.concepts();
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<Rule.Conclusion<?>> conclusions = rule.possibleConclusions();
-                    assertEquals(1, isaHeadConcludablesCount(conclusions));
-                    assertEquals(1, hasHeadConcludablesCount(conclusions));
-                    assertEquals(0, relationHeadConcludablesCount(conclusions));
-                    assertEquals(1, valueHeadConcludablesCount(conclusions));
-
+                    assertTrue(rule.conclusion().isExplicitHas());
                     Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
                     assertEquals(1, isaConcludablesCount(bodyConcludables));
                     assertEquals(1, hasConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
                 }
             }
         }
@@ -202,17 +176,12 @@ public class RuleTest {
                     final LogicManager logicMgr = txn.logic();
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
-                    Set<Rule.Conclusion<?>> conclusions = rule.possibleConclusions();
-                    assertEquals(0, isaHeadConcludablesCount(conclusions));
-                    assertEquals(1, hasHeadConcludablesCount(conclusions));
-                    assertEquals(0, relationHeadConcludablesCount(conclusions));
-                    assertEquals(0, valueHeadConcludablesCount(conclusions));
-
+                    assertTrue(rule.conclusion().isVariableHas());
                     Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
                     assertEquals(2, isaConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
                 }
             }
         }
