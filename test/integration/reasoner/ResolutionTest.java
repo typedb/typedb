@@ -17,8 +17,8 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.Actor;
-import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;

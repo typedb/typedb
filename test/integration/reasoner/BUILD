@@ -21,7 +21,6 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 host_compatible_java_test(
     name = "test-resolution",
     srcs = ["ResolutionTest.java"],
-    test_class = "grakn.core.reasoner.ResolutionTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -30,19 +29,17 @@ host_compatible_java_test(
         "//logic:logic",
         "//reasoner:reasoner",
     ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
+    ],
+    test_class = "grakn.core.reasoner.ResolutionTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
+        "//test/integration/util",
+        "//common",
         "@graknlabs_graql//java:graql",
     ],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

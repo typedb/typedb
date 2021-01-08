@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Derived;
 
 import java.util.HashMap;

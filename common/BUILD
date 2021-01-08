@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "common",
-    srcs = glob(["*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
+    srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
         # Internal Repository Dependencies
         "@graknlabs_common//:common",
@@ -30,6 +30,7 @@ java_library(
         # External Maven Dependencies
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],
 )
@@ -50,6 +51,6 @@ java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl",
 )
