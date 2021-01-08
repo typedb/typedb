@@ -263,7 +263,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 setObjectiveCoefficient(graph.schema().stats().abstractTypeCount());
             } else if (!props().valueTypes().isEmpty()) {
                 int count = 0;
-                for (Encoding.Graph.ValueType valueType : props().valueTypes()) {
+                for (Encoding.ValueType valueType : props().valueTypes()) {
                     count += graph.schema().stats().attTypesWithValueType(valueType);
                 }
                 setObjectiveCoefficient(count);

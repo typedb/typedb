@@ -20,9 +20,9 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.graph.vertex.ThingVertex;
 
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.RELATING;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Objects.requireNonNull;
 
 public class RoleImpl {

@@ -29,7 +29,7 @@ import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 
 public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -133,18 +133,18 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
     public static class Native<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
             extends StructureEdge<VERTEX_FROM, VERTEX_TO> {
 
-        protected final Encoding.Graph.Edge encoding;
+        protected final Encoding.Edge encoding;
         private final boolean isTransitive;
         private final int hash;
 
-        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Graph.Edge encoding, boolean isTransitive) {
+        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive) {
             super(from, to, encoding.name());
             this.encoding = encoding;
             this.isTransitive = isTransitive;
             this.hash = Objects.hash(getClass(), from, to, this.encoding, this.isTransitive);
         }
 
-        public Encoding.Graph.Edge encoding() {
+        public Encoding.Edge encoding() {
             return encoding;
         }
 

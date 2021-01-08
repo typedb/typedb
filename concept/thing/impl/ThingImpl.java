@@ -45,9 +45,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_O
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;

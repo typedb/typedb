@@ -36,9 +36,9 @@ import static java.util.Objects.hash;
 public abstract class TypeEdgeImpl implements TypeEdge {
 
     final SchemaGraph graph;
-    final Encoding.Graph.Edge.Type encoding;
+    final Encoding.Edge.Type encoding;
 
-    TypeEdgeImpl(SchemaGraph graph, Encoding.Graph.Edge.Type encoding) {
+    TypeEdgeImpl(SchemaGraph graph, Encoding.Edge.Type encoding) {
         this.graph = graph;
         this.encoding = encoding;
     }
@@ -62,7 +62,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param encoding the edge {@code Encoding}
          * @param to       the head vertex
          */
-        public Buffered(Encoding.Graph.Edge.Type encoding, TypeVertex from, TypeVertex to) {
+        public Buffered(Encoding.Edge.Type encoding, TypeVertex from, TypeVertex to) {
             super(from.graph(), encoding);
             assert this.graph == to.graph();
             this.from = from;
@@ -72,7 +72,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Encoding.Graph.Edge.Type encoding() {
+        public Encoding.Edge.Type encoding() {
             return encoding;
         }
 
@@ -241,7 +241,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Encoding.Graph.Edge.Type encoding() {
+        public Encoding.Edge.Type encoding() {
             return encoding;
         }
 

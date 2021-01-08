@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public class SystemReference extends Reference.Name {
 
-    public static String PREFIX = "$/";
+    public static String PREFIX = "$/"; // TODO replace with GraqlToken.Char.$SYS
 
     private final int id;
     private final int hash;

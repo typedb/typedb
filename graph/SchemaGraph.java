@@ -53,22 +53,22 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Graph.ValueType.OBJECT;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.RELATION_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ROLE_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.ATTRIBUTE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.ENTITY;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.RELATION;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.ROLE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.THING;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.THING_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.scopedLabel;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.ValueType.OBJECT;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ENTITY;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.RELATION;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.THING;
+import static grakn.core.graph.util.Encoding.Vertex.Type.THING_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
 import static java.lang.Math.toIntExact;
 import static java.util.stream.Collectors.toSet;
 
@@ -185,7 +185,7 @@ public class SchemaGraph implements Graph {
         return tree(rootAttributeType(), v -> v.ins().edge(SUB).from());
     }
 
-    public ResourceIterator<TypeVertex> attributeTypes(Encoding.Graph.ValueType vt) {
+    public ResourceIterator<TypeVertex> attributeTypes(Encoding.ValueType vt) {
         return attributeTypes().filter(at -> at.valueType().equals(vt));
     }
 
@@ -319,11 +319,11 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public TypeVertex create(Encoding.Graph.Vertex.Type encoding, String label) {
+    public TypeVertex create(Encoding.Vertex.Type encoding, String label) {
         return create(encoding, label, null);
     }
 
-    public TypeVertex create(Encoding.Graph.Vertex.Type encoding, String label, @Nullable String scope) {
+    public TypeVertex create(Encoding.Vertex.Type encoding, String label, @Nullable String scope) {
         assert storage.isOpen();
         final String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
@@ -449,10 +449,10 @@ public class SchemaGraph implements Graph {
     @Override
     public void commit() {
         assert storage.isSchema();
-        typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Graph.Status.BUFFERED)).forEach(
+        typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
                 typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Graph.Status.BUFFERED)).forEach(
+        rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
                 ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
@@ -478,7 +478,7 @@ public class SchemaGraph implements Graph {
         private volatile int roleTypeCount;
         private final ConcurrentMap<TypeVertex, Long> subTypesDepth;
         private final ConcurrentMap<Pair<TypeVertex, Boolean>, Long> subTypesCount;
-        private final ConcurrentMap<Encoding.Graph.ValueType, Long> attTypesWithValueType;
+        private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
 
         private Statistics() {
             abstractTypeCount = UNSET_COUNT;
@@ -545,14 +545,14 @@ public class SchemaGraph implements Graph {
             }
         }
 
-        public long attTypesWithValueType(Encoding.Graph.ValueType valueType) {
+        public long attTypesWithValueType(Encoding.ValueType valueType) {
             Supplier<Long> fn = () -> attributeTypes(valueType).stream().count();
             if (isReadOnly) return attTypesWithValueType.computeIfAbsent(valueType, vt -> fn.get());
             else return fn.get();
         }
 
         public long attTypesWithValTypeComparableTo(Set<Label> labels) {
-            Set<Encoding.Graph.ValueType> valueTypes = iterate(labels)
+            Set<Encoding.ValueType> valueTypes = iterate(labels)
                     .map(l -> getType(l).valueType()).noNulls()
                     .flatMap(vt -> iterate(vt.comparables())).toSet();
             return valueTypes.stream().mapToLong(this::attTypesWithValueType).sum();

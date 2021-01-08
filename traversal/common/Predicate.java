@@ -33,7 +33,7 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.graph.util.Encoding.Graph.ValueType.DOUBLE_PRECISION;
+import static grakn.core.graph.util.Encoding.ValueType.DOUBLE_PRECISION;
 
 public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG extends Predicate.Argument> {
 
@@ -83,7 +83,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
             super(operator, argument);
         }
 
-        public Encoding.Graph.ValueType valueType() {
+        public Encoding.ValueType valueType() {
             return argument.valueType();
         }
 
@@ -343,14 +343,14 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
         public static abstract class Value<ARG_VAL_OP extends Operator, ARG_VAL_TYPE> extends Argument {
 
-            private final Encoding.Graph.ValueType valueType;
+            private final Encoding.ValueType valueType;
 
-            public Value(Encoding.Graph.ValueType valueType) {
+            public Value(Encoding.ValueType valueType) {
                 super(valueType.name());
                 this.valueType = valueType;
             }
 
-            public Encoding.Graph.ValueType valueType() {
+            public Encoding.ValueType valueType() {
                 return valueType;
             }
 
@@ -358,7 +358,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
             public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
 
-            public static Value<Operator.Equality, Boolean> BOOLEAN = new Value<Operator.Equality, Boolean>(Encoding.Graph.ValueType.BOOLEAN) {
+            public static Value<Operator.Equality, Boolean> BOOLEAN = new Value<Operator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isBoolean();
@@ -367,13 +367,13 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
-                    if (!vertex.valueType().comparableTo(Encoding.Graph.ValueType.BOOLEAN)) return false;
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                     assert vertex.isBoolean();
                     return vertex.asBoolean().value().equals(value);
                 }
             };
 
-            public static Value<Operator.Equality, Long> LONG = new Value<Operator.Equality, Long>(Encoding.Graph.ValueType.LONG) {
+            public static Value<Operator.Equality, Long> LONG = new Value<Operator.Equality, Long>(Encoding.ValueType.LONG) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isLong();
@@ -382,7 +382,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Long value) {
-                    if (!vertex.valueType().comparableTo(Encoding.Graph.ValueType.LONG)) return false;
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
                     assert (vertex.isLong() || vertex.isDouble());
 
                     if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value));
@@ -391,7 +391,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 }
             };
 
-            public static Value<Operator.Equality, Double> DOUBLE = new Value<Operator.Equality, Double>(Encoding.Graph.ValueType.DOUBLE) {
+            public static Value<Operator.Equality, Double> DOUBLE = new Value<Operator.Equality, Double>(Encoding.ValueType.DOUBLE) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isDouble();
@@ -400,7 +400,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Double value) {
-                    if (!vertex.valueType().comparableTo(Encoding.Graph.ValueType.DOUBLE)) return false;
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
                     assert (vertex.isLong() || vertex.isDouble());
 
                     double vertexValue;
@@ -411,7 +411,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
                 }
             };
 
-            public static Value<Operator.Equality, LocalDateTime> DATETIME = new Value<Operator.Equality, LocalDateTime>(Encoding.Graph.ValueType.DATETIME) {
+            public static Value<Operator.Equality, LocalDateTime> DATETIME = new Value<Operator.Equality, LocalDateTime>(Encoding.ValueType.DATETIME) {
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                     assert value.isDateTime();
@@ -420,17 +420,17 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
                 @Override
                 public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, LocalDateTime value) {
-                    if (!vertex.valueType().comparableTo(Encoding.Graph.ValueType.DATETIME)) return false;
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
                     assert vertex.isDateTime();
 
                     return operator.apply(vertex.asDateTime().value().compareTo(value));
                 }
             };
 
-            public static Value<Operator, String> STRING = new Value<Operator, String>(Encoding.Graph.ValueType.STRING) {
+            public static Value<Operator, String> STRING = new Value<Operator, String>(Encoding.ValueType.STRING) {
                 @Override
                 public boolean apply(Operator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                    if (!vertex.valueType().comparableTo(Encoding.Graph.ValueType.STRING)) return false;
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                     assert value.isString() || value.isRegex();
                     if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
                     else return apply(operator, vertex, value.getString());
@@ -438,7 +438,7 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
 
                 @Override
                 public boolean apply(Operator operator, AttributeVertex<?> vertex, String value) {
-                    if (!vertex.valueType().comparableTo(Encoding.Graph.ValueType.STRING)) return false;
+                    if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                     assert vertex.isString() && operator.isEquality();
                     return operator.asEquality().apply(vertex.asString().value().compareTo(value));
                 }

@@ -29,7 +29,7 @@ import java.util.Optional;
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<Encoding.Graph.Edge.Thing, EdgeIID.Thing, ThingVertex> {
+public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
 
     Optional<ThingVertex> optimised();
 }

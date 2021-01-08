@@ -64,7 +64,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     protected abstract IndexIID.Attribute index();
 
     @Override
-    protected ThingAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction) {
+    protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
         return new ThingAdjacencyImpl.Persisted(this, direction);
     }
 
@@ -74,13 +74,13 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     @Override
-    public Encoding.Graph.ValueType valueType() {
+    public Encoding.ValueType valueType() {
         return attributeIID.valueType();
     }
 
     @Override
-    public Encoding.Graph.Status status() {
-        return Encoding.Graph.Status.IMMUTABLE;
+    public Encoding.Status status() {
+        return Encoding.Status.IMMUTABLE;
     }
 
     @Override

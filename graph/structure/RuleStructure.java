@@ -33,7 +33,7 @@ public interface RuleStructure {
 
     void label(String label);
 
-    Encoding.Graph.Status status();
+    Encoding.Status status();
 
     void setModified();
 

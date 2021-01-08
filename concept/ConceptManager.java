@@ -176,7 +176,7 @@ public final class ConceptManager {
 
     public void validateThings() {
         graphMgr.data().vertices().parallel()
-                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Graph.Vertex.Thing.ROLE))
+                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Vertex.Thing.ROLE))
                 .forEach(v -> ThingImpl.of(v).validate());
     }
 

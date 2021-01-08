@@ -27,7 +27,7 @@ import grakn.core.graph.util.Encoding;
 
 import java.util.regex.Pattern;
 
-public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Graph.Vertex.Type> {
+public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type> {
     /**
      * @return the {@code Graph} containing all Schema elements
      */
@@ -53,9 +53,9 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Graph.Vertex
 
     TypeVertex isAbstract(boolean isAbstract);
 
-    Encoding.Graph.ValueType valueType();
+    Encoding.ValueType valueType();
 
-    TypeVertex valueType(Encoding.Graph.ValueType valueType);
+    TypeVertex valueType(Encoding.ValueType valueType);
 
     Pattern regex();
 

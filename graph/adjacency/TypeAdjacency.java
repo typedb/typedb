@@ -34,7 +34,7 @@ public interface TypeAdjacency {
      * @param encoding the {@code Encoding} to filter the type of edges
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    TypeIteratorBuilder edge(Encoding.Graph.Edge.Type encoding);
+    TypeIteratorBuilder edge(Encoding.Edge.Type encoding);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -44,9 +44,9 @@ public interface TypeAdjacency {
      * @param adjacent vertex that the edge connects to
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    TypeEdge edge(Encoding.Graph.Edge.Type encoding, TypeVertex adjacent);
+    TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent);
 
-    TypeEdge put(Encoding.Graph.Edge.Type encoding, TypeVertex adjacent);
+    TypeEdge put(Encoding.Edge.Type encoding, TypeVertex adjacent);
 
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.
@@ -57,7 +57,7 @@ public interface TypeAdjacency {
      *
      * @param encoding type of the edge to the adjacent vertex
      */
-    void delete(Encoding.Graph.Edge.Type encoding);
+    void delete(Encoding.Edge.Type encoding);
 
     void deleteAll();
 

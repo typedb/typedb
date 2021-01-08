@@ -24,7 +24,7 @@ import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 
-public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Graph.Vertex.Thing> {
+public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 
     /**
      * Returns the {@code DataGraph} containing all {@code ThingVertex}.

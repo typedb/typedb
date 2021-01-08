@@ -35,7 +35,7 @@ public interface ThingAdjacency {
      * @param encoding the {@code Encoding} to filter the type of edges
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    ThingIteratorBuilder edge(Encoding.Graph.Edge.Thing encoding);
+    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding);
 
     /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
@@ -48,7 +48,7 @@ public interface ThingAdjacency {
      * @param lookAhead information of the adjacent edge to filter the edges with
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    ThingIteratorBuilder edge(Encoding.Graph.Edge.Thing encoding, IID... lookAhead);
+    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -58,7 +58,7 @@ public interface ThingAdjacency {
      * @param adjacent vertex that the edge connects to
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge edge(Encoding.Graph.Edge.Thing encoding, ThingVertex adjacent);
+    ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -69,7 +69,7 @@ public interface ThingAdjacency {
      * @param optimised vertex that this optimised edge is compressing
      * @return an edge of type {@code encoding} that connects to {@code adjacent} through {@code optimised}.
      */
-    ThingEdge edge(Encoding.Graph.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
+    ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
     /**
      * Puts an adjacent vertex over an edge with a given encoding.
@@ -83,7 +83,7 @@ public interface ThingAdjacency {
      * @param adjacent the adjacent vertex
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge put(Encoding.Graph.Edge.Thing encoding, ThingVertex adjacent);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent);
 
     /**
      * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
@@ -99,7 +99,7 @@ public interface ThingAdjacency {
      * @param optimised vertex that this optimised edge is compressing
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge put(Encoding.Graph.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.
@@ -110,7 +110,7 @@ public interface ThingAdjacency {
      *
      * @param encoding type of the edge to the adjacent vertex
      */
-    void delete(Encoding.Graph.Edge.Thing encoding);
+    void delete(Encoding.Edge.Thing encoding);
 
     /**
      * Deletes a set of edges that match the provided properties.
@@ -118,7 +118,7 @@ public interface ThingAdjacency {
      * @param encoding  type of the edge to filter by
      * @param lookAhead information of the adjacent edge to filter the edges with
      */
-    void delete(Encoding.Graph.Edge.Thing encoding, IID... lookAhead);
+    void delete(Encoding.Edge.Thing encoding, IID... lookAhead);
 
     void deleteAll();
 

@@ -45,18 +45,18 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Graph.Direction.Edge.BACKWARD;
-import static grakn.core.graph.util.Encoding.Graph.Direction.Edge.FORWARD;
-import static grakn.core.graph.util.Encoding.Graph.Edge.ISA;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.RELATING;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Thing.ROLEPLAYER;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
+import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
+import static grakn.core.graph.util.Encoding.Edge.ISA;
+import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
+import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
@@ -142,14 +142,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private final String varPrefix;
         private final String conPrefix;
         private final GraphPlanner planner;
-        private final Encoding.Graph.Direction.Edge direction;
+        private final Encoding.Direction.Edge direction;
         private double costPrevious;
         private double costNext;
         private boolean isInitialisedVariables;
         private boolean isInitialisedConstraints;
         private Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite;
 
-        Directional(VERTEX_DIR_FROM from, VERTEX_DIR_TO to, Encoding.Graph.Direction.Edge direction, String symbol) {
+        Directional(VERTEX_DIR_FROM from, VERTEX_DIR_TO to, Encoding.Direction.Edge direction, String symbol) {
             super(from, to, symbol);
             this.planner = from.planner;
             this.direction = direction;
@@ -170,7 +170,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return valueOrderNumber;
         }
 
-        public Encoding.Graph.Direction.Edge direction() {
+        public Encoding.Direction.Edge direction() {
             return direction;
         }
 
@@ -309,7 +309,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public static class Directional extends PlannerEdge.Directional<PlannerVertex<?>, PlannerVertex<?>> {
 
-            Directional(PlannerVertex<?> from, PlannerVertex<?> to, Encoding.Graph.Direction.Edge direction) {
+            Directional(PlannerVertex<?> from, PlannerVertex<?> to, Encoding.Direction.Edge direction) {
                 super(from, to, direction, GraqlToken.Predicate.Equality.EQ.toString());
             }
 
@@ -347,7 +347,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             private final grakn.core.traversal.common.Predicate.Variable predicate;
 
-            Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Graph.Direction.Edge direction,
+            Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction,
                         grakn.core.traversal.common.Predicate.Variable predicate) {
                 super(from, to, direction, predicate.toString());
                 this.predicate = predicate;
@@ -398,9 +398,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     public static abstract class Native<VERTEX_NATIVE_FROM extends PlannerVertex<?>, VERTEX_NATIVE_TO extends PlannerVertex<?>>
             extends PlannerEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
-        protected final Encoding.Graph.Edge encoding;
+        protected final Encoding.Edge encoding;
 
-        Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to, Encoding.Graph.Edge encoding) {
+        Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to, Encoding.Edge encoding) {
             super(from, to, encoding.name());
             this.encoding = encoding;
         }
@@ -421,7 +421,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 extends PlannerEdge.Directional<VERTEX_NATIVE_DIR_FROM, VERTEX_NATIVE_DIR_TO> {
 
             Directional(VERTEX_NATIVE_DIR_FROM from, VERTEX_NATIVE_DIR_TO to,
-                        Encoding.Graph.Direction.Edge direction, Encoding.Graph.Edge encoding) {
+                        Encoding.Direction.Edge direction, Encoding.Edge encoding) {
                 super(from, to, direction, encoding.name());
             }
 
@@ -468,7 +468,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public abstract class Directional<VERTEX_ISA_FROM extends PlannerVertex<?>, VERTEX_ISA_TO extends PlannerVertex<?>>
                     extends Native.Directional<VERTEX_ISA_FROM, VERTEX_ISA_TO> {
 
-                Directional(VERTEX_ISA_FROM from, VERTEX_ISA_TO to, Encoding.Graph.Direction.Edge direction) {
+                Directional(VERTEX_ISA_FROM from, VERTEX_ISA_TO to, Encoding.Direction.Edge direction) {
                     super(from, to, direction, ISA);
                 }
 
@@ -537,17 +537,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             protected final boolean isTransitive;
 
-            Type(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Graph.Edge.Type encoding, boolean isTransitive) {
+            Type(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Edge.Type encoding, boolean isTransitive) {
                 super(from, to, encoding);
                 this.isTransitive = isTransitive;
             }
 
-            public Encoding.Graph.Edge.Type encoding() {
+            public Encoding.Edge.Type encoding() {
                 return encoding.asType();
             }
 
             static Type of(PlannerVertex.Type from, PlannerVertex.Type to, StructureEdge.Native<?, ?> structureEdge) {
-                Encoding.Graph.Edge.Type encoding = structureEdge.encoding().asType();
+                Encoding.Edge.Type encoding = structureEdge.encoding().asType();
                 switch (encoding) {
                     case SUB:
                         return new Type.Sub(from.asType(), to.asType(), structureEdge.isTransitive());
@@ -567,7 +567,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public abstract class Directional extends Native.Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
                 Directional(PlannerVertex.Type from, PlannerVertex.Type to,
-                            Encoding.Graph.Direction.Edge direction, Encoding.Graph.Edge encoding) {
+                            Encoding.Direction.Edge direction, Encoding.Edge encoding) {
                     super(from, to, direction, encoding);
                 }
 
@@ -620,7 +620,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private abstract class Directional extends Type.Directional {
 
-                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, SUB);
                     }
 
@@ -697,7 +697,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 public abstract class Directional extends Type.Directional {
 
-                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, OWNS);
                     }
 
@@ -777,7 +777,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private abstract class Directional extends Type.Directional {
 
-                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, PLAYS);
                     }
 
@@ -849,7 +849,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private abstract class Directional extends Type.Directional {
 
-                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, RELATES);
                     }
 
@@ -910,16 +910,16 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public static abstract class Thing extends Native<PlannerVertex.Thing, PlannerVertex.Thing> {
 
-            Thing(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Graph.Edge.Thing encoding) {
+            Thing(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Edge.Thing encoding) {
                 super(from, to, encoding);
             }
 
-            public Encoding.Graph.Edge.Thing encoding() {
+            public Encoding.Edge.Thing encoding() {
                 return encoding.asThing();
             }
 
             static Thing of(PlannerVertex.Thing from, PlannerVertex.Thing to, StructureEdge.Native<?, ?> structureEdge) {
-                Encoding.Graph.Edge.Thing encoding = structureEdge.encoding().asThing();
+                Encoding.Edge.Thing encoding = structureEdge.encoding().asThing();
                 switch (encoding) {
                     case HAS:
                         return new Has(from, to);
@@ -937,7 +937,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public abstract static class Directional extends Native.Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
                 Directional(PlannerVertex.Thing from, PlannerVertex.Thing to,
-                            Encoding.Graph.Direction.Edge direction, Encoding.Graph.Edge encoding) {
+                            Encoding.Direction.Edge direction, Encoding.Edge encoding) {
                     super(from, to, direction, encoding);
                 }
 
@@ -986,7 +986,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private abstract static class Directional extends Thing.Directional {
 
-                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, HAS);
                     }
 
@@ -1121,7 +1121,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private abstract static class Directional extends Thing.Directional {
 
-                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, PLAYING);
                     }
 
@@ -1184,7 +1184,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private abstract static class Directional extends Thing.Directional {
 
-                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, RELATING);
                     }
 
@@ -1264,7 +1264,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 public abstract class Directional extends Thing.Directional {
 
-                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Graph.Direction.Edge direction) {
+                    Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction) {
                         super(from, to, direction, ROLEPLAYER);
                     }
 

@@ -40,11 +40,11 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_R
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
 import static grakn.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
 import static grakn.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
-import static grakn.core.graph.util.Encoding.Graph.Key.BUFFERED;
-import static grakn.core.graph.util.Encoding.Graph.Key.PERSISTED;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ENTITY;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.RELATION;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ROLE;
+import static grakn.core.graph.util.Encoding.Key.BUFFERED;
+import static grakn.core.graph.util.Encoding.Key.PERSISTED;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static java.util.Arrays.copyOfRange;
 
 public class KeyGenerator {
@@ -104,7 +104,7 @@ public class KeyGenerator {
             }
 
             private void syncTypeKeys(Storage storage) {
-                for (Encoding.Graph.Vertex.Type encoding : Encoding.Graph.Vertex.Type.values()) {
+                for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
                     final byte[] prefix = encoding.prefix().bytes();
                     final byte[] lastIID = storage.getLastKey(prefix);
                     final AtomicInteger nextValue = lastIID != null ?
@@ -115,7 +115,7 @@ public class KeyGenerator {
             }
 
             private void syncRuleKey(Storage storage) {
-                final byte[] prefix = Encoding.Graph.Structure.RULE.prefix().bytes();
+                final byte[] prefix = Encoding.Structure.RULE.prefix().bytes();
                 final byte[] lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
                     ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
@@ -167,10 +167,10 @@ public class KeyGenerator {
             }
 
             public void sync(Storage storage) {
-                final Encoding.Graph.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Graph.Vertex.Thing[]{ENTITY, RELATION, ROLE};
+                final Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
 
-                for (Encoding.Graph.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
-                    final byte[] typeEncoding = Encoding.Graph.Vertex.Type.of(thingEncoding).prefix().bytes();
+                for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
+                    final byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
                     final ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid)
                             .filter(iid1 -> iid1.length == VertexIID.Type.LENGTH);
                     while (typeIterator.hasNext()) {

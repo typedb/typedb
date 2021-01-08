@@ -39,7 +39,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRA
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
@@ -51,11 +51,11 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(GraphManager graphMgr, String label, Encoding.Graph.Vertex.Type encoding) {
+    TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
         this(graphMgr, label, encoding, null);
     }
 
-    TypeImpl(GraphManager graphMgr, String label, Encoding.Graph.Vertex.Type encoding, String scope) {
+    TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(encoding, label, scope);
         final TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
@@ -150,7 +150,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public TypeImpl asType() { return this; }
 
     void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
-        if (vertex.status().equals(Encoding.Graph.Status.BUFFERED)) {
+        if (vertex.status().equals(Encoding.Status.BUFFERED)) {
             throw exception(GraknException.of(SESSION_SCHEMA_VIOLATION));
         } else if (isAbstract()) {
             throw exception(GraknException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));

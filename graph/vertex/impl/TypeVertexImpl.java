@@ -36,19 +36,19 @@ import java.util.regex.Pattern;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Graph.Property.ABSTRACT;
-import static grakn.core.graph.util.Encoding.Graph.Property.LABEL;
-import static grakn.core.graph.util.Encoding.Graph.Property.REGEX;
-import static grakn.core.graph.util.Encoding.Graph.Property.SCOPE;
-import static grakn.core.graph.util.Encoding.Graph.Property.VALUE_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.RELATION_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ROLE_TYPE;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.util.Encoding.Property.ABSTRACT;
+import static grakn.core.graph.util.Encoding.Property.LABEL;
+import static grakn.core.graph.util.Encoding.Property.REGEX;
+import static grakn.core.graph.util.Encoding.Property.SCOPE;
+import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
 import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
@@ -62,7 +62,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     String label;
     String scope;
     Boolean isAbstract; // needs to be declared as the Boolean class
-    Encoding.Graph.ValueType valueType;
+    Encoding.ValueType valueType;
     Pattern regex;
 
     private volatile int outOwnsCount;
@@ -78,8 +78,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         this.label = label;
         this.scope = scope;
         this.isDeleted = new AtomicBoolean(false);
-        this.outs = newAdjacency(Encoding.Graph.Direction.Adjacency.OUT);
-        this.ins = newAdjacency(Encoding.Graph.Direction.Adjacency.IN);
+        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
+        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         outOwnsCount = UNSET_COUNT;
         outPlaysCount = UNSET_COUNT;
         outRelatesCount = UNSET_COUNT;
@@ -117,7 +117,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
-    public Encoding.Graph.Vertex.Type encoding() {
+    public Encoding.Vertex.Type encoding() {
         return iid.encoding();
     }
 
@@ -139,7 +139,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public String scopedLabel() {
-        return Encoding.Graph.Vertex.Type.scopedLabel(label, scope);
+        return Encoding.Vertex.Type.scopedLabel(label, scope);
     }
 
     @Override
@@ -153,7 +153,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
      * @param direction the direction of the edges held in {@code TypeAdjacency}
      * @return the new {@code TypeAdjacency} class
      */
-    protected abstract TypeAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction);
+    protected abstract TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
     public boolean isEntityType() {
@@ -261,7 +261,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction) {
+        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new TypeAdjacencyImpl.Buffered(this, direction);
         }
 
@@ -278,8 +278,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Encoding.Graph.Status status() {
-            return isCommitted.get() ? Encoding.Graph.Status.COMMITTED : Encoding.Graph.Status.BUFFERED;
+        public Encoding.Status status() {
+            return isCommitted.get() ? Encoding.Status.COMMITTED : Encoding.Status.BUFFERED;
         }
 
         @Override
@@ -295,12 +295,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Encoding.Graph.ValueType valueType() {
+        public Encoding.ValueType valueType() {
             return valueType;
         }
 
         @Override
-        public TypeVertexImpl valueType(Encoding.Graph.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -392,13 +392,13 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction) {
+        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new TypeAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override
-        public Encoding.Graph.Status status() {
-            return Encoding.Graph.Status.PERSISTED;
+        public Encoding.Status status() {
+            return Encoding.Status.PERSISTED;
         }
 
         @Override
@@ -437,15 +437,15 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Encoding.Graph.ValueType valueType() {
+        public Encoding.ValueType valueType() {
             if (valueType != null) return valueType;
             final byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
-            if (val != null) valueType = Encoding.Graph.ValueType.of(val[0]);
+            if (val != null) valueType = Encoding.ValueType.of(val[0]);
             return valueType;
         }
 
         @Override
-        public TypeVertexImpl valueType(Encoding.Graph.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
             this.setModified();

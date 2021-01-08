@@ -36,9 +36,9 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMAT
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.ROLE_TYPE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Type.Root.ROLE;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
+import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -100,7 +100,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public RelationTypeImpl getRelationType() {
-        return RelationTypeImpl.of(graphMgr, vertex.ins().edge(Encoding.Graph.Edge.Type.RELATES).from().next());
+        return RelationTypeImpl.of(graphMgr, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }
 
     @Override
@@ -110,7 +110,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Stream<ThingTypeImpl> getPlayers() {
-        return vertex.ins().edge(Encoding.Graph.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
+        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
     }
 
     @Override

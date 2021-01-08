@@ -52,9 +52,9 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Graph.ValueType.STRING;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ROLE;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.ValueType.STRING;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
 
 public abstract class ProcedureVertex<
@@ -400,7 +400,7 @@ public abstract class ProcedureVertex<
             assert !props().valueTypes().isEmpty();
             if (iterator == null) {
                 List<ResourceIterator<TypeVertex>> iterators = new ArrayList<>();
-                for (Encoding.Graph.ValueType valueType : props().valueTypes()) {
+                for (Encoding.ValueType valueType : props().valueTypes()) {
                     iterators.add(graphMgr.schema().attributeTypes(valueType));
                 }
                 return link(iterators);

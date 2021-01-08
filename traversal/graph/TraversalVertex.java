@@ -176,7 +176,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean isAbstract;
             private final Set<Label> labels;
-            private final Set<Encoding.Graph.ValueType> valueTypes;
+            private final Set<Encoding.ValueType> valueTypes;
             private String regex;
 
             public Type() {
@@ -205,11 +205,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.isAbstract = true;
             }
 
-            public Set<Encoding.Graph.ValueType> valueTypes() {
+            public Set<Encoding.ValueType> valueTypes() {
                 return valueTypes;
             }
 
-            public void valueType(Encoding.Graph.ValueType valueType) {
+            public void valueType(Encoding.ValueType valueType) {
                 this.valueTypes.add(valueType);
             }
 

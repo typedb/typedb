@@ -98,7 +98,7 @@ public class LogicManager {
         // validate all rules are satisfiable
         rules().forEachRemaining(Rule::validateSatisfiable);
         // validate new rules are stratifiable (eg. do not cause cycles through a negation)
-        graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Graph.Status.BUFFERED))
+        graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
                 .forEach(structure -> getRule(structure.label()).validateCycles());
     }
 

@@ -30,7 +30,7 @@ public abstract class StructureIID extends IID {
         super(bytes);
     }
 
-    abstract Encoding.Graph.Structure encoding();
+    abstract Encoding.Structure encoding();
 
     @Override
     public String toString() {
@@ -57,12 +57,12 @@ public abstract class StructureIID extends IID {
          * @return a byte array representing a new IID for a {@code RuleStructure}
          */
         public static Rule generate(KeyGenerator.Schema keyGenerator) {
-            return of(join(Encoding.Graph.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
+            return of(join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
         }
 
         @Override
-        public Encoding.Graph.Structure.Rule encoding() {
-            return Encoding.Graph.Structure.RULE;
+        public Encoding.Structure.Rule encoding() {
+            return Encoding.Structure.RULE;
         }
 
         @Override

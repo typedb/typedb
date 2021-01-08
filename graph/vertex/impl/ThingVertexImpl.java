@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
@@ -50,8 +50,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         super(iid);
         this.graph = graph;
         this.graphMgr = new GraphManager(graph.schema(), graph);
-        this.outs = newAdjacency(Encoding.Graph.Direction.Adjacency.OUT);
-        this.ins = newAdjacency(Encoding.Graph.Direction.Adjacency.IN);
+        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
+        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         this.isInferred = isInferred;
         this.isModified = false;
         this.isDeleted = new AtomicBoolean(false);
@@ -71,7 +71,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
      * @param direction the direction of the edges held in {@code ThingAdjacency}
      * @return the new {@code ThingAdjacency} class
      */
-    protected abstract ThingAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction);
+    protected abstract ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
     public DataGraph graph() {
@@ -84,7 +84,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public Encoding.Graph.Vertex.Thing encoding() {
+    public Encoding.Vertex.Thing encoding() {
         return iid.encoding();
     }
 
@@ -168,13 +168,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new ThingAdjacencyImpl.Buffered(this, direction);
         }
 
         @Override
-        public Encoding.Graph.Status status() {
-            return Encoding.Graph.Status.BUFFERED;
+        public Encoding.Status status() {
+            return Encoding.Status.BUFFERED;
         }
 
         @Override
@@ -205,7 +205,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Encoding.Graph.Direction.Adjacency direction) {
+        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
             return new ThingAdjacencyImpl.Persisted(this, direction);
         }
 
@@ -215,8 +215,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public Encoding.Graph.Status status() {
-            return Encoding.Graph.Status.PERSISTED;
+        public Encoding.Status status() {
+            return Encoding.Status.PERSISTED;
         }
 
         @Override

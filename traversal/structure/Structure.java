@@ -89,11 +89,11 @@ public class Structure {
         to.in(edge);
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Graph.Edge encoding) {
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding) {
         nativeEdge(from, to, encoding, false);
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Graph.Edge encoding, boolean isTransitive) {
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
         StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive);
         edges.add(edge);
         from.out(edge);

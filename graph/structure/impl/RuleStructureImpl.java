@@ -31,9 +31,9 @@ import graql.lang.pattern.variable.ThingVariable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.graph.util.Encoding.Graph.Property.LABEL;
-import static grakn.core.graph.util.Encoding.Graph.Property.THEN;
-import static grakn.core.graph.util.Encoding.Graph.Property.WHEN;
+import static grakn.core.graph.util.Encoding.Property.LABEL;
+import static grakn.core.graph.util.Encoding.Property.THEN;
+import static grakn.core.graph.util.Encoding.Property.WHEN;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 
@@ -91,7 +91,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         return isDeleted.get();
     }
 
-    public Encoding.Graph.Structure encoding() {
+    public Encoding.Structure encoding() {
         return iid.encoding();
     }
 
@@ -116,8 +116,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public Encoding.Graph.Status status() {
-            return isCommitted.get() ? Encoding.Graph.Status.COMMITTED : Encoding.Graph.Status.BUFFERED;
+        public Encoding.Status status() {
+            return isCommitted.get() ? Encoding.Status.COMMITTED : Encoding.Status.BUFFERED;
         }
 
         @Override
@@ -176,8 +176,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public Encoding.Graph.Status status() {
-            return Encoding.Graph.Status.PERSISTED;
+        public Encoding.Status status() {
+            return Encoding.Status.PERSISTED;
         }
 
         @Override

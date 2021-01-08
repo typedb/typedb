@@ -25,13 +25,13 @@ import grakn.core.graph.util.Encoding;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Graph.Vertex> {
+public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Vertex> {
 
     VERTEX_IID iid();
 
     void iid(VERTEX_IID iid);
 
-    Encoding.Graph.Status status();
+    Encoding.Status status();
 
     VERTEX_ENCODING encoding();
 

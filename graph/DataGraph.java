@@ -57,14 +57,14 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
-import static grakn.core.graph.util.Encoding.Graph.Edge.Type.SUB;
+import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ENTITY_TYPE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_RELATION_TYPE;
 import static grakn.core.graph.util.Encoding.Statistics.CountJobOperation.CREATED;
 import static grakn.core.graph.util.Encoding.Statistics.CountJobOperation.DELETED;
-import static grakn.core.graph.util.Encoding.Graph.ValueType.STRING_MAX_SIZE;
-import static grakn.core.graph.util.Encoding.Graph.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.util.Encoding.ValueType.STRING_MAX_SIZE;
+import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
 import static grakn.core.graph.util.StatisticsBytes.attributeCountJobKey;
 import static grakn.core.graph.util.StatisticsBytes.attributeCountedKey;
 import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountJobKey;
@@ -185,7 +185,7 @@ public class DataGraph implements Graph {
 
     public ResourceIterator<ThingVertex> get(TypeVertex typeVertex) {
         final ResourceIterator<ThingVertex> storageIterator = storage.iterate(
-                join(typeVertex.iid().bytes(), Encoding.Graph.Edge.ISA.in().bytes()),
+                join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
@@ -409,7 +409,7 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Graph.Status.BUFFERED) && !v.isInferred()).forEach(
+        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
@@ -471,7 +471,7 @@ public class DataGraph implements Graph {
             }
         }
 
-        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Encoding.Graph.ValueType valueType) {
+        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Encoding.ValueType valueType) {
             switch (valueType) {
                 case BOOLEAN:
                     return booleans;
