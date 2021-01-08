@@ -361,7 +361,7 @@ public class Rule {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints())
-                                    .filter(ThingConstraint::isRelation)
+                                    .filter(ThingConstraint::isHas)
                                     .map(constraint -> {
                                         assert constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
@@ -414,7 +414,7 @@ public class Rule {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints())
-                                    .filter(ThingConstraint::isRelation)
+                                    .filter(ThingConstraint::isHas)
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 0;
