@@ -21,7 +21,6 @@ package grakn.core.logic;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
-import grakn.core.logic.tool.TypeResolverTraversal;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
@@ -99,16 +98,16 @@ public class TypeResolverTest {
         return Disjunction.create(query.conjunction().normalise()).conjunctions().iterator().next();
     }
 
-    private Conjunction runExhaustiveHinter(TypeResolver typeResolver, String matchString) {
-        return typeResolver.resolveVariablesExhaustive(createConjunction(matchString));
-    }
+//    private Conjunction runExhaustiveHinter(TypeResolver typeResolver, String matchString) {
+//        return typeResolver.resolveVariablesExhaustive(createConjunction(matchString));
+//    }
+//
+//    private Conjunction runSimpleHinter(TypeResolver typeResolver, String matchString) {
+//        return typeResolver.resolveVariables(createConjunction(matchString));
+//    }
 
-    private Conjunction runSimpleHinter(TypeResolver typeResolver, String matchString) {
+    private Conjunction runTraversalResolver(TypeResolver typeResolver, String matchString) {
         return typeResolver.resolveVariables(createConjunction(matchString));
-    }
-
-    private Conjunction runTraversalResolver(TypeResolverTraversal typeResolverTraversal, String matchString) {
-        return typeResolverTraversal.resolveVariables(createConjunction(matchString));
     }
 
 //    @Test
@@ -866,9 +865,9 @@ public class TypeResolverTest {
     public void isa_inference_traversal() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $p isa person;";
-        TypeResolverTraversal typeResolverTraversal = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
-        Conjunction conjunction = runTraversalResolver(typeResolverTraversal, queryString);
+        Conjunction conjunction = runTraversalResolver(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
@@ -880,7 +879,7 @@ public class TypeResolverTest {
     @Test
     public void isa_explicit_inference_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $p isa! person; ";
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
@@ -895,7 +894,7 @@ public class TypeResolverTest {
     @Test
     public void is_inference_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $p isa entity;" +
@@ -915,7 +914,7 @@ public class TypeResolverTest {
     @Test
     public void has_inference_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $p has name 'bob';";
 
@@ -943,7 +942,7 @@ public class TypeResolverTest {
                         "  height sub attribute, value double;" +
                         "  "
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has $b;" +
                 "  $b has $a;";
@@ -972,7 +971,7 @@ public class TypeResolverTest {
                         "  conversion-rate sub attribute, value double;" +
                         "  height sub attribute, value double;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has $b;" +
                 "  $b has $c;" +
@@ -994,7 +993,7 @@ public class TypeResolverTest {
     @Test
     public void has_inference_variable_with_attribute_type_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $p has name $a;";
 
@@ -1011,7 +1010,7 @@ public class TypeResolverTest {
     @Test
     public void has_inference_variable_without_attribute_type_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $p isa shape;" +
@@ -1036,7 +1035,7 @@ public class TypeResolverTest {
                         "  weight sub attribute, value double;" +
                         "  name sub attribute, value string;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $p has $a;" +
                 "  $a = 'bob';";
@@ -1059,7 +1058,7 @@ public class TypeResolverTest {
                                      " name sub attribute, value string;"
         );
 
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = 1; $y = 1.0; $z = 'bob';";
 
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
@@ -1075,7 +1074,7 @@ public class TypeResolverTest {
     @Test
     public void relation_concrete_role_concrete_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $r (wife: $yoko) isa marriage;";
 
@@ -1092,7 +1091,7 @@ public class TypeResolverTest {
     @Test
     public void relation_variable_role_concrete_relation_hidden_variable_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $r ($role: $yoko) isa marriage;";
 
@@ -1110,7 +1109,7 @@ public class TypeResolverTest {
     @Test
     public void relation_variable_role_variable_relation_named_variable_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $r (wife: $yoko) isa $m;";
 
@@ -1147,7 +1146,7 @@ public class TypeResolverTest {
                                      " hetero-marriage sub marriage," +
                                      "  relates husband as spouse," +
                                      "  relates wife as spouse;");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man;";
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
@@ -1166,7 +1165,7 @@ public class TypeResolverTest {
     @Test
     public void relation_anon_isa_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match (wife: $yoko);";
 
@@ -1182,7 +1181,7 @@ public class TypeResolverTest {
     @Test
     public void no_role_type_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match ($yoko) isa marriage;";
 
@@ -1198,7 +1197,7 @@ public class TypeResolverTest {
     @Test
     public void relation_multiple_roles_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
 
@@ -1218,7 +1217,7 @@ public class TypeResolverTest {
     @Test
     public void has_reverse_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match" +
                 "  $p isa! person;" +
@@ -1237,7 +1236,7 @@ public class TypeResolverTest {
     @Test
     public void negations_ignored_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $p isa person;" +
                 "  not {$p isa man;};";
@@ -1261,7 +1260,7 @@ public class TypeResolverTest {
                         "  greek sub man;" +
                         "  socrates sub greek;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $p isa man;" +
                 "  man sub $q;";
@@ -1279,7 +1278,7 @@ public class TypeResolverTest {
     @Test
     public void test_type_var_with_label_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $t type shape;";
 
@@ -1295,7 +1294,7 @@ public class TypeResolverTest {
     @Test
     public void plays_hierarchy_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match (spouse: $john) isa marriage;";
 
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
@@ -1318,7 +1317,7 @@ public class TypeResolverTest {
                         "  weight sub attribute, value long, abstract;" +
                         "  leg-weight sub weight;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has weight $c;" +
                 "  $b has leg-weight 5;" +
@@ -1341,7 +1340,7 @@ public class TypeResolverTest {
         define_custom_schema("define " +
                                      "unit sub attribute, value string, owns unit, owns ref;" +
                                      "ref sub attribute, value long;");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
                 "  $a has $a;";
 
@@ -1357,7 +1356,7 @@ public class TypeResolverTest {
     @Test
     public void all_things_is_empty_set_traversal() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $x isa thing;";
 
@@ -1382,7 +1381,7 @@ public class TypeResolverTest {
                         "  woman-name sub attribute, value string;" +
                         ""
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $x isa $t; $y isa $t; $x has man-name'bob'; $y has woman-name 'alice';";
 
@@ -1407,7 +1406,7 @@ public class TypeResolverTest {
                         "  greek sub man;" +
                         "  socrates sub greek;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $x isa $y;" +
                 "  $y sub $z;" +
@@ -1450,7 +1449,7 @@ public class TypeResolverTest {
                         "  marriage sub relation, relates husband, relates wife, owns marriage-attr; " +
                         "  ownership sub relation, relates pet, relates owner, owns ownership-attr;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match " +
                 "  $a isa $t; " +
                 "  $b isa $t; " +
@@ -1477,7 +1476,7 @@ public class TypeResolverTest {
     public void multiple_anonymous_vars_traversal() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $a has name 'fido'; $a has label 'poodle';";
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -1491,7 +1490,7 @@ public class TypeResolverTest {
     public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result_traversal() throws IOException {
         define_standard_schema("test-type-resolution");
 
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match " +
                 " $x isa company;" +
                 " ($x) isa friendship;";
@@ -1513,7 +1512,7 @@ public class TypeResolverTest {
                                      " person sub entity, plays marriage:spouse, plays hetero-marriage:husband," +
                                      "   plays hetero-marriage:wife;"
         );
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
 
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
@@ -1529,7 +1528,7 @@ public class TypeResolverTest {
     @Test
     public void converts_root_types_traversal() throws IOException {
         define_standard_schema("test-type-resolution");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match $x isa relation;";
 
         Conjunction relationConjunction = runTraversalResolver(typeResolver, relationString);
@@ -1576,7 +1575,7 @@ public class TypeResolverTest {
     public void infers_value_type_recursively_traversal() throws IOException {
         define_standard_schema("basic-schema");
 
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match " +
                 " $x = $y;" +
                 " $y = $z;" +
@@ -1610,7 +1609,7 @@ public class TypeResolverTest {
                         "  weight sub attribute, value double, owns height;" +
                         "  ");
 
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match " +
                 " $x = 'bob';" +
                 " $y = $x;" +
@@ -1630,7 +1629,7 @@ public class TypeResolverTest {
     @Test
     public void multiple_value_types_return_empty() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = 2; $x = 'bob';";
 
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
@@ -1646,7 +1645,7 @@ public class TypeResolverTest {
     @Test
     public void infer_is_attribute_from_ownership() throws IOException {
         define_standard_schema("test-type-resolution");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x has $y;";
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
 
@@ -1661,7 +1660,7 @@ public class TypeResolverTest {
     @Test
     public void infer_is_attribute_from_having_value_traversal() throws IOException {
         define_standard_schema("test-type-resolution");
-        TypeResolverTraversal typeResolver = transaction.logic().typeResolver();
+        TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = $y;";
         Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
 
