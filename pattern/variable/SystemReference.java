@@ -18,7 +18,6 @@
 
 package grakn.core.pattern.variable;
 
-import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Objects;
