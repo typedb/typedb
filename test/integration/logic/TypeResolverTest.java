@@ -1350,7 +1350,6 @@ public class TypeResolverTest {
             put("$a", set("unit"));
         }};
 
-
         assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
     }
 
@@ -1553,6 +1552,14 @@ public class TypeResolverTest {
             put("$x", set("person", "company"));
         }};
         assertEquals(entityExpected, getHintMap(entityConjunction));
+
+        String roleString = "match ($role: $x) isa relation;";
+        Conjunction roleConjunction = runTraversalResolver(typeResolver, roleString);
+        Map<String, Set<String>> roleExpected = new HashMap<String, Set<String>>() {{
+            put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
+            put("$x", set("person", "company"));
+        }};
+        assertEquals(roleExpected, getHintMap(roleConjunction));
 
         String thingString = "match $x isa thing;";
         Conjunction thingConjunction = runTraversalResolver(typeResolver, thingString);

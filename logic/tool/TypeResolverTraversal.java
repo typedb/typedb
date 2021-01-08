@@ -41,9 +41,11 @@ import graql.lang.common.GraqlArg.ValueType;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
@@ -56,41 +58,11 @@ public class TypeResolverTraversal {
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
-//    private final long numOfTypes;
-//    private final long numOfConcreteTypes;
 
     public TypeResolverTraversal(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
-//        this.numOfTypes = 1000;
-//        this.numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
-//        this.numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
-    }
-
-    public Conjunction resolveVariables(Conjunction conjunction) {
-
-        resolveLabels(conjunction);
-        ConstraintMapper constraintMapper = new ConstraintMapper(conjunction, conceptMgr);
-        if (constraintMapper.isSatisfiable) runTraversalEngine(constraintMapper);
-
-
-        findUnsatisfiableVariables(conjunction);
-        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
-        findVariablesWithNoHints(conjunction, numOfTypes);
-        return conjunction;
-    }
-
-    private void findUnsatisfiableVariables(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(variable -> variable.resolvedTypes().isEmpty())
-                .forEachRemaining(variable -> variable.setSatisfiable(false));
-    }
-
-    private void findVariablesWithNoHints(Conjunction conjunction, long numOfTypes) {
-        iterate(conjunction.variables()).filter(variable -> (
-                variable.isType() && variable.resolvedTypes().size() == numOfTypes ||
-                        variable.isThing() && variable.resolvedTypes().size() == numOfTypes
-        )).forEachRemaining(Variable::clearResolvedTypes);
     }
 
     public Conjunction resolveLabels(Conjunction conjunction) {
@@ -111,36 +83,72 @@ public class TypeResolverTraversal {
         return conjunction;
     }
 
-    private void runTraversalEngine(ConstraintMapper constraintMapper) {
-        traversalEng.iterator(constraintMapper.traversal).forEachRemaining(
-                result -> result.forEach((ref, vertex) -> {
-                    Variable variable = constraintMapper.referenceVariableMap.get(ref);
-                    if ((variable.isType() || !vertex.asType().isAbstract()))
-                        variable.addResolvedType(Label.of(vertex.asType().label(), vertex.asType().scope()));
-                })
-        );
+    public Conjunction resolveVariables(Conjunction conjunction) {
+        resolveLabels(conjunction);
+        TraversalConstructor traversalConstructor = new TraversalConstructor(conjunction, conceptMgr);
+
+        if (traversalConstructor.isSatisfiable) {
+            Map<Reference, Set<Label>> resolvedLabels = runTraversalEngine(traversalConstructor);
+            resolvedLabels.forEach((ref, labels) -> traversalConstructor.getVariable(ref).addResolvedTypes(labels));
+            findVariablesWithNoHints(conjunction);
+        } else {
+            iterate(conjunction.variables()).forEachRemaining(variable -> variable.setSatisfiable(false));
+        }
+
+        return conjunction;
     }
 
-    //TODO: renaming to reflect Traversal Structure
-    private static class ConstraintMapper {
+    private void findVariablesWithNoHints(Conjunction conjunction) {
+        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
+        long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
+        iterate(conjunction.variables()).filter(variable -> (
+                variable.isType() && variable.resolvedTypes().size() == numOfTypes ||
+                        variable.isThing() && variable.resolvedTypes().size() == numOfConcreteTypes
+        )).forEachRemaining(Variable::clearResolvedTypes);
+    }
 
-        private final Map<Reference, Variable> referenceVariableMap;
+    private Map<Reference, Set<Label>> runTraversalEngine(TraversalConstructor traversalConstructor) {
+        return logicCache.resolverTraversal().get(traversalConstructor.resolverTraversal(), traversal -> {
+            Map<Reference, Set<Label>> mapping = new HashMap<>();
+            traversalEng.iterator(traversal).forEachRemaining(
+                    result -> result.forEach((ref, vertex) -> {
+                        mapping.putIfAbsent(ref, new HashSet<>());
+                        assert vertex.isType();
+                        if (!(vertex.asType().isAbstract() && traversalConstructor.getVariable(ref).isThing()))
+                            mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
+                    })
+            );
+            return mapping;
+        });
+    }
+
+    private static class TraversalConstructor {
+
+        private final Map<Reference, Variable> variableRegister;
         private final Map<Identifier, TypeVariable> resolvers;
-        private final Traversal traversal;
+        private final Traversal resolverTraversal;
         private int sysVarCounter;
         private final ConceptManager conceptMgr;
         private final Map<Identifier, Set<ValueType>> valueTypeRegister;
         private boolean isSatisfiable;
 
-        ConstraintMapper(Conjunction conjunction, ConceptManager conceptMgr) {
+        TraversalConstructor(Conjunction conjunction, ConceptManager conceptMgr) {
             this.conceptMgr = conceptMgr;
-            this.traversal = new Traversal();
-            this.referenceVariableMap = new HashMap<>();
+            this.resolverTraversal = new Traversal();
+            this.variableRegister = new HashMap<>();
             this.resolvers = new HashMap<>();
             this.sysVarCounter = 0;
             this.isSatisfiable = true;
             this.valueTypeRegister = new HashMap<>();
             conjunction.variables().forEach(this::convert);
+        }
+
+        Traversal resolverTraversal() {
+            return resolverTraversal;
+        }
+
+        Variable getVariable(Reference reference) {
+            return variableRegister.get(reference);
         }
 
         private void convert(Variable variable) {
@@ -152,8 +160,8 @@ public class TypeResolverTraversal {
         private TypeVariable convert(TypeVariable variable) {
             if (resolvers.containsKey(variable.id())) return resolvers.get(variable.id());
             resolvers.put(variable.id(), variable);
-            referenceVariableMap.putIfAbsent(variable.reference(), variable);
-            variable.addTo(traversal);
+            variableRegister.putIfAbsent(variable.reference(), variable);
+            variable.addTo(resolverTraversal);
             return variable;
         }
 
@@ -163,7 +171,7 @@ public class TypeResolverTraversal {
             TypeVariable resolver = new TypeVariable(variable.reference().isAnonymous() ?
                                                              newSystemId() : variable.id());
             resolvers.put(variable.id(), resolver);
-            referenceVariableMap.putIfAbsent(resolver.reference(), variable);
+            variableRegister.putIfAbsent(resolver.reference(), variable);
             valueTypeRegister.putIfAbsent(resolver.id(), set());
 
             //Note: order is important!
@@ -178,29 +186,29 @@ public class TypeResolverTraversal {
 
         private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
             assert conceptMgr.getThing(iidConstraint.iid()) != null;
-            traversal.labels(owner.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
+            resolverTraversal.labels(owner.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
         }
 
         private void convertIsa(TypeVariable owner, IsaConstraint isaConstraint) {
-            if (!isaConstraint.isExplicit()) traversal.sub(owner.id(), convert(isaConstraint.type()).id(), true);
+            if (!isaConstraint.isExplicit()) resolverTraversal.sub(owner.id(), convert(isaConstraint.type()).id(), true);
             else if (isaConstraint.type().reference().isName())
-                traversal.equalTypes(owner.id(), convert(isaConstraint.type()).id());
+                resolverTraversal.equalTypes(owner.id(), convert(isaConstraint.type()).id());
             else if (isaConstraint.type().label().isPresent())
-                traversal.labels(owner.id(), isaConstraint.type().label().get().properLabel());
+                resolverTraversal.labels(owner.id(), isaConstraint.type().label().get().properLabel());
         }
 
         private void convertIs(TypeVariable owner, IsConstraint isConstraint) {
-            traversal.equalTypes(owner.id(), convert(isConstraint.variable()).id());
+            resolverTraversal.equalTypes(owner.id(), convert(isConstraint.variable()).id());
         }
 
         private void convertHas(TypeVariable owner, HasConstraint hasConstraint) {
-            traversal.owns(owner.id(), convert(hasConstraint.attribute()).id(), false);
+            resolverTraversal.owns(owner.id(), convert(hasConstraint.attribute()).id(), false);
         }
 
         private void convertValue(TypeVariable owner, ValueConstraint<?> constraint) {
             Set<ValueType> valueTypes = findComparableValueTypes(constraint);
             if (valueTypeRegister.get(owner.id()).isEmpty()) {
-                valueTypes.forEach(valueType -> traversal.valueType(owner.id(), valueType));
+                valueTypes.forEach(valueType -> resolverTraversal.valueType(owner.id(), valueType));
                 valueTypeRegister.put(owner.id(), valueTypes);
             } else if (!valueTypeRegister.get(owner.id()).containsAll(valueTypes)) this.isSatisfiable = false;
             subAttribute(owner.id());
@@ -221,8 +229,8 @@ public class TypeResolverTraversal {
 
         private void subAttribute(Identifier.Variable variable) {
             Identifier.Variable attributeID = Identifier.Variable.of(Reference.label("attribute"));
-            traversal.labels(attributeID, Label.of("attribute"));
-            traversal.sub(variable, attributeID, true);
+            resolverTraversal.labels(attributeID, Label.of("attribute"));
+            resolverTraversal.sub(variable, attributeID, true);
         }
 
         private void convertRelation(TypeVariable owner, RelationConstraint constraint) {
@@ -231,10 +239,10 @@ public class TypeResolverTraversal {
                 TypeVariable playingRoleType = convert(new TypeVariable(newSystemId()));
                 if (rolePlayer.roleType().isPresent()) {
                     TypeVariable roleTypeVar = convert(rolePlayer.roleType().get());
-                    traversal.sub(playingRoleType.id(), roleTypeVar.id(), true);
+                    resolverTraversal.sub(playingRoleType.id(), roleTypeVar.id(), true);
                 }
-                traversal.relates(owner.id(), playingRoleType.id());
-                traversal.plays(playerType.id(), playingRoleType.id());
+                resolverTraversal.relates(owner.id(), playingRoleType.id());
+                resolverTraversal.plays(playerType.id(), playingRoleType.id());
             }
         }
 
