@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class ProducerBuffer<T> {
+public class ProducerQueue<T> {
 
     private static final int BUFFER_MIN_SIZE = 32;
     private static final int BUFFER_MAX_SIZE = 64;
@@ -46,11 +46,11 @@ public class ProducerBuffer<T> {
     private final int bufferMinSize;
     private final int bufferMaxSize;
 
-    public ProducerBuffer(List<Producer<T>> producers) {
+    public ProducerQueue(List<Producer<T>> producers) {
         this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
     }
 
-    public ProducerBuffer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+    public ProducerQueue(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         this.producers = new ConcurrentLinkedQueue<>(producers);
         this.queue = new ManagedBlockingQueue<>();
         this.iterator = new Iterator();
@@ -60,7 +60,7 @@ public class ProducerBuffer<T> {
         this.bufferMaxSize = bufferMaxSize;
     }
 
-    public ProducerBuffer<T>.Iterator iterator() {
+    public ProducerQueue<T>.Iterator iterator() {
         return iterator;
     }
 

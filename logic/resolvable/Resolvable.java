@@ -20,8 +20,6 @@ package grakn.core.logic.resolvable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Conjunction;
 
-import java.util.Set;
-
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Resolvable {

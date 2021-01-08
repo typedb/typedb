@@ -462,7 +462,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";
 
-        Reasoner(int number, String message) { super (codePrefix, number, messagePrefix, message); }
+        Reasoner(int number, String message) { super(codePrefix, number, messagePrefix, message); }
     }
 
     public static class Migrator extends ErrorMessage {

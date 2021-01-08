@@ -33,7 +33,7 @@ public class EventLoop {
     private static final Logger LOG = LoggerFactory.getLogger(EventLoop.class);
     private static final Consumer<Exception> DEFAULT_EXCEPTION_HANDLER = e -> LOG.error("An unexpected error has occurred.", e);
 
-    private enum State { READY, RUNNING, STOPPED }
+    private enum State {READY, RUNNING, STOPPED}
 
     private State state;
     private final TransferQueue<Job> jobs = new LinkedTransferQueue<>();

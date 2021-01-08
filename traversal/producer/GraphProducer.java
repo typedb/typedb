@@ -72,7 +72,7 @@ public class GraphProducer implements Producer<VertexMap> {
             int splitCount = (int) Math.ceil((double) count / futures.size());
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
                 futures.computeIfPresent(iterator,
-                        (k, v) -> v.thenRunAsync(() -> consume(sink, k, splitCount), forkJoinPool())
+                                         (k, v) -> v.thenRunAsync(() -> produceAsync(sink, k, splitCount), forkJoinPool())
                 );
             }
         }
@@ -82,7 +82,7 @@ public class GraphProducer implements Producer<VertexMap> {
         futures.remove(iterator);
     }
 
-    private void consume(Sink<VertexMap> sink, ResourceIterator<VertexMap> iterator, int count) {
+    private void produceAsync(Sink<VertexMap> sink, ResourceIterator<VertexMap> iterator, int count) {
         try {
             int i = 0;
             for (; i < count && iterator.hasNext(); i++) sink.put(iterator.next());

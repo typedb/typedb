@@ -20,7 +20,6 @@ package grakn.core.traversal.procedure;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
-import grakn.core.common.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
@@ -36,6 +35,7 @@ import java.util.List;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
+import static grakn.core.common.producer.Producers.produce;
 
 public class VertexProcedure implements Procedure {
 
@@ -91,7 +91,7 @@ public class VertexProcedure implements Procedure {
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        return Producers.produce(iterator(graphMgr, params));
+        return produce(iterator(graphMgr, params));
     }
 
     @Override

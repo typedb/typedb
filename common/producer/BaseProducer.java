@@ -36,10 +36,10 @@ public class BaseProducer<T> implements Producer<T> {
 
     @Override
     public synchronized void produce(Sink<T> sink, int count) {
-        future = future.thenRunAsync(() -> consume(sink, count), forkJoinPool());
+        future = future.thenRunAsync(() -> produceAsync(sink, count), forkJoinPool());
     }
 
-    private void consume(Sink<T> sink, int count) {
+    private void produceAsync(Sink<T> sink, int count) {
         try {
             for (int i = 0; i < count; i++) {
                 if (iterator.hasNext()) {

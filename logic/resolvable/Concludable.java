@@ -323,7 +323,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                          unifierBuilder.requirements().types(roleTypeVar.id(), allowedTypes);
                                      }
                                  }
-                        unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
+                                 unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
                              }
                     ));
             return unifierBuilder.build();

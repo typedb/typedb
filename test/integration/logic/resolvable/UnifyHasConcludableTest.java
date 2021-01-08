@@ -310,7 +310,7 @@ public class UnifyHasConcludableTest {
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
-                );
+        );
         Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());

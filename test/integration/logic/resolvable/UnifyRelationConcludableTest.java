@@ -157,7 +157,7 @@ public class UnifyRelationConcludableTest {
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
         try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
             Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
-                                    Graql.parseVariable(thenThingPattern).asThing());
+                                         Graql.parseVariable(thenThingPattern).asThing());
             txn.commit();
             return rule;
         }

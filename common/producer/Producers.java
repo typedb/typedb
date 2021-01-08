@@ -30,19 +30,19 @@ public class Producers {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerBuffer<T> buffer(Producer<T> producer) {
-        return new ProducerBuffer<>(list(producer));
+    public static <T> ProducerQueue<T> queue(Producer<T> producer) {
+        return new ProducerQueue<>(list(producer));
     }
 
-    public static <T> ProducerBuffer<T> buffer(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerBuffer<>(list(producer), bufferMinSize, bufferMaxSize);
+    public static <T> ProducerQueue<T> queue(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
+        return new ProducerQueue<>(list(producer), bufferMinSize, bufferMaxSize);
     }
 
-    public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers) {
-        return new ProducerBuffer<>(producers);
+    public static <T> ProducerQueue<T> queue(List<Producer<T>> producers) {
+        return new ProducerQueue<>(producers);
     }
 
-    public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerBuffer<>(producers, bufferMinSize, bufferMaxSize);
+    public static <T> ProducerQueue<T> queue(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+        return new ProducerQueue<>(producers, bufferMinSize, bufferMaxSize);
     }
 }
