@@ -60,7 +60,7 @@ public class StatisticsBytes {
     public static byte[] attributeCountJobKey(VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                Encoding.Statistics.CountJobType.ATTRIBUTE_VERTEX.bytes(),
+                Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes(),
                 attIID.bytes());
     }
 
@@ -73,7 +73,7 @@ public class StatisticsBytes {
     public static byte[] hasEdgeCountJobKey(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                Encoding.Statistics.CountJobType.HAS_EDGE.bytes(),
+                Encoding.Statistics.JobType.HAS_EDGE.bytes(),
                 thingIID.bytes(),
                 attIID.bytes()
         );

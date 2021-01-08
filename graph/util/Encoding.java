@@ -44,6 +44,85 @@ public class Encoding {
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
 
+    public enum Key {
+        PERSISTED(0, true),
+        BUFFERED(-1, false);
+        private final int initialValue;
+
+        private final boolean isIncrement;
+
+        Key(int initialValue, boolean isIncrement) {
+            this.initialValue = initialValue;
+            this.isIncrement = isIncrement;
+        }
+
+        public int initialValue() {
+            return initialValue;
+        }
+
+        public boolean isIncrement() {
+            return isIncrement;
+        }
+    }
+
+    public enum Status {
+        BUFFERED(0),
+        COMMITTED(1),
+        PERSISTED(2),
+        IMMUTABLE(3);
+
+        private int status;
+
+        Status(int status) {
+            this.status = status;
+        }
+
+        public int status() {
+            return status;
+        }
+    }
+
+    public interface Direction {
+
+        enum Adjacency implements Direction {
+            OUT(true),
+            IN(false);
+
+            private final boolean isOut;
+
+            Adjacency(boolean isOut) {
+                this.isOut = isOut;
+            }
+
+            public boolean isOut() {
+                return isOut;
+            }
+
+            public boolean isIn() {
+                return !isOut;
+            }
+        }
+
+        enum Edge implements Direction {
+            FORWARD(true),
+            BACKWARD(false);
+
+            private final boolean isForward;
+
+            Edge(boolean isForward) {
+                this.isForward = isForward;
+            }
+
+            public boolean isForward() {
+                return isForward;
+            }
+
+            public boolean isBackward() {
+                return !isForward;
+            }
+        }
+    }
+
     public enum PrefixType {
         INDEX(0),
         STATISTICS(1),
@@ -130,43 +209,6 @@ public class Encoding {
             return type.equals(PrefixType.GRAPH_RULE);
         }
 
-    }
-
-    public enum Key {
-        PERSISTED(0, true),
-        BUFFERED(-1, false);
-        private final int initialValue;
-
-        private final boolean isIncrement;
-
-        Key(int initialValue, boolean isIncrement) {
-            this.initialValue = initialValue;
-            this.isIncrement = isIncrement;
-        }
-
-        public int initialValue() {
-            return initialValue;
-        }
-        public boolean isIncrement() {
-            return isIncrement;
-        }
-    }
-
-    public enum Status {
-        BUFFERED(0),
-        COMMITTED(1),
-        PERSISTED(2),
-        IMMUTABLE(3);
-
-        private int status;
-
-        Status(int status) {
-            this.status = status;
-        }
-
-        public int status() {
-            return status;
-        }
     }
 
     /**
@@ -356,6 +398,7 @@ public class Encoding {
         public boolean comparableTo(ValueType valueType) {
             return COMPARABLES.get(this).contains(valueType);
         }
+
         public GraqlArg.ValueType graqlValueType() {
             return graqlValueType;
         }
@@ -502,47 +545,6 @@ public class Encoding {
             }
         }
 
-    }
-
-    public interface Direction {
-
-        enum Adjacency implements Direction {
-            OUT(true),
-            IN(false);
-
-            private final boolean isOut;
-
-            Adjacency(boolean isOut) {
-                this.isOut = isOut;
-            }
-
-            public boolean isOut() {
-                return isOut;
-            }
-
-            public boolean isIn() {
-                return !isOut;
-            }
-        }
-
-        enum Edge implements Direction {
-            FORWARD(true),
-            BACKWARD(false);
-
-            private final boolean isForward;
-
-            Edge(boolean isForward) {
-                this.isForward = isForward;
-            }
-
-            public boolean isForward() {
-                return isForward;
-            }
-
-            public boolean isBackward() {
-                return !isForward;
-            }
-        }
     }
 
     public interface Edge {
@@ -716,21 +718,40 @@ public class Encoding {
             }
         }
     }
+
+    public interface Index {
+        enum Prefix {
+            TYPE(Encoding.Prefix.INDEX_TYPE),
+            RULE(Encoding.Prefix.INDEX_RULE),
+            ATTRIBUTE(Encoding.Prefix.INDEX_ATTRIBUTE);
+
+            private final Encoding.Prefix prefix;
+
+            Prefix(Encoding.Prefix prefix) {
+                this.prefix = prefix;
+            }
+
+            public Encoding.Prefix prefix() {
+                return prefix;
+            }
+        }
+    }
+
     public interface Statistics {
 
-        enum CountJobType {
+        enum JobType {
             ATTRIBUTE_VERTEX(0),
             HAS_EDGE(1);
 
             private final byte key;
 
-            CountJobType(int key) {
+            JobType(int key) {
                 this.key = (byte) key;
             }
 
-            public static CountJobType of(byte[] key) {
+            public static JobType of(byte[] key) {
                 if (key.length == 1) {
-                    for (CountJobType i : CountJobType.values()) {
+                    for (JobType i : JobType.values()) {
                         if (i.key == key[0]) return i;
                     }
                 }
@@ -746,19 +767,19 @@ public class Encoding {
             }
         }
 
-        enum CountJobOperation {
+        enum JobOperation {
             CREATED(0),
             DELETED(1);
 
             private final byte key;
 
-            CountJobOperation(int key) {
+            JobOperation(int key) {
                 this.key = (byte) key;
             }
 
-            public static CountJobOperation of(byte[] key) {
+            public static JobOperation of(byte[] key) {
                 if (key.length == 1) {
-                    for (CountJobOperation i : CountJobOperation.values()) {
+                    for (JobOperation i : JobOperation.values()) {
                         if (i.key == key[0]) return i;
                     }
                 }
@@ -795,23 +816,4 @@ public class Encoding {
             }
         }
     }
-
-    public interface Index {
-        enum Prefix {
-            TYPE(Encoding.Prefix.INDEX_TYPE),
-            RULE(Encoding.Prefix.INDEX_RULE),
-            ATTRIBUTE(Encoding.Prefix.INDEX_ATTRIBUTE);
-
-            private final Encoding.Prefix prefix;
-
-            Prefix(Encoding.Prefix prefix) {
-                this.prefix = prefix;
-            }
-
-            public Encoding.Prefix prefix() {
-                return prefix;
-            }
-        }
-    }
-
 }
