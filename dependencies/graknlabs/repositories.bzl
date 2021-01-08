@@ -59,7 +59,13 @@ def graknlabs_behaviour():
 #        commit = "d1554c4a1038fbf51c71f460fedec230bdec57f3", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
 #    )
 
-    native.local_repository(
-        name = "graknlabs_behaviour",
-        path = "//Users/max/programming/behaviour",
-    )
+        git_repository(
+            name = "graknlabs_behaviour",
+            remote = "https://github.com/maxbaxt/behaviour",
+            commit = "8b35a55da7fa23cd59173eb5deacf66da198fd67", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
+        )
+
+#    native.local_repository(
+#        name = "graknlabs_behaviour",
+#        path = "//Users/max/programming/behaviour",
+#    )
