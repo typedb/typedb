@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 
 java_library(
     name = "util",

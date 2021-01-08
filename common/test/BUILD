@@ -18,6 +18,17 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//visibility:public"])
 
+java_library(
+    name = "util",
+    srcs = glob(["*.java"]),
+    deps = [
+        # Internal dependencies
+
+        # External Maven Dependencies
+        "@maven//:junit_junit",
+    ]
+)
+
 filegroup(
     name = "logback",
     srcs = ["logback.xml"],
