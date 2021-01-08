@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
@@ -70,4 +71,9 @@ public class AbstractConstraint extends TypeConstraint {
 
     @Override
     public String toString() { return ABSTRACT.toString(); }
+
+    @Override
+    protected AbstractConstraint clone(ConstraintCloner cloner) {
+        return cloner.cloneVariable(owner).setAbstract();
+    }
 }

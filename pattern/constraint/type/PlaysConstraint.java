@@ -19,6 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -125,6 +126,15 @@ public class PlaysConstraint extends TypeConstraint {
         if (overriddenRoleType != null)
             syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
         return syntax.toString();
+    }
+
+    @Override
+    protected PlaysConstraint clone(ConstraintCloner cloner) {
+        return cloner.cloneVariable(owner).plays(
+                relationType == null ? null : cloner.cloneVariable(relationType),
+                cloner.cloneVariable(roleType),
+                overriddenRoleType == null ? null : cloner.cloneVariable(overriddenRoleType)
+        );
     }
 
     private static Set<TypeVariable> additionalTypes(TypeVariable roleType, TypeVariable relationType, TypeVariable overriddenRoleType) {

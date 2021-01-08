@@ -19,6 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.parameters.Label;
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -101,5 +102,10 @@ public class SubConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return "" + (isExplicit ? SUBX : SUB) + SPACE + type.referenceSyntax();
+    }
+
+    @Override
+    protected SubConstraint clone(ConstraintCloner cloner) {
+        return cloner.cloneVariable(owner).sub(cloner.cloneVariable(type), isExplicit);
     }
 }

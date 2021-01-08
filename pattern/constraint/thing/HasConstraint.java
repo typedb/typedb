@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -104,5 +105,10 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
     @Override
     public AlphaEquivalence alphaEquals(HasConstraint that) {
         return AlphaEquivalence.valid().validIfAlphaEqual(attribute, that.attribute);
+    }
+
+    @Override
+    protected HasConstraint clone(ConstraintCloner cloner) {
+        return cloner.cloneVariable(owner).has(cloner.cloneVariable(attribute));
     }
 }

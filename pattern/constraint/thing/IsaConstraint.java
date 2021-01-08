@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -109,5 +110,10 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
         return AlphaEquivalence.valid()
                 .validIf(isExplicit() == that.isExplicit())
                 .validIfAlphaEqual(type, that.type);
+    }
+
+    @Override
+    protected IsaConstraint clone(ConstraintCloner cloner) {
+        return cloner.cloneVariable(owner).isa(cloner.cloneVariable(type), isExplicit);
     }
 }

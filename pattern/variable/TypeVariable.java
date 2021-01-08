@@ -96,8 +96,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return this;
     }
 
-    void constrainClone(TypeVariable clone, VariableCloner cloner) {
-        clone.constraints().forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, cloner)));
+    void constrainClone(TypeVariable toClone, VariableCloner cloner) {
+        toClone.constraints().forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, cloner)));
     }
 
     public void constrain(TypeConstraint constraint) {

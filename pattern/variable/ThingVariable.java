@@ -82,8 +82,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return this;
     }
 
-    void constrainClone(ThingVariable clone, VariableCloner cloner) {
-        clone.constraints().forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, cloner)));
+    void constrainClone(ThingVariable toClone, VariableCloner cloner) {
+        toClone.constraints().forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, cloner)));
     }
 
     public static ThingVariable of(Identifier.Variable identifier) {

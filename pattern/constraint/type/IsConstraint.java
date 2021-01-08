@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -85,5 +86,10 @@ public class IsConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return "" + IS + SPACE + variable.referenceSyntax();
+    }
+
+    @Override
+    protected IsConstraint clone(ConstraintCloner cloner) {
+        return cloner.cloneVariable(owner).is(cloner.cloneVariable(variable));
     }
 }

@@ -58,4 +58,6 @@ public abstract class Constraint {
 
     @Override
     public abstract int hashCode();
+
+    protected abstract Constraint clone(ConstraintCloner constraintCloner);
 }
