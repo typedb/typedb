@@ -183,7 +183,8 @@ public class TypeResolver {
         }
 
         private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
-//            assert conceptMgr.getThing(iidConstraint.iid()) != null;
+            if (conceptMgr.getThing(iidConstraint.iid()) == null)
+                throw GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction);
             resolverTraversal.labels(owner.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
         }
 
@@ -206,14 +207,14 @@ public class TypeResolver {
 
         private void convertRelation(TypeVariable owner, RelationConstraint constraint) {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
-                TypeVariable playerType = convert(rolePlayer.player());
-                TypeVariable playingRoleType = convert(new TypeVariable(newSystemId()));
+                TypeVariable playerResolver = convert(rolePlayer.player());
+                TypeVariable actingRoleResolver = convert(new TypeVariable(newSystemId()));
                 if (rolePlayer.roleType().isPresent()) {
-                    TypeVariable roleTypeVar = convert(rolePlayer.roleType().get());
-                    resolverTraversal.sub(playingRoleType.id(), roleTypeVar.id(), true);
+                    TypeVariable roleTypeResolver = convert(rolePlayer.roleType().get());
+                    resolverTraversal.sub(actingRoleResolver.id(), roleTypeResolver.id(), true);
                 }
-                resolverTraversal.relates(owner.id(), playingRoleType.id());
-                resolverTraversal.plays(playerType.id(), playingRoleType.id());
+                resolverTraversal.relates(owner.id(), actingRoleResolver.id());
+                resolverTraversal.plays(playerResolver.id(), actingRoleResolver.id());
             }
         }
 

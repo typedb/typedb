@@ -909,4 +909,23 @@ public class TypeResolverTest {
         assertEquals(expected, getHintMap(exhaustiveConjunction));
     }
 
+    @Test
+    public void infer_key_attributes() {
+        define_custom_schema("define" +
+                                     " person sub entity, owns name @key;" +
+                                     " name sub attribute, value string;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $x has name 'bob';";
+
+        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person"));
+        }};
+
+        assertEquals(expected, getHintMap(exhaustiveConjunction));
+    }
+
 }
