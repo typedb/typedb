@@ -318,12 +318,10 @@ public class ThingTypeSteps {
         assertThrows(() -> get_thing_type(rootLabel, typeLabel).setPlays(roleType));
     }
 
-    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {type_label}")
-    public void thing_type_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, String overriddenLabel) {
+    @When("{root_label}\\( ?{type_label} ?) set plays role: {scoped_label} as {scoped_label}")
+    public void thing_type_set_plays_role_as(RootLabel rootLabel, String typeLabel, Parameters.ScopedLabel roleLabel, Parameters.ScopedLabel overriddenLabel) {
         final RoleType roleType = tx().concepts().getRelationType(roleLabel.scope()).getRelates(roleLabel.label());
-        final RoleType overriddenType = tx().concepts().getRelationType(roleLabel.scope()).getSupertypes()
-                .map(Type::asRelationType).flatMap(RelationType::getRelates)
-                .filter(r -> r.getLabel().name().equals(overriddenLabel)).findAny().get();
+        final RoleType overriddenType = tx().concepts().getRelationType(overriddenLabel.scope()).getRelates(overriddenLabel.label());
         get_thing_type(rootLabel, typeLabel).setPlays(roleType, overriddenType);
     }
 
