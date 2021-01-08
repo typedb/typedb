@@ -193,7 +193,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     public void remove(ThingEdge edge) {
         InfixIID.Thing infixIID = infixIID(edge.encoding(), infixTails(edge));
         if (edges.containsKey(infixIID)) {
-            edges.get(infixIID).remove(edge);
+            edges.get(infixIID).remove(edge.outIID());
             owner.setModified();
         }
     }
