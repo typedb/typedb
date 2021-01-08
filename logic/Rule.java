@@ -360,8 +360,8 @@ public class Rule {
                 public static Optional<Explicit> of(Conjunction conjunction) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
-                            .flatMap(variable -> Iterators.iterate(variable.constraints())
-                                    .filter(ThingConstraint::isHas)
+                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                                    .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
                                     .map(constraint -> {
                                         assert constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
@@ -413,8 +413,8 @@ public class Rule {
                 public static Optional<Variable> of(Conjunction conjunction) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
-                            .flatMap(variable -> Iterators.iterate(variable.constraints())
-                                    .filter(ThingConstraint::isHas)
+                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                                    .filter(constraint -> constraint.asHas().attribute().id().isNamedReference())
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 0;
