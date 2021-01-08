@@ -18,12 +18,12 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -47,9 +47,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
@@ -608,7 +609,6 @@ public class TypeResolverTest {
         }};
 
         assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertTrue(exhaustiveConjunction.variables().stream().allMatch(Variable::isSatisfiable));
     }
 
     @Test
@@ -745,7 +745,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void overridden_relates_are_valid()  {
+    public void overridden_relates_are_valid() {
         define_custom_schema("define" +
                                      " marriage sub relation, relates spouse;" +
                                      " hetero-marriage sub marriage," +
@@ -807,9 +807,6 @@ public class TypeResolverTest {
             put("$x", set());
         }};
         assertEquals(thingExpected, getHintMap(thingConjunction));
-        for (Variable variable : thingConjunction.variables()) {
-            assertTrue(variable.isSatisfiable());
-        }
     }
 
     @Test
@@ -868,19 +865,16 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void multiple_value_types_return_empty() throws IOException {
+    public void multiple_value_types_returns_unsatisfiable_error() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = 2; $x = 'bob';";
+        Conjunction conjunction = createConjunction(queryString);
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set());
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertFalse(exhaustiveConjunction.variables().stream().anyMatch(Variable::isSatisfiable));
+        assertThrowsWithMessage(
+                () -> typeResolver.resolveVariables(conjunction),
+                GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
+        );
     }
 
     @Test

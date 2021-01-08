@@ -25,6 +25,8 @@ import java.util.Comparator;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class Util {
 
@@ -43,12 +45,6 @@ public class Util {
     public static void assertNotNulls(Object... objects) {
         for (Object object : objects) {
             assertNotNull(object);
-        }
-    }
-
-    public static void assertNulls(Object... objects) {
-        for (Object object : objects) {
-            assertNull(object);
         }
     }
 }

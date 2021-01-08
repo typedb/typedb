@@ -95,11 +95,6 @@ public abstract class Variable implements Pattern {
         resolvedTypes.retainAll(labels);
     }
 
-    public void removeResolvedType(Label label) {
-        assert !(isSatisfiable && resolvedTypes.isEmpty());
-        resolvedTypes.remove(label);
-    }
-
     public Set<Label> resolvedTypes() {
         return resolvedTypes;
     }
