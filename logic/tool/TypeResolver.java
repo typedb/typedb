@@ -21,6 +21,7 @@ package grakn.core.logic.tool;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.thing.Thing;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
@@ -182,7 +183,7 @@ public class TypeResolver {
         }
 
         private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
-            assert conceptMgr.getThing(iidConstraint.iid()) != null;
+//            assert conceptMgr.getThing(iidConstraint.iid()) != null;
             resolverTraversal.labels(owner.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
         }
 

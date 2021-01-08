@@ -18,6 +18,7 @@
 
 package grakn.core.logic;
 
+import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
@@ -30,6 +31,7 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -728,7 +730,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
+    public void matching_rp_in_relation_that_cant_play_that_role_throws_an_error() throws IOException {
         define_standard_schema("test-type-resolution");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -736,12 +738,12 @@ public class TypeResolverTest {
                 " $x isa company;" +
                 " ($x) isa friendship;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = createConjunction(queryString);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set());
-        }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertThrowsWithMessage(
+                () -> typeResolver.resolveVariables(conjunction),
+                GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
+        );
     }
 
     @Test
