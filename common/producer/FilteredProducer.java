@@ -25,7 +25,7 @@ public class FilteredProducer<T> implements Producer<T> {
     private final Producer<T> baseProducer;
     private final Predicate<T> predicate;
 
-    public FilteredProducer(Producer<T> baseProducer, Predicate<T> predicate) {
+    FilteredProducer(Producer<T> baseProducer, Predicate<T> predicate) {
         this.baseProducer = baseProducer;
         this.predicate = predicate;
     }
