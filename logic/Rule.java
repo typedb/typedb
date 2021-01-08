@@ -67,7 +67,7 @@ public class Rule {
 //        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
-        pruneThenTypeHints();
+        pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
@@ -83,7 +83,7 @@ public class Rule {
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
         validateSatisfiable();
-        pruneThenTypeHints();
+        pruneThenResolvedTypes();
 
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
@@ -169,7 +169,7 @@ public class Rule {
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
-    private void pruneThenTypeHints() {
+    private void pruneThenResolvedTypes() {
         // TODO name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isNamedReference())
                 .forEach(thenVar ->

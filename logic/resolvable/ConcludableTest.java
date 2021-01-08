@@ -55,7 +55,7 @@ public class ConcludableTest {
         return concludables.stream().filter(Concludable::isIsa).count();
     }
 
-    private long valueConcludablesCount(Set<Concludable<?>> concludables) {
+    private long attributeConcludablesCount(Set<Concludable<?>> concludables) {
         return concludables.stream().filter(Concludable::isAttribute).count();
     }
 
@@ -66,7 +66,7 @@ public class ConcludableTest {
         assertEquals(1, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -76,7 +76,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -86,7 +86,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(1, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -106,7 +106,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(1, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -116,7 +116,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(1, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -126,7 +126,7 @@ public class ConcludableTest {
         assertEquals(1, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -136,7 +136,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(1, valueConcludablesCount(concludables));
+        assertEquals(1, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -147,7 +147,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(3, hasConcludablesCount(concludables));
         assertEquals(2, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -157,7 +157,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(2, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -167,7 +167,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -177,7 +177,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(2, valueConcludablesCount(concludables));
+        assertEquals(2, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -187,7 +187,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(2, valueConcludablesCount(concludables));
+        assertEquals(2, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class ConcludableTest {
         assertEquals(1, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, valueConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test

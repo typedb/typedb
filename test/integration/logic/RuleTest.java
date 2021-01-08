@@ -53,7 +53,7 @@ public class RuleTest {
         return concludables.stream().filter(Concludable::isRelation).count();
     }
 
-    private long valueConcludablesCount(Set<Concludable<?>> concludables) {
+    private long attributeConcludablesCount(Set<Concludable<?>> concludables) {
         return concludables.stream().filter(Concludable::isAttribute).count();
     }
 
@@ -90,7 +90,7 @@ public class RuleTest {
                     assertEquals(2, isaConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConcludablesCount(bodyConcludables));
                     assertEquals(1, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
                 }
             }
         }
@@ -127,7 +127,7 @@ public class RuleTest {
                     assertEquals(1, isaConcludablesCount(bodyConcludables));
                     assertEquals(1, hasConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
                 }
             }
         }
@@ -164,7 +164,7 @@ public class RuleTest {
                     assertEquals(2, isaConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, valueConcludablesCount(bodyConcludables));
+                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
                 }
             }
         }
