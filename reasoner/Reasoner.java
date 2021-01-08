@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;

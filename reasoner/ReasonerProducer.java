@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;

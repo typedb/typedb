@@ -18,7 +18,7 @@
 
 package grakn.core.common.concurrent;
 
-import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.concurrent.actor.EventLoopGroup;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
