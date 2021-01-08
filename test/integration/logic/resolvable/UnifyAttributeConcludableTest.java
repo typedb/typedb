@@ -18,7 +18,7 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.core.common.iterator.Iterators;
+import grakn.core.Grakn.Transaction;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
@@ -29,7 +29,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -121,12 +120,13 @@ public class UnifyAttributeConcludableTest {
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
-    private IsaConstraint findIsaConstraint(Conjunction conjunction) {
-        List<IsaConstraint> isas = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
-                .filter(constraint -> constraint.isThing() && constraint.asThing().isIsa())
-                .map(constraint -> constraint.asThing().asIsa()).toList();
-        assert isas.size() == 1 : "More than 1 isa constraint in conjunction to search";
-        return isas.get(0);
+    private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
+        try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
+                                         Graql.parseVariable(thenThingPattern).asThing());
+            txn.commit();
+            return rule;
+        }
     }
 
     @Ignore // TODO enable when we have the final structure of conclusions and concludable in place
@@ -134,15 +134,11 @@ public class UnifyAttributeConcludableTest {
     public void literal_predicates_unify_and_filter_answers() {
         String conjunction = "{ $a > 'b'; $a < 'y'; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
-        Concludable.Value queryConcludable = concludables.iterator().next().asValue();
+        Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables()); // TODO this will become a Has conclusion
+        Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -186,7 +182,7 @@ public class UnifyAttributeConcludableTest {
         String conjunction = "{ $x > $y; }";
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(2, concludables.size());
-        Concludable.Value queryConcludable = concludables.iterator().next().asValue();
+        Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 
         /*
         TODO build attribute concludables (2) out of the conjunction
@@ -194,13 +190,9 @@ public class UnifyAttributeConcludableTest {
         and nothing else
         */
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        IsaConstraint thenHasNameIsa = findIsaConstraint(thenHasNameJohn);
-        Rule.Conclusion.Isa hasIsaConclusion = Rule.Conclusion.Isa.create(thenHasNameIsa, whenHasName.variables()); // TODO refactor in new structure
+        Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasIsaConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -214,13 +206,9 @@ public class UnifyAttributeConcludableTest {
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
-        // rule: when { $x isa person; } then { (employee: $x) isa employment; }
-        Conjunction whenExactRelation = parseConjunction("{ $x isa person; }");
-        Conjunction thenExactRelation = parseConjunction("{ (employee: $x) isa employment; }");
-        IsaConstraint thenEmploymentIsa = findIsaConstraint(thenExactRelation);
-        Rule.Conclusion.Isa relationIsaExactConclusion = Rule.Conclusion.Isa.create(thenEmploymentIsa, whenExactRelation.variables());
+        Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }", "(employee: $x) isa employment");
 
-        unifiers = queryConcludable.unify(relationIsaExactConclusion, conceptMgr).toList();
+        unifiers = queryConcludable.unify(rule2.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
     }
 

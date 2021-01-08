@@ -30,32 +30,32 @@ package(
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(["*.java", "tool/*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"],),
-    deps = [
-        # Internal dependencies
-        "//common:common",
-        "//graph:graph",
-
-        # Internal Repository Dependencies
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-    ],
+    srcs = glob(["*.java", "tool/*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"]),
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
+    deps = [
+        # Internal dependencies
+        "//common",
+        "//graph",
+
+        # Internal Repository Dependencies
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/common",
+        "@graknlabs_graql//java/pattern",
+
+        # External Maven Dependencies
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
     tags = ["maven_coordinates=io.grakn.core:grakn-logic:{pom_version}"],
     visibility = ["//visibility:public"],
+
 )
 
 host_compatible_java_test(
     name = "test-concludable",
-    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     srcs = [
         "resolvable/ConcludableTest.java",
     ],
@@ -63,12 +63,12 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.resolvable.ConcludableTest",
     deps = [
         # Internal dependencies
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common",
         "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java:graql",
     ],
@@ -76,7 +76,6 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-retrievable",
-    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     srcs = [
         "resolvable/RetrievableTest.java",
     ],
@@ -84,6 +83,7 @@ host_compatible_java_test(
         "//logic:logic",
         "//pattern:pattern",
     ],
+    test_class = "grakn.core.logic.resolvable.RetrievableTest",
     deps = [
         # Internal dependencies
 

@@ -18,8 +18,8 @@
 
 package grakn.core.logic.resolvable;
 
+import grakn.core.Grakn.Transaction;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -32,7 +32,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -138,12 +137,13 @@ public class UnifyHasConcludableTest {
         return logicMgr.typeResolver().resolveLabels(conjunction);
     }
 
-    private HasConstraint findHasConstraint(Conjunction conjunction) {
-        List<HasConstraint> has = Iterators.iterate(conjunction.variables()).flatMap(var -> Iterators.iterate(var.constraints()))
-                .filter(constraint -> constraint.isThing() && constraint.asThing().isHas())
-                .map(constraint -> constraint.asThing().asHas()).toList();
-        assert has.size() == 1 : "More than 1 has constraint in conjunction to search";
-        return has.get(0);
+    private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
+        try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
+                                         Graql.parseVariable(thenThingPattern).asThing());
+            txn.commit();
+            return rule;
+        }
     }
 
     //TODO: create more tests when type inference is working to test unifier pruning
@@ -154,13 +154,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        HasConstraint thenHasNameIsa = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameIsa, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name 'john'");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -208,13 +204,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; $a isa first-name; } then { $x has $a; }
-        Conjunction whenHasName = parseConjunction("{ $x isa person; $a isa first-name; }");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has $a; }");
-        HasConstraint thenHasNamehas = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNamehas, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -269,13 +261,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        HasConstraint thenHasNameHas = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameHas, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -306,13 +294,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; $a isa first-name; } then { $x has $a; }
-        Conjunction whenHasName = parseConjunction("{$x isa person; $a isa first-name;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has $a; }");
-        HasConstraint thenHasNameHas = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameHas, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -343,13 +327,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -389,13 +369,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; $a isa first-name; } then { $x has $a; }
-        Conjunction whenHasName = parseConjunction("{ $x isa person; $a isa first-name; }");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has $a; }");
-        HasConstraint thenHasNameHas = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasNameHas, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -435,13 +411,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $a isa self-owning-attr; } then { $a has $a; }
-        Conjunction whenHasName = parseConjunction("{ $a isa self-owning-attribute; }");
-        Conjunction thenHasNameJohn = parseConjunction("{ $a has $a; }");
-        HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -463,13 +435,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $x isa person; } then { $x has first-name "john"; }
-        Conjunction whenHasName = parseConjunction("{$x isa person;}");
-        Conjunction thenHasNameJohn = parseConjunction("{ $x has first-name 'john'; }");
-        HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -502,13 +470,9 @@ public class UnifyHasConcludableTest {
         Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        // rule: when { $a isa self-owning-attr; } then { $a has $a; }
-        Conjunction whenHasName = parseConjunction("{ $a isa self-owning-attribute; }");
-        Conjunction thenHasNameJohn = parseConjunction("{ $a has $a; }");
-        HasConstraint thenHasName = findHasConstraint(thenHasNameJohn);
-        Rule.Conclusion.Has hasConclusion = Rule.Conclusion.Has.create(thenHasName, whenHasName.variables());
+        Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
 
-        List<Unifier> unifiers = queryConcludable.unify(hasConclusion, conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asHas(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
