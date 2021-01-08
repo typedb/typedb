@@ -17,6 +17,7 @@
 
 package grakn.core.graph.structure.impl;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.iid.IndexIID;
@@ -31,6 +32,7 @@ import graql.lang.pattern.variable.ThingVariable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNIMPLEMENTED;
 import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.THEN;
 import static grakn.core.graph.util.Encoding.Property.WHEN;
@@ -56,6 +58,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         this.when = when;
         this.then = then;
         this.isDeleted = new AtomicBoolean(false);
+        throw GraknException.of(UNIMPLEMENTED);
     }
 
     @Override
