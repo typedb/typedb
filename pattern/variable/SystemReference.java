@@ -18,13 +18,14 @@
 
 package grakn.core.pattern.variable;
 
+import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Objects;
 
 public class SystemReference extends Reference.Name {
 
-    public static String PREFIX = "$/"; // TODO replace with GraqlToken.Char.$SYS
+    public static String PREFIX = "$/";
 
     private final int id;
     private final int hash;
