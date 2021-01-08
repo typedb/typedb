@@ -59,9 +59,9 @@ public abstract class VertexIID extends IID {
 
     public static VertexIID of(byte[] bytes) {
         switch (Encoding.Prefix.of(bytes[0]).type()) {
-            case GRAPH_TYPE:
+            case TYPE:
                 return VertexIID.Type.of(bytes);
-            case GRAPH_THING:
+            case THING:
                 return VertexIID.Thing.of(bytes);
             default:
                 return null;

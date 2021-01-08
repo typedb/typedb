@@ -126,9 +126,9 @@ public class Encoding {
     public enum PrefixType {
         INDEX(0),
         STATISTICS(1),
-        GRAPH_TYPE(2),
-        GRAPH_THING(3),
-        GRAPH_RULE(4);
+        TYPE(2),
+        THING(3),
+        RULE(4);
 
         private final int key;
 
@@ -153,16 +153,16 @@ public class Encoding {
         STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
         STATISTICS_COUNTED(52, PrefixType.STATISTICS),
         STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
-        VERTEX_THING_TYPE(100, PrefixType.GRAPH_TYPE),
-        VERTEX_ENTITY_TYPE(110, PrefixType.GRAPH_TYPE),
-        VERTEX_ATTRIBUTE_TYPE(120, PrefixType.GRAPH_TYPE),
-        VERTEX_RELATION_TYPE(130, PrefixType.GRAPH_TYPE),
-        VERTEX_ROLE_TYPE(140, PrefixType.GRAPH_TYPE),
-        VERTEX_ENTITY(150, PrefixType.GRAPH_THING),
-        VERTEX_ATTRIBUTE(160, PrefixType.GRAPH_THING),
-        VERTEX_RELATION(170, PrefixType.GRAPH_THING),
-        VERTEX_ROLE(180, PrefixType.GRAPH_THING),
-        STRUCTURE_RULE(190, PrefixType.GRAPH_RULE);
+        VERTEX_THING_TYPE(100, PrefixType.TYPE),
+        VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
+        VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
+        VERTEX_RELATION_TYPE(130, PrefixType.TYPE),
+        VERTEX_ROLE_TYPE(140, PrefixType.TYPE),
+        VERTEX_ENTITY(150, PrefixType.THING),
+        VERTEX_ATTRIBUTE(160, PrefixType.THING),
+        VERTEX_RELATION(170, PrefixType.THING),
+        VERTEX_ROLE(180, PrefixType.THING),
+        STRUCTURE_RULE(190, PrefixType.RULE);
 
         private final byte key;
         private final PrefixType type;
@@ -198,15 +198,15 @@ public class Encoding {
         public boolean isStatistics() { return type.equals(PrefixType.STATISTICS); }
 
         public boolean isType() {
-            return type.equals(PrefixType.GRAPH_TYPE);
+            return type.equals(PrefixType.TYPE);
         }
 
         public boolean isThing() {
-            return type.equals(PrefixType.GRAPH_THING);
+            return type.equals(PrefixType.THING);
         }
 
         public boolean isRule() {
-            return type.equals(PrefixType.GRAPH_RULE);
+            return type.equals(PrefixType.RULE);
         }
 
     }
@@ -217,8 +217,6 @@ public class Encoding {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
-    // TODO we should compress these more
-    // TODO for example, group properties 1-50, type edges 40-60, instance edges 60-80, reserved for future use 80-127
     public enum Infix {
         PROPERTY_LABEL(0),
         PROPERTY_SCOPE(1),
@@ -229,25 +227,25 @@ public class Encoding {
         PROPERTY_THEN(6),
         PROPERTY_VALUE(7),
         PROPERTY_VALUE_REF(8),
-        EDGE_ISA_IN(-20), // EDGE_ISA_OUT does not exist by design
-        EDGE_SUB_OUT(30),
-        EDGE_SUB_IN(-30),
-        EDGE_OWNS_OUT(40),
-        EDGE_OWNS_IN(-40),
-        EDGE_OWNS_KEY_OUT(50),
-        EDGE_OWNS_KEY_IN(-50),
-        EDGE_HAS_OUT(60),
-        EDGE_HAS_IN(-60),
-        EDGE_PLAYS_OUT(70),
-        EDGE_PLAYS_IN(-70),
-        EDGE_PLAYING_OUT(80),
-        EDGE_PLAYING_IN(-80),
-        EDGE_RELATES_OUT(90),
-        EDGE_RELATES_IN(-90),
-        EDGE_RELATING_OUT(100),
-        EDGE_RELATING_IN(-100),
-        EDGE_ROLEPLAYER_OUT(110, true),
-        EDGE_ROLEPLAYER_IN(-110, true);
+        EDGE_ISA_IN(-40), // EDGE_ISA_OUT does not exist by design
+        EDGE_SUB_OUT(50),
+        EDGE_SUB_IN(-50),
+        EDGE_OWNS_OUT(51),
+        EDGE_OWNS_IN(-51),
+        EDGE_OWNS_KEY_OUT(52),
+        EDGE_OWNS_KEY_IN(-52),
+        EDGE_PLAYS_OUT(53),
+        EDGE_PLAYS_IN(-53),
+        EDGE_RELATES_OUT(54),
+        EDGE_RELATES_IN(-54),
+        EDGE_HAS_OUT(70),
+        EDGE_HAS_IN(-70),
+        EDGE_PLAYING_OUT(71),
+        EDGE_PLAYING_IN(-71),
+        EDGE_RELATING_OUT(72),
+        EDGE_RELATING_IN(-72),
+        EDGE_ROLEPLAYER_OUT(73, true),
+        EDGE_ROLEPLAYER_IN(-73, true);
         private final byte key;
         private final boolean isOptimisation;
 
