@@ -21,7 +21,6 @@ package grakn.core.logic.tool;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.thing.Thing;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
@@ -253,6 +252,4 @@ public class TypeResolver {
         }
 
     }
-
-
 }
