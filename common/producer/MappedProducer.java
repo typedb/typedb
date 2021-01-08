@@ -25,7 +25,7 @@ public class MappedProducer<T, U> implements Producer<U> {
     private final Producer<T> baseProducer;
     private final Function<T, U> mappingFn;
 
-    public MappedProducer(Producer<T> baseProducer, Function<T, U> mappingFn) {
+    MappedProducer(Producer<T> baseProducer, Function<T, U> mappingFn) {
         this.baseProducer = baseProducer;
         this.mappingFn = mappingFn;
     }

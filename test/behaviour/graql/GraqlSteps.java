@@ -151,15 +151,15 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlMatch) {
-            answers = tx().query().match(graqlQuery.asMatch()).toList();
+            answers = tx().query().match(graqlQuery.asMatch(), false).toList();
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
-            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate());
+            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate(), false);
         } else if (graqlQuery instanceof GraqlMatch.Group) {
-            answerGroups = tx().query().match(graqlQuery.asMatchGroup()).toList();
+            answerGroups = tx().query().match(graqlQuery.asMatchGroup(), false).toList();
         } else if (graqlQuery instanceof GraqlMatch.Group.Aggregate) {
-            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate()).toList();
+            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate(), false).toList();
         } else {
             throw new ScenarioDefinitionException("Only match and insert supported for now");
         }

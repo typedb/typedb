@@ -29,7 +29,7 @@ public class BaseProducer<T> implements Producer<T> {
     private final ResourceIterator<T> iterator;
     private CompletableFuture<Void> future;
 
-    public BaseProducer(ResourceIterator<T> iterator) {
+    BaseProducer(ResourceIterator<T> iterator) {
         this.iterator = iterator;
         this.future = CompletableFuture.completedFuture(null);
     }

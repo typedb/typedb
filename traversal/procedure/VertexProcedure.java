@@ -19,8 +19,8 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.producer.BaseProducer;
 import grakn.core.common.producer.Producer;
+import grakn.core.common.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
@@ -91,7 +91,7 @@ public class VertexProcedure implements Procedure {
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        return new BaseProducer<>(iterator(graphMgr, params));
+        return Producers.produce(iterator(graphMgr, params));
     }
 
     @Override

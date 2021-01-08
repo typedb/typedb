@@ -61,7 +61,8 @@ public class GraphProducer implements Producer<VertexMap> {
     public synchronized void produce(Sink<VertexMap> sink, int count) {
         if (futures.size() < parallelisation) {
             for (int i = futures.size(); i < parallelisation && start.hasNext(); i++) {
-                ResourceIterator<VertexMap> iterator = new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
+                ResourceIterator<VertexMap> iterator =
+                        new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
                 futures.put(iterator, CompletableFuture.completedFuture(null));
             }
         }
@@ -70,7 +71,9 @@ public class GraphProducer implements Producer<VertexMap> {
         } else {
             int splitCount = (int) Math.ceil((double) count / futures.size());
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
-                futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(() -> consume(sink, k, splitCount), forkJoinPool()));
+                futures.computeIfPresent(iterator,
+                        (k, v) -> v.thenRunAsync(() -> consume(sink, k, splitCount), forkJoinPool())
+                );
             }
         }
     }
@@ -82,13 +85,9 @@ public class GraphProducer implements Producer<VertexMap> {
     private void consume(Sink<VertexMap> sink, ResourceIterator<VertexMap> iterator, int count) {
         try {
             int i = 0;
-            for (; i < count && iterator.hasNext(); i++) {
-                sink.put(iterator.next());
-            }
+            for (; i < count && iterator.hasNext(); i++) sink.put(iterator.next());
             finish(iterator);
-            if (count - i > 0) {
-                produce(sink, count - i);
-            }
+            if (count - i > 0) produce(sink, count - i);
         } catch (Throwable e) {
             done(sink, e);
         }
