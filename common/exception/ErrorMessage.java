@@ -324,6 +324,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeRead(7, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
                 new TypeRead(8, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
+        public static final TypeRead ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE =
+                new TypeRead(9, "The role type '%s' has scope '%s' that is not a relation type.");
 
         private static final String codePrefix = "TYR";
         private static final String messagePrefix = "Invalid Type Read";
