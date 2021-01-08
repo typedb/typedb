@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.TraversalEngine;
