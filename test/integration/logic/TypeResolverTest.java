@@ -103,7 +103,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void isa_inference_traversal() throws IOException {
+    public void isa_inference() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $p isa person;";
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -118,7 +118,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void isa_explicit_inference_traversal() throws IOException {
+    public void isa_explicit_inference() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -133,7 +133,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void is_inference_traversal() throws IOException {
+    public void is_inference() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -153,7 +153,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_inference_traversal() throws IOException {
+    public void has_inference() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -170,7 +170,7 @@ public class TypeResolverTest {
 
 
     @Test
-    public void has_with_cycle_traversal() throws IOException {
+    public void has_with_cycle() throws IOException {
         define_custom_schema(
                 "define" +
                         "  person sub entity, owns name, owns height;" +
@@ -199,7 +199,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_with_big_cycle_traversal() {
+    public void has_with_big_cycle() {
         define_custom_schema(
                 "define" +
                         "  person sub entity, owns name, owns height;" +
@@ -232,7 +232,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_inference_variable_with_attribute_type_traversal() throws IOException {
+    public void has_inference_variable_with_attribute_type() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -249,7 +249,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_inference_variable_without_attribute_type_traversal() throws IOException {
+    public void has_inference_variable_without_attribute_type() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -268,7 +268,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void infer_from_value_type_traversal() {
+    public void infer_from_value_type() {
         define_custom_schema(
                 "define" +
                         "  dog sub entity, owns weight;" +
@@ -292,7 +292,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void value_comparision_between_double_long_traversal() throws IOException {
+    public void value_comparision_between_double_long() throws IOException {
         define_custom_schema("define" +
                                      " house-number sub attribute, value long;" +
                                      " length sub attribute, value double;" +
@@ -313,7 +313,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void relation_concrete_role_concrete_traversal() throws IOException {
+    public void relation_concrete_role_concrete() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -330,7 +330,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void relation_variable_role_concrete_relation_hidden_variable_traversal() throws IOException {
+    public void relation_variable_role_concrete_relation_hidden_variable() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -348,7 +348,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void relation_variable_role_variable_relation_named_variable_traversal() throws IOException {
+    public void relation_variable_role_variable_relation_named_variable() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -404,7 +404,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void relation_anon_isa_traversal() throws IOException {
+    public void relation_anon_isa() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -420,7 +420,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void no_role_type_traversal() throws IOException {
+    public void no_role_type() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -436,7 +436,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void relation_multiple_roles_traversal() throws IOException {
+    public void relation_multiple_roles() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -456,7 +456,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_reverse_traversal() throws IOException {
+    public void has_reverse() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -475,7 +475,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void negations_ignored_traversal() throws IOException {
+    public void negations_ignored() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match" +
@@ -492,7 +492,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void up_down_hierarchy_isa_traversal() {
+    public void up_down_hierarchy_isa() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity;" +
@@ -517,7 +517,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void test_type_var_with_label_traversal() throws IOException {
+    public void test_type_var_with_label() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -533,7 +533,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void plays_hierarchy_traversal() throws IOException {
+    public void plays_hierarchy() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match (spouse: $john) isa marriage;";
@@ -548,7 +548,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_hierarchy_traversal() {
+    public void has_hierarchy() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity, owns weight;" +
@@ -577,7 +577,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void has_with_minimal_cycle_traversal() {
+    public void has_with_minimal_cycle() {
         define_custom_schema("define " +
                                      "unit sub attribute, value string, owns unit, owns ref;" +
                                      "ref sub attribute, value long;");
@@ -595,7 +595,7 @@ public class TypeResolverTest {
 
 
     @Test
-    public void all_things_is_empty_set_traversal() throws IOException {
+    public void all_things_is_empty_set() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
@@ -612,7 +612,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void branched_isa_traversal() throws IOException {
+    public void branched_isa() throws IOException {
         define_custom_schema(
                 "define" +
                         "  person sub entity;" +
@@ -638,7 +638,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void simple_always_infers_its_supers_traversal() {
+    public void simple_always_infers_its_supers() {
         define_custom_schema(
                 "define" +
                         "  animal sub entity;" +
@@ -673,7 +673,7 @@ public class TypeResolverTest {
     @Test
     //TODO: ignored as the gap fpesn't appea. Unclear if this is a resolver or traversal bug.
     @Ignore
-    public void hierarchy_hint_gap_traversal() throws IOException {
+    public void hierarchy_hint_gap() throws IOException {
         define_custom_schema(
                 "define " +
                         "  animal sub entity;" +
@@ -714,7 +714,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void multiple_anonymous_vars_traversal() throws IOException {
+    public void multiple_anonymous_vars() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $a has name 'fido'; $a has label 'poodle';";
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -728,7 +728,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result_traversal() throws IOException {
+    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
         define_standard_schema("test-type-resolution");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -745,7 +745,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void overridden_relates_are_valid_traversal()  {
+    public void overridden_relates_are_valid()  {
         define_custom_schema("define" +
                                      " marriage sub relation, relates spouse;" +
                                      " hetero-marriage sub marriage," +
@@ -767,7 +767,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void converts_root_types_traversal() throws IOException {
+    public void converts_root_types() throws IOException {
         define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match $x isa relation;";
@@ -813,7 +813,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void infers_value_type_recursively_traversal() throws IOException {
+    public void infers_value_type_recursively() throws IOException {
         define_standard_schema("basic-schema");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -899,7 +899,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void infer_is_attribute_from_having_value_traversal() throws IOException {
+    public void infer_is_attribute_from_having_value() throws IOException {
         define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = $y;";
