@@ -58,7 +58,7 @@ public class GraphProducer implements Producer<VertexMap> {
     }
 
     @Override
-    public synchronized void produce(Sink<VertexMap> sink, int count) {
+    public synchronized void produce(Queue<VertexMap> queue, int count) {
         if (futures.size() < parallelisation) {
             for (int i = futures.size(); i < parallelisation && start.hasNext(); i++) {
                 ResourceIterator<VertexMap> iterator =
@@ -67,12 +67,12 @@ public class GraphProducer implements Producer<VertexMap> {
             }
         }
         if (futures.size() == 0) {
-            done(sink);
+            done(queue);
         } else {
             int splitCount = (int) Math.ceil((double) count / futures.size());
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
                 futures.computeIfPresent(iterator,
-                                         (k, v) -> v.thenRunAsync(() -> produceAsync(sink, k, splitCount), forkJoinPool())
+                                         (k, v) -> v.thenRunAsync(() -> produceAsync(queue, k, splitCount), forkJoinPool())
                 );
             }
         }
@@ -82,26 +82,26 @@ public class GraphProducer implements Producer<VertexMap> {
         futures.remove(iterator);
     }
 
-    private void produceAsync(Sink<VertexMap> sink, ResourceIterator<VertexMap> iterator, int count) {
+    private void produceAsync(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int count) {
         try {
             int i = 0;
-            for (; i < count && iterator.hasNext(); i++) sink.put(iterator.next());
+            for (; i < count && iterator.hasNext(); i++) queue.put(iterator.next());
             finish(iterator);
-            if (count - i > 0) produce(sink, count - i);
+            if (count - i > 0) produce(queue, count - i);
         } catch (Throwable e) {
-            done(sink, e);
+            done(queue, e);
         }
     }
 
-    private void done(Sink<VertexMap> sink) {
+    private void done(Queue<VertexMap> queue) {
         if (isDone.compareAndSet(false, true)) {
-            sink.done(this);
+            queue.done(this);
         }
     }
 
-    private void done(Sink<VertexMap> sink, Throwable e) {
+    private void done(Queue<VertexMap> queue, Throwable e) {
         if (isDone.compareAndSet(false, true)) {
-            sink.done(this, e);
+            queue.done(this, e);
         }
     }
 

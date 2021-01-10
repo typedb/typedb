@@ -33,34 +33,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class ProducerQueue<T> {
+public class IterableProducer<T> {
 
     private static final int BUFFER_MIN_SIZE = 32;
     private static final int BUFFER_MAX_SIZE = 64;
 
     private final ConcurrentLinkedQueue<Producer<T>> producers;
-    private final ManagedBlockingQueue<Either<T, Done>> queue;
     private final Iterator iterator;
-    private final Sink sink;
+    private final Queue queue;
     private final AtomicInteger pending;
     private final int bufferMinSize;
     private final int bufferMaxSize;
 
-    public ProducerQueue(List<Producer<T>> producers) {
+    public IterableProducer(List<Producer<T>> producers) {
         this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
     }
 
-    public ProducerQueue(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+    public IterableProducer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         this.producers = new ConcurrentLinkedQueue<>(producers);
-        this.queue = new ManagedBlockingQueue<>();
         this.iterator = new Iterator();
-        this.sink = new Sink();
+        this.queue = new Queue();
         this.pending = new AtomicInteger(0);
         this.bufferMinSize = bufferMinSize;
         this.bufferMaxSize = bufferMaxSize;
     }
 
-    public ProducerQueue<T>.Iterator iterator() {
+    public IterableProducer<T>.Iterator iterator() {
         return iterator;
     }
 
@@ -70,7 +68,7 @@ public class ProducerQueue<T> {
             pending.addAndGet(available);
             ExecutorService.forkJoinPool().submit(() -> {
                 assert !producers.isEmpty();
-                producers.peek().produce(sink, available);
+                producers.peek().produce(queue, available);
             });
         }
     }
@@ -113,12 +111,7 @@ public class ProducerQueue<T> {
             else if (state == State.FETCHED) return true;
             else mayProduce();
 
-            Either<T, Done> result;
-            try {
-                result = queue.take();
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            }
+            Either<T, Done> result = queue.take();
 
             if (result.isFirst()) {
                 next = result.first();
@@ -148,12 +141,18 @@ public class ProducerQueue<T> {
         }
     }
 
-    public class Sink implements Producer.Sink<T> {
+    private class Queue implements Producer.Queue<T> {
+
+        private final ManagedBlockingQueue<Either<T, Done>> blockingQueue;
+
+        private Queue() {
+            this.blockingQueue = new ManagedBlockingQueue<>();
+        }
 
         @Override
         public void put(T item) {
             try {
-                queue.put(Either.first(item));
+                blockingQueue.put(Either.first(item));
                 pending.decrementAndGet();
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
@@ -175,7 +174,7 @@ public class ProducerQueue<T> {
                 if (producers.isEmpty()) {
                     try {
                         Done done = error == null ? Done.success() : Done.error(error);
-                        queue.put(Either.second(done));
+                        blockingQueue.put(Either.second(done));
                     } catch (InterruptedException e) {
                         throw GraknException.of(e);
                     }
@@ -185,6 +184,18 @@ public class ProducerQueue<T> {
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
             }
+        }
+
+        private Either<T, Done> take() {
+            try {
+                return blockingQueue.take();
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            }
+        }
+
+        private int size() {
+            return blockingQueue.size();
         }
     }
 }

@@ -26,23 +26,23 @@ import static grakn.common.collection.Collections.list;
 
 public class Producers {
 
-    public static <T> BaseProducer<T> produce(ResourceIterator<T> iterator) {
+    public static <T> BaseProducer<T> producer(ResourceIterator<T> iterator) {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerQueue<T> queue(Producer<T> producer) {
-        return new ProducerQueue<>(list(producer));
+    public static <T> IterableProducer<T> iterable(Producer<T> producer) {
+        return new IterableProducer<>(list(producer));
     }
 
-    public static <T> ProducerQueue<T> queue(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerQueue<>(list(producer), bufferMinSize, bufferMaxSize);
+    public static <T> IterableProducer<T> iterable(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
+        return new IterableProducer<>(list(producer), bufferMinSize, bufferMaxSize);
     }
 
-    public static <T> ProducerQueue<T> queue(List<Producer<T>> producers) {
-        return new ProducerQueue<>(producers);
+    public static <T> IterableProducer<T> iterable(List<Producer<T>> producers) {
+        return new IterableProducer<>(producers);
     }
 
-    public static <T> ProducerQueue<T> queue(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerQueue<>(producers, bufferMinSize, bufferMaxSize);
+    public static <T> IterableProducer<T> iterable(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+        return new IterableProducer<>(producers, bufferMinSize, bufferMaxSize);
     }
 }
