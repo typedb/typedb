@@ -79,7 +79,7 @@ public class TypeResolver {
                     } else {
                         TypeVertex type = traversalEng.graph().schema().getType(label);
                         if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
-                        typeVar.addResolvedType(label);
+                        typeVar.addSingleResolvedType(label);
                     }
                 });
         return conjunction;
@@ -158,10 +158,17 @@ public class TypeResolver {
 
         private TypeVariable convert(TypeVariable variable) {
             if (resolverRegister.containsKey(variable.id())) return resolverRegister.get(variable.id());
-            resolverRegister.put(variable.id(), variable);
-            variableRegister.putIfAbsent(variable.reference(), variable);
-            variable.addTo(resolverTraversal);
-            return variable;
+            TypeVariable resolver;
+            if (variable.label().isPresent() && variable.label().get().scope().isPresent()) {
+                resolver = new TypeVariable(newSystemId());
+                resolverTraversal.labels(resolver.id(), variable.resolvedTypes());
+            } else {
+                resolver = variable;
+            }
+            resolverRegister.put(variable.id(), resolver);
+            variableRegister.putIfAbsent(resolver.reference(), variable);
+            resolver.addTo(resolverTraversal);
+            return resolver;
         }
 
         private TypeVariable convert(ThingVariable variable) {

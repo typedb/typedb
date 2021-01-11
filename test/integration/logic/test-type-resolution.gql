@@ -43,5 +43,3 @@ name sub attribute, value string;
 age sub attribute, value long;
 
 ref sub attribute, value long;
-
-

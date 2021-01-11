@@ -67,7 +67,6 @@ public class Reasoner {
         Set<Conjunction> conjunctions = disjunction.conjunctions().stream()
                 .map(conjunction -> logicMgr.typeResolver().resolveVariables(conjunction))
                 .collect(Collectors.toSet());
-        // TODO enable: conjunction = logicMgr.typeResolver().resolveVariablesExhaustive(conjunction);
         if (!isParallel) return iterate(conjunctions).flatMap(this::iterator);
         else return buffer(conjunctions.stream()
                                    .flatMap(conjunction -> producers(conjunction).stream())
