@@ -22,6 +22,7 @@ import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
+import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
@@ -45,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -239,16 +241,14 @@ public class TypeResolver {
         }
 
         private Set<ValueType> findComparableValueTypes(ValueConstraint<?> constraint) {
-            if (constraint.isBoolean()) return set(ValueType.BOOLEAN);
-            else if (constraint.isString()) return set(ValueType.STRING);
-            else if (constraint.isDateTime()) return set(ValueType.DATETIME);
-            else if (constraint.isLong() || constraint.isDouble()) return set(ValueType.LONG, ValueType.DOUBLE);
-            else if (constraint.isVariable()) {
+            if (constraint.isVariable()) {
                 TypeVariable comparableVar = convert(constraint.asVariable().value());
                 assert valueTypeRegister.containsKey(comparableVar.id());
                 subAttribute(comparableVar.id());
                 return valueTypeRegister.get(comparableVar.id());
-            } else throw GraknException.of(ILLEGAL_STATE);
+            }
+            return Encoding.ValueType.of(constraint.value().getClass()).comparables()
+                    .stream().map(Encoding.ValueType::graqlValueType).collect(Collectors.toSet());
         }
 
         private void subAttribute(Identifier.Variable variable) {
