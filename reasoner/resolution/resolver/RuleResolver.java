@@ -252,7 +252,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 break;
             }
         }
-        assert index != -1 && index < plan.size() - 1 ;
+        assert index != -1 && index < plan.size() - 1;
         return plan.get(index + 1);
     }
 }

@@ -18,33 +18,40 @@
 
 package grakn.core.common.producer;
 
-import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.iterator.ResourceIterator;
+
+import java.util.concurrent.CompletableFuture;
+
+import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 
 public class BaseProducer<T> implements Producer<T> {
 
-    private ResourceIterator<T> iterator;
+    private final ResourceIterator<T> iterator;
+    private CompletableFuture<Void> future;
 
     BaseProducer(ResourceIterator<T> iterator) {
         this.iterator = iterator;
+        this.future = CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void produce(Sink<T> sink, int count) {
-        ExecutorService.forkJoinPool().submit(() -> {
-            try {
-                for (int i = 0; i < count; i++) {
-                    if (iterator.hasNext()) {
-                        sink.put(iterator.next());
-                    } else {
-                        sink.done(this);
-                        break;
-                    }
+    public synchronized void produce(Queue<T> queue, int count) {
+        future = future.thenRunAsync(() -> produceAsync(queue, count), forkJoinPool());
+    }
+
+    private void produceAsync(Queue<T> queue, int count) {
+        try {
+            for (int i = 0; i < count; i++) {
+                if (iterator.hasNext()) {
+                    queue.put(iterator.next());
+                } else {
+                    queue.done(this);
+                    break;
                 }
-            } catch (Throwable e) {
-                sink.done(this, e);
             }
-        });
+        } catch (Throwable e) {
+            queue.done(this, e);
+        }
     }
 
     @Override

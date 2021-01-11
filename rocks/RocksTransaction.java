@@ -238,6 +238,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                 throw GraknException.of(e);
             }
         }
+
         @Override
         void closeStorage() {
             schemaStorage.close();

@@ -25,14 +25,14 @@ public class FilteredProducer<T> implements Producer<T> {
     private final Producer<T> baseProducer;
     private final Predicate<T> predicate;
 
-    public FilteredProducer(Producer<T> baseProducer, Predicate<T> predicate) {
+    FilteredProducer(Producer<T> baseProducer, Predicate<T> predicate) {
         this.baseProducer = baseProducer;
         this.predicate = predicate;
     }
 
     @Override
-    public void produce(Producer.Sink<T> sink, int count) {
-        baseProducer.produce(new Sink(sink), count);
+    public void produce(Producer.Queue<T> queue, int count) {
+        baseProducer.produce(new Queue(queue), count);
     }
 
     @Override
@@ -40,28 +40,28 @@ public class FilteredProducer<T> implements Producer<T> {
         baseProducer.recycle();
     }
 
-    private class Sink implements Producer.Sink<T> {
+    private class Queue implements Producer.Queue<T> {
 
-        private final Producer.Sink<T> baseSink;
+        private final Producer.Queue<T> baseQueue;
 
-        Sink(Producer.Sink<T> baseSink) {
-            this.baseSink = baseSink;
+        Queue(Producer.Queue<T> baseQueue) {
+            this.baseQueue = baseQueue;
         }
 
         @Override
         public void put(T item) {
-            if (predicate.test(item)) baseSink.put(item);
+            if (predicate.test(item)) baseQueue.put(item);
             else baseProducer.produce(this, 1);
         }
 
         @Override
         public void done(Producer<T> producer) {
-            baseSink.done(FilteredProducer.this);
+            baseQueue.done(FilteredProducer.this);
         }
 
         @Override
         public void done(Producer<T> producer, Throwable e) {
-            baseSink.done(FilteredProducer.this, e);
+            baseQueue.done(FilteredProducer.this, e);
         }
     }
 }

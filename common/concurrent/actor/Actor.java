@@ -32,7 +32,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
     private final EventLoop eventLoop;
 
     public static <NEW_STATE extends State<NEW_STATE>>
-        Actor<NEW_STATE> create(EventLoopGroup eventLoopGroup, Function<Actor<NEW_STATE>, NEW_STATE> stateConstructor) {
+    Actor<NEW_STATE> create(EventLoopGroup eventLoopGroup, Function<Actor<NEW_STATE>, NEW_STATE> stateConstructor) {
 
         Actor<NEW_STATE> actor = new Actor<>(eventLoopGroup);
         actor.state = stateConstructor.apply(actor);

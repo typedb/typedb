@@ -122,6 +122,7 @@ public class RocksDatabase implements Grakn.Database {
     /**
      * Responsible for committing the initial schema of a database.
      * A different implementation of this class may override it.
+     *
      * @param transaction
      */
     protected void initialiseCommit(RocksTransaction.Schema transaction) {

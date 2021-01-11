@@ -25,14 +25,14 @@ public class MappedProducer<T, U> implements Producer<U> {
     private final Producer<T> baseProducer;
     private final Function<T, U> mappingFn;
 
-    public MappedProducer(Producer<T> baseProducer, Function<T, U> mappingFn) {
+    MappedProducer(Producer<T> baseProducer, Function<T, U> mappingFn) {
         this.baseProducer = baseProducer;
         this.mappingFn = mappingFn;
     }
 
     @Override
-    public void produce(Producer.Sink<U> sink, int count) {
-        baseProducer.produce(new Sink(sink), count);
+    public void produce(Producer.Queue<U> queue, int count) {
+        baseProducer.produce(new Queue(queue), count);
     }
 
     @Override
@@ -40,27 +40,27 @@ public class MappedProducer<T, U> implements Producer<U> {
         baseProducer.recycle();
     }
 
-    private class Sink implements Producer.Sink<T> {
+    private class Queue implements Producer.Queue<T> {
 
-        private final Producer.Sink<U> baseSink;
+        private final Producer.Queue<U> baseQueue;
 
-        Sink(Producer.Sink<U> baseSink) {
-            this.baseSink = baseSink;
+        Queue(Producer.Queue<U> baseQueue) {
+            this.baseQueue = baseQueue;
         }
 
         @Override
         public void put(T item) {
-            baseSink.put(mappingFn.apply(item));
+            baseQueue.put(mappingFn.apply(item));
         }
 
         @Override
         public void done(Producer<T> producer) {
-            baseSink.done(MappedProducer.this);
+            baseQueue.done(MappedProducer.this);
         }
 
         @Override
         public void done(Producer<T> producer, Throwable e) {
-            baseSink.done(MappedProducer.this, e);
+            baseQueue.done(MappedProducer.this, e);
         }
     }
 }

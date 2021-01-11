@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 
 public interface Producer<T> {
 
-    void produce(Sink<T> sink, int count);
+    void produce(Queue<T> queue, int count);
 
     void recycle();
 
@@ -34,7 +34,7 @@ public interface Producer<T> {
         return new FilteredProducer<>(this, predicate);
     }
 
-    interface Sink<U> {
+    interface Queue<U> {
 
         void put(U item);
 
