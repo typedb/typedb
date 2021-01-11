@@ -116,7 +116,7 @@ public abstract class Identifier {
             this.hash = Objects.hash(Variable.class, this.reference, this.id);
         }
 
-        public static Referrable of(Reference.Referrable reference) {
+        public static Referable of(Reference.Referable reference) {
             if (reference.isLabel()) return new Label(reference.asLabel());
             else if (reference.isName()) return new Name(reference.asName());
             else assert false;
@@ -127,11 +127,11 @@ public abstract class Identifier {
             return new Anonymous(reference, id);
         }
 
-        public static Referrable name(String name) {
+        public static Referable name(String name) {
             return Variable.of(Reference.named(name));
         }
 
-        public static Referrable label(String label) {
+        public static Referable label(String label) {
             return Variable.of(Reference.label(label));
         }
 
@@ -168,19 +168,19 @@ public abstract class Identifier {
             return hash;
         }
 
-        static class Referrable extends Variable {
+        static class Referable extends Variable {
 
-            Referrable(Reference reference) {
+            Referable(Reference reference) {
                 super(reference, null);
             }
 
             @Override
-            public Reference.Referrable reference() {
-                return reference.asReferrable();
+            public Reference.Referable reference() {
+                return reference.asReferable();
             }
         }
 
-        static class Name extends Referrable {
+        static class Name extends Referable {
 
             private Name(Reference.Name reference) {
                 super(reference);
@@ -192,7 +192,7 @@ public abstract class Identifier {
             }
         }
 
-        static class Label extends Referrable {
+        static class Label extends Referable {
 
             private Label(Reference.Label reference) {
                 super(reference);

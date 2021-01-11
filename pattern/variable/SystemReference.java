@@ -22,7 +22,7 @@ import graql.lang.pattern.variable.Reference;
 
 import java.util.Objects;
 
-public class SystemReference extends Reference.Referrable {
+public class SystemReference extends Reference.Referable {
 
     public final static String PREFIX = "$/";
 
@@ -30,7 +30,7 @@ public class SystemReference extends Reference.Referrable {
     private final int hash;
 
     SystemReference(int id) {
-        super(Type.SYSTEM, true);
+        super(Reference.Type.SYSTEM, true);
         this.id = id;
         this.hash = Objects.hash(SystemReference.class, id);
     }
@@ -40,7 +40,7 @@ public class SystemReference extends Reference.Referrable {
         return PREFIX + id;
     }
 
-    public static SystemReference of(int id) {
+    public static SystemReference System(int id) {
         return new SystemReference(id);
     }
 

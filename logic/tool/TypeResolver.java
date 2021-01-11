@@ -480,7 +480,7 @@ public class TypeResolver {
         }
 
         private Identifier.Variable newSystemVariable() {
-            return Identifier.Variable.of(SystemReference.of(sysVarCounter++));
+            return Identifier.Variable.of(SystemReference.System(sysVarCounter++));
         }
 
         boolean contains(Variable variable) {
