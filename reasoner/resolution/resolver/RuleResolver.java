@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.common.collection.Pair;
-import grakn.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
@@ -252,7 +252,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 break;
             }
         }
-        assert index != -1 && index < plan.size() - 1 ;
+        assert index != -1 && index < plan.size() - 1;
         return plan.get(index + 1);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -36,13 +36,13 @@ public class VertexProducer implements Producer<VertexMap> {
     }
 
     @Override
-    public void produce(Sink<VertexMap> sink, int count) {
+    public void produce(Queue<VertexMap> queue, int count) {
         if (future == null) {
-            future = runAsync(consume(count, sink), forkJoinPool());
-        } else future.thenRun(consume(count, sink));
+            future = runAsync(consume(count, queue), forkJoinPool());
+        } else future.thenRun(consume(count, queue));
     }
 
-    private Runnable consume(int count, Sink<VertexMap> sink) {
+    private Runnable consume(int count, Queue<VertexMap> sink) {
         return () -> {
             try {
                 int i = 0;

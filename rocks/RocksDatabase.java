@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -122,6 +122,7 @@ public class RocksDatabase implements Grakn.Database {
     /**
      * Responsible for committing the initial schema of a database.
      * A different implementation of this class may override it.
+     *
      * @param transaction
      */
     protected void initialiseCommit(RocksTransaction.Schema transaction) {

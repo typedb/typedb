@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,8 +17,8 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.Actor;
-import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;

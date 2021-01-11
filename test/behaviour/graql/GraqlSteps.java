@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -56,7 +56,6 @@ import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static grakn.core.test.behaviour.util.Util.assertThrowsWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class GraqlSteps {
@@ -151,15 +150,15 @@ public class GraqlSteps {
         answerGroups = null;
         numericAnswerGroups = null;
         if (graqlQuery instanceof GraqlMatch) {
-            answers = tx().query().match(graqlQuery.asMatch(), false).toList();
+            answers = tx().query().match(graqlQuery.asMatch()).toList();
         } else if (graqlQuery instanceof GraqlInsert) {
             throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
         } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
-            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate(), false);
+            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate());
         } else if (graqlQuery instanceof GraqlMatch.Group) {
-            answerGroups = tx().query().match(graqlQuery.asMatchGroup(), false).toList();
+            answerGroups = tx().query().match(graqlQuery.asMatchGroup()).toList();
         } else if (graqlQuery instanceof GraqlMatch.Group.Aggregate) {
-            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate(), false).toList();
+            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate()).toList();
         } else {
             throw new ScenarioDefinitionException("Only match and insert supported for now");
         }

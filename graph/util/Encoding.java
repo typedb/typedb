@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -47,10 +47,9 @@ public class Encoding {
     public enum Key {
         PERSISTED(0, true),
         BUFFERED(-1, false);
-
         private final int initialValue;
-        private final boolean isIncrement;
 
+        private final boolean isIncrement;
 
         Key(int initialValue, boolean isIncrement) {
             this.initialValue = initialValue;
@@ -63,6 +62,23 @@ public class Encoding {
 
         public boolean isIncrement() {
             return isIncrement;
+        }
+    }
+
+    public enum Status {
+        BUFFERED(0),
+        COMMITTED(1),
+        PERSISTED(2),
+        IMMUTABLE(3);
+
+        private int status;
+
+        Status(int status) {
+            this.status = status;
+        }
+
+        public int status() {
+            return status;
         }
     }
 
@@ -109,16 +125,17 @@ public class Encoding {
 
     public enum PrefixType {
         INDEX(0),
-        TYPE(1),
-        THING(2),
-        RULE(3),
-        STATISTICS(4);
+        STATISTICS(1),
+        TYPE(2),
+        THING(3),
+        RULE(4);
 
         private final int key;
 
         PrefixType(int key) {
             this.key = key;
         }
+
     }
 
     /**
@@ -178,6 +195,8 @@ public class Encoding {
             return type.equals(PrefixType.INDEX);
         }
 
+        public boolean isStatistics() { return type.equals(PrefixType.STATISTICS); }
+
         public boolean isType() {
             return type.equals(PrefixType.TYPE);
         }
@@ -189,94 +208,7 @@ public class Encoding {
         public boolean isRule() {
             return type.equals(PrefixType.RULE);
         }
-    }
 
-    public enum StatisticsCountJobType {
-        ATTRIBUTE_VERTEX(0),
-        HAS_EDGE(1);
-
-        private final byte key;
-
-        StatisticsCountJobType(int key) {
-            this.key = (byte) key;
-        }
-
-        public static StatisticsCountJobType of(byte[] key) {
-            if (key.length == 1) {
-                for (StatisticsCountJobType i : StatisticsCountJobType.values()) {
-                    if (i.key == key[0]) return i;
-                }
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
-        }
-
-        public byte key() {
-            return key;
-        }
-
-        public byte[] bytes() {
-            return new byte[]{key};
-        }
-    }
-
-    public enum StatisticsCountJobValue {
-        CREATED(0),
-        DELETED(1);
-
-        private final byte key;
-
-        StatisticsCountJobValue(int key) {
-            this.key = (byte) key;
-        }
-
-        public static StatisticsCountJobValue of(byte[] key) {
-            if (key.length == 1) {
-                for (StatisticsCountJobValue i : StatisticsCountJobValue.values()) {
-                    if (i.key == key[0]) return i;
-                }
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
-        }
-
-        public byte key() {
-            return key;
-        }
-
-        public byte[] bytes() {
-            return new byte[]{key};
-        }
-    }
-
-    public enum StatisticsInfix {
-        VERTEX_COUNT(0),
-        VERTEX_TRANSITIVE_COUNT(1),
-        HAS_EDGE_COUNT(2),
-        HAS_EDGE_TOTAL_COUNT(3);
-
-        private final byte key;
-
-        StatisticsInfix(int key) {
-            this.key = (byte) key;
-        }
-
-        public byte key() {
-            return key;
-        }
-
-        public byte[] bytes() {
-            return new byte[]{key};
-        }
-    }
-
-    public enum InfixType {
-        PROPERTY(0),
-        EDGE(1);
-
-        private final int key;
-
-        InfixType(int key) {
-            this.key = key;
-        }
     }
 
     /**
@@ -285,49 +217,44 @@ public class Encoding {
      *
      * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
-    // TODO I think we should compress these more
-    // TODO for example, group properties 1-50, type edges 40-60, instance edges 60-80, reserved for future use 80-127
     public enum Infix {
-        PROPERTY_LABEL(0, InfixType.PROPERTY),
-        PROPERTY_SCOPE(1, InfixType.PROPERTY),
-        PROPERTY_ABSTRACT(2, InfixType.PROPERTY),
-        PROPERTY_VALUE_TYPE(3, InfixType.PROPERTY),
-        PROPERTY_REGEX(4, InfixType.PROPERTY),
-        PROPERTY_WHEN(5, InfixType.PROPERTY),
-        PROPERTY_THEN(6, InfixType.PROPERTY),
-        PROPERTY_VALUE(7, InfixType.PROPERTY),
-        PROPERTY_VALUE_REF(8, InfixType.PROPERTY),
-        EDGE_ISA_IN(-20, InfixType.EDGE), // EDGE_ISA_OUT does not exist by design
-        EDGE_SUB_OUT(30, InfixType.EDGE),
-        EDGE_SUB_IN(-30, InfixType.EDGE),
-        EDGE_OWNS_OUT(40, InfixType.EDGE),
-        EDGE_OWNS_IN(-40, InfixType.EDGE),
-        EDGE_OWNS_KEY_OUT(50, InfixType.EDGE),
-        EDGE_OWNS_KEY_IN(-50, InfixType.EDGE),
-        EDGE_HAS_OUT(60, InfixType.EDGE),
-        EDGE_HAS_IN(-60, InfixType.EDGE),
-        EDGE_PLAYS_OUT(70, InfixType.EDGE),
-        EDGE_PLAYS_IN(-70, InfixType.EDGE),
-        EDGE_PLAYING_OUT(80, InfixType.EDGE),
-        EDGE_PLAYING_IN(-80, InfixType.EDGE),
-        EDGE_RELATES_OUT(90, InfixType.EDGE),
-        EDGE_RELATES_IN(-90, InfixType.EDGE),
-        EDGE_RELATING_OUT(100, InfixType.EDGE),
-        EDGE_RELATING_IN(-100, InfixType.EDGE),
-        EDGE_ROLEPLAYER_OUT(110, InfixType.EDGE, true),
-        EDGE_ROLEPLAYER_IN(-110, InfixType.EDGE, true);
-
+        PROPERTY_LABEL(0),
+        PROPERTY_SCOPE(1),
+        PROPERTY_ABSTRACT(2),
+        PROPERTY_VALUE_TYPE(3),
+        PROPERTY_REGEX(4),
+        PROPERTY_WHEN(5),
+        PROPERTY_THEN(6),
+        PROPERTY_VALUE(7),
+        PROPERTY_VALUE_REF(8),
+        EDGE_ISA_IN(-40), // EDGE_ISA_OUT does not exist by design
+        EDGE_SUB_OUT(50),
+        EDGE_SUB_IN(-50),
+        EDGE_OWNS_OUT(51),
+        EDGE_OWNS_IN(-51),
+        EDGE_OWNS_KEY_OUT(52),
+        EDGE_OWNS_KEY_IN(-52),
+        EDGE_PLAYS_OUT(53),
+        EDGE_PLAYS_IN(-53),
+        EDGE_RELATES_OUT(54),
+        EDGE_RELATES_IN(-54),
+        EDGE_HAS_OUT(70),
+        EDGE_HAS_IN(-70),
+        EDGE_PLAYING_OUT(71),
+        EDGE_PLAYING_IN(-71),
+        EDGE_RELATING_OUT(72),
+        EDGE_RELATING_IN(-72),
+        EDGE_ROLEPLAYER_OUT(73, true),
+        EDGE_ROLEPLAYER_IN(-73, true);
         private final byte key;
         private final boolean isOptimisation;
-        private final InfixType type;
 
-        Infix(int key, InfixType type) {
-            this(key, type, false);
+        Infix(int key) {
+            this(key, false);
         }
 
-        Infix(int key, InfixType type, boolean isOptimisation) {
+        Infix(int key, boolean isOptimisation) {
             this.key = (byte) key;
-            this.type = type;
             this.isOptimisation = isOptimisation;
         }
 
@@ -346,54 +273,10 @@ public class Encoding {
             return new byte[]{key};
         }
 
-        public InfixType type() {
-            return type;
-        }
-
-        public boolean isProperty() {
-            return type.equals(InfixType.PROPERTY);
-        }
-
-        public boolean isEdge() {
-            return type.equals(InfixType.EDGE);
-        }
-
         public boolean isOptimisation() {
             return isOptimisation;
         }
-    }
 
-    public enum Index {
-        TYPE(Prefix.INDEX_TYPE),
-        RULE(Prefix.INDEX_RULE),
-        ATTRIBUTE(Prefix.INDEX_ATTRIBUTE);
-
-        private final Prefix prefix;
-
-        Index(Prefix prefix) {
-            this.prefix = prefix;
-        }
-
-        public Prefix prefix() {
-            return prefix;
-        }
-    }
-
-    public enum Status {
-        BUFFERED(0),
-        COMMITTED(1),
-        PERSISTED(2),
-        IMMUTABLE(3);
-
-        private int status;
-
-        Status(int status) {
-            this.status = status;
-        }
-
-        public int status() {
-            return status;
-        }
     }
 
     public enum Property {
@@ -416,6 +299,7 @@ public class Encoding {
         public Infix infix() {
             return infix;
         }
+
     }
 
     public enum ValueType {
@@ -425,7 +309,6 @@ public class Encoding {
         DOUBLE(30, Double.class, true, false, GraqlArg.ValueType.DOUBLE),
         STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
         DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
-
         public static final ZoneId TIME_ZONE_ID = ZoneId.of("Z");
         public static final Charset STRING_ENCODING = UTF_8;
         public static final int STRING_SIZE_ENCODING = Bytes.SHORT_SIZE;
@@ -440,6 +323,7 @@ public class Encoding {
                 pair(STRING, set(STRING)),
                 pair(DATETIME, set(DATETIME))
         );
+
         private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
@@ -448,11 +332,11 @@ public class Encoding {
                 pair(STRING, set(STRING)),
                 pair(DATETIME, set(DATETIME))
         );
-
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;
         private final boolean isWritable;
+
         private final GraqlArg.ValueType graqlValueType;
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
@@ -516,9 +400,11 @@ public class Encoding {
         public GraqlArg.ValueType graqlValueType() {
             return graqlValueType;
         }
+
     }
 
     public interface Structure {
+
         Prefix prefix();
 
         interface Rule extends Structure {
@@ -827,6 +713,104 @@ public class Encoding {
 
             public int lookAhead() {
                 return tailSize + 2;
+            }
+        }
+    }
+
+    public interface Index {
+        enum Prefix {
+            TYPE(Encoding.Prefix.INDEX_TYPE),
+            RULE(Encoding.Prefix.INDEX_RULE),
+            ATTRIBUTE(Encoding.Prefix.INDEX_ATTRIBUTE);
+
+            private final Encoding.Prefix prefix;
+
+            Prefix(Encoding.Prefix prefix) {
+                this.prefix = prefix;
+            }
+
+            public Encoding.Prefix prefix() {
+                return prefix;
+            }
+        }
+    }
+
+    public interface Statistics {
+
+        enum JobType {
+            ATTRIBUTE_VERTEX(0),
+            HAS_EDGE(1);
+
+            private final byte key;
+
+            JobType(int key) {
+                this.key = (byte) key;
+            }
+
+            public static JobType of(byte[] key) {
+                if (key.length == 1) {
+                    for (JobType i : JobType.values()) {
+                        if (i.key == key[0]) return i;
+                    }
+                }
+                throw GraknException.of(UNRECOGNISED_VALUE);
+            }
+
+            public byte key() {
+                return key;
+            }
+
+            public byte[] bytes() {
+                return new byte[]{key};
+            }
+        }
+
+        enum JobOperation {
+            CREATED(0),
+            DELETED(1);
+
+            private final byte key;
+
+            JobOperation(int key) {
+                this.key = (byte) key;
+            }
+
+            public static JobOperation of(byte[] key) {
+                if (key.length == 1) {
+                    for (JobOperation i : JobOperation.values()) {
+                        if (i.key == key[0]) return i;
+                    }
+                }
+                throw GraknException.of(UNRECOGNISED_VALUE);
+            }
+
+            public byte key() {
+                return key;
+            }
+
+            public byte[] bytes() {
+                return new byte[]{key};
+            }
+        }
+
+        enum Infix {
+            VERTEX_COUNT(0),
+            VERTEX_TRANSITIVE_COUNT(1),
+            HAS_EDGE_COUNT(2),
+            HAS_EDGE_TOTAL_COUNT(3);
+
+            private final byte key;
+
+            Infix(int key) {
+                this.key = (byte) key;
+            }
+
+            public byte key() {
+                return key;
+            }
+
+            public byte[] bytes() {
+                return new byte[]{key};
             }
         }
     }

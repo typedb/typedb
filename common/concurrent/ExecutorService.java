@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
 
 package grakn.core.common.concurrent;
 
-import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.concurrent.actor.EventLoopGroup;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;

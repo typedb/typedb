@@ -76,4 +76,4 @@ Grakn & Graql has been built using various open-source Graph and Distributed Com
 
 This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Cluster - get in touch with our team at enterprise@grakn.ai.
 
-Copyright (C) 2020 Grakn Labs
+Copyright (C) 2021 Grakn Labs

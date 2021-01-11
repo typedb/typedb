@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -26,23 +26,23 @@ import static grakn.common.collection.Collections.list;
 
 public class Producers {
 
-    public static <T> BaseProducer<T> produce(ResourceIterator<T> iterator) {
+    public static <T> BaseProducer<T> producer(ResourceIterator<T> iterator) {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerBuffer<T> buffer(Producer<T> producer) {
-        return new ProducerBuffer<>(list(producer));
+    public static <T> IterableProducer<T> iterable(Producer<T> producer) {
+        return new IterableProducer<>(list(producer));
     }
 
-    public static <T> ProducerBuffer<T> buffer(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerBuffer<>(list(producer), bufferMinSize, bufferMaxSize);
+    public static <T> IterableProducer<T> iterable(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
+        return new IterableProducer<>(list(producer), bufferMinSize, bufferMaxSize);
     }
 
-    public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers) {
-        return new ProducerBuffer<>(producers);
+    public static <T> IterableProducer<T> iterable(List<Producer<T>> producers) {
+        return new IterableProducer<>(producers);
     }
 
-    public static <T> ProducerBuffer<T> buffer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerBuffer<>(producers, bufferMinSize, bufferMaxSize);
+    public static <T> IterableProducer<T> iterable(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+        return new IterableProducer<>(producers, bufferMinSize, bufferMaxSize);
     }
 }

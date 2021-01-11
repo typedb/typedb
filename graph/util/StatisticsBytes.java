@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -27,21 +27,21 @@ public class StatisticsBytes {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 typeIID.bytes(),
-                Encoding.StatisticsInfix.VERTEX_COUNT.bytes());
+                Encoding.Statistics.Infix.VERTEX_COUNT.bytes());
     }
 
     public static byte[] vertexTransitiveCountKey(VertexIID.Type typeIID) {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 typeIID.bytes(),
-                Encoding.StatisticsInfix.VERTEX_TRANSITIVE_COUNT.bytes());
+                Encoding.Statistics.Infix.VERTEX_TRANSITIVE_COUNT.bytes());
     }
 
     public static byte[] hasEdgeCountKey(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 thingTypeIID.bytes(),
-                Encoding.StatisticsInfix.HAS_EDGE_COUNT.bytes(),
+                Encoding.Statistics.Infix.HAS_EDGE_COUNT.bytes(),
                 attTypeIID.bytes());
     }
 
@@ -49,7 +49,7 @@ public class StatisticsBytes {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 thingTypeIID.bytes(),
-                Encoding.StatisticsInfix.HAS_EDGE_TOTAL_COUNT.bytes());
+                Encoding.Statistics.Infix.HAS_EDGE_TOTAL_COUNT.bytes());
     }
 
     public static byte[] countJobKey() {
@@ -60,7 +60,7 @@ public class StatisticsBytes {
     public static byte[] attributeCountJobKey(VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                Encoding.StatisticsCountJobType.ATTRIBUTE_VERTEX.bytes(),
+                Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes(),
                 attIID.bytes());
     }
 
@@ -73,7 +73,7 @@ public class StatisticsBytes {
     public static byte[] hasEdgeCountJobKey(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                Encoding.StatisticsCountJobType.HAS_EDGE.bytes(),
+                Encoding.Statistics.JobType.HAS_EDGE.bytes(),
                 thingIID.bytes(),
                 attIID.bytes()
         );
@@ -83,7 +83,7 @@ public class StatisticsBytes {
         return join(
                 Encoding.Prefix.STATISTICS_COUNTED.bytes(),
                 thingIID.bytes(),
-                Encoding.StatisticsInfix.HAS_EDGE_COUNT.bytes(),
+                Encoding.Statistics.Infix.HAS_EDGE_COUNT.bytes(),
                 attIID.bytes()
         );
     }

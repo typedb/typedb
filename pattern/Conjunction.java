@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -125,6 +125,7 @@ public class Conjunction implements Pattern, Cloneable {
         if (this == obj) return true;
         if (obj == null || obj.getClass() != getClass()) return false;
         final Conjunction that = (Conjunction) obj;
+        // TODO This doesn't work! It doesn't compare constraints
         return (this.variables.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
     }

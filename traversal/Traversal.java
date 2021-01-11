@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,6 +23,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.producer.Producer;
+import grakn.core.common.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
@@ -48,8 +49,7 @@ import java.util.regex.Pattern;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
-import static grakn.core.common.producer.Producers.buffer;
-import static grakn.core.common.producer.Producers.produce;
+import static grakn.core.common.producer.Producers.iterable;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
@@ -105,10 +105,10 @@ public class Traversal {
             planners.get(0).tryOptimise(graphMgr);
             return planners.get(0).procedure().producer(graphMgr, parameters, parallelisation);
         } else {
-            return produce(cartesian(planners.parallelStream().map(planner -> {
+            return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
                 return planner.procedure().producer(graphMgr, parameters, parallelisation);
-            }).map(p -> buffer(p).iterator()).collect(toList())).map(partialAnswers -> {
+            }).map(p -> iterable(p).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);

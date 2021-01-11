@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,12 +20,12 @@ package grakn.core.traversal.procedure;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
+import grakn.core.common.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.PlannerVertex;
-import grakn.core.traversal.producer.VertexProducer;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +91,7 @@ public class VertexProcedure implements Procedure {
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        return new VertexProducer(iterator(graphMgr, params));
+        return Producers.producer(iterator(graphMgr, params));
     }
 
     @Override

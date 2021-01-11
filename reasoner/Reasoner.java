@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,8 +18,8 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.ExecutorService;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
@@ -44,7 +44,7 @@ import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTO
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.producer.Producers.buffer;
+import static grakn.core.common.producer.Producers.iterable;
 import static java.util.stream.Collectors.toList;
 
 public class Reasoner {
@@ -68,9 +68,9 @@ public class Reasoner {
                 .map(conjunction -> logicMgr.typeResolver().resolveVariables(conjunction))
                 .collect(Collectors.toSet());
         if (!isParallel) return iterate(conjunctions).flatMap(this::iterator);
-        else return buffer(conjunctions.stream()
-                                   .flatMap(conjunction -> producers(conjunction).stream())
-                                   .collect(toList())).iterator();
+        else return iterable(conjunctions.stream()
+                                     .flatMap(conjunction -> producers(conjunction).stream())
+                                     .collect(toList())).iterator();
     }
 
     private List<Producer<ConceptMap>> producers(Conjunction conjunction) {
@@ -83,7 +83,7 @@ public class Reasoner {
         Set<Negation> negations = conjunction.negations();
         if (negations.isEmpty()) return list(answers);
         else {
-            Predicate<ConceptMap> predicate = answer -> !buffer(iterate(negations).flatMap(
+            Predicate<ConceptMap> predicate = answer -> !iterable(iterate(negations).flatMap(
                     n -> iterate(producers(n.disjunction(), answer))).toList()
             ).iterator().hasNext();
             return list(answers.filter(predicate));

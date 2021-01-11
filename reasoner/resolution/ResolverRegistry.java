@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,8 +19,8 @@
 package grakn.core.reasoner.resolution;
 
 import grakn.common.collection.Pair;
-import grakn.common.concurrent.actor.Actor;
-import grakn.common.concurrent.actor.EventLoopGroup;
+import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
@@ -104,7 +104,7 @@ public class ResolverRegistry {
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c: concludableActors.entrySet()) {
+        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {

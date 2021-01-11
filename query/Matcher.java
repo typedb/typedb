@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -175,19 +175,26 @@ public class Matcher {
             Collector<ConceptMap, ?, Numeric> aggregator;
             switch (method) {
                 case COUNT:
-                    aggregator = count(); break;
+                    aggregator = count();
+                    break;
                 case MAX:
-                    aggregator = max(var); break;
+                    aggregator = max(var);
+                    break;
                 case MEAN:
-                    aggregator = mean(var); break;
+                    aggregator = mean(var);
+                    break;
                 case MEDIAN:
-                    aggregator = median(var); break;
+                    aggregator = median(var);
+                    break;
                 case MIN:
-                    aggregator = min(var); break;
+                    aggregator = min(var);
+                    break;
                 case STD:
-                    aggregator = std(var); break;
+                    aggregator = std(var);
+                    break;
                 case SUM:
-                    aggregator = sum(var); break;
+                    aggregator = sum(var);
+                    break;
                 default:
                     throw GraknException.of(UNRECOGNISED_VALUE);
             }

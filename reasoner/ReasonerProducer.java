@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Grakn Labs
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.common.concurrent.actor.Actor;
+import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
@@ -33,7 +33,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final Actor<RootResolver> rootResolver;
     private Request resolveRequest;
     private boolean done;
-    private Sink<ConceptMap> sink = null;
+    private Queue<ConceptMap> queue = null;
     private int iteration;
     private boolean iterationInferredAnswer;
 
@@ -44,9 +44,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void produce(Sink<ConceptMap> sink, int count) {
-        assert this.sink == null || this.sink == sink;
-        this.sink = sink;
+    public void produce(Queue<ConceptMap> queue, int count) {
+        assert this.queue == null || this.queue == queue;
+        this.queue = queue;
         for (int i = 0; i < count; i++) {
             requestAnswer();
         }
@@ -57,7 +57,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestAnswered(ResolutionAnswer answer) {
         if (answer.isInferred()) iterationInferredAnswer = true;
-        sink.put(answer.derived().conceptMap());
+        queue.put(answer.derived().conceptMap());
     }
 
     private void requestFailed(int iteration) {
@@ -70,7 +70,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
             // fully terminated finding answers
             if (!done) {
                 done = true;
-                sink.done(this);
+                queue.done(this);
             }
         } else {
             // straggler request failing from prior iteration
