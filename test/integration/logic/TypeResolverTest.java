@@ -18,7 +18,6 @@
 
 package grakn.core.logic;
 
-import grakn.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
@@ -31,7 +30,6 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,7 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -101,7 +99,7 @@ public class TypeResolverTest {
         return Disjunction.create(query.conjunction().normalise()).conjunctions().iterator().next();
     }
 
-    private Conjunction runTraversalResolver(TypeResolver typeResolver, String matchString) {
+    private Conjunction resolveConjunction(TypeResolver typeResolver, String matchString) {
         return typeResolver.resolveVariables(createConjunction(matchString));
     }
 
@@ -111,7 +109,7 @@ public class TypeResolverTest {
         String queryString = "match $p isa person;";
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
-        Conjunction conjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
@@ -126,13 +124,13 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $p isa! person; ";
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -145,14 +143,14 @@ public class TypeResolverTest {
                 "  $p is $q;" +
                 "  $q isa mammal;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$p", set("mammal", "person", "man", "woman", "dog"));
             put("$q", set("mammal", "person", "man", "woman", "dog"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
     }
 
     @Test
@@ -162,13 +160,13 @@ public class TypeResolverTest {
 
         String queryString = "match $p has name 'bob';";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
 
@@ -191,14 +189,14 @@ public class TypeResolverTest {
                 "  $a has $b;" +
                 "  $b has $a;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("nickname", "name"));
             put("$b", set("nickname", "name"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -222,7 +220,7 @@ public class TypeResolverTest {
                 "  $c has $d;" +
                 "  $d has $a;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$a", set("name", "surname", "nickname", "middlename"));
@@ -231,7 +229,7 @@ public class TypeResolverTest {
             put("$d", set("name", "surname", "nickname", "middlename"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
     }
 
     @Test
@@ -241,14 +239,14 @@ public class TypeResolverTest {
 
         String queryString = "match $p has name $a;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
             put("$a", set("name"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -260,14 +258,14 @@ public class TypeResolverTest {
                 "  $p isa shape;" +
                 "  $p has $a;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("triangle", "right-angled-triangle", "square"));
             put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -284,14 +282,14 @@ public class TypeResolverTest {
                 "  $p has $a;" +
                 "  $a = 'bob';";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person"));
             put("$a", set("name"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -305,14 +303,14 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = 1; $y = 1.0; $z = 'bob';";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("house-number", "length"));
             put("$y", set("house-number", "length"));
             put("$z", set("name"));
         }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -322,14 +320,14 @@ public class TypeResolverTest {
 
         String queryString = "match $r (wife: $yoko) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -339,7 +337,7 @@ public class TypeResolverTest {
 
         String queryString = "match $r ($role: $yoko) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -347,7 +345,7 @@ public class TypeResolverTest {
             put("$r", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -357,7 +355,7 @@ public class TypeResolverTest {
 
         String queryString = "match $r (wife: $yoko) isa $m;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
@@ -365,7 +363,7 @@ public class TypeResolverTest {
             put("$m", set("marriage", "relation", "thing"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -393,7 +391,7 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man;";
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "woman", "man"));
@@ -403,7 +401,7 @@ public class TypeResolverTest {
             put("$m", set("hetero-marriage", "marriage", "partnership", "relation", "thing"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -413,13 +411,13 @@ public class TypeResolverTest {
 
         String queryString = "match (wife: $yoko);";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -429,13 +427,13 @@ public class TypeResolverTest {
 
         String queryString = "match ($yoko) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("man", "woman", "person"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -445,7 +443,7 @@ public class TypeResolverTest {
 
         String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -455,7 +453,7 @@ public class TypeResolverTest {
             put("$a", set("person", "man", "woman"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -467,14 +465,14 @@ public class TypeResolverTest {
                 "  $p isa! person;" +
                 "  $p has $a;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("name", "email"));
             put("$p", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -485,13 +483,13 @@ public class TypeResolverTest {
                 "  $p isa person;" +
                 "  not {$p isa man;};";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -509,14 +507,14 @@ public class TypeResolverTest {
                 "  $p isa man;" +
                 "  man sub $q;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("man", "greek", "socrates"));
             put("$q", set("thing", "entity", "animal", "person", "man"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -526,13 +524,13 @@ public class TypeResolverTest {
 
         String queryString = "match $t type shape;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$t", set("shape"));
         }};
 
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
+        assertTrue(getHintMap(conjunction).entrySet().containsAll(expected.entrySet()));
     }
 
     @Test
@@ -541,13 +539,13 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match (spouse: $john) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$john", set("person", "man", "woman"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -567,7 +565,7 @@ public class TypeResolverTest {
                 "  $b has leg-weight 5;" +
                 "  $p has weight $c;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("animal", "dog", "person", "chair"));
@@ -576,7 +574,7 @@ public class TypeResolverTest {
             put("$p", set("animal", "person", "dog", "chair"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -588,12 +586,12 @@ public class TypeResolverTest {
         String queryString = "match" +
                 "  $a has $a;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$a", set("unit"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
     }
 
 
@@ -604,13 +602,13 @@ public class TypeResolverTest {
 
         String queryString = "match $x isa thing;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", Collections.emptySet());
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -628,7 +626,7 @@ public class TypeResolverTest {
 
         String queryString = "match $x isa $t; $y isa $t; $x has man-name'bob'; $y has woman-name 'alice';";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$x", set("man"));
@@ -636,7 +634,7 @@ public class TypeResolverTest {
             put("$t", set("thing", "entity", "person"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
     }
 
     @Test
@@ -656,7 +654,7 @@ public class TypeResolverTest {
                 "  $z sub $w;" +
                 "  $w sub person;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "man", "greek", "socrates"));
@@ -665,7 +663,7 @@ public class TypeResolverTest {
             put("$w", set("person", "man", "greek", "socrates"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     // When a hint label exists, it can "skip" a generation, meaning a hint and the hint's descendent is possible, yet
@@ -673,7 +671,7 @@ public class TypeResolverTest {
     // We show this below on the hint labels of $t
     // We also show on $a that hints can be isolated form each other completely hierarchy-wise.
     @Test
-    //TODO: ignored as the gap fpesn't appea. Unclear if this is a resolver or traversal bug.
+    //TODO: ignored as the gap doesn't appear. Unclear if this is a resolver or traversal bug.
     @Ignore
     public void hierarchy_hint_gap() throws IOException {
         define_custom_schema(
@@ -703,7 +701,7 @@ public class TypeResolverTest {
                 "  $a has left-attr true; " +
                 "  $b has right-attr true;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$t", set("animal", "person"));
@@ -712,7 +710,7 @@ public class TypeResolverTest {
             put("$rel", set("ownership", "marriage"));
             put("$c", set("ownership-attr", "marriage-attr"));
         }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -720,13 +718,13 @@ public class TypeResolverTest {
         define_standard_schema("basic-schema");
         String queryString = "match $a has name 'fido'; $a has label 'poodle';";
         TypeResolver typeResolver = transaction.logic().typeResolver();
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("dog"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -758,14 +756,14 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person"));
             put("$y", set("person"));
             put("$m", set("marriage", "hetero-marriage"));
         }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -774,14 +772,14 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match $x isa relation;";
 
-        Conjunction relationConjunction = runTraversalResolver(typeResolver, relationString);
+        Conjunction relationConjunction = resolveConjunction(typeResolver, relationString);
         Map<String, Set<String>> relationExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("friendship", "employment"));
         }};
         assertEquals(relationExpected, getHintMap(relationConjunction));
 
         String attributeString = "match $x isa attribute;";
-        Conjunction attributeConjunction = runTraversalResolver(typeResolver, attributeString);
+        Conjunction attributeConjunction = resolveConjunction(typeResolver, attributeString);
         Map<String, Set<String>> attributeExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("name", "age", "ref"));
         }};
@@ -789,14 +787,14 @@ public class TypeResolverTest {
         assertEquals(attributeExpected, getHintMap(attributeConjunction));
 
         String entityString = "match $x isa entity;";
-        Conjunction entityConjunction = runTraversalResolver(typeResolver, entityString);
+        Conjunction entityConjunction = resolveConjunction(typeResolver, entityString);
         Map<String, Set<String>> entityExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "company"));
         }};
         assertEquals(entityExpected, getHintMap(entityConjunction));
 
         String roleString = "match ($role: $x) isa relation;";
-        Conjunction roleConjunction = runTraversalResolver(typeResolver, roleString);
+        Conjunction roleConjunction = resolveConjunction(typeResolver, roleString);
         Map<String, Set<String>> roleExpected = new HashMap<String, Set<String>>() {{
             put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
             put("$x", set("person", "company"));
@@ -804,7 +802,7 @@ public class TypeResolverTest {
         assertEquals(roleExpected, getHintMap(roleConjunction));
 
         String thingString = "match $x isa thing;";
-        Conjunction thingConjunction = runTraversalResolver(typeResolver, thingString);
+        Conjunction thingConjunction = resolveConjunction(typeResolver, thingString);
         Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
             put("$x", set());
         }};
@@ -822,7 +820,7 @@ public class TypeResolverTest {
                 " $z = $w;" +
                 " $w = 1;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("perimeter", "area", "hypotenuse-length"));
@@ -831,7 +829,7 @@ public class TypeResolverTest {
             put("$w", set("perimeter", "area", "hypotenuse-length"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -856,14 +854,14 @@ public class TypeResolverTest {
                 " $x has $y;" +
                 " $y has $x;";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("nickname", "name"));
             put("$y", set("nickname", "name"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -884,14 +882,14 @@ public class TypeResolverTest {
         define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x has $y;";
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "company", "friendship", "employment"));
             put("$y", set("name", "age", "ref"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -899,14 +897,14 @@ public class TypeResolverTest {
         define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x = $y;";
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("name", "age", "ref"));
             put("$y", set("name", "age", "ref"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -919,13 +917,13 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $x has name 'bob';";
 
-        Conjunction exhaustiveConjunction = runTraversalResolver(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
 }

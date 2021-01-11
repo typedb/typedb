@@ -471,8 +471,9 @@ public class SchemaGraph implements Graph {
     public class Statistics {
 
         private static final int UNSET_COUNT = -1;
-        private volatile int abstractTypeCount;
+        private volatile int abstractThingTypeCount;
         private volatile int thingTypeCount;
+        private volatile int concreteThingTypeCount;
         private volatile int attributeTypeCount;
         private volatile int relationTypeCount;
         private volatile int roleTypeCount;
@@ -481,7 +482,7 @@ public class SchemaGraph implements Graph {
         private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
 
         private Statistics() {
-            abstractTypeCount = UNSET_COUNT;
+            abstractThingTypeCount = UNSET_COUNT;
             thingTypeCount = UNSET_COUNT;
             attributeTypeCount = UNSET_COUNT;
             relationTypeCount = UNSET_COUNT;
@@ -491,11 +492,11 @@ public class SchemaGraph implements Graph {
             attTypesWithValueType = new ConcurrentHashMap<>();
         }
 
-        public long abstractTypeCount() {
+        public long abstractThingTypeCount() {
             Supplier<Integer> fn = () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count());
             if (isReadOnly) {
-                if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = fn.get();
-                return abstractTypeCount;
+                if (abstractThingTypeCount == UNSET_COUNT) abstractThingTypeCount = fn.get();
+                return abstractThingTypeCount;
             } else {
                 return fn.get();
             }
@@ -505,8 +506,8 @@ public class SchemaGraph implements Graph {
             Supplier<Integer> fn = () ->
                     toIntExact(thingTypes().stream().filter(typeVertex -> !typeVertex.isAbstract()).count());
             if (isReadOnly) {
-                if (thingTypeCount == UNSET_COUNT) thingTypeCount = fn.get();
-                return thingTypeCount;
+                if (concreteThingTypeCount == UNSET_COUNT) concreteThingTypeCount = fn.get();
+                return concreteThingTypeCount;
             } else {
                 return fn.get();
             }

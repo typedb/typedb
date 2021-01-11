@@ -198,6 +198,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(12, "Tye type variable '%s' has multiple 'value' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(13, "The type variable '%s' has multiple 'regex' constraints.");
+        public static final Pattern SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION =
+                new Pattern(14, "The conjunction %s can never be satisfied within the current.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -456,8 +458,6 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class Reasoner extends ErrorMessage {
         public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
                 new Reasoner(1, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'");
-        public static final Reasoner SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION =
-                new Reasoner(2, "The conjunction %s can never be satisfied as it requires schematically incompatible types.");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";

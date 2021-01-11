@@ -1,23 +1,24 @@
 /*
  * Copyright (C) 2020 Grakn Labs
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
  *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
 
 package grakn.core.logic.tool;
 
+import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
@@ -47,12 +48,13 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.THING_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 
-//TODO: here we remake Type Resolver, using a Traversal Structure instead of a Pattern to move on the graph and find out answers.
 public class TypeResolver {
 
     private final ConceptManager conceptMgr;
@@ -87,15 +89,15 @@ public class TypeResolver {
         resolveLabels(conjunction);
         TraversalConstructor traversalConstructor = new TraversalConstructor(conjunction, conceptMgr);
 
-        Map<Reference, Set<Label>> resolvedLabels = runTraversalEngine(traversalConstructor);
+        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalConstructor);
         if (resolvedLabels.isEmpty()) throw GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction);
-        resolvedLabels.forEach((ref, labels) -> traversalConstructor.getVariable(ref).addResolvedTypes(labels));
-        findVariablesWithNoHints(conjunction);
+        resolvedLabels.forEach((ref, labels) -> traversalConstructor.getVariable(ref).setResolvedTypes(labels));
+        clearResolvedTypesWhichProvideNoInfo(conjunction);
 
         return conjunction;
     }
 
-    private void findVariablesWithNoHints(Conjunction conjunction) {
+    private void clearResolvedTypesWhichProvideNoInfo(Conjunction conjunction) {
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
         iterate(conjunction.variables()).filter(variable -> (
@@ -104,7 +106,7 @@ public class TypeResolver {
         )).forEachRemaining(Variable::clearResolvedTypes);
     }
 
-    private Map<Reference, Set<Label>> runTraversalEngine(TraversalConstructor traversalConstructor) {
+    private Map<Reference, Set<Label>> executeResolverTraversals(TraversalConstructor traversalConstructor) {
         return logicCache.resolver().get(traversalConstructor.resolverTraversal(), traversal -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(traversal).forEachRemaining(
@@ -112,7 +114,7 @@ public class TypeResolver {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         assert vertex.isType();
                         if (!(vertex.asType().isAbstract() && traversalConstructor.getVariable(ref).isThing()))
-                            mapping.get(ref).add(Label.of(vertex.asType().label(), vertex.asType().scope()));
+                            mapping.get(ref).add(vertex.asType().properLabel());
                     })
             );
             return mapping;
@@ -183,7 +185,7 @@ public class TypeResolver {
 
         private void convertIID(TypeVariable owner, IIDConstraint iidConstraint) {
             if (conceptMgr.getThing(iidConstraint.iid()) == null)
-                throw GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction);
+                throw GraknException.of(THING_NOT_FOUND, Bytes.bytesToHexString(iidConstraint.iid()));
             resolverTraversal.labels(owner.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
         }
 
@@ -194,6 +196,7 @@ public class TypeResolver {
                 resolverTraversal.equalTypes(owner.id(), convert(isaConstraint.type()).id());
             else if (isaConstraint.type().label().isPresent())
                 resolverTraversal.labels(owner.id(), isaConstraint.type().label().get().properLabel());
+            else throw GraknException.of(ILLEGAL_STATE);
         }
 
         private void convertIs(TypeVariable owner, IsConstraint isConstraint) {
@@ -242,8 +245,8 @@ public class TypeResolver {
         }
 
         private void subAttribute(Identifier.Variable variable) {
-            Identifier.Variable attributeID = Identifier.Variable.of(Reference.label("attribute"));
-            resolverTraversal.labels(attributeID, Label.of("attribute"));
+            Identifier.Variable attributeID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
+            resolverTraversal.labels(attributeID, Label.of(ATTRIBUTE.toString()));
             resolverTraversal.sub(variable, attributeID, true);
         }
 
