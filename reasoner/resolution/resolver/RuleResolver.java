@@ -112,7 +112,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         ConceptMap whenAnswer = fromDownstream.answer().derived().withInitial();
         Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
         if (isLast(sender)) {
-            Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer);
+            Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer, traversalEngine, conceptMgr);
             assert fromUpstream.answerBounds().isUnified();
             Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified()
                     .aggregateToUpstream(thenMaterialisation);
