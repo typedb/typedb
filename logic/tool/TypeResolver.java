@@ -46,7 +46,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -183,8 +182,13 @@ public class TypeResolver {
             valueTypeRegister.putIfAbsent(resolver.id(), set());
 
             //Note: order is important!
-            variable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
+            // This is because it is necessary to assume that when convert() has been called on a Variable, the output
+            //has at least resolved the valueTypes.
+            // This sort of ordering is dealt with via the TraversalEngine for most of the constraints, but because
+            //a valueType cannot be a Variable, we have to find out its concrete valueType and place that on the
+            //Traversal instead.
             variable.value().forEach(constraint -> convertValue(resolver, constraint));
+            variable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
             variable.is().forEach(constraint -> convertIs(resolver, constraint));
             variable.has().forEach(constraint -> convertHas(resolver, constraint));
             variable.relation().forEach(constraint -> convertRelation(resolver, constraint));
@@ -243,12 +247,12 @@ public class TypeResolver {
         private Set<ValueType> findComparableValueTypes(ValueConstraint<?> constraint) {
             if (constraint.isVariable()) {
                 TypeVariable comparableVar = convert(constraint.asVariable().value());
-                assert valueTypeRegister.containsKey(comparableVar.id());
+                assert valueTypeRegister.containsKey(comparableVar.id()); //This will fail without careful ordering.
                 subAttribute(comparableVar.id());
                 return valueTypeRegister.get(comparableVar.id());
             }
-            return Encoding.ValueType.of(constraint.value().getClass()).comparables()
-                    .stream().map(Encoding.ValueType::graqlValueType).collect(Collectors.toSet());
+            return iterate(Encoding.ValueType.of(constraint.value().getClass()).comparables())
+                    .map(Encoding.ValueType::graqlValueType).toSet();
         }
 
         private void subAttribute(Identifier.Variable variable) {

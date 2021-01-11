@@ -504,7 +504,7 @@ public class SchemaGraph implements Graph {
 
         public long concreteThingTypeCount() {
             Supplier<Integer> fn = () ->
-                    toIntExact(thingTypes().stream().filter(typeVertex -> !typeVertex.isAbstract()).count());
+                    toIntExact(iterate(thingTypes()).filter(typeVertex -> !typeVertex.isAbstract()).count());
             if (isReadOnly) {
                 if (concreteThingTypeCount == UNSET_COUNT) concreteThingTypeCount = fn.get();
                 return concreteThingTypeCount;
