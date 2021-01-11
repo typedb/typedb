@@ -151,8 +151,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         if (isModified) owner.isModified();
         if (isReflexive) {
-            if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonSymmetric(edge);
-            else ((ThingAdjacencyImpl) edge.from().outs()).putNonSymmetric(edge);
+            if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonReflexive(edge);
+            else ((ThingAdjacencyImpl) edge.from().outs()).putNonReflexive(edge);
         }
         return edge;
     }
@@ -180,7 +180,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return put(encoding, edge, infixes, true, true);
     }
 
-    private void putNonSymmetric(ThingEdgeImpl edge) {
+    private void putNonReflexive(ThingEdgeImpl edge) {
         put(edge.encoding(), edge, infixTails(edge), true, false);
     }
 
