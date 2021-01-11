@@ -132,7 +132,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return edge;
     }
 
-    private ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingEdgeImpl edge, IID[] infixes, boolean isModified, boolean symmetricPut) {
+    private ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingEdgeImpl edge, IID[] infixes, boolean isModified, boolean isReflexive) {
         assert encoding.lookAhead() == infixes.length;
         InfixIID.Thing infixIID = infixIID(encoding);
         for (int i = 0; i < encoding.lookAhead(); i++) {
@@ -150,7 +150,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         if (isModified) owner.isModified();
-        if (symmetricPut) {
+        if (isReflexive) {
             if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonSymmetric(edge);
             else ((ThingAdjacencyImpl) edge.from().outs()).putNonSymmetric(edge);
         }
