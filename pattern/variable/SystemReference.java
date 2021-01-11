@@ -27,9 +27,35 @@ public class SystemReference extends Reference.Referrable {
     public final static String PREFIX = "$/";
 
     private final int id;
+    private final int hash;
 
-    public SystemReference(int id) {
-        super();
+    SystemReference(int id) {
+        super(Type.SYSTEM, true);
+        this.id = id;
+        this.hash = Objects.hash(SystemReference.class, id);
+    }
+
+    @Override
+    public String syntax() {
+        return PREFIX + id;
+    }
+
+    public static SystemReference of(int id) {
+        return new SystemReference(id);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SystemReference that = (SystemReference) o;
+        return this.id == that.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
     }
 
 }
