@@ -71,9 +71,9 @@ public class GraphProducer implements Producer<VertexMap> {
         } else {
             int splitCount = (int) Math.ceil((double) count / futures.size());
             for (ResourceIterator<VertexMap> iterator : futures.keySet()) {
-                futures.computeIfPresent(iterator,
-                                         (k, v) -> v.thenRunAsync(() -> produceAsync(queue, k, splitCount), forkJoinPool())
-                );
+                futures.computeIfPresent(iterator, (k, v) -> v.thenRunAsync(
+                        () -> produceAsync(queue, k, splitCount), forkJoinPool()
+                ));
             }
         }
     }
