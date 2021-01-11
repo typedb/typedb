@@ -31,19 +31,21 @@ import static grakn.common.collection.Collections.set;
 public class ConstraintCloner {
 
     private final Map<Identifier.Variable, Variable> variables;
+    private final Map<Constraint, Constraint> constraints;
 
     public ConstraintCloner() {
         variables = new HashMap<>();
+        constraints = new HashMap<>();
     }
 
-    public static ConstraintCloner cloneFromConstraints(Set<Constraint> include) {
+    public static ConstraintCloner cloneFromConstraints(Set<Constraint> constraints) {
         ConstraintCloner cloner = new ConstraintCloner();
-        include.forEach(cloner::clone);
+        constraints.forEach(cloner::clone);
         return cloner;
     }
 
     private void clone(Constraint constraint) {
-        constraint.clone(this);
+        constraints.put(constraint, constraint.clone(this));
     }
 
     public ThingVariable cloneVariable(ThingVariable variable) {
@@ -64,5 +66,9 @@ public class ConstraintCloner {
 
     public Set<Variable> variables() {
         return set(variables.values());
+    }
+
+    public Constraint getClone(Constraint constraint) {
+        return constraints.get(constraint);
     }
 }

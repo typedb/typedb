@@ -151,7 +151,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_exact_unifies_rule_has_exact() {
         String conjunction = "{ $y has name 'john'; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name 'john'");
@@ -201,7 +201,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_exact_unifies_rule_has_variable() {
         String conjunction = "{ $y has name 'john'; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
@@ -258,7 +258,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_variable_unifies_rule_has_exact() {
         String conjunction = "{ $y has $a; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
@@ -291,7 +291,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_variable_unifies_rule_has_variable() {
         String conjunction = "{ $y has $b; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
@@ -324,7 +324,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_typed_variable_unifies_rule_has_exact() {
         String conjunction = "{ $y has name $b; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
@@ -366,7 +366,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_typed_variable_unifies_rule_has_variable() {
         String conjunction = "{ $y has name $b; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
@@ -408,7 +408,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_many_to_one_unifier() {
         String conjunction = "{ $x has attribute $y; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
@@ -432,7 +432,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_one_to_many_unifier() {
         String conjunction = "{ $b has attribute $b; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
@@ -467,7 +467,7 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_all_equivalent_vars_unifier() {
         String conjunction = "{ $b has self-owning-attribute $b; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
         Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");

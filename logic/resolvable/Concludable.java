@@ -27,15 +27,16 @@ import grakn.core.concept.type.Type;
 import grakn.core.graph.util.Encoding;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.logic.tool.ConstraintCopier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
+import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -60,29 +61,17 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolvable {
+public abstract class Concludable extends Resolvable {
 
-    private final CONSTRAINT constraint;
-    private final Set<Constraint> coreConstraints;
     private Map<Rule, Set<Unifier>> applicableRules = null;
 
-    private Concludable(CONSTRAINT constraint, Set<Constraint> otherCoreConstraints) {
-        this.constraint = constraint;
-        HashSet<Constraint> c = new HashSet<>(otherCoreConstraints);
-        c.add(this.constraint);
-        this.coreConstraints = set(c);
+    private Concludable() {
         applicableRules = new HashMap<>(); // TODO Implement
     }
 
-    public CONSTRAINT constraint() {
-        return constraint;
-    }
+    public abstract Set<Constraint> constraints();
 
-    public Set<Constraint> coreConstraints() {
-        return coreConstraints;
-    }
-
-    public static Set<Concludable<?>> create(grakn.core.pattern.Conjunction conjunction) {
+    public static Set<Concludable> create(grakn.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction.variables()).concludables();
     }
 
@@ -126,7 +115,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
     ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
 
-    public AlphaEquivalence alphaEquals(Concludable<?> that) {
+    public AlphaEquivalence alphaEquals(Concludable that) {
         if (that.isRelation()) return alphaEquals(that.asRelation());
         else if (that.isHas()) return alphaEquals(that.asHas());
         else if (that.isIsa()) return alphaEquals(that.asIsa());
@@ -233,27 +222,50 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
     }
 
-    public static class Relation extends Concludable<RelationConstraint> {
+    public static class Relation extends Concludable {
 
-        public Relation(final RelationConstraint constraint, @Nullable IsaConstraint isaConstraint) {
-            super(ConstraintCopier.copyConstraint(constraint), isaConstraint == null ? set() : set(isaConstraint));
+        private final RelationConstraint relation;
+        private final IsaConstraint isaConstraint;
+        private final Set<LabelConstraint> labels;
+
+        private Relation(Set<Variable> variables, RelationConstraint relation, @Nullable IsaConstraint isaConstraint, Set<LabelConstraint> labels) {
+            this.relation = relation;
+            this.isaConstraint = isaConstraint;
+            this.labels = labels;
+        }
+
+        public static Relation of(RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
+            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(
+                    isa == null ? set(new HashSet<>(labels), relation) : set(new HashSet<>(labels), relation, isa));
+            return new Relation(cloner.variables(), cloner.getClone(relation).asThing().asRelation(),
+                                isa == null ? null : cloner.getClone(isa).asThing().asIsa(),
+                                Iterators.iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
+        }
+
+        public RelationConstraint relation() {
+            return relation;
+        }
+
+        @Override
+        public Set<Constraint> constraints() {
+            return isaConstraint == null ? set(new HashSet<>(labels), relation) : set(new HashSet<>(labels), relation, isaConstraint);
         }
 
         @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
-            if (this.constraint().players().size() > relationConclusion.relation().players().size())
+            if (this.relation().players().size() > relationConclusion.relation().players().size())
                 return Iterators.empty();
             Unifier.Builder unifierBuilder = Unifier.builder();
 
-            if (!constraint().owner().reference().isAnonymous()) {
-                assert constraint().owner().reference().isName();
-                if (unificationSatisfiable(constraint().owner(), relationConclusion.relation().owner())) {
-                    unifierBuilder.add(constraint().owner().id(), relationConclusion.relation().owner().id());
+            if (!relation().owner().reference().isAnonymous()) {
+                assert relation().owner().reference().isName();
+                if (unificationSatisfiable(relation().owner(), relationConclusion.relation().owner())) {
+                    unifierBuilder.add(relation().owner().id(), relationConclusion.relation().owner().id());
                 } else return Iterators.empty();
             }
 
-            if (constraint().owner().isa().isPresent()) {
-                TypeVariable concludableRelationType = constraint().owner().isa().get().type();
+            if (relation().owner().isa().isPresent()) {
+                TypeVariable concludableRelationType = relation().owner().isa().get().type();
                 TypeVariable conclusionRelationType = relationConclusion.relation().owner().isa().get().type();
                 if (unificationSatisfiable(concludableRelationType, conclusionRelationType, conceptMgr)) {
                     unifierBuilder.add(concludableRelationType.id(), conclusionRelationType.id());
@@ -267,7 +279,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 } else return Iterators.empty();
             }
 
-            List<RolePlayer> conjRolePlayers = list(constraint().players());
+            List<RolePlayer> conjRolePlayers = list(relation().players());
             Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();
 
             return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
@@ -334,24 +346,47 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         AlphaEquivalence alphaEquals(Relation that) {
-            return constraint().alphaEquals(that.constraint());
+            return relation().alphaEquals(that.relation());
         }
     }
 
-    public static class Has extends Concludable<HasConstraint> {
+    public static class Has extends Concludable {
 
-        public Has(final HasConstraint constraint, @Nullable IsaConstraint isaConstraint, Set<ValueConstraint<?>> valueConstraints) {
-            super(ConstraintCopier.copyConstraint(constraint), core(isaConstraint, valueConstraints));
+        private final HasConstraint has;
+        private final IsaConstraint isa;
+        private final Set<ValueConstraint<?>> values;
+
+        private Has(Set<Variable> variables, HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values) {
+            this.has = has;
+            this.isa = isa;
+            this.values = values;
+        }
+
+        public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
+            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(
+                    isa == null ? set(new HashSet<>(values), has) : set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), has, isa));
+            return new Has(cloner.variables(), cloner.getClone(has).asThing().asHas(),
+                           isa == null ? null : cloner.getClone(isa).asThing().asIsa(),
+                           new HashSet<>(Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
+        }
+
+        public HasConstraint has() {
+            return has;
+        }
+
+        @Override
+        public Set<Constraint> constraints() {
+            return isa == null ? set(new HashSet<>(values), has) : set(new HashSet<>(values), has, isa);
         }
 
         @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), hasConclusion.has().owner())) {
-                unifierBuilder.add(constraint().owner().id(), hasConclusion.has().owner().id());
+            if (unificationSatisfiable(has().owner(), hasConclusion.has().owner())) {
+                unifierBuilder.add(has().owner().id(), hasConclusion.has().owner().id());
             } else return Iterators.empty();
 
-            ThingVariable attr = constraint().attribute();
+            ThingVariable attr = has().attribute();
             if (unificationSatisfiable(attr, hasConclusion.has().attribute())) {
                 unifierBuilder.add(attr.id(), hasConclusion.has().attribute().id());
                 if (attr.reference().isAnonymous()) {
@@ -433,30 +468,44 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         AlphaEquivalence alphaEquals(Has that) {
-            return constraint().alphaEquals(that.constraint());
+            return has().alphaEquals(that.has());
         }
 
-        private static Set<Constraint> core(@Nullable IsaConstraint isaConstraint, Set<ValueConstraint<?>> valueConstraints) {
-            Set<Constraint> c = new HashSet<>(valueConstraints);
-            if (isaConstraint != null) c.add(isaConstraint);
-            return c;
-        }
     }
 
-    public static class Isa extends Concludable<IsaConstraint> {
+    public static class Isa extends Concludable {
 
-        public Isa(final IsaConstraint constraint, Set<ValueConstraint<?>> value) {
-            super(ConstraintCopier.copyConstraint(constraint), new HashSet<>(value));
+        private final IsaConstraint isa;
+        private final Set<ValueConstraint<?>> values;
+
+        private Isa(Set<Variable> variables, IsaConstraint isa, Set<ValueConstraint<?>> values) {
+            this.isa = isa;
+            this.values = values;
+        }
+
+        public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
+            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), isa));
+            return new Isa(cloner.variables(), cloner.getClone(isa).asThing().asIsa(), new HashSet<>(
+                    Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
+        }
+
+        public IsaConstraint isa() {
+            return isa;
+        }
+
+        @Override
+        public Set<Constraint> constraints() {
+            return set(new HashSet<>(values), isa);
         }
 
         @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), isaConclusion.isa().owner())) {
-                unifierBuilder.add(constraint().owner().id(), isaConclusion.isa().owner().id());
+            if (unificationSatisfiable(isa().owner(), isaConclusion.isa().owner())) {
+                unifierBuilder.add(isa().owner().id(), isaConclusion.isa().owner().id());
             } else return Iterators.empty();
 
-            TypeVariable type = constraint().type();
+            TypeVariable type = isa().type();
             if (unificationSatisfiable(type, isaConclusion.isa().type(), conceptMgr)) {
                 unifierBuilder.add(type.id(), isaConclusion.isa().type().id());
 
@@ -482,21 +531,37 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         AlphaEquivalence alphaEquals(Isa that) {
-            return constraint().alphaEquals(that.constraint());
+            return isa().alphaEquals(that.isa());
         }
     }
 
-    public static class Attribute extends Concludable<ValueConstraint<?>> {
+    public static class Attribute extends Concludable {
 
-        public Attribute(final ValueConstraint<?> constraint) {
-            super(ConstraintCopier.copyConstraint(constraint), set());
+        private final ValueConstraint<?> value;
+
+        public Attribute(Set<Variable> variables, ValueConstraint<?> value) {
+            this.value = value;
+        }
+
+        public static Attribute of(ValueConstraint<?> value) {
+            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(set(value));
+            return new Attribute(cloner.variables(), cloner.getClone(value).asThing().asValue());
+        }
+
+        public ValueConstraint<?> value() {
+            return null;
+        }
+
+        @Override
+        public Set<Constraint> constraints() {
+            return set(value);
         }
 
         @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(constraint().owner(), valueConclusion.value().owner())) {
-                unifierBuilder.add(constraint().owner().id(), valueConclusion.value().owner().id());
+            if (unificationSatisfiable(value().owner(), valueConclusion.value().owner())) {
+                unifierBuilder.add(value().owner().id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
 
             /*
@@ -508,10 +573,10 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             Trying to find results for a query 'match $x > $y' will never find any answers, as a rule can only infer
             an equality, ie. 'then { $x has $_age; $_age = 10; $_age isa age; }
              */
-            if (constraint().isVariable()) {
-                assert constraint().value() instanceof ThingVariable;
-                ThingVariable value = (ThingVariable) constraint().value();
-                if (unificationSatisfiable(constraint().predicate(), valueConclusion.value().predicate())) {
+            if (value().isVariable()) {
+                assert value().value() instanceof ThingVariable;
+                ThingVariable value = (ThingVariable) value().value();
+                if (unificationSatisfiable(value().predicate(), valueConclusion.value().predicate())) {
                     unifierBuilder.add(value.id(), valueConclusion.value().owner().id());
                 } else return Iterators.empty();
                 // } else {
@@ -542,7 +607,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         @Override
         AlphaEquivalence alphaEquals(Attribute that) {
-            return constraint().alphaEquals(that.constraint());
+            return value().alphaEquals(that.value());
         }
     }
 
@@ -551,7 +616,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
 
         private final Set<Variable> isaOwnersToSkip = new HashSet<>();
         private final Set<Variable> valueOwnersToSkip = new HashSet<>();
-        private final Set<Concludable<?>> concludables = new HashSet<>();
+        private final Set<Concludable> concludables = new HashSet<>();
 
         Extractor(Set<Variable> variables) {
             Set<Constraint> constraints = variables.stream().flatMap(variable -> variable.constraints().stream())
@@ -567,30 +632,37 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            concludables.add(new Relation(relationConstraint, relationConstraint.owner().isa().orElse(null)));
+            Set<LabelConstraint> labelConstraints = set(labelConstraints(relationConstraint), relationConstraint.owner().isa().map(Extractor::labelConstraints).orElse(set()));
+            concludables.add(Relation.of(relationConstraint, relationConstraint.owner().isa().orElse(null), labelConstraints));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            concludables.add(new Has(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value()));
+            Set<LabelConstraint> labelConstraints = set(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
+            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value(), labelConstraints));
             isaOwnersToSkip.add(hasConstraint.attribute());
             if (hasConstraint.attribute().isa().isPresent()) valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         public void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(new Isa(isaConstraint, isaConstraint.owner().value()));
+            concludables.add(Isa.of(isaConstraint, isaConstraint.owner().value(), labelConstraints(isaConstraint)));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }
 
         private void fromConstraint(ValueConstraint<?> valueConstraint) {
             if (valueOwnersToSkip.contains(valueConstraint.owner())) return;
-            concludables.add(new Attribute(valueConstraint));
+            concludables.add(Attribute.of(valueConstraint));
         }
 
-        public Set<Concludable<?>> concludables() {
+        public Set<Concludable> concludables() {
             return new HashSet<>(concludables);
+        }
+
+        private static Set<LabelConstraint> labelConstraints(Constraint constraint) {
+            return new HashSet<>(Iterators.iterate(constraint.variables()).filter(v -> v.reference().isLabel()).map(
+                    v -> v.asType().label().get()).toSet());
         }
     }
 }

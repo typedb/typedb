@@ -133,7 +133,7 @@ public class UnifyAttributeConcludableTest {
     @Test
     public void literal_predicates_unify_and_filter_answers() {
         String conjunction = "{ $a > 'b'; $a < 'y'; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
@@ -180,7 +180,7 @@ public class UnifyAttributeConcludableTest {
     @Test
     public void variable_predicates_unify_value_conclusions() {
         String conjunction = "{ $x > $y; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(2, concludables.size());
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 

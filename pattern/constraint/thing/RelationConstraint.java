@@ -156,8 +156,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         private final int hash;
 
         public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player, int repetition) {
-            assert roleType == null || roleType.reference().isName() ||
-                    (roleType.label().isPresent() && roleType.label().get().scope().isPresent());
+//            assert roleType == null || roleType.reference().isName() ||
+//                    (roleType.label().isPresent() && roleType.label().get().scope().isPresent()); // TODO We have a problem here if we reach this before we've added a labelconstraint to the role type variable
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;

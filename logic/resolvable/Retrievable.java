@@ -40,7 +40,7 @@ public class Retrievable extends Resolvable {
         this.conjunction = conjunction;
     }
 
-    public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable<?>> toExclude) {
+    public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
         return Retrievable.Extractor.from(conjunction, toExclude).extract();
     }
 
@@ -61,22 +61,22 @@ public class Retrievable extends Resolvable {
 
     public static class Extractor {
         private final Conjunction conjunction;
-        private final Set<Concludable<?>> concludables;
+        private final Set<Concludable> concludables;
         private final Set<SubgraphRegistry> subgraphs = new HashSet<>();
         private final Set<Variable> extractedVariables = new HashSet<>();
         private final Set<Constraint> extractedConstraints = new HashSet<>();
 
-        public Extractor(Conjunction conjunction, Set<Concludable<?>> concludables) {
+        public Extractor(Conjunction conjunction, Set<Concludable> concludables) {
             this.conjunction = conjunction;
             this.concludables = concludables;
         }
 
-        public static Extractor from(Conjunction conjunction, Set<Concludable<?>> concludables) {
+        public static Extractor from(Conjunction conjunction, Set<Concludable> concludables) {
             return new Extractor(conjunction, concludables);
         }
 
         public Set<Retrievable> extract() {
-            concludables.forEach(concludable -> extractedConstraints.addAll(concludable.coreConstraints()));
+            concludables.forEach(concludable -> extractedConstraints.addAll(concludable.constraints()));
             Iterators.iterate(conjunction.variables()).filter(var -> var.id().reference().isName()).forEachRemaining(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();

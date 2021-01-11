@@ -38,7 +38,7 @@ public abstract class Resolvable {
         throw GraknException.of(INVALID_CASTING);
     }
 
-    public Concludable<?> asConcludable() {
+    public Concludable asConcludable() {
         throw GraknException.of(INVALID_CASTING);
     }
 

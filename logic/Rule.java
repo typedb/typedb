@@ -71,7 +71,7 @@ public class Rule {
     private final Conjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
-    private final Set<Concludable<?>> requiredWhenConcludables;
+    private final Set<Concludable> requiredWhenConcludables;
 
     private Rule(LogicManager logicManager, RuleStructure structure) {
         this.logicManager = logicManager;
@@ -113,7 +113,7 @@ public class Rule {
         return new Rule(graphMgr, conceptMgr, logicManager, label, when, then);
     }
 
-    public Set<Concludable<?>> whenConcludables() {
+    public Set<Concludable> whenConcludables() {
         return requiredWhenConcludables;
     }
 

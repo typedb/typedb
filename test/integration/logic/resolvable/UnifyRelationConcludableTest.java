@@ -166,7 +166,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_and_player_unifies_rule_relation_exact() {
         String conjunction = "{ $r (employee: $y) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
@@ -226,7 +226,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_type_and_player_unifies_rule_relation_exact() {
         String conjunction = "{ (employee: $y) isa $rel; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
@@ -283,7 +283,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_role_unifies_rule_relation_exact() {
         String conjunction = "{ ($role: $y) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
@@ -340,7 +340,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_without_isa_unifies_rule_relation() {
         String conjunction = "{ (employee: $y); }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
@@ -367,7 +367,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_variables_one_to_many_unifiers() {
         String conjunction = "{ ($role: $p) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("three-people-are-employed",
@@ -400,7 +400,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_variable_multiple_identical_unifiers() {
         String conjunction = "{ (employee: $p) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("the-same-person-is-employed-twice",
@@ -423,7 +423,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void unify_relation_many_to_many() {
         String conjunction = "{ (employee: $p, employee: $q) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("three-people-are-employed",
@@ -477,7 +477,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_player_role_unifies_rule_relation_repeated_variable_role() {
         String conjunction = "{ ($role: $p) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("two-people-are-employed",
@@ -506,7 +506,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_duplicate_players_unifies_rule_relation_distinct_players() {
         String conjunction = "{ (employee: $p, employee: $p) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("two-people-are-employed",
@@ -574,7 +574,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_unifies_many_to_many_rule_relation_players() {
         String conjunction = "{ (employee: $p, employer: $p, employee: $q) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("two-people-are-employed-one-is-also-the-employer",
@@ -606,7 +606,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_variable_role_unifies_many_to_many_rule_relation_roles() {
         String conjunction = "{ ($role1: $p, $role1: $q, $role2: $q) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("two-people-are-employed-one-is-also-the-employer",
@@ -653,7 +653,7 @@ public class UnifyRelationConcludableTest {
     public void relation_variable_role_unifies_many_to_many_rule_relation_roles_2() {
         String conjunction = "{ ($role1: $p, $role2: $q, $role1: $p) isa employment; }";
 
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("two-people-are-employed-one-is-also-the-employer",
@@ -692,7 +692,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_duplicate_roles_unifies_rule_relation_distinct_roles() {
         String conjunction = "{ (employee: $p, employee: $p) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("two-people-are-employed",
@@ -715,7 +715,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_distinct_roles_unifies_rule_relation_duplicate_roles() {
         String conjunction = "{ (employee: $p, employee: $q) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("a-person-is-employed-twice",
@@ -766,7 +766,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_duplicate_roles_unifies_rule_relation_duplicate_roles() {
         String conjunction = "{ (employee: $p, employee: $p) isa employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("a-person-is-employed-twice",
@@ -789,7 +789,7 @@ public class UnifyRelationConcludableTest {
     @Test
     public void relation_more_players_than_rule_relation_fails_unify() {
         String conjunction = "{ (part-time-employee: $r, employer: $p, restriction: $q) isa part-time-employment; }";
-        Set<Concludable<?>> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("one-employee-one-employer",
