@@ -22,39 +22,51 @@ import graql.lang.pattern.variable.Reference;
 
 import java.util.Objects;
 
-public class SystemReference extends Reference.Name {
+public class SystemReference extends Reference.Referrable {
 
-    public static String PREFIX = "$/";
+    public final static String PREFIX = "$/";
 
     private final int id;
-    private final int hash;
 
     public SystemReference(int id) {
-        super("sys" + id); // TODO: why are we we doing this? Why does this class have to extend Reference.Name?
-        this.id = id;
-        this.hash = Objects.hash(SystemReference.class, id);
+        super();
     }
 
-    public static SystemReference of(int id) {
-        return new SystemReference(id);
-    }
-
-    @Override
-    public String syntax() {
-        return PREFIX + name;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SystemReference that = (SystemReference) o;
-        return this.id == that.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
-    }
 }
+
+//public class SystemReference extends Reference.Name {
+//
+//    public static String PREFIX = "$/";
+//
+//    private final int id;
+//    private final int hash;
+//
+//    public SystemReference(int id) {
+//        super("sys" + id); // TODO: why are we we doing this? Why does this class have to extend Reference.Name?
+//        this.id = id;
+//        this.hash = Objects.hash(SystemReference.class, id);
+//    }
+//
+//    public static SystemReference of(int id) {
+//        return new SystemReference(id);
+//    }
+//
+//    @Override
+//    public String syntax() {
+//        return PREFIX + name;
+//    }
+//
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//
+//        SystemReference that = (SystemReference) o;
+//        return this.id == that.id;
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return hash;
+//    }
+//}
