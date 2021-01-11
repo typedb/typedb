@@ -17,7 +17,6 @@
 
 package grakn.core.pattern.constraint;
 
-import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
@@ -37,7 +36,7 @@ public class ConstraintCloner {
         variables = new HashMap<>();
     }
 
-    public static ConstraintCloner cloneFromConjunction(Set<Constraint> include) {
+    public static ConstraintCloner cloneFromConstraints(Set<Constraint> include) {
         ConstraintCloner cloner = new ConstraintCloner();
         include.forEach(cloner::clone);
         return cloner;
@@ -48,7 +47,7 @@ public class ConstraintCloner {
     }
 
     public ThingVariable cloneVariable(ThingVariable variable) {
-        return variables.computeIfAbsent(variable.id().asVariable(), identifier -> {
+        return variables.computeIfAbsent(variable.id(), identifier -> {
             ThingVariable clone = new ThingVariable(identifier);
             clone.addResolvedTypes(variable.resolvedTypes());
             return clone;
@@ -56,7 +55,7 @@ public class ConstraintCloner {
     }
 
     public TypeVariable cloneVariable(TypeVariable variable) {
-        return variables.computeIfAbsent(variable.id().asVariable(), identifier -> {
+        return variables.computeIfAbsent(variable.id(), identifier -> {
             TypeVariable clone = new TypeVariable(identifier);
             clone.addResolvedTypes(variable.resolvedTypes());
             return clone;

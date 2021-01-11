@@ -94,9 +94,11 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
         if (attribute.reference().isName()) {
             syntax.append(attribute.reference().toString());
         } else {
-            syntax.append(attribute.isa().get().type().label().get().label());
+            if (attribute.isa().isPresent() && attribute.isa().get().type().label().isPresent()) {
+                syntax.append(attribute.isa().get().type().label().get().label());
+            }
             syntax.append(SPACE);
-            syntax.append(attribute.value().iterator().next());
+            attribute.value().forEach(value -> syntax.append(value.toString()));
         }
 
         return syntax.toString();
