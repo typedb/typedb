@@ -181,12 +181,8 @@ public class TypeResolver {
             variableRegister.putIfAbsent(resolver.reference(), variable);
             valueTypeRegister.putIfAbsent(resolver.id(), set());
 
-            //Note: order is important!
-            // This is because it is necessary to assume that when convert() has been called on a Variable, the output
-            //has at least resolved the valueTypes.
-            // This sort of ordering is dealt with via the TraversalEngine for most of the constraints, but because
-            //a valueType cannot be a Variable, we have to find out its concrete valueType and place that on the
-            //Traversal instead.
+            // Note: order is important! convertValue assumes that any other Variable encountered from that edge will
+            //have resolved its valueType, so we execute convertValue first.
             variable.value().forEach(constraint -> convertValue(resolver, constraint));
             variable.isa().ifPresent(constraint -> convertIsa(resolver, constraint));
             variable.is().forEach(constraint -> convertIs(resolver, constraint));
