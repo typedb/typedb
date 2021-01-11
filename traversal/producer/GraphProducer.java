@@ -86,8 +86,11 @@ public class GraphProducer implements Producer<VertexMap> {
         try {
             int i = 0;
             for (; i < count && iterator.hasNext(); i++) queue.put(iterator.next());
-            if (!iterator.hasNext()) finish(iterator);
-            if (count - i > 0) produce(queue, count - i);
+            if (!iterator.hasNext()) {
+                finish(iterator);
+                int toCompensate = count - i;
+                if (toCompensate > 0) produce(queue, toCompensate);
+            }
         } catch (Throwable e) {
             done(queue, e);
         }
