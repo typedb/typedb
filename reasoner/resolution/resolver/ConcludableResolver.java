@@ -152,7 +152,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable, request.answerBounds().conceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         mayRegisterRules(request, iterationState, responseProducer);
         return responseProducer;
@@ -170,7 +170,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             iterationState.nextIteration(newIteration);
         }
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable, request.answerBounds().conceptMap());
+        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         mayRegisterRules(request, iterationState, responseProducerNewIter);
         return responseProducerNewIter;

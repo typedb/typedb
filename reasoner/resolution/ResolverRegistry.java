@@ -97,13 +97,13 @@ public class ResolverRegistry {
     }
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
-        LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable);
+        LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine));
         return new Pair<>(retrievableActor, identity(retrievable));
     }
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable concludable) {
-        LOG.debug("Register retrieval for concludable actor: '{}'", concludable);
+        LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
@@ -118,7 +118,7 @@ public class ResolverRegistry {
     }
 
     private static Map<Reference.Name, Reference.Name> identity(Resolvable resolvable) {
-        return new HashSet<>(resolvable.variables()).stream()
+        return new HashSet<>(resolvable.conjunction().variables()).stream()
                 .filter(variable -> variable.reference().isName())
                 .map(variable -> variable.reference().asName())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
