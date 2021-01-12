@@ -367,8 +367,8 @@ public class SchemaGraph implements Graph {
         final String oldScopedLabel = scopedLabel(oldLabel, oldScope);
         final String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
-            multiLabelLock.lockWrite();
             final TypeVertex type = getType(newLabel, newScope);
+            multiLabelLock.lockWrite();
             if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
@@ -383,8 +383,8 @@ public class SchemaGraph implements Graph {
     public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
         assert storage.isOpen();
         try {
-            multiLabelLock.lockWrite();
             final RuleStructure rule = getRule(newLabel);
+            multiLabelLock.lockWrite();
             if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
             rulesByLabel.remove(oldLabel);
             rulesByLabel.put(newLabel, vertex);
