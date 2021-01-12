@@ -24,8 +24,7 @@ import grakn.protocol.TransactionProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,7 +39,7 @@ class SessionRPC {
 
     private final Grakn.Session session;
     private final GraknRPCService graknRPCService;
-    private final Set<TransactionRPC> transactionRPCs;
+    private final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCs;
     private final AtomicBoolean isOpen;
     private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
@@ -48,7 +47,7 @@ class SessionRPC {
     SessionRPC(GraknRPCService graknRPCService, Grakn.Session session, Options.Session options) {
         this.graknRPCService = graknRPCService;
         this.session = session;
-        transactionRPCs = new HashSet<>();
+        transactionRPCs = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
         idleTimeoutMillis = options.sessionIdleTimeoutMillis();
         setIdleTimeout();
@@ -56,7 +55,7 @@ class SessionRPC {
 
     TransactionRPC transaction(TransactionStream transactionStream, TransactionProto.Transaction.Open.Req request) {
         final TransactionRPC transactionRPC = new TransactionRPC(this, transactionStream, request);
-        transactionRPCs.add(transactionRPC);
+        transactionRPCs.put(transactionRPC.hashCode(), transactionRPC);
         return transactionRPC;
     }
 
@@ -69,14 +68,14 @@ class SessionRPC {
     }
 
     void remove(TransactionRPC transactionRPC) {
-        transactionRPCs.remove(transactionRPC);
+        transactionRPCs.remove(transactionRPC.hashCode());
     }
 
     void close() {
         if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
         if (isOpen.compareAndSet(true, false)) {
-            final Set<TransactionRPC> transactionRPCsCopy = new HashSet<>(transactionRPCs);
-            transactionRPCsCopy.parallelStream().forEach(TransactionRPC::close);
+            final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
+            transactionRPCsCopy.values().parallelStream().forEach(TransactionRPC::close);
             session.close();
             graknRPCService.removeSession(session.uuid());
         }
@@ -84,8 +83,8 @@ class SessionRPC {
 
     void closeWithError(Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
-            final Set<TransactionRPC> transactionRPCsCopy = new HashSet<>(transactionRPCs);
-            transactionRPCsCopy.parallelStream().forEach(tr -> tr.closeWithError(error));
+            final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
+            transactionRPCsCopy.values().parallelStream().forEach(tr -> tr.closeWithError(error));
             session.close();
             graknRPCService.removeSession(session.uuid());
         }

@@ -22,7 +22,7 @@ config:
     common: [build, release]
     graql: [build, release]
     protocol: [build, release]
-    grabl-tracing: [build]
+    grabl-tracing: [build, release]
     behaviour: [build]
 
 build:
