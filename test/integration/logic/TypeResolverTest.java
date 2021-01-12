@@ -31,7 +31,9 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlMatch;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -73,15 +75,23 @@ public class TypeResolverTest {
         grakn.close();
     }
 
-    private static void define_standard_schema(String fileName) throws IOException {
+    @Before
+    public void setup() {
         transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+    }
+
+    @After
+    public void tearDown() {
+        transaction.close();
+    }
+
+    private static void define_standard_schema(String fileName) throws IOException {
         final GraqlDefine query = Graql.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".gql")), UTF_8));
         transaction.query().define(query);
     }
 
     private static void define_custom_schema(String schema) {
-        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         final GraqlDefine query = Graql.parseQuery(schema);
         transaction.query().define(query);
     }
