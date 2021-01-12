@@ -19,12 +19,18 @@ package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.variable.Variable;
 
+import java.util.Set;
+
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class Resolvable {
+public abstract class Resolvable extends Conjunction {
 
-    public abstract Conjunction conjunction();
+    public Resolvable(Set<Variable> variables) {
+        super(variables, set());
+    }
 
     public boolean isRetrievable() {
         return false;

@@ -39,8 +39,7 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $p has $n; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(set(parse("{ $p isa person; }"), parse("{ $n isa name; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $p isa person; }"), parse("{ $n isa name; }")), retrievables);
     }
 
     @Test
@@ -48,8 +47,7 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $p isa person; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(set(parse("{ $p has $n; $n isa name; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $p has $n; $n isa name; }")), retrievables);
     }
 
     @Test
@@ -59,8 +57,7 @@ public class RetrievableTest {
                 "{ $p isa $pt; $pt type person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p has $n; $n isa name; }"),
-                         parse("{ $pt type person; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+                         parse("{ $pt type person; }")), retrievables);
     }
 
     @Test
@@ -69,8 +66,7 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $p isa $pt; $pt sub person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(set(parse("{ $p has $n; $n isa name; }"), parse("{ $pt sub person; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $p has $n; $n isa name; }"), parse("{ $pt sub person; }")), retrievables);
     }
 
     @Test
@@ -80,8 +76,7 @@ public class RetrievableTest {
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p isa person, has name \"Alice\"; }"),
-                         parse("{ $c isa company; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+                         parse("{ $c isa company; }")), retrievables);
     }
 
     @Test
@@ -91,8 +86,7 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
         assertEquals(3, concludables.size());
-        assertEquals(set(parse("{ $p has name \"Alice\"; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $p has name \"Alice\"; }")), retrievables);
     }
 
     @Test
@@ -101,22 +95,19 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name $n; $n \"Alice\"; $c isa company; }"), concludables);
         assertEquals(2, concludables.size());
-        assertEquals(set(parse("{ $e(employee: $p, employer:$c) isa employment; $c isa company; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $e(employee: $p, employer:$c) isa employment; $c isa company; }")), retrievables);
     }
 
     @Test
     public void test_termination_building_retrievable_with_a_has_cycle() {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b has $a; }"), set());
-        assertEquals(set(parse("{ $a has $b; $b has $a; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $a has $b; $b has $a; }")), retrievables);
     }
 
     @Test
     public void test_termination_building_retrievable_with_a_relation_cycle() {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a($b); $b($a); }"), set());
-        assertEquals(set(parse("{ $a($b); $b($a); }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $a($b); $b($a); }")), retrievables);
     }
 
     @Test
@@ -124,15 +115,13 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
         assertEquals(1, concludables.size());
-        assertEquals(set(parse("{ $b > 5; $b < 10; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $b > 5; $b < 10; }")), retrievables);
     }
 
     @Test
     public void test_disconnected_conjunction_in_retrievable() {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a = 7; $b > 5; $b < 10; }"), set());
         assertEquals(set(parse("{ $b > 5; $b < 10; }"),
-                         parse("{ $a = 7; }")),
-                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+                         parse("{ $a = 7; }")), retrievables);
     }
 }
