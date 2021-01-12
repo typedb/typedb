@@ -44,8 +44,8 @@ public class GraphProducer implements Producer<VertexMap> {
     private final ResourceIterator<? extends Vertex<?, ?>> start;
     private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
     private final AtomicBoolean isDone;
-    private final Map<ResourceIterator<VertexMap>, CompletableFuture<Void>> jobs;
-    private final Map<ResourceIterator<VertexMap>, Integer> jobsToProduce;
+    private final Map<ResourceIterator<VertexMap>, CompletableFuture<Void>> iteratorJobs;
+    private final Map<ResourceIterator<VertexMap>, Integer> iteratorRequested;
 
     public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, int parallelisation) {
         assert parallelisation > 0;
@@ -56,56 +56,57 @@ public class GraphProducer implements Producer<VertexMap> {
         this.isDone = new AtomicBoolean(false);
         this.produced = ConcurrentHashMap.newKeySet();
         this.start = procedure.startVertex().iterator(graphMgr, params);
-        this.jobs = new HashMap<>();
-        this.jobsToProduce = new HashMap<>();
+        this.iteratorJobs = new HashMap<>();
+        this.iteratorRequested = new HashMap<>();
     }
 
     @Override
     public synchronized void produce(Queue<VertexMap> queue, int count) {
-        if (jobsToProduce.size() < parallelisation) {
-            for (int i = jobsToProduce.size(); i < parallelisation && start.hasNext(); i++) {
+        if (iteratorRequested.size() < parallelisation) {
+            for (int i = iteratorRequested.size(); i < parallelisation && start.hasNext(); i++) {
                 ResourceIterator<VertexMap> iterator =
                         new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
-                jobsToProduce.put(iterator, 0);
+                iteratorRequested.put(iterator, 0);
             }
         }
-        if (jobsToProduce.size() == 0) done(queue);
-        else {
-            int splitCount = (int) Math.ceil((double) count / jobsToProduce.size());
-            for (ResourceIterator<VertexMap> iterator : jobsToProduce.keySet()) {
-                jobsToProduce.computeIfPresent(iterator, (k, v) -> v + splitCount);
-                if (!jobs.containsKey(iterator))
-                    jobs.put(iterator, runAsync(() -> produceAsync(queue, iterator), forkJoinPool()));
+        if (iteratorRequested.size() == 0) {
+            done(queue);
+        } else {
+            int splitCount = (int) Math.ceil((double) count / iteratorRequested.size());
+            for (ResourceIterator<VertexMap> iterator : iteratorRequested.keySet()) {
+                assert iteratorRequested.containsKey(iterator);
+                iteratorRequested.computeIfPresent(iterator, (k, v) -> v + splitCount);
+                if (!iteratorJobs.containsKey(iterator)) {
+                    iteratorJobs.put(iterator, runAsync(() -> produceAsync(queue, iterator), forkJoinPool()));
+                }
             }
         }
     }
 
     private synchronized int take(ResourceIterator<VertexMap> iterator) {
-        int count = jobsToProduce.get(iterator);
-        jobsToProduce.put(iterator, 0);
+        int count = iteratorRequested.get(iterator);
+        iteratorRequested.put(iterator, 0);
         return count;
     }
 
-    private synchronized void compensate(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int toProduce) {
-        jobs.remove(iterator);
-        int toCompensate = toProduce + take(iterator);
-        if (!iterator.hasNext()) jobsToProduce.remove(iterator);
+    private synchronized void compensate(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int requested) {
+        iteratorJobs.remove(iterator);
+        int toCompensate = requested + take(iterator);
+        if (!iterator.hasNext()) iteratorRequested.remove(iterator);
         if (toCompensate > 0) produce(queue, toCompensate);
     }
 
     private void produceAsync(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator) {
         try {
-            int toProduce = 0;
-            int produced = 0;
-            while (iterator.hasNext()) {
-                toProduce = take(iterator);
+            int requested;
+            int produced;
+            do {
+                requested = take(iterator);
                 produced = 0;
-                if (toProduce > 0) {
-                    for (; produced < toProduce && iterator.hasNext(); produced++)
-                        queue.put(iterator.next());
-                } else break;
-            }
-            compensate(queue, iterator, toProduce - produced);
+                for (; produced < requested && iterator.hasNext(); produced++)
+                    queue.put(iterator.next());
+            } while (requested != 0 && iterator.hasNext());
+            compensate(queue, iterator, requested - produced);
         } catch (Throwable e) {
             done(queue, e);
         }
@@ -126,6 +127,6 @@ public class GraphProducer implements Producer<VertexMap> {
     @Override
     public void recycle() {
         start.recycle();
-        jobs.keySet().forEach(ResourceIterator::recycle);
+        iteratorJobs.keySet().forEach(ResourceIterator::recycle);
     }
 }
