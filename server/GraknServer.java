@@ -45,6 +45,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -95,6 +96,14 @@ public class GraknServer implements AutoCloseable {
         server = rpcServer();
         Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
+    }
+
+    private int port() {
+        return command.port();
+    }
+
+    private Path dataDir() {
+        return command.dataDir();
     }
 
     private void configureAndVerifyDataDir() throws IOException {
@@ -242,8 +251,10 @@ public class GraknServer implements AutoCloseable {
         final GraknServer server = new GraknServer(command);
         server.start();
         Instant end = Instant.now();
-        LOG.info("Grakn Core version: {}", Version.VERSION);
-        LOG.info("Grakn Core Server has been started (in {} ms)", Duration.between(start, end).toMillis());
+        LOG.info("- version: {}", Version.VERSION);
+        LOG.info("- listening to port: {}", server.port());
+        LOG.info("- data directory configured to: {}", server.dataDir());
+        LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
         server.serve();
     }
 
