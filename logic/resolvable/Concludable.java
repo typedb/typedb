@@ -72,7 +72,7 @@ public abstract class Concludable extends Resolvable {
     public abstract Set<Constraint> constraints();
 
     public static Set<Concludable> create(grakn.core.pattern.Conjunction conjunction) {
-        return new Extractor(conjunction.variables()).concludables();
+        return new Extractor(conjunction).concludables();
     }
 
     public ResourceIterator<Unifier> getUnifiers(Rule rule) {
@@ -549,7 +549,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public ValueConstraint<?> value() {
-            return null;
+            return value;
         }
 
         @Override
@@ -618,8 +618,8 @@ public abstract class Concludable extends Resolvable {
         private final Set<Variable> valueOwnersToSkip = new HashSet<>();
         private final Set<Concludable> concludables = new HashSet<>();
 
-        Extractor(Set<Variable> variables) {
-            Set<Constraint> constraints = variables.stream().flatMap(variable -> variable.constraints().stream())
+        Extractor(Conjunction conjunction) {
+            Set<Constraint> constraints = conjunction.variables().stream().flatMap(variable -> variable.constraints().stream())
                     .collect(Collectors.toSet());
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isRelation)
                     .map(ThingConstraint::asRelation).forEach(this::fromConstraint);

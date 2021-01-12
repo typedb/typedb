@@ -226,7 +226,6 @@ public class ConcludableTest {
         assertFalse(list(relationConstraint.players()).get(0).player().isa().isPresent());
     }
 
-    //TODO This test only worked in debug
     @Test
     public void test_conjunction_concludables_contain_type_labels_with_anonymous_type_and_relation_variable() {
         String conjunction = "{ (patient-role-type: $per) isa diagnosis; $per isa person; }";
@@ -241,7 +240,6 @@ public class ConcludableTest {
 
     @Test
     public void test_conjunction_anonymous_variable_constraints_are_not_conflated() {
-        // TODO This test may have lost meaning with the new architecture
         String conjunction = "{ (patient-role-type: $per) isa diagnosis; (patient-role-type: $p2) isa diagnosis; " +
                 "$per isa person; $per has age 50; $per has age 70; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
