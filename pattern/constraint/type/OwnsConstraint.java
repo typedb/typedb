@@ -19,7 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.ConstraintCloner;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -126,7 +126,7 @@ public class OwnsConstraint extends TypeConstraint {
     }
 
     @Override
-    protected OwnsConstraint clone(ConstraintCloner cloner) {
+    public OwnsConstraint clone(Conjunction.Cloner cloner) {
         return cloner.cloneVariable(owner).owns(
                 cloner.cloneVariable(attributeType),
                 overriddenAttributeType == null ? null :cloner.cloneVariable(overriddenAttributeType),

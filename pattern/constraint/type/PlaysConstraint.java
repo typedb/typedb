@@ -19,7 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.ConstraintCloner;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -129,7 +129,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    protected PlaysConstraint clone(ConstraintCloner cloner) {
+    public PlaysConstraint clone(Conjunction.Cloner cloner) {
         return cloner.cloneVariable(owner).plays(
                 relationType == null ? null : cloner.cloneVariable(relationType),
                 cloner.cloneVariable(roleType),

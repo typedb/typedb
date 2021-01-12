@@ -18,7 +18,7 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.ConstraintCloner;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -225,7 +225,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        protected Long clone(ConstraintCloner cloner) {
+        public Long clone(Conjunction.Cloner cloner) {
             return cloner.cloneVariable(owner).valueLong(predicate(), value);
         }
     }
@@ -257,7 +257,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        protected Double clone(ConstraintCloner cloner) {
+        public Double clone(Conjunction.Cloner cloner) {
             return cloner.cloneVariable(owner).valueDouble(predicate(), value);
         }
     }
@@ -289,7 +289,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        protected Boolean clone(ConstraintCloner cloner) {
+        public Boolean clone(Conjunction.Cloner cloner) {
             return cloner.cloneVariable(owner).valueBoolean(predicate(), value);
         }
     }
@@ -321,7 +321,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        protected String clone(ConstraintCloner cloner) {
+        public String clone(Conjunction.Cloner cloner) {
             return cloner.cloneVariable(owner).valueString(predicate(), value);
         }
     }
@@ -353,7 +353,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        protected DateTime clone(ConstraintCloner cloner) {
+        public DateTime clone(Conjunction.Cloner cloner) {
             return cloner.cloneVariable(owner).valueDateTime(predicate(), value);
         }
     }
@@ -394,7 +394,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        protected Variable clone(ConstraintCloner cloner) {
+        public Variable clone(Conjunction.Cloner cloner) {
             return cloner.cloneVariable(owner).valueVariable(predicate(), value);
         }
     }

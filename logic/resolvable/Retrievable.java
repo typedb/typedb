@@ -21,7 +21,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.Variable;
@@ -87,7 +86,7 @@ public class Retrievable extends Resolvable {
                 }
             });
             return Iterators.iterate(subgraphs).filter(SubgraphRegistry::isValid).map(subgraph -> {
-                ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(subgraph.registeredConstraints);
+                Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(subgraph.registeredConstraints);
                 return new Retrievable(new Conjunction(cloner.variables(), set()));
             }).toSet();
         }

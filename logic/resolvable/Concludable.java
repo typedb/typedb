@@ -29,7 +29,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.ConstraintCloner;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -235,7 +234,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Relation of(RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
-            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(
+            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(
                     isa == null ? set(new HashSet<>(labels), relation) : set(new HashSet<>(labels), relation, isa));
             return new Relation(cloner.variables(), cloner.getClone(relation).asThing().asRelation(),
                                 isa == null ? null : cloner.getClone(isa).asThing().asIsa(),
@@ -363,7 +362,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
-            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(
+            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(
                     isa == null ? set(new HashSet<>(values), has) : set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), has, isa));
             return new Has(cloner.variables(), cloner.getClone(has).asThing().asHas(),
                            isa == null ? null : cloner.getClone(isa).asThing().asIsa(),
@@ -484,7 +483,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
-            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), isa));
+            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), isa));
             return new Isa(cloner.variables(), cloner.getClone(isa).asThing().asIsa(), new HashSet<>(
                     Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
         }
@@ -544,7 +543,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Attribute of(ValueConstraint<?> value) {
-            ConstraintCloner cloner = ConstraintCloner.cloneFromConstraints(set(value));
+            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(set(value));
             return new Attribute(cloner.variables(), cloner.getClone(value).asThing().asValue());
         }
 

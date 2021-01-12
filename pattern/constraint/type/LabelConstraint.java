@@ -19,7 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.parameters.Label;
-import grakn.core.pattern.constraint.ConstraintCloner;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.TypeVariable;
@@ -105,7 +105,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
     }
 
     @Override
-    protected LabelConstraint clone(ConstraintCloner cloner) {
+    public LabelConstraint clone(Conjunction.Cloner cloner) {
         return cloner.cloneVariable(owner).label(label);
     }
 }

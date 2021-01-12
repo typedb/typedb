@@ -19,7 +19,7 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.common.collection.Bytes;
-import grakn.core.pattern.constraint.ConstraintCloner;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.traversal.Traversal;
 
@@ -90,7 +90,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     @Override
-    protected IIDConstraint clone(ConstraintCloner cloner) {
+    public IIDConstraint clone(Conjunction.Cloner cloner) {
         return cloner.cloneVariable(owner).iid(iid);
     }
 }
