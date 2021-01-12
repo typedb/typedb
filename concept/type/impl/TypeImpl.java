@@ -125,7 +125,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
             assert type.getSupertype() != null;
             type = (TypeImpl) type.getSupertype();
             if (!hierarchy.add(type.vertex.scopedLabel())) {
-                throw GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy);
+                throw exception(GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy));
             }
         }
     }
