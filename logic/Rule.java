@@ -20,9 +20,16 @@ package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
@@ -32,12 +39,19 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.variable.SystemReference;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
+import grakn.core.traversal.Traversal;
+import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -107,9 +121,8 @@ public class Rule {
         return conclusion;
     }
 
-    public Map<Identifier, Concept> putConclusion(ConceptMap whenAnswer) {
-        // TODO
-        return null;
+    public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+        return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
     }
 
     public Conjunction when() {
@@ -155,8 +168,10 @@ public class Rule {
     }
 
     void validateSatisfiable() {
-        // TODO check that the rule has a set of satisfiable type hints. We may want to use the stream of combinations of types
+        // TODO: check that the rule has a set of satisfiable types. This includes strictly for the `when` of the rule
         // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
+        // TODO: and also checking that each combinations of types from the `when` is a valid insertable answer in the `then`
+        // TODO: we may want to use the stream of combinations of types directly from type inferences, without collapsing them
     }
 
     void validateCycles() {
@@ -207,7 +222,7 @@ public class Rule {
             throw GraknException.of(ILLEGAL_STATE);
         }
 
-        public abstract Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr);
+        public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
 
         public boolean isRelation() {
             return false;
@@ -286,14 +301,25 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
-                /*
-                get Relation Type
-                create instance of relation type
-                get each RolePlayer in the RelationConstraint
-                 */
+            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Identifier relationTypeIdentifier = isa().type().id();
+                RelationType relationType = relationType(whenConcepts, conceptMgr);
+                Set<RolePlayer> players = new HashSet<>();
+                relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
+                Optional<grakn.core.concept.thing.Relation> relationInstance = matchRelation(relationType, players, traversalEng, conceptMgr);
 
-                return null;
+                Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                if (relationInstance.isPresent()) {
+                    thenConcepts.put(relationTypeIdentifier, relationInstance.get());
+                } else {
+                    grakn.core.concept.thing.Relation relation = insertRelation(relationType, players);
+                    thenConcepts.put(relationTypeIdentifier, relation);
+                }
+                players.forEach(rp -> {
+                    thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
+                    thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
+                });
+                return thenConcepts;
             }
 
             public RelationConstraint relation() {
@@ -323,6 +349,64 @@ public class Rule {
             public Relation asRelation() {
                 return this;
             }
+
+
+            private grakn.core.concept.thing.Relation insertRelation(RelationType relationType, Set<RolePlayer> players) {
+                grakn.core.concept.thing.Relation relation = relationType.create(true);
+                players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player, true));
+                return relation;
+            }
+
+            private Optional<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
+                                                                              TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Traversal traversal = new Traversal();
+                SystemReference relationRef = SystemReference.of(0);
+                Identifier.Variable relationId = Identifier.Variable.of(relationRef);
+                traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
+                players.forEach(rp -> {
+                    // note: NON-transitive role player types - we require an exact role being played
+                    traversal.rolePlayer(relationId, rp.playerIdentifier, set(rp.roleType.getLabel()), rp.repetition);
+                    traversal.iid(rp.playerIdentifier, rp.player.getIID());
+                });
+                ResourceIterator<ConceptMap> iterator = traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
+                if (iterator.hasNext()) return Optional.of(iterator.next().get(relationRef).asRelation());
+                else return Optional.empty();
+            }
+
+            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                if (isa().type().reference().isName()) {
+                    Reference.Name typeReference = isa().type().reference().asName();
+                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
+                    return whenConcepts.get(typeReference).asRelationType();
+                } else {
+                    assert isa().type().reference().isLabel();
+                    return conceptMgr.getRelationType(isa().type().label().get().label());
+                }
+            }
+
+            private static class RolePlayer {
+                private final Identifier roleTypeIdentifier;
+                private final RoleType roleType;
+                private final Identifier.Variable playerIdentifier;
+                private final Thing player;
+                private final int repetition;
+
+                public RolePlayer(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
+                    assert rp.roleType().isPresent();
+                    roleTypeIdentifier = rp.roleType().get().id();
+                    if (rp.roleType().get().reference().isName()) {
+                        roleType = whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
+                    } else {
+                        assert rp.roleType().get().reference().isLabel();
+                        roleType = scope.getRelates(rp.roleType().get().label().get().properLabel().name());
+                    }
+                    assert whenConcepts.contains(rp.player().reference().asName());
+                    playerIdentifier = Identifier.Variable.of(rp.player().reference().asName());
+                    player = whenConcepts.get(rp.player().reference().asName()).asThing();
+                    repetition = rp.repetition();
+                }
+            }
+
         }
 
         public static abstract class Has extends Conclusion {
@@ -347,15 +431,16 @@ public class Rule {
                 return true;
             }
 
-            @Override
-            public Map<Identifier, Concept> putConclusion(ConceptManager conceptMgr) {
-                return null;
-            }
-
             public static class Explicit extends Has implements Isa, Value {
 
                 private final IsaConstraint isa;
                 private final ValueConstraint<?> value;
+
+                private Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
+                    super(has);
+                    this.isa = isa;
+                    this.value = value;
+                }
 
                 public static Optional<Explicit> of(Conjunction conjunction) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
@@ -371,10 +456,22 @@ public class Rule {
                                     })).first();
                 }
 
-                Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
-                    super(has);
-                    this.isa = isa;
-                    this.value = value;
+                @Override
+                public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                    Identifier.Variable ownerId = has().owner().id();
+                    assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
+                    Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
+                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                    Attribute attribute = getOrCreateAttribute(conceptMgr);
+                    owner.setHas(attribute, true);
+                    TypeVariable declaredType = has().attribute().isa().get().type();
+                    Identifier declaredTypeIdentifier = declaredType.id();
+                    AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
+                    assert attrType.equals(attribute.getType());
+                    thenConcepts.put(declaredTypeIdentifier, attrType);
+                    thenConcepts.put(has().attribute().id(), attribute);
+                    thenConcepts.put(has().owner().id(), owner);
+                    return thenConcepts;
                 }
 
                 @Override
@@ -406,9 +503,33 @@ public class Rule {
                 public ValueConstraint<?> value() {
                     return value;
                 }
+
+
+                private Attribute getOrCreateAttribute(ConceptManager conceptMgr) {
+                    assert has().attribute().isa().isPresent()
+                            && has().attribute().isa().get().type().label().isPresent()
+                            && has().attribute().value().size() == 1
+                            && has().attribute().value().iterator().next().isValueIdentity();
+                    Label attributeTypeLabel = has().attribute().isa().get().type().label().get().properLabel();
+                    AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                    assert attributeType != null;
+                    ValueConstraint<?> value = has().attribute().value().iterator().next();
+                    if (value.isBoolean()) return attributeType.asBoolean().put(value.asBoolean().value(), true);
+                    else if (value.isDateTime())
+                        return attributeType.asDateTime().put(value.asDateTime().value(), true);
+                    else if (value.isDouble()) return attributeType.asDouble().put(value.asDouble().value(), true);
+                    else if (value.isLong()) return attributeType.asLong().put(value.asLong().value(), true);
+                    else if (value.isString()) return attributeType.asString().put(value.asString().value(), true);
+                    else throw GraknException.of(ILLEGAL_STATE);
+                }
+
             }
 
             public static class Variable extends Has {
+
+                private Variable(HasConstraint hasConstraint) {
+                    super(hasConstraint);
+                }
 
                 public static Optional<Variable> of(Conjunction conjunction) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
@@ -422,8 +543,20 @@ public class Rule {
                                     })).first();
                 }
 
-                Variable(HasConstraint hasConstraint) {
-                    super(hasConstraint);
+                @Override
+                public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                    Identifier.Variable ownerId = has().owner().id();
+                    assert whenConcepts.contains(ownerId.reference().asName())
+                            && whenConcepts.get(ownerId.reference().asName()).isThing();
+                    Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
+                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                    assert whenConcepts.contains(has().attribute().reference().asName())
+                            && whenConcepts.get(has().attribute().reference().asName()).isAttribute();
+                    Attribute attribute = whenConcepts.get(has().attribute().reference().asName()).asAttribute();
+                    owner.setHas(attribute, true);
+                    thenConcepts.put(has().attribute().id(), attribute);
+                    thenConcepts.put(has().owner().id(), owner);
+                    return thenConcepts;
                 }
 
                 @Override

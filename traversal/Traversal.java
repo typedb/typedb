@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
-import static grakn.core.common.producer.Producers.produce;
+import static grakn.core.common.producer.Producers.iterable;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
@@ -105,10 +105,10 @@ public class Traversal {
             planners.get(0).tryOptimise(graphMgr);
             return planners.get(0).procedure().producer(graphMgr, parameters, parallelisation);
         } else {
-            return produce(cartesian(planners.parallelStream().map(planner -> {
+            return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
                 return planner.procedure().producer(graphMgr, parameters, parallelisation);
-            }).map(p -> Producers.queue(p).iterator()).collect(toList())).map(partialAnswers -> {
+            }).map(p -> iterable(p).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
