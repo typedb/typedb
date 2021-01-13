@@ -65,7 +65,6 @@ public class GraqlSteps {
     private static List<ConceptMapGroup> answerGroups;
     private static List<NumericGroup> numericAnswerGroups;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
-    HashMap<String, String> groupOwnerIdentifiers = new HashMap<>();
     private Map<String, Map<String, String>> rules;
 
     @Given("the integrity is validated")
@@ -129,73 +128,57 @@ public class GraqlSteps {
         assertThrows(() -> graql_delete(deleteQueryStatements));
     }
 
+    private void clearAnswers() {
+        answers = null;
+        numericAnswer = null;
+        answerGroups = null;
+        numericAnswerGroups = null;
+    }
+
     @When("get answers of graql insert")
     public void get_answers_of_graql_insert(String graqlQueryStatements) {
         final GraqlInsert graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asInsert();
-        // Erase answers from previous steps to avoid polluting the result space
-        answers = null;
-        numericAnswer = null;
-        answerGroups = null;
-        numericAnswerGroups = null;
-
+        clearAnswers();
         answers = tx().query().insert(graqlQuery).toList();
     }
 
-    @When("get answers of graql query")
-    public void graql_query(String graqlQueryStatements) {
-        final GraqlQuery graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements));
-        // Erase answers from previous steps to avoid polluting the result space
-        answers = null;
-        numericAnswer = null;
-        answerGroups = null;
-        numericAnswerGroups = null;
-        if (graqlQuery instanceof GraqlMatch) {
-            answers = tx().query().match(graqlQuery.asMatch()).toList();
-        } else if (graqlQuery instanceof GraqlInsert) {
-            throw new ScenarioDefinitionException("Insert is not supported; use `get answers of graql insert` instead");
-        } else if (graqlQuery instanceof GraqlMatch.Aggregate) {
-            numericAnswer = tx().query().match(graqlQuery.asMatchAggregate());
-        } else if (graqlQuery instanceof GraqlMatch.Group) {
-            answerGroups = tx().query().match(graqlQuery.asMatchGroup()).toList();
-        } else if (graqlQuery instanceof GraqlMatch.Group.Aggregate) {
-            numericAnswerGroups = tx().query().match(graqlQuery.asMatchGroupAggregate()).toList();
-        } else {
-            throw new ScenarioDefinitionException("Only match and insert supported for now");
-        }
+    @When("get answers of graql match")
+    public void graql_match(String graqlQueryStatements) {
+        final GraqlMatch graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asMatch();
+        clearAnswers();
+        answers = tx().query().match(graqlQuery).toList();
     }
 
     @When("graql match; throws exception")
     public void graql_match_throws_exception(String graqlQueryStatements) {
-        assertThrows(() -> graql_query(graqlQueryStatements));
+        assertThrows(() -> graql_match(graqlQueryStatements));
+    }
+
+    @When("get answer of graql match aggregate")
+    public void graql_match_aggregate(String graqlQueryStatements) {
+        final GraqlMatch.Aggregate graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asMatchAggregate();
+        clearAnswers();
+        numericAnswer = tx().query().match(graqlQuery);
+    }
+
+    @When("get answers of graql match group")
+    public void graql_match_group(String graqlQueryStatements) {
+        final GraqlMatch.Group graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asMatchGroup();
+        clearAnswers();
+        answerGroups = tx().query().match(graqlQuery).toList();
+    }
+
+    @When("get answers of graql match group aggregate")
+    public void graql_match_group_aggregate(String graqlQueryStatements) {
+        final GraqlMatch.Group.Aggregate graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asMatchGroupAggregate();
+        clearAnswers();
+        numericAnswerGroups = tx().query().match(graqlQuery).toList();
     }
 
     @Then("answer size is: {number}")
     public void answer_quantity_assertion(int expectedAnswers) {
         assertEquals(String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.size()),
                      expectedAnswers, answers.size());
-    }
-
-    @Then("concept identifiers are")
-    public void concept_identifiers_are(Map<String, Map<String, String>> identifiers) {
-        for (Map.Entry<String, Map<String, String>> entry : identifiers.entrySet()) {
-            final String identifier = entry.getKey();
-            final String check = entry.getValue().get("check");
-            final String value = entry.getValue().get("value");
-
-            switch (check) {
-                case "key":
-                    identifierChecks.put(identifier, new KeyUniquenessCheck(value));
-                    break;
-                case "value":
-                    identifierChecks.put(identifier, new ValueUniquenessCheck(value));
-                    break;
-                case "label":
-                    identifierChecks.put(identifier, new LabelUniquenessCheck(value));
-                    break;
-                default:
-                    throw new ScenarioDefinitionException(String.format("Unrecognised identifier check \"%s\"", check));
-            }
-        }
     }
 
     @Then("uniquely identify answer concepts")
