@@ -276,8 +276,6 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             List<RolePlayer> conjRolePlayers = list(constraint().players());
             List<RolePlayer> thenRolePlayers = list(relationConclusion.relation().players());
 
-//            return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
-//                    .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));
             return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
                     .map(mapping -> convertMapping(mapping, unifierBuilder.duplicate(), conceptMgr));
         }
@@ -288,24 +286,9 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             if (conjRolePLayers.isEmpty()) return Iterators.iterate(list(mapping));
             RolePlayer conjRP = conjRolePLayers.get(0);
             return Iterators.iterate(thenRolePlayers)
-//                    .filter(thenRP -> !visited.contains(thenRP))
                     .filter(thenRP -> mapping.values().stream().noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
                     .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
                     .map(thenRP -> {
-//                        unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
-//                        if (conjRP.roleType().isPresent()) {
-//                            TypeVariable roleTypeVar = conjRP.roleType().get();
-//                            unifierBuilder.add(roleTypeVar.id(), thenRP.roleType().get().id());
-//                            if (roleTypeVar.reference().isLabel()) {
-//                                Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream()
-//                                        .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
-//                                        .collect(Collectors.toSet());
-//                                unifierBuilder.requirements().types(roleTypeVar.id(), allowedTypes);
-//                            }
-//                        }
-//                        Set<RolePlayer> newVisited = new HashSet<>(visited);
-//                        newVisited.add(thenRP);
-//                        return newVisited;
                         Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
                         clone.putIfAbsent(conjRP, new HashSet<>());
                         clone.get(conjRP).add(thenRP);
@@ -336,25 +319,6 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             return unifierBuilder.build();
         }
 
-        private ResourceIterator<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
-                List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
-                Map<RolePlayer, Set<Integer>> mapping, ConceptManager conceptMgr) {
-
-            if (conjRolePlayers.isEmpty()) return Iterators.iterate(list(mapping));
-            RolePlayer conjRP = conjRolePlayers.get(0);
-
-            return Iterators.iterate(IntStream.range(0, thenRolePlayers.size()).iterator())
-                    .filter(thenIdx -> mapping.values().stream().noneMatch(players -> players.contains(thenIdx)))
-                    .filter(thenIdx -> unificationSatisfiable(conjRP, thenRolePlayers.get(thenIdx), conceptMgr))
-                    .map(thenIdx -> {
-                        Map<RolePlayer, Set<Integer>> clone = cloneMapping(mapping);
-                        clone.putIfAbsent(conjRP, new HashSet<>());
-                        clone.get(conjRP).add(thenIdx);
-                        return clone;
-                    }).flatMap(newMapping -> matchRolePlayerIndices(conjRolePlayers.subList(1, conjRolePlayers.size()),
-                                                                    thenRolePlayers, newMapping, conceptMgr));
-        }
-
         private boolean unificationSatisfiable(RolePlayer concludableRolePlayer, RolePlayer conclusionRolePlayer, ConceptManager conceptMgr) {
             assert conclusionRolePlayer.roleType().isPresent();
             boolean satisfiable = true;
@@ -363,30 +327,6 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             }
             satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
             return satisfiable;
-        }
-
-        private Unifier rolePlayerMappingToUnifier(
-                Map<RolePlayer, Set<Integer>> matchedRolePlayerIndices, List<RolePlayer> thenRolePlayers,
-                Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
-
-            matchedRolePlayerIndices.forEach((conjRP, thenRPIndices) -> thenRPIndices.stream().map(thenRolePlayers::get)
-                    .forEach(thenRP -> {
-                                 if (conjRP.roleType().isPresent()) {
-                                     assert thenRP.roleType().isPresent();
-                                     TypeVariable roleTypeVar = conjRP.roleType().get();
-                                     unifierBuilder.add(roleTypeVar.id(), thenRP.roleType().get().id());
-
-                                     if (roleTypeVar.reference().isLabel()) {
-                                         Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream()
-                                                 .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
-                                                 .collect(Collectors.toSet());
-                                         unifierBuilder.requirements().types(roleTypeVar.id(), allowedTypes);
-                                     }
-                                 }
-                                 unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
-                             }
-                    ));
-            return unifierBuilder.build();
         }
 
         @Override
