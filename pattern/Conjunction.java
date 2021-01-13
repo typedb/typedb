@@ -33,7 +33,9 @@ import graql.lang.pattern.variable.BoundVariable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -151,7 +153,26 @@ public class Conjunction implements Pattern, Cloneable {
             constraints = new HashMap<>();
         }
 
-        public static Cloner cloneExactly(Set<Constraint> constraints) {
+        public static Cloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
+            final LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
+            Collections.addAll(ordered, s2);
+            return cloneExactly(ordered);
+        }
+
+        public static Cloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
+            final LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
+            ordered.addAll(s2);
+            Collections.addAll(ordered, s3);
+            return cloneExactly(ordered);
+        }
+
+        public static Cloner cloneExactly(Constraint constraint) {
+            final LinkedHashSet<Constraint> orderedSet = new LinkedHashSet<>();
+            orderedSet.add(constraint);
+            return cloneExactly(orderedSet);
+        }
+
+        private static Cloner cloneExactly(LinkedHashSet<? extends Constraint> constraints) {
             Cloner cloner = new Cloner();
             constraints.forEach(cloner::clone);
             return cloner;

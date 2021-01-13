@@ -86,7 +86,11 @@ public class Retrievable extends Resolvable {
                 }
             });
             return Iterators.iterate(subgraphs).filter(SubgraphRegistry::isValid).map(subgraph -> {
-                Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(subgraph.registeredConstraints);
+                Set<TypeConstraint> labelConstraints = Iterators.iterate(subgraph.registeredConstraints)
+                        .filter(Constraint::isType).map(Constraint::asType).filter(TypeConstraint::isLabel).toSet();
+                Set<? extends Constraint> otherConstraints = new HashSet<>(subgraph.registeredConstraints);
+                otherConstraints.removeAll(labelConstraints);
+                Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, otherConstraints);
                 return new Retrievable(new Conjunction(cloner.variables(), set()));
             }).toSet();
         }

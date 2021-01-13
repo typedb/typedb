@@ -244,10 +244,16 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Relation of(RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
-            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(
-                    isa == null ? set(new HashSet<>(labels), relation) : set(new HashSet<>(labels), relation, isa));
-            return new Relation(cloner.variables(), cloner.getClone(relation).asThing().asRelation(),
-                                isa == null ? null : cloner.getClone(isa).asThing().asIsa(),
+            Conjunction.Cloner cloner;
+            IsaConstraint clonedIsa;
+            if (isa == null) {
+                cloner = Conjunction.Cloner.cloneExactly(labels, relation);
+                clonedIsa = null;
+            } else {
+                cloner = Conjunction.Cloner.cloneExactly(labels, isa, relation);
+                clonedIsa = cloner.getClone(isa).asThing().asIsa();
+            }
+            return new Relation(cloner.variables(), cloner.getClone(relation).asThing().asRelation(), clonedIsa,
                                 Iterators.iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
         }
 
@@ -380,11 +386,17 @@ public abstract class Concludable extends Resolvable {
             this.values = values;
         }
 
-        public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
-            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(
-                    isa == null ? set(new HashSet<>(values), has) : set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), has, isa));
-            return new Has(cloner.variables(), cloner.getClone(has).asThing().asHas(),
-                           isa == null ? null : cloner.getClone(isa).asThing().asIsa(),
+        public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labels) {
+            Conjunction.Cloner cloner;
+            IsaConstraint clonedIsa;
+            if (isa == null) {
+                cloner = Conjunction.Cloner.cloneExactly(values, has);
+                clonedIsa = null;
+            } else {
+                cloner = Conjunction.Cloner.cloneExactly(labels, values, isa, has);
+                clonedIsa = cloner.getClone(isa).asThing().asIsa();
+            }
+            return new Has(cloner.variables(), cloner.getClone(has).asThing().asHas(), clonedIsa,
                            new HashSet<>(Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
         }
 
@@ -509,7 +521,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
-            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(set(set(new HashSet<Constraint>(labelConstraints), new HashSet<>(values)), isa));
+            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, values, isa);
             return new Isa(cloner.variables(), cloner.getClone(isa).asThing().asIsa(), new HashSet<>(
                     Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
         }
@@ -576,7 +588,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Attribute of(ValueConstraint<?> value) {
-            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(set(value));
+            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(value);
             return new Attribute(cloner.variables(), cloner.getClone(value).asThing().asValue());
         }
 
