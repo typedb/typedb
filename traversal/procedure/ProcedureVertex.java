@@ -30,7 +30,7 @@ import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.graph.TraversalVertex;
 
 import javax.annotation.Nullable;
@@ -55,7 +55,7 @@ import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.ValueType.STRING;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
-import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
+import static grakn.core.traversal.predicate.Predicate.Operator.Equality.EQ;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,

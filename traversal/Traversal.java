@@ -29,7 +29,7 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.structure.Structure;

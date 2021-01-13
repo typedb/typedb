@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.traversal.common;
+package grakn.core.traversal.predicate;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.Encoding;
