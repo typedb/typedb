@@ -44,21 +44,17 @@ import grakn.core.traversal.predicate.Predicate;
 import graql.lang.common.GraqlToken;
 
 import javax.annotation.Nullable;
-import javax.management.relation.Role;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -271,17 +267,15 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 } else return Iterators.empty();
             }
 
-            // TODO this will work for now, but we should rewrite using role player `repetition`
-
             List<RolePlayer> conjRolePlayers = list(constraint().players());
-            List<RolePlayer> thenRolePlayers = list(relationConclusion.relation().players());
+            Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();
 
             return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
-                    .map(mapping -> convertMapping(mapping, unifierBuilder.duplicate(), conceptMgr));
+                    .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.duplicate(), conceptMgr));
         }
 
         private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
-                List<RolePlayer> conjRolePLayers, List<RolePlayer> thenRolePlayers,
+                List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
             if (conjRolePLayers.isEmpty()) return Iterators.iterate(list(mapping));
             RolePlayer conjRP = conjRolePLayers.get(0);
@@ -297,24 +291,23 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                                                               thenRolePlayers, newMapping, conceptMgr));
         }
 
-        private Unifier convertMapping(Map<RolePlayer, Set<RolePlayer>> mapping, Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
-            mapping.forEach((conjRP, thenRPs) -> {
-                thenRPs.forEach(thenRP -> {
-                    unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
-                    if (conjRP.roleType().isPresent()) {
-                        assert thenRP.roleType().isPresent();
-                        TypeVariable conjRoleType = conjRP.roleType().get();
-                        TypeVariable thenRoleType = thenRP.roleType().get();
-                        unifierBuilder.add(conjRoleType.id(), thenRoleType.id());
-                        if (conjRoleType.reference().isLabel()) {
-                            Set<Label> allowedTypes = conjRoleType.resolvedTypes().stream()
-                                    .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
-                                    .collect(Collectors.toSet());
-                            unifierBuilder.requirements().types(conjRoleType.id(), allowedTypes);
-                        }
+        private Unifier convertRPMappingToUnifier(
+                Map<RolePlayer, Set<RolePlayer>> mapping, Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
+            mapping.forEach((conjRP, thenRPs) -> thenRPs.forEach(thenRP -> {
+                unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
+                if (conjRP.roleType().isPresent()) {
+                    assert thenRP.roleType().isPresent();
+                    TypeVariable conjRoleType = conjRP.roleType().get();
+                    TypeVariable thenRoleType = thenRP.roleType().get();
+                    unifierBuilder.add(conjRoleType.id(), thenRoleType.id());
+                    if (conjRoleType.reference().isLabel()) {
+                        Set<Label> allowedTypes = conjRoleType.resolvedTypes().stream()
+                                .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
+                                .collect(Collectors.toSet());
+                        unifierBuilder.requirements().types(conjRoleType.id(), allowedTypes);
                     }
-                });
-            });
+                }
+            }));
 
             return unifierBuilder.build();
         }
