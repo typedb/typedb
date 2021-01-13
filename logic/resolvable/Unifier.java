@@ -175,7 +175,9 @@ public class Unifier {
 
         public Builder duplicate() {
             Map<Identifier, Set<Identifier>> unifierCopy = new HashMap<>();
-            unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
+            //TODO: why does set() break this with duplicate()?
+            unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, new HashSet<>(unifieds))));
+//            unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
             Requirements requirementsCopy = requirements.duplicate();
             return new Builder(unifierCopy, requirementsCopy);
         }
