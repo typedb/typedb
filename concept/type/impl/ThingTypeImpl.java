@@ -89,7 +89,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             case THING_TYPE:
                 return new ThingTypeImpl.Root(graphMgr, vertex);
             default:
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw graphMgr.exception(GraknException.of(UNRECOGNISED_VALUE));
         }
     }
 
@@ -151,7 +151,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         TypeEdge edge;
         final TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
-            throw GraknException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label());
+            throw exception(GraknException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
         }
         if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
@@ -323,7 +323,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         final TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) return;
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
-            throw GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString());
+            throw exception(GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }
         edge.delete();
     }
