@@ -45,6 +45,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -97,6 +98,14 @@ public class GraknServer implements AutoCloseable {
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
     }
 
+    private int port() {
+        return command.port();
+    }
+
+    private Path dataDir() {
+        return command.dataDir();
+    }
+
     private void configureAndVerifyDataDir() throws IOException {
         if (!Files.isDirectory(this.command.dataDir())) {
             if (this.command.dataDir().equals(ServerDefaults.DATA_DIR)) {
@@ -126,7 +135,7 @@ public class GraknServer implements AutoCloseable {
 
     private static void printASCIILogo() throws IOException {
         if (ASCII_LOGO_FILE.exists()) {
-            LOG.info("\n" + new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
+            System.out.println("\n" + new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
         }
     }
 
@@ -242,8 +251,14 @@ public class GraknServer implements AutoCloseable {
         final GraknServer server = new GraknServer(command);
         server.start();
         Instant end = Instant.now();
-        LOG.info("Grakn Core version: {}", Version.VERSION);
-        LOG.info("Grakn Core Server has been started (in {} ms)", Duration.between(start, end).toMillis());
+        LOG.info("- version: {}", Version.VERSION);
+        LOG.info("- listening to port: {}", server.port());
+        LOG.info("- data directory configured to: {}", server.dataDir());
+        LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
+        LOG.info("");
+        LOG.info("Grakn Core Server is now running and will keep this process alive.");
+        LOG.info("You can press CTRL+C to shutdown this server.");
+        LOG.info("...");
         server.serve();
     }
 

@@ -25,7 +25,7 @@ import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.GraphPlanner;
 import grakn.core.traversal.planner.PlannerEdge;

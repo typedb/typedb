@@ -30,7 +30,7 @@ public class SystemReference extends Reference.Name {
     private final int hash;
 
     public SystemReference(int id) {
-        super("sys" + id); // TODO: why are we we doing this? Why does this class have to extend Reference.Name?
+        super("sys" + id);
         this.id = id;
         this.hash = Objects.hash(SystemReference.class, id);
     }

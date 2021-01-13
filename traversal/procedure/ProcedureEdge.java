@@ -69,7 +69,7 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
-import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
+import static grakn.core.traversal.predicate.Predicate.Operator.Equality.EQ;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 
 public abstract class ProcedureEdge<
@@ -176,10 +176,10 @@ public abstract class ProcedureEdge<
 
     static class Predicate extends ProcedureEdge<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
-        private final grakn.core.traversal.common.Predicate.Variable predicate;
+        private final grakn.core.traversal.predicate.Predicate.Variable predicate;
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                          Encoding.Direction.Edge direction, grakn.core.traversal.common.Predicate.Variable predicate) {
+                          Encoding.Direction.Edge direction, grakn.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, order, direction, predicate.toString());
             this.predicate = predicate;
         }
@@ -740,7 +740,7 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         ResourceIterator<? extends AttributeVertex<?>> iter;
-                        grakn.core.traversal.common.Predicate.Value<?> eq = null;
+                        grakn.core.traversal.predicate.Predicate.Value<?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
