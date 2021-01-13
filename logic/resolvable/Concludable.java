@@ -40,7 +40,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.predicate.Predicate;
 import graql.lang.common.GraqlToken;
 
 import javax.annotation.Nullable;

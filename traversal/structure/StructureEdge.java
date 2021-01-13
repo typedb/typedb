@@ -94,16 +94,16 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
     public static class Predicate extends StructureEdge<StructureVertex.Thing, StructureVertex.Thing> {
 
-        private final grakn.core.traversal.common.Predicate.Variable predicate;
+        private final grakn.core.traversal.predicate.Predicate.Variable predicate;
         private final int hash;
 
-        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, grakn.core.traversal.common.Predicate.Variable predicate) {
+        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, grakn.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString());
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
         }
 
-        public grakn.core.traversal.common.Predicate.Variable predicate() {
+        public grakn.core.traversal.predicate.Predicate.Variable predicate() {
             return predicate;
         }
 

@@ -328,10 +328,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     public static class Predicate extends PlannerEdge<PlannerVertex.Thing, PlannerVertex.Thing> {
 
-        private final grakn.core.traversal.common.Predicate.Variable predicate;
+        private final grakn.core.traversal.predicate.Predicate.Variable predicate;
 
         Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to,
-                  grakn.core.traversal.common.Predicate.Variable predicate) {
+                  grakn.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString(), false);
             this.predicate = predicate;
             initialiseDirectionalEdges();
@@ -345,15 +345,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public static class Directional extends PlannerEdge.Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
-            private final grakn.core.traversal.common.Predicate.Variable predicate;
+            private final grakn.core.traversal.predicate.Predicate.Variable predicate;
 
             Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction,
-                        grakn.core.traversal.common.Predicate.Variable predicate) {
+                        grakn.core.traversal.predicate.Predicate.Variable predicate) {
                 super(from, to, direction, predicate.toString());
                 this.predicate = predicate;
             }
 
-            public grakn.core.traversal.common.Predicate.Variable predicate() {
+            public grakn.core.traversal.predicate.Predicate.Variable predicate() {
                 return predicate;
             }
 
@@ -368,7 +368,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 long cost;
                 if (isSelfClosure() || to().props().hasIID()) {
                     cost = 1;
-                } else if (predicate.operator().equals(grakn.core.traversal.common.Predicate.Operator.Equality.EQ)) {
+                } else if (predicate.operator().equals(grakn.core.traversal.predicate.Predicate.Operator.Equality.EQ)) {
                     if (!to.props().types().isEmpty()) {
                         cost = to.props().types().size();
                     } else if (!from.props().types().isEmpty()) {
