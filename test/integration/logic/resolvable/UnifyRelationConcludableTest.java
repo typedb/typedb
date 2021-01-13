@@ -41,7 +41,6 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
