@@ -25,6 +25,7 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.producer.Producer;
+import grakn.core.common.producer.Producers;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -162,7 +163,9 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    private ReasonerProducer resolve(Conjunction conjunction) {
-        return new ReasonerProducer(conjunction, resolverRegistry);
+    private Producer<ConceptMap> resolve(Conjunction conjunction) {
+        return Producers.empty();
+        // TODO enable reasoner when ready!
+        // return new ReasonerProducer(conjunction, resolverRegistry);
     }
 }
