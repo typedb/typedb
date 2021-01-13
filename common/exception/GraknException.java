@@ -22,6 +22,10 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * TODO there is some technical debt in the way we throw and catch GraknException, which is a RuntimeException.
+ * see issue #6021
+ */
 public class GraknException extends RuntimeException {
 
     @Nullable
