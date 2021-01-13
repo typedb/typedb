@@ -135,7 +135,7 @@ public class GraknServer implements AutoCloseable {
 
     private static void printASCIILogo() throws IOException {
         if (ASCII_LOGO_FILE.exists()) {
-            LOG.info("\n" + new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
+            System.out.println("\n" + new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
         }
     }
 
