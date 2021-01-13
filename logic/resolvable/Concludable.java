@@ -221,6 +221,16 @@ public abstract class Concludable extends Resolvable {
         }
     }
 
+    /** Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
+     * be any number of rolePlayers:
+     * { $r($role: $x) isa $relation; }
+     * { ($role: $x) isa $relation; }
+     * { ($x) isa $relation; }
+     * { ($x); }
+     * { $r($x) isa $relation; }
+     * { $r($role: $x); }
+     * { $r($x); }
+     */
     public static class Relation extends Concludable {
 
         private final RelationConstraint relation;
@@ -349,6 +359,15 @@ public abstract class Concludable extends Resolvable {
         }
     }
 
+    /**
+     * `Has` handles these concludable patterns:
+     * `{ $x has $a; }`,
+     * `{ $x has age $a; }`,
+     * `{ $x has age 30; }`,
+     * `{ $x has $a; $a isa age; }`,
+     * `{ $x has $a; $a 30 isa age; }`,
+     * `{ $x has $a; $a 30; }`
+     */
     public static class Has extends Concludable {
 
         private final HasConstraint has;
@@ -472,6 +491,13 @@ public abstract class Concludable extends Resolvable {
 
     }
 
+    /**
+     * Isa handles concludable these concludable patterns, where the owner of the IsaConstraint is not already the
+     * subject of a Has or Relation Concludable:
+     * `{ $x isa person; }`
+     * `{ $a isa age; $a = 30; }`
+     * `{ $a isa age; $a > 5; $a < 30; }`
+     */
     public static class Isa extends Concludable {
 
         private final IsaConstraint isa;
@@ -534,6 +560,13 @@ public abstract class Concludable extends Resolvable {
         }
     }
 
+    /**
+     * Attribute handles patterns where nothing is known about an attribute except its value:
+     * { $a = 30; }
+     * { $a > 5; $a < 20; }
+     * It does not handle:
+     * { $a < $b; }
+     */
     public static class Attribute extends Concludable {
 
         private final ValueConstraint<?> value;
