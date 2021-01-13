@@ -97,21 +97,23 @@ public abstract class Concludable extends Resolvable {
         return iterate(applicableRules.keySet());
     }
 
-    public abstract Variable generating();
+    // TODO renaming, ordering of methods
+    private synchronized void computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        if (applicableRules == null) {
+            applicableRules = new HashMap<>();
+            Variable mayBeGeneratedVar = generating();
+            Set<Label> possibleTypes = mayBeGeneratedVar.resolvedTypes();
 
-    /*
-    TODO this should be improved by indexing rules by possible types, so rather than retrieving all rules
-    TODO and attempting to unify them, we only read rules that are relevant
-     */
-    private void computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        assert applicableRules == null;
-        applicableRules = new HashMap<>();
-        logicMgr.rules().forEachRemaining(rule -> iterate(unify(rule.conclusion(), conceptMgr))
-                .forEachRemaining(unifier -> {
-                    applicableRules.putIfAbsent(rule, new HashSet<>());
-                    applicableRules.get(rule).add(unifier);
-                }));
+            possibleTypes.forEach(type -> logicMgr.rulesPotentiallyConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+        }
     }
+
+    abstract Variable generating();
 
     abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 

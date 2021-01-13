@@ -23,6 +23,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
@@ -36,6 +37,7 @@ import graql.lang.pattern.constraint.TypeConstraint;
 import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
 
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -72,18 +74,16 @@ public class LogicManager {
         Rule rule = logicCache.rule().getIfPresent(label);
         if (rule != null) return rule;
         RuleStructure structure = graphMgr.schema().getRule(label);
-        if (structure != null) {
-            return logicCache.rule().get(structure.label(), l -> Rule.of(this, structure));
-        }
+        if (structure != null) return logicCache.rule().get(structure.label(), l -> Rule.of(this, structure));
         return null;
     }
 
+    public ResourceIterator<Rule> rulesPotentiallyConcluding(Label type) {
+        return graphMgr.schema().ruleIndex().rulesConcluding(type).map(this::fromStructure);
+    }
+
     public ResourceIterator<Rule> rules() {
-        return graphMgr.schema().rules().map(struct -> {
-            Rule rule = logicCache.rule().getIfPresent(struct.label());
-            if (rule == null) rule = logicCache.rule().get(struct.label(), l -> Rule.of(this, struct));
-            return rule;
-        });
+        return graphMgr.schema().rules().map(this::fromStructure);
     }
 
     /**
@@ -104,6 +104,12 @@ public class LogicManager {
 
     public TypeResolver typeResolver() {
         return typeResolver;
+    }
+
+    private Rule fromStructure(RuleStructure ruleStructure) {
+        Rule rule = logicCache.rule().getIfPresent(ruleStructure.label());
+        if (rule == null) rule = logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
+        return rule;
     }
 
     static void validateRuleStructureLabels(ConceptManager conceptMgr, RuleStructure ruleStructure) {

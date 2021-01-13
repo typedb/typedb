@@ -103,6 +103,10 @@ public class SchemaGraph implements Graph {
         isModified = false;
     }
 
+    public RuleIndex ruleIndex() {
+        return ruleIndex;
+    }
+
     static class Cache {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
@@ -661,5 +665,29 @@ public class SchemaGraph implements Graph {
                 }
             } else return maxDepthFn.get();
         }
+    }
+
+    public static class RuleIndex {
+        ConcurrentHashMap<Label, Set<RuleStructure>> implicitlyConcluding;
+        ConcurrentHashMap<Label, Set<RuleStructure>> explicitlyConcluding;
+
+        public ResourceIterator<RuleStructure> rulesConcluding(Label label) {
+            Set<RuleStructure> implicit = implicitlyConcluding.computeIfAbsent(label, this::loadImplicitlyConcluding);
+            Set<RuleStructure> explicit = explicitlyConcluding.computeIfAbsent(label, this::loadExplicitlyConcluding);
+            return link(iterate(implicit), iterate(explicit));
+        }
+
+        private Set<RuleStructure> loadImplicitlyConcluding(Label label) {
+            // TODO read from storage
+        }
+
+        private Set<RuleStructure> loadExplicitlyConcluding(Label label) {
+            // TODO read from storage
+        }
+
+
+        // TODO accessors for rule validation
+
+        // TODO updating index and committing it
     }
 }
