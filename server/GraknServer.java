@@ -255,6 +255,10 @@ public class GraknServer implements AutoCloseable {
         LOG.info("- listening to port: {}", server.port());
         LOG.info("- data directory configured to: {}", server.dataDir());
         LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
+        LOG.info("");
+        LOG.info("Grakn Core Server is now running and will keep this process alive.");
+        LOG.info("You can press CTRL+C to shutdown this server.");
+        LOG.info("...");
         server.serve();
     }
 
