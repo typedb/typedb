@@ -209,7 +209,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
         if (!concludableThingVar.resolvedTypes().isEmpty() && !conclusionThingVar.resolvedTypes().isEmpty()) {
-            satisfiable &= Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
+            satisfiable = Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
@@ -269,12 +269,15 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             }
 
             // TODO this will work for now, but we should rewrite using role player `repetition`
+
             List<RolePlayer> conjRolePlayers = list(constraint().players());
             List<RolePlayer> thenRolePlayers = list(relationConclusion.relation().players());
 
             return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
                     .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));
         }
+
+//        private ResourceIterator<Map<RolePlayer, >>
 
         private ResourceIterator<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
                 List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
@@ -299,7 +302,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             assert conclusionRolePlayer.roleType().isPresent();
             boolean satisfiable = true;
             if (concludableRolePlayer.roleType().isPresent()) {
-                satisfiable &= unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
+                satisfiable = unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
             }
             satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
             return satisfiable;
