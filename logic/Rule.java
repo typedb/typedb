@@ -98,9 +98,9 @@ public class Rule {
         this.then = thenPattern(structure.then());
         validateSatisfiable();
         pruneThenResolvedTypes();
-
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
+        validateInsertable();
         validateCycles();
     }
 
@@ -167,11 +167,26 @@ public class Rule {
         return structure.hashCode(); // does not need caching
     }
 
-    void validateSatisfiable() {
-        // TODO: check that the rule has a set of satisfiable types. This includes strictly for the `when` of the rule
-        // TODO instead of the collapsed type hints on the `isa` and `sub` constraints
-        // TODO: and also checking that each combinations of types from the `when` is a valid insertable answer in the `then`
-        // TODO: we may want to use the stream of combinations of types directly from type inferences, without collapsing them
+    public void validateSatisfiable() {
+        /*
+         check that none of the variables in the `when` or `then` conjunctions are marked `isSatisfiable = false`. otherwise throw an error
+         */
+    }
+
+    public void validateInsertable()  {
+        /*
+        High level, we also want to ensure that every combination of possible variable types in the `then`, that may be provided
+        by the `when` of the rule, is actually compatible with the `then` of the rule. This means,
+        we need _any_ set of instances to be insertable in the `then`. Note that inserts are different from `match`
+        in that you don't check any subtyping (i think), just check what the exact concept's capabilities are.
+
+        If any combination of types the `when` may produce is not compatible with the `then`, we should flag it to the user.
+
+        To do this you may want to
+        1. utilise the streaming mode of `TypeResolver` (can re-run it, thats ok) to get all combinations
+        2. utilise the `Rule.Conclusion` classes before (there's exactly 1 of the 3 per rule) to validate a combination is compatible with the conclusion
+           using these Rule.Conclusion data structures indicates that it is a "high level" logical rule validation, which is true
+         */
     }
 
     void validateCycles() {
