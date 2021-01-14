@@ -135,4 +135,43 @@ public class RetrievableTest {
                          parse("{ $a = 7; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
+
+    @Test
+    public void test_has_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; $b < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
+        assertEquals(set(parse("{ $b > 5; $b < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_has_with_anonymous_atribute_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x has age 30; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has age 30; }"), concludables);
+        assertEquals(set(), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_isa_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; $a < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a isa $b; $a > 5; $a < 10; }"), concludables);
+        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_attribute_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; $a < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a > 5; $a < 10; }"), concludables);
+        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_variable_value_constraints_create_retrievable_and_two_concludables() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x > $y; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x > $y; }"), concludables);
+        assertEquals(set(parse("{ $x > $y; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
 }

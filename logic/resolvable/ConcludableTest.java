@@ -171,7 +171,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(2, attributeConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -181,7 +181,7 @@ public class ConcludableTest {
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(2, attributeConcludablesCount(concludables));
+        assertEquals(1, attributeConcludablesCount(concludables));
     }
 
     @Test
@@ -192,6 +192,16 @@ public class ConcludableTest {
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
         assertEquals(0, attributeConcludablesCount(concludables));
+    }
+
+    @Test
+    public void test_conjunction_creates_two_attribute_concludables_for_variable_value_comparison() {
+        String conjunction = "{ $x > $y; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(0, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(2, attributeConcludablesCount(concludables));
     }
 
     @Test
