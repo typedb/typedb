@@ -25,11 +25,11 @@ import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Predicate;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.GraphPlanner;
 import grakn.core.traversal.planner.PlannerEdge;
 import grakn.core.traversal.planner.PlannerVertex;
+import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.producer.GraphIterator;
 import grakn.core.traversal.producer.GraphProducer;
 import graql.lang.pattern.variable.Reference;
@@ -250,7 +250,7 @@ public class GraphProcedure implements Procedure {
             return type;
         }
 
-        public ProcedureVertex.Thing setPredicate(ProcedureVertex.Thing thing, Predicate.Value.SubString predicate) {
+        public ProcedureVertex.Thing setPredicate(ProcedureVertex.Thing thing, Predicate.Value.String predicate) {
             thing.props().predicate(predicate);
             return thing;
         }

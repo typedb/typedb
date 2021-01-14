@@ -18,6 +18,7 @@
 
 package grakn.core.graph.edge.impl;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.graph.DataGraph;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.EdgeIID;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
@@ -42,11 +44,18 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     final DataGraph graph;
     final Encoding.Edge.Thing encoding;
     final AtomicBoolean deleted;
+    boolean isInferred;
 
-    ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding) {
+    ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding, boolean isInferred) {
         this.graph = graph;
         this.encoding = encoding;
-        deleted = new AtomicBoolean(false);
+        this.deleted = new AtomicBoolean(false);
+        this.isInferred = isInferred;
+    }
+
+    @Override
+    public boolean isInferred() {
+        return isInferred;
     }
 
     public static class Buffered extends ThingEdgeImpl implements ThingEdge {
@@ -60,12 +69,13 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         /**
          * Default constructor for {@code ThingEdgeImpl.Buffered}.
          *
-         * @param encoding the edge {@code Encoding}
-         * @param from     the tail vertex
-         * @param to       the head vertex
+         * @param encoding   the edge {@code Encoding}
+         * @param from       the tail vertex
+         * @param to         the head vertex
+         * @param isInferred
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to) {
-            this(encoding, from, to, null);
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, boolean isInferred) {
+            this(encoding, from, to, null, isInferred);
         }
 
         /**
@@ -76,8 +86,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised) {
-            super(from.graph(), encoding);
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised, boolean isInferred) {
+            super(from.graph(), encoding, isInferred);
             assert this.graph == to.graph();
             assert encoding.isOptimisation() || optimised == null;
             this.from = from;
@@ -127,6 +137,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             return Optional.ofNullable(optimised);
         }
 
+        @Override
+        public void isInferred(boolean isInferred) {
+            this.isInferred = isInferred;
+        }
+
         /**
          * Deletes this {@code Edge} from connecting between two {@code Vertex}.
          *
@@ -150,6 +165,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public void commit() {
+            if (isInferred()) throw GraknException.of(ILLEGAL_OPERATION);
             if (committed.compareAndSet(false, true)) {
                 graph.storage().put(outIID().bytes());
                 graph.storage().put(inIID().bytes());
@@ -222,7 +238,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param iid   the {@code iid} of a persisted edge
          */
         public Persisted(DataGraph graph, EdgeIID.Thing iid) {
-            super(graph, iid.encoding());
+            super(graph, iid.encoding(), false);
 
             if (iid.isOutwards()) {
                 fromIID = iid.start();
@@ -282,6 +298,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (optimised != null) return Optional.of(optimised);
             if (optimisedIID != null) optimised = graph.convert(optimisedIID);
             return Optional.ofNullable(optimised);
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            throw GraknException.of(ILLEGAL_OPERATION);
         }
 
         /**

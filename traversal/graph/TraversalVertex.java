@@ -21,7 +21,7 @@ package grakn.core.traversal.graph;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.util.Encoding;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.predicate.Predicate;
 
 import java.util.HashSet;
 import java.util.Objects;

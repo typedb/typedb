@@ -37,6 +37,8 @@ public interface Relation extends Thing {
 
     void addPlayer(RoleType roleType, Thing player);
 
+    void addPlayer(RoleType roleType, Thing player, boolean isInferred);
+
     void removePlayer(RoleType roleType, Thing player);
 
     Stream<? extends Thing> getPlayers(String roleType, String... roleTypes);

@@ -79,11 +79,12 @@ public interface ThingAdjacency {
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param encoding of the edge that will connect the owner to the adjacent vertex
-     * @param adjacent the adjacent vertex
+     * @param encoding   of the edge that will connect the owner to the adjacent vertex
+     * @param adjacent   the adjacent vertex
+     * @param isInferred
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, boolean isInferred);
 
     /**
      * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
@@ -94,12 +95,13 @@ public interface ThingAdjacency {
      * an {@code Adjacency} map with an opposite direction to this one. I.e.
      * This is a recursive put operation.
      *
-     * @param encoding  type of the edge
-     * @param adjacent  the adjacent vertex
-     * @param optimised vertex that this optimised edge is compressing
+     * @param encoding   type of the edge
+     * @param adjacent   the adjacent vertex
+     * @param optimised  vertex that this optimised edge is compressing
+     * @param isInferred
      * @return an edge of type {@code encoding} that connects to {@code adjacent}.
      */
-    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
+    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised, boolean isInferred);
 
     /**
      * Deletes all edges with a given encoding from the {@code Adjacency} map.

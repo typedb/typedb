@@ -22,11 +22,12 @@ host_compatible_java_test(
     name = "test-rule",
     srcs = ["RuleTest.java"],
     native_libraries_deps = [
-        "//rocks:rocks",
         "//:grakn",
         "//concept:concept",
-        "//pattern:pattern",
         "//logic:logic",
+        "//pattern:pattern",
+        "//rocks:rocks",
+        "//traversal:traversal",
     ],
     resource_strip_prefix = "common/test",
     resources = [
@@ -39,7 +40,9 @@ host_compatible_java_test(
         "//common",
 
         # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_graql//java/pattern",
     ],
 )
 

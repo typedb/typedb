@@ -70,6 +70,8 @@ public interface Thing extends Concept {
      */
     void setHas(Attribute attribute);
 
+    void setHas(Attribute attribute, boolean isInferred);
+
     /**
      * Remove an {@code Attribute} from being owned by this {@code Thing}.
      *

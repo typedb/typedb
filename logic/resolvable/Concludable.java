@@ -40,7 +40,7 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Predicate;
+import grakn.core.traversal.predicate.Predicate;
 import graql.lang.common.GraqlToken;
 
 import javax.annotation.Nullable;
@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
@@ -209,7 +208,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
     boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
         if (!concludableThingVar.resolvedTypes().isEmpty() && !conclusionThingVar.resolvedTypes().isEmpty()) {
-            satisfiable &= Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
+            satisfiable = Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
@@ -268,65 +267,59 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
                 } else return Iterators.empty();
             }
 
-            // TODO this will work for now, but we should rewrite using role player `repetition`
             List<RolePlayer> conjRolePlayers = list(constraint().players());
-            List<RolePlayer> thenRolePlayers = list(relationConclusion.relation().players());
+            Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();
 
-            return matchRolePlayerIndices(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
-                    .map(indexMap -> rolePlayerMappingToUnifier(indexMap, thenRolePlayers, unifierBuilder.duplicate(), conceptMgr));
+            return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
+                    .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.duplicate(), conceptMgr));
         }
 
-        private ResourceIterator<Map<RolePlayer, Set<Integer>>> matchRolePlayerIndices(
-                List<RolePlayer> conjRolePlayers, List<RolePlayer> thenRolePlayers,
-                Map<RolePlayer, Set<Integer>> mapping, ConceptManager conceptMgr) {
-
-            if (conjRolePlayers.isEmpty()) return Iterators.iterate(list(mapping));
-            RolePlayer conjRP = conjRolePlayers.get(0);
-
-            return Iterators.iterate(IntStream.range(0, thenRolePlayers.size()).iterator())
-                    .filter(thenIdx -> mapping.values().stream().noneMatch(players -> players.contains(thenIdx)))
-                    .filter(thenIdx -> unificationSatisfiable(conjRP, thenRolePlayers.get(thenIdx), conceptMgr))
-                    .map(thenIdx -> {
-                        Map<RolePlayer, Set<Integer>> clone = cloneMapping(mapping);
+        private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
+                List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
+                Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
+            if (conjRolePLayers.isEmpty()) return Iterators.iterate(list(mapping));
+            RolePlayer conjRP = conjRolePLayers.get(0);
+            return Iterators.iterate(thenRolePlayers)
+                    .filter(thenRP -> Iterators.iterate(mapping.values()).noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
+                    .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
+                    .map(thenRP -> {
+                        Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
                         clone.putIfAbsent(conjRP, new HashSet<>());
-                        clone.get(conjRP).add(thenIdx);
+                        clone.get(conjRP).add(thenRP);
                         return clone;
-                    }).flatMap(newMapping -> matchRolePlayerIndices(conjRolePlayers.subList(1, conjRolePlayers.size()),
-                                                                    thenRolePlayers, newMapping, conceptMgr));
+                    }).flatMap(newMapping -> matchRolePlayers(conjRolePLayers.subList(1, conjRolePLayers.size()),
+                                                              thenRolePlayers, newMapping, conceptMgr));
+        }
+
+        private Unifier convertRPMappingToUnifier(
+                Map<RolePlayer, Set<RolePlayer>> mapping, Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
+            mapping.forEach((conjRP, thenRPs) -> thenRPs.forEach(thenRP -> {
+                unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
+                if (conjRP.roleType().isPresent()) {
+                    assert thenRP.roleType().isPresent();
+                    TypeVariable conjRoleType = conjRP.roleType().get();
+                    TypeVariable thenRoleType = thenRP.roleType().get();
+                    unifierBuilder.add(conjRoleType.id(), thenRoleType.id());
+                    if (conjRoleType.reference().isLabel()) {
+                        Set<Label> allowedTypes = conjRoleType.resolvedTypes().stream()
+                                .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
+                                .collect(Collectors.toSet());
+                        unifierBuilder.requirements().types(conjRoleType.id(), allowedTypes);
+                    }
+                }
+            }));
+
+            return unifierBuilder.build();
         }
 
         private boolean unificationSatisfiable(RolePlayer concludableRolePlayer, RolePlayer conclusionRolePlayer, ConceptManager conceptMgr) {
             assert conclusionRolePlayer.roleType().isPresent();
             boolean satisfiable = true;
             if (concludableRolePlayer.roleType().isPresent()) {
-                satisfiable &= unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
+                satisfiable = unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
             }
             satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
             return satisfiable;
-        }
-
-        private Unifier rolePlayerMappingToUnifier(
-                Map<RolePlayer, Set<Integer>> matchedRolePlayerIndices, List<RolePlayer> thenRolePlayers,
-                Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
-
-            matchedRolePlayerIndices.forEach((conjRP, thenRPIndices) -> thenRPIndices.stream().map(thenRolePlayers::get)
-                    .forEach(thenRP -> {
-                                 if (conjRP.roleType().isPresent()) {
-                                     assert thenRP.roleType().isPresent();
-                                     TypeVariable roleTypeVar = conjRP.roleType().get();
-                                     unifierBuilder.add(roleTypeVar.id(), thenRP.roleType().get().id());
-
-                                     if (roleTypeVar.reference().isLabel()) {
-                                         Set<Label> allowedTypes = roleTypeVar.resolvedTypes().stream()
-                                                 .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
-                                                 .collect(Collectors.toSet());
-                                         unifierBuilder.requirements().types(roleTypeVar.id(), allowedTypes);
-                                     }
-                                 }
-                                 unifierBuilder.add(conjRP.player().id(), thenRP.player().id());
-                             }
-                    ));
-            return unifierBuilder.build();
         }
 
         @Override

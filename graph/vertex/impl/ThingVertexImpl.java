@@ -112,16 +112,14 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public boolean isInferred() {
-        return isInferred;
-    }
-
-    @Override
     public void isInferred(boolean isInferred) {
         this.isInferred = isInferred;
     }
 
     @Override
+    public boolean isInferred() {
+        return isInferred;
+    }
 
     public boolean isDeleted() {
         return isDeleted.get();

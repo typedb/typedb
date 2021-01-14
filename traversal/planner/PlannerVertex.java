@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.traversal.common.Predicate.Operator.Equality.EQ;
+import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
 
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
         extends TraversalVertex<PlannerEdge.Directional<?, ?>, PROPERTIES> {

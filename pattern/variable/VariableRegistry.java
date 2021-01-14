@@ -101,7 +101,7 @@ public class VariableRegistry {
         } else if (types.containsKey(graqlVar.reference())) {
             return types.get(graqlVar.reference()).constrainConcept(graqlVar.constraints(), this);
         } else if (bounds != null && bounds.contains(graqlVar.reference())) {
-            Reference.Referrable ref = graqlVar.reference().asReferrable();
+            Reference.Referable ref = graqlVar.reference().asReferable();
             if (bounds.get(graqlVar.reference()).isThing()) {
                 things.put(ref, new ThingVariable(Identifier.Variable.of(ref)));
                 return things.get(ref).constrainConcept(graqlVar.constraints(), this);
@@ -117,7 +117,7 @@ public class VariableRegistry {
     public TypeVariable register(graql.lang.pattern.variable.TypeVariable graqlVar) {
         if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_TYPE_VARIABLE);
         return computeTypeIfAbsent(
-                graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferrable()))
+                graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferable()))
         ).constrainType(graqlVar.constraints(), this);
     }
 
@@ -127,7 +127,7 @@ public class VariableRegistry {
             graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymous.size()));
             anonymous.add(graknVar);
         } else {
-            graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferrable())));
+            graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferable())));
         }
         return graknVar.constrainThing(graqlVar.constraints(), this);
     }
