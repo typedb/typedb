@@ -55,6 +55,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
@@ -171,9 +172,14 @@ public class Rule {
         /*
          check that none of the variables in the `when` or `then` conjunctions are marked `isSatisfiable = false`. otherwise throw an error
          */
+        if (Stream.concat(then.variables().stream(), when.variables().stream()).anyMatch(variable -> !variable.isSatisfiable())) {
+            // TODO: improve this to have a more relevant exception
+            throw GraknException.of(ILLEGAL_STATE);
+        }
     }
 
     public void validateInsertable()  {
+
         /*
         High level, we also want to ensure that every combination of possible variable types in the `then`, that may be provided
         by the `when` of the rule, is actually compatible with the `then` of the rule. This means,
