@@ -150,7 +150,7 @@ public class UnifyAttributeConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(2, unifier.requirements().predicates().size());
+        // TODO Assert that there are 2 predicates in the unifier requirements;
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -204,7 +204,7 @@ public class UnifyAttributeConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
 
         Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }", "(employee: $x) isa employment");
 

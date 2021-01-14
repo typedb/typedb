@@ -21,15 +21,12 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.variable.ThingVariable;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.Test;
 
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.pattern.variable.VariableRegistry.createFromThings;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -38,10 +35,6 @@ public class ConcludableTest {
 
     private Conjunction parseConjunction(String query) {
         return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-    }
-
-    private ThingVariable parseThingVariable(String graqlVariable, String variableName) {
-        return createFromThings(list(Graql.parseVariable(graqlVariable).asThing())).get(Reference.named(variableName)).asThing();
     }
 
     private long relationConcludablesCount(Set<Concludable> concludables) {

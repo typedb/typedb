@@ -191,7 +191,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
                      unifier.requirements().types().get(Identifier.Variable.label("employment:employee")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -248,7 +248,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
                      unifier.requirements().types().get(Identifier.Variable.label("relation:employee")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -305,7 +305,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(set(Label.of("employment"), Label.of("part-time-employment")),
                      unifier.requirements().types().get(Identifier.Variable.label("employment")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -361,7 +361,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
                      unifier.requirements().types().get(Identifier.Variable.label("relation:employee")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
     }
 
     @Test
@@ -535,7 +535,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
                      unifier.requirements().types().get(Identifier.Variable.label("employment:employee")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -743,7 +743,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
                      unifier.requirements().types().get(Identifier.Variable.label("employment:employee")));
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertFalse(unifier.requirements().hasPredicate());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();

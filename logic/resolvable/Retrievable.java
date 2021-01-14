@@ -28,24 +28,16 @@ import grakn.core.pattern.variable.Variable;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class Retrievable extends Resolvable {
 
-    private final Conjunction conjunction;
-
     public Retrievable(Conjunction conjunction) {
-        this.conjunction = conjunction;
+        super(conjunction);
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
         return Retrievable.Extractor.from(conjunction, toExclude).extract();
-    }
-
-    @Override
-    public Conjunction conjunction() {
-        return conjunction;
     }
 
     @Override
@@ -91,7 +83,7 @@ public class Retrievable extends Resolvable {
                 Set<? extends Constraint> otherConstraints = new HashSet<>(subgraph.registeredConstraints);
                 otherConstraints.removeAll(labelConstraints);
                 Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, otherConstraints);
-                return new Retrievable(new Conjunction(cloner.variables(), set()));
+                return new Retrievable(cloner.conjunction());
             }).toSet();
         }
 

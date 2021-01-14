@@ -198,8 +198,8 @@ public class Conjunction implements Pattern, Cloneable {
             }).asType();
         }
 
-        public Set<Variable> variables() {
-            return set(variables.values());
+        public Conjunction conjunction() {
+            return new Conjunction(set(variables.values()), set());
         }
 
         public Constraint getClone(Constraint constraint) {

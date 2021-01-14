@@ -25,7 +25,15 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Resolvable {
 
-    public abstract Conjunction conjunction();
+    private final Conjunction conjunction;
+
+    public Resolvable(Conjunction conjunction) {
+        this.conjunction = conjunction;
+    }
+
+    public Conjunction conjunction() {
+        return conjunction;
+    }
 
     public boolean isRetrievable() {
         return false;
