@@ -198,8 +198,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(12, "Tye type variable '%s' has multiple 'value' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(13, "The type variable '%s' has multiple 'regex' constraints.");
-        public static final Pattern SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION =
+        public static final Pattern UNSATISFIABLE_CONJUNCTION =
                 new Pattern(14, "The conjunction %s can never be satisfied within the current schema.");
+        public static final Pattern UNSATISFIABLE_CONSTRAINT_VALUE_TYPE =
+                new Pattern(14, "The value type in this constraint %s can not be satisfied within the current conjunction.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
