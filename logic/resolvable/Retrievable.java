@@ -67,7 +67,7 @@ public class Retrievable extends Resolvable {
         }
 
         public Set<Retrievable> extract() {
-            concludables.forEach(concludable -> extractedConstraints.addAll(concludable.constraints()));
+            concludables.forEach(concludable -> extractedConstraints.addAll(concludable.concludableConstraints()));
             Iterators.iterate(conjunction.variables()).filter(var -> var.id().reference().isName()).forEachRemaining(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();

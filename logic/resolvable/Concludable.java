@@ -72,7 +72,7 @@ public abstract class Concludable extends Resolvable {
         applicableRules = new HashMap<>(); // TODO Implement
     }
 
-    public abstract Set<Constraint> constraints();
+    public abstract Set<Constraint> concludableConstraints();
 
     public static Set<Concludable> create(grakn.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction).concludables();
@@ -224,6 +224,57 @@ public abstract class Concludable extends Resolvable {
         return Iterators.iterate(values).filter(v -> v.predicate().equals(EQ)).toSet();
     }
 
+    private static Function<grakn.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
+        Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn;
+        if (value.isLong()) {
+            predicateFn = (a) -> {
+                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                        .comparableTo(Encoding.ValueType.LONG)) return false;
+
+                assert a.getType().isDouble() || a.getType().isLong();
+                if (a.getType().isLong())
+                    return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
+                else if (a.getType().isDouble())
+                    return Predicate.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
+                else throw GraknException.of(ILLEGAL_STATE);
+            };
+        } else if (value.isDouble()) {
+            predicateFn = (a) -> {
+                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                        .comparableTo(Encoding.ValueType.DOUBLE)) return false;
+
+                assert a.getType().isDouble() || a.getType().isLong();
+                if (a.getType().isLong())
+                    return Predicate.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
+                else if (a.getType().isDouble())
+                    return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
+                else throw GraknException.of(ILLEGAL_STATE);
+            };
+        } else if (value.isBoolean()) {
+            predicateFn = (a) -> {
+                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                        .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                assert a.getType().isBoolean();
+                return a.asBoolean().getValue().compareTo(value.asBoolean().value()) == 0;
+            };
+        } else if (value.isString()) {
+            predicateFn = (a) -> {
+                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                        .comparableTo(Encoding.ValueType.STRING)) return false;
+                assert a.getType().isString();
+                return a.asString().getValue().compareTo(value.asString().value()) == 0;
+            };
+        } else if (value.isDateTime()) {
+            predicateFn = (a) -> {
+                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                        .comparableTo(Encoding.ValueType.DATETIME)) return false;
+                assert a.getType().isDateTime();
+                return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
+            };
+        } else throw GraknException.of(ILLEGAL_STATE);
+        return predicateFn;
+    }
+
     /** Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
      * { $r($role: $x) isa $relation; }
@@ -266,7 +317,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Set<Constraint> constraints() {
+        public Set<Constraint> concludableConstraints() {
             return isa == null ? set(new HashSet<>(labels), relation) : set(new HashSet<>(labels), relation, isa);
         }
 
@@ -411,7 +462,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Set<Constraint> constraints() {
+        public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
@@ -437,53 +488,7 @@ public abstract class Concludable extends Resolvable {
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
 
                     ValueConstraint<?> value = attr.value().iterator().next();
-                    Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn;
-                    if (value.isLong()) {
-                        predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.LONG)) return false;
-
-                            assert a.getType().isDouble() || a.getType().isLong();
-                            if (a.getType().isLong())
-                                return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
-                            else if (a.getType().isDouble())
-                                return Predicate.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
-                            else throw GraknException.of(ILLEGAL_STATE);
-                        };
-                    } else if (value.isDouble()) {
-                        predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.DOUBLE)) return false;
-
-                            assert a.getType().isDouble() || a.getType().isLong();
-                            if (a.getType().isLong())
-                                return Predicate.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
-                            else if (a.getType().isDouble())
-                                return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
-                            else throw GraknException.of(ILLEGAL_STATE);
-                        };
-                    } else if (value.isBoolean()) {
-                        predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
-                            assert a.getType().isBoolean();
-                            return a.asBoolean().getValue().compareTo(value.asBoolean().value()) == 0;
-                        };
-                    } else if (value.isString()) {
-                        predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.STRING)) return false;
-                            assert a.getType().isString();
-                            return a.asString().getValue().compareTo(value.asString().value()) == 0;
-                        };
-                    } else if (value.isDateTime()) {
-                        predicateFn = (a) -> {
-                            if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                    .comparableTo(Encoding.ValueType.DATETIME)) return false;
-                            assert a.getType().isDateTime();
-                            return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
-                        };
-                    } else throw GraknException.of(ILLEGAL_STATE);
+                    Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn = valueEqualsFunction(value);
                     unifierBuilder.requirements().hasPredicate(attr.id(), predicateFn);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
@@ -542,7 +547,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Set<Constraint> constraints() {
+        public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
             constraints.addAll(equalsConstraints(values));
@@ -565,6 +570,9 @@ public abstract class Concludable extends Resolvable {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
                     unifierBuilder.requirements().types(type.id(),
                                                         subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
+                }
+                for (ValueConstraint<?> value : equalsConstraints(values)) {
+                    unifierBuilder.requirements().hasPredicate(value.owner().id(), valueEqualsFunction(value));
                 }
             } else return Iterators.empty();
 
@@ -598,20 +606,17 @@ public abstract class Concludable extends Resolvable {
 
         private final Set<ValueConstraint<?>> values;
         private final ThingVariable attribute;
-        private final Set<Constraint> constraints;
 
         private Attribute(ThingVariable attribute, Set<ValueConstraint<?>> values) {
             super(new Conjunction(set(attribute), set()));
             this.attribute = attribute;
             this.values = values;
-            constraints = new HashSet<>(values);
         }
 
         private Attribute(IsaConstraint isa) {
             super(new Conjunction(isa.variables(), set()));
             attribute = isa.owner();
             values = set();
-            constraints = set(isa);
         }
 
         public static Attribute of(ThingVariable attribute) {
@@ -628,7 +633,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Set<Constraint> constraints() {
+        public Set<Constraint> concludableConstraints() {
             return new HashSet<>(equalsConstraints(values));
         }
 
@@ -639,6 +644,9 @@ public abstract class Concludable extends Resolvable {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
             assert Iterators.iterate(values).map(ValueConstraint::isVariable).toSet().size() == 0;
+            for (ValueConstraint<?> value : equalsConstraints(values)) {
+                unifierBuilder.requirements().hasPredicate(value.owner().id(), valueEqualsFunction(value));
+            }
             return Iterators.iterate(list(unifierBuilder.build()));
         }
 
