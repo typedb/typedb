@@ -100,7 +100,7 @@ public class TypeResolverTest {
     }
 
     private Conjunction resolveConjunction(TypeResolver typeResolver, String matchString) {
-        return typeResolver.resolveVariables(createConjunction(matchString));
+        return typeResolver.resolve(createConjunction(matchString));
     }
 
     @Test
@@ -739,7 +739,7 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrowsWithMessage(
-                () -> typeResolver.resolveVariables(conjunction),
+                () -> typeResolver.resolve(conjunction),
                 GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
         );
     }
@@ -872,7 +872,7 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrowsWithMessage(
-                () -> typeResolver.resolveVariables(conjunction),
+                () -> typeResolver.resolve(conjunction),
                 GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
         );
     }

@@ -86,7 +86,7 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolveVariables(Conjunction conjunction) {
+    public Conjunction resolve(Conjunction conjunction) {
         resolveLabels(conjunction);
         TraversalConstructor traversalConstructor = new TraversalConstructor(conjunction, conceptMgr);
 
