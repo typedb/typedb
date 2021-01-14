@@ -61,6 +61,7 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 public abstract class Concludable extends Resolvable {
 
@@ -217,6 +218,10 @@ public abstract class Concludable extends Resolvable {
         } else {
             return conceptMgr.getThingType(label.name()).getSubtypes().map(Type::getLabel);
         }
+    }
+
+    private static Set<ValueConstraint<?>> equalsConstraints(Set<ValueConstraint<?>> values) {
+        return Iterators.iterate(values).filter(v -> v.predicate().equals(EQ)).toSet();
     }
 
     /** Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
@@ -407,7 +412,11 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         public Set<Constraint> constraints() {
-            return isa == null ? set(new HashSet<>(values), has) : set(new HashSet<>(values), has, isa);
+            Set<Constraint> constraints = new HashSet<>();
+            constraints.add(has);
+            if (isa != null) constraints.add(isa);
+            constraints.addAll(equalsConstraints(values));
+            return constraints;
         }
 
         @Override
@@ -534,7 +543,10 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         public Set<Constraint> constraints() {
-            return set(new HashSet<>(values), isa);
+            Set<Constraint> constraints = new HashSet<>();
+            constraints.add(isa);
+            constraints.addAll(equalsConstraints(values));
+            return constraints;
         }
 
         @Override
@@ -602,11 +614,13 @@ public abstract class Concludable extends Resolvable {
             constraints = set(isa);
         }
 
+        public static Attribute of(ThingVariable attribute) {
+            return new Attribute(attribute.clone().isa(TypeVariable.of(Identifier.Variable.of(
+                    Reference.Referrable.label(GraqlToken.Type.ATTRIBUTE.toString()))), false));
+        }
+
         public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {
             assert Iterators.iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
-            if (values.isEmpty()) return new Attribute(attribute.clone().isa(TypeVariable.of(Identifier.Variable.of(
-                    Reference.Referrable.label(GraqlToken.Type.ATTRIBUTE.toString()))), false));
-
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(values);
             assert cloner.conjunction().variables().size() == 1;
             return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), new HashSet<>(Iterators.iterate(
@@ -615,7 +629,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         public Set<Constraint> constraints() {
-            return new HashSet<>(constraints);
+            return new HashSet<>(equalsConstraints(values));
         }
 
         @Override
@@ -643,7 +657,6 @@ public abstract class Concludable extends Resolvable {
             return AlphaEquivalence.valid().validIfAlphaEqual(values, that.values);
         }
     }
-
 
     private static class Extractor {
 
@@ -674,7 +687,7 @@ public abstract class Concludable extends Resolvable {
             Set<LabelConstraint> labelConstraints = set(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
             concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value(), labelConstraints));
             isaOwnersToSkip.add(hasConstraint.attribute());
-            if (hasConstraint.attribute().isa().isPresent()) valueOwnersToSkip.add(hasConstraint.attribute());
+            valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         public void fromConstraint(IsaConstraint isaConstraint) {
@@ -686,7 +699,18 @@ public abstract class Concludable extends Resolvable {
 
         private void fromConstraint(ValueConstraint<?> valueConstraint) {
             if (valueOwnersToSkip.contains(valueConstraint.owner())) return;
-            concludables.add(Attribute.of(valueConstraint.owner(), set(valueConstraint))); // TODO This needs to find the set of non-ValueConstraints properly
+            if (valueConstraint.isVariable()) {
+                // form: `{ $x > $y; }`
+                concludables.add(Attribute.of(valueConstraint.owner()));
+                ValueConstraint.Variable val;
+                if (!valueOwnersToSkip.contains((val = valueConstraint.asVariable()).value())) {
+                    concludables.add(Attribute.of(val.value()));
+                    valueOwnersToSkip.add(val.value());
+                }
+            } else {
+                concludables.add(Attribute.of(valueConstraint.owner(), set(valueConstraint.owner().value())));
+            }
+            valueOwnersToSkip.add(valueConstraint.owner());
         }
 
         public Set<Concludable> concludables() {

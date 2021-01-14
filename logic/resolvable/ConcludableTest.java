@@ -155,6 +155,15 @@ public class ConcludableTest {
     }
 
     @Test
+    public void test_conjunction_isa_and_has_are_built() {
+        String conjunction = "{ $p isa person, has name $n; $n \"Alice\"; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(1, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
+    }
+    @Test
     public void test_conjunction_only_creates_has_concludable_when_attribute_has_value_constraints() {
         String conjunction = "{ $x has $a; $a isa age; $a > 5; $a <= 10; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
@@ -202,6 +211,26 @@ public class ConcludableTest {
         assertEquals(0, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
         assertEquals(2, attributeConcludablesCount(concludables));
+    }
+
+    @Test
+    public void test_conjunction_creates_two_attribute_concludables_for_variable_and_constant_value_comparison() {
+        String conjunction = "{ $x > $y; $y = 5; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(0, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(2, attributeConcludablesCount(concludables));
+    }
+
+    @Test
+    public void test_conjunction_creates_attribute_and_isa_concludables_for_variable_value_comparison() {
+        String conjunction = "{ $x > $y; $y isa age; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(1, attributeConcludablesCount(concludables));
     }
 
     @Test

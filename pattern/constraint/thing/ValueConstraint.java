@@ -395,7 +395,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public Variable clone(Conjunction.Cloner cloner) {
-            return cloner.cloneVariable(owner).valueVariable(predicate(), value);
+            return cloner.cloneVariable(owner).valueVariable(predicate(), cloner.cloneVariable(value));
         }
     }
 }
