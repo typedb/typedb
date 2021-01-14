@@ -89,6 +89,14 @@ public class LogicManager {
         return graphMgr.schema().ruleIndex().rulesConcludingHasAttribute(attributeType).map(this::fromStructure);
     }
 
+    public void indexRuleConcludes(Rule rule, Label type) {
+        graphMgr.schema().ruleIndex().ruleConcludes(rule.structure(), type);
+    }
+
+    public void indexRuleConcludesHasAttribute(Rule rule, Label attributeType) {
+        graphMgr.schema().ruleIndex().ruleConcludesHasAttribute(rule.structure(), attributeType);
+    }
+
     /**
      * On commit we must clear the rule cache and revalidate rules
      * Rule indexes should also be deleted and regenerated at approximate the same time
@@ -154,4 +162,5 @@ public class LogicManager {
             }
         }).map(Label::scopedName).collect(Collectors.toSet());
     }
+
 }

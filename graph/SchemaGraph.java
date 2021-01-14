@@ -39,7 +39,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -667,15 +667,17 @@ public class SchemaGraph implements Graph {
     }
 
     public class RuleIndex {
-        ConcurrentHashMap<Label, Set<RuleStructure>> rulesConclude;
-        ConcurrentHashMap<Label, Set<RuleStructure>> rulesConcludeHasAttribute;
+        ConcurrentHashMap<Label, Set<RuleStructure>> typeConcludedInRules;
+        ConcurrentHashMap<Label, Set<RuleStructure>> hasAttributeTypeConcludedInRules;
+        ConcurrentHashMap<Label, Set<RuleStructure>> bufferedTypeConcludedInRules;
+        ConcurrentHashMap<Label, Set<RuleStructure>> bufferedHasAttributeTypeConcludedInRules;
 
         public ResourceIterator<RuleStructure> rulesConcluding(Label type) {
-            return iterate(rulesConclude.computeIfAbsent(type, this::loadConcludes));
+            return iterate(typeConcludedInRules.computeIfAbsent(type, this::loadConcludes));
         }
 
         public ResourceIterator<RuleStructure> rulesConcludingHasAttribute(Label attributeType) {
-            return iterate(rulesConcludeHasAttribute.computeIfAbsent(attributeType, this::loadConcludesHasAttribute));
+            return iterate(hasAttributeTypeConcludedInRules.computeIfAbsent(attributeType, this::loadConcludesHasAttribute));
         }
 
         private Set<RuleStructure> loadConcludes(Label label) {
@@ -696,9 +698,26 @@ public class SchemaGraph implements Graph {
                     .map(SchemaGraph.this::convert).toSet();
         }
 
+        public void ruleConcludes(RuleStructure rule, Label type) {
+            bufferedTypeConcludedInRules.compute(type, (l, rules) -> {
+                if (rules == null) rules = new HashSet<>();
+                rules.add(rule);
+                return rules;
+            });
+        }
+
+        public void ruleConcludesHasAttribute(RuleStructure rule, Label attributeType) {
+            bufferedHasAttributeTypeConcludedInRules.compute(attributeType, (l, rules) -> {
+                if (rules == null) rules = new HashSet<>();
+                rules.add(rule);
+                return rules;
+            });
+        }
+
+        // TODO committing buffered index and deleting from index
+
 
         // TODO accessors for rule validation
 
-        // TODO updating index and committing it
     }
 }
