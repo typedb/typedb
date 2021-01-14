@@ -103,6 +103,8 @@ public abstract class Concludable extends Resolvable {
             applicableRules = new HashMap<>();
             Variable mayBeGeneratedVar = generating();
             Set<Label> possibleTypes = mayBeGeneratedVar.resolvedTypes();
+            // may never be empty as its always known to be at least a relation or attribute
+            assert !possibleTypes.isEmpty();
 
             possibleTypes.forEach(type -> logicMgr.rulesPotentiallyConcluding(type)
                     .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)

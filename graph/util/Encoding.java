@@ -35,10 +35,12 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.collection.Bytes.checkedCast;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+// TODO replace (byte) with `checkedCast` methods
 public class Encoding {
 
     public static final String ROCKS_DATA = "data";
@@ -732,6 +734,19 @@ public class Encoding {
             public Encoding.Prefix prefix() {
                 return prefix;
             }
+
+            public byte[] bytes() { return prefix.bytes(); }
+        }
+
+        enum Infix {
+            EXPLICITLY_CONCLUDING(0),
+            MAYBE_CONCLUDING(1);
+
+            private final byte key;
+
+            Infix(int key) { this.key = checkedCast(key); }
+
+            public byte[] bytes() { return new byte[] {key}; }
         }
     }
 

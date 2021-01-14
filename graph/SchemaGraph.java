@@ -19,6 +19,7 @@
 package grakn.core.graph;
 
 import grakn.common.collection.Pair;
+import grakn.core.common.collection.Bytes;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -47,6 +48,7 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
+import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SCHEMA_READ_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -83,6 +85,7 @@ public class SchemaGraph implements Graph {
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
 
+    private final RuleIndex ruleIndex;
     private final Statistics statistics;
     private final Cache cache;
     private final boolean isReadOnly;
@@ -98,6 +101,7 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
+        ruleIndex = new RuleIndex();
         statistics = new Statistics();
         cache = new Cache();
         isModified = false;
@@ -313,13 +317,7 @@ public class SchemaGraph implements Graph {
 
             final IndexIID.Rule index = IndexIID.Rule.of(label);
             final byte[] iid = storage.get(index.bytes());
-            if (iid != null) {
-                vertex = rulesByIID.computeIfAbsent(
-                        StructureIID.Rule.of(iid), i -> new RuleStructureImpl.Persisted(this, i)
-                );
-                rulesByLabel.putIfAbsent(label, vertex);
-            }
-
+            if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
             return vertex;
         } catch (InterruptedException e) {
             throw GraknException.of(e);
@@ -667,22 +665,32 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public static class RuleIndex {
-        ConcurrentHashMap<Label, Set<RuleStructure>> implicitlyConcluding;
+    public class RuleIndex {
+        ConcurrentHashMap<Label, Set<RuleStructure>> maybeConcluding;
         ConcurrentHashMap<Label, Set<RuleStructure>> explicitlyConcluding;
 
         public ResourceIterator<RuleStructure> rulesConcluding(Label label) {
-            Set<RuleStructure> implicit = implicitlyConcluding.computeIfAbsent(label, this::loadImplicitlyConcluding);
+            Set<RuleStructure> implicit = maybeConcluding.computeIfAbsent(label, this::loadMaybeConcluding);
             Set<RuleStructure> explicit = explicitlyConcluding.computeIfAbsent(label, this::loadExplicitlyConcluding);
             return link(iterate(implicit), iterate(explicit));
         }
 
-        private Set<RuleStructure> loadImplicitlyConcluding(Label label) {
-            // TODO read from storage
+        private Set<RuleStructure> loadMaybeConcluding(Label label) {
+            TypeVertex type = getType(label);
+            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
+                                                type.iid().bytes(),
+                                                Encoding.Index.Infix.MAYBE_CONCLUDING.bytes());
+            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
+                    .map(SchemaGraph.this::convert).toSet();
         }
 
         private Set<RuleStructure> loadExplicitlyConcluding(Label label) {
-            // TODO read from storage
+            TypeVertex type = getType(label);
+            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
+                                                type.iid().bytes(),
+                                                Encoding.Index.Infix.EXPLICITLY_CONCLUDING.bytes());
+            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
+                    .map(SchemaGraph.this::convert).toSet();
         }
 
 

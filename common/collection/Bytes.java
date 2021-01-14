@@ -231,4 +231,9 @@ public class Bytes {
         }
         return true;
     }
+
+    public static byte checkedCast(int value) {
+        if ((value & 0xFFFFFF00) != 0) throw new ClassCastException("Byte being converted is not in single byte range");
+        return (byte) value;
+    }
 }
