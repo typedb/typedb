@@ -174,4 +174,19 @@ public class RetrievableTest {
         assertEquals(set(parse("{ $x > $y; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
+
+    @Test
+    public void test_variable_value_equals_constraints_create_retrievable_and_two_concludables() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x = $y; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x = $y; }"), concludables);
+        assertEquals(set(parse("{ $x = $y; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_equals_constraint_only_present_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x has $a; $a = $b; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has $a; $a = $b; }"), concludables);
+        assertEquals(set(), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
 }
