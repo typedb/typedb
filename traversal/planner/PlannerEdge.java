@@ -27,6 +27,7 @@ import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.traversal.graph.TraversalEdge;
+import grakn.core.traversal.predicate.PredicateOperator;
 import grakn.core.traversal.structure.StructureEdge;
 import graql.lang.common.GraqlToken;
 
@@ -368,7 +369,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 long cost;
                 if (isSelfClosure() || to().props().hasIID()) {
                     cost = 1;
-                } else if (predicate.operator().equals(grakn.core.traversal.predicate.Predicate.Operator.Equality.EQ)) {
+                } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
                     if (!to.props().types().isEmpty()) {
                         cost = to.props().types().size();
                     } else if (!from.props().types().isEmpty()) {

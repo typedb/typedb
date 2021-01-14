@@ -69,7 +69,7 @@ import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
-import static grakn.core.traversal.predicate.Predicate.Operator.Equality.EQ;
+import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 
 public abstract class ProcedureEdge<
