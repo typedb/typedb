@@ -241,6 +241,7 @@ public class Unifier {
         }
 
         private boolean predicatesSatisfied(Identifier id, Concept concept) {
+            if (predicate == null) return true;
             if (predicate.first().equals(id)) {
                 assert concept.isThing() && (concept.asThing() instanceof Attribute);
                 return predicate.second().apply(concept.asAttribute());
@@ -277,7 +278,8 @@ public class Unifier {
             Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
             types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
             isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
-            Pair<Identifier, Function<Attribute, Boolean>> predicatesCopy = new Pair<>(predicate.first(), predicate.second());
+            Pair<Identifier, Function<Attribute, Boolean>> predicatesCopy = predicate == null ? null : new Pair<>(
+                    predicate.first(), predicate.second());
             return new Requirements(typesCopy, isaExplicitCopy, predicatesCopy);
         }
     }
