@@ -510,7 +510,17 @@ public class Rule {
                 }
 
                 @Override
+                public boolean isValue() {
+                    return true;
+                }
+
+                @Override
                 public Isa asIsa() {
+                    return this;
+                }
+
+                @Override
+                public Value asValue() {
                     return this;
                 }
 

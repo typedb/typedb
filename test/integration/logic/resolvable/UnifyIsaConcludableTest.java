@@ -154,7 +154,7 @@ public class UnifyIsaConcludableTest {
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
                                "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -179,7 +179,7 @@ public class UnifyIsaConcludableTest {
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
                                "(employee: $x) isa employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -205,7 +205,7 @@ public class UnifyIsaConcludableTest {
                                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
                                "($role-type: $x) isa $rel-type");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -231,17 +231,17 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }", "(employee: $x) isa employment");
-        unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         Rule rule3 = createRule("isa-rule-3",
                                 "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
                                 "($role-type: $x) isa $rel-type");
-        unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
 
         // TODO this test can only be enabled after full type resolution runs
 //        assertEquals(0, unifiers.size());
@@ -257,7 +257,7 @@ public class UnifyIsaConcludableTest {
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
                                "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -300,7 +300,7 @@ public class UnifyIsaConcludableTest {
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "(employee: $x) isa employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -344,7 +344,7 @@ public class UnifyIsaConcludableTest {
                                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
                                "($role-type: $x) isa $rel-type");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -387,7 +387,7 @@ public class UnifyIsaConcludableTest {
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
                                "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }",
@@ -426,7 +426,7 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
 
         Unifier unifier = unifiers.get(0);

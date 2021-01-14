@@ -172,7 +172,7 @@ public class UnifyRelationConcludableTest {
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
                                " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -232,7 +232,7 @@ public class UnifyRelationConcludableTest {
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
                                " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -289,7 +289,7 @@ public class UnifyRelationConcludableTest {
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
                                " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -346,7 +346,7 @@ public class UnifyRelationConcludableTest {
         Rule rule = createRule("people-are-employed", "{ $x isa person; }",
                                " (employee: $x) isa employment ");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -374,7 +374,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; $z isa person; }",
                                "(employee: $x, employee: $y, employee: $z) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -407,7 +407,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }",
                                "($employee: $x, $employee: $x) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -430,7 +430,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; $z isa person; }",
                                "(employee: $x, employee: $y, employee: $z) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -485,7 +485,7 @@ public class UnifyRelationConcludableTest {
                                        "$employee type employment:employee; $employer type employment:employer; }",
                                "($employee: $x, $employee: $y) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -514,7 +514,7 @@ public class UnifyRelationConcludableTest {
                                        "$employee type employment:employee; }",
                                "($employee: $x, $employee: $y) isa $employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         Set<Map<String, Set<String>>> result = Iterators.iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -581,7 +581,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; }",
                                "(employee: $x, employer: $x, employee: $y) isa employment");
 
-        List<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         List<Map<String, Set<String>>> result = Iterators.iterate(unifier).map(u -> getStringMapping(u.mapping())).toList();
 
         List<Map<String, Set<String>>> expected = list(
@@ -613,7 +613,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; }",
                                "(employee: $x, employer: $x, employee: $y) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -660,7 +660,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; }",
                                "(employee: $x, employer: $x, employee: $y) isa employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -699,7 +699,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $y isa person; $employment type employment; $employee type employment:employee; }",
                                "($employee: $x, $employee: $y) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -722,7 +722,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $employment type employment; $employee type employment:employee; }",
                                "($employee: $x, $employee: $x) isa $employment");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         Set<Map<String, Set<String>>> result = Iterators.iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -773,7 +773,7 @@ public class UnifyRelationConcludableTest {
                                "{ $x isa person; $employment type employment; $employee type employment:employee; }",
                                "($employee: $x, $employee: $x) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = set(
@@ -797,7 +797,7 @@ public class UnifyRelationConcludableTest {
                                        "$employee sub employment:employee; $employer sub employment:employer; }",
                                "($employee: $x, $employer: $y) isa $employment");
 
-        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion().asRelation(), conceptMgr);
+        ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();
 
         Set<Map<String, Set<String>>> expected = Collections.emptySet();

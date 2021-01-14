@@ -138,7 +138,7 @@ public class UnifyAttributeConcludableTest {
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
@@ -192,7 +192,7 @@ public class UnifyAttributeConcludableTest {
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
-        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion().asIsa(), conceptMgr).toList();
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
