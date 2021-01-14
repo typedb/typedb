@@ -280,7 +280,7 @@ public abstract class Concludable<CONSTRAINT extends Constraint> extends Resolva
             if (conjRolePLayers.isEmpty()) return Iterators.iterate(list(mapping));
             RolePlayer conjRP = conjRolePLayers.get(0);
             return Iterators.iterate(thenRolePlayers)
-                    .filter(thenRP -> mapping.values().stream().noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
+                    .filter(thenRP -> Iterators.iterate(mapping.values()).noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
                     .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
                     .map(thenRP -> {
                         Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
