@@ -23,7 +23,6 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
@@ -78,12 +77,16 @@ public class LogicManager {
         return null;
     }
 
-    public ResourceIterator<Rule> rulesPotentiallyConcluding(Label type) {
+    public ResourceIterator<Rule> rules() {
+        return graphMgr.schema().rules().map(this::fromStructure);
+    }
+
+    public ResourceIterator<Rule> rulesConcluding(Label type) {
         return graphMgr.schema().ruleIndex().rulesConcluding(type).map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rules() {
-        return graphMgr.schema().rules().map(this::fromStructure);
+    public ResourceIterator<Rule> rulesConcludingHasAttribute(Label attributeType) {
+        return graphMgr.schema().ruleIndex().rulesConcludingHasAttribute(attributeType).map(this::fromStructure);
     }
 
     /**
@@ -107,9 +110,7 @@ public class LogicManager {
     }
 
     private Rule fromStructure(RuleStructure ruleStructure) {
-        Rule rule = logicCache.rule().getIfPresent(ruleStructure.label());
-        if (rule == null) rule = logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
-        return rule;
+        return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
     }
 
     static void validateRuleStructureLabels(ConceptManager conceptMgr, RuleStructure ruleStructure) {

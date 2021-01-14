@@ -102,6 +102,31 @@ public class Rule {
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateInsertable();
         validateCycles();
+        indexConclusion();
+    }
+
+    private void indexConclusion() {
+        /*
+        generate two index items:
+        1. the type(s) that this rule can "generate" or modify, to facilitate quick lookups of relevant rules to a query
+            eg. in $x has $a, all the resolved types of $a,
+            eg. in (friend: $x) isa friendship, all the resolved types of $_0
+
+        note that this can become "outdated" and need to be re-indexed
+           */
+
+
+
+
+        /*
+        2. all explicit labels that are mentioned in this rule, to prevent types from undefined when they are used in a rule
+
+        note that the second can be handled transparently by the RuleStructure if that makes more sense
+        note that the latter is always up to date as we can only delete types that are not mentioned in rules,
+             and we can only add a rule that mentions types that exist. This hints that we should be creating this index
+             when we create the rule structure, and delete it when we delete the rule structure
+         */
+
     }
 
     public static Rule of(LogicManager logicManager, RuleStructure structure) {

@@ -39,6 +39,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -666,29 +667,31 @@ public class SchemaGraph implements Graph {
     }
 
     public class RuleIndex {
-        ConcurrentHashMap<Label, Set<RuleStructure>> maybeConcluding;
-        ConcurrentHashMap<Label, Set<RuleStructure>> explicitlyConcluding;
+        ConcurrentHashMap<Label, Set<RuleStructure>> rulesConclude;
+        ConcurrentHashMap<Label, Set<RuleStructure>> rulesConcludeHasAttribute;
 
-        public ResourceIterator<RuleStructure> rulesConcluding(Label label) {
-            Set<RuleStructure> implicit = maybeConcluding.computeIfAbsent(label, this::loadMaybeConcluding);
-            Set<RuleStructure> explicit = explicitlyConcluding.computeIfAbsent(label, this::loadExplicitlyConcluding);
-            return link(iterate(implicit), iterate(explicit));
+        public ResourceIterator<RuleStructure> rulesConcluding(Label type) {
+            return iterate(rulesConclude.computeIfAbsent(type, this::loadConcludes));
         }
 
-        private Set<RuleStructure> loadMaybeConcluding(Label label) {
+        public ResourceIterator<RuleStructure> rulesConcludingHasAttribute(Label attributeType) {
+            return iterate(rulesConcludeHasAttribute.computeIfAbsent(attributeType, this::loadConcludesHasAttribute));
+        }
+
+        private Set<RuleStructure> loadConcludes(Label label) {
             TypeVertex type = getType(label);
             byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
                                                 type.iid().bytes(),
-                                                Encoding.Index.Infix.MAYBE_CONCLUDING.bytes());
+                                                Encoding.Index.Infix.RULE_CONCLUDES.bytes());
             return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
                     .map(SchemaGraph.this::convert).toSet();
         }
 
-        private Set<RuleStructure> loadExplicitlyConcluding(Label label) {
+        private Set<RuleStructure> loadConcludesHasAttribute(Label label) {
             TypeVertex type = getType(label);
             byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
                                                 type.iid().bytes(),
-                                                Encoding.Index.Infix.EXPLICITLY_CONCLUDING.bytes());
+                                                Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes());
             return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
                     .map(SchemaGraph.this::convert).toSet();
         }
