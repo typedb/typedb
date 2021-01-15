@@ -633,7 +633,7 @@ public abstract class Concludable extends Resolvable {
 
         public static Attribute of(ThingVariable attribute) {
             return new Attribute(attribute.clone().isa(TypeVariable.of(Identifier.Variable.of(
-                    Reference.Referrable.label(GraqlToken.Type.ATTRIBUTE.toString()))), false));
+                    Reference.label(GraqlToken.Type.ATTRIBUTE.toString()))), false));
         }
 
         public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {
