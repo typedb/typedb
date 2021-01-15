@@ -1,4 +1,4 @@
-**For the title of this PR:** please follow the grammatical rules of a usual publication title, and thus does NOT CONTAIN CODE: no dots, parentheses, backticks, etc. It needs to be distinctive (not detailed) and succinct (not lengthy). Details of this PR will go in th description. **For the description of this PR:** please replace every line in curly brackets ( { like this } ) with an appropriate description following the guidance. Finally, **please remove this paragraph**.
+**For the title of this PR:** please follow the grammatical rules of a usual publication title, and thus does NOT CONTAIN CODE: no dots, parentheses, backticks, etc. It needs to be distinctive (not detailed) and succinct (not lengthy). Details of this PR will go in the description. **For the description of this PR:** please replace every line in curly brackets ( { like this } ) with an appropriate description following the guidance. Finally, **please remove this paragraph**.
 
 ## What is the goal of this PR?
 
