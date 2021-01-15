@@ -64,7 +64,7 @@ public class RocksDatabase implements Grakn.Database {
     protected RocksSession.Data statisticsBackgroundCounterSession;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
-    private final StampedLock dataTxnSchemaLock;
+    private final StampedLock dataWriteSchemaLock;
     private final RocksGrakn grakn;
     private Cache cache;
 
@@ -78,7 +78,7 @@ public class RocksDatabase implements Grakn.Database {
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
-        dataTxnSchemaLock = new StampedLock();
+        dataWriteSchemaLock = new StampedLock();
 
         try {
             rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
@@ -145,7 +145,7 @@ public class RocksDatabase implements Grakn.Database {
         RocksSession session;
 
         if (type.isSchema()) {
-            lock = dataTxnSchemaLock().writeLock();
+            lock = dataWriteSchemaLock().writeLock();
             session = sessionFactory.sessionSchema(this, options);
         } else if (type.isData()) {
             session = sessionFactory.sessionData(this, options);
@@ -233,8 +233,8 @@ public class RocksDatabase implements Grakn.Database {
      *
      * @return a {@code StampedLock} to protect data writes from concurrent schema modification
      */
-    StampedLock dataTxnSchemaLock() {
-        return dataTxnSchemaLock;
+    StampedLock dataWriteSchemaLock() {
+        return dataWriteSchemaLock;
     }
 
     @Override
@@ -261,7 +261,7 @@ public class RocksDatabase implements Grakn.Database {
     void remove(RocksSession session) {
         if (statisticsBackgroundCounterSession != session) {
             final long lock = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) dataTxnSchemaLock().unlockWrite(lock);
+            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
         }
     }
 
