@@ -22,7 +22,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
 
 /**
- * A {@code Lock} that wrapped in a {@code ManagedBlocker}.
+ * A {@code Semaphore}-based locking mechanism that wrapped in a {@code ManagedBlocker}.
  * It is **NOT** re-entrant by design.
  *
  * When a thread is blocked while waiting to acquire a lock, this class will
