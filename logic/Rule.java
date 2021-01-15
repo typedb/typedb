@@ -61,7 +61,6 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
 public class Rule {
@@ -86,7 +85,6 @@ public class Rule {
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         this.structure = graphMgr.schema().create(label, when, then);
-        validateRuleStructureLabels(conceptMgr, this.structure);
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         validateSatisfiable();

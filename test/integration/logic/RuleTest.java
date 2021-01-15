@@ -390,7 +390,7 @@ public class RuleTest {
     // ------------ indexing test (do these belong in a LogicManagerTest?) ------------
 
     @Test
-    public void rule_relation_indexes_maintained() throws IOException {
+    public void rule_relation_indexes_created_and_readable() throws IOException {
         Util.resetDirectory(directory);
 
         try (RocksGrakn grakn = RocksGrakn.open(directory)) {
@@ -416,25 +416,24 @@ public class RuleTest {
                             .filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
-//                    Rule allFriendsRule = logicMgr.putRule(
-//                            "all-people-are-friends",
-//                            Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
-//                            Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
-//                    Conjunction allFriendsThen = allFriendsRule.then();
-//                    Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
-//                    assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
+                    Rule allFriendsRule = logicMgr.putRule(
+                            "all-people-are-friends",
+                            Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
+                            Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
+                    Conjunction allFriendsThen = allFriendsRule.then();
+                    Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
                     txn.commit();
                 }
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
-//                    Rule allFriendsRule = txn.logic().getRule("all-people-are-friendship");
-                    assertEquals(set(marriageFriendsRule), friendshipRules);
+                    Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
+                    assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
                 }
             }
         }

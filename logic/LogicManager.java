@@ -113,9 +113,8 @@ public class LogicManager {
      */
     public void revalidateAndReindexRules() {
         logicCache.rule().clear();
-        // validate all schema structures contain valid types
-        graphMgr.schema().rules().forEachRemaining(structure -> validateRuleStructureLabels(conceptMgr, structure));
-        // validate all rules are satisfiable
+
+        // validate all rules are valid and satisfiable
         rules().forEachRemaining(Rule::validateSatisfiable);
 
         // re-index if rules are valid and satisfiable
@@ -132,48 +131,6 @@ public class LogicManager {
 
     private Rule fromStructure(RuleStructure ruleStructure) {
         return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
-    }
-
-    static void validateRuleStructureLabels(ConceptManager conceptMgr, RuleStructure ruleStructure) {
-        graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = ruleStructure.when().normalise().patterns().get(0);
-        Stream<BoundVariable> positiveVariables = whenNormalised.patterns().stream().filter(Conjunctable::isVariable)
-                .map(Conjunctable::asVariable);
-        Stream<BoundVariable> negativeVariables = whenNormalised.patterns().stream().filter(Conjunctable::isNegation)
-                .flatMap(p -> negationVariables(p.asNegation()));
-        Stream<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
-        Stream<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
-        Stream<Label> thenLabels = getTypeLabels(ruleStructure.then().variables());
-        Set<String> invalidLabels = invalidLabels(conceptMgr, Stream.of(whenPositiveLabels, whenNegativeLabels, thenLabels).flatMap(Function.identity()));
-        if (!invalidLabels.isEmpty()) {
-            throw GraknException.of(TYPES_NOT_FOUND, ruleStructure.label(), String.join(", ", invalidLabels));
-        }
-    }
-
-    private static Stream<Label> getTypeLabels(Stream<BoundVariable> variables) {
-        return variables.filter(BoundVariable::isType).map(variable -> variable.asType().label())
-                .filter(Optional::isPresent).map(labelConstraint -> {
-                    TypeConstraint.Label label = labelConstraint.get();
-                    if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
-                    else return Label.of(label.label());
-                });
-    }
-
-    private static Stream<BoundVariable> negationVariables(Negation<?> ruleNegation) {
-        assert ruleNegation.patterns().size() == 1 && ruleNegation.patterns().get(0).isDisjunction();
-        return ruleNegation.patterns().get(0).asDisjunction().patterns().stream()
-                .flatMap(pattern -> pattern.asConjunction().patterns().stream()).map(Pattern::asVariable);
-    }
-
-    private static Set<String> invalidLabels(ConceptManager conceptMgr, Stream<Label> labels) {
-        return labels.filter(label -> {
-            if (label.scope().isPresent()) {
-                RelationType scope = conceptMgr.getRelationType(label.scope().get());
-                if (scope == null) return false;
-                return scope.getRelates(label.name()) == null;
-            } else {
-                return conceptMgr.getThingType(label.name()) == null;
-            }
-        }).map(Label::scopedName).collect(Collectors.toSet());
     }
 
 }
