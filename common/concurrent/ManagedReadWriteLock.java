@@ -19,7 +19,6 @@
 package grakn.core.common.concurrent;
 
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
