@@ -135,6 +135,10 @@ public class Rule {
         return when;
     }
 
+    public Conjunction then() {
+        return then;
+    }
+
     public String getLabel() {
         return structure.label();
     }
