@@ -18,6 +18,7 @@
 
 package grakn.core.logic;
 
+import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
@@ -32,6 +33,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -46,6 +48,7 @@ import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
@@ -179,6 +182,13 @@ public class Rule {
     }
 
     public void validateInsertable()  {
+        ResourceIterator<VertexMap> possibleWhenPerms = null; //TODO
+        ResourceIterator<VertexMap> possibleThenPerms = null; //TODO
+
+        Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
+        if (possibleWhenPerms.anyMatch(vertexMap -> !possibleThenSet.contains(vertexMap))) {
+            throw GraknException.of(ILLEGAL_STATE);
+        }
 
         /*
         High level, we also want to ensure that every combination of possible variable types in the `then`, that may be provided
