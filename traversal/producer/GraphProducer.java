@@ -125,7 +125,7 @@ public class GraphProducer implements Producer<VertexMap> {
     }
 
     @Override
-    public void recycle() {
+    public synchronized void recycle() {
         start.recycle();
         iteratorJobs.keySet().forEach(ResourceIterator::recycle);
     }
