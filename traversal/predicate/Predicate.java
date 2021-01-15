@@ -18,24 +18,16 @@
 
 package grakn.core.traversal.predicate;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlToken;
 
-import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Objects;
 
-import static grakn.common.collection.Collections.map;
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.graph.util.Encoding.ValueType.DOUBLE_PRECISION;
 
-public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG extends Predicate.Argument> {
+public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG extends PredicateArgument> {
 
     final PRED_OP operator;
     final PRED_ARG argument;
@@ -77,9 +69,9 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
         return hash;
     }
 
-    public static abstract class Value<VAL_OP extends Operator> extends Predicate<VAL_OP, Argument.Value<VAL_OP, ?>> {
+    public static abstract class Value<VAL_OP extends PredicateOperator> extends Predicate<VAL_OP, PredicateArgument.Value<VAL_OP, ?>> {
 
-        public Value(VAL_OP operator, Argument.Value<VAL_OP, ?> argument) {
+        public Value(VAL_OP operator, PredicateArgument.Value<VAL_OP, ?> argument) {
             super(operator, argument);
         }
 
@@ -91,38 +83,38 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
             return argument.apply(operator, vertex, value);
         }
 
-        public static class Equality extends Value<Operator.Equality> {
+        public static class Numerical extends Value<PredicateOperator.Equality> {
 
-            public Equality(Operator.Equality operator, Argument.Value<Operator.Equality, ?> argument) {
+            public Numerical(PredicateOperator.Equality operator, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
                 super(operator, argument);
             }
 
-            public static Predicate.Value.Equality of(GraqlToken.Predicate.Equality token, Argument.Value<Operator.Equality, ?> argument) {
-                return new Predicate.Value.Equality(Predicate.Operator.Equality.of(token), argument);
+            public static Numerical of(GraqlToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
+                return new Numerical(PredicateOperator.Equality.of(token), argument);
             }
         }
 
-        public static class SubString extends Value<Operator> {
+        public static class String extends Value<PredicateOperator> {
 
-            public SubString(Operator operator, Argument.Value<Operator, String> argument) {
+            public String(PredicateOperator operator, PredicateArgument.Value<PredicateOperator, java.lang.String> argument) {
                 super(operator, argument);
             }
 
-            public static Predicate.Value.SubString of(GraqlToken.Predicate token) {
-                return new Predicate.Value.SubString(Predicate.Operator.SubString.of(token), Argument.Value.STRING);
+            public static String of(GraqlToken.Predicate token) {
+                return new String(PredicateOperator.of(token), PredicateArgument.Value.STRING);
             }
         }
     }
 
-    public static class Variable extends Predicate<Operator.Equality, Argument.Variable> {
+    public static class Variable extends Predicate<PredicateOperator.Equality, PredicateArgument.Variable> {
 
 
-        private Variable(Operator.Equality operator) {
-            super(operator, Argument.Variable.VARIABLE);
+        private Variable(PredicateOperator.Equality operator) {
+            super(operator, PredicateArgument.Variable.VARIABLE);
         }
 
         public static Predicate.Variable of(GraqlToken.Predicate.Equality token) {
-            return new Predicate.Variable(Operator.Equality.of(token));
+            return new Predicate.Variable(PredicateOperator.Equality.of(token));
         }
 
         public boolean apply(AttributeVertex<?> fromVertex, AttributeVertex<?> toVertex) {
@@ -134,343 +126,4 @@ public abstract class Predicate<PRED_OP extends Predicate.Operator, PRED_ARG ext
         }
     }
 
-    public static abstract class Operator {
-
-        private final GraqlToken.Predicate token;
-
-        protected Operator(GraqlToken.Predicate token) {
-            this.token = token;
-        }
-
-        public static Operator of(GraqlToken.Predicate token) {
-            if (token.isEquality()) return Equality.of(token.asEquality());
-            else if (token.isSubString()) return SubString.of(token.asSubString());
-            else throw GraknException.of(ILLEGAL_STATE);
-        }
-
-        boolean isEquality() { return false; }
-
-        boolean isSubString() { return false; }
-
-        Operator.Equality asEquality() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equality.class));
-        }
-
-        Operator.SubString asSubString() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(SubString.class));
-        }
-
-        @Override
-        public String toString() {
-            return token.toString();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Operator that = (Operator) o;
-            return this.token.equals(that.token);
-        }
-
-        @Override
-        public int hashCode() {
-            return token.hashCode();
-        }
-
-        public static abstract class Equality extends Operator {
-
-            public Equality(GraqlToken.Predicate.Equality token) {
-                super(token);
-            }
-
-            abstract boolean apply(int comparisonResult);
-
-            abstract Equality reflection();
-
-            @Override
-            boolean isEquality() { return true; }
-
-            @Override
-            Operator.Equality asEquality() { return this; }
-
-            public static final Equality EQ = new Equality(GraqlToken.Predicate.Equality.EQ) {
-                @Override
-                boolean apply(int comparisonResult) { return comparisonResult == 0; }
-
-                @Override
-                Equality reflection() { return this; }
-            };
-
-            public static final Equality NEQ = new Equality(GraqlToken.Predicate.Equality.NEQ) {
-                @Override
-                boolean apply(int comparisonResult) { return comparisonResult != 0; }
-
-                @Override
-                Equality reflection() { return this; }
-            };
-
-            public static final Equality GT = new Equality(GraqlToken.Predicate.Equality.GT) {
-                @Override
-                boolean apply(int comparisonResult) { return comparisonResult > 0; }
-
-                @Override
-                Equality reflection() { return LT; }
-            };
-
-            public static final Equality GTE = new Equality(GraqlToken.Predicate.Equality.GTE) {
-                @Override
-                boolean apply(int comparisonResult) { return comparisonResult >= 0; }
-
-                @Override
-                Equality reflection() { return LTE; }
-            };
-
-            public static final Equality LT = new Equality(GraqlToken.Predicate.Equality.LT) {
-                @Override
-                boolean apply(int comparisonResult) { return comparisonResult < 0; }
-
-                @Override
-                Equality reflection() { return GT; }
-            };
-
-            public static final Equality LTE = new Equality(GraqlToken.Predicate.Equality.LTE) {
-                @Override
-                boolean apply(int comparisonResult) { return comparisonResult <= 0; }
-
-                @Override
-                Equality reflection() { return GTE; }
-            };
-
-            private static final Map<GraqlToken.Predicate.Equality, Equality> operators = map(
-                    pair(GraqlToken.Predicate.Equality.EQ, Equality.EQ),
-                    pair(GraqlToken.Predicate.Equality.NEQ, Equality.NEQ),
-                    pair(GraqlToken.Predicate.Equality.GT, Equality.GT),
-                    pair(GraqlToken.Predicate.Equality.GTE, Equality.GTE),
-                    pair(GraqlToken.Predicate.Equality.LT, Equality.LT),
-                    pair(GraqlToken.Predicate.Equality.LTE, Equality.LTE)
-            );
-
-            public static Operator.Equality of(GraqlToken.Predicate.Equality operator) {
-                return Equality.operators.get(operator);
-            }
-        }
-
-        public static abstract class SubString extends Operator {
-
-            public SubString(GraqlToken.Predicate.SubString token) {
-                super(token);
-            }
-
-            abstract boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
-
-            @Override
-            boolean isSubString() { return true; }
-
-            @Override
-            Operator.SubString asSubString() { return this; }
-
-            private static final SubString CONTAINS = new SubString(GraqlToken.Predicate.SubString.CONTAINS) {
-                @Override
-                boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
-                    assert predicateValue.isString();
-                    return containsIgnoreCase(vertexValue, predicateValue.getString());
-                }
-
-                private boolean containsIgnoreCase(java.lang.String str1, java.lang.String str2) {
-                    final int len2 = str2.length();
-                    if (len2 == 0) return true; // Empty string is contained
-
-                    final char first2Lo = Character.toLowerCase(str2.charAt(0));
-                    final char first2Up = Character.toUpperCase(str2.charAt(0));
-
-                    for (int i = 0; i <= str1.length() - len2; i++) {
-                        // Quick check before calling the more expensive regionMatches() method:
-                        final char first1 = str1.charAt(i);
-                        if (first1 != first2Lo && first1 != first2Up) continue;
-                        if (str1.regionMatches(true, i, str2, 0, len2)) return true;
-                    }
-                    return false;
-                }
-            };
-
-            private static final SubString LIKE = new SubString(GraqlToken.Predicate.SubString.LIKE) {
-                @Override
-                boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
-                    assert predicateValue.isRegex();
-                    return predicateValue.getRegex().matcher(vertexValue).matches();
-                }
-            };
-
-            private static final Map<GraqlToken.Predicate.SubString, SubString> operators = map(
-                    pair(GraqlToken.Predicate.SubString.CONTAINS, SubString.CONTAINS),
-                    pair(GraqlToken.Predicate.SubString.LIKE, SubString.LIKE)
-            );
-
-            private static Operator.SubString of(GraqlToken.Predicate.SubString token) {
-                return operators.get(token);
-            }
-        }
-    }
-
-    public abstract static class Argument {
-
-        private final String symbol;
-
-        protected Argument(String symbol) {
-            this.symbol = symbol;
-        }
-
-        @Override
-        public String toString() {
-            return "<" + symbol + ">";
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Argument that = (Argument) o;
-            return this.symbol.equals(that.symbol);
-        }
-
-        @Override
-        public int hashCode() {
-            return symbol.hashCode();
-        }
-
-        public static abstract class Value<ARG_VAL_OP extends Operator, ARG_VAL_TYPE> extends Argument {
-
-            private final Encoding.ValueType valueType;
-
-            public Value(Encoding.ValueType valueType) {
-                super(valueType.name());
-                this.valueType = valueType;
-            }
-
-            public Encoding.ValueType valueType() {
-                return valueType;
-            }
-
-            public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value);
-
-            public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
-
-            public static Value<Operator.Equality, Boolean> BOOLEAN = new Value<Operator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                    assert value.isBoolean();
-                    return apply(operator, vertex, value.getBoolean());
-                }
-
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
-                    if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
-                    assert vertex.isBoolean();
-                    return vertex.asBoolean().value().equals(value);
-                }
-            };
-
-            public static Value<Operator.Equality, Long> LONG = new Value<Operator.Equality, Long>(Encoding.ValueType.LONG) {
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                    assert value.isLong();
-                    return apply(operator, vertex, value.getLong());
-                }
-
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Long value) {
-                    if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
-                    assert (vertex.isLong() || vertex.isDouble());
-
-                    if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value));
-                    else if (vertex.isDouble()) return operator.apply(compareDoubles(vertex.asDouble().value(), value));
-                    else throw GraknException.of(ILLEGAL_STATE);
-                }
-            };
-
-            public static Value<Operator.Equality, Double> DOUBLE = new Value<Operator.Equality, Double>(Encoding.ValueType.DOUBLE) {
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                    assert value.isDouble();
-                    return apply(operator, vertex, value.getDouble());
-                }
-
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Double value) {
-                    if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
-                    assert (vertex.isLong() || vertex.isDouble());
-
-                    double vertexValue;
-                    if (vertex.isLong()) vertexValue = vertex.asLong().value();
-                    else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
-                    else throw GraknException.of(ILLEGAL_STATE);
-                    return operator.apply(compareDoubles(vertexValue, value));
-                }
-            };
-
-            public static Value<Operator.Equality, LocalDateTime> DATETIME = new Value<Operator.Equality, LocalDateTime>(Encoding.ValueType.DATETIME) {
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                    assert value.isDateTime();
-                    return apply(operator, vertex, value.getDateTime());
-                }
-
-                @Override
-                public boolean apply(Operator.Equality operator, AttributeVertex<?> vertex, LocalDateTime value) {
-                    if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
-                    assert vertex.isDateTime();
-
-                    return operator.apply(vertex.asDateTime().value().compareTo(value));
-                }
-            };
-
-            public static Value<Operator, String> STRING = new Value<Operator, String>(Encoding.ValueType.STRING) {
-                @Override
-                public boolean apply(Operator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                    if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
-                    assert value.isString() || value.isRegex();
-                    if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
-                    else return apply(operator, vertex, value.getString());
-                }
-
-                @Override
-                public boolean apply(Operator operator, AttributeVertex<?> vertex, String value) {
-                    if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
-                    assert vertex.isString() && operator.isEquality();
-                    return operator.asEquality().apply(vertex.asString().value().compareTo(value));
-                }
-            };
-        }
-
-        public static class Variable extends Argument {
-
-            public static Variable VARIABLE = new Variable();
-
-            public Variable() {
-                super("var");
-            }
-
-            public boolean apply(Operator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
-                if (!from.valueType().comparableTo(to.valueType())) return false;
-
-                switch (to.valueType()) {
-                    case BOOLEAN:
-                        return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
-                    case LONG:
-                        return Value.LONG.apply(operator, from, to.asLong().value());
-                    case DOUBLE:
-                        return Value.DOUBLE.apply(operator, from, to.asDouble().value());
-                    case STRING:
-                        return Value.STRING.apply(operator, from, to.asString().value());
-                    case DATETIME:
-                        return Value.DATETIME.apply(operator, from, to.asDateTime().value());
-                    default:
-                        throw GraknException.of(ILLEGAL_STATE);
-                }
-            }
-        }
-    }
 }

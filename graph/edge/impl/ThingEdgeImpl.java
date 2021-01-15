@@ -35,11 +35,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
 import static grakn.core.graph.util.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
-import static java.util.Objects.isNull;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
 
@@ -70,9 +68,10 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         /**
          * Default constructor for {@code ThingEdgeImpl.Buffered}.
-         *  @param encoding the edge {@code Encoding}
-         * @param from     the tail vertex
-         * @param to       the head vertex
+         *
+         * @param encoding   the edge {@code Encoding}
+         * @param from       the tail vertex
+         * @param to         the head vertex
          * @param isInferred
          */
         public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, boolean isInferred) {

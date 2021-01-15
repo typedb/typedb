@@ -29,9 +29,10 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.Planner;
+import grakn.core.traversal.predicate.Predicate;
+import grakn.core.traversal.predicate.PredicateArgument;
 import grakn.core.traversal.structure.Structure;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
@@ -199,20 +200,20 @@ public class Traversal {
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
-        Predicate.Value.SubString predicate = Predicate.Value.SubString.of(token);
+        Predicate.Value.String predicate = Predicate.Value.String.of(token);
         structure.thingVertex(attribute).props().predicate(predicate);
         if (token == LIKE) parameters.pushValue(attribute, predicate, new Parameters.Value(Pattern.compile(value)));
         else parameters.pushValue(attribute, predicate, new Parameters.Value(value));
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Boolean value) {
-        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.BOOLEAN);
+        Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Long value) {
-        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.LONG);
+        Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
@@ -222,14 +223,14 @@ public class Traversal {
         if (Predicate.compareDoubles(value, longValue) == 0) {
             predicate(attribute, token, longValue);
         } else {
-            Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.DOUBLE);
+            Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DOUBLE);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
-        Predicate.Value.Equality predicate = Predicate.Value.Equality.of(token, Predicate.Argument.Value.DATETIME);
+        Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
@@ -237,6 +238,19 @@ public class Traversal {
     public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality token, Identifier.Variable att2) {
         Predicate.Variable predicate = Predicate.Variable.of(token);
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Traversal that = (Traversal) o;
+        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.structure, this.parameters);
     }
 
     public static class Parameters {
@@ -273,6 +287,21 @@ public class Traversal {
             if (!values.isEmpty()) str.append("\n\tvalues: ").append(values);
             str.append("\n}");
             return str.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Parameters that = (Parameters) o;
+
+            return iid.equals(that.iid) && values.equals(that.values);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(iid, values);
         }
 
         public static class Value {

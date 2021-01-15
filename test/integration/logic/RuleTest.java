@@ -17,7 +17,6 @@
 
 package grakn.core.logic;
 
-import grakn.common.collection.Collections;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
@@ -46,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;

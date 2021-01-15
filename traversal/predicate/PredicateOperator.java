@@ -1,0 +1,211 @@
+/*
+ * Copyright (C) 2021 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package grakn.core.traversal.predicate;
+
+import grakn.core.common.exception.GraknException;
+import grakn.core.traversal.Traversal;
+import graql.lang.common.GraqlToken;
+
+import java.util.Map;
+
+import static grakn.common.collection.Collections.map;
+import static grakn.common.collection.Collections.pair;
+import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+
+public abstract class PredicateOperator {
+
+    private final GraqlToken.Predicate token;
+
+    protected PredicateOperator(GraqlToken.Predicate token) {
+        this.token = token;
+    }
+
+    public static PredicateOperator of(GraqlToken.Predicate token) {
+        if (token.isEquality()) return Equality.of(token.asEquality());
+        else if (token.isSubString()) return SubString.of(token.asSubString());
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    boolean isEquality() { return false; }
+
+    boolean isSubString() { return false; }
+
+    Equality asEquality() {
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equality.class));
+    }
+
+    SubString asSubString() {
+        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(SubString.class));
+    }
+
+    @Override
+    public String toString() {
+        return token.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PredicateOperator that = (PredicateOperator) o;
+        return this.token.equals(that.token);
+    }
+
+    @Override
+    public int hashCode() {
+        return token.hashCode();
+    }
+
+    public static abstract class Equality extends PredicateOperator {
+
+        public Equality(GraqlToken.Predicate.Equality token) {
+            super(token);
+        }
+
+        abstract boolean apply(int comparisonResult);
+
+        abstract Equality reflection();
+
+        @Override
+        boolean isEquality() { return true; }
+
+        @Override
+        Equality asEquality() { return this; }
+
+        public static final Equality EQ = new Equality(GraqlToken.Predicate.Equality.EQ) {
+            @Override
+            boolean apply(int comparisonResult) { return comparisonResult == 0; }
+
+            @Override
+            Equality reflection() { return this; }
+        };
+
+        public static final Equality NEQ = new Equality(GraqlToken.Predicate.Equality.NEQ) {
+            @Override
+            boolean apply(int comparisonResult) { return comparisonResult != 0; }
+
+            @Override
+            Equality reflection() { return this; }
+        };
+
+        public static final Equality GT = new Equality(GraqlToken.Predicate.Equality.GT) {
+            @Override
+            boolean apply(int comparisonResult) { return comparisonResult > 0; }
+
+            @Override
+            Equality reflection() { return LT; }
+        };
+
+        public static final Equality GTE = new Equality(GraqlToken.Predicate.Equality.GTE) {
+            @Override
+            boolean apply(int comparisonResult) { return comparisonResult >= 0; }
+
+            @Override
+            Equality reflection() { return LTE; }
+        };
+
+        public static final Equality LT = new Equality(GraqlToken.Predicate.Equality.LT) {
+            @Override
+            boolean apply(int comparisonResult) { return comparisonResult < 0; }
+
+            @Override
+            Equality reflection() { return GT; }
+        };
+
+        public static final Equality LTE = new Equality(GraqlToken.Predicate.Equality.LTE) {
+            @Override
+            boolean apply(int comparisonResult) { return comparisonResult <= 0; }
+
+            @Override
+            Equality reflection() { return GTE; }
+        };
+
+        private static final Map<GraqlToken.Predicate.Equality, Equality> operators = map(
+                pair(GraqlToken.Predicate.Equality.EQ, Equality.EQ),
+                pair(GraqlToken.Predicate.Equality.NEQ, Equality.NEQ),
+                pair(GraqlToken.Predicate.Equality.GT, Equality.GT),
+                pair(GraqlToken.Predicate.Equality.GTE, Equality.GTE),
+                pair(GraqlToken.Predicate.Equality.LT, Equality.LT),
+                pair(GraqlToken.Predicate.Equality.LTE, Equality.LTE)
+        );
+
+        public static Equality of(GraqlToken.Predicate.Equality operator) {
+            return Equality.operators.get(operator);
+        }
+    }
+
+    public static abstract class SubString extends PredicateOperator {
+
+        public SubString(GraqlToken.Predicate.SubString token) {
+            super(token);
+        }
+
+        abstract boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
+
+        @Override
+        boolean isSubString() { return true; }
+
+        @Override
+        SubString asSubString() { return this; }
+
+        private static final SubString CONTAINS = new SubString(GraqlToken.Predicate.SubString.CONTAINS) {
+            @Override
+            boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
+                assert predicateValue.isString();
+                return containsIgnoreCase(vertexValue, predicateValue.getString());
+            }
+
+            private boolean containsIgnoreCase(String str1, String str2) {
+                final int len2 = str2.length();
+                if (len2 == 0) return true; // Empty string is contained
+
+                final char first2Lo = Character.toLowerCase(str2.charAt(0));
+                final char first2Up = Character.toUpperCase(str2.charAt(0));
+
+                for (int i = 0; i <= str1.length() - len2; i++) {
+                    // Quick check before calling the more expensive regionMatches() method:
+                    final char first1 = str1.charAt(i);
+                    if (first1 != first2Lo && first1 != first2Up) continue;
+                    if (str1.regionMatches(true, i, str2, 0, len2)) return true;
+                }
+                return false;
+            }
+        };
+
+        private static final SubString LIKE = new SubString(GraqlToken.Predicate.SubString.LIKE) {
+            @Override
+            boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
+                assert predicateValue.isRegex();
+                return predicateValue.getRegex().matcher(vertexValue).matches();
+            }
+        };
+
+        private static final Map<GraqlToken.Predicate.SubString, SubString> operators = map(
+                pair(GraqlToken.Predicate.SubString.CONTAINS, SubString.CONTAINS),
+                pair(GraqlToken.Predicate.SubString.LIKE, SubString.LIKE)
+        );
+
+        private static SubString of(GraqlToken.Predicate.SubString token) {
+            return operators.get(token);
+        }
+    }
+}

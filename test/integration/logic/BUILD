@@ -60,6 +60,7 @@ host_compatible_java_test(
     deps = [
         # Internal dependencies
         "//common",
+        "//common/test:util",
         "//test/integration/util",
 
         # External dependencies from Grakn Labs
