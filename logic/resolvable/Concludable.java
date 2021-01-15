@@ -102,20 +102,7 @@ public abstract class Concludable extends Resolvable {
                 }));
     }
 
-    ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
-        if (conclusion.isRelation())
-            return Iterators.link(unify(conclusion.asRelation(), conceptMgr), unify(conclusion.asIsa(), conceptMgr));
-        else if (conclusion.isVariableHas())
-            return unify(conclusion.asHas(), conceptMgr);
-        else if (conclusion.isExplicitHas())
-            return Iterators.link(unify(conclusion.asHas(), conceptMgr), unify(conclusion.asIsa(), conceptMgr), unify(
-                    conclusion.asValue(), conceptMgr));
-        else if (conclusion.isIsa())
-            return Iterators.link(unify(conclusion.asIsa(), conceptMgr), unify(conclusion.asValue(), conceptMgr));
-        else if (conclusion.isValue())
-            return unify(conclusion.asValue(), conceptMgr);
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
+    abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
     ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
 
@@ -329,6 +316,12 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+            if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
+            return Iterators.empty();
+        }
+
+        @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
             if (this.relation().players().size() > relationConclusion.relation().players().size())
                 return Iterators.empty();
@@ -478,6 +471,12 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+            if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
+            return Iterators.empty();
+        }
+
+        @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(has().owner(), hasConclusion.has().owner())) {
@@ -559,6 +558,12 @@ public abstract class Concludable extends Resolvable {
             constraints.add(isa);
             constraints.addAll(equalsConstraints(values));
             return constraints;
+        }
+
+        @Override
+        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+            if (conclusion.isIsa()) return unify(conclusion.asIsa(), conceptMgr);
+            return Iterators.empty();
         }
 
         @Override
@@ -645,12 +650,18 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+            if (conclusion.isValue()) return unify(conclusion.asValue(), conceptMgr);
+            return Iterators.empty();
+        }
+
+        @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
+            assert Iterators.iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(attribute, valueConclusion.value().owner())) {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
-            assert Iterators.iterate(values).map(ValueConstraint::isVariable).toSet().size() == 0;
             for (ValueConstraint<?> value : equalsConstraints(values)) {
                 unifierBuilder.requirements().hasPredicate(value.owner().id(), valueEqualsFunction(value));
             }

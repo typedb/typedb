@@ -19,6 +19,7 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.Grakn.Transaction;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
@@ -29,6 +30,7 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -37,7 +39,6 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -129,10 +130,9 @@ public class UnifyAttributeConcludableTest {
         }
     }
 
-    @Ignore // TODO enable when we have the final structure of conclusions and concludable in place
     @Test
     public void literal_predicates_unify_and_filter_answers() {
-        String conjunction = "{ $a > 'b'; $a < 'y'; }";
+        String conjunction = "{ $a = 'john'; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 
@@ -154,41 +154,29 @@ public class UnifyAttributeConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
+                pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
         Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
-        // filter out using >
         identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("first-name", "abe"))
-        );
-        unified = unifier.unUnify(identifiedConcepts);
-        assertFalse(unified.isPresent());
-
-        // filter out using <
-        identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("first-name", "zack"))
+                pair(Identifier.Variable.anon(0), instanceOf("first-name", "abe"))
         );
         unified = unifier.unUnify(identifiedConcepts);
         assertFalse(unified.isPresent());
 
     }
 
-    @Ignore // TODO enable when new structure of concludables is enforced
     @Test
     public void variable_predicates_unify_value_conclusions() {
         String conjunction = "{ $x > $y; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(2, concludables.size());
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
-
-        /*
-        TODO build attribute concludables (2) out of the conjunction
-        Each should successfully unify with rules that can conclude new concepts
-        and nothing else
-        */
+        // Get the name of the attribute variable from whichever concludable is chosen
+        String var = Iterators.iterate(concludables).map(Concludable::conjunction).flatMap(
+                c -> Iterators.iterate(c.variables())).filter(Variable::isThing).map(v -> v.reference().syntax()).first().get();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
 
@@ -197,7 +185,7 @@ public class UnifyAttributeConcludableTest {
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
+            put(var, set("$_0"));
         }};
         assertEquals(expected, result);
 
@@ -206,7 +194,7 @@ public class UnifyAttributeConcludableTest {
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertFalse(unifier.requirements().hasPredicate());
 
-        Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }", "(employee: $x) isa employment");
+        Rule rule2 = createRule("isa-rule-2", "{ " + var + " isa person; }", "(employee: " + var + ") isa employment");
 
         unifiers = queryConcludable.unify(rule2.conclusion().asIsa(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
