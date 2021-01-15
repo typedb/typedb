@@ -684,24 +684,6 @@ public class SchemaGraph implements Graph {
             return iterate(hasAttributeTypeConcludedInRules.computeIfAbsent(attributeType, this::loadConcludesHasAttribute));
         }
 
-        private Set<RuleStructure> loadConcludes(Label label) {
-            TypeVertex type = getType(label);
-            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                type.iid().bytes(),
-                                                Encoding.Index.Infix.RULE_CONCLUDES.bytes());
-            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
-                    .map(SchemaGraph.this::convert).toSet();
-        }
-
-        private Set<RuleStructure> loadConcludesHasAttribute(Label label) {
-            TypeVertex type = getType(label);
-            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                type.iid().bytes(),
-                                                Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes());
-            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
-                    .map(SchemaGraph.this::convert).toSet();
-        }
-
         public void ruleConcludes(RuleStructure rule, Label type) {
             bufferedTypeConcludedInRules.compute(type, (l, rules) -> {
                 if (rules == null) rules = new HashSet<>();
@@ -730,17 +712,32 @@ public class SchemaGraph implements Graph {
         }
 
         public void clearRuleConcludes(RuleStructure structure, Label type) {
-
+            typeConcludedInRules.get(type).remove(structure);
+            bufferedTypeConcludedInRules.get(type).remove(structure);
         }
 
         public void clearRuleConcludesHasAttribute(RuleStructure structure, Label attributeType) {
-
+            hasAttributeTypeConcludedInRules.get(attributeType).remove(structure);
+            bufferedHasAttributeTypeConcludedInRules.get(attributeType).remove(structure);
         }
 
-        // TODO committing buffered index and deleting from index
+        private Set<RuleStructure> loadConcludes(Label label) {
+            TypeVertex type = getType(label);
+            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
+                                                type.iid().bytes(),
+                                                Encoding.Index.Infix.RULE_CONCLUDES.bytes());
+            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
+                    .map(SchemaGraph.this::convert).toSet();
+        }
 
-
-        // TODO accessors for rule validation
+        private Set<RuleStructure> loadConcludesHasAttribute(Label label) {
+            TypeVertex type = getType(label);
+            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
+                                                type.iid().bytes(),
+                                                Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes());
+            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(value, indexScanPrefix.length)))
+                    .map(SchemaGraph.this::convert).toSet();
+        }
 
     }
 }

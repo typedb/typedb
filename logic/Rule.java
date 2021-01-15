@@ -100,18 +100,6 @@ public class Rule {
 
     private void indexConclusion() {
         /*
-        generate two index items:
-        1. the type(s) that this rule can "generate" or modify, to facilitate quick lookups of relevant rules to a query
-            eg. in $x has $a, all the resolved types of $a,
-            eg. in (friend: $x) isa friendship, all the resolved types of $_0
-
-        note that this can become "outdated" and need to be re-indexed
-           */
-
-
-
-
-        /*
         2. all explicit labels that are mentioned in this rule, to prevent types from undefined when they are used in a rule
 
         note that the second can be handled transparently by the RuleStructure if that makes more sense
@@ -238,16 +226,16 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
-//        logicMgr.typeHinter().computeHintsExhaustive(whenPattern(structure.when())); // replace with this
-        return logicMgr.typeResolver().resolveLabels(
-                Conjunction.create(conjunction.normalise().patterns().get(0)));
+        Conjunction conj = logicMgr.typeResolver().resolveLabels(Conjunction.create(conjunction.normalise().patterns().get(0)));
+        return logicMgr.typeResolver().resolveVariablesExhaustive(conj);
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
         // TODO when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
 //        this.then = logicMgr.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
-        return logicMgr.typeResolver().resolveLabels(
+        Conjunction conj = logicMgr.typeResolver().resolveLabels(
                 new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
+        return logicMgr.typeResolver().resolveVariablesExhaustive(conj);
     }
 
     public void reIndex(LogicManager logicMgr) {
