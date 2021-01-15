@@ -201,7 +201,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Pattern UNSATISFIABLE_CONJUNCTION =
                 new Pattern(14, "The conjunction %s can never be satisfied within the current schema.");
         public static final Pattern UNSATISFIABLE_CONSTRAINT_VALUE_TYPE =
-                new Pattern(14, "The value type in this constraint %s can not be satisfied within the current conjunction.");
+                new Pattern(15, "The value type in this constraint %s can not be satisfied within the current conjunction.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";

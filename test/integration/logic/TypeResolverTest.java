@@ -31,9 +31,7 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlMatch;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -56,26 +54,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
-//    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-resolver");
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
-//    private static String database = "type-hinter-test";
-private static String database = "type-resolver-test";
+    private static String database = "type-resolver-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction transaction;
 
-//    @BeforeClass
-    @Before
-    public void open_session() throws IOException {
+    @BeforeClass
+    public static void open_session() throws IOException {
         Util.resetDirectory(directory);
         grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
     }
 
-//    @AfterClass
-    @After
-    public void close_session() {
+    @AfterClass
+    public static void close_session() {
         session.close();
         grakn.close();
     }

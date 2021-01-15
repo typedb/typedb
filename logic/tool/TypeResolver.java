@@ -98,8 +98,8 @@ public class TypeResolver {
 
         resolvedLabels.forEach((ref, labels) -> {
             Variable variable = traversalConstructor.getVariable(ref);
-            if (variable.isType() && variable.resolvedTypes().size() < numOfTypes ||
-                    variable.isThing() && variable.resolvedTypes().size() < numOfConcreteTypes) {
+            if (variable.isType() && labels.size() < numOfTypes ||
+                    variable.isThing() && labels.size() < numOfConcreteTypes) {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
                 variable.setResolvedTypes(labels);
             }
