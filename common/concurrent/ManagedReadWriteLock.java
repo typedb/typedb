@@ -29,7 +29,7 @@ import java.util.concurrent.locks.StampedLock;
  * possibly arrange for a spare thread to be activated if necessary, to ensure
  * sufficient parallelism while the current thread is blocked. There are 2 blocking
  * methods we would like to manage for a {@code ReadWriteLock}, they are
- * {@code lock.readLock().lock()} and {@code lock.writeLock().lock()}.
+ * {@code lock.asReadWriteLock().readLock().lock()} and {@code lock.asReadWriteLock().writeLock().lock()}.
  * Each of them needs to be wrapped in a {@code ManagedBlocker}, and every thread
  * needs to have one instance of each blocker. Thus, we hold each {@code ManagedBlocker}
  * in a {@code ThreadLocal} object.
