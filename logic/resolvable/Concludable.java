@@ -104,14 +104,6 @@ public abstract class Concludable extends Resolvable {
 
     abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
-    ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
-
-    ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
-
-    ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
-
-    ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) { return Iterators.empty(); }
-
     public AlphaEquivalence alphaEquals(Concludable that) {
         if (that.isRelation()) return alphaEquals(that.asRelation());
         else if (that.isHas()) return alphaEquals(that.asHas());
@@ -321,7 +313,6 @@ public abstract class Concludable extends Resolvable {
             return Iterators.empty();
         }
 
-        @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
             if (this.relation().players().size() > relationConclusion.relation().players().size())
                 return Iterators.empty();
@@ -476,7 +467,6 @@ public abstract class Concludable extends Resolvable {
             return Iterators.empty();
         }
 
-        @Override
         public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(has().owner(), hasConclusion.has().owner())) {
@@ -566,7 +556,6 @@ public abstract class Concludable extends Resolvable {
             return Iterators.empty();
         }
 
-        @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
             // TODO This needs to handle the ValueConstraint unification
             Unifier.Builder unifierBuilder = Unifier.builder();
@@ -655,7 +644,6 @@ public abstract class Concludable extends Resolvable {
             return Iterators.empty();
         }
 
-        @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
             assert Iterators.iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();

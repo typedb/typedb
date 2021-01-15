@@ -392,13 +392,13 @@ public class UnifyIsaConcludableTest {
 
         Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }",
                                 "(employee: $x) isa employment");
-        unifiers = queryConcludable.unify(rule2.conclusion().asIsa(), conceptMgr).toList();
+        unifiers = queryConcludable.unify(rule2.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         Rule rule3 = createRule("isa-rule-3",
                                 "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
                                 "($role-type: $x) isa $rel-type");
-        unifiers = queryConcludable.unify(rule3.conclusion().asIsa(), conceptMgr).toList();
+        unifiers = queryConcludable.unify(rule3.conclusion(), conceptMgr).toList();
         // TODO this test can only be enabled after full type resolution runs
 //        assertEquals(0, unifiers.size());
     }

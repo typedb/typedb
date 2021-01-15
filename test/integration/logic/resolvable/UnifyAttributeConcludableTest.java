@@ -196,7 +196,7 @@ public class UnifyAttributeConcludableTest {
 
         Rule rule2 = createRule("isa-rule-2", "{ " + var + " isa person; }", "(employee: " + var + ") isa employment");
 
-        unifiers = queryConcludable.unify(rule2.conclusion().asIsa(), conceptMgr).toList();
+        unifiers = queryConcludable.unify(rule2.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
     }
 
