@@ -19,18 +19,17 @@
 package grakn.core.common.concurrent;
 
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
 /**
- * A {@code ReentrantReadWriteLock} that wrapped in a {@code ManagedBlocker}.
+ * A {@code ReadWriteLock} that wrapped in a {@code ManagedBlocker}.
+ * It is **NOT** re-entrant by design.
  *
  * When a thread is blocked while waiting to acquire a lock, this class will
  * possibly arrange for a spare thread to be activated if necessary, to ensure
  * sufficient parallelism while the current thread is blocked. There are 2 blocking
- * methods we would like to manage for a {@code ReentrantReadWriteLock}, they are
- * {@code lock.asReadWriteLock().readLock().lock()} and {@code lock.asReadWriteLock().writeLock().lock()}.
+ * methods we would like to manage for a {@code ReadWriteLock}, they are
+ * {@code lock.readLock().lock()} and {@code lock.writeLock().lock()}.
  * Each of them needs to be wrapped in a {@code ManagedBlocker}, and every thread
  * needs to have one instance of each blocker. Thus, we hold each {@code ManagedBlocker}
  * in a {@code ThreadLocal} object.
