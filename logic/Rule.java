@@ -184,9 +184,13 @@ public class Rule {
     public void validateInsertable()  {
         ResourceIterator<VertexMap> possibleWhenPerms = null; //TODO
         ResourceIterator<VertexMap> possibleThenPerms = null; //TODO
+        Map<Reference, Variable> referenceVariableMapping = new HashMap<>(); //TODO
 
         Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
-        if (possibleWhenPerms.anyMatch(vertexMap -> !possibleThenSet.contains(vertexMap))) {
+        if (possibleWhenPerms.anyMatch(vertexMap -> {
+            possibleThenSet.stream().anyMatch(thenVertexMap -> vertexMapsEqual(vertexMap))
+            !possibleThenSet.contains(vertexMap)
+        })) {
             throw GraknException.of(ILLEGAL_STATE);
         }
 
@@ -203,6 +207,13 @@ public class Rule {
         2. utilise the `Rule.Conclusion` classes before (there's exactly 1 of the 3 per rule) to validate a combination is compatible with the conclusion
            using these Rule.Conclusion data structures indicates that it is a "high level" logical rule validation, which is true
          */
+    }
+
+    private void vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap, Map<Reference, Variable> referenceVariableMap) {
+        thenVertexMap.map().forEach((ref, vertex) -> {
+            Variable variable = referenceVariableMap.get(ref);
+
+        });
     }
 
     void validateCycles() {
