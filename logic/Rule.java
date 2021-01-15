@@ -250,6 +250,12 @@ public class Rule {
                 new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
     }
 
+    public void reIndex(LogicManager logicMgr) {
+        conclusion().clearFromIndex(this, logicMgr);
+        conclusion().generateIndex(this, logicMgr);
+        structure.isOutdated(false);
+    }
+
     public static abstract class Conclusion {
 
         public static Conclusion create(Conjunction then) {
@@ -265,6 +271,8 @@ public class Rule {
         public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
 
         abstract void generateIndex(Rule rule, LogicManager logicMgr);
+
+        abstract void clearFromIndex(Rule rule, LogicManager logicMgr);
 
         public boolean isRelation() {
             return false;
@@ -369,6 +377,13 @@ public class Rule {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes(); // TODO these should in the future follow insert semantics
                 possibleRelationTypes.forEach(label -> logicMgr.indexRuleConcludes(rule, label));  // TODO this feels ugly, passing `rule` in
+            }
+
+            @Override
+            void clearFromIndex(Rule rule, LogicManager logicMgr) {
+                Variable relation = relation().owner();
+                Set<Label> possibleRelationTypes = relation.resolvedTypes(); // TODO these should in the future follow insert semantics
+                possibleRelationTypes.forEach(label -> logicMgr.clearIndexRuleConcludes(rule, label));  // TODO this feels ugly, passing `rule` in
             }
 
             public RelationConstraint relation() {
@@ -533,6 +548,16 @@ public class Rule {
                 }
 
                 @Override
+                void clearFromIndex(Rule rule, LogicManager logicMgr) {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
+                    possibleAttributeHas.forEach(label -> {
+                        logicMgr.clearIndexRuleConcludes(rule, label);
+                        logicMgr.clearIndexRuleConcludesHasAttribute(rule, label);
+                    }); // TODO this feels ugly, passing `rule` in
+                }
+
+                @Override
                 public boolean isExplicitHas() {
                     return true;
                 }
@@ -632,6 +657,13 @@ public class Rule {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
                     possibleAttributeHas.forEach(label -> logicMgr.indexRuleConcludesHasAttribute(rule, label)); // TODO this feels ugly, passing `rule` in
+                }
+
+                @Override
+                void clearFromIndex(Rule rule, LogicManager logicMgr) {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
+                    possibleAttributeHas.forEach(label -> logicMgr.clearIndexRuleConcludesHasAttribute(rule, label)); // TODO this feels ugly, passing `rule` in
                 }
 
                 @Override

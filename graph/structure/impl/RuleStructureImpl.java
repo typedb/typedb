@@ -39,6 +39,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     final SchemaGraph graph;
     final AtomicBoolean isDeleted;
+    final AtomicBoolean isOutdated;
     final Conjunction<? extends Pattern> when;
     final ThingVariable<?> then;
     StructureIID.Rule iid;
@@ -55,6 +56,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         this.label = label;
         this.when = when;
         this.then = then;
+        this.isOutdated = new AtomicBoolean(false);
         this.isDeleted = new AtomicBoolean(false);
     }
 
@@ -89,6 +91,16 @@ public abstract class RuleStructureImpl implements RuleStructure {
     @Override
     public boolean isDeleted() {
         return isDeleted.get();
+    }
+
+    @Override
+    public boolean isOutdated() {
+        return isOutdated.get();
+    }
+
+    @Override
+    public void isOutdated(boolean isOutdated) {
+        this.isOutdated.set(isOutdated);
     }
 
     public Encoding.Structure encoding() {
@@ -135,6 +147,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         @Override
         public void commit() {
+            assert !isOutdated();
             if (isCommitted.compareAndSet(false, true)) {
                 commitVertex();
                 commitProperties();
@@ -200,7 +213,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public void commit() { }
+        public void commit() {
+            assert !isOutdated();
+        }
 
         @Override
         public void delete() {

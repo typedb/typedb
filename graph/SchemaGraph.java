@@ -352,6 +352,8 @@ public class SchemaGraph implements Graph {
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
+            // TODO this is a linear operation per new type
+            rules().forEachRemaining(rule -> rule.isOutdated(true));
         }
     }
 
@@ -474,7 +476,9 @@ public class SchemaGraph implements Graph {
         ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
         rulesByIID.values().forEach(RuleStructure::commit);
+        ruleIndex.commit();
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
+        ruleIndex.clear();
     }
 
     @Override
@@ -712,6 +716,25 @@ public class SchemaGraph implements Graph {
                 rules.add(rule);
                 return rules;
             });
+        }
+
+        public void commit() {
+            // TODO write buffered hash maps into storage
+        }
+
+        public void clear() {
+            typeConcludedInRules.clear();
+            hasAttributeTypeConcludedInRules.clear();
+            bufferedTypeConcludedInRules.clear();
+            bufferedHasAttributeTypeConcludedInRules.clear();
+        }
+
+        public void clearRuleConcludes(RuleStructure structure, Label type) {
+
+        }
+
+        public void clearRuleConcludesHasAttribute(RuleStructure structure, Label attributeType) {
+
         }
 
         // TODO committing buffered index and deleting from index

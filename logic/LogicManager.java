@@ -97,18 +97,31 @@ public class LogicManager {
         graphMgr.schema().ruleIndex().ruleConcludesHasAttribute(rule.structure(), attributeType);
     }
 
+    public void clearIndexRuleConcludes(Rule rule, Label type) {
+        graphMgr.schema().ruleIndex().clearRuleConcludes(rule.structure(), type);
+    }
+
+    public void clearIndexRuleConcludesHasAttribute(Rule rule, Label attributeType) {
+        graphMgr.schema().ruleIndex().clearRuleConcludesHasAttribute(rule.structure(), attributeType);
+    }
+
     /**
-     * On commit we must clear the rule cache and revalidate rules
-     * Rule indexes should also be deleted and regenerated at approximate the same time
-     * Note: does not need to by synchronized as only called by one schema transaction at a time
+     * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
+     * when we re-load the Rule objects
+     * Rule indexes should also be deleted and regenerated as needed
+     * Note: does not need to be synchronized as only called by one schema transaction at a time
      */
-    public void validateRules() {
+    public void revalidateAndReindexRules() {
         logicCache.rule().clear();
         // validate all schema structures contain valid types
         graphMgr.schema().rules().forEachRemaining(structure -> validateRuleStructureLabels(conceptMgr, structure));
         // validate all rules are satisfiable
         rules().forEachRemaining(Rule::validateSatisfiable);
-        // validate new rules are stratifiable (eg. do not cause cycles through a negation)
+
+        // re-index if rules are valid and satisfiable
+        graphMgr.schema().rules().filter(RuleStructure::isOutdated).forEachRemaining(s -> fromStructure(s).reIndex(this));
+
+        // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
                 .forEach(structure -> getRule(structure.label()).validateCycles());
     }

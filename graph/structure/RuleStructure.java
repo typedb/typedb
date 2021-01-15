@@ -51,5 +51,12 @@ public interface RuleStructure {
      * Commits this {@code RuleStructure} to be persisted onto storage.
      */
     void commit();
+
+    /**
+     * When a rule is outdated, we must re-index before correct reasoning may take place
+     */
+    boolean isOutdated();
+
+    void isOutdated(boolean isOutdated);
 }
 
