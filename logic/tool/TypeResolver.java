@@ -88,6 +88,7 @@ public class TypeResolver {
 
     public Conjunction resolve(Conjunction conjunction) {
         resolveLabels(conjunction);
+        if (iterate(conjunction.variables()).noneMatch(Variable::isThing)) return conjunction;
         TraversalBuilder traversalConstructor = new TraversalBuilder(conjunction, conceptMgr);
 
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalConstructor);

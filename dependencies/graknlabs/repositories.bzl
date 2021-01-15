@@ -54,6 +54,7 @@ def graknlabs_grabl_tracing():
     )
 
 def graknlabs_behaviour():
+#    TODO: change this once behaviour PR is merged.
     git_repository(
         name = "graknlabs_behaviour",
         remote = "https://github.com/graknlabs/behaviour",
