@@ -81,11 +81,14 @@ public class Rule {
         this.logicManager = logicManager;
         this.structure = structure;
         // TODO enable when we have type hinting
-//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-//        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
         this.when = whenPattern(structure.when());
         this.then = thenPattern(structure.then());
-        pruneThenResolvedTypes();
+        logicManager.typeResolver().resolve(this);
+//        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()));
+//        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()));
+//        this.when = whenPattern(structure.when());
+//        this.then = thenPattern(structure.then());
+//        pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
@@ -96,10 +99,10 @@ public class Rule {
         this.structure = graphMgr.schema().create(label, when, then);
         validateRuleStructureLabels(conceptMgr, this.structure);
         // TODO enable when we have type hinting
-//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-//        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
-        this.when = whenPattern(structure.when());
-        this.then = thenPattern(structure.then());
+        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()));
+        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()));;
+//        this.when = whenPattern(structure.when());
+//        this.then = thenPattern(structure.then());
         validateSatisfiable();
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
@@ -131,6 +134,10 @@ public class Rule {
 
     public Conjunction when() {
         return when;
+    }
+
+    public Conjunction then() {
+        return then;
     }
 
     public String getLabel() {
@@ -210,6 +217,10 @@ public class Rule {
     }
 
     private void vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap, Map<Reference, Variable> referenceVariableMap) {
+
+
+
+
         thenVertexMap.map().forEach((ref, vertex) -> {
             Variable variable = referenceVariableMap.get(ref);
 

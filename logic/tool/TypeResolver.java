@@ -20,11 +20,15 @@ package grakn.core.logic.tool;
 
 import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.logic.LogicCache;
+import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
@@ -39,6 +43,7 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import graql.lang.common.GraqlArg.ValueType;
 import graql.lang.pattern.variable.Reference;
 
@@ -68,6 +73,19 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
+    public Rule resolve(Rule rule) {
+        Conjunction then = rule.then();
+        Conjunction when = rule.when();
+
+        TraversalBuilder thenTraversalBuilder = new TraversalBuilder(then, conceptMgr, true);
+        TraversalBuilder whenTraversalBuilder = new TraversalBuilder(when, conceptMgr, false);
+
+
+//        resolve(rule.then(), true);
+
+        //TODO
+    }
+
     public Conjunction resolveLabels(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
@@ -88,16 +106,16 @@ public class TypeResolver {
 
     public Conjunction resolve(Conjunction conjunction) {
         resolveLabels(conjunction);
-        TraversalBuilder traversalConstructor = new TraversalBuilder(conjunction, conceptMgr);
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr);
 
-        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalConstructor);
+        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
 
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
 
         resolvedLabels.forEach((ref, labels) -> {
-            Variable variable = traversalConstructor.getVariable(ref);
+            Variable variable = traversalBuilder.getVariable(ref);
             if (variable.isType() && labels.size() < numOfTypes ||
                     variable.isThing() && labels.size() < numOfConcreteTypes) {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
@@ -106,6 +124,19 @@ public class TypeResolver {
         });
 
         return conjunction;
+    }
+
+    public ResourceIterator<Map<Variable, Label>> resolveRuleConjunction(Conjunction conjunction, boolean insertable) {
+        resolveLabels(conjunction);
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
+        return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
+            Map<Variable, Label> newMapping = new HashMap<>();
+            vertexMap.map().forEach((ref, vertex) -> {
+                assert vertex.isType();
+                newMapping.put(traversalBuilder.getVariable(ref), vertex.asType().properLabel());
+            });
+            return newMapping;
+        });
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalConstructor) {
@@ -132,15 +163,21 @@ public class TypeResolver {
         private final ConceptManager conceptMgr;
         private final Traversal traversal;
         private int sysVarCounter;
+        private final boolean insertable;
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr) {
+        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, boolean insertable) {
             this.conceptMgr = conceptMgr;
             this.traversal = new Traversal();
             this.variableRegister = new HashMap<>();
             this.resolverRegister = new HashMap<>();
             this.valueTypeRegister = new HashMap<>();
             this.sysVarCounter = 0;
+            this.insertable = insertable;
             conjunction.variables().forEach(this::register);
+        }
+
+        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr) {
+            this(conjunction, conceptMgr, false);
         }
 
         Traversal traversal() {
@@ -186,7 +223,8 @@ public class TypeResolver {
             var.isa().ifPresent(constraint -> registerIsa(resolver, constraint));
             var.is().forEach(constraint -> registerIs(resolver, constraint));
             var.has().forEach(constraint -> registerHas(resolver, constraint));
-            var.relation().forEach(constraint -> registerRelation(resolver, constraint));
+            if (insertable) var.relation().forEach(constraint -> registerInsertableRelation(resolver, constraint));
+            else var.relation().forEach(constraint -> registerRelation(resolver, constraint));
             var.iid().ifPresent(constraint -> registerIID(resolver, constraint));
             return resolver;
         }
@@ -198,7 +236,7 @@ public class TypeResolver {
         }
 
         private void registerIsa(TypeVariable owner, IsaConstraint isaConstraint) {
-            if (!isaConstraint.isExplicit())
+            if (!isaConstraint.isExplicit() && !insertable)
                 traversal.sub(owner.id(), register(isaConstraint.type()).id(), true);
             else if (isaConstraint.type().reference().isName())
                 traversal.equalTypes(owner.id(), register(isaConstraint.type()).id());
@@ -225,6 +263,16 @@ public class TypeResolver {
                 }
                 traversal.relates(owner.id(), actingRoleResolver.id());
                 traversal.plays(playerResolver.id(), actingRoleResolver.id());
+            }
+        }
+
+        private void registerInsertableRelation(TypeVariable owner, RelationConstraint constraint) {
+            for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
+                TypeVariable playerResolver = register(rolePlayer.player());
+                TypeVariable roleResolver = register(rolePlayer.roleType().isPresent() ?
+                        rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
+                traversal.relates(owner.id(), roleResolver.id());
+                traversal.plays(playerResolver.id(), roleResolver.id());
             }
         }
 
