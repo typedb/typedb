@@ -65,7 +65,7 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, boolean isParallel) {
         Set<Conjunction> conjunctions = disjunction.conjunctions().stream()
-                .map(conjunction -> logicMgr.typeResolver().resolveVariables(conjunction))
+                .map(conjunction -> logicMgr.typeResolver().resolve(conjunction))
                 .collect(Collectors.toSet());
         if (!isParallel) return iterate(conjunctions).flatMap(this::iterator);
         else return iterable(conjunctions.stream()

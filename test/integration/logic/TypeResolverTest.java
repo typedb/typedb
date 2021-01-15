@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Pattern.SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -100,7 +100,7 @@ public class TypeResolverTest {
     }
 
     private Conjunction resolveConjunction(TypeResolver typeResolver, String matchString) {
-        return typeResolver.resolveVariables(createConjunction(matchString));
+        return typeResolver.resolve(createConjunction(matchString));
     }
 
     @Test
@@ -739,8 +739,8 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrowsWithMessage(
-                () -> typeResolver.resolveVariables(conjunction),
-                GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
+                () -> typeResolver.resolve(conjunction),
+                GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
         );
     }
 
@@ -872,8 +872,8 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrowsWithMessage(
-                () -> typeResolver.resolveVariables(conjunction),
-                GraknException.of(SCHEMATICALLY_UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
+                () -> typeResolver.resolve(conjunction),
+                GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
         );
     }
 

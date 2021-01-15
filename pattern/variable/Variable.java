@@ -92,8 +92,8 @@ public abstract class Variable implements Pattern {
     }
 
     public void setResolvedTypes(Set<Label> labels) {
-        clearResolvedTypes();
-        addResolvedTypes(labels);
+        resolvedTypes.clear();
+        resolvedTypes.addAll(labels);
     }
 
     public void retainResolvedTypes(Set<Label> labels) {

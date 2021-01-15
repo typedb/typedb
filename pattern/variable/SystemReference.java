@@ -30,7 +30,7 @@ public class SystemReference extends Reference.Name {
     private final int hash;
 
     public SystemReference(int id) {
-        super("sys" + id);
+        super("" + id);
         this.id = id;
         this.hash = Objects.hash(SystemReference.class, id);
     }
