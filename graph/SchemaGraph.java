@@ -471,8 +471,9 @@ public class SchemaGraph implements Graph {
     public class Statistics {
 
         private static final int UNSET_COUNT = -1;
-        private volatile int abstractTypeCount;
         private volatile int thingTypeCount;
+        private volatile int abstractTypeCount;
+        private volatile int concreteThingTypeCount;
         private volatile int attributeTypeCount;
         private volatile int relationTypeCount;
         private volatile int roleTypeCount;
@@ -481,8 +482,9 @@ public class SchemaGraph implements Graph {
         private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
 
         private Statistics() {
-            abstractTypeCount = UNSET_COUNT;
             thingTypeCount = UNSET_COUNT;
+            abstractTypeCount = UNSET_COUNT;
+            concreteThingTypeCount = UNSET_COUNT;
             attributeTypeCount = UNSET_COUNT;
             relationTypeCount = UNSET_COUNT;
             roleTypeCount = UNSET_COUNT;
@@ -492,10 +494,20 @@ public class SchemaGraph implements Graph {
         }
 
         public long abstractTypeCount() {
-            Supplier<Integer> fn = () -> toIntExact(thingTypes().stream().filter(TypeVertex::isAbstract).count());
+            Supplier<Integer> fn = () -> toIntExact(Stream.concat(thingTypes().stream(), roleTypes().stream()).filter(TypeVertex::isAbstract).count());
             if (isReadOnly) {
                 if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = fn.get();
                 return abstractTypeCount;
+            } else {
+                return fn.get();
+            }
+        }
+
+        public long concreteThingTypeCount() {
+            Supplier<Integer> fn = () -> toIntExact(thingTypes().filter(typeVertex -> !typeVertex.isAbstract()).count());
+            if (isReadOnly) {
+                if (concreteThingTypeCount == UNSET_COUNT) concreteThingTypeCount = fn.get();
+                return concreteThingTypeCount;
             } else {
                 return fn.get();
             }

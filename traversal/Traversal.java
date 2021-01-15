@@ -240,6 +240,19 @@ public class Traversal {
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Traversal that = (Traversal) o;
+        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.structure, this.parameters);
+    }
+
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iid;
@@ -274,6 +287,21 @@ public class Traversal {
             if (!values.isEmpty()) str.append("\n\tvalues: ").append(values);
             str.append("\n}");
             return str.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Parameters that = (Parameters) o;
+
+            return iid.equals(that.iid) && values.equals(that.values);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(iid, values);
         }
 
         public static class Value {

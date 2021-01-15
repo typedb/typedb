@@ -18,12 +18,12 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -47,14 +47,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONSTRAINT_VALUE_TYPE;
+import static grakn.core.common.test.Util.assertThrows;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-hinter-resolver");
-    private static String database = "type-hinter-test";
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
+    private static String database = "type-resolver-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction transaction;
@@ -98,29 +101,23 @@ public class TypeResolverTest {
         return Disjunction.create(query.conjunction().normalise()).conjunctions().iterator().next();
     }
 
-    private Conjunction runExhaustiveHinter(TypeResolver typeResolver, String matchString) {
-        return typeResolver.resolveVariablesExhaustive(createConjunction(matchString));
-    }
-
-    private Conjunction runSimpleHinter(TypeResolver typeResolver, String matchString) {
-        return typeResolver.resolveVariables(createConjunction(matchString));
+    private Conjunction resolveConjunction(TypeResolver typeResolver, String matchString) {
+        return typeResolver.resolve(createConjunction(matchString));
     }
 
     @Test
     public void isa_inference() throws IOException {
         define_standard_schema("basic-schema");
+        String queryString = "match $p isa person;";
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
-        String queryString = "match $p isa person; ";
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -129,15 +126,13 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
         String queryString = "match $p isa! person; ";
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -150,21 +145,14 @@ public class TypeResolverTest {
                 "  $p is $q;" +
                 "  $q isa mammal;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$p", set("mammal", "person", "man", "woman", "dog"));
             put("$q", set("mammal", "person", "man", "woman", "dog"));
         }};
 
-        Map<String, Set<String>> expectedSimple = new HashMap<String, Set<String>>() {{
-            put("$p", set("square", "tortoise", "woman", "mammal", "person", "animal", "man", "reptile", "dog", "triangle", "right-angled-triangle"));
-            put("$q", set("mammal", "person", "man", "woman", "dog"));
-        }};
-
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
-        assertEquals(expectedSimple, getHintMap(simpleConjunction));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
     }
 
     @Test
@@ -174,331 +162,13 @@ public class TypeResolverTest {
 
         String queryString = "match $p has name 'bob';";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void has_inference_variable_with_attribute_type() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match $p has name $a;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$p", set("person", "man", "woman", "dog"));
-            put("$a", set("name"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void has_inference_variable_without_attribute_type() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match" +
-                "  $p isa shape;" +
-                "  $p has $a;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$p", set("triangle", "right-angled-triangle", "square"));
-            put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-    }
-
-    @Test
-    public void relation_concrete_role_concrete() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match $r (wife: $yoko) isa marriage;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("woman"));
-            put("$r", set("marriage"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void relation_variable_role_concrete_relation_hidden_variable() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match $r ($role: $yoko) isa marriage;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("person", "man", "woman"));
-            put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse"));
-            put("$r", set("marriage"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void relation_variable_role_variable_relation_named_variable() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match $r (wife: $yoko) isa $m;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("woman"));
-            put("$r", set("marriage"));
-            put("$m", set("marriage", "relation", "thing"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void relation_anon_isa() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match (wife: $yoko);";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("woman"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void no_role_type() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match ($yoko) isa marriage;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("man", "woman", "person"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void relation_multiple_roles() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$yoko", set("person", "man", "woman"));
-            put("$john", set("man"));
-            put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse"));
-            put("$r", set("marriage"));
-            put("$a", set("person", "man", "woman"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void has_reverse() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-
-        String queryString = "match" +
-                "  $p isa! person;" +
-                "  $p has $a;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("name", "email"));
-            put("$p", set("person"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void negations_ignored() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match" +
-                "  $p isa person;" +
-                "  not {$p isa man;};";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$p", set("person", "man", "woman"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void up_down_hierarchy_isa() {
-        define_custom_schema(
-                "define" +
-                        "  animal sub entity;" +
-                        "  person sub animal;" +
-                        "  man sub person;" +
-                        "  greek sub man;" +
-                        "  socrates sub greek;"
-        );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match" +
-                "  $p isa man;" +
-                "  man sub $q;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$p", set("man", "greek", "socrates"));
-            put("$q", set("thing", "entity", "animal", "person", "man"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void test_type_var_with_label() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeHinter = transaction.logic().typeResolver();
-
-        String queryString = "match $t type shape;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeHinter, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeHinter, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$t", set("shape"));
-        }};
-
-        assertTrue(getHintMap(exhaustiveConjunction).entrySet().containsAll(expected.entrySet()));
-        assertTrue(getHintMap(simpleConjunction).entrySet().containsAll(expected.entrySet()));
-    }
-
-    @Test
-    public void infer_from_value_type() {
-        define_custom_schema(
-                "define" +
-                        "  dog sub entity, owns weight;" +
-                        "  person sub entity, owns name;" +
-                        "  weight sub attribute, value double;" +
-                        "  name sub attribute, value string;"
-        );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match" +
-                "  $p has $a;" +
-                "  $a = 'bob';";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$p", set("person"));
-            put("$a", set("name"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void plays_hierarchy() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match (spouse: $john) isa marriage;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$john", set("person", "man", "woman"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void has_hierarchy() {
-        define_custom_schema(
-                "define" +
-                        "  animal sub entity, owns weight;" +
-                        "  person sub animal, owns leg-weight;" +
-                        "  chair sub entity, owns leg-weight;" +
-                        "  dog sub animal;" +
-                        "  weight sub attribute, value long, abstract;" +
-                        "  leg-weight sub weight;"
-        );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match" +
-                "  $a has weight $c;" +
-                "  $b has leg-weight 5;" +
-                "  $p has weight $c;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("animal", "dog", "person", "chair"));
-            put("$b", set("person", "chair"));
-            put("$c", set("leg-weight"));
-            put("$p", set("animal", "person", "dog", "chair"));
-        }};
-
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
 
@@ -521,34 +191,14 @@ public class TypeResolverTest {
                 "  $a has $b;" +
                 "  $b has $a;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("nickname", "name"));
             put("$b", set("nickname", "name"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
-    }
-
-    @Test
-    public void has_with_minimal_cycle() {
-        define_custom_schema("define " +
-                                     "unit sub attribute, value string, owns unit, owns ref;" +
-                                     "ref sub attribute, value long;");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match" +
-                "  $a has $a;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
-            put("$a", set("unit"));
-        }};
-
-
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -572,8 +222,7 @@ public class TypeResolverTest {
                 "  $c has $d;" +
                 "  $d has $a;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$a", set("name", "surname", "nickname", "middlename"));
@@ -582,13 +231,371 @@ public class TypeResolverTest {
             put("$d", set("name", "surname", "nickname", "middlename"));
         }};
 
-        Map<String, Set<String>> expectedSimple = new HashMap<String, Set<String>>() {{
-            put("$a", set("name", "surname", "nickname", "middlename", "measure-system"));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
+    }
+
+    @Test
+    public void has_inference_variable_with_attribute_type() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $p has name $a;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person", "man", "woman", "dog"));
+            put("$a", set("name"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
-        assertEquals(expectedExhaustive, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
+
+    @Test
+    public void has_inference_variable_without_attribute_type() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match" +
+                "  $p isa shape;" +
+                "  $p has $a;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("triangle", "right-angled-triangle", "square"));
+            put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void infer_from_value_type() {
+        define_custom_schema(
+                "define" +
+                        "  dog sub entity, owns weight;" +
+                        "  person sub entity, owns name;" +
+                        "  weight sub attribute, value double;" +
+                        "  name sub attribute, value string;"
+        );
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $p has $a;" +
+                "  $a = 'bob';";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person"));
+            put("$a", set("name"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void value_comparision_between_double_long() throws IOException {
+        define_custom_schema("define" +
+                                     " house-number sub attribute, value long;" +
+                                     " length sub attribute, value double;" +
+                                     " name sub attribute, value string;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $x = 1; $y = 1.0; $z = 'bob';";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("house-number", "length"));
+            put("$y", set("house-number", "length"));
+            put("$z", set("name"));
+        }};
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void relation_concrete_role_concrete() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $r (wife: $yoko) isa marriage;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("woman"));
+            put("$r", set("marriage"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void relation_variable_role_concrete_relation_hidden_variable() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $r ($role: $yoko) isa marriage;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("person", "man", "woman"));
+            put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
+            put("$r", set("marriage"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void relation_variable_role_variable_relation_named_variable() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $r (wife: $yoko) isa $m;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("woman"));
+            put("$r", set("marriage"));
+            put("$m", set("marriage", "relation", "thing"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void relation_staggered_role_hierarchy() {
+        define_custom_schema("define" +
+                                     " person sub entity," +
+                                     "  plays partnership:partner," +
+                                     "  plays marriage:spouse;" +
+                                     "" +
+                                     " man sub person," +
+                                     "  plays hetero-marriage:husband;" +
+                                     "" +
+                                     " woman sub person," +
+                                     "   plays hetero-marriage:wife;" +
+                                     "" +
+                                     " partnership sub relation," +
+                                     "  relates partner;" +
+                                     "" +
+                                     " marriage sub partnership," +
+                                     "  relates spouse as partner;" +
+                                     "" +
+                                     " hetero-marriage sub marriage," +
+                                     "  relates husband as spouse," +
+                                     "  relates wife as spouse;");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man;";
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("person", "woman", "man"));
+            put("$john", set("man"));
+            put("$role", set("hetero-marriage:husband", "marriage:spouse", "partnership:partner", "relation:role"));
+            put("$r", set("hetero-marriage", "marriage"));
+            put("$m", set("hetero-marriage", "marriage", "partnership", "relation", "thing"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void relation_anon_isa() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match (wife: $yoko);";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("woman"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void no_role_type() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match ($yoko) isa marriage;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("man", "woman", "person"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void relation_multiple_roles() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$yoko", set("person", "man", "woman"));
+            put("$john", set("man"));
+            put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
+            put("$r", set("marriage"));
+            put("$a", set("person", "man", "woman"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void has_reverse() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match" +
+                "  $p isa! person;" +
+                "  $p has $a;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("name", "email"));
+            put("$p", set("person"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void negations_ignored() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $p isa person;" +
+                "  not {$p isa man;};";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("person", "man", "woman"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void up_down_hierarchy_isa() {
+        define_custom_schema(
+                "define" +
+                        "  animal sub entity;" +
+                        "  person sub animal;" +
+                        "  man sub person;" +
+                        "  greek sub man;" +
+                        "  socrates sub greek;"
+        );
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $p isa man;" +
+                "  man sub $q;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$p", set("man", "greek", "socrates"));
+            put("$q", set("thing", "entity", "animal", "person", "man"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void test_type_var_with_label() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        String queryString = "match $t type shape;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$t", set("shape"));
+        }};
+
+        assertTrue(getHintMap(conjunction).entrySet().containsAll(expected.entrySet()));
+    }
+
+    @Test
+    public void plays_hierarchy() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match (spouse: $john) isa marriage;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$john", set("person", "man", "woman"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void has_hierarchy() {
+        define_custom_schema(
+                "define" +
+                        "  animal sub entity, owns weight;" +
+                        "  person sub animal, owns leg-weight;" +
+                        "  chair sub entity, owns leg-weight;" +
+                        "  dog sub animal;" +
+                        "  weight sub attribute, value long, abstract;" +
+                        "  leg-weight sub weight;"
+        );
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $a has weight $c;" +
+                "  $b has leg-weight 5;" +
+                "  $p has weight $c;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("animal", "dog", "person", "chair"));
+            put("$b", set("person", "chair"));
+            put("$c", set("leg-weight"));
+            put("$p", set("animal", "person", "dog", "chair"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void has_with_minimal_cycle() {
+        define_custom_schema("define " +
+                                     "unit sub attribute, value string, owns unit, owns ref;" +
+                                     "ref sub attribute, value long;");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match" +
+                "  $a has $a;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+            put("$a", set("unit"));
+        }};
+
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
+    }
+
 
     @Test
     public void all_things_is_empty_set() throws IOException {
@@ -597,15 +604,13 @@ public class TypeResolverTest {
 
         String queryString = "match $x isa thing;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", Collections.emptySet());
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -623,8 +628,7 @@ public class TypeResolverTest {
 
         String queryString = "match $x isa $t; $y isa $t; $x has man-name'bob'; $y has woman-name 'alice';";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$x", set("man"));
@@ -632,14 +636,7 @@ public class TypeResolverTest {
             put("$t", set("thing", "entity", "person"));
         }};
 
-        Map<String, Set<String>> expectedSimple = new HashMap<String, Set<String>>() {{
-            put("$x", set("man"));
-            put("$y", set("woman"));
-            put("$t", set("thing", "entity", "person", "man", "woman"));
-        }};
-
-        assertEquals(expectedExhaustive, getHintMap(exhaustiveConjunction));
-        assertEquals(expectedSimple, getHintMap(simpleConjunction));
+        assertEquals(expectedExhaustive, getHintMap(conjunction));
     }
 
     @Test
@@ -659,8 +656,7 @@ public class TypeResolverTest {
                 "  $z sub $w;" +
                 "  $w sub person;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "man", "greek", "socrates"));
@@ -669,8 +665,7 @@ public class TypeResolverTest {
             put("$w", set("person", "man", "greek", "socrates"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     // When a hint label exists, it can "skip" a generation, meaning a hint and the hint's descendent is possible, yet
@@ -678,6 +673,7 @@ public class TypeResolverTest {
     // We show this below on the hint labels of $t
     // We also show on $a that hints can be isolated form each other completely hierarchy-wise.
     @Test
+    //TODO: ignored as the gap doesn't appear. Unclear if this is a resolver or traversal bug.
     @Ignore
     public void hierarchy_hint_gap() throws IOException {
         define_custom_schema(
@@ -707,7 +703,7 @@ public class TypeResolverTest {
                 "  $a has left-attr true; " +
                 "  $b has right-attr true;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$t", set("animal", "person"));
@@ -716,7 +712,7 @@ public class TypeResolverTest {
             put("$rel", set("ownership", "marriage"));
             put("$c", set("ownership-attr", "marriage-attr"));
         }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -724,19 +720,17 @@ public class TypeResolverTest {
         define_standard_schema("basic-schema");
         String queryString = "match $a has name 'fido'; $a has label 'poodle';";
         TypeResolver typeResolver = transaction.logic().typeResolver();
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-        Conjunction simpleConjunction = runSimpleHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("dog"));
         }};
 
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-        assertEquals(expected, getHintMap(simpleConjunction));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
-    public void matching_rp_in_relation_that_cant_play_that_role_returns_empty_result() throws IOException {
+    public void matching_rp_in_relation_that_cant_play_that_role_throws_an_error() throws IOException {
         define_standard_schema("test-type-resolution");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -744,31 +738,12 @@ public class TypeResolverTest {
                 " $x isa company;" +
                 " ($x) isa friendship;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+        Conjunction conjunction = createConjunction(queryString);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set());
-        }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-    }
-
-    @Test
-    public void value_comparision_between_double_long() throws IOException {
-        define_custom_schema("define" +
-                                     " house-number sub attribute, value long;" +
-                                     " length sub attribute, value double;"
+        assertThrowsWithMessage(
+                () -> typeResolver.resolve(conjunction),
+                GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
         );
-
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match $x = 1.0;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set("house-number", "length"));
-        }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-
     }
 
     @Test
@@ -783,37 +758,14 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
 
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person"));
             put("$y", set("person"));
             put("$m", set("marriage", "hetero-marriage"));
         }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-
-    }
-
-    @Test
-    public void thing_is_valid_answer() {
-        define_custom_schema("define " +
-                                     "marriage sub relation, relates spouse;" +
-                                     "person sub entity, plays marriage:spouse;"
-        );
-
-        TypeResolver typeResolver = transaction.logic().typeResolver();
-        String queryString = "match " +
-                " ($x, $y) isa $type;";
-
-        Conjunction exhaustiveConjunction = runExhaustiveHinter(typeResolver, queryString);
-
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set("person"));
-            put("$y", set("person"));
-            put("$type", set("marriage", "relation", "thing"));
-        }};
-        assertEquals(expected, getHintMap(exhaustiveConjunction));
-
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -822,14 +774,14 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         String relationString = "match $x isa relation;";
 
-        Conjunction relationConjunction = runExhaustiveHinter(typeResolver, relationString);
+        Conjunction relationConjunction = resolveConjunction(typeResolver, relationString);
         Map<String, Set<String>> relationExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("friendship", "employment"));
         }};
         assertEquals(relationExpected, getHintMap(relationConjunction));
 
         String attributeString = "match $x isa attribute;";
-        Conjunction attributeConjunction = runExhaustiveHinter(typeResolver, attributeString);
+        Conjunction attributeConjunction = resolveConjunction(typeResolver, attributeString);
         Map<String, Set<String>> attributeExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("name", "age", "ref"));
         }};
@@ -837,40 +789,142 @@ public class TypeResolverTest {
         assertEquals(attributeExpected, getHintMap(attributeConjunction));
 
         String entityString = "match $x isa entity;";
-        Conjunction entityConjunction = runExhaustiveHinter(typeResolver, entityString);
+        Conjunction entityConjunction = resolveConjunction(typeResolver, entityString);
         Map<String, Set<String>> entityExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "company"));
         }};
         assertEquals(entityExpected, getHintMap(entityConjunction));
 
+        String roleString = "match ($role: $x) isa relation;";
+        Conjunction roleConjunction = resolveConjunction(typeResolver, roleString);
+        Map<String, Set<String>> roleExpected = new HashMap<String, Set<String>>() {{
+            put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
+            put("$x", set("person", "company"));
+        }};
+        assertEquals(roleExpected, getHintMap(roleConjunction));
+
         String thingString = "match $x isa thing;";
-        Conjunction thingConjunction = runExhaustiveHinter(typeResolver, thingString);
+        Conjunction thingConjunction = resolveConjunction(typeResolver, thingString);
         Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
             put("$x", set());
         }};
         assertEquals(thingExpected, getHintMap(thingConjunction));
-        for (Variable variable : thingConjunction.variables()) {
-            assertTrue(variable.isSatisfiable());
-        }
     }
 
     @Test
-    public void impossible_queries_make_variables_unsatisfiable() throws IOException {
+    public void infers_value_type_recursively() throws IOException {
+        define_standard_schema("basic-schema");
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " $x = $y;" +
+                " $y = $z;" +
+                " $z = $w;" +
+                " $w = 1;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("perimeter", "area", "hypotenuse-length"));
+            put("$y", set("perimeter", "area", "hypotenuse-length"));
+            put("$z", set("perimeter", "area", "hypotenuse-length"));
+            put("$w", set("perimeter", "area", "hypotenuse-length"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void infers_value_cycle() throws IOException {
+        define_custom_schema(
+                "define" +
+                        "  person sub entity, owns name, owns height;" +
+                        "  name sub attribute, value string, owns nickname, owns height;" +
+                        "  nickname sub attribute, value string, owns name;" +
+                        "  surname sub attribute, value string, owns name;" +
+                        "  name sub attribute, value string;" +
+                        "  surname sub attribute, value string;" +
+                        "  nickname sub attribute, value string;" +
+                        "  height sub attribute, value double, owns weight, owns name;" +
+                        "  weight sub attribute, value double, owns height;" +
+                        "  ");
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match " +
+                " $x = 'bob';" +
+                " $y = $x;" +
+                " $x has $y;" +
+                " $y has $x;";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("nickname", "name"));
+            put("$y", set("nickname", "name"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void multiple_value_types_returns_unsatisfiable_error() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $x = 2; $x = 'bob';";
+        Conjunction conjunction = createConjunction(queryString);
+
+        assertThrows(
+                () -> typeResolver.resolve(conjunction)
+        );
+    }
+
+    @Test
+    public void infer_is_attribute_from_ownership() throws IOException {
         define_standard_schema("test-type-resolution");
         TypeResolver typeResolver = transaction.logic().typeResolver();
-        String relationString = "match " +
-                "$r (employee: $x) isa $m; " +
-                "$m sub friendship; ";
+        String queryString = "match $x has $y;";
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
-        Conjunction conjunction = runExhaustiveHinter(typeResolver, relationString);
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$r", set());
-            put("$x", set());
-            put("$m", set());
+            put("$x", set("person", "company", "friendship", "employment"));
+            put("$y", set("name", "age", "ref"));
         }};
+
         assertEquals(expected, getHintMap(conjunction));
-        for (Variable variable : conjunction.variables()) {
-            if (!variable.reference().isLabel()) assertFalse(variable.isSatisfiable());
-        }
     }
+
+    @Test
+    public void infer_is_attribute_from_having_value() throws IOException {
+        define_standard_schema("test-type-resolution");
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $x = $y;";
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("name", "age", "ref"));
+            put("$y", set("name", "age", "ref"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void infer_key_attributes() {
+        define_custom_schema("define" +
+                                     " person sub entity, owns name @key;" +
+                                     " name sub attribute, value string;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $x has name 'bob';";
+
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$x", set("person"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
 }
