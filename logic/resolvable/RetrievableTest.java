@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 public class RetrievableTest {
 
@@ -188,5 +189,16 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $x has $a; $a = $b; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has $a; $a = $b; }"), concludables);
         assertEquals(set(), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_is_constraint_is_a_retrievable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x is $y; $x isa thing; $y isa thing; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x is $y; $x isa thing; $y isa thing; }"), concludables);
+        // We can't build the conjunction { $x is $y; } using Graql (without binding the variables)
+        assertEquals(1, retrievables.size());
+        assertEquals(2, retrievables.iterator().next().conjunction().variables().size());
+        assertTrue(retrievables.iterator().next().conjunction().variables().stream().filter(
+                v -> v.reference().asName().name().equals("x")).findFirst().get().constraints().iterator().next().asThing().isIs());
     }
 }
