@@ -66,7 +66,7 @@ public final class ConceptManager {
     public ConceptMap conceptMap(VertexMap vertexMap) {
         Map<Reference.Name, Concept> map = new HashMap<>();
         vertexMap.forEach((reference, vertex) -> {
-            if (!reference.isName()) throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
+            if (!reference.isName()) throw exception(GraknException.of(ILLEGAL_STATE));
             if (vertex.isThing()) map.put(reference.asName(), ThingImpl.of(vertex.asThing()));
             else if (vertex.isType()) map.put(reference.asName(), TypeImpl.of(graphMgr, vertex.asType()));
             else graphMgr.exception(GraknException.of(ILLEGAL_STATE));
@@ -123,8 +123,8 @@ public final class ConceptManager {
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
-        if (valueType == null) throw graphMgr.exception(GraknException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
-        if (!valueType.isWritable()) throw graphMgr.exception(GraknException.of(UNSUPPORTED_OPERATION));
+        if (valueType == null) throw exception(GraknException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
+        if (!valueType.isWritable()) throw exception(GraknException.of(UNSUPPORTED_OPERATION));
 
         final TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
@@ -144,7 +144,7 @@ public final class ConceptManager {
                 if (vertex != null) return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
                 else return new AttributeTypeImpl.DateTime(graphMgr, label);
             default:
-                throw graphMgr.exception(GraknException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
+                throw exception(GraknException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
         }
     }
 
@@ -171,7 +171,7 @@ public final class ConceptManager {
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(graphMgr, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        if (!exceptions.isEmpty()) throw graphMgr.exception(GraknException.of(exceptions));
+        if (!exceptions.isEmpty()) throw exception(GraknException.of(exceptions));
     }
 
     public void validateThings() {

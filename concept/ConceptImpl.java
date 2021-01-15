@@ -145,4 +145,5 @@ public abstract class ConceptImpl implements Concept {
     public RelationImpl asRelation() {
         throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Relation.class)));
     }
+
 }
