@@ -48,6 +48,8 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONSTRAINT_VALUE_TYPE;
+import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -871,9 +873,8 @@ public class TypeResolverTest {
         String queryString = "match $x = 2; $x = 'bob';";
         Conjunction conjunction = createConjunction(queryString);
 
-        assertThrowsWithMessage(
-                () -> typeResolver.resolve(conjunction),
-                GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
+        assertThrows(
+                () -> typeResolver.resolve(conjunction)
         );
     }
 
