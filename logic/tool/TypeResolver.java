@@ -80,7 +80,7 @@ public class TypeResolver {
                     } else {
                         TypeVertex type = traversalEng.graph().schema().getType(label);
                         if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
-                        typeVar.addSingleResolvedType(label);
+                        typeVar.addResolvedType(label);
                     }
                 });
         return conjunction;
