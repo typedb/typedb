@@ -427,13 +427,70 @@ public class RuleTest {
                 }
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
 
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_relation_indexes_update_on_rule_delete() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    friendship.setRelates("friend");
+                    final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    marriage.setRelates("spouse");
+                    person.setPlays(friendship.getRelates("friend"));
+                    person.setPlays(marriage.getRelates("spouse"));
+                    Rule marriageFriendsRule = logicMgr.putRule(
+                            "marriage-is-friendship",
+                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                    Conjunction marriageFriendsThen = marriageFriendsRule.then();
+                    Variable marriageFriendsRelation = iterate(marriageFriendsThen.variables())
+                            .filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
+
+                    Rule allFriendsRule = logicMgr.putRule(
+                            "all-people-are-friends",
+                            Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
+                            Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
+                    Conjunction allFriendsThen = allFriendsRule.then();
+                    Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
+                    txn.commit();
+                }
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    LogicManager logicMgr = txn.logic();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
+                    Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
+                    Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
+                    assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
+                    allFriendsRule.delete();
+                    txn.commit();
+                }
+            }
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    LogicManager logicMgr = txn.logic();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
+                    Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
+                    assertEquals(set(marriageFriendsRule), friendshipRules);
                 }
             }
         }

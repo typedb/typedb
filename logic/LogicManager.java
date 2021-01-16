@@ -18,32 +18,17 @@
 
 package grakn.core.logic;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.type.RelationType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
-import graql.lang.pattern.constraint.TypeConstraint;
-import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
-
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.TYPES_NOT_FOUND;
 
 public class LogicManager {
 
@@ -89,21 +74,6 @@ public class LogicManager {
         return graphMgr.schema().ruleIndex().rulesConcludingHasAttribute(attributeType).map(this::fromStructure);
     }
 
-    public void indexRuleConcludes(Rule rule, Label type) {
-        graphMgr.schema().ruleIndex().ruleConcludes(rule.structure(), type);
-    }
-
-    public void indexRuleConcludesHasAttribute(Rule rule, Label attributeType) {
-        graphMgr.schema().ruleIndex().ruleConcludesHasAttribute(rule.structure(), attributeType);
-    }
-
-    public void clearIndexRuleConcludes(Rule rule, Label type) {
-        graphMgr.schema().ruleIndex().clearRuleConcludes(rule.structure(), type);
-    }
-
-    public void clearIndexRuleConcludesHasAttribute(Rule rule, Label attributeType) {
-        graphMgr.schema().ruleIndex().clearRuleConcludesHasAttribute(rule.structure(), attributeType);
-    }
 
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
@@ -118,7 +88,7 @@ public class LogicManager {
         rules().forEachRemaining(Rule::validateSatisfiable);
 
         // re-index if rules are valid and satisfiable
-        graphMgr.schema().rules().filter(RuleStructure::isOutdated).forEachRemaining(s -> fromStructure(s).reIndex(this));
+        graphMgr.schema().rules().filter(RuleStructure::isOutdated).forEachRemaining(s -> fromStructure(s).reIndex());
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))

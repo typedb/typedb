@@ -18,6 +18,7 @@
 package grakn.core.graph.structure.impl;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.StructureIID;
@@ -101,6 +102,26 @@ public abstract class RuleStructureImpl implements RuleStructure {
     @Override
     public void isOutdated(boolean isOutdated) {
         this.isOutdated.set(isOutdated);
+    }
+
+    @Override
+    public void createConcludesIndex(Label type) {
+        graph.ruleIndex().ruleConcludes(this, type);
+    }
+
+    @Override
+    public void createConcludesHasAttributeIndex(Label type) {
+        graph.ruleIndex().ruleConcludesHasAttribute(this, type);
+    }
+
+    @Override
+    public void clearConcludesIndex(Label type) {
+        graph.ruleIndex().clearRuleConcludes(this, type);
+    }
+
+    @Override
+    public void clearConcludesHasAttributeIndex(Label type) {
+        graph.ruleIndex().clearRuleConcludes(this, type);
     }
 
     public Encoding.Structure encoding() {

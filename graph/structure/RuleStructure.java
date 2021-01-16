@@ -17,6 +17,7 @@
 
 package grakn.core.graph.structure;
 
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.util.Encoding;
 import graql.lang.pattern.Conjunction;
@@ -58,5 +59,13 @@ public interface RuleStructure {
     boolean isOutdated();
 
     void isOutdated(boolean isOutdated);
+
+    void createConcludesIndex(Label label);
+
+    void createConcludesHasAttributeIndex(Label type);
+
+    void clearConcludesIndex(Label label);
+
+    void clearConcludesHasAttributeIndex(Label type);
 }
 

@@ -93,7 +93,7 @@ public class Rule {
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateInsertable();
         validateCycles();
-        this.conclusion.generateIndex(this, logicMgr);
+        this.conclusion.index(this);
     }
 
     private void indexConclusion() {
@@ -150,6 +150,7 @@ public class Rule {
     }
 
     public void delete() {
+        conclusion().clearFromIndex(this);
         structure.delete();
     }
 
@@ -240,9 +241,9 @@ public class Rule {
         return logicMgr.typeResolver().resolveVariablesExhaustive(conj);
     }
 
-    public void reIndex(LogicManager logicMgr) {
-        conclusion().clearFromIndex(this, logicMgr);
-        conclusion().generateIndex(this, logicMgr);
+    public void reIndex() {
+        conclusion().clearFromIndex(this);
+        conclusion().index(this);
         structure.isOutdated(false);
     }
 
@@ -260,9 +261,9 @@ public class Rule {
 
         public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
 
-        abstract void generateIndex(Rule rule, LogicManager logicMgr);
+        abstract void index(Rule rule);
 
-        abstract void clearFromIndex(Rule rule, LogicManager logicMgr);
+        abstract void clearFromIndex(Rule rule);
 
         public boolean isRelation() {
             return false;
@@ -363,17 +364,17 @@ public class Rule {
             }
 
             @Override
-            void generateIndex(Rule rule, LogicManager logicMgr) {
+            void index(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes(); // TODO these should in the future follow insert semantics
-                possibleRelationTypes.forEach(label -> logicMgr.indexRuleConcludes(rule, label));  // TODO this feels ugly, passing `rule` in
+                possibleRelationTypes.forEach(rule.structure::createConcludesIndex);
             }
 
             @Override
-            void clearFromIndex(Rule rule, LogicManager logicMgr) {
+            void clearFromIndex(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes(); // TODO these should in the future follow insert semantics
-                possibleRelationTypes.forEach(label -> logicMgr.clearIndexRuleConcludes(rule, label));  // TODO this feels ugly, passing `rule` in
+                possibleRelationTypes.forEach(rule.structure::clearConcludesIndex);
             }
 
             public RelationConstraint relation() {
@@ -528,23 +529,23 @@ public class Rule {
                 }
 
                 @Override
-                void generateIndex(Rule rule, LogicManager logicMgr) {
+                void index(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
                     possibleAttributeHas.forEach(label -> {
-                        logicMgr.indexRuleConcludes(rule, label);
-                        logicMgr.indexRuleConcludesHasAttribute(rule, label);
-                    }); // TODO this feels ugly, passing `rule` in
+                        rule.structure.createConcludesIndex(label);
+                        rule.structure.createConcludesHasAttributeIndex(label);
+                    });
                 }
 
                 @Override
-                void clearFromIndex(Rule rule, LogicManager logicMgr) {
+                void clearFromIndex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
                     possibleAttributeHas.forEach(label -> {
-                        logicMgr.clearIndexRuleConcludes(rule, label);
-                        logicMgr.clearIndexRuleConcludesHasAttribute(rule, label);
-                    }); // TODO this feels ugly, passing `rule` in
+                        rule.structure.clearConcludesIndex(label);
+                        rule.structure.clearConcludesHasAttributeIndex(label);
+                    });
                 }
 
                 @Override
@@ -643,17 +644,17 @@ public class Rule {
                 }
 
                 @Override
-                void generateIndex(Rule rule, LogicManager logicMgr) {
+                void index(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
-                    possibleAttributeHas.forEach(label -> logicMgr.indexRuleConcludesHasAttribute(rule, label)); // TODO this feels ugly, passing `rule` in
+                    possibleAttributeHas.forEach(rule.structure::createConcludesHasAttributeIndex);
                 }
 
                 @Override
-                void clearFromIndex(Rule rule, LogicManager logicMgr) {
+                void clearFromIndex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
-                    possibleAttributeHas.forEach(label -> logicMgr.clearIndexRuleConcludesHasAttribute(rule, label)); // TODO this feels ugly, passing `rule` in
+                    possibleAttributeHas.forEach(rule.structure::clearConcludesHasAttributeIndex);
                 }
 
                 @Override
