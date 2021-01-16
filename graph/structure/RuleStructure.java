@@ -62,9 +62,9 @@ public interface RuleStructure {
 
     void createConcludesIndex(Label label);
 
-    void createConcludesHasAttributeIndex(Label type);
-
     void clearConcludesIndex(Label label);
+
+    void createConcludesHasAttributeIndex(Label type);
 
     void clearConcludesHasAttributeIndex(Label type);
 }

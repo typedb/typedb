@@ -672,28 +672,28 @@ public class SchemaGraph implements Graph {
     }
 
     public class RuleIndex {
-        ConcurrentHashMap<Label, Set<RuleStructure>> typeConcludedInRules;
-        ConcurrentHashMap<Label, Set<RuleStructure>> hasAttributeTypeConcludedInRules;
-        ConcurrentHashMap<Label, Set<RuleStructure>> bufferedTypeConcludedInRules;
-        ConcurrentHashMap<Label, Set<RuleStructure>> bufferedHasAttributeTypeConcludedInRules;
+        ConcurrentHashMap<Label, Set<RuleStructure>> typeConcluded;
+        ConcurrentHashMap<Label, Set<RuleStructure>> hasAttributeTypeConcluded;
+        ConcurrentHashMap<Label, Set<RuleStructure>> bufferedTypeConcluded;
+        ConcurrentHashMap<Label, Set<RuleStructure>> bufferedHasAttributeTypeConcluded;
 
         public RuleIndex() {
-            typeConcludedInRules = new ConcurrentHashMap<>();
-            hasAttributeTypeConcludedInRules = new ConcurrentHashMap<>();
-            bufferedTypeConcludedInRules = new ConcurrentHashMap<>();
-            bufferedHasAttributeTypeConcludedInRules = new ConcurrentHashMap<>();
+            typeConcluded = new ConcurrentHashMap<>();
+            hasAttributeTypeConcluded = new ConcurrentHashMap<>();
+            bufferedTypeConcluded = new ConcurrentHashMap<>();
+            bufferedHasAttributeTypeConcluded = new ConcurrentHashMap<>();
         }
 
         public ResourceIterator<RuleStructure> rulesConcluding(Label type) {
-            return iterate(typeConcludedInRules.computeIfAbsent(type, this::loadConcludes));
+            return iterate(typeConcluded.computeIfAbsent(type, this::loadConcludes));
         }
 
         public ResourceIterator<RuleStructure> rulesConcludingHasAttribute(Label attributeType) {
-            return iterate(hasAttributeTypeConcludedInRules.computeIfAbsent(attributeType, this::loadConcludesHasAttribute));
+            return iterate(hasAttributeTypeConcluded.computeIfAbsent(attributeType, this::loadConcludesHasAttribute));
         }
 
         public void ruleConcludes(RuleStructure rule, Label type) {
-            bufferedTypeConcludedInRules.compute(type, (l, rules) -> {
+            bufferedTypeConcluded.compute(type, (l, rules) -> {
                 if (rules == null) rules = new HashSet<>();
                 rules.add(rule);
                 return rules;
@@ -701,7 +701,7 @@ public class SchemaGraph implements Graph {
         }
 
         public void ruleConcludesHasAttribute(RuleStructure rule, Label attributeType) {
-            bufferedHasAttributeTypeConcludedInRules.compute(attributeType, (l, rules) -> {
+            bufferedHasAttributeTypeConcluded.compute(attributeType, (l, rules) -> {
                 if (rules == null) rules = new HashSet<>();
                 rules.add(rule);
                 return rules;
@@ -709,7 +709,7 @@ public class SchemaGraph implements Graph {
         }
 
         public void commit() {
-            bufferedTypeConcludedInRules.forEach((label, rules) -> {
+            bufferedTypeConcluded.forEach((label, rules) -> {
                 VertexIID.Type typeIid = getType(label).iid();
                 rules.forEach(rule -> {
                     StructureIID.Rule ruleIid = rule.iid();
@@ -720,7 +720,7 @@ public class SchemaGraph implements Graph {
                     storage.put(typeRuleIndex);
                 });
             });
-            bufferedHasAttributeTypeConcludedInRules.forEach((label, rules) -> {
+            bufferedHasAttributeTypeConcluded.forEach((label, rules) -> {
                 VertexIID.Type typeIid = getType(label).iid();
                 rules.forEach(rule -> {
                     StructureIID.Rule ruleIid = rule.iid();
@@ -734,24 +734,44 @@ public class SchemaGraph implements Graph {
         }
 
         public void clear() {
-            typeConcludedInRules.clear();
-            hasAttributeTypeConcludedInRules.clear();
-            bufferedTypeConcludedInRules.clear();
-            bufferedHasAttributeTypeConcludedInRules.clear();
+            typeConcluded.clear();
+            hasAttributeTypeConcluded.clear();
+            bufferedTypeConcluded.clear();
+            bufferedHasAttributeTypeConcluded.clear();
         }
 
         public void clearRuleConcludes(RuleStructure structure, Label type) {
-            typeConcludedInRules.get(type).remove(structure);
-            // TODO delete from storage
-            bufferedTypeConcludedInRules.get(type).remove(structure);
-            // TODO delete from storage
+            Set<RuleStructure> rules = typeConcluded.get(type);
+            if (rules != null && rules.contains(structure)) {
+                typeConcluded.get(type).remove(structure);
+                VertexIID.Type typeIID = getType(type).iid();
+                storage().delete(join(
+                        Encoding.Index.Prefix.TYPE.bytes(),
+                        typeIID.bytes(),
+                        Encoding.Index.Infix.RULE_CONCLUDES.bytes(),
+                        structure.iid().bytes()
+                ));
+            }
+            if (bufferedTypeConcluded.containsKey(type)) {
+                bufferedTypeConcluded.get(type).remove(structure);
+            }
         }
 
         public void clearRuleConcludesHasAttribute(RuleStructure structure, Label attributeType) {
-            hasAttributeTypeConcludedInRules.get(attributeType).remove(structure);
-            // TODO delete from storage
-            bufferedHasAttributeTypeConcludedInRules.get(attributeType).remove(structure);
-            // TODO delete from storage
+            Set<RuleStructure> rules = hasAttributeTypeConcluded.get(attributeType);
+            if (rules != null && rules.contains(structure)) {
+                rules.remove(structure);
+                VertexIID.Type typeIID = getType(attributeType).iid();
+                storage().delete(join(
+                        Encoding.Index.Prefix.TYPE.bytes(),
+                        typeIID.bytes(),
+                        Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
+                        structure.iid().bytes()
+                ));
+            }
+            if (bufferedHasAttributeTypeConcluded.containsKey(attributeType)) {
+                bufferedHasAttributeTypeConcluded.get(attributeType).remove(structure);
+            }
         }
 
         private Set<RuleStructure> loadConcludes(Label label) {
