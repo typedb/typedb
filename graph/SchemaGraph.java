@@ -740,7 +740,7 @@ public class SchemaGraph implements Graph {
             bufferedHasAttributeTypeConcluded.clear();
         }
 
-        public void clearRuleConcludes(RuleStructure structure, Label type) {
+        public void deleteRuleConcludes(RuleStructure structure, Label type) {
             Set<RuleStructure> rules = typeConcluded.get(type);
             if (rules != null && rules.contains(structure)) {
                 typeConcluded.get(type).remove(structure);
@@ -757,7 +757,7 @@ public class SchemaGraph implements Graph {
             }
         }
 
-        public void clearRuleConcludesHasAttribute(RuleStructure structure, Label attributeType) {
+        public void deleteRuleConcludesHasAttribute(RuleStructure structure, Label attributeType) {
             Set<RuleStructure> rules = hasAttributeTypeConcluded.get(attributeType);
             if (rules != null && rules.contains(structure)) {
                 rules.remove(structure);

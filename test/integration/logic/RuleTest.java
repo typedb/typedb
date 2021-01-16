@@ -404,9 +404,11 @@ public class RuleTest {
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
                     final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
+                    person.setOwns(name);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
@@ -423,6 +425,15 @@ public class RuleTest {
                     Conjunction allFriendsThen = allFriendsRule.then();
                     Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
                     assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
+
+                    Rule marriageSameName = logicMgr.putRule(
+                            "marriage-same-name",
+                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("$y has $a").asThing());
+                    Conjunction sameName = marriageSameName.then();
+                    Variable nameAttr = iterate(sameName.variables()).filter(v -> v.id().equals(Identifier.Variable.name("a"))).next();
+                    assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
+
                     txn.commit();
                 }
             }
@@ -434,6 +445,10 @@ public class RuleTest {
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
+
+                    Set<Rule> hasNameRules = logicMgr.rulesConcludingHasAttribute(Label.of("name")).toSet();
+                    Rule marriageSameName = txn.logic().getRule("marriage-same-name");
+                    assertEquals(set(marriageSameName), hasNameRules);
                 }
             }
         }
@@ -454,9 +469,11 @@ public class RuleTest {
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
                     final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
+                    person.setOwns(name);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
@@ -473,6 +490,15 @@ public class RuleTest {
                     Conjunction allFriendsThen = allFriendsRule.then();
                     Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
                     assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
+
+                    Rule marriageSameName = logicMgr.putRule(
+                            "marriage-same-name",
+                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("$y has $a").asThing());
+                    Conjunction sameName = marriageSameName.then();
+                    Variable nameAttr = iterate(sameName.variables()).filter(v -> v.id().equals(Identifier.Variable.name("a"))).next();
+                    assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
+
                     txn.commit();
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -482,6 +508,12 @@ public class RuleTest {
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
                     allFriendsRule.delete();
+
+                    Set<Rule> hasNameRules = logicMgr.rulesConcludingHasAttribute(Label.of("name")).toSet();
+                    Rule marriageSameName = txn.logic().getRule("marriage-same-name");
+                    assertEquals(set(marriageSameName), hasNameRules);
+                    marriageSameName.delete();
+
                     txn.commit();
                 }
             }
@@ -491,6 +523,9 @@ public class RuleTest {
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     assertEquals(set(marriageFriendsRule), friendshipRules);
+
+                    Set<Rule> hasNameRules = logicMgr.rulesConcludingHasAttribute(Label.of("name")).toSet();
+                    assertEquals(set(), hasNameRules);
                 }
             }
         }

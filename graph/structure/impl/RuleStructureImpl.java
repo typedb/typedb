@@ -111,7 +111,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void clearConcludesIndex(Label type) {
-        graph.ruleIndex().clearRuleConcludes(this, type);
+        graph.ruleIndex().deleteRuleConcludes(this, type);
     }
 
     @Override
@@ -121,7 +121,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void clearConcludesHasAttributeIndex(Label type) {
-        graph.ruleIndex().clearRuleConcludesHasAttribute(this, type);
+        graph.ruleIndex().deleteRuleConcludesHasAttribute(this, type);
     }
 
     public Encoding.Structure encoding() {
