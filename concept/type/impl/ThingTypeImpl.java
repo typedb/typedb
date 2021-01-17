@@ -29,6 +29,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.edge.TypeEdge;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -59,6 +60,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
@@ -381,11 +383,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void delete() {
-        // TODO throw if type is indexed by a rule
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
             throw exception(GraknException.of(TYPE_HAS_SUBTYPES, getLabel()));
         } else if (getSubtypes().flatMap(ThingType::getInstances).findFirst().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
+        } else if (graphMgr.schema().ruleIndex().rulesContaining(getLabel()).hasNext()) {
+            throw exception(GraknException.of(
+                    TYPE_PRESENT_IN_RULES, getLabel(),
+                    graphMgr.schema().ruleIndex().rulesContaining(getLabel()).map(RuleStructure::label).toList()
+            ));
         } else {
             vertex.delete();
         }

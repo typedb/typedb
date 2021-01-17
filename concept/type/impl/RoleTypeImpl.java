@@ -23,6 +23,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
@@ -117,8 +119,14 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     public void delete() {
         if (getInstances().findAny().isPresent()) {
             throw exception(GraknException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getLabel()));
+        } else if (graphMgr.schema().ruleIndex().rulesContaining(getLabel()).hasNext()) {
+            throw exception(GraknException.of(
+                    TYPE_PRESENT_IN_RULES, getLabel(),
+                    graphMgr.schema().ruleIndex().rulesContaining(getLabel()).map(RuleStructure::label).toList()
+            ));
+        } else {
+            vertex.delete();
         }
-        vertex.delete();
     }
 
     private Stream<RoleImpl> getInstances() {

@@ -36,8 +36,9 @@ host_compatible_java_test(
     test_class = "grakn.core.logic.RuleTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util",
         "//common",
+        "//common/test:util",
+        "//test/integration/util",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",

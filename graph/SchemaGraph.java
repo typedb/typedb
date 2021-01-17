@@ -733,33 +733,30 @@ public class SchemaGraph implements Graph {
             bufferedTypeConcluded.forEach((label, rules) -> {
                 VertexIID.Type typeIid = getType(label).iid();
                 rules.forEach(rule -> {
-                    StructureIID.Rule ruleIid = rule.iid();
                     byte[] typeRuleConconcludesIndex = join(Encoding.Index.Prefix.TYPE.bytes(),
                                                             typeIid.bytes(),
                                                             Encoding.Index.Infix.RULE_CONCLUDES.bytes(),
-                                                            ruleIid.bytes());
+                                                            rule.iid().bytes());
                     storage.put(typeRuleConconcludesIndex);
                 });
             });
             bufferedHasAttributeTypeConcluded.forEach((label, rules) -> {
                 VertexIID.Type typeIid = getType(label).iid();
                 rules.forEach(rule -> {
-                    StructureIID.Rule ruleIid = rule.iid();
                     byte[] typeRuleConcludesHasIndex = join(Encoding.Index.Prefix.TYPE.bytes(),
                                                             typeIid.bytes(),
                                                             Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
-                                                            ruleIid.bytes());
+                                                            rule.iid().bytes());
                     storage.put(typeRuleConcludesHasIndex);
                 });
             });
             bufferedRuleContains.forEach((label, rules) -> {
                 VertexIID.Type typeIid = getType(label).iid();
                 rules.forEach(rule -> {
-                    StructureIID.Rule ruleIid = rule.iid();
                     byte[] typeInRule = join(Encoding.Index.Prefix.TYPE.bytes(),
                                              typeIid.bytes(),
                                              Encoding.Index.Infix.RULE_CONTAINS.bytes(),
-                                             ruleIid.bytes()
+                                             rule.iid().bytes()
                     );
                     storage.put(typeInRule);
                 });
