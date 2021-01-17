@@ -29,10 +29,12 @@ import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.constraint.Constraint;
 import graql.lang.pattern.constraint.ThingConstraint;
 import graql.lang.pattern.constraint.TypeConstraint;
 import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
+import graql.lang.pattern.variable.Variable;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -164,10 +166,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
-        return variables.map(bv -> {
-            if (bv.isThing()) return bv.asThing().isa().map(isa -> isa.type()).orElse(null);
-            else return bv.asType();
-        }).filter(Objects::nonNull).map(variable -> variable.asType().label()).filter(Optional::isPresent)
+        return variables.flatMap(v -> iterate(v.constraints())).flatMap(c -> iterate(c.variables()))
+                .distinct().filter(Variable::isType).map(var -> var.asType().label()).filter(Optional::isPresent)
                 .map(labelConstraint -> {
                     TypeConstraint.Label label = labelConstraint.get();
                     if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
