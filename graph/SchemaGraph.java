@@ -776,10 +776,9 @@ public class SchemaGraph implements Graph {
             Set<RuleStructure> rules = typeConcluded.get(type);
             if (rules != null && rules.contains(structure)) {
                 typeConcluded.get(type).remove(structure);
-                VertexIID.Type typeIID = getType(type).iid();
                 storage().delete(join(
                         Encoding.Index.Prefix.TYPE.bytes(),
-                        typeIID.bytes(),
+                        getType(type).iid().bytes(),
                         Encoding.Index.Infix.RULE_CONCLUDES.bytes(),
                         structure.iid().bytes()
                 ));
@@ -793,10 +792,9 @@ public class SchemaGraph implements Graph {
             Set<RuleStructure> rules = hasAttributeTypeConcluded.get(attributeType);
             if (rules != null && rules.contains(structure)) {
                 rules.remove(structure);
-                VertexIID.Type typeIID = getType(attributeType).iid();
                 storage().delete(join(
                         Encoding.Index.Prefix.TYPE.bytes(),
-                        typeIID.bytes(),
+                        getType(attributeType).iid().bytes(),
                         Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
                         structure.iid().bytes()
                 ));
@@ -807,12 +805,23 @@ public class SchemaGraph implements Graph {
         }
 
 
-        public void deleteBufferedRuleContains(RuleStructureImpl.Buffered buffered, ResourceIterator<Label> types) {
-            // TODO
+        public void deleteBufferedRuleContains(RuleStructure rule, ResourceIterator<Label> types) {
+            types.forEachRemaining(type -> {
+                assert bufferedRuleContains.containsKey(type) && bufferedRuleContains.get(type).contains(rule);
+                bufferedRuleContains.get(type).remove(rule);
+            });
         }
 
-        public void deleteRuleContains(RuleStructureImpl.Persisted persisted, ResourceIterator<Label> types) {
-            // TODO
+        public void deleteRuleContains(RuleStructure rule, ResourceIterator<Label> types) {
+            types.forEachRemaining(type -> {
+                Set<RuleStructure> rules = ruleContains.get(type);
+                assert rules != null && rules.contains(rule);
+                storage().delete(join(
+                        Encoding.Index.Prefix.TYPE.bytes(),
+                        getType(type).iid().bytes(),
+                        Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
+                        rule.iid().bytes()));
+            });
         }
 
         private Set<RuleStructure> loadConcludes(Label label) {

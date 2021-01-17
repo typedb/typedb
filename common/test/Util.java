@@ -47,6 +47,14 @@ public class Util {
         }
     }
 
+    public static void assertNotThrows(Runnable function) {
+        try {
+            function.run();
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
     public static void assertThrowsWithMessage(Runnable function, String message) {
         try {
             function.run();
