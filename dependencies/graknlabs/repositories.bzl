@@ -36,7 +36,7 @@ def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
         remote = "https://github.com/graknlabs/graql",
-        tag = "2.0.0-alpha-3", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+        commit = "4c866c8d566eae1d21386b20c4e1e6806a9deb25", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 def graknlabs_protocol():
