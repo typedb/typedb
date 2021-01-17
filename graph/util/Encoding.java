@@ -740,7 +740,8 @@ public class Encoding {
 
         enum Infix {
             RULE_CONCLUDES(0),
-            RULE_CONCLUDES_HAS_ATTRIBUTE(1);
+            RULE_CONCLUDES_HAS_ATTRIBUTE(1),
+            RULE_CONTAINS(3);
 
             private final byte key;
 

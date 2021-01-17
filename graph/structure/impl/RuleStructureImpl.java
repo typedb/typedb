@@ -25,13 +25,21 @@ import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.constraint.TypeConstraint;
+import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.THEN;
 import static grakn.core.graph.util.Encoding.Property.WHEN;
@@ -132,6 +140,36 @@ public abstract class RuleStructureImpl implements RuleStructure {
         graph.delete(this);
     }
 
+    ResourceIterator<Label> validRuleLabels() {
+        graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
+        ResourceIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
+                .map(Conjunctable::asVariable);
+        ResourceIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
+                .flatMap(p -> negationVariables(p.asNegation()));
+        ResourceIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
+        ResourceIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
+        ResourceIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
+        // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
+        // this lets us index only types the user can actually retrieve as a concept
+        return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
+                .filter(label -> graph.getType(label) != null);
+    }
+
+    private ResourceIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {
+        assert ruleNegation.patterns().size() == 1 && ruleNegation.patterns().get(0).isDisjunction();
+        return iterate(ruleNegation.patterns().get(0).asDisjunction().patterns())
+                .flatMap(pattern -> iterate(pattern.asConjunction().patterns())).map(Pattern::asVariable);
+    }
+
+    private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
+        return variables.filter(BoundVariable::isType).map(variable -> variable.asType().label())
+                .filter(Optional::isPresent).map(labelConstraint -> {
+                    TypeConstraint.Label label = labelConstraint.get();
+                    if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
+                    else return Label.of(label.label());
+                });
+    }
+
     public static class Buffered extends RuleStructureImpl {
 
         private final AtomicBoolean isCommitted;
@@ -140,6 +178,12 @@ public abstract class RuleStructureImpl implements RuleStructure {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
+            indexLabels();
+        }
+
+        private void indexLabels() {
+            ResourceIterator<Label> labels = validRuleLabels();
+            labels.forEachRemaining(label -> graph.ruleIndex().ruleContains(this, label));
         }
 
         @Override
@@ -162,6 +206,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
+                graph.ruleIndex().deleteBufferedRuleContains(this, validRuleLabels());
                 deleteVertexFromGraph();
             }
         }
@@ -241,6 +286,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
+                graph.ruleIndex().deleteRuleContains(this, validRuleLabels());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }

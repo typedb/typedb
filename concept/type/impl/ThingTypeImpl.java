@@ -381,6 +381,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void delete() {
+        // TODO throw if type is indexed by a rule
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
             throw exception(GraknException.of(TYPE_HAS_SUBTYPES, getLabel()));
         } else if (getSubtypes().flatMap(ThingType::getInstances).findFirst().isPresent()) {
