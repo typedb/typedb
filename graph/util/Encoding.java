@@ -168,7 +168,7 @@ public class Encoding {
         private final PrefixType type;
 
         Prefix(int key, PrefixType type) {
-            this.key = (byte) key;
+            this.key = (byte) (key & 0xff);
             this.type = type;
         }
 
