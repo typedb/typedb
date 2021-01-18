@@ -37,7 +37,7 @@ public class Retrievable extends Resolvable {
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
-        return Retrievable.Extractor.from(conjunction, toExclude).extract();
+        return Retrievable.Extractor.of(conjunction, toExclude).extract();
     }
 
     @Override
@@ -62,7 +62,7 @@ public class Retrievable extends Resolvable {
             this.concludables = concludables;
         }
 
-        public static Extractor from(Conjunction conjunction, Set<Concludable> concludables) {
+        public static Extractor of(Conjunction conjunction, Set<Concludable> concludables) {
             return new Extractor(conjunction, concludables);
         }
 

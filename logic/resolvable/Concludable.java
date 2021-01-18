@@ -112,13 +112,13 @@ public abstract class Concludable extends Resolvable {
         else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    AlphaEquivalence alphaEquals(Relation that) { return null; } // TODO Should these return AlphaEquivalence.Invalid
+    AlphaEquivalence alphaEquals(Relation that) { return AlphaEquivalence.invalid(); }
 
-    AlphaEquivalence alphaEquals(Has that) { return null; }
+    AlphaEquivalence alphaEquals(Has that) { return AlphaEquivalence.invalid(); }
 
-    AlphaEquivalence alphaEquals(Isa that) { return null; }
+    AlphaEquivalence alphaEquals(Isa that) { return AlphaEquivalence.invalid(); }
 
-    AlphaEquivalence alphaEquals(Attribute that) { return null; }
+    AlphaEquivalence alphaEquals(Attribute that) { return AlphaEquivalence.invalid(); }
 
     public boolean isRelation() { return false; }
 
@@ -264,12 +264,12 @@ public abstract class Concludable extends Resolvable {
     /** Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
      * { $r($role: $x) isa $relation; }
+     * { $r($role: $x); }
+     * { $r($x) isa $relation; }
+     * { $r($x); }
      * { ($role: $x) isa $relation; }
      * { ($x) isa $relation; }
      * { ($x); }
-     * { $r($x) isa $relation; }
-     * { $r($role: $x); }
-     * { $r($x); }
      */
     public static class Relation extends Concludable {
 
@@ -419,7 +419,11 @@ public abstract class Concludable extends Resolvable {
      * `{ $x has age 30; }`,
      * `{ $x has $a; $a isa age; }`,
      * `{ $x has $a; $a 30 isa age; }`,
-     * `{ $x has $a; $a 30; }`
+     * `{ $x has $a; $a = 30; }`
+     * `{ $x has $a; $a < 30; $a >= 10; }`
+     * Value constraints are included here to improve performance, with the exception of `=`, which cannot be included
+     * elsewhere due to the anonymous attribute variable in examples such as `{ $x has age 30; }`. Only `=` is added as
+     * a requirement on the unifier.
      */
     public static class Has extends Concludable {
 
@@ -484,6 +488,7 @@ public abstract class Concludable extends Resolvable {
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
 
                     ValueConstraint<?> value = attr.value().iterator().next();
+                    assert value.predicate().equals(EQ);
                     Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn = valueEqualsFunction(value);
                     unifierBuilder.requirements().hasPredicate(attr.id(), predicateFn);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
@@ -520,6 +525,7 @@ public abstract class Concludable extends Resolvable {
      * `{ $x isa person; }`
      * `{ $a isa age; $a = 30; }`
      * `{ $a isa age; $a > 5; $a < 30; }`
+     * Value constraints are included here to improve performance. Only `=` is added as a requirement on the unifier.
      */
     public static class Isa extends Concludable {
 
@@ -557,7 +563,6 @@ public abstract class Concludable extends Resolvable {
         }
 
         ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
-            // TODO This needs to handle the ValueConstraint unification
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(isa().owner(), isaConclusion.isa().owner())) {
                 unifierBuilder.add(isa().owner().id(), isaConclusion.isa().owner().id());
@@ -601,7 +606,8 @@ public abstract class Concludable extends Resolvable {
      * `{ $a = 30; }`
      * `{ $a > 5; $a < 20; }`
      * It does not handle `{ $a < $b; }`, this scenario should be split into a Retrievable of `{ $a < $b; }`, a
-     * Concludable.Attribute of `$a` and a Concludable.Attribute of `$b` (both having an empty set of ValueConstraints).
+     * `Concludable.Attribute` of `$a` and a `Concludable.Attribute` of `$b` (both having an empty set of
+     * ValueConstraints). Only `=` is added as a requirement on the unifier.
      */
     public static class Attribute extends Concludable {
 
